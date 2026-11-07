@@ -45,7 +45,7 @@
     "test:dutyline": "node scripts/dutyline.test.js",
     "test:reststatus": "node scripts/reststatus.test.js",
     "test:design": "node scripts/design.test.js",
-    "test:citacoes": "node scripts/citacoes-easyjet.test.js",
+    "test:citacoes": "node scripts/citacoes-easyjet.test.js && node scripts/citacoes-tap-ftl.test.js",
     "test:dinheiro-menos": "node scripts/dinheiro-menos.test.js"
   },
   "dependencies": {

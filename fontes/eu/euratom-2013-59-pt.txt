@@ -1,0 +1,557 @@
+Diretiva 2013/59/Euratom do Conselho, de 5 de dezembro de 2013 (JO L 13 de 17.1.2014) — versão portuguesa, CELEX 32013L0059.
+Extrato literal (pdftotext -layout, duas colunas) das páginas L 13/13 a L 13/21: art. 9.º (limites de dose, n.º 2: 20 mSv),
+art. 35.º, n.º 3 (tripulações: 1 mSv e 6 mSv) e art. 40.º. PDF do Cellar (EUR-Lex), SHA-256 40f3990bacfb77baa12347ca2eb038d368f1e041ea275e686b873a9ce0c38017.
+Junto a 2026-11-06 (auditoria dos cálculos, bloco 7, A-277). Conferido por scripts/citacoes-tap-ftl.test.js.
+================================================================================
+17.1.2014  PT  Jornal Oficial da União Europeia                    L 13/13
+
+2. Os valores dos níveis de referência são determinados em         c) O limite de dose equivalente para as extremidades é fixado
+função do tipo de situação de exposição. A determinação dos           em 500 mSv por ano.
+níveis de referência tem em conta tanto os requisitos de prote­
+ção radiológica, como critérios de natureza societal. No que diz                                   Artigo 10.o
+respeito à exposição da população, a determinação dos níveis de           Proteção das trabalhadoras grávidas e lactantes
+referência tem em conta o leque de níveis de referência estabe­
+lecido no Anexo I.                                                 1. Os Estados-Membros asseguram que a proteção concedida
+                                                                   ao nascituro seja equivalente à dispensada a qualquer elemento
+3. No que respeita às situações de exposição existentes que        da população. Logo que uma trabalhadora grávida informe a
+envolvam exposição ao radão, os níveis de referência são esta­     empresa ou, no caso de uma trabalhadora externa, a entidade
+belecidos em termos de concentração de atividade de radão no       empregadora, de que está grávida, em conformidade com a
+ar, conforme especificado no artigo 74.o para os elementos da      legislação nacional, a empresa e a entidade empregadora asse­
+população, e no artigo 54.o para os trabalhadores.                 guram que as condições de trabalho da trabalhadora grávida
+                                                                   sejam de molde a que a dose equivalente recebida pelo nascituro
+                                     SECÇÃO 2                      seja tão baixa quanto razoavelmente possível e que não seja
+                                                                   provável que essa dose exceda 1 mSv durante pelo menos o
+                             Limites de dose                       resto da gravidez.
+                                 Artigo 8.o
+                                                                   2. Logo que uma trabalhadora informe a empresa ou, no
+       Limite de idade para os trabalhadores expostos              caso de uma trabalhadora externa, a entidade empregadora, de
+                                                                   que está a amamentar, a mulher lactante não deve desempenhar
+Os Estados-Membros asseguram que, sob reserva do disposto no       funções que envolvam um risco significativo de incorporação de
+artigo 11.o, n.o 2, as pessoas com menos de 18 anos de idade       radionuclídeos ou de contaminação corporal.
+não podem ser afetas a qualquer função que as coloque na
+categoria de trabalhadores expostos.                                                               Artigo 11.o
+                                                                           Limites de dose para aprendizes e estudantes
+                                 Artigo 9.o
+                                                                   1. Os Estados-Membros asseguram que os limites de dose
+        Limites de dose para a exposição profissional              para os aprendizes de idade igual ou superior a 18 anos e
+                                                                   para os estudantes de idade igual ou superior a 18 anos que,
+1. Os Estados-Membros asseguram que os limites de dose             no âmbito dos seus estudos, sejam obrigados a trabalhar com
+para a exposição profissional são aplicáveis à soma das exposi­    fontes de radiação, são iguais aos limites de dose fixados no
+ções profissionais anuais de um trabalhador resultantes de todas   artigo 9.o para a exposição profissional.
+as práticas autorizadas, à exposição ao radão em locais de tra­
+balho que obrigam à notificação nos termos do artigo 54.o,         2. Os Estados-Membros asseguram que o limite de dose efe­
+n.o 3, e a outras situações de exposição profissional resultantes  tiva para os aprendizes com idades compreendidas entre os 16
+de situações de exposição existentes, nos termos do artigo 100.o,  e os 18 anos e para os estudantes com idades compreendidas
+n.o 3. À exposição profissional de emergência é aplicável o        entre os 16 e os 18 anos que, no âmbito dos seus estudos,
+artigo 53.o.                                                       sejam obrigados a trabalhar com fontes de radiação, são de 6
+                                                                   mSv por ano.
+2. O limite de dose efetiva para a exposição profissional é
+fixado em 20 mSv num mesmo ano. No entanto, em circuns­            3. Para além dos limites de dose efetiva estabelecidos no
+tâncias especiais ou em certas situações de exposição identifica­  n.o 2, aplicam-se os seguintes limites de dose equivalente:
+das na legislação nacional, a autoridade competente pode auto­
+rizar uma dose efetiva superior que pode atingir 50 mSv num        a) O limite de dose equivalente para o cristalino do olho é
+mesmo ano, desde que a dose média anual ao longo de cinco             fixado em 15 mSv por ano;
+anos consecutivos, incluindo os anos em que o limite foi ex­
+cedido, não seja superior a 20 mSv.                                b) O limite de dose equivalente para a pele é fixado em 150
+                                                                      mSv por ano. Este limite aplica-se à dose média numa su­
+3. Para além dos limites de dose efetiva estabelecidos no             perfície de 1 cm2 de pele, independentemente da superfície
+n.o 2, aplicam-se os seguintes limites de dose equivalente:           exposta;
+
+a) O limite de dose equivalente para o cristalino do olho é        c) O limite de dose equivalente para as extremidades é fixado
+   fixado em 20 mSv num mesmo ano ou em 100 mSV ao                    em 150 mSv por ano.
+   longo de cinco anos consecutivos, desde que a dose média
+   num mesmo ano não exceda 50 mSv, tal como previsto na           4. Os Estados-Membros asseguram que os limites de dose
+   legislação nacional;                                            para os aprendizes e estudantes que não estejam abrangidos
+                                                                   pelo disposto nos n.os 1, 2 e 3 são iguais aos limites de dose
+b) O limite de dose equivalente para a pele é fixado em 500        fixados no artigo 12.o para os elementos da população.
+   mSv por ano; este limite aplica-se à dose média numa su­
+   perfície de 1 cm2 de pele, independentemente da superfície
+   exposta;
+L 13/14  PT  Jornal Oficial da União Europeia                     17.1.2014
+
+                                Artigo 12.o                                                       Artigo 15.o
+       Limites de dose para a exposição da população                  Formação e informação dos trabalhadores expostos
+1. Os Estados-Membros asseguram que os limites de dose            1. Os Estados-Membros exigem que a empresa informe os
+para a exposição da população são aplicáveis à soma das ex­       trabalhadores expostos sobre:
+posições anuais de um elemento da população resultantes de
+todas as práticas autorizadas.                                    a) Os riscos sanitários das radiações associados ao seu trabalho;
+
+2. Os Estados-Membros fixam o limite de dose efetiva para a       b) As precauções e procedimentos gerais de proteção contra
+exposição da população em 1 mSv por ano.                             radiações a adotar;
+
+3. Além do limite de dose estabelecido no n.o 2, aplicam-se       c) As precauções e procedimentos de proteção contra radiações
+os seguintes limites de dose equivalente:                            relacionados com as condições operacionais e de trabalho,
+                                                                     no que respeita à prática em geral e a cada tipo de posto de
+a) O limite de dose equivalente para o cristalino do olho é          trabalho ou de funções que lhes tenha sido atribuído;
+   fixado em 15 mSv por ano;
+                                                                  d) As partes pertinentes dos planos e procedimentos de res­
+b) O limite de dose equivalente para a pele é fixado em 50 mSv       posta a emergências;
+   por ano. Este limite aplica-se à dose média numa superfície
+   de 1 cm2 de pele, independentemente da superfície exposta.     e) A importância de que se reveste o cumprimento dos requi­
+                                                                     sitos técnicos, médicos e administrativos.
+                                Artigo 13.o
+     Estimativas da dose efetiva e da dose equivalente            No caso dos trabalhadores externos, a entidade empregadora
+Para o cálculo das doses efetiva e equivalente, utilizam-se os    assegura que são prestadas as informações exigidas nas alíneas
+valores e relações normalizados adequados. No que respeita à      a), b) e e).
+radiação externa, são usadas as quantidades operacionais defini­
+das na Secção 2.3 da Publicação 116 da CIPR.                      2. Os Estados-Membros exigem à empresa ou, no caso de
+                                                                  trabalhadores externos, à entidade empregadora, que informe as
+                                   CAPÍTULO IV                    trabalhadoras expostas da importância de declararem rapida­
+                                                                  mente uma eventual gravidez, tendo em conta os riscos de
+REQUISITOS EM MATÉRIA DE ENSINO, FORMAÇÃO E                       exposição para o nascituro.
+INFORMAÇÃO NO DOMÍNIO DA PROTEÇÃO CONTRA
+                                                                  3. Os Estados-Membros exigem à empresa ou, no caso de
+                                  RADIAÇÕES                       trabalhadores externos, à entidade empregadora, que informe as
+                                                                  trabalhadoras expostas da importância de anunciarem a sua
+                                Artigo 14.o                       intenção de amamentar, tendo em vista os riscos de exposição
+Responsabilidades gerais em matéria de ensino, formação e         para o lactente em caso de incorporação de radionuclídeos ou
+                                                                  de contaminação corporal.
+                     prestação de informações
+1. Os Estados-Membros estabelecem um quadro legislativo e         4. Os Estados-Membros exigem às empresas ou, no caso de
+administrativo adequado para proporcionar um ensino, uma          trabalhadores externos, à entidade empregadora, que disponibi­
+formação e uma informação apropriados no domínio da prote­        lizem aos trabalhadores expostos programas de formação e
+ção contra radiações a todos os indivíduos cujas funções exigem   informação em matéria de proteção contra radiações.
+competências específicas nesse domínio. A prestação de forma­
+ção e de informação é repetida a intervalos apropriados e deve    5. Além da informação e da formação no domínio da pro­
+ser documentada.                                                  teção contra radiações, especificadas nos n.os 1, 2, 3 e 4, os
+                                                                  Estados-Membros exigem que a empresa responsável por fontes
+2. Os Estados-Membros asseguram que sejam tomadas me­             seladas de atividade elevada assegure que a formação abrange os
+didas para organizar o ensino, a formação e a reciclagem de       requisitos específicos de gestão e controlo seguros das fontes
+modo a permitir o reconhecimento, por parte de especialistas      seladas de atividade elevada, com vista a preparar devidamente
+em proteção contra radiações e de especialistas em física médi­   os trabalhadores em causa para qualquer evento que possa afe­
+ca, assim como dos serviços de medicina do trabalho e serviços    tar a proteção contra radiações. A informação e a formação
+de dosimetria, em relação ao tipo de práticas.                    devem dar particular destaque aos requisitos necessários em
+                                                                  matéria de segurança e conter informações específicas sobre
+3. Os Estados-Membros podem tomar medidas para organi­            as eventuais consequências de uma perda de controlo adequado
+zar o ensino, a formação e a reciclagem por forma a possibilitar  das fontes seladas de atividade elevada.
+o reconhecimento por parte dos responsáveis pela proteção
+contra radiações, caso esse reconhecimento se encontre previsto
+na legislação nacional.
+17.1.2014  PT  Jornal Oficial da União Europeia                   L 13/15
+
+                                Artigo 16.o                                                       Artigo 18.o
+Informação e formação de trabalhadores potencialmente             Ensino, informação e formação em matéria de exposição
+
+                       expostos a fontes órfãs                                                      médica
+1. Os Estados-Membros asseguram que os gestores de ins­           1. Os Estados-Membros asseguram que os médicos e as pes­
+talações com maiores probabilidades de conter ou de processar     soas envolvidas nos aspetos práticos dos procedimentos radio­
+fontes órfãs (nomeadamente os grandes parques de sucata me­       lógicos médicos recebem um ensino, informações e formação
+tálica e grandes instalações de reciclagem de sucata metálica) e  teórica e prática adequados às práticas radiológicas, e que têm a
+de importantes pontos de trânsito nodal, são informados da        necessária competência em matéria de proteção contra radia­
+possibilidade de detetarem uma fonte.                             ções.
+
+2. Os Estados-Membros incentivam os gestores das instala­         Para o efeito, os Estados-Membros asseguram a elaboração de
+ções referidas no n.o 1 a assegurarem que, sempre que os traba­   currículos apropriados e reconhecem os diplomas, certificados
+lhadores possam, nas suas instalações, detetar uma fonte, esses   ou qualificações formais correspondentes.
+trabalhadores são:
+                                                                  2. As pessoas que frequentam programas específicos de for­
+a) Aconselhados e formados em matéria de deteção visual das       mação podem participar nos aspetos práticos dos procedimen­
+   fontes e dos seus contentores;                                 tos radiológicos médicos previstos no artigo 57.o, n.o 2.
+
+b) Informados quanto aos principais dados relativos à radiação    3. Os Estados-Membros asseguram que sejam proporciona­
+   ionizante e aos seus efeitos;                                  dos um ensino e uma formação contínuos após a qualificação e,
+                                                                  no caso especial da utilização clínica de novas técnicas, que seja
+c) informados e formados nas medidas a tomar in loco em caso      ministrada formação sobre essas técnicas e sobre os requisitos
+   de deteção ou suspeita de deteção de uma fonte.                pertinentes de proteção contra as radiações.
+
+                                Artigo 17.o                       4. Os Estados-Membros devem encorajar a introdução de um
+Informação prévia e formação dos trabalhadores de                 curso sobre proteção contra as radiações no programa de estu­
+                                                                  dos de base das escolas de medicina e de odontologia.
+                               emergência
+1. Os Estados-Membros asseguram que os trabalhadores de                                              CAPÍTULO V
+emergência identificados num plano de resposta a emergências
+ou num sistema de gestão de emergências recebem informação         JUSTIFICAÇÃO E CONTROLO REGULADOR DAS PRÁTICAS
+adequada e regularmente atualizada sobre os riscos sanitários
+que a sua intervenção pode envolver e sobre as medidas de                                              SECÇÃO 1
+precaução a tomar em semelhante caso. Essa informação tem
+em conta as diversas situações de emergência potencial e o tipo                   Justificação e proibição das práticas
+de intervenção.                                                                                   Artigo 19.o
+
+2. Logo que ocorra uma situação de emergência, as informa­                               Justificação das práticas
+ções referidas no n.o 1 são completadas por informações ade­      1. Os Estados-Membros asseguram que novas classes ou ti­
+quadas, em função das circunstâncias do caso concreto.            pos de práticas que envolvam a exposição a radiações ionizantes
+                                                                  são justificadas, antes de serem aprovadas.
+3. Os Estados-Membros asseguram que a empresa ou a or­
+ganização responsável pela proteção dos trabalhadores de emer­    2. Os Estados-Membros ponderam a eventual reapreciação
+gência proporciona aos trabalhadores referidos no n.o 1 ações     das classes ou tipos de práticas existentes no que se refere à
+de formação adequadas, tal como previsto no sistema de gestão     sua justificação sempre que surjam novas provas importantes
+de emergências descrito no artigo 97.o. Sempre que necessário,    acerca da sua eficácia ou das suas potenciais consequências, ou
+a formação inclui exercícios práticos.                            que se disponha de novas informações importantes sobre outras
+                                                                  técnicas e tecnologias.
+4. Os Estados-Membros asseguram ainda que, além da for­
+mação em matéria de resposta a situações de emergência refe­      3. As práticas que envolvam exposições profissionais ou ex­
+rida no n.o 3, a empresa ou a organização responsável pela        posição da população devem justificar-se como classe ou tipo de
+proteção dos trabalhadores de emergência proporciona a estes      prática, tendo em conta ambas as categorias de exposições.
+trabalhadores uma formação e informação adequadas no domí­
+nio da proteção contra radiações.                                 4. As práticas que envolvam exposições médicas devem jus­
+                                                                  tificar-se tanto como classe ou tipo de prática, tendo em conta
+                                                                  as exposições médicas e, se for caso disso, as exposições pro­
+                                                                  fissionais e da população a elas associadas, como ao nível de
+                                                                  cada exposição médica individual, tal como especificado no
+                                                                  artigo 55.o.
+L 13/16  PT  Jornal Oficial da União Europeia                     17.1.2014
+
+                                Artigo 20.o                                                       Artigo 22.o
+           Práticas que envolvem bens de consumo                  Práticas que envolvem a exposição deliberada de pessoas
+1. Os Estados-Membros exigem que as empresas que preten­
+dam fabricar ou importar um bem de consumo cuja utilização                      para fins de imagiologia não médica
+prevista constitua presumivelmente uma nova classe ou tipo de     1. Os Estados-Membros asseguram a identificação das práti­
+prática prestem à autoridade competente todas as informações      cas que envolvem exposições imagiológicas não médicas, em
+pertinentes, incluindo as enumeradas no Anexo IV, Secção A, de    particular tendo em conta as práticas incluídas no Anexo V.
+modo a permitir a aplicação do requisito de justificação cons­
+tante do artigo 19.o, n.o 1.                                      2. Os Estados-Membros asseguram que é dada especial aten­
+                                                                  ção à justificação das práticas que envolvem exposições imagio­
+2. Com base numa avaliação dessas informações, os Estados-        lógicas não médicas, em particular:
+-Membros asseguram que a autoridade competente, tal como
+descrito no Anexo IV, Secção B, decida se a utilização prevista   a) Todos os tipos de práticas que envolvem exposições imagio­
+do bem de consumo se justifica.                                      lógicas não médicas devem ser justificados antes de serem
+                                                                     geralmente aceites;
+3. Sem prejuízo do n.o 1, os Estados-Membros asseguram que
+a autoridade competente, que tenha recebido informações nos       b) Todas as aplicações específicas de um tipo de prática geral­
+termos desse número, informe do facto o ponto de contacto            mente aceite devem ser justificadas;
+das autoridades competentes dos outros Estados-Membros e, se
+tal for solicitado, da sua decisão e do respetivo fundamento.     c) Todos os procedimentos de exposição individual imagioló­
+                                                                     gica não médica que utilizem equipamento radiológico mé­
+4 Os Estados-Membros proíbem a venda ou a disponibiliza­             dico devem ser justificados previamente, tendo em conta os
+ção ao público de bens de consumo se a sua utilização prevista       objetivos específicos do procedimento e as características do
+não se justificar ou a se a sua utilização não preencher os          indivíduo em causa;
+critérios de isenção de notificação nos termos do artigo 26.o.
+                                                                  d) A justificação geral e particular das práticas que envolvem
+                                Artigo 21.o                          exposições imagiológicas não médicas, conforme definido
+                        Proibição de práticas                        nas alíneas a) e b), pode ser sujeita a reapreciação;
+1. Os Estados-Membros proíbem a adição deliberada de subs­
+tâncias radioativas na produção de géneros alimentícios, alimen­  e) As circunstâncias que justificam exposições imagiológicas
+tos para animais e cosméticos, bem como a importação ou              não médicas sem justificação específica para cada exposição
+exportação de produtos nessas condições.                             devem ser sujeitas a uma reapreciação periódica.
+
+2. Sem prejuízo do disposto na Diretiva 1999/2/CE, consi­         3. Os Estados-Membros podem isentar as práticas justificadas
+deram-se injustificadas as práticas que envolvem uma ativação     que envolvem exposições imagiológicas não médicas e utilizam
+de material que resulte num aumento da atividade num bem de       equipamentos radiológicos médicos do requisito de restrições de
+consumo que, aquando da colocação no mercado, não possa ser       dose previsto no artigo 6.o, n.o 1, alínea b), assim como dos
+ignorado do ponto de vista da proteção contra as radiações. No    limites de dose constantes do artigo 12.o.
+entanto, a autoridade competente pode avaliar tipos específicos
+de práticas no âmbito dessa classe quanto à sua justificação.     4. Sempre que decida que determinada prática que envolve
+                                                                  exposições imagiológicas não médicas é justificada, o Estado-
+3. Os Estados-Membros proíbem a adição deliberada de subs­        -Membro assegura que:
+tâncias radioativas no fabrico de brinquedos e adornos pessoais,
+bem como a importação ou exportação de produtos nessas            a) Essa prática está sujeita a autorização;
+condições.
+                                                                  b) Os requisitos aplicáveis à prática em questão, incluindo os
+4. Os Estados-Membros proíbem as práticas que envolvam               critérios de aplicação individual, são estabelecidos pela auto­
+uma ativação dos materiais utilizados nos brinquedos e adornos       ridade competente, em cooperação com outros organismos e
+pessoais que resulte, aquando da colocação dos produtos no           sociedades científicas médicas competentes, conforme ade­
+mercado, ou aquando do seu fabrico, num aumento da ativi­            quado;
+dade que não possa ser ignorado do ponto de vista da proteção
+contra as radiações. Proíbem igualmente a importação ou ex­       c) Para os procedimentos que utilizam equipamentos radiológi­
+portação de tais produtos ou materiais.                              cos médicos:
+
+                                                                       i) aplicam-se os requisitos relevantes identificados para a
+                                                                          exposição médica previstos no Capítulo VII, incluindo
+                                                                          os que se referem ao equipamento, otimização, respon­
+                                                                          sabilidades, formação e proteção especial durante a gra­
+                                                                          videz, bem como à participação apropriada do especia­
+                                                                          lista em física médica;
+17.1.2014  PT  Jornal Oficial da União Europeia                     L 13/17
+
+    ii) são criados, sempre que apropriado, protocolos específi­                                    Artigo 25.o
+        cos, coerentes com o objetivo da exposição e a qualidade
+        de imagem exigida;                                                                         Notificação
+
+   iii) são introduzidos, sempre que exequível, níveis específicos  1. Os Estados-Membros asseguram que seja exigida notifica­
+        de referência de diagnóstico;                               ção para todas as práticas justificadas, incluindo as práticas
+                                                                    identificadas nos termos do artigo 23.o. A notificação é efetuada
+d) Para os procedimentos que não utilizem equipamentos ra­          antes do início da prática ou, relativamente às práticas existen­
+   diológicos médicos, as restrições de dose são significativa­     tes, logo que possível a partir do momento em que este requi­
+   mente inferiores ao limite de dose para os elementos da          sito é aplicável. No que diz respeito às práticas sujeitas a noti­
+   população;                                                       ficação, os Estados-Membros especificam quais as informações a
+                                                                    fornecer juntamente com a notificação. Sempre que seja apre­
+e) O indivíduo sujeito a exposição é previamente informado,         sentado um pedido de autorização, não é necessária qualquer
+   sendo-lhe igualmente solicitado que dê o seu acordo, salva­      notificação separada.
+   guardando os casos em que as autoridades de aplicação da
+   lei podem atuar sem o consentimento do indivíduo em con­         As práticas podem ficar isentas de notificação, tal como espe­
+   formidade com a legislação nacional;                             cificado no artigo 26.o.
+
+                                     SECÇÃO 2                       2. Os Estados-Membros asseguram que seja exigida notifica­
+                                                                    ção para os locais de trabalho especificados no artigo 54.o,
+                          Controlo regulador                        n.o 3, bem como para as situações de exposição existente que
+                                Artigo 23.o                         sejam geridas como situações de exposição planeada, tal como
+                                                                    especificado no artigo 100.o, n.o 3.
+Identificação das práticas que envolvem material radioativo
+                                  natural                           3. Não obstante os critérios de isenção constantes do ar­
+                                                                    tigo 26.o, nas situações identificadas pelos Estados-Membros
+Os Estados-Membros asseguram a identificação das classes ou         em que se receie que uma prática identificada em conformidade
+tipos de práticas que envolvem material radioativo natural e que    com o artigo 23.o possa levar à presença de radionuclídeos
+conduzem à exposição dos trabalhadores ou dos elementos da          naturais na água suscetíveis de afetar a qualidade do abasteci­
+população a níveis que não possam ser ignorados do ponto de         mento de água potável ou de afetar qualquer outra via de
+vista da proteção contra radiações. Tal identificação é realizada   exposição, de molde a suscitar preocupações do ponto de vista
+por meios adequados, tendo em conta os setores industriais          da proteção contra radiações, a autoridade competente pode
+enumerados no Anexo VI.                                             exigir que a prática em questão seja sujeita a notificação.
+
+                                Artigo 24.o                         4. As atividades humanas que envolvam materiais contami­
+                                                                    nados por radioatividade resultantes de libertações autorizadas
+         Abordagem gradativa do controlo regulador                  ou de materiais liberados s nos termos do artigo 30.o não
+                                                                    podem ser geridas como situações de exposição planeada,
+1. Os Estados-Membros exigem que, para efeitos de proteção          pelo que não necessitam de ser notificadas.
+contra radiações, as práticas sejam sujeitas a um controlo regu­
+lador, efetuado por meio de notificação, autorização e inspeções                                    Artigo 26.o
+apropriadas, devendo esse controlo ser proporcionado aten­
+dendo tanto à magnitude e probabilidade de ocorrência das                                   Isenção de notificação
+exposições resultantes das práticas como ao impacto que tal
+controlo pode ter na redução dessas exposições ou na melhoria       1. Os Estados-Membros podem decidir que as práticas justi­
+da segurança radiológica.                                           ficadas que envolvam os seguintes elementos não carecem de
+                                                                    notificação:
+2. Sem prejuízo dos artigos 27.o e 28.o, sempre que apro­
+priado e em conformidade com os critérios gerais de isenção         a) Materiais radioativos, sempre que as quantidades de atividade
+constantes do Anexo VII, o controlo regulador pode ser limi­           envolvida não excedam, no total, os valores de isenção in­
+tado à notificação e a uma frequência adequada de inspeções.           dicados no Anexo VII, Quadro B, coluna 3 ou valores mais
+Para o efeito, os Estados-Membros podem estabelecer isenções           elevados que, no caso de aplicações específicas, sejam apro­
+gerais ou permitir que a autoridade competente decida isentar as       vados pela autoridade competente e satisfaçam os critérios
+práticas notificadas do requisito de autorização com base nos          gerais de isenção e de liberação estabelecidos no Anexo VII;
+critérios gerais especificados no Anexo VII; caso o material           ou
+esteja presente em quantidades moderadas, conforme especifi­
+cado pelos Estados-Membros, os valores de concentração de           b) Sem prejuízo do artigo 25.o, n.o 4, os materiais radioativos,
+atividade estabelecidos no Anexo VII, Quadro B, coluna 2, po­          sempre que as concentrações de atividade não excedam os
+dem ser utilizados para esse efeito.                                   valores de isenção indicados no Anexo VII, Quadro A, ou
+                                                                       valores mais elevados que, em caso de aplicações específicas,
+3. As práticas notificadas que não estão isentas de autoriza­          sejam aprovados pela autoridade competente e satisfaçam os
+ção ficam sujeitas a controlo regulador através de registo ou da       critérios gerais de isenção e de liberação estabelecidos no
+concessão de licença.                                                  Anexo VII; ou
+L 13/18  PT  Jornal Oficial da União Europeia                     17.1.2014
+
+c) Um aparelho que contenha uma fonte selada, desde que:             humanos contra as radiações, a animais para fins de diag­
+                                                                     nóstico médico ou veterinário, tratamento ou investigação;
+     i) o aparelho seja de um tipo aprovado pela autoridade
+        competente;                                               b) Exploração e desativação de qualquer instalação nuclear e
+                                                                     exploração e encerramento de minas de urânio;
+    ii) o aparelho não produza, em condições normais de fun­
+        cionamento, um débito de dose superior a 1 μSv · hÄ1 à    c) Adição deliberada de substâncias radioativas na produção ou
+        distância de 0,1 m de qualquer superfície acessível; e       no fabrico de bens de consumo ou outros produtos, in­
+                                                                     cluindo medicamentos, e na importação ou exportação de
+   iii) a autoridade competente tenha especificado as condições      tais bens ou produtos;
+        de reciclagem e eliminação; ou
+                                                                  d) Qualquer prática que envolva fontes seladas de atividade
+d) Qualquer aparelho elétrico, desde que:                            elevada;
+
+    i) se trate de um tubo de raios catódicos destinado à visua­  e) Exploração, desativação e encerramento de qualquer instala­
+       lização de imagens, ou de outro aparelho elétrico que         ção de armazenagem a longo prazo ou eliminação de resí­
+       funcione a uma diferença de potencial não superior a          duos radioativos, incluindo instalações que gerem resíduos
+       30 quilovolts (kV), ou de um aparelho de um tipo apro­        radioativos para esse efeito;
+       vado pela autoridade competente; e
+                                                                  f) Práticas que libertem para o ambiente quantidades significa­
+   ii) não produza, em condições normais de funcionamento,           tivas de material radioativo com efluentes gasosos ou líqui­
+       um débito de dose superior a 1 μSv · hÄ1 à distância de       dos.
+       0,1 m de qualquer superfície acessível.
+                                                                                                  Artigo 29.o
+2. Os Estados-Membros podem isentar outros tipos de prá­                             Procedimento de autorização
+ticas do requisito de notificação desde que sejam cumpridos os    1. Para efeitos de autorização, os Estados-Membros exigem o
+critérios gerais de isenção estabelecidos no Anexo VII, ponto 3,  fornecimento de informações relevantes para a proteção contra
+com base numa avaliação que revele que a isenção é a melhor       as radiações, de forma proporcionada atendendo à natureza da
+opção.                                                            prática e aos riscos radiológicos envolvidos.
+
+                                Artigo 27.o                       2. Para efeitos de concessão de uma licença e ao determina­
+                 Registo ou concessão de licença                  rem que informações devem ser fornecidas nos termos do n.o 1,
+1. Os Estados-Membros exigem o registo ou a concessão de          os Estados-Membros têm em conta a lista indicativa constante
+uma licença das seguintes práticas:                               do Anexo IX.
+
+a) Funcionamento de geradores de radiações ou aceleradores ou     3. A licença inclui, conforme seja apropriado, condições es­
+   fontes radioativas para exposições médicas ou para fins de     pecíficas e uma referência aos requisitos constantes da legislação
+   imagiologia não médica;                                        nacional por forma a assegurar que os elementos da licença têm
+                                                                  força executória e impõem restrições adequadas aos limites
+b) Funcionamento de geradores de radiações ou aceleradores,       operacionais e às condições de operação. A legislação nacional
+   exceto microscópios eletrónicos, ou fontes radioativas para    ou as condições específicas exigem ainda, sempre que apropria­
+   fins não abrangidos pela alínea a).                            do, a aplicação formal e documentada do princípio da otimiza­
+                                                                  ção.
+2. Os Estados-Membros podem exigir o registo ou a conces­
+são de licença para outros tipos de práticas.                     4. Sempre que aplicável, a legislação nacional ou a licença
+                                                                  inclui condições relativas à descarga de efluentes radioativos, em
+3. A decisão regulamentar de submeter determinados tipos          conformidade com os requisitos estabelecidos no Capítulo VIII
+de práticas quer a registo quer à concessão de uma licença pode   no que respeita à autorização de libertação de efluentes radio­
+basear-se na experiência adquirida em matéria de regulamenta­     ativos no ambiente.
+ção, tendo em conta a magnitude das doses esperadas ou po­
+tenciais, assim como a complexidade da prática em causa.                                          Artigo 30.o
+                                                                                    Isenção do controlo regulador
+                                Artigo 28.o                       1. Os Estados-Membros asseguram que a eliminação, recicla­
+                        Concessão de licenças                     gem ou reutilização de materiais radioativos que resultam de
+Os Estados-Membros exigem a concessão de licenças para as         uma prática autorizada estejam sujeitas a autorização.
+seguintes práticas:
+
+a) Administração deliberada de substâncias radioativas
+   a pessoas e, na medida em que afete a proteção dos seres
+17.1.2014  PT  Jornal Oficial da União Europeia                    L 13/19
+
+2. Os materiais destinados a eliminação, reciclagem ou reu­        c) Trabalhadores expostos ao radão no trabalho, na situação
+tilização podem ser isentos do controlo regulador desde que as        especificada no artigo 54.o, n.o 3.
+concentrações de atividade:
+                                                                   Tal aplica-se também à proteção dos trabalhadores por conta
+a) No caso dos materiais sólidos, não excedam os níveis de         própria e às pessoas que participam em ações de voluntariado.
+   liberação indicados no Anexo VII, Quadro A; ou
+                                                                   4. Os Estados-Membros asseguram que as entidades empre­
+b) Cumpram os níveis de liberação específicos e os requisitos      gadoras tenham acesso a informações sobre a eventual exposi­
+   conexos no caso de materiais específicos ou de materiais        ção dos seus empregados sob a responsabilidade de outra enti­
+   resultantes de determinados tipos de práticas; tais níveis de   dade empregadora ou empresa.
+   liberação específicos são estabelecidos na legislação nacional
+   ou pela autoridade nacional competente com base nos cri­                                        Artigo 32.o
+   térios gerais de isenção e liberação indicados no Anexo VII, e        Proteção operacional dos trabalhadores expostos
+   tendo em conta as orientações técnicas fornecidas pela Co­      Os Estados-Membros asseguram que, em conformidade com as
+   munidade.                                                       disposições pertinentes da presente diretiva, a proteção opera­
+                                                                   cional dos trabalhadores expostos se baseie:
+3. Os Estados-Membros asseguram que para a liberação de
+materiais que contenham radionuclídeos naturais, e sempre que      a) Na avaliação prévia para identificar a natureza e a magnitude
+estes resultem de práticas autorizadas em que os radionuclídeos       do risco radiológico decorrente da exposição dos trabalha­
+naturais são processados em razão das suas propriedades radio­        dores;
+ativas, cindíveis ou férteis, os níveis de liberação respeitem os
+critérios de dose aplicáveis para a liberação dos materiais que    b) Na otimização da proteção contra radiações em todas as
+contêm radionuclídeos artificiais.                                    condições de trabalho, incluindo exposições profissionais de­
+                                                                      correntes de práticas que envolvam exposições médicas;
+4. Os Estados-Membros não autorizam a diluição deliberada
+de materiais radioativos para que estes fiquem isentos do con­     c) Na classificação dos trabalhadores em diferentes categorias;
+trolo regulador. A mistura de materiais que ocorre numa situa­
+ção de funcionamento normal quando a radioatividade não está       d) Em medidas de fiscalização e de monitorização relativas às
+a ser tida em conta não está sujeita a essa proibição. A autori­      diferentes áreas e condições de trabalho, incluindo, sempre
+dade competente pode autorizar, em circunstâncias específicas, a      que necessário, monitorização individual;
+mistura de materiais radioativos e não radioativos, para efeitos
+de reutilização ou reciclagem.                                     e) No controlo médico;
+
+                                   CAPÍTULO VI                     f) Na educação e formação.
+
+                       EXPOSIÇÕES PROFISSIONAIS                                                    Artigo 33.o
+                                                                         Proteção operacional de aprendizes e estudantes
+                                Artigo 31.o                        1. Os Estados-Membros asseguram que as condições de ex­
+                                                                   posição e a proteção operacional dos aprendizes e estudantes
+                           Responsabilidades                       com idade igual ou superior a 18 anos referidos no artigo 11.o,
+                                                                   n.o 1, sejam equivalentes às dos trabalhadores expostos das ca­
+1. Os Estados-Membros asseguram que a empresa seja res­            tegorias A ou B, consoante o caso.
+ponsável pela avaliação e aplicação das medidas de proteção
+contra radiações dos trabalhadores expostos.                       2. Os Estados-Membros asseguram que as condições de ex­
+                                                                   posição e a proteção operacional dos aprendizes e estudantes
+2. No caso dos trabalhadores externos, as responsabilidades        com idade entre 16 e 18 anos referidos no artigo 11.o, n.o 2,
+da empresa e da entidade empregadora dos trabalhadores ex­         sejam equivalentes às dos trabalhadores expostos da categoria B.
+ternos constam do artigo 51.o.
+                                                                                                   Artigo 34.o
+3. Sem prejuízo dos n.os 1 e 2, os Estados-Membros tomam             Consulta de especialistas em proteção contra radiações
+as medidas necessárias para que haja uma atribuição clara de       Os Estados-Membros exigem que as empresas consultem um
+responsabilidades para a proteção dos trabalhadores em qual­       especialista em proteção contra radiações no âmbito das suas
+quer situação de exposição, para uma empresa, uma entidade         esferas de competência, tal como exposto no artigo 82.o, sobre
+empregadora ou qualquer outra organização, em particular para      as questões abaixo enunciadas que são pertinentes para a prá­
+a proteção de:                                                     tica:
+
+a) Trabalhadores de emergência;                                    a) Exame e ensaios dos dispositivos de proteção e dos instru­
+                                                                      mentos de medição;
+b) Trabalhadores envolvidos no tratamento de terrenos, edifí­
+   cios e outras obras de construção contaminados;
+L 13/20  PT  Jornal Oficial da União Europeia                      17.1.2014
+
+b) Análise crítica prévia dos projetos de instalações, do ponto    d) Para aplicar o artigo 10.o, n.o 1, aos membros grávidos da
+   de vista da proteção contra radiações;                             tripulação aérea.
+
+c) Aprovação para entrada em serviço de fontes de radiação                                         Artigo 36.o
+   novas ou modificadas, do ponto de vista da proteção contra                     Classificação dos locais de trabalho
+   radiações;                                                      1. Os Estados-Membros asseguram que as disposições a to­
+                                                                   mar nos locais de trabalho incluam, se for caso disso, uma
+d) Verificação periódica da eficácia dos dispositivos e técnicas   classificação em diversas zonas, com base numa avaliação das
+   de proteção;                                                    doses anuais esperadas, bem como da probabilidade e da mag­
+                                                                   nitude das exposições potenciais.
+e) Calibragem regular dos instrumentos de medição e verifica­
+   ção regular do seu bom estado de funcionamento e da sua         2. Deve ser estabelecida uma distinção entre zonas controla­
+   correta utilização.                                             das e zonas vigiadas. Os Estados-Membros asseguram que a
+                                                                   autoridade competente estabeleça orientações para a classifica­
+                                Artigo 35.o                        ção das zonas controladas e vigiadas atendendo a cada situação
+                                                                   específica.
+          Disposições a tomar nos locais de trabalho
+                                                                   3. Os Estados-Membros asseguram que a empresa mantenha
+1. Os Estados-Membros asseguram que, para efeitos de pro­          sob observação as condições de trabalho nas zonas controladas
+teção contra radiações, sejam tomadas disposições em todos os      e vigiadas.
+locais de trabalho em que os trabalhadores sejam suscetíveis de
+receber, aquando da sua exposição a radiações ionizantes, doses                                    Artigo 37.o
+superiores a uma dose efetiva de 1 mSv por ano ou a uma dose                                 Zonas controladas
+equivalente de 15 mSv por ano, para o cristalino do olho, ou de    1. Os Estados-Membros asseguram que sejam aplicáveis às
+50 mSv por ano, para a pele e as extremidades dos membros.         zonas controladas os seguintes requisitos mínimos:
+
+Essas disposições devem ser adequadas à natureza das instala­      a) Estas zonas devem ser delimitadas, ficando o seu acesso
+ções e das fontes e à dimensão e natureza dos riscos.                 reservado aos indivíduos que tenham recebido instruções
+                                                                      adequadas; o controlo do acesso deve efetuar-se segundo
+2. No caso dos locais de trabalho especificados no artigo 54.o,       normas escritas da empresa. Devem ser tomadas medidas
+n.o 3, e sempre que a exposição dos trabalhadores seja suscetível     específicas sempre que houver um risco significativo de dis­
+de exceder uma dose efetiva de 6 mSv por ano ou um valor de           persão da contaminação radioativa, nomeadamente para a
+exposição ao radão correspondente integrado no tempo, deter­          entrada e saída de pessoas e de mercadorias e para a moni­
+minado pelo Estado-Membro, estes são geridos como situações           torização da contaminação na zona controlada e, sempre
+de exposição planeada e os Estados-Membros determinam quais           que apropriado, nas zonas adjacentes;
+os requisitos estabelecidos no presente capítulo que são apro­
+priados. Para os locais de trabalho especificados no artigo 54.o,  b) Tendo em conta a natureza e a importância dos riscos ra­
+n.o 3, em que a dose efetiva para os trabalhadores seja igual ou      diológicos na zona controlada, o controlo radiológico do
+inferior a 6 mSv por ano ou a exposição seja inferior ao valor        local de trabalho deve ser organizado nos termos do ar­
+de exposição ao radão correspondente integrado no tempo, a            tigo 39.o;
+autoridade competente exige que a empresa mantenha as expo­
+sições sob observação.                                             c) Deve ser afixada uma sinalização indicativa do tipo de zona,
+                                                                      da natureza das fontes e dos riscos que lhes são inerentes;
+3. No que respeita a uma empresa de aviação em que a dose
+efetiva recebida pela tripulação resultante da radiação cósmica    d) Devem ser elaboradas instruções de trabalho adaptadas ao
+seja suscetível de exceder 6 mSv por ano, aplicam-se os requi­        risco radiológico associado às fontes e às operações envolvi­
+sitos pertinentes estabelecidos no presente capítulo, tendo em        das;
+conta as características específicas dessa situação de exposição.
+Os Estados-Membros asseguram que sempre que a dose efetiva         e) Os trabalhadores devem receber uma formação específica
+para a tripulação seja suscetível de ser superior a 1 mSv/ano, a      relacionada com as características do local de trabalho e
+autoridade competente exige que a empresa tome as medidas             das atividades;
+adequadas, nomeadamente:
+                                                                   f) Deve ser fornecido ao trabalhador o necessário equipamento
+a) Para avaliar a exposição da tripulação em questão;                 de proteção individual.
+
+b) Para ter em conta a exposição avaliada na organização dos
+   horários de trabalho, a fim de reduzir as doses das tripula­
+   ções muito expostas;
+
+c) Para informar os trabalhadores em questão sobre os riscos
+   que a sua atividade profissional comporta para a saúde e
+   sobre a respetiva dose individual;
+17.1.2014  PT  Jornal Oficial da União Europeia                       L 13/21
+
+2. Os Estados-Membros asseguram que a empresa seja res­               2. Os Estados-Membros exigem à empresa ou, no caso de
+ponsável pelo cumprimento destas obrigações tendo em conta o          trabalhadores externos, à entidade empregadora, que determine
+parecer dado pelo especialista em proteção contra radiações.          a classificação de cada um dos trabalhadores antes de os mes­
+                                                                      mos assumirem funções suscetíveis de implicarem exposições, e
+                                Artigo 38.o                           que proceda à revisão periódica de tal classificação com base
+                             Zonas vigiadas                           nas condições de trabalho e nos controlos médicos. A distinção
+1. Os Estados-Membros asseguram que sejam aplicáveis às               tem igualmente em conta as exposições potenciais.
+zonas vigiadas os seguintes requisitos mínimos:
+                                                                                                      Artigo 41.o
+a) Tendo em conta a natureza e a importância dos riscos ra­
+   diológicos na zona vigiada, o controlo radiológico do local                              Monitorização individual
+   de trabalho deve ser organizado nos termos do artigo 39.o;
+                                                                      1. Os Estados-Membros asseguram que os trabalhadores da
+b) Se adequado, deve ser afixada uma sinalização indicativa do        categoria A sejam sistematicamente monitorizados com base em
+   tipo de zona, da natureza das fontes e dos riscos que lhes         medições individuais efetuadas por um serviço de dosimetria.
+   são inerentes;                                                     Nos casos em que os trabalhadores da categoria A sejam sus­
+                                                                      cetíveis de estar sujeitos a uma exposição interna significativa ou
+c) Se adequado, devem ser elaboradas instruções de trabalho           a uma exposição significativa do cristalino do olho ou das
+   adaptadas ao risco radiológico associado às fontes e às ope­       extremidades dos membros, deve ser criado um sistema de
+   rações envolvidas.                                                 monitorização adequado.
+
+2. Os Estados-Membros asseguram que a empresa seja res­               2. Os Estados-Membros asseguram que a monitorização dos
+ponsável pelo cumprimento destas obrigações tendo em conta o          trabalhadores da categoria B seja pelo menos suficiente para
+parecer dado pelo especialista em proteção contra radiações.          demonstrar que esses trabalhadores estão corretamente classifi­
+                                                                      cados na categoria B. Os Estados-Membros podem exigir para
+                                Artigo 39.o                           os trabalhadores da categoria B uma monitorização individual,
+           Controlo radiológico do local de trabalho                  e, se necessário, medições individuais efetuadas por um serviço
+1. Os Estados-Membros asseguram que o controlo radioló­               de dosimetria.
+gico do local de trabalho referido no artigo 37.o, n.o 1, alínea b),
+e no artigo 38.o, n.o 1, alínea a), inclua, sempre que necessário:    3. No caso de ser impossível ou inoportuno proceder a me­
+                                                                      dições individuais, a monitorização individual deve basear-se
+a) A medição dos débitos de dose externos, com indicação da           numa estimativa calculada a partir de medições individuais efe­
+   natureza e da qualidade das radiações em causa;                    tuadas noutros trabalhadores expostos, nos resultados do con­
+                                                                      trolo do local de trabalho previsto no artigo 39.o, ou com base
+b) A medição da concentração da atividade no ar e da densi­           em métodos de cálculo aprovados pela autoridade competente.
+   dade superficial dos radionuclídeos contaminantes, com in­
+   dicação da sua natureza e respetivos estados físico e químico.                                     Artigo 42.o
+
+2. Os resultados destas medições devem ser registados e uti­              Avaliação das doses em caso de exposição acidental
+lizados, se necessário, para estimar as doses individuais, como
+previsto no artigo 41.o.                                              Os Estados-Membros asseguram que, em caso de exposição
+                                                                      acidental, se exija que a empresa avalie as doses em causa e a
+                                Artigo 40.o                           sua distribuição no corpo.
+            Classificação dos trabalhadores expostos
+1. Os Estados-Membros asseguram que, para efeitos de mo­                                              Artigo 43.o
+nitorização e controlo, se faça uma distinção entre duas cate­
+gorias de trabalhadores expostos:                                                  Registo e comunicação dos resultados
+
+a) Categoria A: os trabalhadores expostos suscetíveis de recebe­      1. Os Estados-Membros asseguram que para cada trabalhador
+   rem uma dose efetiva superior a 6 mSv por ano, ou uma              das categorias A e B seja elaborado um registo do qual constem

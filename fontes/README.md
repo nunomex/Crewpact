@@ -97,3 +97,16 @@ cada frase no texto e calcula com ela.
 - **O que falta:** o Código do Trabalho na versão consolidada da DRE (o art. 255.º, n.º 2, a) não mudou desde 2009, mas
   confirmar antes de publicar — pacote do advogado) e o destaque do próprio INE sobre o IPC (a página do INE não deixa
   descarregar sem navegador).
+
+## Radiação cósmica (`eu/euratom-2013-59-pt.txt`, `pt/dl-108-2018-republicado.txt`) — auditoria, bloco 7 (6 de novembro de 2026)
+
+O teste `scripts/citacoes-tap-ftl.test.js` (corre no `npm run test:citacoes`) confere cada frase que a Prova e a Biblioteca
+citam.
+
+| Ficheiro | Documento | Para quê |
+|---|---|---|
+| `eu/euratom-2013-59-pt.txt` | Diretiva 2013/59/Euratom (JO L 13 de 17-01-2014), páginas L 13/13 a L 13/21 | art. 9.º, n.º 2 (limite de 20 mSv por ano), art. 35.º, n.º 3 (tripulações: 1 mSv e 6 mSv), art. 40.º |
+| `pt/dl-108-2018-republicado.txt` | DL 108/2018, republicado pelo DL 81/2022 (DR 1.ª série n.º 234, 06-12-2022), arts. 67.º, 84.º, 92.º e 93.º | o nível de referência para tripulações: 10 mSv/ano (art. 92.º); a entidade empregadora mantém as doses abaixo dele (art. 93.º) |
+
+- Extratos literais (pdftotext) com o SHA-256 do PDF no cabeçalho. A 2.ª alteração do DL (DL 139-D/2023) não toca nestes
+  artigos (lista de artigos alterados conferida no próprio diploma).

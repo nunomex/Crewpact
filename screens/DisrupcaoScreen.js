@@ -17,7 +17,7 @@ import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
 import { AppContext } from '../data/appContext';
-import { disruptionsByDuty, disruptionDelta, disruptionHtml } from '../data/disruption';
+import { disruptionsByDuty, disruptionDelta, disruptionHtml, declarationFor } from '../data/disruption';
 import { printToPdfAndShare } from '../data/pdf';
 import { warmFontsCss, fontsCssNow } from '../data/pdfFonts';
 
@@ -189,7 +189,7 @@ export default function DisrupcaoScreen({ navigation }) {
               <TouchableOpacity style={s.cAsk} activeOpacity={0.7} onPress={() => toggle(c.id)}
                 accessibilityRole="checkbox" accessibilityState={{ checked: on }}>
                 <View style={[s.tick, !on && s.tickOff]}>{on ? <Icon name="check" size={11} color={PELE.ink} /> : null}</View>
-                <Text style={s.cAskTxt}>{l('Não fui chamado de assistência nem tinha LATE/NSO/RCON/UNCT/DECL/RFSD na escala', 'Not called from standby, no LATE/NSO/RCON/UNCT/DECL/RFSD codes on my roster')}</Text>
+                <Text style={s.cAskTxt}>{declarationFor(c.type, c.clause, lang)}</Text>
               </TouchableOpacity>
             </View>
           );

@@ -561,21 +561,21 @@ export const serviceMoney = (ae, category, svc, { date, fleet, daySvcs = null } 
     if (dayHasFlight) return out;
     if (ae.GROUND_PER_DIEM) {
       if (kind === 'office' && svc.officeType === 'medical') {
-        out.other = { lbl: { pt: 'Per diem B — ato médico (Cl. 9.ª)', en: 'Per diem B — medical (Cl. 9)' }, eur: ae.perDiemB(category, date) };
+        out.other = { lbl: { pt: 'Per diem B — ato médico (RRRGS Cl. 9.ª)', en: 'Per diem B — medical (RRRGS Cl. 9)' }, eur: ae.perDiemB(category, date) };
       } else if (kind === 'standby_airport' || (kind === 'training' && svc.trainingType === 'sim')) {
-        out.other = { lbl: { pt: 'Per diem A (Cl. 9.ª)', en: 'Per diem A (Cl. 9)' }, eur: ae.perDiem(category, [0], 1, fleet, date, { longHaul: false }) };
+        out.other = { lbl: { pt: 'Per diem A (RRRGS Cl. 9.ª)', en: 'Per diem A (RRRGS Cl. 9)' }, eur: ae.perDiem(category, [0], 1, fleet, date, { longHaul: false }) };
       } else if (kind === 'training') {
         const maybeA = !svc.eLearning && !svc.trainingType;   // sem o tipo: 0 certo, até ao A (Cl. 10.ª, n.º 2, d))
         out.other = maybeA
-          ? { lbl: { pt: 'Formação sem tipo marcado (Cl. 9.ª/10.ª)', en: 'Training, type not set (Cl. 9/10)' }, eur: 0, max: ae.perDiem(category, [0], 1, fleet, date, { longHaul: false }) }
-          : { lbl: { pt: 'Per diem B (Cl. 9.ª)', en: 'Per diem B (Cl. 9)' }, eur: ae.perDiemB(category, date) };
+          ? { lbl: { pt: 'Formação sem tipo marcado (RRRGS Cl. 9.ª/10.ª)', en: 'Training, type not set (RRRGS Cl. 9/10)' }, eur: 0, max: ae.perDiem(category, [0], 1, fleet, date, { longHaul: false }) }
+          : { lbl: { pt: 'Per diem B (RRRGS Cl. 9.ª)', en: 'Per diem B (RRRGS Cl. 9)' }, eur: ae.perDiemB(category, date) };
       }
       return out;
     }
     if (ae.EXTRAORD_FROM_ROSTER && ae.extraord) {
       const mult = kind === 'standby_airport' ? 2 : (kind === 'standby_home' || kind === 'office' || (kind === 'training' && !svc.eLearning)) ? 1 : 0;
       const each = ae.extraord(date, category);
-      if (mult && each != null) out.other = { lbl: { pt: mult === 2 ? 'Complemento × 2 (Cl. 8.ª)' : 'Complemento (Cl. 8.ª)', en: mult === 2 ? 'Supplement × 2 (Cl. 8)' : 'Supplement (Cl. 8)' }, eur: r2(mult * each) };
+      if (mult && each != null) out.other = { lbl: { pt: mult === 2 ? 'Complemento × 2 (RRRGS Cl. 8.ª)' : 'Complemento (RRRGS Cl. 8.ª)', en: mult === 2 ? 'Supplement × 2 (RRRGS Cl. 8)' : 'Supplement (RRRGS Cl. 8)' }, eur: r2(mult * each) };
     }
     return out;
   }

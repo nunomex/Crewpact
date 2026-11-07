@@ -46,6 +46,15 @@ cabine como no de piloto". Este documento é a lista do que está errado e da or
 > sazonais: o mês é "incerto" até haver as datas de atividade. Antes da 1.ª tabela de cada acordo, "sem tabela" (sem €). A
 > revisão independente apanhou 6 erros, corrigidos no mesmo dia. Golden novo `test:dinheiro`. Detalhe e pendências em
 > `docs/decisoes.md`. Próximo: bloco 6 (dinheiro a menos).
+>
+> **Bloco 6 (dinheiro a menos, L1–L13) feito a 2026-11-06** — detalhe em `docs/decisoes.md`.
+>
+> **Bloco 7 (textos e citações, nível 4) feito a 2026-11-06:** A-012, A-048, A-073, A-081, A-103, A-104, A-113, A-159,
+> A-198, A-205, A-207, A-210, A-211, A-213, A-277, A-294, A-295, A-297, A-298, A-299 (o texto; o motor já tinha ficado no
+> bloco 1) e A-300; A-180 e A-212 já tinham ficado nos blocos 1 e 6. A-296: o ecrã FtlDetail e o texto integral da lei
+> foram apagados (decisão do Nuno, 2026-11-07). Teste novo `scripts/citacoes-tap-ftl.test.js` (no `npm run test:citacoes`):
+> cada citação TAP com o regulamento e a cláusula certa, cada citação FTL do código existe no texto oficial, radiação e
+> "bruto". Fontes novas: Diretiva 2013/59/Euratom e DL 108/2018 republicado. Próximo: bloco 8 (dúvidas → advogado).
 
 ## Como se fez
 

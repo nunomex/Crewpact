@@ -224,15 +224,15 @@ export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceSta
     // trabalho prestado" (Cl. 8.ª, n.º 2; CT art. 296.º: a doença de mais de um mês suspende) — certo e máximo.
     const sh = suspensionShare(events, p.y);
     const v = rb * admissionShare(serviceStart, p.y);
-    out.push({ id: 'natal', eur: r2(sh ? v * sh.min : v), cite: 'Cl. 8.ª', ...(sh ? { max: r2(v * sh.max), suspension: true } : {}) });
+    out.push({ id: 'natal', eur: r2(sh ? v * sh.min : v), cite: 'RRRGS Cl. 8.ª', ...(sh ? { max: r2(v * sh.max), suspension: true } : {}) });
   }
-  if ([p.y, p.y + 1].some((y) => vacationPayYm(events, y) === ym)) out.push({ id: 'ferias', eur: rb, cite: 'Cl. 7.ª' });
+  if ([p.y, p.y + 1].some((y) => vacationPayYm(events, y) === ym)) out.push({ id: 'ferias', eur: rb, cite: 'RRRGS Cl. 7.ª' });
   return out;
 };
 export const pendingAnnual = (cat, { year, contract = '12/12', index = 1, serviceStart = null, largada = null, history = null, events = [] } = {}) => {
   if (vacationPayYm(events, year)) return [];
   const rb = monthlyBase(cat, { contract, index, ym: `${year}-12`, serviceStart, largada, history });
-  return rb == null ? [] : [{ id: 'ferias', eur: rb, month: null, cite: 'Cl. 7.ª' }];
+  return rb == null ? [] : [{ id: 'ferias', eur: rb, month: null, cite: 'RRRGS Cl. 7.ª' }];
 };
 // Vencimento horário (Tabela A-3.3): 3% do VB/hora (Limite 1) ou 6% (Limite 2). Escala com o VB.
 export const hourly = (cat, limit = 1, index = 1, ym) => { const T = tableAt(ym); return T ? r2((limit === 2 ? 0.06 : 0.03) * vbOf(cat, index, T)) : null; };
@@ -258,15 +258,15 @@ export const computeAeMonth = ({ category = 'OP3', contract = '12/12', duties = 
 
 // Catálogo de cálculos do AE de PILOTO (página Cálculos). `linked` = entra no total mensal.
 export const CALCS = [
-  { id: 'base',    group: 'Base',      linked: true,  label: 'Remuneração base',          sub: 'VB + VE (2% por anuidade técnica) + VS (1,5% por ano) · cl. 2.ª' },
+  { id: 'base',    group: 'Base',      linked: true,  label: 'Remuneração base',          sub: 'VB + VE (2% por anuidade técnica) + VS (1,5% por ano) · RRRGS Cl. 2.ª' },
   { id: 'perdiem', group: 'Por voo',   linked: true,  label: 'Per diem',                  sub: 'por dia · frota/operação (A-3.2)' },
   { id: 'night',   group: 'Por voo',   linked: true,  label: 'Pernoita (estadia)',        sub: 'per diem B · CTE 180 / OP 135 (A-3.2)' },
-  { id: 'comando', group: 'Por voo',   linked: false, label: 'Comando em cruzeiro',       sub: '200 €/setor > 3h (cl. 11.ª)' },
+  { id: 'comando', group: 'Por voo',   linked: false, label: 'Comando em cruzeiro',       sub: '200 €/setor > 3h (RRRGS Cl. 11.ª)' },
   { id: 'hourly1', group: 'Por voo',   linked: false, label: 'Hora de voo (Limite 1)',    sub: '3% do VB/hora (A-3.3)' },
   { id: 'hourly2', group: 'Por voo',   linked: false, label: 'Hora de voo (Limite 2)',    sub: '6% do VB/hora acima do plafond (A-3.3)' },
-  { id: 'vs',      group: 'Subsídios', linked: true,  label: 'Vencimento de senioridade', sub: '1,5% do VB por ano de companhia (cl. 5.ª)' },
-  { id: 'natal',   group: 'Subsídios', linked: true,  label: 'Subsídio de Natal',         sub: 'a remuneração base, em dezembro (cl. 8.ª)' },
-  { id: 'ferias',  group: 'Subsídios', linked: true,  label: 'Subsídio de férias',        sub: 'a remuneração base, no mês antes das férias (cl. 7.ª)' },
+  { id: 'vs',      group: 'Subsídios', linked: true,  label: 'Vencimento de senioridade', sub: '1,5% do VB por ano de companhia (RRRGS Cl. 5.ª)' },
+  { id: 'natal',   group: 'Subsídios', linked: true,  label: 'Subsídio de Natal',         sub: 'a remuneração base, em dezembro (RRRGS Cl. 8.ª)' },
+  { id: 'ferias',  group: 'Subsídios', linked: true,  label: 'Subsídio de férias',        sub: 'a remuneração base, no mês antes das férias (RRRGS Cl. 7.ª)' },
 ];
 
 // Catálogo aplicável a uma categoria/contrato (esconde papéis e itens `when` falsos).
@@ -294,6 +294,15 @@ export const catalogValue = (id, { category = 'OP3', contract = '12/12', index =
 };
 
 // ── "Extras do mês" — contadores por evento/hora que NÃO se inferem da rota ──
+// O que o Início diz no estado de baixa — AE (clausulado geral) Cl. 37.ª, n.os 1 e 2 (BTE 29/2023 p. 272): com a doença
+// comprovada pelos serviços médicos da empresa, a TAP paga o líquido da remuneração base mensal nos 3 primeiros dias (só em 3
+// ocorrências por ano, salvo barotraumatismo) e, nos restantes, a diferença entre esse líquido e o subsídio da Segurança
+// Social. A app não calcula líquidos: só diz a regra (auditoria A-103/A-205, bloco 7).
+export const SICK_STATE = {
+  first: { pt: 'Dias 1 a 3: a TAP paga o líquido da remuneração base, até 3 ocorrências por ano (AE Cl. 37.ª)', en: 'Days 1–3: TAP pays the net base pay, up to 3 occurrences a year (AE Cl. 37)' },
+  rest: { pt: 'Do 4.º dia: a TAP completa o subsídio da Segurança Social até ao líquido da remuneração base (AE Cl. 37.ª)', en: 'From day 4: TAP tops up the social-security benefit to the net base pay (AE Cl. 37)' },
+  paidFirst3: false,
+};
 export const EXTRA_KINDS = [
   { id: 'comandoSectors', calc: 'comando', per: 'event', label: { pt: 'Comando em cruzeiro (setores)', en: 'Cruise command (sectors)' } },
   { id: 'hoursL1',        calc: 'hourly1', per: 'hour',  label: { pt: 'Horas de voo acima do plafond (L1)', en: 'Flight hours over plafond (L1)' } },

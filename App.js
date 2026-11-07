@@ -74,7 +74,6 @@ import HomeScreen         from './screens/HomeScreen';
 import EscalaScreen       from './screens/EscalaScreen';
 import DutyDetailScreen   from './screens/DutyDetailScreen';
 import InfoScreen         from './screens/InfoScreen';   // PORT pele: aba FTL/AE → INFO (incremental)
-import FtlDetailScreen    from './screens/FtlDetailScreen';
 import StatsScreen        from './screens/StatsScreen';
 import SettingsScreen     from './screens/SettingsScreen';
 import PerfilPaginaScreen from './screens/PerfilPaginaScreen';
@@ -129,9 +128,7 @@ async function loadLockPref(uid) {
 function HomeStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Home"      component={HomeScreen} />
-      <Stack.Screen name="FtlDetail" component={FtlDetailScreen} />
-    </Stack.Navigator>
+      <Stack.Screen name="Home"      component={HomeScreen} />    </Stack.Navigator>
   );
 }
 
@@ -141,9 +138,7 @@ function EscalaStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="EscalaMain" component={EscalaScreen} />
-      <Stack.Screen name="DutyDetail" component={DutyDetailScreen} />
-      <Stack.Screen name="FtlDetail" component={FtlDetailScreen} />
-    </Stack.Navigator>
+      <Stack.Screen name="DutyDetail" component={DutyDetailScreen} />    </Stack.Navigator>
   );
 }
 
@@ -173,9 +168,7 @@ function PerfilStack() {
       <Stack.Screen name="Relatorios" component={RelatoriosScreen} />
       <Stack.Screen name="Disrupcao" component={DisrupcaoScreen} />
       <Stack.Screen name="Estabilidade" component={EstabilidadeScreen} />
-      <Stack.Screen name="Biblioteca" component={InfoScreen} />
-      <Stack.Screen name="FtlDetail"  component={FtlDetailScreen} />
-    </Stack.Navigator>
+      <Stack.Screen name="Biblioteca" component={InfoScreen} />    </Stack.Navigator>
   );
 }
 

@@ -4,7 +4,7 @@ import { woclOverlapMin } from './woclCalculator';
 import { durationMin, minToHhmm } from '../utils/time';
 
 // Máximo de PSV a partir do índice da faixa selecionada (sem hora de report).
-// Usado pelo seletor de faixas do PsvCalc.
+// PSV por faixa (sem horas concretas). O seletor de faixas que o usava (PsvCalc) foi apagado a 2026-11-07; fica no motor.
 export const computeFdpByBand = ({ state = 'acc', bandIdx = 0, sectors = 1, splitBreakH = 0 }) => {
   const baseMin = baseMaxFdpByBand(state, bandIdx, sectors);
   const extMin = state === 'acc' ? splitExtensionMin(splitBreakH) : 0;

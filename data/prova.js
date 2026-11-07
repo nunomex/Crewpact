@@ -22,10 +22,10 @@ const RAD_URL = RADIATION_SOURCES[0].url;   // Diretiva 2013/59/Euratom (EUR-Lex
 // ── Universais (lei UE — a MESMA para piloto e cabine) ───────────────────────
 const UNIVERSAL = {
   psvMax: {
-    art: 'ORO.FTL.205', title: { pt: 'PSV máximo (FDP)', en: 'Max FDP' },
+    art: 'ORO.FTL.205(b)', title: { pt: 'PSV máximo (FDP)', en: 'Max FDP' },
     resumo: {
-      pt: 'O período de serviço de voo máximo parte de um valor-base determinado pela hora de apresentação (tabela) e reduz com o número de setores. Casos especiais — repouso a bordo, standby prévio, delayed reporting — ajustam o teto.',
-      en: 'The maximum flight duty period starts from a base value set by report time (table) and reduces with the number of sectors. Special cases — in-flight rest, prior standby, delayed reporting — adjust the ceiling.',
+      pt: 'Aclimatado, o período de serviço de voo máximo lê-se no Quadro 2 pela hora de início na hora de referência (a hora local onde está aclimatado) e reduz com o número de setores. Em estado de aclimatação desconhecido conta só o número de setores (Quadro 3; Quadro 4 com gestão do risco de fadiga). Casos especiais — repouso a bordo, standby prévio, adiamento da apresentação — ajustam o teto.',
+      en: 'When acclimatised, the maximum flight duty period is read from Table 2 by the start time at reference time (local time where the crew member is acclimatised) and reduces with the number of sectors. In an unknown state of acclimatisation only the number of sectors counts (Table 3; Table 4 with fatigue risk management). Special cases — in-flight rest, prior standby, delayed reporting — adjust the ceiling.',
     },
   },
   repouso: {
@@ -39,22 +39,22 @@ const UNIVERSAL = {
     art: 'ORO.FTL.210', title: { pt: 'Limites acumulados', en: 'Cumulative limits' },
     resumo: {
       pt: 'Tetos de tempo de voo: 100 h em quaisquer 28 dias consecutivos, 900 h por ano civil e 1000 h em 12 meses consecutivos. Tetos de serviço: 60 h em 7 dias, 110 h em 14 dias e 190 h em 28 dias.',
-      en: 'Flight time ceilings: 100 h in any 28 consecutive days, 900 h per calendar year and 1000 h in any 12 consecutive months. Duty ceilings: 60 h in 7 days, 110 h in 14 days and 190 h in 28 days.',
+      en: 'Flight time ceilings: 100 h in any 28 consecutive days, 900 h per calendar year and 1000 h in any 12 consecutive calendar months. Duty ceilings: 60 h in 7 days, 110 h in 14 days and 190 h in 28 days.',
     },
   },
   standby: {
-    art: 'ORO.FTL.225 / 230', title: { pt: 'Standby', en: 'Standby' },
+    art: 'ORO.FTL.225 · CS FTL.1.225', title: { pt: 'Standby', en: 'Standby' },
     resumo: {
-      pt: 'O standby no aeroporto conta por inteiro como serviço; os outros standbys contam parcialmente para o PSV a partir de limiares definidos, com tetos próprios de duração e de tempo acordado.',
-      en: 'Airport standby counts in full as duty; other standby counts partially towards the FDP beyond defined thresholds, with its own ceilings for duration and time awake.',
+      pt: 'O standby no aeroporto conta por inteiro como serviço, e o PSV máximo reduz-se no tempo de standby acima de 4 h. O outro standby conta 25 % como serviço (só para os limites acumulados) e, se o standby acabar (apresentação) depois das primeiras 6 h (8 h com repouso a bordo ou serviço repartido), o PSV máximo reduz-se no excesso (se o standby começar entre as 23h00 e as 07h00, essas horas não contam até seres contactado). Cada tipo tem tetos próprios de duração. A reserva é outra coisa (ORO.FTL.230).',
+      en: 'Airport standby counts in full as duty, and the maximum FDP is reduced by standby time beyond 4 h. Other standby counts 25 % as duty (for the cumulative limits only) and, if standby ends (reporting) after the first 6 h (8 h with in-flight rest or split duty), the maximum FDP is reduced by the excess (if standby starts between 23:00 and 07:00, those hours do not count until you are contacted). Each type has its own duration ceilings. Reserve is something else (ORO.FTL.230).',
     },
   },
   radiacao: {
-    art: 'Art. 35.º/3', title: { pt: 'Radiação cósmica', en: 'Cosmic radiation' },
+    art: 'Art. 35.º/3 · Art. 9.º/2', title: { pt: 'Radiação cósmica', en: 'Cosmic radiation' },
     ref: 'Diretiva 2013/59/Euratom · EUR-Lex', url: RAD_URL,
     resumo: {
-      pt: 'As tripulações são trabalhadores expostos a radiação cósmica: quando a dose anual pode exceder 1 mSv, a companhia é obrigada a avaliá-la, a tê-la em conta nas escalas e a informar o tripulante. Limite ocupacional: 20 mSv/ano.',
-      en: 'Aircrew are radiation-exposed workers: when the annual dose may exceed 1 mSv, the airline must assess it, account for it in rosters and inform the crew member. Occupational limit: 20 mSv/year.',
+      pt: 'As tripulações são trabalhadores expostos a radiação cósmica: quando a dose anual pode exceder 1 mSv, a companhia é obrigada a avaliá-la, a tê-la em conta nas escalas e a informar o tripulante (art. 35.º/3). O limite de dose para a exposição profissional é 20 mSv/ano (art. 9.º/2). Em Portugal, o nível de referência para tripulações é 10 mSv/ano, e a entidade empregadora tem de manter as doses abaixo dele (DL 108/2018, art. 92.º e 93.º).',
+      en: 'Aircrew are radiation-exposed workers: when the annual dose may exceed 1 mSv, the airline must assess it, account for it in rosters and inform the crew member (art. 35(3)). The occupational dose limit is 20 mSv/year (art. 9(2)). In Portugal, the reference level for aircrew is 10 mSv/year, and the employer must keep doses below it (DL 108/2018, arts. 92 and 93).',
     },
   },
 };
@@ -101,16 +101,16 @@ const AE_PROVAS = {
     cabin: {
       tag: 'AE TAP · Cabine (SNPVAC)', vig: 'BTE 7/2024 · até 31/12/2026',
       items: {
-        perDiem: { art: 'Cl. 7.ª (AC1)', title: { pt: 'Ajuda de custo (AC1)', en: 'Per diem (AC1)' }, resumo: {
+        perDiem: { art: 'RRRGS Cl. 7.ª (AC1)', title: { pt: 'Ajuda de custo (AC1)', en: 'Per diem (AC1)' }, resumo: {
           pt: 'Por cada DIA DE CALENDÁRIO (hora da base) com um serviço de voo ou DHC a começar ou em curso é devida a AC1 — uma por dia, com um ou vários serviços.',
           en: 'Each CALENDAR DAY (base time) with a flight duty or DHC starting or under way earns the AC1 — one per day, with one or several duties.' } },
-        pernoita: { art: 'Cl. 7.ª (AC2)', title: { pt: 'Estadia (AC2)', en: 'Night stop (AC2)' }, resumo: {
+        pernoita: { art: 'RRRGS Cl. 7.ª (AC2)', title: { pt: 'Estadia (AC2)', en: 'Night stop (AC2)' }, resumo: {
           pt: 'A AC2 paga os dias de estadia fora da base SEM voo. Num dia com voo paga-se só a AC1: no mesmo dia prevalece o valor superior (n.º 3).',
           en: 'The AC2 pays stay days away from base WITHOUT a flight. On a day with a flight only the AC1 is paid: on the same day the higher amount prevails (no. 3).' } },
-        base: { art: 'Cl. 3.ª', title: { pt: 'Vencimento base', en: 'Base salary' }, resumo: {
+        base: { art: 'RRRGS Cl. 3.ª', title: { pt: 'Vencimento base', en: 'Base salary' }, resumo: {
           pt: 'O vencimento base é mensal, por categoria, conforme a tabela do acordo.',
           en: 'Base salary is monthly, per category, as per the agreement’s table.' } },
-        ferias: { art: 'Cl. 23.ª', title: { pt: 'Férias', en: 'Annual leave' }, resumo: {
+        ferias: { art: 'AE Cl. 23.ª', title: { pt: 'Férias', en: 'Annual leave' }, resumo: {
           pt: 'Direito a 42 dias de calendário de férias por ano civil.',
           en: 'Entitlement to 42 calendar days of leave per calendar year.' } },
       },
@@ -118,10 +118,10 @@ const AE_PROVAS = {
     pilot: {
       tag: 'AE TAP · Pilotos (SPAC)', vig: 'BTE 29/2023 · até 31/12/2026',
       items: {
-        ferias: { art: 'Cl. 45.ª', title: { pt: 'Férias', en: 'Annual leave' }, resumo: {
-          pt: 'Direito a 42 dias de calendário de férias por ano civil, com piso de 38 dias por perda com faltas.',
-          en: 'Entitlement to 42 calendar days of leave per calendar year, with a 38-day floor for absence-related loss.' } },
-        comando: { art: 'Cl. 11.ª', title: { pt: 'Comando em cruzeiro', en: 'Cruise relief command' }, resumo: {
+        ferias: { art: 'RUPT Cl. 45.ª', title: { pt: 'Férias', en: 'Annual leave' }, resumo: {
+          pt: 'Direito a 42 dias de calendário de férias por ano civil. As ausências longas (doença acima de 60 dias, por exemplo) reduzem-nas, mas nunca abaixo de 30 dias (n.os 5 e 6). Trocar faltas injustificadas por dias de férias nunca as deixa abaixo de 38 dias (AE Cl. 33.ª, n.º 2).',
+          en: 'Entitlement to 42 calendar days of leave per calendar year. Long absences (sickness over 60 days, for example) reduce them, but never below 30 days (nos. 5 and 6). Trading unjustified absences for leave days never takes them below 38 days (AE Cl. 33, no. 2).' } },
+        comando: { art: 'RRRGS Cl. 11.ª', title: { pt: 'Comando em cruzeiro', en: 'Cruise relief command' }, resumo: {
           pt: 'O comando em cruzeiro paga 200 € por setor com mais de 3 horas.',
           en: 'Cruise relief command pays €200 per sector longer than 3 hours.' } },
         // per diem / pernoita: SEM âncora verificada no módulo (v1) → ausência honesta.
@@ -141,7 +141,7 @@ export const provaFor = (id, { companySlug = null, companyName = null, isPilot =
       // companhia (OM-A, cap. 7) prevalece — a app calcula a CS FTL.1 de referência (2026-11-03).
       scheme: id !== 'radiacao',
       title: u.title[L], art: u.art, resumo: u.resumo[L],
-      lawTag: L === 'en' ? 'FTL · Universal (pilot and cabin)' : 'FTL · Universal (piloto e cabine)',
+      lawTag: id === 'radiacao' ? (L === 'en' ? 'Radiation protection · Universal (pilot and cabin)' : 'Proteção contra radiações · Universal (piloto e cabine)') : (L === 'en' ? 'FTL · Universal (pilot and cabin)' : 'FTL · Universal (piloto e cabine)'),
       ref: u.ref || FTL_REF, url: u.url || FTL_URL,
     };
   }

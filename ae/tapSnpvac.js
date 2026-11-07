@@ -198,12 +198,12 @@ export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceSta
     // admissão e da cessação; a lei completa-a) — certo e máximo.
     const sh = suspensionShare(events, p.y);
     const v = b == null ? null : b * admissionShare(serviceStart, p.y);
-    if (v != null) out.push({ id: 'natal', eur: r2(sh ? v * sh.min : v), cite: 'Cl. 17.ª', ...(sh ? { max: r2(v * sh.max), suspension: true } : {}) });
+    if (v != null) out.push({ id: 'natal', eur: r2(sh ? v * sh.min : v), cite: 'RRRGS Cl. 17.ª', ...(sh ? { max: r2(v * sh.max), suspension: true } : {}) });
   }
   for (const year of [p.y, p.y + 1]) {
     if (vacationPayYm(events, year) !== ym) continue;
     const v = feriasEur(cat, { year, payYm: ym, contract, index, serviceStart, largada, history });
-    if (v != null) out.push({ id: 'ferias', eur: v, cite: year === 2024 ? 'Cl. 18.ª e Cl. 39.ª' : 'Cl. 18.ª' });
+    if (v != null) out.push({ id: 'ferias', eur: v, cite: year === 2024 ? 'RRRGS Cl. 18.ª e Cl. 39.ª' : 'RRRGS Cl. 18.ª' });
   }
   return out;
 };
@@ -213,7 +213,7 @@ export const pendingAnnual = (cat, { year, contract = '12/12', index = 1, servic
   const ym = `${year}-12`;
   if (!hasTableFor(cat, ym)) return [];
   const v = feriasEur(cat, { year, payYm: ym, contract, index, serviceStart, largada, history });
-  return v == null ? [] : [{ id: 'ferias', eur: v, month: null, cite: 'Cl. 18.ª' }];
+  return v == null ? [] : [{ id: 'ferias', eur: v, month: null, cite: 'RRRGS Cl. 18.ª' }];
 };
 
 // Complemento extraordinário (Cl. 8.ª) por dia de calendário sem ajuda de custo maior: a) assistência não acionada no aeroporto e
@@ -252,15 +252,15 @@ export const computeAeMonth = ({ category = 'CAB3', contract = '12/12', duties =
 
 // Catálogo de cálculos do AE de CABINE (página Cálculos). `linked` = entra no total mensal.
 export const CALCS = [
-  { id: 'base',     group: 'Base',      linked: true,  label: 'Remuneração base (VB)',     sub: 'cl. 3.ª · tabela 2026' },
-  { id: 'perdiem',  group: 'Por voo',   linked: true,  label: 'Ajuda de custo (AC1)',      sub: '150 €/dia de voo (2026, cl. 7.ª)' },
-  { id: 'night',    group: 'Por voo',   linked: true,  label: 'Pernoita / estadia (AC2)',  sub: '80 €/dia (2026, cl. 7.ª)' },
-  { id: 'vh',       group: 'Por voo',   linked: false, label: 'Vencimento horário',        sub: '2,5% do VB/hora acima do plafond (cl. 14.ª)' },
-  { id: 'extraord', group: 'Subsídios', linked: true,  label: 'Complemento extraordinário', sub: '40 €/dia · assistência em casa, formação, instalações; 2× assistência no aeroporto (cl. 8.ª)' },
-  { id: 'vs',       group: 'Subsídios', linked: true,  label: 'Vencimento de senioridade', sub: '1% do VB por anuidade (cl. 5.ª)' },
-  { id: 'natal',    group: 'Subsídios', linked: true,  label: 'Subsídio de Natal',         sub: 'VB + VS, em dezembro (cl. 17.ª)' },
-  { id: 'ferias',   group: 'Subsídios', linked: true,  label: 'Subsídio de férias',        sub: 'VB + VS + 675 €, no mês antes das férias (cl. 18.ª)' },
-  { id: 'chefia',   group: 'Funções',   linked: true,  label: 'Adicional de chefia',       sub: '8% das AC1 + AC2 do mês, pago no seguinte (cl. 11.ª)', when: ({ category }) => /^SC/.test(category) },
+  { id: 'base',     group: 'Base',      linked: true,  label: 'Remuneração base (VB)',     sub: 'RRRGS Cl. 3.ª · tabela 2026' },
+  { id: 'perdiem',  group: 'Por voo',   linked: true,  label: 'Ajuda de custo (AC1)',      sub: '150 €/dia de voo (2026, RRRGS Cl. 7.ª)' },
+  { id: 'night',    group: 'Por voo',   linked: true,  label: 'Pernoita / estadia (AC2)',  sub: '80 €/dia (2026, RRRGS Cl. 7.ª)' },
+  { id: 'vh',       group: 'Por voo',   linked: false, label: 'Vencimento horário',        sub: '2,5% do VB/hora acima do plafond (RRRGS Cl. 14.ª)' },
+  { id: 'extraord', group: 'Subsídios', linked: true,  label: 'Complemento extraordinário', sub: '40 €/dia · assistência em casa, formação, instalações; 2× assistência no aeroporto (RRRGS Cl. 8.ª)' },
+  { id: 'vs',       group: 'Subsídios', linked: true,  label: 'Vencimento de senioridade', sub: '1% do VB por anuidade (RRRGS Cl. 5.ª)' },
+  { id: 'natal',    group: 'Subsídios', linked: true,  label: 'Subsídio de Natal',         sub: 'VB + VS, em dezembro (RRRGS Cl. 17.ª)' },
+  { id: 'ferias',   group: 'Subsídios', linked: true,  label: 'Subsídio de férias',        sub: 'VB + VS + 675 €, no mês antes das férias (RRRGS Cl. 18.ª)' },
+  { id: 'chefia',   group: 'Funções',   linked: true,  label: 'Adicional de chefia',       sub: '8% das AC1 + AC2 do mês, pago no seguinte (RRRGS Cl. 11.ª)', when: ({ category }) => /^SC/.test(category) },
 ];
 
 export const catalogFor = (category, contract = '12/12', opts = {}) =>
@@ -286,6 +286,15 @@ export const catalogValue = (id, { category = 'CAB3', contract = '12/12', index 
 };
 
 // ── "Extras do mês" — contadores por dia/hora que NÃO se inferem da rota ──
+// O que o Início diz no estado de baixa — RRRGS Cl. 20.ª, n.os 1 e 2 (BTE 7/2024 p. 316): com a doença comprovada pelos
+// serviços médicos da empresa, a TAP paga o líquido da retribuição fixa mensal nos 3 primeiros dias (só em 3 ocorrências por
+// ano) e, nos restantes, a diferença entre esse líquido e o subsídio da Segurança Social. A app não calcula líquidos: só diz a
+// regra (auditoria A-103/A-205, bloco 7).
+export const SICK_STATE = {
+  first: { pt: 'Dias 1 a 3: a TAP paga o líquido da retribuição fixa, até 3 ocorrências por ano (RRRGS Cl. 20.ª)', en: 'Days 1–3: TAP pays the net fixed pay, up to 3 occurrences a year (RRRGS Cl. 20)' },
+  rest: { pt: 'Do 4.º dia: a TAP completa o subsídio da Segurança Social até ao líquido da retribuição fixa (RRRGS Cl. 20.ª)', en: 'From day 4: TAP tops up the social-security benefit to the net fixed pay (RRRGS Cl. 20)' },
+  paidFirst3: false,
+};
 export const EXTRA_KINDS = [
   { id: 'extraordDays', calc: 'extraord', per: 'day',  label: { pt: 'Dias de assistência (compl. extraord.)', en: 'Assistance days (extra compl.)' } },
   { id: 'vhHours',      calc: 'vh',       per: 'hour', label: { pt: 'Horas acima do plafond',                 en: 'Hours over plafond' } },

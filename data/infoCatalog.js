@@ -8,18 +8,18 @@ import { BRAND } from './constants';
 
 export const FTL = { groups: [
   { name: 'Voo', items: [
-    { v: '900', u: 'h', name: 'Voo · ano civil', art: 'ORO.FTL.210(b)', f: 'Teto de horas de voo por ano civil (jan–dez).' },
-    { v: '1000', u: 'h', name: 'Voo · 12 meses', art: 'ORO.FTL.210(a)', f: 'Janela móvel de 12 meses consecutivos.' },
-    { v: '100', u: 'h', name: 'Voo · 28 dias', art: 'ORO.FTL.210', f: 'Janela móvel de 28 dias.' },
+    { v: '900', u: 'h', name: 'Voo · ano civil', art: 'ORO.FTL.210(b)(2)', f: 'Teto de horas de voo por ano civil (jan–dez).' },
+    { v: '1000', u: 'h', name: 'Voo · 12 meses', art: 'ORO.FTL.210(b)(3)', f: '12 meses consecutivos. A app usa a janela móvel por dia, que contém todas as janelas de 12 meses.' },
+    { v: '100', u: 'h', name: 'Voo · 28 dias', art: 'ORO.FTL.210(b)(1)', f: 'Janela móvel de 28 dias.' },
   ] },
   { name: 'Serviço', items: [
-    { v: '60', u: 'h', name: 'Serviço · 7 dias', art: 'ORO.FTL.210', f: 'Horas de serviço (duty) em 7 dias consecutivos.' },
-    { v: '110', u: 'h', name: 'Serviço · 14 dias', art: 'ORO.FTL.210', f: 'Horas de serviço em 14 dias.' },
-    { v: '190', u: 'h', name: 'Serviço · 28 dias', art: 'ORO.FTL.210', f: 'Horas de serviço em 28 dias.' },
+    { v: '60', u: 'h', name: 'Serviço · 7 dias', art: 'ORO.FTL.210(a)(1)', f: 'Horas de serviço (duty) em 7 dias consecutivos.' },
+    { v: '110', u: 'h', name: 'Serviço · 14 dias', art: 'ORO.FTL.210(a)(2)', f: 'Horas de serviço em 14 dias.' },
+    { v: '190', u: 'h', name: 'Serviço · 28 dias', art: 'ORO.FTL.210(a)(3)', f: 'Horas de serviço em 28 dias.' },
   ] },
   { name: 'Repouso & FDP', items: [
-    { v: '12', u: 'h', name: 'Repouso mínimo', art: 'ORO.FTL.235', f: 'Na base ≥12 h, fora da base ≥10 h — ou o serviço anterior, se for maior; 14 h depois de repouso a bordo ou de fuso ≥4 h.', ex: 'Serviço de 13 h fora da base → 13 h de repouso.' },
-    { v: '13', u: 'h', name: 'FDP básico', art: 'ORO.FTL.205', f: 'Período de serviço de voo máximo; reduz por setores e por hora WOCL.' },
+    { v: '12', u: 'h', name: 'Repouso mínimo', art: 'ORO.FTL.235(a)(1) e (b)', f: 'Na base ≥12 h, fora da base ≥10 h — ou o serviço anterior, se for maior; 14 h depois de repouso a bordo ou de fuso ≥4 h.', ex: 'Serviço de 13 h fora da base → 13 h de repouso.' },
+    { v: '13', u: 'h', name: 'FDP básico', art: 'ORO.FTL.205(b)', f: 'PSV máximo aclimatado (Quadro 2): pela hora de início na hora de referência, reduz com os setores; em estado de aclimatação desconhecido, só pelos setores (Quadro 3).' },
   ] },
 ] };
 
@@ -32,7 +32,7 @@ export const AE_PILOT = { word: 'O teu AE', groups: [
     { v: '×NS', u: '·', name: 'Per diem', art: 'Art. 37', f: 'Σ setores voados × nominal. Bandas: curto 0,8 · médio 1,2 · longo 1,5 · extra 2,5.', ex: 'LIS-OPO-LIS: 2×0,8×38,76 = 62,02 €.' },
     { v: '2', u: 'NS', name: 'Paragem nocturna', art: 'Art. 39', f: '2 setores nominais por noite fora da base, entre voos.', ex: 'FO: 77,52 €.' },
     { v: '2', u: 'NS', name: 'Dia de férias', art: 'Art. 38', f: 'Pagamento fixo por dia de férias, além do salário.', ex: 'FO: 77,52 €/dia.' },
-    { v: '1–2', u: 'NS', name: 'Serviço aeroporto (ADTY)', art: 'Art. 40', f: '1 setor (≤4h) ou 2 (>4h / se chamado a voar).' },
+    { v: '0–2', u: 'NS', name: 'Serviço aeroporto (ADTY)', art: 'Anexo I.5', f: 'Não chamado: 1 setor nominal até 3h59, 2 a partir de 4h00. Chamado a voar: até 3h59 só os setores voados; a partir de 4h00, 2 setores nominais + os setores voados (Art. 40.º).' },
     { v: '×NS', u: '·', name: 'Posicionamento', art: 'Art. 44', f: 'Os setores do posicionamento pelas bandas do per diem, por distância de grande círculo. Não na formação inicial.', ex: 'FO LIS-CDG (médio): 1,2 × 38,76 = 46,51 €.', long: 'Posicionamento por ar/terra' },
   ] },
   { name: 'Terra & formação', items: [
@@ -53,7 +53,7 @@ export const AE_PILOT = { word: 'O teu AE', groups: [
     { v: '35', u: '%', name: 'Complemento de gravidez', art: 'Anexo I.11', f: '35% da remuneração mensal base.' },
     { v: '5–15', u: '%', name: 'Prémio de permanência', art: 'Anexo I.9', f: 'No mês do aniversário de serviço (Art. 47.º): SFO 5% desde o 3.º · CPT 5% (2.º-4.º), 10% (5.º-9.º), 15% (10.º e seguintes).' },
     { v: '€/ano', u: '·', name: 'Retenção (sazonal)', art: 'Anexo I.15', f: 'Em maio, só nos PPY que não são estilo de vida: CPT 12 000 · co-pilotos 6 000.', long: 'Pagamento de retenção' },
-    { v: '~2 sem', u: '·', name: 'Bónus de performance', art: 'Art. 46', f: 'Alvo ~2 semanas de base · discricionário/estimativa.', long: 'Bónus anual' },
+    { v: '5–10', u: '%', name: 'Bónus de performance', art: 'Art. 46', f: 'Alvo (on target) em % da retribuição base anual: CPT e SFO 10 % · FO 7,5 % · SO 5 % (Art. 46.º, n.º 3). O valor pago depende do desempenho: estimativa.', long: 'Bónus anual' },
   ] },
 ] };
 
@@ -66,7 +66,7 @@ export const AE_CABIN = { word: 'O teu AE', groups: [
     { v: '×NS', u: '·', name: 'Per diem', art: 'Cl. 53', f: 'Σ setores voados × nominal. Bandas 0,8 · 1,2 · 1,5 · 2,5.' },
     { v: '46', u: '€', name: 'Pernoita', art: 'Cl. 56', f: 'Valor FIXO por noite fora da base (≠ pilotos, que é 2 NS).', ex: '46,00 €/noite.', long: 'Paragem nocturna' },
     { v: '2', u: 'NS', name: 'Dia de férias', art: 'Cl. 60', f: '2 setores nominais por dia de férias.', ex: 'CM: 65,00 €.' },
-    { v: '1–2', u: 'NS', name: 'Assistência no aeroporto', art: 'Cl. 58', f: 'ADTY em setores médios, conforme chamado/duração.' },
+    { v: '0–2,4', u: 'NS', name: 'Assistência no aeroporto', art: 'Cl. 58', f: 'Em setores médios (1 setor médio = 1,2 NS). Não chamado: 1 setor médio até 3h59, 2 a partir de 4 h. Chamado: o per diem do voo, + 1 setor médio a partir de 4 h.' },
     { v: 'tabela', u: '·', name: 'Posicionamento', art: 'Anexo I.18', f: 'Pela duração da viagem, curto · médio · longo: FA 16,00 · 24,00 · 30,00 — CM 26,00 · 39,00 · 48,75 — FA1 10,50 · 15,74 · 19,68. O acordo não diz onde acaba cada um: a app conta o curto e mostra até onde pode ir.', long: 'Posicionamento' },
   ] },
   { name: 'Terra', items: [
@@ -76,7 +76,7 @@ export const AE_CABIN = { word: 'O teu AE', groups: [
     { v: '20', u: '€', name: 'Alteração de escala (SNC)', art: 'Cl. 66', f: 'Por evento qualificável.' },
     { v: '1', u: 'NS', name: 'Irregularidade (RDP)', art: 'Cl. 67', f: 'Por evento (piso €18 FA / €23 CM).', long: 'Irregularidade de escala' },
     { v: '115', u: '€', name: 'Trabalhar em folga (DDO)', art: 'Cl. 68', f: 'O serviço passou a meia-noite e entrou num dia de descanso.' },
-    { v: '140', u: '€', name: 'Folga infringida (IDO)', art: 'Cl. 68', f: 'Pernoita não programada num dia de folga.' },
+    { v: '140', u: '€', name: 'Folga infringida (IDO)', art: 'Cl. 68', f: 'Paragem noturna não programada que coincide com um dia de folga: o dia de folga é devido (devolvido) e paga-se o IDO (Cl. 68.ª, n.º 3).' },
     { v: '1', u: '%', name: 'Voluntário em folga (WFLY)', art: 'Cl. 69', f: '1% da base anual — aceitaste trabalhar num dia de descanso escalado.' },
   ] },
   { name: 'Papéis', items: [
@@ -103,7 +103,7 @@ export const AE_TAP_PILOT = { word: 'O teu AE', groups: [
   { name: 'Por dia', items: [
     { v: '202,50', u: '€', name: 'Per diem A · dia de voo', art: 'Tabela A-3.2', f: 'POR DIA de calendário com voo, dead-head, assistência no aeroporto ou simulador como aluno: CTE 300 (WB/LC) · 270 (MC) — OP 225 · 202,50. WB cobra sempre WB; no NB, médio ou longo curso pela área do RUPT (Cl. 32.ª e 37.ª).', long: 'Per diem A (OP · MC)' },
     { v: '135', u: '€', name: 'Per diem B · estadia', art: 'Tabela A-3.2', f: 'Dia de estadia fora, refrescamento (presencial ou e-learning) ou inspeção médica: CTE 180 · OP 135 (+ hotel pago).' },
-    { v: '200', u: '€', name: 'Comando em cruzeiro', art: 'Cl. 11.ª', f: 'Por setor com mais de 3 h a exercer comando em cruzeiro.' },
+    { v: '200', u: '€', name: 'Comando em cruzeiro', art: 'RRRGS Cl. 11.ª', f: 'Por setor com mais de 3 h a exercer comando em cruzeiro.' },
   ] },
   { name: 'Horas', items: [
     { v: '3', u: '%', name: 'Hora de voo · Limite 1', art: 'Tabela A-3.3', f: '3% do VB por hora acima do plafond.' },
@@ -111,27 +111,27 @@ export const AE_TAP_PILOT = { word: 'O teu AE', groups: [
   ] },
   { name: 'Subsídios & férias', items: [
     { v: 'RB', u: '·', name: 'Subsídios de férias e Natal', art: 'RRRGS Cl. 7.ª/8.ª', f: 'Cada um = a remuneração base (VB + VE + VS). Natal em dezembro; férias no mês antes do 1.º período de férias.', long: 'Subsídios de férias e Natal' },
-    { v: '42', u: 'dias', name: 'Férias', art: 'RUPT Cl. 45.ª', f: '42 dias de CALENDÁRIO por ano civil (piso de 38 mesmo com faltas).' },
+    { v: '42', u: 'dias', name: 'Férias', art: 'RUPT Cl. 45.ª', f: '42 dias de CALENDÁRIO por ano civil. As ausências longas reduzem-nos, até um mínimo de 30 dias (RUPT Cl. 45.ª, n.º 6); trocar faltas injustificadas por férias nunca as deixa abaixo de 38 dias (AE Cl. 33.ª, n.º 2).' },
   ] },
 ] };
 
 export const AE_TAP_CABIN = { word: 'O teu AE', groups: [
   { name: 'Base', items: [
-    { v: '2 020,73', u: '€', name: 'Vencimento base · CAB 3', art: 'Cl. 3.ª (2026)', f: 'Tabela 2026 PUBLICADA (sem estimativas): CAB 0 = RMMG 920 · CAB 1 1.214,68 … CAB 5 2.357,32 · S/C 1-7 até 3.287,57.', long: 'Vencimento base (coluna 2026)' },
+    { v: '2 020,73', u: '€', name: 'Vencimento base · CAB 3', art: 'RRRGS Cl. 3.ª (2026)', f: 'Tabela 2026 PUBLICADA (sem estimativas): CAB 0 = RMMG 920 · CAB 1 1.214,68 … CAB 5 2.357,32 · S/C 1-7 até 3.287,57.', long: 'Vencimento base (coluna 2026)' },
   ] },
   { name: 'Por dia', items: [
-    { v: '150', u: '€', name: 'Ajuda de custo · dia de voo (AC1)', art: 'Cl. 7.ª', f: 'POR DIA de calendário com serviço de voo/DHC (não por setor).' },
-    { v: '80', u: '€', name: 'Estadia / pernoita (AC2)', art: 'Cl. 7.ª', f: 'Por dia de estadia fora ou cancelamento tardio (+ hotel pago).' },
-    { v: '40', u: '€', name: 'Complemento extraordinário', art: 'Cl. 8.ª', f: 'Por dia sem voo: assistência em casa, formação presencial, deslocação às instalações = 40 · assistência no aeroporto não acionada = 2 × (80).' },
+    { v: '150', u: '€', name: 'Ajuda de custo · dia de voo (AC1)', art: 'RRRGS Cl. 7.ª', f: 'POR DIA de calendário com serviço de voo/DHC (não por setor).' },
+    { v: '80', u: '€', name: 'Estadia / pernoita (AC2)', art: 'RRRGS Cl. 7.ª', f: 'Por dia de estadia fora ou cancelamento tardio (+ hotel pago).' },
+    { v: '40', u: '€', name: 'Complemento extraordinário', art: 'RRRGS Cl. 8.ª', f: 'Por dia sem voo: assistência em casa, formação presencial, deslocação às instalações = 40 · assistência no aeroporto não acionada = 2 × (80).' },
   ] },
   { name: 'Horas & funções', items: [
-    { v: '2,5', u: '%', name: 'Vencimento horário', art: 'Cl. 14.ª', f: '2,5% do VB por hora acima dos plafonds.' },
-    { v: '8', u: '%', name: 'Adicional de chefia', art: 'Cl. 11.ª', f: '8% das AC1 + AC2 do mês, pago no mês seguinte (supervisor de cabine).' },
-    { v: '1', u: '%', name: 'Senioridade', art: 'Cl. 5.ª', f: '1% do VB por cada anuidade.' },
+    { v: '2,5', u: '%', name: 'Vencimento horário', art: 'RRRGS Cl. 14.ª', f: '2,5% do VB por hora acima dos plafonds.' },
+    { v: '8', u: '%', name: 'Adicional de chefia', art: 'RRRGS Cl. 11.ª', f: '8% das AC1 + AC2 do mês, pago no mês seguinte (supervisor de cabine).' },
+    { v: '1', u: '%', name: 'Senioridade', art: 'RRRGS Cl. 5.ª', f: '1% do VB por cada anuidade.' },
   ] },
   { name: 'Férias & subsídios', items: [
-    { v: '42', u: 'dias', name: 'Férias', art: 'Cl. 23.ª', f: '42 dias de CALENDÁRIO por ano (já incluem 12 de compensação de feriados). 1.º ano: 3 dias/mês, máx. 26.' },
-    { v: 'VB+VS', u: '·', name: 'Subsídios férias/Natal', art: 'Cl. 17.ª/18.ª', f: 'Natal = VB + VS, em dezembro · férias = VB + VS + 675 €, no mês antes das férias.', long: 'Subsídios de férias e Natal' },
+    { v: '42', u: 'dias', name: 'Férias', art: 'AE Cl. 23.ª', f: '42 dias de CALENDÁRIO por ano (já incluem 12 de compensação de feriados). 1.º ano: 3 dias/mês, máx. 26.' },
+    { v: 'VB+VS', u: '·', name: 'Subsídios férias/Natal', art: 'RRRGS Cl. 17.ª/18.ª', f: 'Natal = VB + VS, em dezembro · férias = VB + VS + 675 €, no mês antes das férias.', long: 'Subsídios de férias e Natal' },
     { v: '83,3', u: '%', name: 'Tempo parcial', art: 'RTTP Cl. 7.ª', f: 'Vencimento e subsídios: 10 meses 83,3% · 9 meses 75% · 8 meses 66,7% · 7 meses 58,3% · 6 meses 50%.' },
   ] },
 ] };

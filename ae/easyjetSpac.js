@@ -358,7 +358,7 @@ export const CALCS = [
   { id: 'wfly',    group: 'Perturbação', linked: false, label: 'Voluntário em folga (WFLY)', sub: '1% base anual' },
   { id: 'sick',    group: 'Subsídios',   linked: false, label: 'Complemento de doença',     sub: '60% base diária (dias 1-3)' },
   { id: 'instr',   group: 'Funções',     linked: false, label: 'Instrutor / verificador',   sub: '€120/dia', role: true },
-  { id: 'adty',    group: 'Por voo',     linked: false, label: 'Serviço de aeroporto (ADTY)', sub: '1-2 setores nominais · conforme serviço (Anexo I.5)' },
+  { id: 'adty',    group: 'Por voo',     linked: false, label: 'Serviço de aeroporto (ADTY)', sub: 'não chamado: 1 NS até 3h59, 2 a partir de 4 h · chamado: os setores, + 2 NS a partir de 4 h (Anexo I.5)' },
   { id: 'office4', group: 'Funções',     linked: false, label: 'Dia de escritório (OFC4)',   sub: '1,5 setores nominais (Anexo I.14)' },
   { id: 'office8', group: 'Funções',     linked: false, label: 'Dia de escritório (OFC8)',   sub: '3 setores nominais (Anexo I.14)' },
   { id: 'benefits',  group: 'Subsídios', linked: true,  label: 'Prestação complementar anual', sub: 'em abril · €/ano por categoria (Art. 45.º, Anexo I.8)' },
@@ -432,6 +432,12 @@ export const SICK_HINT = {
 // Papéis pagos POR DIA (Art. 42.º: instrutor "por cada dia"): uma vez por dia. E o instrutor só em terra ou simulador.
 export const DAILY_ROLES = ['instr'];
 export const GROUND_ONLY_ROLES = ['instr'];
+// O que o Início diz no estado de baixa (auditoria A-103/A-205, bloco 7: o texto vinha fixo e a TAP lia o Art. 48.º).
+export const SICK_STATE = {
+  first: { pt: 'Dias 1 a 3: o acordo paga 60 % da base do dia (Art. 48.º)', en: 'Days 1–3: the agreement pays 60% of the daily base (Art. 48)' },
+  rest: { pt: 'Do 4.º dia em diante: só a Segurança Social (Art. 48.º)', en: 'From day 4: social security only (Art. 48)' },
+  paidFirst3: true,   // a unidade "de 3 pagos" no Início
+};
 export const EXTRA_KINDS = [
   { id: 'instructorDays', calc: 'instructor', per: 'day',   label: { pt: 'Dias de instrutor',            en: 'Instructor days' } },
   { id: 'adhocDays',      calc: 'adhoc',      per: 'day',   label: { pt: 'Dias ad-hoc',                  en: 'Ad-hoc days' } },

@@ -204,7 +204,7 @@ export default function StatsScreen({ navigation }) {
     { k: 'base', nm: l('Base', 'Base'), ic: 'wallet', val: A.base || 0, sub: baseSub },
     (A.perDiem > 0) && { k: 'diem', nm: l('Per diem', 'Per diem'), ic: 'plane', val: A.perDiem, sub: `${st.flights} ${l('voos', 'flights')} · ${st.sectors} ${l('setores', 'sectors')}` },
     // TAP: a estadia paga-se nos dias SEM voo (Cl. 7.ª/9.ª) — as noites fora não são o número de AC2/B (revisão do bloco 6).
-    (A.nightStops > 0) && { k: 'pern', nm: l('Pernoitas', 'Night stops'), ic: 'bed', val: A.nightStops, sub: (ae && ae.PER_DIEM_BY_DAY) ? l('estadia nos dias sem voo (Cl. 7.ª/9.ª)', 'stay on days without flights (Cl. 7/9)') : `${st.nightStops} ${l('paragens nocturnas', 'night stops')}` },
+    (A.nightStops > 0) && { k: 'pern', nm: l('Pernoitas', 'Night stops'), ic: 'bed', val: A.nightStops, sub: (ae && ae.PER_DIEM_BY_DAY) ? (isPilot ? l('estadia nos dias sem voo (per diem B, RRRGS Cl. 9.ª)', 'stay on days without flights (per diem B, RRRGS Cl. 9)') : l('estadia nos dias sem voo (AC2, RRRGS Cl. 7.ª)', 'stay on days without flights (AC2, RRRGS Cl. 7)')) : `${st.nightStops} ${l('paragens nocturnas', 'night stops')}` },
     // Posicionamento (bloco 6): pilotos pelos setores (Art. 44.º); cabine pela tabela do Anexo I.18 — o acordo não diz onde acaba
     // o curto, por isso conta o curto e diz-se até onde pode ir.
     (A.positioning > 0) && { k: 'pos', nm: l('Posicionamento', 'Positioning'), ic: 'plane', val: A.positioning, sub: (!isYear && A.positioningMax > A.positioning) ? l(`o curto; até ${fmtEur0(A.positioningMax)} conforme a duração da viagem (Anexo I.18)`, `short rate; up to ${fmtEur0(A.positioningMax)} by trip length (App. I.18)`) : l('posicionamentos do período', 'positioning in the period') },
@@ -396,7 +396,7 @@ export default function StatsScreen({ navigation }) {
             <View style={s.seybRow}>
               {mode === 'safety' ? <View style={s.seybDot} /> : null}
               <Text style={s.seyb}>{mode === 'money'
-                ? `${l('Os teus ganhos · estimados', 'Your earnings · estimated')} ${isYear ? l('no ano', 'this year') : `${l('em', 'in')} ${monthName.toLowerCase()}`}`
+                ? `${l('Os teus ganhos · estimados · brutos', 'Your earnings · estimated · gross')} ${isYear ? l('no ano', 'this year') : `${l('em', 'in')} ${monthName.toLowerCase()}`}`
                 : l('A tua segurança · janelas FTL · agora', 'Your safety · FTL windows · now')}</Text>
             </View>
             {mode === 'money' && noTableTxt ? <Text style={s.dsub}>{noTableTxt}</Text> : null}
@@ -666,9 +666,9 @@ export default function StatsScreen({ navigation }) {
               {rad.flightsWithout > 0 ? (
                 <><Text style={s.radCtxB}>{rad.flightsWithout} {rad.flightsWithout === 1 ? l('voo sem rota não entra', 'flight without a route is not counted') : l('voos sem rota não entram', 'flights without a route are not counted')}</Text>{l(' na estimativa — completa as rotas na Escala.', ' in the estimate — complete the routes in the roster.')}</>
               ) : isYear ? (
-                <>{l('Limite legal: ', 'Legal limit: ')}<Text style={s.radCtxB}>20 mSv/{l('ano', 'year')}</Text>{l(' · a companhia é obrigada a avaliar o teu valor oficial — pede-lho.', ' · your airline must assess your official dose — ask them for it.')}</>
+                <>{l('Limite legal: ', 'Legal limit: ')}<Text style={s.radCtxB}>20 mSv/{l('ano', 'year')}</Text>{l(' · em Portugal, o nível de referência das tripulações é 10 mSv/ano (DL 108/2018, art. 92.º) · a companhia é obrigada a avaliar o teu valor oficial — pede-lho.', ' · in Portugal, the aircrew reference level is 10 mSv/year (DL 108/2018, art. 92) · your airline must assess your official dose — ask them for it.')}</>
               ) : (
-                <>{l('No ano: ', 'This year: ')}<Text style={s.radCtxB}>≈ {fmtMsv(radYear ? radYear.mSv : 0)} mSv</Text> · {l('limite legal: 20 mSv/ano.', 'legal limit: 20 mSv/year.')}</>
+                <>{l('No ano: ', 'This year: ')}<Text style={s.radCtxB}>≈ {fmtMsv(radYear ? radYear.mSv : 0)} mSv</Text> · {l('limite legal: 20 mSv/ano; nível de referência em Portugal: 10 mSv/ano.', 'legal limit: 20 mSv/year; reference level in Portugal: 10 mSv/year.')}</>
               )}
             </Text>
             {radBaptism ? (

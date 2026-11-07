@@ -259,6 +259,22 @@ const longDate = (iso, lang) => {
   return lang === 'en' ? `${W[d.getDay()]}, ${M[d.getMonth()]} ${d.getDate()} ${d.getFullYear()}`
     : `${W[d.getDay()]}, ${d.getDate()} ${M[d.getMonth()]} ${d.getFullYear()}`;
 };
+// A declaração do tripulante — o que a app não pode saber, pela regra de CADA acordo (auditoria A-081, bloco 7: o visto era o
+// mesmo para todos, com os códigos LATE/NSO/… que só existem na Cl. 67.ª da cabine, e não dizia a exclusão das 12 h).
+//   SNC pilotos — Art. 63.º, n.º 4 (não é devido se chamado de assistência) e n.º 5 (perturbação fora do controlo da empresa:
+//     aeroporto inoperacional ou ação industrial externa, nas 12 h seguintes) · SNC cabine — Cl. 66.ª, n.os 3 e 4 (iguais).
+//   RDP cabine — Cl. 67.ª, n.º 2: chamado de assistência (salvo o n.º 3) ou com LATE, NSO, RCON, UNCT, DECL, RFSD na escala.
+export const declarationFor = (type, clause, lang = 'pt') => {
+  const en = lang === 'en';
+  if (type === 'rdp') return en
+    ? 'Not called from home or airport standby (except a home-standby call-out flown 2 h after the confirmed report time, no. 3); no LATE, NSO, RCON, UNCT, DECL or RFSD on my roster (Cl. 67, no. 2).'
+    : 'Não fui chamado de assistência em casa ou no aeroporto (salvo chamado de casa com o voo 2 h depois da apresentação confirmada, n.º 3) nem tinha LATE, NSO, RCON, UNCT, DECL ou RFSD na escala (Cl. 67.ª, n.º 2).';
+  const pilot = /Art\./.test(String(clause || ''));
+  const ref = pilot ? (en ? 'Art. 63, nos. 4 and 5' : 'Art. 63.º, n.os 4 e 5') : (en ? 'Cl. 66, nos. 3 and 4' : 'Cl. 66.ª, n.os 3 e 4');
+  return en
+    ? `Not called from standby, and the change was not a direct consequence, within 12 h, of a disruption outside the company's control (airport inoperative for easyJet flights, or industrial action by an external agency or subcontractor) (${ref}).`
+    : `Não fui chamado de assistência e a alteração não foi consequência direta, nas 12 h seguintes, de uma perturbação fora do controlo da empresa (aeroporto inoperacional para os voos da easyJet, ou ação industrial de uma agência externa ou subcontratante) (${ref}).`;
+};
 const DL = {
   pt: {
     reg: 'Irregularidade de escala — prova de apoio ao RDF', title: 'Relatório de Disrupção de Escala',
@@ -289,7 +305,7 @@ export const disruptionHtml = ({ header = {}, events = [] } = {}, lang = 'pt', f
       <div class="row"><div class="w">${esc(L.published)}</div><div class="v">${esc(e.beforeLine)}${e.snapshotAt ? ` — snapshot ${esc(e.snapshotAt)}` : ''}</div></div>
       <div class="row"><div class="w">${esc(L.change)}</div><div class="v"><b>${esc(e.detectedAt)}</b> (${esc(L.sync)}) · ${esc(e.afterLine)}</div></div>
       <div class="row"><div class="w">${esc(L.law)}</div><div class="v">${esc(e.lawLine)}</div></div>
-      ${e.declared ? `<div class="row"><div class="w">${esc(L.decl)}</div><div class="v">${esc(L.declTxt)}</div></div>` : ''}
+      ${e.declared ? `<div class="row"><div class="w">${esc(L.decl)}</div><div class="v">${esc(labelsOverride && labelsOverride.declTxt ? L.declTxt : declarationFor(e.type, e.clause, lang))}</div></div>` : ''}
     </div>
     ${e.valueLabel
       ? `<div class="law">${esc(L.value)} <span class="eur">${esc(e.valueLabel)}</span> ${esc(L.approval)}</div>`

@@ -770,8 +770,10 @@ export default function HomeScreen({ navigation }) {
     return { quota, taken, left: Math.max(0, quota - taken), retISO: ret, period, lastDay: ret === isoAdd(todayISO, 1),
       retLabel: new Date(ret + 'T00:00:00').toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' }).replace(/-feira/i, '') };
   })() : null;
-  // ── DOENÇA: dia N do episódio + regra de pagamento crew-aware (Art. 48 piloto: dias 1-3; cabine Cl. 61.ª: 45 % após o 3.º dia) ──
-  const sickFirst3 = !ae || ae.SICK_FIRST3 !== false;
+  // ── DOENÇA: dia N do episódio + a regra de pagamento do ACORDO DO PERFIL (ae.SICK_STATE: easyJet pilotos Art. 48.º, cabine
+  // Cl. 61.ª, TAP pilotos AE Cl. 37.ª, TAP cabine RRRGS Cl. 20.ª). Sem acordo modelado: nenhuma frase sobre pagamento (A-103/A-205).
+  const sickState = ae && ae.SICK_STATE ? ae.SICK_STATE : null;
+  const sickFirst3 = !!(sickState && sickState.paidFirst3);
   const sickDay = cs.sickDay || 0;
   // ── FECHO DO MÊS: dias que faltam ──
   const fechoDaysLeft = (homeState === 'fecho') ? (() => {
@@ -801,7 +803,7 @@ export default function HomeScreen({ navigation }) {
   const monthMoney = monthAe ? monthAe.total : null;
   // 9/3 e sazonais sem as datas de atividade (Cl. 48.ª/80.ª): o mês é INCERTO — diz-se, com o intervalo da base (bloco 5).
   const monthUnc = monthAe && monthAe.baseRange ? monthAe.baseRange : null;
-  const estLbl = monthUnc ? l('incerto', 'uncertain') : l('estimado', 'estimated');
+  const estLbl = monthUnc ? l('incerto · bruto', 'uncertain · gross') : l('estimado · bruto', 'estimated · gross');   // os acordos dão valores brutos (A-198)
   // Fecho: a parte variável dividida em "até hoje" e "resto do mês" (a MESMA conta do total — data/stats.js).
   const monthSplitNow = useMemo(() => {
     if (!ae || !crewCategory) return null;   // fecho (título) + o cartão do mês em todos os estados
@@ -1124,14 +1126,9 @@ export default function HomeScreen({ navigation }) {
         rows: vacInfo && vacInfo.lastDay ? upcomingRows(todayISO) : [] };
     }
     if (homeState === 'doenca') {
-      const payTxt = sickFirst3 ? (sickDay <= 3 ? l('Dias 1 a 3: o acordo paga 60 % da base do dia (Art. 48.º)', 'Days 1–3: the agreement pays 60% of the daily base (Art. 48)') : l('Do 4.º dia em diante: só a Segurança Social (Art. 48.º)', 'From day 4: social security only (Art. 48)')) 
-        // Cabine easyJet — Cl. 61.ª (BTE 8/2024 p. 302, lida em fontes/ae-easyjet/ a 2026-11-04): complemento de 45 % da
-        // remuneração base diária ao subsídio da SS, APÓS os 3 dias iniciais, só com direito ao subsídio, máx. 90 dias/12 meses.
-        // (Antes: "Regista só os dias pagos (Art. 61)" — citava mal e era uma instrução para a app, não o que ele recebe.)
-        : sickDay <= 3 ? l('Dias 1 a 3: sem complemento do acordo (Cl. 61.ª)', 'Days 1–3: no agreement top-up (Cl. 61)')
-          : l('Do 4.º dia: o acordo junta 45 % do salário diário ao subsídio da Segurança Social (Cl. 61.ª)', 'From day 4: the agreement adds 45% of daily pay to the social-security benefit (Cl. 61)');
+      const payTxt = sickState ? (sickDay <= 3 ? sickState.first : sickState.rest)[lang === 'en' ? 'en' : 'pt'] : null;
       return { ...b, lbl: l('Baixa · dia do episódio', 'Sick leave · day of the episode'), // O número sem o "º" (a 150 pt desenhava-se enorme e sublinhado); a unidade diz quanto o acordo paga (2026-11-04):
-        // piloto (Art. 48, dias 1-3 de cada episódio) "de 3 pagos" até ao 3.º · depois, e na cabine, "º dia".
+        // pilotos easyJet (Art. 48.º, dias 1-3 de cada episódio) "de 3 pagos" até ao 3.º · depois, e nos outros acordos, "º dia".
         digits: String(sickDay), unit: sickFirst3 && sickDay <= 3 ? l('de 3 pagos', 'of 3 paid') : l('º dia', 'day'),
         headline: payTxt,
         sub: flight ? `${l('Próximo serviço', 'Next duty')}: ${wdLong(flight.dateISO).toLowerCase()} ${Number(flight.dateISO.slice(8, 10))}${flight.report ? `, report ${flight.report}` : ''} — ${l('se continuares de baixa, avisa a escala', 'if you’re still sick, tell crewing')}` : null };

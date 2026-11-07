@@ -18,9 +18,10 @@ verificadores cada); agrupados, cerca de 70 problemas.
 **Bloco 4 (importação da escala) FEITO a 2026-11-06** — ver a entrada "BLOCO 4" abaixo. Falta vê-lo no iPhone (lista na entrada).
 **Bloco 5 (dinheiro a mais, M1–M11) FEITO a 2026-11-06** — ver a entrada "BLOCO 5" abaixo. Falta vê-lo no iPhone e as pendências da entrada.
 **Bloco 6 (dinheiro a menos, L1–L13) FEITO a 2026-11-06** — ver a entrada "BLOCO 6" abaixo. Falta vê-lo no iPhone e as pendências da entrada.
+**Bloco 7 (textos e citações) FEITO a 2026-11-06** — ver a entrada "BLOCO 7" abaixo. Falta vê-lo no iPhone. O ecrã FtlDetail foi apagado (decisão do Nuno, 2026-11-07).
 **A seguir, pela ordem do relatório** (golden-first a partir do texto oficial em `fontes/`; um bloco por sessão):
-7. **Textos e citações (nível 4)** — Opus 5.5 Alto, sessão nova: alargar o `test:citacoes` à TAP e ao FTL · 8. Dúvidas →
-   advogado (A-240, A-241 e as dos blocos 5 e 6). Fora dos blocos: A-249 a A-251 (formulário manual).
+8. **Dúvidas → advogado** (A-240, A-241 e as dos blocos 5 e 6; tabela "Dúvidas de leitura" do relatório) — "vamos ao
+   advogado". Fora dos blocos: A-249 a A-251 (formulário manual) e A-218 (a formação inicial não paga pernoita).
 **Regra do Nuno (2026-11-06): "a lei é que manda", sempre.** Sem um facto de que a lei precisa → perguntar, ou "incerto"
 com o que falta. Nunca um valor inventado, nem "o mais restritivo". Ver a entrada "A LEI É QUE MANDA" abaixo.
 **Factos por saber — pesquisa na internet de 2026-11-06** (até lá a app dá "incerto" perto do limite). A lista para
@@ -36,6 +37,67 @@ tabela secundária (Áustria/Irlanda/Malta = matinal; Portugal = sem escolha pub
 leitura automática. A easyJet deixou de ser assumida matinal: os dois tipos para todos, até haver documento oficial.
 **Depois disso:** o esboço `design/inicio-v6.html` e o modo escuro (adiados pela auditoria).
 **Por ver no iPhone (de antes):** a disrupção e o aviso de RDP; uma conta de CABINE.
+
+---
+
+## 2026-11-06 (noite) — AUDITORIA, BLOCO 7: textos e citações (Opus 5.5)
+
+Golden primeiro: `scripts/citacoes-tap-ftl.test.js` (334 asserções), que corre no `npm run test:citacoes` depois do da
+easyJet. Procura cada citação que o tripulante lê no texto oficial de `fontes/`. `npm test` verde (33 suites); pacote iOS
+gerado sem erros. Nenhum valor em € nem nenhum limite mudou: só o que se lê.
+- **TAP — o regulamento em cada citação.** No BTE da TAP cada regulamento recomeça a numeração. Uma "Cl. 7.ª" solta abria a
+  "Direito à atividade sindical" (A-104). Agora: "RRRGS Cl. 9.ª", "RUPT Cl. 45.ª", "AE Cl. 37.ª" (clausulado geral, como o
+  próprio BTE escreve "cláusula 49.ª do AE"). Corrigido na Biblioteca, na Prova, nos Cálculos dos módulos, nas prestações do
+  mês (`cite`), no formulário, no valor do serviço (`perdiem.js`), no detalhe do serviço (limites do RUPT) e nos Números.
+  O teste lê o BTE por regulamento e confirma a cláusula e o assunto.
+- **Férias dos pilotos TAP (A-113):** "piso de 38 mesmo com faltas" estava errado. As ausências longas reduzem até 30 dias
+  (RUPT Cl. 45.ª, n.os 5 e 6); os 38 são o piso da troca de faltas injustificadas por férias (AE Cl. 33.ª, n.º 2).
+- **Baixa no Início (A-103, A-205):** a regra vem do acordo do perfil (`SICK_STATE` em cada módulo). TAP pilotos: AE Cl. 37.ª;
+  TAP cabine: RRRGS Cl. 20.ª. Nos dois, dias 1–3 = o líquido, só em 3 ocorrências por ano; depois a TAP completa o subsídio
+  da SS até ao líquido (a app não calcula líquidos, só diz a regra). Sem acordo modelado (Ryanair, Hi Fly): nenhuma frase
+  sobre pagamento. "de 3 pagos" só nos pilotos easyJet.
+- **Formulário do serviço (A-207, A-211):** as notas saíram para `data/aeTexts.js` (testável). ADTY dos pilotos pelo Anexo
+  I.5 (não chamado 1 NS até 3h59, 2 a partir de 4 h; chamado: os setores, + 2 NS a partir de 4 h); ADTY da cabine pela Cl.
+  58.ª; assistência em casa da cabine = Cl. 59.ª. A pernoita diz a regra de cada acordo; sem acordo, não diz "abono AE". A
+  lista dos tipos deixou de prometer € ("+2 setores", "sem abono").
+- **Biblioteca easyJet (A-012, A-048, A-073, A-210):** bónus dos pilotos = alvo de 10 % (CPT, SFO), 7,5 % (FO), 5 % (SO)
+  da base anual (Art. 46.º, n.º 3), não "~2 semanas"; ADTY pilotos e cabine pelo texto; IDO da cabine = paragem noturna
+  não programada num dia de folga, a folga é devida (Cl. 68.ª, n.º 3).
+- **FTL:** Biblioteca com a alínea de cada número (1000 h = ORO.FTL.210(b)(3), A-213; 900 h (b)(2); 100 h (b)(1); 60/110/190
+  h (a)(1)–(3); 12 h = 235(a)(1); PSV = 205(b)). Prova do PSV máximo com a hora de referência e o estado desconhecido
+  (Quadro 3) (A-299); Prova do standby pela CS FTL.1.225 (25 %, 4 h e 6/8 h), sem o "230" da reserva (A-294); "calendar
+  months" em inglês (A-300). Textos latentes do ecrã FtlDetail (corrigidos e, a seguir, apagados com o ecrã — ver abaixo): definição 8 em inglês copiada
+  do JO, "CS FTL.1.205(g)" → (d), "psvExt" 205(b) → 205(d), ORO.FTL.205 c) com a frase da hora dos pilotos (A-298),
+  repouso a bordo com 90 min consecutivos, 2 h aos comandos e os tetos dos pilotos (A-297), recuperação com 60 h, 2 dias
+  locais e 72 h (A-295). O teste varre todo o código: cada "ORO.FTL.NNN(x)(n)(i)" / "CS FTL.1.NNN(…)" tem de existir.
+  Apanhou "ORO.FTL.225(d)(e)" e "CS FTL.1.220(d)(e)" (escritos como subalíneas) → "(d) e (e)".
+- **Radiação (A-277):** fontes novas — Diretiva 2013/59/Euratom (`fontes/eu/`) e DL 108/2018 republicado em 2022
+  (`fontes/pt/`). Prova: 20 mSv = art. 9.º/2; acrescentado o nível de referência português, 10 mSv/ano (DL 108/2018, art.
+  92.º e 93.º), também nos Números e na Biblioteca. A Prova da radiação deixou de dizer "FTL".
+- **Valores brutos (A-198):** "estimado · bruto" no Início, "estimados · brutos" nos Números, "Total estimado (bruto)" no
+  Perfil (os Anexos I dizem "valores brutos").
+- **SNC/RDP (A-081):** a declaração do visto (ecrã e PDF) é a de cada acordo (`declarationFor`): SNC pilotos Art. 63.º, n.os
+  4 e 5; SNC cabine Cl. 66.ª, n.os 3 e 4 (chamado de assistência; perturbação externa nas 12 h); RDP cabine Cl. 67.ª, n.º 2
+  (os códigos LATE/NSO/…). A proposta "Registar SNC" da Escala diz as exclusões.
+- **FtlDetail APAGADO (A-296; decisão do Nuno a 2026-11-07, por recomendação do Claude):** o ecrã do texto integral da lei não
+  tinha entrada desde julho. A lei abre-se na fonte oficial (Biblioteca → Fontes; Prova de cada número), e uma cópia à mão
+  desatualiza-se em silêncio (a auditoria encontrou lá erros). A tabela do repouso a bordo da cabine já vive no calculador da
+  Simulação. Saíram: `screens/FtlDetailScreen.js` e as rotas; `FTL_SECTIONS`, `FTL_LIMITS`, `FTL_DEFINITIONS`, `FTL_ARTICLES` e
+  `ftlSectionTitle` de `data/ftl.js` (as tabelas do motor ficam); as calculadoras desmontadas PsvCalc, LimitsCalc e RestCalc.
+  O teste tranca a ausência (se voltar, volta com teste). Guardião do design: a dívida desceu (novo chão gravado).
+  **Por fazer (limpeza à parte):** ~60 chaves `ftl.*` do i18n sem uso (quase todas desde julho, com o FtlHub) — conferir usos
+  dinâmicos antes de apagar.
+- **Revisão independente (2.º agente, só com o código e as fontes):** 0 erros, 7 reparos, todos aplicados — a exclusão do
+  e-learning da TAP cabine é do RUPT Cl. 38.ª, n.º 5, b) e c) (só e-learning, não a formação presencial); a Prova do standby
+  diz a regra da noite (CS FTL.1.225(b)(9)); "greve de uma agência externa ou de um subcontratante" na Escala; repouso mínimo
+  = ORO.FTL.235(a)(1) e (b); cabine "45 % da base diária" (Cl. 61.ª); as 9 chaves do `VALUE_I18N` seguem os rótulos TAP novos;
+  o lawTag do detalhe não repete "RUPT". Não conferido: a numeração dos artigos no texto original do DL 108/2018 (só na
+  republicação de 2022, que está em `fontes/`).
+- **Pendente:** o mosaico do mês no Início ("NOV · ESTIMADO") não diz "bruto" — não cabe; a linha por cima já diz. A-218
+  (formação inicial sem pernoita, pilotos Art. 39.º/44.º e cabine Cl. 56.ª) é dinheiro, fica fora deste bloco.
+- **Ver no iPhone:** Início em baixa (conta TAP e de cabine); notas do formulário por tipo (easyJet piloto/cabine, TAP);
+  Biblioteca (bónus, ADTY, FTL); Prova do PSV, standby e radiação; Disrupção (o visto mais longo cabe?); o alerta do SNC na
+  Escala (texto mais longo).
 
 ---
 

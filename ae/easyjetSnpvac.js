@@ -422,6 +422,13 @@ export const SICK_HINT = {
   pt: 'Regista todos os dias da baixa. O acordo paga 45 % da base do dia a partir do 4.º dia de cada episódio, até 90 dias em 12 meses (Cl. 61.ª). Nos dias de baixa a empresa não paga a base (Código do Trabalho, art. 255.º); o subsídio da Segurança Social não entra na conta.',
   en: 'Log every sick day. The agreement pays 45 % of the daily base from the 4th day of each episode, up to 90 days in 12 months (Cl. 61). On sick days the company does not pay the base (Labour Code, art. 255); the Social Security benefit is not in this estimate.',
 };
+// O que o Início diz no estado de baixa — Cl. 61.ª (BTE 8/2024 p. 302): 45 % da base diária ao subsídio da SS, depois dos 3
+// dias iniciais, só com direito ao subsídio, até 90 dias em 12 meses (auditoria A-103/A-205, bloco 7).
+export const SICK_STATE = {
+  first: { pt: 'Dias 1 a 3: sem complemento do acordo (Cl. 61.ª)', en: 'Days 1–3: no agreement top-up (Cl. 61)' },
+  rest: { pt: 'Do 4.º dia: o acordo junta 45 % da base diária ao subsídio da Segurança Social (Cl. 61.ª)', en: 'From day 4: the agreement adds 45% of the daily base to the social-security benefit (Cl. 61)' },
+  paidFirst3: false,
+};
 export const EXTRA_KINDS = [
   { id: 'vacDays',  calc: 'holidayDay', per: 'day',   label: { pt: 'Dias de férias',                 en: 'Leave days' } },
   { id: 'sickDays', calc: 'sickDay',    per: 'day',   label: { pt: 'Dias de doença',                 en: 'Sick days' } },

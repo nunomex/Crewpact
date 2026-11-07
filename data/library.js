@@ -22,7 +22,7 @@ export const FTL_SOURCES = [
 export const RADIATION_SOURCES = [
   { key: 'euratom', label: 'Diretiva 2013/59/Euratom', sub: { pt: 'Art. 35.º/3 — tripulações: avaliar, escalas, informar · EUR-Lex', en: 'Art. 35(3) — aircrew: assess, rosters, inform · EUR-Lex' },
     url: 'https://eur-lex.europa.eu/legal-content/PT/TXT/?uri=CELEX:32013L0059' },
-  { key: 'dl108', label: 'DL n.º 108/2018 (PT)', sub: { pt: 'Art. 84.º — proteção das tripulações de voo · DRE (texto original, com alterações posteriores)', en: 'Art. 84 — flight crew protection · DRE (original text, later amended)' },
+  { key: 'dl108', label: 'DL n.º 108/2018 (PT)', sub: { pt: 'Art. 84.º — proteção das tripulações · art. 67.º/2 — limite de 20 mSv/ano · art. 92.º — nível de referência para tripulações, 10 mSv/ano · DRE (texto original; republicado pelo DL 81/2022)', en: 'Art. 84 — aircrew protection · art. 67(2) — 20 mSv/year limit · art. 92 — reference level for aircrew, 10 mSv/year · DRE (original text; republished by DL 81/2022)' },
     url: 'https://files.diariodarepublica.pt/1s/2018/12/23200/0549005543.pdf' },
   { key: 'cari7', label: 'FAA · CARI-7', sub: { pt: 'O modelo de referência das doses de voo — a base da estimativa da app', en: 'The reference model for flight doses — the basis of the app’s estimate' },
     url: 'https://www.faa.gov/data_research/research/med_humanfacs/aeromedical/radiobiology/cari7' },

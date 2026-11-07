@@ -767,8 +767,8 @@ export default function EscalaScreen({ navigation, route }) {
             if (!cand.total) return;
             Alert.alert(
               l('Alterações de última hora', 'Short-notice changes'),
-              l(`${cand.total === 1 ? '1 serviço mudou' : `${cand.total} serviços mudaram`} 2 h ou mais nas 48 h antes (${isPilot ? 'Art. 63.º' : 'Cl. 66.ª'}). Registar ${cand.total === 1 ? 'o SNC' : 'os SNC'} nos Extras do mês (um por serviço)? Se caiu num dia de folga publicada, marca DDO/WFLY/IDO no próprio serviço.`,
-                `${cand.total} dut${cand.total === 1 ? 'y' : 'ies'} moved 2 h or more within 48 h (${isPilot ? 'Art. 63' : 'Cl. 66'}). Log the SNC in the month's extras (one per duty)? If it fell on a published day off, mark DDO/WFLY/IDO on the duty itself.`),
+              l(`${cand.total === 1 ? '1 serviço mudou' : `${cand.total} serviços mudaram`} 2 h ou mais nas 48 h antes (${isPilot ? 'Art. 63.º' : 'Cl. 66.ª'}). Não é devido se foste chamado de assistência, nem se a alteração veio, nas 12 h seguintes, de um aeroporto inoperacional ou de uma greve de uma agência externa ou de um subcontratante (${isPilot ? 'n.os 4 e 5' : 'n.os 3 e 4'}). Registar ${cand.total === 1 ? 'o SNC' : 'os SNC'} nos Extras do mês (um por serviço)? Se caiu num dia de folga publicada, marca DDO/WFLY/IDO no próprio serviço.`,
+                `${cand.total} dut${cand.total === 1 ? 'y' : 'ies'} moved 2 h or more within 48 h (${isPilot ? 'Art. 63' : 'Cl. 66'}). Not due if you were called from standby, or if the change came, within 12 h, from an inoperative airport or a strike by an external agency or subcontractor (${isPilot ? 'nos. 4 and 5' : 'nos. 3 and 4'}). Log the SNC in the month's extras (one per duty)? If it fell on a published day off, mark DDO/WFLY/IDO on the duty itself.`),
               [
                 { text: l('Agora não', 'Not now'), style: 'cancel' },
                 { text: l(`Registar +${cand.total} SNC`, `Log +${cand.total} SNC`), onPress: () => {

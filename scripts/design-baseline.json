@@ -1,12 +1,12 @@
 {
- "gerado": "2026-11-06",
+ "gerado": "2026-11-07",
  "total": {
-  "tipoFora": 217,
-  "tipoMenor11": 108,
-  "espacoFora": 424,
+  "tipoFora": 212,
+  "tipoMenor11": 104,
+  "espacoFora": 410,
   "raioFora": 57,
   "corSolta": 62,
-  "ionicons": 10,
+  "ionicons": 9,
   "iconeNavSolto": 3,
   "amareloTexto": 4
  },
@@ -48,16 +48,6 @@
    "raioFora": 1,
    "corSolta": 1,
    "ionicons": 0,
-   "iconeNavSolto": 0,
-   "amareloTexto": 0
-  },
-  "screens/FtlDetailScreen.js": {
-   "tipoFora": 5,
-   "tipoMenor11": 4,
-   "espacoFora": 12,
-   "raioFora": 0,
-   "corSolta": 0,
-   "ionicons": 1,
    "iconeNavSolto": 0,
    "amareloTexto": 0
   },
@@ -264,7 +254,7 @@
   "components/FtlCalcs.js": {
    "tipoFora": 3,
    "tipoMenor11": 0,
-   "espacoFora": 17,
+   "espacoFora": 15,
    "raioFora": 1,
    "corSolta": 0,
    "ionicons": 0,

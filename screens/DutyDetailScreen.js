@@ -136,15 +136,15 @@ export default function DutyDetailScreen({ route, navigation }) {
   const aeDoc = docFor(ctD);
   const aeUrl = AE_DEEPLINKS.tap && AE_DEEPLINKS.tap[ctD] ? AE_DEEPLINKS.tap[ctD].url : null;
   const aeFdpId = ctD === 'pilot' ? (aeLc ? 'P32' : 'P27') : (aeLc ? 'C26' : 'C23');
-  const aeFdpCl = { P27: 'Cl. 35.ª', P32: 'Cl. 43.ª', C23: 'Cl. 23.ª', C26: 'Cl. 23.ª' }[aeFdpId];
+  const aeFdpCl = { P27: 'RUPT Cl. 35.ª', P32: 'RUPT Cl. 43.ª', C23: 'RUPT Cl. 23.ª', C26: 'RUPT Cl. 23.ª' }[aeFdpId];   // cada regulamento do BTE recomeça a numeração: diz-se qual (A-104)
   const aePsvProva = aeOk ? {
-    title: l('PSV máx. · acordo da TAP', 'FDP max · TAP agreement'), lawTag: `${aeDoc.doc} · ${aeFdpCl}`,
+    title: l('PSV máx. · acordo da TAP', 'FDP max · TAP agreement'), lawTag: `${aeDoc.doc.replace(/ — RUPT$/, '')} · ${aeFdpCl}`,
     resumo: plainFor(aeFdpId, lang),
     art: { P27: 'RUPT, Cl. 35.ª, n.º 1, e Cl. 6.ª, n.º 40', P32: 'RUPT, Cl. 43.ª, n.os 1 a 3, Cl. 42.ª e Cl. 6.ª, n.º 40', C23: 'RUPT, Cl. 23.ª, n.º 1, e Cl. 4.ª, n.º 25', C26: 'RUPT, Cl. 23.ª, n.os 2 a 5, 10 e 11, e Cl. 24.ª, n.º 2' }[aeFdpId],
     ref: `${aeDoc.bte}, p. ${{ P27: '304–305', P32: '307', C23: '341', C26: '341–343' }[aeFdpId]}`, url: aeUrl,
   } : null;
   const aeRestProva = aeNext ? {
-    title: l('Próxima saída de calços · acordo da TAP', 'Next off-blocks · TAP agreement'), lawTag: `${aeDoc.doc} · ${ctD === 'pilot' ? 'Cl. 25.ª, 34.ª e 24.ª' : 'Cl. 29.ª e 32.ª'}`,
+    title: l('Próxima saída de calços · acordo da TAP', 'Next off-blocks · TAP agreement'), lawTag: `${aeDoc.doc.replace(/ — RUPT$/, '')} · ${ctD === 'pilot' ? 'RUPT Cl. 25.ª, 34.ª e 24.ª' : 'RUPT Cl. 29.ª e 32.ª'}`,
     resumo: plainFor(ctD === 'pilot' ? 'P42' : 'C38', lang),
     art: ctD === 'pilot' ? 'RUPT, Cl. 25.ª, n.º 2, Cl. 34.ª, n.º 2, e Cl. 24.ª, n.º 3' : 'RUPT, Cl. 29.ª, n.os 2 e 7, e Cl. 32.ª, n.º 4',
     ref: `${aeDoc.bte}, p. ${ctD === 'pilot' ? '301 e 304' : '345–347'}`, url: aeUrl,
@@ -353,7 +353,7 @@ export default function DutyDetailScreen({ route, navigation }) {
                   'sem-coluna': l('O acordo da TAP não tem limite para 5 ou mais aterragens: vale a regra europeia.', 'The TAP agreement has no limit for 5 or more landings: EU rules apply.'),
                   'sem-fuso': l('Longo curso sem a hora UTC dos voos: a app não sabe a hora local de cada escala. Vale a regra europeia.', 'Long haul without the flights\' UTC times: the app does not know the local time at each station. EU rules apply.'),
                   'sem-rotacao': l('Longo curso: a escala não mostra o início da rotação, por isso a app não sabe a aclimatização. Vale a regra europeia.', 'Long haul: the roster does not show the start of the rotation, so the app cannot tell acclimatisation. EU rules apply.'),
-                  'sem-banda': l('Mais de 12 h de diferença horária: fora do quadro do acordo da TAP (Cl. 23.ª, n.º 4). Vale a regra europeia.', 'More than 12 h of time difference: outside the TAP agreement table (Cl. 23, no. 4). EU rules apply.'),
+                  'sem-banda': l('Mais de 12 h de diferença horária: fora do quadro do acordo da TAP (RUPT Cl. 23.ª, n.º 4). Vale a regra europeia.', 'More than 12 h of time difference: outside the TAP agreement table (RUPT Cl. 23, no. 4). EU rules apply.'),
                   'sem-valor': l('O quadro do acordo da TAP não tem valor para 4 aterragens a esta hora. Vale a regra europeia.', 'The TAP agreement table has no value for 4 landings at this time. EU rules apply.'),
                 }[aeFdp.reason] || l('Falta a posição de um aeroporto: a app não sabe se este voo é de médio curso. Vale a regra europeia.', 'An airport position is missing: the app cannot tell whether this flight is medium haul. EU rules apply.')}
               </Text>
@@ -361,18 +361,18 @@ export default function DutyDetailScreen({ route, navigation }) {
             {aeOk ? (
               <Text style={s.aeWhy}>
                 {aeStricter ? l('Vale o limite mais apertado. ', 'The tighter limit applies. ') : l('Aqui a regra europeia é a mais apertada. ', 'Here the EU rule is the tighter one. ')}
-                {l(`Acordo da TAP: ${fmtDur(aeFdp.limit)}, contado até 30 min depois dos calços (${aeFdpCl} e ${ctD === 'pilot' ? 'Cl. 6.ª, n.º 40' : 'Cl. 4.ª, n.º 25'}), ou seja ${fmtDur(aeOnBlockMax)} até aos calços.`,
-                  `TAP agreement: ${fmtDur(aeFdp.limit)}, counted to 30 min after on-blocks (${aeFdpCl.replace('.ª', '')} and ${ctD === 'pilot' ? 'Cl. 6, no. 40' : 'Cl. 4, no. 25'}), i.e. ${fmtDur(aeOnBlockMax)} to on-blocks.`)}
+                {l(`Acordo da TAP: ${fmtDur(aeFdp.limit)}, contado até 30 min depois dos calços (${aeFdpCl} e ${ctD === 'pilot' ? 'RUPT Cl. 6.ª, n.º 40' : 'RUPT Cl. 4.ª, n.º 25'}), ou seja ${fmtDur(aeOnBlockMax)} até aos calços.`,
+                  `TAP agreement: ${fmtDur(aeFdp.limit)}, counted to 30 min after on-blocks (${aeFdpCl.replace('.ª', '')} and ${ctD === 'pilot' ? 'RUPT Cl. 6, no. 40' : 'RUPT Cl. 4, no. 25'}), i.e. ${fmtDur(aeOnBlockMax)} to on-blocks.`)}
                 {aeLc && aeFdp.limitMax ? l(` Longo curso: ${fmtDur(aeFdp.limit)} ou ${fmtDur(aeFdp.limitMax)}, conforme a aclimatização, que o acordo deixa em aberto aqui; a app mostra o mais apertado.`, ` Long haul: ${fmtDur(aeFdp.limit)} or ${fmtDur(aeFdp.limitMax)} depending on acclimatisation, which the agreement leaves open here; the app shows the tighter one.`) : ''}
-                {aeFdp.reason === 'pode-ter-reforco' ? l(' Acima disto, só com tripulação reforçada (Cl. 42.ª), que a escala não mostra.', ' Beyond this, only with an augmented crew (Cl. 42), which the roster does not show.') : ''}
-                {aeFdp.reason === 'pode-ter-ldmcr' ? l(' Acima disto, só com descanso a bordo (Cl. 24.ª, n.º 2), que a escala não mostra.', ' Beyond this, only with crew rest on board (Cl. 24, no. 2), which the roster does not show.') : ''}
+                {aeFdp.reason === 'pode-ter-reforco' ? l(' Acima disto, só com tripulação reforçada (RUPT Cl. 42.ª), que a escala não mostra.', ' Beyond this, only with an augmented crew (RUPT Cl. 42), which the roster does not show.') : ''}
+                {aeFdp.reason === 'pode-ter-ldmcr' ? l(' Acima disto, só com descanso a bordo (RUPT Cl. 24.ª, n.º 2), que a escala não mostra.', ' Beyond this, only with crew rest on board (RUPT Cl. 24, no. 2), which the roster does not show.') : ''}
                 {easaMax != null ? l(` Regra europeia: ${fmtDur(easaMax)} até aos calços (ORO.FTL.205).`, ` EU rule: ${fmtDur(easaMax)} to on-blocks (ORO.FTL.205).`) : ''}
               </Text>
             ) : null}
             {aeNext ? (
               <Text style={s.aeWhy}>
-                {l(`Próxima saída: ${fmtDur(aeNext.rest)} de repouso na base e ${fmtDur(aeNext.trans)} de transição (${ctD === 'pilot' ? 'Cl. 25.ª, n.º 2, Cl. 34.ª, n.º 2, e Cl. 24.ª, n.º 3' : 'Cl. 29.ª, n.os 2 e 7, e Cl. 32.ª, n.º 4'}), contadas a partir dos calços.`,
-                  `Next departure: ${fmtDur(aeNext.rest)} rest at base and ${fmtDur(aeNext.trans)} transition (${ctD === 'pilot' ? 'Cl. 25, no. 2, Cl. 34, no. 2, and Cl. 24, no. 3' : 'Cl. 29, nos. 2 and 7, and Cl. 32, no. 4'}), counted from on-blocks.`)}
+                {l(`Próxima saída: ${fmtDur(aeNext.rest)} de repouso na base e ${fmtDur(aeNext.trans)} de transição (${ctD === 'pilot' ? 'RUPT Cl. 25.ª, n.º 2, Cl. 34.ª, n.º 2, e Cl. 24.ª, n.º 3' : 'RUPT Cl. 29.ª, n.os 2 e 7, e Cl. 32.ª, n.º 4'}), contadas a partir dos calços.`,
+                  `Next departure: ${fmtDur(aeNext.rest)} rest at base and ${fmtDur(aeNext.trans)} transition (${ctD === 'pilot' ? 'RUPT Cl. 25, no. 2, Cl. 34, no. 2, and Cl. 24, no. 3' : 'RUPT Cl. 29, nos. 2 and 7, and Cl. 32, no. 4'}), counted from on-blocks.`)}
               </Text>
             ) : null}
           </>
