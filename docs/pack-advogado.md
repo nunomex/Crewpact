@@ -567,6 +567,11 @@ Estas questões não pedem uma leitura jurídica. Pedem um documento ou uma prá
 - TAP cabine: aplicou-se em 2026 a atualização adicional de 2 % ligada ao resultado de 2025 (RRRGS Cl. 3.ª, n.º 3)?
 - TAP pilotos: o documento do adiamento salarial (D22).
 - Deliberações das comissões paritárias da TAP (E5, E6).
+- Dois números do Manual de Operações de cada companhia (easyJet e TAP), que o regime europeu deixa ao operador:
+  - no serviço repartido, quanto tempo de pré-voo, pós-voo e deslocação se desconta da pausa em terra (CS FTL.1.220(b): no
+    mínimo 30 minutos, "the operator specifies the actual times in its operations manual");
+  - quanto tempo antes dos pilotos se apresenta a tripulação de cabine (ORO.FTL.205(c): o PSV máximo da cabine conta-se pela
+    apresentação dos pilotos, com uma diferença de até 1 hora).
 
 ---
 

@@ -42,6 +42,17 @@ leitura automática. A easyJet deixou de ser assumida matinal: os dois tipos par
 
 ---
 
+## 2026-11-08 — Os dois números do Manual de Operações vão aos sindicatos
+
+O desconto da pausa no repartido (`splitAdminMin`, CS FTL.1.220(b)) e a diferença de apresentação pilotos/cabine
+(`cabinGapMin`, ORO.FTL.205(c)) estão desconhecidos (null) para todas as companhias: os repartidos e a cabine perto do limite dão
+"incerto". **Decidido (Nuno, por recomendação):** pedir os valores da easyJet e da TAP ao SPAC e ao SNPVAC (Anexo D-A do pack,
+na mesma conversa da licença) — é um número por companhia, não por tripulante. O campo na configuração (como o pós-voo da Ryanair
+e da Hi Fly) fica de reserva para as companhias de que nunca se consiga o valor. Quando chegarem: pô-los em `App.js` por
+companhia, com a citação do manual, golden primeiro.
+
+---
+
 ## 2026-11-08 — O "Editar serviço" saiu: a escala só se lê, o resto completa-se (Opus 5.5)
 
 **Pergunta do Nuno:** "a opção editar serviço não faz sentido, pois não? A escala vem do calendário ou do PDF." **Análise:** metade
