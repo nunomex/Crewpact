@@ -194,7 +194,9 @@ export default function StatsScreen({ navigation }) {
   const reasons = isYear ? (A.uncertainReasons || []) : (A.baseRange ? [A.baseRange.reason || 'activity'] : []);
   const whyTap = l('atualização do vencimento base por confirmar', 'base pay update not confirmed'), whyAct = l('faltam as datas de atividade', 'activity dates missing');
   const whyAdm = l('falta o dia em que entraste', 'the day you joined is missing');
-  const uncWhy = [reasons.some((r) => /^tap/.test(r)) ? whyTap : null, reasons.includes('admission') ? whyAdm : null, reasons.some((r) => !/^tap/.test(r) && r !== 'admission') ? whyAct : null].filter(Boolean).join('; ') || whyAct;
+  const whySick = l('nos dias de baixa a TAP paga o líquido ou completa o subsídio da Segurança Social', 'on sick days TAP pays the net amount or tops up the social-security benefit');
+  const uncWhy = [reasons.some((r) => /^tap/.test(r) && r !== 'tapSick') ? whyTap : null, reasons.includes('tapSick') ? whySick : null, reasons.includes('admission') ? whyAdm : null,
+    reasons.some((r) => !/^tap/.test(r) && r !== 'admission') ? whyAct : null].filter(Boolean).join('; ') || whyAct;
   const baseUnc = !isYear && A.baseRange ? ` · ${l('incerto', 'uncertain')}: ${fmtEur0(A.baseRange.min)} ${l('a', 'to')} ${fmtEur0(A.baseRange.max)} (${uncWhy})` : (isYear && A.uncertain ? ` · ${l('incerto', 'uncertain')} (${uncWhy})` : '');
   const baseSub = (isYear ? `${l('salário base acumulado', 'accrued base salary')} · ${st.aeYtd?.monthsElapsed || 0} ${l('meses', 'months')}` : `${l('salário base', 'base salary')} · ${monthName}`) + baseUnc;
   // Mês sem tabela do acordo (antes da 1.ª tabela publicada, ou antes da admissão): não há € — diz-se porquê (bloco 5).
@@ -233,7 +235,12 @@ export default function StatsScreen({ navigation }) {
         const why = [other ? l('a leitura do acordo', 'how the agreement is read') : null, raise ? l('a atualização do vencimento base, por confirmar', 'the base pay update, not yet confirmed') : null,
           adm ? l('o dia em que entraste', 'the day you joined') : null].filter(Boolean).join(l(' e ', ' and '));
         return l(` · até mais ${fmtEur0(up)} conforme ${why}`, ` · up to ${fmtEur0(up)} more depending on ${why}`); })() },
-    (extrasSum !== 0) && { k: 'extras', nm: l('Extras', 'Extras'), ic: 'plus', val: extrasSum, sub: l('escala (papéis · OFC) + eventos (DDO · doença; nos dias de baixa a base sai, CT art. 255.º)', 'roster (roles · OFC) + events (DDO · sick; on sick days the base is not paid, Labour Code art. 255)') + ((!isYear && A.extrasMax > (A.extras || 0)) ? l(` · e-learning: até mais ${fmtEur0(A.extrasMax - (A.extras || 0))} (o acordo não diz se as 24 h contam as 8 primeiras)`, ` · e-learning: up to ${fmtEur0(A.extrasMax - (A.extras || 0))} more (the agreement does not say if the 24 h include the first 8)`) : '') },
+    ((extrasSum !== 0) || (!isYear && A.prestCompl)) && { k: 'extras', nm: l('Extras', 'Extras'), ic: 'plus', val: extrasSum, sub: l('escala (papéis · OFC) + eventos (DDO · doença; nos dias de baixa a base sai, CT art. 255.º)', 'roster (roles · OFC) + events (DDO · sick; on sick days the base is not paid, Labour Code art. 255)')
+      // Pilotos TAP: a prestação complementar (Cl. 10.ª) — certa, ou "até" quando a disponibilidade está em dúvida.
+      + ((!isYear && A.prestCompl) ? (A.prestCompl.eur > 0
+        ? l(` · prestação complementar (Cl. 10.ª): ${A.prestCompl.days} dia(s), ${fmtEur0(A.prestCompl.eur)}`, ` · complementary pay (Cl. 10): ${A.prestCompl.days} day(s), ${fmtEur0(A.prestCompl.eur)}`)
+        : l(` · prestação complementar (Cl. 10.ª): até ${fmtEur0(A.prestCompl.max)} — com férias ou baixa no mês, depende da disponibilidade`, ` · complementary pay (Cl. 10): up to ${fmtEur0(A.prestCompl.max)} — with leave or sickness in the month, it depends on availability`)) : '')
+      + (() => { const eDelta = (A.extrasMax || 0) - (A.extras || 0) - (A.prestCompl ? A.prestCompl.max - A.prestCompl.eur : 0); return (!isYear && eDelta > 0) ? l(` · e-learning: até mais ${fmtEur0(eDelta)} (o acordo não diz se as 24 h contam as 8 primeiras)`, ` · e-learning: up to ${fmtEur0(eDelta)} more (the agreement does not say if the 24 h include the first 8)`) : ''; })() },
   ].filter(Boolean);
 
   // Janelas FTL como opções do dial da Segurança (filtradas pelo âmbito Mês/Ano; a 28 d de serviço = sempre).

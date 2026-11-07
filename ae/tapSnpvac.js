@@ -320,19 +320,28 @@ export const SICK_STATE = {
   rest: { pt: 'Do 4.º dia: a TAP completa o subsídio da Segurança Social até ao líquido da retribuição fixa (RRRGS Cl. 20.ª)', en: 'From day 4: TAP tops up the social-security benefit to the net fixed pay (RRRGS Cl. 20)' },
   paidFirst3: false,
 };
+export const SICK_NET_TOPUP = true;
 export const EXTRA_KINDS = [
   { id: 'extraordDays', calc: 'extraord', per: 'day',  label: { pt: 'Dias de assistência (compl. extraord.)', en: 'Assistance days (extra compl.)' } },
   { id: 'vhHours',      calc: 'vh',       per: 'hour', label: { pt: 'Horas acima do plafond',                 en: 'Hours over plafond' } },
+  // AC2 por cancelamento tardio (Cl. 7.ª, n.º 2, a)): avisado na base com menos de 1h30 sobre o ETD — um por dia; num dia com voo
+  // prevalece a AC1 (n.º 3 — aeEvents.eventCounts não o conta).
+  { id: 'lateCancelDays', calc: 'ac2',  per: 'day',  label: { pt: 'Cancelamento tardio (AC2)',             en: 'Late cancellation (AC2)' } },
+  // Doença (RRRGS Cl. 20.ª / AE Cl. 37.ª): regista-se para o estado do Início e a suspensão do contrato (CT art. 296.º); não é
+  // uma prestação em € — a TAP paga o líquido (dias 1–3) ou completa o subsídio da Segurança Social, e a app não calcula líquidos:
+  // a base dos dias de baixa fica incerta (perdiem.monthlyAe, `SICK_NET_TOPUP`).
+  { id: 'sickDays',     calc: 'sick',     per: 'day',  noMoney: true, label: { pt: 'Dias de doença',        en: 'Sick days' } },
 ];
 const EXTRA_VALUE = {
   extraordDays: (cat, index, ym) => extraord(ym, cat),
   vhHours: (cat, index, ym) => vh(cat, index, ym),
+  lateCancelDays: (cat, index, ym) => nightStop(cat, 1, ym),
 };
 export const monthExtras = (cat, counts = {}, { index = 1, ym } = {}) => {
   const items = []; let total = 0;
   for (const k of EXTRA_KINDS) {
     const n = Math.max(0, Math.floor(+counts[k.id] || 0));
-    if (!n) continue;
+    if (!n || k.noMoney) continue;
     const raw = EXTRA_VALUE[k.id](cat, index, ym);
     // Sem valor na tabela desse mês (ex.: dia de férias do SO antes de abril de 2024; o complemento da TAP de 2023): o item
     // fica com each null, "sem valor", e fora da soma — nunca 0,00 € em silêncio (revisão do bloco 5).

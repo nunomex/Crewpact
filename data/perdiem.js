@@ -420,7 +420,8 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
     }
   }
   // ── TAP: tudo por dia de calendário (Cl. 7.ª/8.ª cabine · Cl. 9.ª pilotos; bloco 6, L5) ──
-  let groundEur = 0, groundMaxDelta = 0, complEur = 0, chefia = 0, extrasMaxDelta = 0;
+  let groundEur = 0, groundMaxDelta = 0, complEur = 0, chefia = 0, extrasMaxDelta = 0, prestCompl = null;
+  const abDays = [];   // dias de terra com per diem A ou B (pilotos TAP) — para a prestação complementar
   if (byDay) {
     const td = tapCalendarDays(duties, ym || '', { baseAt });
     td.flightDays.forEach((f) => flights.push(ae.GROUND_PER_DIEM ? { dists: f.dists, longHaul: f.longHaul } : f.dists));
@@ -438,9 +439,9 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
         // B também: inspeções médicas e atos médicos a mando da empresa (Cl. 9.ª, n.º 1, b), iii)) — escritório marcado 'medical'.
         const isB = ks.some((x) => (x.kind === 'training' && (x.eLearning || x.trainingType === 'ground')) || (x.kind === 'office' && x.officeType === 'medical'));
         const maybeA = ks.some((x) => x.kind === 'training' && !x.eLearning && !x.trainingType);
-        if (isA) { flights.push({ dists: [0], longHaul: false }); stays.delete(g.date); continue; }
+        if (isA) { flights.push({ dists: [0], longHaul: false }); stays.delete(g.date); abDays.push(g.date); continue; }
         const b = ae.perDiemB ? ae.perDiemB(category, g.date) : null;
-        if (isB) { if (b != null) groundEur += b; stays.delete(g.date); continue; }
+        if (isB) { if (b != null) groundEur += b; stays.delete(g.date); abDays.push(g.date); continue; }
         if (maybeA) {
           const a = ae.perDiem(category, [0], 1, fleet, g.date, { longHaul: false });
           if (a != null) groundMaxDelta += a - (stays.has(g.date) && b != null ? b : 0);
@@ -459,6 +460,29 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
       }
     }
     nightStops = stays.size;
+    // Prestação retributiva complementar dos pilotos TAP (regulamento de retribuições, Cl. 10.ª): o piloto "com disponibilidade"
+    // que não seja escalado para serviços de per diem A ou B (ou simulador como verificador) em pelo menos 5 dias de calendário no
+    // mês recebe o per diem A (a coluna da frota — não há voo efetivo; Anexo, alínea b)) por cada dia em falta, até 5. Só com a
+    // escala do mês (algum serviço nesse mês). Férias, doença ou a entrada a meio do mês deixam a "disponibilidade" em dúvida →
+    // certo 0, possível os dias. (O n.º 5 — a operação da TAP 50 % abaixo do mês homólogo — a app não sabe.)
+    if (ae.PREST_COMPL_DAYS && ym) {
+      const ab = new Set([...td.flightDays.map((f) => f.date), ...stays, ...abDays]);
+      for (const date of Object.keys(duties || {})) {
+        const d = duties[date];
+        if (!d || d.deleted || !date.startsWith(ym)) continue;
+        if ([d, ...(Array.isArray(d.extra) ? d.extra : [])].some((s) => s && s.kind === 'training' && (s.role === 'instr' || s.instructor))) ab.add(date);   // verificador
+      }
+      const hasRoster = Object.keys(duties || {}).some((date) => date.startsWith(ym) && duties[date] && !duties[date].deleted);
+      const days = Math.max(0, ae.PREST_COMPL_DAYS - ab.size);
+      const a = days ? ae.perDiem(category, [0], 1, fleet, ym, { longHaul: false }) : null;
+      if (hasRoster && days && a != null) {
+        const full = r2(days * a);
+        const doubt = (events || []).some((e) => e && (e.type === 'vacDays' || e.type === 'sickDays') && String(e.date).startsWith(ym))
+          || (serviceStart && String(serviceStart).slice(0, 7) === ym);
+        prestCompl = { days, eur: doubt ? 0 : full, max: full };
+        if (!doubt) complEur += full; else extrasMaxDelta += full;
+      }
+    }
     // Cabine: e-learning (Cl. 13.ª) e DHC fora de C/CL (Cl. 12.ª, n.º 4) do mês ANTERIOR, pagos neste.
     if (ae.ELEARN_EUR_H && ym) {
       const prevYm = ymShift(ym, -1);
@@ -516,11 +540,27 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
       : null;
     month.base = nb;
   }
+  // TAP (RRRGS Cl. 20.ª / AE Cl. 37.ª): nos dias de baixa a TAP paga o líquido (dias 1–3) ou completa o subsídio da Segurança Social
+  // até ao líquido — a app não calcula líquidos → a base desses dias fica incerta: de base − dias × base ÷ 30 (a convenção dos
+  // acordos) ao máximo. Os dias com serviço não contam (como em aeEvents.eventCounts).
+  if (ae.SICK_NET_TOPUP && ym && month.base > 0) {
+    const sick = new Set((events || []).filter((e) => e && e.type === 'sickDays' && /^\d{4}-\d{2}-\d{2}$/.test(String(e.date)) && String(e.date).startsWith(ym)
+      && !(duties[e.date] && !duties[e.date].deleted)).map((e) => String(e.date)));
+    if (sick.size) {
+      const [yy, mm] = ym.split('-').map(Number), dim = new Date(Date.UTC(yy, mm, 0)).getUTCDate();
+      const loss = sick.size >= dim ? month.base : Math.min(month.base, r2((month.base * sick.size) / 30));
+      const br = month.baseRange;
+      month.baseRange = { min: r2((br ? br.min : month.base) - loss), max: br ? br.max : month.base, reason: 'tapSick' };
+      month.base = r2(month.base - loss);
+      month.total = r2(month.total - loss);
+    }
+  }
   // Acertos depois do motor do acordo (as parcelas continuam a somar ao total):
   const bump = (field, v) => { if (!v) return; month[field] = r2((month[field] || 0) + v); month.total = r2(month.total + v); };
   if (groundEur) { bump('perDiem', groundEur); month.variable = r2((month.variable || 0) + groundEur); }
   if (complEur || chefia) { bump('extras', r2(complEur + chefia)); month.variable = r2((month.variable || 0) + complEur + chefia); }
   month.chefia = chefia;
+  if (prestCompl) month.prestCompl = prestCompl;
   month.extrasMax = extrasMaxDelta > 0 ? r2((month.extras || 0) + extrasMaxDelta) : null;   // e-learning da TAP: o máximo
   month.perDiemMax = groundMaxDelta > 0 ? r2(month.perDiem + groundMaxDelta) : null;
   posMin = r2(posMin); posMax = r2(posMax);

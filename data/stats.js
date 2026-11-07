@@ -295,6 +295,7 @@ export const monthStats = (duties = {}, { ym, ae = null, category = null, contra
       extras: m.extras || 0, events: eventsEur, total: +((m.total || 0) + eventsEur).toFixed(2),
       positioning: m.positioning || 0, positioningMax: m.positioningMax || 0, annual: m.annual || 0, annualItems: m.annualItems || [],
       chefia: m.chefia || 0, perDiemMax: m.perDiemMax || null, extrasMax: m.extrasMax || null, seniority: m.seniority || null,
+      prestCompl: m.prestCompl || null,   // pilotos TAP, Cl. 10.ª
       withRoute: m.withRoute, missing: m.missing,
       estimated: !!(ae.isIndexEstimated && ae.isIndexEstimated(ymStr)) && index > 1,
       baseRange: m.baseRange || null,   // 9/3 e sazonais sem as datas de atividade: a base do mês é incerta

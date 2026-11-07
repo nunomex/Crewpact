@@ -319,8 +319,11 @@ eq('routeDistances rota vazia', routeDistancesNM(null).length, 0);
   // CABINE (Art. 58): matriz em setores MÉDIOS — CM não-chamado ≥4h = 2×1,2×32,50 = 78 € (não 2 NS=65).
   eq('ADTY mês cabine: 2 setores MÉDIOS (78 €)', monthlyAe({ '2026-06-10': sb('08:00', '20:00') }, 'CM', '12/12', cabin, { ym: '2026-06' }).extras, 78);
   // TAP pilotos: "Deslocação para serviço de assistência no aeroporto" = per diem A (RRRGS Cl. 9.ª, n.º 1, a), ii); bloco 6) —
-  // sem voo efetivo, a coluna da frota (NB → 270). Base sem a data de entrada = só o VB (8 125).
-  eq('TAP mês: assistência no aeroporto = per diem A', monthlyAe({ '2026-06-10': sb('08:00', '20:00') }, 'CTE', '12/12', tapPilot, { ym: '2026-06' }).total, 8395);
+  // sem voo efetivo, a coluna da frota (NB → 270). Base sem a data de entrada = só o VB (8 125). Com um só dia de per diem no
+  // mês entra a prestação retributiva complementar (regulamento de retribuições, Cl. 10.ª): os 4 dias em falta × o per diem A
+  // (270) = 1 080 → 8 125 + 270 + 1 080 = 9 475.
+  const sbM = monthlyAe({ '2026-06-10': sb('08:00', '20:00') }, 'CTE', '12/12', tapPilot, { ym: '2026-06' });
+  eq('TAP mês: assistência no aeroporto = per diem A (+ a prestação complementar de 4 dias)', JSON.stringify([sbM.total, sbM.prestCompl]), JSON.stringify([9475, { days: 4, eur: 1080, max: 1080 }]));
 }
 
 // ── PAPÉIS por serviço (Funções, pagos como a lei define) + DDO/WFLY/IDO por condição ──

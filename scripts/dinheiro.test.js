@@ -261,6 +261,43 @@ has('TAP cabine Cl. 7.ª/1 a) (+30 min)', TAPC, 'o seu término após trinta min
   eq('TAP CTE: dias na hora da base → 3 A + 2 B', [mz.perDiem, mz.nightStops], [900, 360]);
   eq('TAP CTE: sem a base, as horas da escala (como antes) → 4 A + 1 B', (({ perDiem, nightStops }) => [perDiem, nightStops])(monthlyAe(lcZ, 'CTE', '12/12', tapP, { ym: '2026-04', fleet: 'WB' })), [1200, 180]);
   eq('TAP CTE: o valor do serviço de regresso na hora da base (1 dia A)', serviceMoney(tapP, 'CTE', lcZ['2026-04-04'], { date: '2026-04-04', fleet: 'WB', baseAt: 'LIS' }).perDiem, 300);
+  // AC2 por cancelamento tardio (cabine Cl. 7.ª, n.º 2, a)): "em caso de cancelamento de um serviço de voo em que, na base, o
+  // tripulante seja avisado ... com menos de 1 hora e 30 minutos sobre a hora de ETD" — um registo por dia, à AC2 (80 € em 2026);
+  // num dia com voo "prevalecerá o pagamento de valor superior" (n.º 3) — a AC1 → não conta.
+  eq('TAP cabine: cancelamento tardio é um extra que se regista', tapC.EXTRA_KINDS.some((k) => k.id === 'lateCancelDays'), true);
+  eq('TAP cabine: 2 cancelamentos tardios = 2 × AC2', tapC.monthExtras('CAB3', { lateCancelDays: 2 }, { ym: '2026-05' }).total, 160);
+  const flD = { '2026-05-10': { kind: 'flight', route: 'LIS-OPO-LIS', report_time: '06:00', block_on: '09:00' } };
+  eq('TAP cabine: cancelamento tardio num dia com voo → prevalece a AC1 (não conta)', eventCounts([{ type: 'lateCancelDays', date: '2026-05-10' }], '2026-05', flD).lateCancelDays || 0, 0);
+  eq('TAP cabine: cancelamento tardio num dia sem voo → conta', eventCounts([{ type: 'lateCancelDays', date: '2026-05-11' }], '2026-05', flD).lateCancelDays, 1);
+  eq('TAP pilotos: sem cancelamento tardio (o per diem A paga a apresentação, Cl. 9.ª)', tapP.EXTRA_KINDS.some((k) => k.id === 'lateCancelDays'), false);
+  // Doença na TAP (cabine RRRGS Cl. 20.ª; pilotos AE Cl. 37.ª): regista-se; a TAP paga o LÍQUIDO (dias 1–3) ou completa o subsídio
+  // da Segurança Social até ao líquido — a app não calcula líquidos → a base dos dias de baixa fica incerta (de base − dias × base
+  // ÷ 30 à base), sem prestação em € à parte.
+  for (const [nm, ae, cat] of [['cabine', tapC, 'CAB3'], ['pilotos', tapP, 'OP3']]) {
+    eq(`TAP ${nm}: a doença é um extra que se regista`, ae.EXTRA_KINDS.some((k) => k.id === 'sickDays'), true);
+    eq(`TAP ${nm}: a doença não dá uma prestação em € à parte`, ae.monthExtras(cat, { sickDays: 3, sickAbsentDays: 3 }, { ym: '2026-05' }).items.length, 0);
+    const sick5 = ['2026-05-04', '2026-05-05', '2026-05-06', '2026-05-07', '2026-05-08'].map((date) => ({ type: 'sickDays', date }));
+    // (na cabine de 2026 a base já tem um intervalo — os 2 % do KPI: o máximo fica o desse intervalo)
+    const m0 = monthlyAe({}, cat, '12/12', ae, { ym: '2026-05', fleet: 'NB' }), b0 = m0.base, top = m0.baseRange ? m0.baseRange.max : b0;
+    const ms = monthlyAe({}, cat, '12/12', ae, { ym: '2026-05', fleet: 'NB', events: sick5 });
+    const lo5 = Math.round((b0 - b0 * 5 / 30) * 100) / 100;
+    eq(`TAP ${nm}: 5 dias de baixa → base incerta de base − 5/30 ao máximo`, [ms.base, ms.baseRange], [lo5, { min: lo5, max: top, reason: 'tapSick' }]);
+  }
+  // Prestação retributiva complementar dos pilotos (regulamento de retribuições, Cl. 10.ª): o piloto disponível que não seja
+  // escalado para serviços de per diem A ou B em pelo menos 5 dias de calendário no mês recebe o per diem A por cada dia em falta,
+  // até 5 (Anexo: "de igual valor ao da coluna per diem A na tabela A-3.2"). OP3 NB, maio de 2026, 2 dias de voo → 3 × 202,50.
+  const two2 = {
+    '2026-05-12': { kind: 'flight', route: 'LIS-OPO-LIS', report_time: '06:00', block_on: '09:00' },
+    '2026-05-20': { kind: 'flight', route: 'LIS-FAO-LIS', report_time: '06:00', block_on: '09:00' },
+  };
+  const pc = monthlyAe(two2, 'OP3', '12/12', tapP, { ym: '2026-05', fleet: 'NB' });
+  eq('TAP pilotos: 2 dias com per diem → prestação complementar de 3 dias (607,50 €)', pc.prestCompl, { days: 3, eur: 607.5, max: 607.5 });
+  const six = {}; ['04', '06', '08', '12', '14', '18'].forEach((d) => { six[`2026-05-${d}`] = two2['2026-05-12']; });
+  eq('TAP pilotos: 6 dias com per diem → sem prestação complementar', monthlyAe(six, 'OP3', '12/12', tapP, { ym: '2026-05', fleet: 'NB' }).prestCompl || null, null);
+  // Com férias no mês a "disponibilidade" (n.º 1) fica em dúvida → certo 0, possível os 3 dias.
+  const pcV = monthlyAe(two2, 'OP3', '12/12', tapP, { ym: '2026-05', fleet: 'NB', events: [{ type: 'vacDays', date: '2026-05-25' }] });
+  eq('TAP pilotos: com férias no mês → prestação complementar incerta (0 a 607,50 €)', pcV.prestCompl, { days: 3, eur: 0, max: 607.5 });
+  eq('TAP cabine: sem prestação complementar (é dos pilotos)', monthlyAe(two2, 'CAB3', '12/12', tapC, { ym: '2026-05' }).prestCompl || null, null);
 }
 
 // ═══ M7 · Instrutor (pilotos easyJet) — Art. 42.º: "por cada dia ... em terra, incluindo em simulador" ═══

@@ -92,6 +92,8 @@ export const eventCounts = (events = [], ym, duties = null, sickFirst3 = true) =
     // Desde o bloco 6 o complemento das assistências, da formação e das deslocações sai da própria escala (perdiem.monthlyAe):
     // num dia com qualquer serviço o registo à mão também não conta outra vez.
     if (!isMonthOnly && e.type === 'extraordDays' && (flewOn(e.date) || autoPaid(e.date))) continue;
+    // TAP cabine: o cancelamento tardio (AC2, Cl. 7.ª, n.º 2, a)) num dia com voo — prevalece a AC1 (n.º 3).
+    if (!isMonthOnly && e.type === 'lateCancelDays' && flewOn(e.date)) continue;
     if (e.type === 'sickDays' && !isMonthOnly) { sickDated.add(e.date); continue; }
     if (String(e.date).slice(0, 7) === ym || (isMonthOnly && e.date === ym)) add(e.type);
   }

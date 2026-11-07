@@ -340,10 +340,18 @@ export const SICK_STATE = {
   rest: { pt: 'Do 4.º dia: a TAP completa o subsídio da Segurança Social até ao líquido da remuneração base (AE Cl. 37.ª)', en: 'From day 4: TAP tops up the social-security benefit to the net base pay (AE Cl. 37)' },
   paidFirst3: false,
 };
+export const SICK_NET_TOPUP = true;
+// Prestação retributiva complementar (regulamento de retribuições, Cl. 10.ª): menos de 5 dias de per diem A ou B no mês → o per diem
+// A por cada dia em falta, até 5 (perdiem.monthlyAe).
+export const PREST_COMPL_DAYS = 5;
 export const EXTRA_KINDS = [
   { id: 'comandoSectors', calc: 'comando', per: 'event', label: { pt: 'Comando em cruzeiro (setores)', en: 'Cruise command (sectors)' } },
   { id: 'hoursL1',        calc: 'hourly1', per: 'hour',  label: { pt: 'Horas de voo acima do plafond (L1)', en: 'Flight hours over plafond (L1)' } },
   { id: 'hoursL2',        calc: 'hourly2', per: 'hour',  label: { pt: 'Horas de voo (Limite 2)',          en: 'Flight hours (Limit 2)' } },
+  // Doença (AE Cl. 37.ª): regista-se para o estado do Início e a suspensão do contrato (CT art. 296.º); não é
+  // uma prestação em € — a TAP paga o líquido (dias 1–3) ou completa o subsídio da Segurança Social, e a app não calcula líquidos:
+  // a base dos dias de baixa fica incerta (perdiem.monthlyAe, `SICK_NET_TOPUP`).
+  { id: 'sickDays',       calc: 'sick',    per: 'day',   noMoney: true, label: { pt: 'Dias de doença',            en: 'Sick days' } },
 ];
 const EXTRA_VALUE = {
   comandoSectors: (cat, index, ym) => comando(ym),
@@ -354,7 +362,7 @@ export const monthExtras = (cat, counts = {}, { index = 1, ym } = {}) => {
   const items = []; let total = 0;
   for (const k of EXTRA_KINDS) {
     const n = Math.max(0, Math.floor(+counts[k.id] || 0));
-    if (!n) continue;
+    if (!n || k.noMoney) continue;
     const each = EXTRA_VALUE[k.id](cat, index, ym) || 0;
     const sub = r2(each * n);
     items.push({ id: k.id, calc: k.calc, n, each, total: sub });
