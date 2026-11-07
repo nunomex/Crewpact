@@ -583,6 +583,29 @@ eqj('TAP CTE 2024: base 8 125,00 a 8 368,75 → incerto', [cte24.base, cte24.bas
 const cte26 = tapPilot.computeAeMonth({ category: 'CTE', ym: '2026-03', index: tapPilot.indexFactor('2026-03') });
 eqj('TAP CTE 2026: 8 622,31 a 8 878,41', [cte26.baseRange.min, cte26.baseRange.max], [8622.31, 8878.41]);
 eq('TAP 2023: base certa, sem intervalo', tapPilot.computeAeMonth({ category: 'CTE', ym: '2023-06' }).baseRange, null);
+// Revisão do 8b, E4: os subsídios e o valor horário seguem o VB → também em intervalo (antes saíam no mínimo como certos).
+const nat26 = tapPilot.annualItems('CTE', { ym: '2026-12', index: tapPilot.indexFactor('2026-12') }).find((it) => it.id === 'natal');
+eqj('TAP CTE Natal 2026: 8 622,31 a 8 878,41', [nat26.eur, nat26.max, nat26.tapRaise], [8622.31, 8878.41, true]);
+const pend25 = tapPilot.pendingAnnual('CTE', { year: 2025, index: tapPilot.indexFactor('2025-12') })[0];
+eqj('TAP CTE férias 2025 (sem mês): 8 287,50 a 8 619,81', [pend25.eur, pend25.max], [8287.5, 8619.81]);
+eqj('TAP CTE hora L1 2026: 258,67 a 266,35', tapPilot.hourlyRange('CTE', 1, '2026-03'), { min: 258.67, max: 266.35 });
+eq('TAP 2023: Natal certo, sem máximo', tapPilot.annualItems('CTE', { ym: '2023-12', index: 1 }).find((it) => it.id === 'natal').max, undefined);
+// Revisão do 8b, reparo 5 — TAP cabine 2026: o KPI (RRRGS Cl. 3.ª, n.º 3) é "de 2 %" e "uma atualização global para o ano de
+// 2026 de 10 % face aos valores em vigor no final do ano de 2025" → duas leituras; o máximo é a maior, coluna × 1,02.
+// CAB 3: 2 020,73 × 1,02 = 2 061,14 (a outra leitura daria 1 871,05 × 1,10 = 2 058,16).
+const cab3 = tapCabin.computeAeMonth({ category: 'CAB3', ym: '2026-03' });
+eqj('TAP cabine CAB 3 2026: 2 020,73 a 2 061,14 → incerto', [cab3.base, cab3.baseRange.min, cab3.baseRange.max, cab3.baseRange.reason], [2020.73, 2020.73, 2061.14, 'tapKpi']);
+eqj('TAP cabine CAB 0 2026: 920,00 a 938,40 (está na tabela; leitura)', [tapCabin.computeAeMonth({ category: 'CAB0', ym: '2026-03' }).baseRange.min, tapCabin.computeAeMonth({ category: 'CAB0', ym: '2026-03' }).baseRange.max], [920, 938.4]);
+eq('TAP cabine S/C 7 2026: máximo 3 353,32', tapCabin.computeAeMonth({ category: 'SC7', ym: '2026-03' }).baseRange.max, 3353.32);
+eq('TAP cabine 2025: sem KPI', tapCabin.computeAeMonth({ category: 'CAB3', ym: '2025-03' }).baseRange, null);
+const natCab = tapCabin.annualItems('CAB3', { ym: '2026-12' }).find((it) => it.id === 'natal');
+eqj('TAP cabine Natal 2026: 2 020,73 a 2 061,14', [natCab.eur, natCab.max, natCab.tapRaise], [2020.73, 2061.14, true]);
+const pendCab = tapCabin.pendingAnnual('CAB3', { year: 2026 })[0];
+eqj('TAP cabine férias 2026 (sem mês): 2 695,73 a 2 736,14 (+675 €)', [pendCab.eur, pendCab.max], [2695.73, 2736.14]);
+const tapCabTxt = require('fs').readFileSync(path.resolve('fontes/ae-tap/tap-snpvac-2024.txt'), 'utf8').replace(/\s+/g, ' ');
+eq('fonte: KPI 2026 "atualização global de 10 %"', tapCabTxt.includes('resultando numa atualização global para o ano de 2026 de 10 % face aos valores em vigor no final do ano de 2025'), true);
+// Com um índice escolhido à mão (≠ o do motor) não há intervalo.
+eq('TAP índice à mão: Natal sem máximo', tapPilot.annualItems('CTE', { ym: '2026-12', index: 1.05 }).find((it) => it.id === 'natal').max, undefined);
 eq('TAP vigência até dez-2026', tapPilot.AE_VALID_UNTIL, '2026-12-31');
 eq('TAP não expirado em jun-2026', tapPilot.isAgreementExpired(new Date('2026-06-23')), false);
 eq('TAP expirado em jan-2027', tapPilot.isAgreementExpired(new Date('2027-01-02')), true);

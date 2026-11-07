@@ -102,7 +102,21 @@ export const hasTableFor = (cat, ym) => { const T = tableAt(ym); return !!T && T
 const acOf = (row, cat) => (row ? (row[cat] != null ? row[cat] : row.rest) : null);
 const withT = (ym, fn) => { const T = tableAt(ym); return T ? fn(T) : null; };
 
-const vbOf = (cat, index = 1, T = tableAt()) => (T && T.VB[cat] != null ? T.VB[cat] * index : null);
+// KPI de 2026 (RRRGS Cl. 3.ª, n.º 3, BTE 7/2024 p. 309): "Se o resultado líquido (...) se revelar positivo em 2025, os valores da
+// tabela salarial de vencimento base para 2026 terão uma atualização salarial adicional (KPI) de 2 %, resultando numa
+// atualização global para o ano de 2026 de 10 % face aos valores em vigor no final do ano de 2025", e depende do RCT. A app não
+// sabe se as condições se cumpriram → o VB de 2026 é um INTERVALO: a coluna publicada e o máximo. O texto admite duas leituras
+// dos 2 %: "2 %" sobre a coluna (× 1,02) ou "10 % face aos valores em vigor no final do ano de 2025" (fim de 2025 × 1,10, que
+// é 1,85 % sobre a coluna); o máximo é a MAIOR, coluna × 1,02 (como no PPY; revisão do 8b). Vale para toda a tabela, também o
+// CAB 0 (está na tabela, indexado à RMMG — leitura; o valor principal fica nos 920 €). Pack do advogado.
+export const KPI_2026 = 1.02;
+const VB_2026_KPI = Object.fromEntries(Object.keys(VB_2026).map((c) => [c, r2(VB_2026[c] * KPI_2026)]));
+const vbOf = (cat, index = 1, T = tableAt(), kpi = false) => {
+  if (!T || T.VB[cat] == null) return null;
+  return (kpi && T.VB === VB_2026 ? VB_2026_KPI[cat] : T.VB[cat]) * index;
+};
+// O VB pode subir pelo KPI neste mês? (só com a coluna de 2026)
+export const kpiApplies = (cat, ym) => { const T = tableAt(ym); return !!T && T.VB === VB_2026 && VB_2026_KPI[cat] != null && VB_2026_KPI[cat] > VB_2026[cat]; };
 
 // VENCIMENTO DE SENIORIDADE (auditoria L4: A-093/A-190, bloco 6). Cl. 3.ª, n.º 1: "O vencimento fixo mensal é constituído
 // pelo vencimento base (VB) e pelo vencimento de senioridade (VS)". Cl. 5.ª, n.º 1: a) "Cada anuidade vence no primeiro dia do
@@ -122,13 +136,13 @@ const catAt = (history, ym, fallback) => {
 // A "antiguidade ao serviço" (n.º 1, a)) é a da Cl. 14.ª, n.º 3 do clausulado geral: "contada a partir da data do primeiro voo de
 // largada para a profissão" (revisão independente do bloco 6). Com `largada` conta dela; senão da data de entrada e diz-o
 // (`fromEntry`): as anuidades podem vencer uns meses depois.
-export const seniority = (cat, { ym, serviceStart = null, largada = null, history = null, index = 1 } = {}) => {
+export const seniority = (cat, { ym, serviceStart = null, largada = null, history = null, index = 1, kpi = false } = {}) => {
   const T = tableAt(ym), p = ymParts(ym), s = ymParts(largada || serviceStart);
   if (!T || !p || !s) return { vs: 0, anuidades: 0, unknown: true, fromEntry: false };
   let sum = 0, n = 0, unknown = false;
   for (let k = 1; (s.y + k) * 12 + s.m <= p.y * 12 + p.m; k++) {
     const c = catAt(history, `${s.y + k}-${String(s.m).padStart(2, '0')}`, cat);
-    const vb = vbOf(c, index, T);
+    const vb = vbOf(c, index, T, kpi);
     if (vb == null) { unknown = true; continue; }
     sum += vb; n++;
   }
@@ -136,10 +150,10 @@ export const seniority = (cat, { ym, serviceStart = null, largada = null, histor
 };
 // Vencimento fixo mensal (€) = (VB + VS) × fração do contrato. VB já é MENSAL (cl. 3.ª); `index` aceite por paridade.
 // `ym` data o mês (tabela em vigor); sem ele = tabela atual; null sem tabela (ou sem o escalão nesse ano).
-export const monthlyBase = (cat, { contract = '12/12', index = 1, ym, serviceStart = null, largada = null, history = null } = {}) => {
-  const vb = vbOf(cat, index, tableAt(ym));
+export const monthlyBase = (cat, { contract = '12/12', index = 1, ym, serviceStart = null, largada = null, history = null, kpi = false } = {}) => {
+  const vb = vbOf(cat, index, tableAt(ym), kpi);
   if (vb == null) return null;
-  const sv = (serviceStart || largada) ? seniority(cat, { ym, serviceStart, largada, history, index }) : null;
+  const sv = (serviceStart || largada) ? seniority(cat, { ym, serviceStart, largada, history, index, kpi }) : null;
   return r2((vb + (sv ? sv.vs : 0)) * contractFactor(contract));
 };
 
@@ -168,7 +182,7 @@ export const firstYearVacationDays = (serviceStart, _ref = new Date()) => {
 };
 
 // Vencimentos por função/hora.
-export const vh = (cat, index = 1, ym) => withT(ym, (T) => { const vb = vbOf(cat, index, T); return vb == null ? null : r2(T.VH_PCT * vb); });               // €/hora acima do plafond
+export const vh = (cat, index = 1, ym, kpi = false) => withT(ym, (T) => { const vb = vbOf(cat, index, T, kpi); return vb == null ? null : r2(T.VH_PCT * vb); });               // €/hora acima do plafond
 export const vs = (cat, years = 0, index = 1, ym) => withT(ym, (T) => { const vb = vbOf(cat, index, T); return vb == null ? null : r2(T.VS_PCT * Math.max(0, years) * vb); });  // senioridade — €/mês
 export const extraord = (ym, cat) => withT(ym, (T) => acOf(T.EXTRAORD, cat));                          // complemento extraordinário — €/dia (cl. 8.ª)
 
@@ -180,8 +194,8 @@ export const extraord = (ym, cat) => withT(ym, (T) => acOf(T.EXTRAORD, cat));   
 // 39.ª, n.º 2-3): os 675 € "de forma proporcional aos meses remanescentes do ano de 2024" depois da entrada em vigor (1-mar-2024)
 // → 10/12. O tempo parcial reduz os dois subsídios (RTTP Cl. 7.ª).
 const ENTRY_INTO_FORCE = '2024-03';
-const feriasEur = (cat, { year, payYm, contract, index, serviceStart, largada, history }) => {
-  const b = monthlyBase(cat, { contract: '12/12', index, ym: payYm, serviceStart, largada, history });
+const feriasEur = (cat, { year, payYm, contract, index, serviceStart, largada, history, kpi = false }) => {
+  const b = monthlyBase(cat, { contract: '12/12', index, ym: payYm, serviceStart, largada, history, kpi });
   if (b == null) return null;
   let extra = 675;
   if (year < 2024 || (`${year}-12` < ENTRY_INTO_FORCE)) extra = 0;
@@ -198,12 +212,18 @@ export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceSta
     // admissão e da cessação; a lei completa-a) — certo e máximo.
     const sh = suspensionShare(events, p.y);
     const v = b == null ? null : b * admissionShare(serviceStart, p.y);
-    if (v != null) out.push({ id: 'natal', eur: r2(sh ? v * sh.min : v), cite: 'RRRGS Cl. 17.ª', ...(sh ? { max: r2(v * sh.max), suspension: true } : {}) });
+    const bK = kpiApplies(cat, ym) ? monthlyBase(cat, { contract, index, ym, serviceStart, largada, history, kpi: true }) : b;
+    const vK = bK == null ? null : bK * admissionShare(serviceStart, p.y);
+    if (v != null) {
+      const eur = r2(sh ? v * sh.min : v), max = r2(sh ? vK * sh.max : vK);
+      out.push({ id: 'natal', eur, cite: 'RRRGS Cl. 17.ª', ...(max > eur ? { max } : {}), ...(sh ? { suspension: true } : {}), ...(bK > b ? { tapRaise: true } : {}) });
+    }
   }
   for (const year of [p.y, p.y + 1]) {
     if (vacationPayYm(events, year) !== ym) continue;
     const v = feriasEur(cat, { year, payYm: ym, contract, index, serviceStart, largada, history });
-    if (v != null) out.push({ id: 'ferias', eur: v, cite: year === 2024 ? 'RRRGS Cl. 18.ª e Cl. 39.ª' : 'RRRGS Cl. 18.ª' });
+    const vK = kpiApplies(cat, ym) ? feriasEur(cat, { year, payYm: ym, contract, index, serviceStart, largada, history, kpi: true }) : v;
+    if (v != null) out.push({ id: 'ferias', eur: v, cite: year === 2024 ? 'RRRGS Cl. 18.ª e Cl. 39.ª' : 'RRRGS Cl. 18.ª', ...(vK > v ? { max: vK, tapRaise: true } : {}) });
   }
   return out;
 };
@@ -213,7 +233,8 @@ export const pendingAnnual = (cat, { year, contract = '12/12', index = 1, servic
   const ym = `${year}-12`;
   if (!hasTableFor(cat, ym)) return [];
   const v = feriasEur(cat, { year, payYm: ym, contract, index, serviceStart, largada, history });
-  return v == null ? [] : [{ id: 'ferias', eur: v, month: null, cite: 'RRRGS Cl. 18.ª' }];
+  const vK = kpiApplies(cat, ym) ? feriasEur(cat, { year, payYm: ym, contract, index, serviceStart, largada, history, kpi: true }) : v;
+  return v == null ? [] : [{ id: 'ferias', eur: v, month: null, cite: 'RRRGS Cl. 18.ª', ...(vK > v ? { max: vK, tapRaise: true } : {}) }];
 };
 
 // Complemento extraordinário (Cl. 8.ª) por dia de calendário sem ajuda de custo maior: a) assistência não acionada no aeroporto e
@@ -243,9 +264,12 @@ export const computeAeMonth = ({ category = 'CAB3', contract = '12/12', duties =
   const extras = 0;   // sem prestação por setor nominal
   const variable = r2(perDiemTotal + nightTotal + extras);
   const sv = seniority(category, { ym, serviceStart, largada, history, index });   // sem largada: conta da entrada (fromEntry)
+  // KPI de 2026 por confirmar (ver vbOf) → a base do mês é um intervalo, "incerto".
+  const baseK = kpiApplies(category, ym) ? monthlyBase(category, { contract, index, ym, serviceStart, largada, history, kpi: true }) : base;
+  const baseRange = baseK > base ? { min: base, max: baseK, reason: 'tapKpi' } : null;
   return {
     category, contract, base, perDiem: perDiemTotal, nightStops: nightTotal, extras,
-    variable, total: r2(base + variable),
+    variable, total: r2(base + variable), baseRange,
     seniority: { vs: sv.vs, anuidades: sv.anuidades, unknown: !!sv.unknown, fromEntry: !!sv.fromEntry },
   };
 };

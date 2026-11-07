@@ -20,7 +20,7 @@ import ProvaSheet from '../components/ProvaSheet';
 import { monthAudit } from '../data/audit';
 import AuditSheet from '../components/AuditSheet';
 import { yearCount } from '../data/aeEvents';
-import { computeFlightTime, computeDutyTime } from '../ftl';
+import { computeFlightTime, computeDutyTime, sumCalendarYearMin } from '../ftl';
 import { t } from '../data/i18n';
 import { select } from '../data/haptics';
 import { AppContext, isoDay } from '../data/appContext';
@@ -167,10 +167,13 @@ export default function StatsScreen({ navigation }) {
   const monthAbbr = (i) => new Date(2020, i, 1).toLocaleDateString(locale, { month: 'short' }).replace('.', '').slice(0, 3);
   const kindLabel = (k) => t('duties.kind.' + k, lang);
 
-  // 900 h no ano civil (ORO.FTL.210(b)(2)) em minutos: a barra pára nos 100 %, o texto não (A-262).
-  const yearFlightGap = { over: st.flightMin > ANNUAL_FLIGHT_LIMIT_H * 60, overMin: Math.max(0, st.flightMin - ANNUAL_FLIGHT_LIMIT_H * 60), headroomMin: Math.max(0, ANNUAL_FLIGHT_LIMIT_H * 60 - st.flightMin) };
-  const flightPct = Math.floor((st.flightMin / (ANNUAL_FLIGHT_LIMIT_H * 60)) * 100);
-  const flightRatio = Math.min(1, st.flightMin / (ANNUAL_FLIGHT_LIMIT_H * 60));
+  // 900 h no ano civil (ORO.FTL.210(b)(2)) em minutos: a barra pára nos 100 %, o texto não (A-262). O limite conta por DIA LOCAL
+  // (um voo de 31/12 que passa a meia-noite conta a parte de 1/1 no ano seguinte — bloco 8b) → a mesma soma do 210 do Início;
+  // as horas do ano, mais acima, contam pelo dia do serviço (como um logbook).
+  const legalYearMin = isYear ? sumCalendarYearMin(dayLog || {}, 'voo', new Date(+year, 6, 1)) : st.flightMin;
+  const yearFlightGap = { over: legalYearMin > ANNUAL_FLIGHT_LIMIT_H * 60, overMin: Math.max(0, legalYearMin - ANNUAL_FLIGHT_LIMIT_H * 60), headroomMin: Math.max(0, ANNUAL_FLIGHT_LIMIT_H * 60 - legalYearMin) };
+  const flightPct = Math.floor((legalYearMin / (ANNUAL_FLIGHT_LIMIT_H * 60)) * 100);
+  const flightRatio = Math.min(1, legalYearMin / (ANNUAL_FLIGHT_LIMIT_H * 60));
   const chartData = isYear ? st.months : st.days;   // 12 meses · ou dias do mês
   const maxBar = Math.max(1, ...chartData.map((m) => m.flightMin));
   const kindsPresent = STAT_KINDS.filter((k) => st.byKind[k] > 0);
@@ -185,14 +188,14 @@ export default function StatsScreen({ navigation }) {
   const total = A.total || 0;
   const extrasSum = (A.extras || 0) + (A.events || 0) + (A.cash || 0);
   // 9/3 e sazonais sem as datas de atividade: a base do mês é incerta (Cl. 48.ª/80.ª; bloco 5) — diz-se o intervalo.
-  const tapRaise = !!(A.baseRange && A.baseRange.reason === 'tapRaise') || (isYear && !!aeNow && aeNow.AE_ID === 'tap-spac');
-  const uncWhy = tapRaise ? l('atualização do vencimento base por publicar', 'base pay update not published') : l('faltam as datas de atividade', 'activity dates missing');
+  const tapRaise = !!(A.baseRange && /^tap/.test(A.baseRange.reason || '')) || (isYear && !!aeNow && /^tap-/.test(aeNow.AE_ID || ''));
+  const uncWhy = tapRaise ? l('atualização do vencimento base por confirmar', 'base pay update not confirmed') : l('faltam as datas de atividade', 'activity dates missing');
   const baseUnc = !isYear && A.baseRange ? ` · ${l('incerto', 'uncertain')}: ${fmtEur0(A.baseRange.min)} ${l('a', 'to')} ${fmtEur0(A.baseRange.max)} (${uncWhy})` : (isYear && A.uncertain ? ` · ${l('incerto', 'uncertain')} (${uncWhy})` : '');
   const baseSub = (isYear ? `${l('salário base acumulado', 'accrued base salary')} · ${st.aeYtd?.monthsElapsed || 0} ${l('meses', 'months')}` : `${l('salário base', 'base salary')} · ${monthName}`) + baseUnc;
   // Mês sem tabela do acordo (antes da 1.ª tabela publicada, ou antes da admissão): não há € — diz-se porquê (bloco 5).
   // TAP: o subsídio de férias paga-se no mês antes das férias; sem férias registadas o mês não se sabe (fica fora da soma).
   const pendTxt = (isYear && A.pendingAnnual && A.pendingAnnual.length)
-    ? l(`Subsídio de férias de ${fmtEur0(A.pendingAnnual[0].eur)}: entra no mês antes das tuas férias — regista-as para ele aparecer.`, `Holiday allowance of ${fmtEur0(A.pendingAnnual[0].eur)}: paid the month before your leave — log your leave for it to show.`)
+    ? (() => { const pa = A.pendingAnnual[0]; const v = pa.max > pa.eur ? `${fmtEur0(pa.eur)} ${l('a', 'to')} ${fmtEur0(pa.max)}` : fmtEur0(pa.eur); return l(`Subsídio de férias de ${v}: entra no mês antes das tuas férias — regista-as para ele aparecer.`, `Holiday allowance of ${v}: paid the month before your leave — log your leave for it to show.`); })()
     : null;
   // TAP: sem a data de entrada não há anuidades nem senioridade (Cl. 4.ª/5.ª) — diz-se que falta.
   const senTxt = (A.seniority && A.seniority.unknown) || (isYear && A.seniorityUnknown)
@@ -214,7 +217,11 @@ export default function StatsScreen({ navigation }) {
     (A.annual > 0) && { k: 'subs', nm: l('Subsídios', 'Allowances'), ic: 'wallet', val: A.annual, sub: [
       ...new Set((A.annualItems || []).map((it) => annualLabel(it, lang))),
     ].join(' · ') + ((A.annualItems || []).some((it) => it.incomplete) ? l(' — sem a média das variáveis, que o acordo não define', ' — without the variable-pay average, which the agreement does not define') : '') + ((A.annualItems || []).some((it) => it.suspension) ? l(' · Natal proporcional: baixa de mais de um mês (CT arts. 263.º e 296.º)', ' · Christmas pro rata: sick leave over a month (Labour Code arts. 263 and 296)') : '')
-      + (() => { const up = (A.annualItems || []).reduce((a, it) => a + (it.max > it.eur ? it.max - it.eur : 0), 0); return up > 0 ? l(` · até mais ${fmtEur0(up)} conforme a leitura do acordo`, ` · up to ${fmtEur0(up)} more depending on how the agreement is read`) : ''; })() },
+      + (() => { const up = (A.annualItems || []).reduce((a, it) => a + (it.max > it.eur ? it.max - it.eur : 0), 0); if (!(up > 0)) return ''; const its = (A.annualItems || []).filter((it) => it.max > it.eur);
+        const raise = its.some((it) => it.tapRaise), other = its.some((it) => !it.tapRaise || it.suspension);
+        const why = raise && other ? l('a leitura do acordo e a atualização do vencimento base, por confirmar', 'how the agreement is read and the base pay update, not yet confirmed')
+          : raise ? l('a atualização do vencimento base, por confirmar', 'the base pay update, not yet confirmed') : l('a leitura do acordo', 'how the agreement is read');
+        return l(` · até mais ${fmtEur0(up)} conforme ${why}`, ` · up to ${fmtEur0(up)} more depending on ${why}`); })() },
     (extrasSum !== 0) && { k: 'extras', nm: l('Extras', 'Extras'), ic: 'plus', val: extrasSum, sub: l('escala (papéis · OFC) + eventos (DDO · doença; nos dias de baixa a base sai, CT art. 255.º)', 'roster (roles · OFC) + events (DDO · sick; on sick days the base is not paid, Labour Code art. 255)') + ((!isYear && A.extrasMax > (A.extras || 0)) ? l(` · e-learning: até mais ${fmtEur0(A.extrasMax - (A.extras || 0))} (o acordo não diz se as 24 h contam as 8 primeiras)`, ` · e-learning: up to ${fmtEur0(A.extrasMax - (A.extras || 0))} more (the agreement does not say if the 24 h include the first 8)`) : '') },
   ].filter(Boolean);
 

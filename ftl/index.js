@@ -29,7 +29,7 @@ import { isNightDuty, overlapsWOCL } from './calculators/woclCalculator';
 import { validateDuty } from './validators/validateDuty';
 import { validateRest } from './validators/validateRest';
 import { validateLimits, computeDutyTime, limitsAround } from './validators/validateLimits';
-import { entryMin, nextMin } from './calculators/cumulativeCalculator';
+import { entryMin, nextMin, sumCalendarYearMin } from './calculators/cumulativeCalculator';
 import { withinBand, fmtBandRange, bandRangeMins, splitCountedBreakMin, splitAccLevel, SPLIT_ADMIN_MIN, SPLIT_MIN_BREAK_H, isFdpDuty } from './rules/fdpRules';
 import { DUTY_WINDOWS, FLIGHT_WINDOWS } from './rules/flightTimeRules';
 import { QUADRO1_DIFF, QUADRO1_ELAPSED, TZ_REST_DIFF, TZ_REST_ELAPSED } from './constants/tables';
@@ -45,7 +45,9 @@ import { airportOffsetMin, legZulu } from '../data/zulu';
 // v2 (2026-11-06): auditoria dos cálculos, bloco 1 — as entradas v1 recalculam-se sozinhas (reconcileDayLog).
 // v3 (2026-11-06, "a lei é que manda"): sem um facto de que a lei precisa → intervalo (garantido/possível) e incerto.
 // v4 (2026-11-06, bloco 4): o serviço sem apresentação leva o máximo possível (servicoMaxMin); posicionamento (`dh`) nas pernas.
-export const ENGINE_VERSION = 5;
+// v5 (2026-11-07, bloco 8b): parte depois da meia-noite (servicoNextMin/vooNextMin); teto da cabine com a diferença; sala no repartido.
+// v6 (2026-11-07, revisão do 8b): voo depois da meia-noite pelas horas Zulu; standby (8) e (9); tempo decorrido no longo curso.
+export const ENGINE_VERSION = 6;
 
 // Uma atividade (manual ou da escala) → PSV + repouso + legalidade num só objeto.
 // input: { state, report, end?, sectors, splitBreakH?, inBase?, postFlightMin? }
@@ -96,6 +98,8 @@ export const computeDuty = ({
   const unknowns = [];
   if (accUnknown && splitBreakH > 0) unknowns.push('accommodation');
   // Só é um facto em falta quando as duas leituras dão pausas contáveis diferentes (pausa ≥ 6 h ou no WOCL).
+  if (preStandby && preStandby.type !== 'airport' && preStandby.standbyH > 0 && preStandby.startMin != null
+    && (preStandby.startMin >= 23 * 60 || preStandby.startMin < 7 * 60)) unknowns.push('standbyContact');
   if (accBasic && splitBreakH > 0) {
     const brk = Math.round(splitBreakH * 60);
     if (splitCountedBreakMin(brk, splitStartMin, 'basic') !== splitCountedBreakMin(brk, splitStartMin, 'basic-easa')) unknowns.push('splitAccRule');
@@ -139,7 +143,13 @@ export const computeDuty = ({
     }
     // Standby anterior (CS 225): reduz o teto (aeroporto > 4 h e o teto de 16 h; casa > 6 h).
     if (preStandby && preStandby.standbyH > 0 && m != null) {
-      const sb = computeStandby({ type: preStandby.type, standbyH: preStandby.standbyH, maxFdpMin: m, startMin: preStandby.startMin != null ? preStandby.startMin : null });
+      // CS FTL.1.225(b)(8): com o PSV prolongado por repouso a bordo ou por repartido, as 6 h de (6)/(7) passam a 8 h
+      // (revisão do 8b, reparo 10: a app usava sempre 6 h).
+      const sbExt = (modifier === 'augmented') || ((b.extMin || 0) > 0 && splitBreakH > 0);
+      // CS FTL.1.225(b)(9): a noite (23:00–07:00) não conta para a redução "until the crew member is contacted by the
+      // operator". A app não sabe a hora do contacto → o garantido conta a noite toda (contacto logo no início), o possível
+      // nada dela (contacto na apresentação) — revisão do 8b, E4.
+      const sb = computeStandby({ type: preStandby.type, standbyH: preStandby.standbyH, maxFdpMin: m, startMin: (hi && preStandby.startMin != null) ? preStandby.startMin : null, extended: sbExt });
       sbRedMin = sb.reductionMin;
       m = sb.reducedMaxFdpMin;
     }
@@ -373,7 +383,9 @@ const zuluTimingOf = (duty = {}, base = null, date = null, refMode = 'auto') => 
   const onN = parseHhmm(lN.on), onZN = parseHhmm(day ? legZulu(dayOf(onN), lN, 'on') : lN.onZ), end = parseHhmm(duty.block_on);
   if (onN != null && onZN != null && end != null && end === onN) {
     const adj = durationMin(reportZ, onZN) - durationMin(rep, end);
-    if (Math.abs(adj) <= 180) elapsedAdjMin = adj;
+    // Até 12 h: um longo curso tem fusos de 3 h ou mais (LIS→GRU 4 h). O limite antigo de 3 h deitava fora o tempo decorrido e
+    // o PSV contava-se em relógios misturados (21:15 LIS → 05:30 GRU dava 8:15 em vez de 12:15 — revisão do 8b, E3).
+    if (Math.abs(adj) <= 720) elapsedAdjMin = adj;
   }
   // Hora de referência.
   let bandShiftMin = 0;
@@ -607,13 +619,21 @@ const afterMidnightMin = (startMin, durMin) => (startMin == null || !(durMin > 0
 const vooAfterMidnightMin = (duty = {}, startMin) => {
   const fm = Math.round(duty.flight_minutes || 0);
   if (!fm || startMin == null) return 0;
-  const legs = (Array.isArray(duty.legs) && duty.legs.length) ? duty.legs.filter((l) => l && !l.dh)
+  const all = (Array.isArray(duty.legs) && duty.legs.length) ? duty.legs.filter(Boolean) : [];
+  const legs = all.length ? all.filter((l) => !l.dh)
     : (duty.block_off ? [{ off: duty.block_off, on: duty.block_on }] : []);
   if (!legs.length) return 0;
   const midRel = 1440 - startMin;   // a meia-noite, em minutos desde o início
+  // Com as horas Zulu de todas as pernas, cada uma passa para o relógio da escala (o desvio da 1.ª partida): as horas locais de
+  // cada aeroporto misturam fusos e, no longo curso, repartiam mal à volta da meia-noite (revisão do 8b, reparo 2).
+  // O relógio da escala é o da 1.ª perna do SERVIÇO (com os posicionamentos), o mesmo do zuluTimingOf (revisão do 8b, E2).
+  const l0 = all.length ? all[0] : legs[0];
+  const allZ = legs.every((l) => l.offZ && l.onZ) && parseHhmm(l0.off) != null && parseHhmm(l0.offZ) != null;
+  const shift = allZ ? parseHhmm(l0.off) - parseHhmm(l0.offZ) : 0;
+  const clk = (z) => (((parseHhmm(z) + shift) % 1440) + 1440) % 1440;
   let tot = 0, after = 0;
   for (const l of legs) {
-    const off = parseHhmm(l.off), on = parseHhmm(l.on);
+    const off = allZ ? clk(l.offZ) : parseHhmm(l.off), on = allZ ? clk(l.onZ) : parseHhmm(l.on);
     if (off == null || on == null) return 0;
     let a = off - startMin; while (a < 0) a += 1440;
     const dur = durationMin(off, on);
@@ -994,7 +1014,7 @@ export const fatigueFromDuty = (d, { restMin = null, consecutiveDisruptive = 0 }
 };
 
 export {
-  computeFdp, computeFdpByBand, computeRest, computeFlightTime, computeDutyTime, validateLimits, limitsAround,
+  computeFdp, computeFdpByBand, computeRest, computeFlightTime, computeDutyTime, validateLimits, limitsAround, sumCalendarYearMin,
   validateDuty, validateRest, isNightDuty, overlapsWOCL,
   computeAcclimatisation, computeDiscretion,
   computeInflightRest, computeFlightCrewFdp, computeStandby, computeReducedRest, computeTimeZoneRest,

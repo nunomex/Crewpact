@@ -21,7 +21,7 @@ verificadores cada); agrupados, cerca de 70 problemas.
 **Bloco 7 (textos e citações) FEITO a 2026-11-06** — ver a entrada "BLOCO 7" abaixo. Falta vê-lo no iPhone. O ecrã FtlDetail foi apagado (decisão do Nuno, 2026-11-07).
 **Bloco 8 (dúvidas → advogado) FEITO a 2026-11-07** — pack em **`docs/pack-advogado.md`**. Ver a entrada "BLOCO 8" abaixo.
 **Bloco 8b (erros novos da triagem) FEITO a 2026-11-07** — ver a entrada "BLOCO 8b" abaixo (falta ver no iPhone e publicar a
-política/termos atualizados em crewpact.app, com o OK do Nuno). Fica da triagem, por corrigir: noites seguidas (FAQ 47617),
+política/termos — PUBLICADOS a 2026-11-07). Fica da triagem, por corrigir: noites seguidas (FAQ 47617),
 A-138, R3, AVSEC 1182/71 e as leituras não-conservadoras à espera do advogado. Fora dos blocos: A-249 a A-251 (formulário
 manual) e A-218 (a formação inicial não paga pernoita).
 **Regra do Nuno (2026-11-06): "a lei é que manda", sempre.** Sem um facto de que a lei precisa → perguntar, ou "incerto"
@@ -65,9 +65,7 @@ Golden primeiro em cada um; `npm test` verde (33 suites); pacote iOS gerado sem 
   sem "de legalidade"; PDF do 245 = "Registo pessoal · modelo do ORO.FTL.245" + declaração "tal como registados na
   aplicação"; Privacidade §3 com a linha do tempo, o vínculo, a largada, a entrada por código, o "Abrangido" (dispositivo) e
   as datas de baixa (dispositivo); marcadores dos e-mails tirados. Copiado para `web/site/` — **NÃO publicado** (falta o OK).
-- **Pack:** `docs/pack-advogado.md` atualizado com estas mudanças; Word em `docs/pack-advogado-v2.docx` (o
-  `pack-advogado.docx` antigo ficou preso por duas instâncias do Word sem janela, abertas pelo agente — fechar no Gestor de
-  tarefas e apagar o antigo/`~$ck-advogado.docx`).
+- **Pack:** `docs/pack-advogado.md` atualizado com estas mudanças; Word em `docs/pack-advogado.docx`.
 - **Revisão independente (2.º agente, só com o código e as fontes):** 5 erros + 10 reparos. Corrigidos no mesmo dia, golden primeiro:
   E1 o Início/Números/notificações só viam o período que acaba hoje → com a parte de amanhã, o pior dos dois (`computeDutyTime`,
   `computeFlightTime`); E2 a Simulação/importação não viam o período que começa no dia seguinte → `limitsAround` com mais um
@@ -76,7 +74,30 @@ Golden primeiro em cada um; `npm test` verde (33 suites); pacote iOS gerado sem 
   1 h a menos (22:00→04:00 = 7 h, dava 6 h) — `zuluTimingOf` usa o dia de cada hora; reparo 1 (a parte depois da meia-noite
   conta desde o início real do PSV na 2.ª notificação), 3 (rótulo da sala), 4 (Estatísticas pelo `AE_ID`), 6 (comentários do VB:
   a nota diz "mínima adicional" de 1 %).
-- **Fica para depois (da revisão):** E4 — na TAP pilotos só a BASE mostra o intervalo; Natal, férias, `pendingAnnual` e as
+- **Feito depois, no mesmo dia (o Nuno: "corrige isto"):** E4 — TAP pilotos: Natal, férias, subsídio pendente e `hourlyRange`
+  (3 %/6 %) com o máximo do VB do ano (flag `tapRaise`; só com o índice do motor). Reparo 5 — TAP cabine 2026: o KPI dá
+  "10 % face aos valores em vigor no final do ano de 2025" (a coluna tem 8 %) → máximo = fim de 2025 × 1,10 (CAB 3: 2 020,73 a
+  2 058,16 €); S/C 1–7 (só existem desde 2026) = coluna × 1,10/1,08, leitura; CAB 0 fora (RMMG); `baseRange` reason `tapKpi`
+  com o texto próprio no "Quanto recebo?". Reparo 2 — o voo depois da meia-noite reparte-se pelas horas Zulu das pernas no
+  relógio da escala. Reparo 8 — a barra das 900 h das Estatísticas usa a soma legal do ano (`sumCalendarYearMin`, dia local);
+  as horas do ano continuam pelo dia do serviço (logbook). Reparo 10 — CS FTL.1.225(b)(8): standby antes de um PSV com repouso
+  a bordo ou repartido → 8 h. Reparo 7 — não se aplica: nenhum ecrã grava entradas manuais (as calculadoras foram apagadas).
+  **Publicado** em crewpact.app (termos e privacidade novos, ainda com a marca RASCUNHO), verificado HTTP 200 e o texto novo.
+  **2.ª revisão independente** (destes acertos): 6 erros + 9 reparos. Corrigidos: ENGINE_VERSION → 6 (sem isso os registos
+  gravados não recalculavam); o relógio do voo depois da meia-noite é o da 1.ª perna do SERVIÇO (com posicionamentos);
+  **tempo decorrido no longo curso** (já vinha de antes, GRAVE: o limite de 3 h ao ajuste deitava-o fora → LIS→GRU 21:15→05:30
+  dava PSV 8:15 em vez de 12:15; agora até 12 h); **standby noturno (CS 225(b)(9))** sem a hora do contacto → garantido com a
+  noite a contar, possível sem ela, facto em falta `standbyContact` (já vinha de antes); KPI da TAP cabine pela leitura MAIOR
+  (coluna × 1,02, toda a tabela, também o CAB 0 — CAB 3 2 061,14 €; a outra leitura, fim de 2025 × 1,10, vai no pack D23);
+  o texto do "até mais" separa a leitura do acordo da atualização do VB; o intervalo da base dos pilotos TAP só com o índice
+  do motor.
+  Ficam (reparos): `hourlyRange` e o `kpi` do `vh` sem ecrã que os mostre; o aviso das 18 h acordado do standby recalcula sobre
+  o teto já reduzido e com 6 h (conservador); na barra das 900 h o número grande é pelo dia do serviço e a percentagem pelo dia
+  local (podem não bater num voo de 31/12); o "incerto" do ANO nas Estatísticas atribui-se à TAP se a companhia atual é TAP;
+  repartido com adiamento pode dar 8 h no standby sem a extensão (raro, não reproduzido); as telas que mostram Zulu ainda
+  convertem a chegada depois da meia-noite com o dia da partida (só a vista).
+  **Pack:** D23 (a leitura dos 2 % do KPI da TAP cabine e o CAB 0); Word num só ficheiro, `docs/pack-advogado.docx`.
+- **Era para depois (da revisão):** E4 — na TAP pilotos só a BASE mostra o intervalo; Natal, férias, `pendingAnnual` e as
   horas L1/L2 (3 %/6 % do VB) saem no mínimo como certos (conservador, mas devia ser intervalo); reparo 5 — TAP cabine 2026 sem
   o intervalo do KPI de 2 %; reparo 2 — o voo depois da meia-noite reparte-se pelas horas locais de cada aeroporto (longo curso:
   ~20 min mal repartidos; o total certo); reparo 7 — entradas manuais sem `src:'duty'` não repartem; reparo 8 — "horas do ano"

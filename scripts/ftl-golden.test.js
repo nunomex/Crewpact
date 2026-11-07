@@ -415,13 +415,15 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('A-234: dentro', sbFl.psv.over, false);
   eq('A-234: serviço 210 = 25 % do standby + voo = 11,0 h', sbFl.servico, 11);
   // A-167: standby em casa 05:00–13:00, apresentação às 13:30, calços às 20:00 (2 setores, Quadro 2 às 13:30 = 12:45).
-  // Conta 07:00–13:30 = 6:30 ((b)(9)); a redução é o que passa das 6 h = 0:30 → máximo 12:15. PSV 6:30 → dentro.
+  // (b)(9): a noite só não conta "until the crew member is contacted" — a app não sabe a hora do contacto (revisão do 8b, E4):
+  // garantido = contacto logo às 05:00 (conta 05:00–13:30 = 8:30, reduz 2:30 → 10:15); possível = contacto na apresentação
+  // (conta 07:00–13:30 = 6:30, reduz 0:30 → 12:15). PSV 6:30 → dentro nos dois.
   const sbFl2 = dayFtlFromDuties([
     { report_time: '05:00', block_on: '13:00', sectors: 0, kind: 'standby_home' },
     { report_time: '13:30', block_on: '20:00', sectors: 2, kind: 'flight' },
   ]);
   eq('A-167: PSV 6:30', sbFl2.psv.result, '06:30');
-  eq('A-167: máximo 12:15', sbFl2.psv.max, '12:15');
+  eqj('A-167: máximo 10:15 a 12:15 (falta a hora do contacto)', [sbFl2.psv.max, sbFl2.psv.maxHi, sbFl2.psv.unknowns], ['10:15', '12:15', ['standbyContact']]);
   eq('A-167: dentro', sbFl2.psv.over, false);
   // Standby de aeroporto 06:00–10:00 e voo às 10:00: o standby conta 100 % e o teto combinado aplica-se.
   const apFl = dayFtlFromDuties([
@@ -752,6 +754,20 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   // E em março (29/03/2026, adianta 1 h às 01:00): 22:00 → 04:00 são 5 h reais.
   const dDst2 = ftl.ftlForDuty({ report_time: '22:00', block_on: '04:00', sectors: 1, legs: [{ dep: 'LIS', arr: 'OPO', off: '22:45', on: '04:00' }] }, { date: '2026-03-28', base: 'LIS' });
   eq('E5: PSV na noite da hora de verão = 5:00 reais', dDst2.fdp.actualFdpStr, '05:00');
+  // Revisão do 8b, reparo 2: com as horas Zulu, o voo reparte-se no relógio da escala. LIS 22:30 (21:30Z) → GRU 05:30 locais
+  // (08:30Z): 11 h de voo; no relógio de Lisboa a chegada é às 09:30 → 9:30 depois da meia-noite (as horas locais davam 5:30).
+  const eGru = ftl.dutyToFtlDay({ report_time: '21:15', block_on: '05:30', sectors: 1, flight_minutes: 660, legs: [{ dep: 'LIS', arr: 'GRU', off: '22:30', on: '05:30', offZ: '21:30', onZ: '08:30' }] });
+  eq('Reparo 2: LIS→GRU, 9:30 de voo depois da meia-noite (relógio da escala)', eGru.vooNextMin, 570);
+  // Revisão do 8b, E2: o relógio da escala é o da 1.ª perna do SERVIÇO, também quando é um posicionamento. Inverno: OPO 20:00,
+  // DH OPO→BCN, voo BCN 23:30 (22:30Z) → TFN 00:30Z, 2 h de voo, pós-voo 30 → no relógio de OPO o voo é 22:30–00:30: 30 min depois.
+  const eDh = ftl.dutyToFtlDay({ report_time: '20:00', block_on: '00:30', sectors: 1, flight_minutes: 120, legs: [
+    { dep: 'OPO', arr: 'BCN', off: '20:45', on: '23:00', offZ: '20:45', onZ: '22:00', dh: true },
+    { dep: 'BCN', arr: 'TFN', off: '23:30', on: '00:30', offZ: '22:30', onZ: '00:30' }] }, { postFlightMin: 30 });
+  eqj('E2: com posicionamento antes, voo 0:30 e serviço 1:00 depois da meia-noite', [eDh.vooNextMin, eDh.servicoNextMin], [30, 60]);
+  // Revisão do 8b, E3: LIS→GRU (verão, 4 h de fuso). Apresentação 21:15 LIS, calços 05:30 GRU (08:30Z) = 12:15 reais de PSV; o
+  // limite antigo de 3 h ao tempo decorrido deitava-o fora e dava 8:15 (relógios misturados).
+  const dGru = ftl.ftlForDuty({ report_time: '21:15', block_on: '05:30', sectors: 1, flight_minutes: 660, legs: [{ dep: 'LIS', arr: 'GRU', off: '22:30', on: '05:30', offZ: '21:30', onZ: '08:30' }] }, { date: '2026-07-10', base: 'LIS', isPilot: true });
+  eq('E3: LIS→GRU, PSV real 12:15', dGru.fdp.actualFdpStr, '12:15');
   // Serviço que não passa a meia-noite: nada a repartir.
   eq('A-173: serviço diurno sem parte seguinte', logNt[iso(2)].servicoNextMin || 0, 0);
   // Entradas antigas (só horas) continuam a contar.
@@ -1064,6 +1080,12 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   // leituras contam 5:45 → exato, sem a dúvida da sala.
   const dE3 = computeDuty({ state: 'acc', report: '06:00', end: '20:00', sectors: 4, splitBreakH: 6.25, splitBreakStart: '10:00', accommodation: 'basic' });
   eqj('E3: pausa líquida 5:45 com sala → exato, sem dúvida', [dE3.fdp.exact, dE3.fdp.uncertain, dE3.fdp.unknowns], [true, false, []]);
+  // Revisão do 8b, reparo 10 — CS FTL.1.225(b)(8): standby em casa antes de um PSV com repouso a bordo → as 6 h passam a 8 h.
+  // Piloto, 3 pilotos em classe 1 (16:00), standby em casa das 08:00 às 15:00 (7 h): com 6 h reduzia 1 h (15:00); com 8 h não reduz.
+  const dR10 = computeDuty({ state: 'acc', report: '15:00', end: '05:00', sectors: 1, isPilot: true, augmented: { restClass: 'c1', additionalCrew: 1 }, preStandby: { type: 'other', standbyH: 7, startMin: M('08:00') } });
+  eq('Reparo 10: standby 7 h + repouso a bordo → sem redução (16:00)', dR10.fdp.maxFdpStr, '16:00');
+  const dR10b = computeDuty({ state: 'acc', report: '15:00', end: '23:00', sectors: 1, isPilot: true, preStandby: { type: 'other', standbyH: 7, startMin: M('08:00') } });
+  eq('Reparo 10: sem repouso a bordo, as 6 h continuam (reduz 1 h)', dR10b.fdp.stdbyReductionMin, 60);
   // Repouso a bordo abaixo de 90 min consecutivos (CS FTL.1.205(c)(1)(ii)) → não permitido.
   eq('Cabine com 1:15 de repouso a bordo → não permitido', computeDuty({ state: 'acc', report: '06:00', end: '20:00', sectors: 2, augmented: { restClass: 'c1', additionalCrew: 2, fcRestClass: 'c1', cabinRestMin: 75 } }).fdp.notAllowed, true);
   // Piloto da auditoria A-142: 3 pilotos, classe 3, 10:00 → 00:10 = PSV 14:10 > 14:00 → excede 0:10, calços até às 00:00.

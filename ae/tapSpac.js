@@ -234,23 +234,40 @@ export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceSta
   const out = [];
   const rb = monthlyBase(cat, { contract, index, ym, serviceStart, largada, history });
   if (rb == null) return out;
+  // O VB do ano é um intervalo (indexRange, bloco 8b): o subsídio vai da RB com o mínimo à RB com o máximo (revisão do 8b, E4).
+  const rbMax = rbAtMax(cat, { contract, index, ym, serviceStart, largada, history });
+  const up = rbMax > rb ? { tapRaise: true } : {};
   if (p.m === 12) {
     // "No ano da admissão, no da cessação do contrato de trabalho, bem como no da suspensão do mesmo (...) na proporção do tempo de
     // trabalho prestado" (Cl. 8.ª, n.º 2; CT art. 296.º: a doença de mais de um mês suspende) — certo e máximo.
     const sh = suspensionShare(events, p.y);
-    const v = rb * admissionShare(serviceStart, p.y);
-    out.push({ id: 'natal', eur: r2(sh ? v * sh.min : v), cite: 'RRRGS Cl. 8.ª', ...(sh ? { max: r2(v * sh.max), suspension: true } : {}) });
+    const share = admissionShare(serviceStart, p.y);
+    const v = rb * share, vMax = rbMax * share;
+    const eur = r2(sh ? v * sh.min : v), max = r2(sh ? vMax * sh.max : vMax);
+    out.push({ id: 'natal', eur, cite: 'RRRGS Cl. 8.ª', ...(max > eur ? { max } : {}), ...(sh ? { suspension: true } : {}), ...up });
   }
-  if ([p.y, p.y + 1].some((y) => vacationPayYm(events, y) === ym)) out.push({ id: 'ferias', eur: rb, cite: 'RRRGS Cl. 7.ª' });
+  if ([p.y, p.y + 1].some((y) => vacationPayYm(events, y) === ym)) out.push({ id: 'ferias', eur: rb, cite: 'RRRGS Cl. 7.ª', ...(rbMax > rb ? { max: rbMax } : {}), ...up });
   return out;
+};
+// A RB com o VB no máximo do ano (indexRange). Só quando o `index` pedido é o do motor (o mínimo do ano); com outro índice
+// (quem o escolhe à mão) não há intervalo.
+const rbAtMax = (cat, { contract, index, ym, serviceStart, largada, history }) => {
+  const ir = indexRange(ym);
+  if (Math.abs(index - ir.min) > 1e-9 || !(ir.max > ir.min)) return monthlyBase(cat, { contract, index, ym, serviceStart, largada, history });
+  return monthlyBase(cat, { contract, index: ir.max, ym, serviceStart, largada, history });
 };
 export const pendingAnnual = (cat, { year, contract = '12/12', index = 1, serviceStart = null, largada = null, history = null, events = [] } = {}) => {
   if (vacationPayYm(events, year)) return [];
-  const rb = monthlyBase(cat, { contract, index, ym: `${year}-12`, serviceStart, largada, history });
-  return rb == null ? [] : [{ id: 'ferias', eur: rb, month: null, cite: 'RRRGS Cl. 7.ª' }];
+  const ym = `${year}-12`;
+  const rb = monthlyBase(cat, { contract, index, ym, serviceStart, largada, history });
+  if (rb == null) return [];
+  const rbMax = rbAtMax(cat, { contract, index, ym, serviceStart, largada, history });
+  return [{ id: 'ferias', eur: rb, month: null, cite: 'RRRGS Cl. 7.ª', ...(rbMax > rb ? { max: rbMax, tapRaise: true } : {}) }];
 };
 // Vencimento horário (Tabela A-3.3): 3% do VB/hora (Limite 1) ou 6% (Limite 2). Escala com o VB.
 export const hourly = (cat, limit = 1, index = 1, ym) => { const T = tableAt(ym); return T ? r2((limit === 2 ? 0.06 : 0.03) * vbOf(cat, index, T)) : null; };
+// O mesmo com o VB do ano em intervalo (indexRange): { min, max } — o valor horário segue o VB (revisão do 8b, E4).
+export const hourlyRange = (cat, limit = 1, ym) => { const ir = indexRange(ym); const min = hourly(cat, limit, ir.min, ym); return min == null ? null : { min, max: hourly(cat, limit, ir.max, ym) }; };
 
 // Estimativa mensal de apoio (€): base (VB+VE) + per diems do mês + pernoitas (Per diem B).
 //   duties = array de serviços (cada um = array de distâncias NM das pernas do dia).
@@ -266,7 +283,7 @@ export const computeAeMonth = ({ category = 'OP3', contract = '12/12', duties = 
   const sv = seniority(category, { ym, serviceStart, largada, history, index });
   // O VB do ano é um intervalo (ver indexRange): a base vai do mínimo ao máximo → "incerto" (bloco 8b).
   const ir = indexRange(ym);
-  const baseRange = ir.max > ir.min
+  const baseRange = (ir.max > ir.min && Math.abs(index - ir.min) < 1e-9)   // com um índice escolhido à mão não há intervalo
     ? { min: monthlyBase(category, { contract, index: ir.min, ym, serviceStart, largada, history }), max: monthlyBase(category, { contract, index: ir.max, ym, serviceStart, largada, history }), reason: 'tapRaise' }
     : null;
   return {

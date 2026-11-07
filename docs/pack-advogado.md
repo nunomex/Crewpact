@@ -537,6 +537,25 @@ janeiro de cada ano.
 - **Pergunta:** um acordo destes, não publicado no BTE, altera a convenção perante o trabalhador?
 - Vou pedir ao SPAC a ata ou o protocolo e recibos reais. Até lá, a aplicação passará a mostrar os dois valores.
 
+#### D23. TAP cabine: os "2 %" de 2026 (KPI)
+
+- **Texto:** RRRGS Cl. 3.ª, n.º 3 (PDF p. 39 | BTE p. 309): «Se o resultado líquido da empresa (…) se revelar positivo em
+  2025, os valores da tabela salarial de vencimento base para 2026 terão uma atualização salarial adicional (KPI (…)) de
+  2 %, resultando numa atualização global para o ano de 2026 de 10 % face aos valores em vigor no final do ano de 2025.
+  Esta atualização está dependente da efetiva implementação das alterações à composição de tripulações constantes do
+  Regulamento de Composição de Tripulações (RCT).»
+- **As duas leituras:** a coluna de 2026 publicada já tem +8 % sobre 2025.
+  - Leitura A, "2 %" sobre a coluna: CAB 3 2 020,73 € × 1,02 = 2 061,14 €.
+  - Leitura B, "10 % face a 2025": 1 871,05 € × 1,10 = 2 058,16 € (só +1,85 % sobre a coluna).
+- **Casos especiais:**
+  - O CAB 0 está na tabela, mas é "indexado à RMMG" (920 €): o KPI aplica-se-lhe?
+  - O S/C 4 de 2026 vem do C/C 3 com 4 anos ou mais (Cl. 17.ª): pela leitura B ficaria abaixo da própria coluna.
+- **A aplicação hoje:** mostra a coluna como valor principal e a leitura A como máximo, com "incerto", em todas as
+  categorias.
+- **Perguntas:**
+  1. Qual das leituras é a certa?
+  2. O KPI aplica-se ao CAB 0?
+
 ### Anexo D-A — Factos que vou pedir aos sindicatos e à empresa (para contexto)
 
 Estas questões não pedem uma leitura jurídica. Pedem um documento ou uma prática.

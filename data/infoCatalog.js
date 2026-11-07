@@ -117,7 +117,7 @@ export const AE_TAP_PILOT = { word: 'O teu AE', groups: [
 
 export const AE_TAP_CABIN = { word: 'O teu AE', groups: [
   { name: 'Base', items: [
-    { v: '2 020,73', u: '€', name: 'Vencimento base · CAB 3', art: 'RRRGS Cl. 3.ª (2026)', f: 'Tabela 2026 publicada: CAB 0 = RMMG 920 · CAB 1 1.214,68 … CAB 5 2.357,32 · S/C 1-7 até 3.287,57. Não inclui os +2 % adicionais (KPI) que dependem do resultado de 2025 (RRRGS Cl. 3.ª, n.º 3) — confirma no recibo.', long: 'Vencimento base (coluna 2026)' },
+    { v: '2 020,73', u: '€', name: 'Vencimento base · CAB 3', art: 'RRRGS Cl. 3.ª (2026)', f: 'Tabela 2026 publicada: CAB 0 = RMMG 920 · CAB 1 1.214,68 … CAB 5 2.357,32 · S/C 1-7 até 3.287,57. Com os 2 % adicionais (KPI), que dependem do resultado de 2025 e do RCT (RRRGS Cl. 3.ª, n.º 3), o CAB 3 vai até 2.061,14 — a app mostra os dois valores; confirma no recibo.', long: 'Vencimento base (coluna 2026)' },
   ] },
   { name: 'Por dia', items: [
     { v: '150', u: '€', name: 'Ajuda de custo · dia de voo (AC1)', art: 'RRRGS Cl. 7.ª', f: 'POR DIA de calendário com serviço de voo/DHC (não por setor).' },
