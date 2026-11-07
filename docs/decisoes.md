@@ -6,40 +6,93 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 ---
 
-## PRÓXIMA SESSÃO (ler isto primeiro · atualizado 2026-11-06)
+## O QUE FALTA (ler isto primeiro · lista única · atualizada 2026-11-08)
 
-**Auditoria dos cálculos FEITA → corrigir.** O Nuno: "é crucial todos os cálculos e contas estarem certos, no tripulante de
-cabine como no de piloto". Relatório em **`docs/auditoria-calculos.md`** (ler primeiro), detalhe em
-`docs/auditoria-calculos-achados.md` (A-001…A-300). 300 achados: **143 erros, 100 riscos e 43 dúvidas confirmados** (2
-verificadores cada); agrupados, cerca de 70 problemas.
-**Bloco 1 (motor FTL) FEITO a 2026-11-06** — ver a entrada abaixo. Falta vê-lo no iPhone (lista na entrada).
-**Bloco 2 (Simulação) FEITO a 2026-11-06** — ver a entrada "BLOCO 2" abaixo. Falta vê-lo no iPhone (lista na entrada).
-**Bloco 3 (limites TAP e validades) FEITO a 2026-11-06** — ver a entrada "BLOCO 3" abaixo. Falta vê-lo no iPhone (lista na entrada).
-**Bloco 4 (importação da escala) FEITO a 2026-11-06** — ver a entrada "BLOCO 4" abaixo. Falta vê-lo no iPhone (lista na entrada).
-**Bloco 5 (dinheiro a mais, M1–M11) FEITO a 2026-11-06** — ver a entrada "BLOCO 5" abaixo. Falta vê-lo no iPhone e as pendências da entrada.
-**Bloco 6 (dinheiro a menos, L1–L13) FEITO a 2026-11-06** — ver a entrada "BLOCO 6" abaixo. Falta vê-lo no iPhone e as pendências da entrada.
-**Bloco 7 (textos e citações) FEITO a 2026-11-06** — ver a entrada "BLOCO 7" abaixo. Falta vê-lo no iPhone. O ecrã FtlDetail foi apagado (decisão do Nuno, 2026-11-07).
-**Bloco 8 (dúvidas → advogado) FEITO a 2026-11-07** — pack em **`docs/pack-advogado.md`**. Ver a entrada "BLOCO 8" abaixo.
-**Bloco 8b (erros novos da triagem) FEITO a 2026-11-07** — ver a entrada "BLOCO 8b" abaixo (falta ver no iPhone e publicar a
-política/termos — PUBLICADOS a 2026-11-07). Os 4 que ficavam da triagem — FEITOS a 2026-11-08 (entrada abaixo). Ficam
-as leituras não-conservadoras à espera do advogado. Fora dos blocos: A-249 a A-251 (formulário
-manual) e A-218 (a formação inicial não paga pernoita).
-**Regra do Nuno (2026-11-06): "a lei é que manda", sempre.** Sem um facto de que a lei precisa → perguntar, ou "incerto"
-com o que falta. Nunca um valor inventado, nem "o mais restritivo". Ver a entrada "A LEI É QUE MANDA" abaixo.
-**Factos por saber — pesquisa na internet de 2026-11-06** (até lá a app dá "incerto" perto do limite). A lista para
-pesquisar, com onde procurar e onde entra no código, está em **`docs/pesquisa-pendente.md`**.
-(1) Apresentação cabine vs pilotos (ORO.FTL.205(c)): só no Manual de Operações (EASA FAQ 47585: "defined by the operator
-in the Operations manual"); não é público. AE TAP pilotos Cl. 18.ª dá só o MÍNIMO dos pilotos (60/75/60 min, BTE 29/2023 p. 297).
-(2) Desconto da pausa do repartido (CS FTL.1.220(b)): só no OM; mínimo 30 min (EASA FAQ 47627). AE TAP cabine Cl. 4.ª n.º 16
-diz o que se exclui, sem minutos; AE TAP pilotos Cl. 15.ª n.º 8: repartido só com autorização do SPAC.
-(3) Pós-voo: TAP = 30 min pelo AE (FEITO, `38340d2`); easyJet = 30 (OM, confirmado pelo Nuno; a Cl. 67.ª da cabine usa
-"calços mais 30 minutos"); Ryanair e Hi Fly: nada público → perguntar na configuração (decisão do Nuno).
-(4) Tipo matinal/tardio (ARO.OPS.230: decide a autoridade): sem fonte oficial para ANAC, Austro Control nem IAA; só uma
-tabela secundária (Áustria/Irlanda/Malta = matinal; Portugal = sem escolha publicada). Transport Malta OAN 03/15 bloqueia
-leitura automática. A easyJet deixou de ser assumida matinal: os dois tipos para todos, até haver documento oficial.
-**Depois disso:** o esboço `design/inicio-v6.html` e o modo escuro (adiados pela auditoria).
-**Por ver no iPhone (de antes):** a disrupção e o aviso de RDP; uma conta de CABINE.
+Uma linha por pendência; o pormenor está na entrada indicada entre parênteses (as entradas ficam abaixo, como histórico).
+Quando uma coisa se fizer, sai daqui. **Regra do Nuno: "a lei é que manda"** — sem um facto, "incerto" com o que falta; nunca
+um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está feita: `docs/auditoria-calculos.md`.
 
+### 1. Ver no iPhone (nada disto foi visto no telemóvel)
+- **Detalhe do serviço (v2):** horário "do calendário" e hora REAL ao lado da prevista; repartido sem alojamento (Incerto →
+  Completar → folha das 3 opções); cabine com a apresentação dos pilotos; "O calendário está errado?" (horas reais, faltou um
+  dado); dia com 2 serviços (o 2.º abre o seu Detalhe); DH ("DH ·" e sign-off derivado); estadia de 2 noites; "não se aplica —
+  sem setores" (2026-11-08 Editar saiu · BLOCO 4 · BLOCO 6 · BLOCO 1).
+- **Início:** "Registar o sign-off" → horas reais; serviço noturno pela meia-noite; "incerto" e "dentro, com prolongamento";
+  "Tenho descanso?"/"Repouso até"; baixa (conta TAP e conta de cabine, "dia N do episódio"); 9/3 com "incerto"; fecho de novembro
+  com o Natal; limites com DH antes, 2 voos no dia e assistência antes; "o que registaste está válido"; repouso depois de um
+  repartido; folga sem nada marcado; disrupção e aviso de RDP (precisa de um atraso real); barra de baixo de dia e de noite;
+  iPhone pequeno, letra grande, VoiceOver (2026-11-08 · 8b · A LEI É QUE MANDA · BLOCOS 1–7 · 2026-11-02/04).
+- **Escala:** sem toque longo, "Ver" nos serviços extra; conta TAP cabine com um voo dos Açores pela meia-noite; alerta de SNC
+  com o texto longo (2026-11-08 · BLOCO 7).
+- **Simulação:** duas noites com uma folga pelo meio; dia livre e dia com serviço; "Quanto falta aos limites?"; resultado em
+  poster; validades (AVSEC a cair num sábado; validades num serviço futuro) (2026-11-08 Os 4 · BLOCO 2 · BLOCO 3).
+- **Importação:** o calendário sintético do guião (repartido de 7 h, DH antes e depois, HSBY + voo, dia inteiro com horas,
+  formação de 3 dias, aviso ⚠, repouso curto); reimportar com sign-off ("relidos", sem SNC); apagar e reimportar a doença de
+  teste; formulário de correção (comandante instrutor, voo depois da meia-noite → DDO/IDO); validades (BLOCO 4 · 5 · 6 · 3).
+- **Números, Estatísticas, "Quanto recebo?":** % das 900 h e "faltam h:mm"; meses de 2024/25 e antes de fev-2024; "Extras do
+  mês"; subsídios (junho, novembro, abril, 14/14); conta TAP piloto e cabine com o motivo do incerto (BLOCO 1 · 5 · 6 · 8b).
+- **Relatórios, Prova, Biblioteca:** o rótulo "Registo pessoal" cabe; PDF 245, CSV, logbook; Prova do PSV, standby e radiação;
+  Biblioteca (bónus, ADTY, FTL, valor horário TAP) (8b · BLOCO 1 · BLOCO 7 · 2026-11-08).
+- **Disrupção:** 2 alterações ao mesmo serviço (1 candidato); o visto longo cabe; cabine com repouso a bordo e diferença de
+  apresentação; repartido com sala (BLOCO 5 · BLOCO 7 · 8b).
+- **Perfil e contas:** "Abrangido pelo AE" grava e repõe; TAP piloto (anuidades, formação) e TAP cabine (VS, chefia, tempo
+  parcial); configuração (§0c, §0f), Perfil e Família (§0e), linha do tempo (§0g), limites TAP (§0h, kit de longo curso §0i);
+  entrada (reenviar código, código errado, palavra-passe, mudar e-mail); reset de palavra-passe e reativar conta apagada; janelas
+  com o cabeçalho novo (8b · BLOCO 6 · 2026-11-02/03 · `docs/verificacao-device.md`).
+- **Guiões completos:** passeio fino (Prova, Auditoria do mês, radiação, relatórios, SNC/RDP, morph da pílula, Desfazer, marcos,
+  hotéis v2); "testar o calendário"; duas contas (quem vê o quê), modo avião, permissões, cópias de segurança (2026-11-02 Ponto
+  de situação · `docs/05-verificacao.md`).
+
+### 2. Acertos de código por fazer
+- **Cálculos:** suspensão do contrato na cabine easyJet — a Cl. 86.ª/2 diz "superior a 30 dias", o código usa "mais de um mês"
+  (BLOCO 8); 4 setores em noites seguidas ainda fora do "Dentro dos limites?" do Início (a importação já os vê) (BLOCO 2);
+  `nightOf` pelas horas da escala, não pelo fuso de aclimatação — pesa no longo curso (BLOCO 8); mês da admissão a meio do mês
+  (o `serviceStart` guarda só o mês) (BLOCO 5 · 8); valor "agora" do voo do mês da cabine TAP só pela hora da partida; máximo da
+  assistência a 100 % no trimestre (2026-11-08 Os 4).
+- **TAP:** dias de estadia perdidos com outro serviço depois do voo no mesmo dia; horas da escala na hora do destino; doença
+  (Cl. 20.ª) sem eventos; AC2 por cancelamento tardio; prestação complementar dos pilotos (Cl. 10.ª) (BLOCO 5 · BLOCO 6).
+- **easyJet:** média das variáveis nos subsídios; subsídios no ano da saída; WFLY + DDO no mesmo serviço; formação fora da base
+  da cabine na importação (BLOCO 6).
+- **Campos por fazer (com Mobbin):** formação inicial (A-218); subsídio de idioma; exercício efetivo do VE (TAP); datas de
+  atividade dos 9/3 e sazonais; reserva na configuração para o pós-voo da Ryanair/Hi Fly e para os números do Manual de Operações
+  se os sindicatos não os derem (BLOCO 5 · 6 · 2026-11-08 Manual de Operações).
+- **Importação e formulário:** setor que não encaixa entre dias sem aviso (2026-11-04 madrugada); A-249 a A-251 e A-179 (pernas e
+  fusos no "Detetar"); A-241 (MTG/GND); riscos R3, R5–R8, R10–R12 do bloco 4 (BLOCO 4).
+- **Simulação:** "Juntar ao dia" (Mobbin primeiro); TAP ~45 ms por cálculo (BLOCO 2).
+- **Desenho:** modo escuro da app toda (prioridade, projeto próprio) (2026-11-04 tarde); esboço `design/inicio-v6.html` por
+  atualizar; Escala "na linguagem do Início" e a etiqueta de um dia com 2 serviços; Validades e formulário de evento na escala
+  DS 2.0; mosaico "NOV · ESTIMADO" sem "bruto"; modelos de e-mail do Supabase com o cabeçalho antigo; cor das notificações
+  `#F5402C` no `app.json` (2026-11-02/03/04 · BLOCO 7).
+- **Plataforma:** @react-navigation v7 (e apagar a camada `shims/`); "Secure email change" e o modelo de mudar e-mail no
+  Supabase; tabelas órfãs `rest_periods` e `user_additional_roles`; pasta `android/` desatualizada (2026-11-02).
+
+### 3. À espera do advogado — `docs/pack-advogado.md` (Word: `docs/pack-advogado.docx`)
+- Falta o teu apelido na linha de autor e enviar. Temas: A (entidade, termos, privacidade, art. 9.º, saúde, PDFs, sincronia de
+  folgas) · B (licença e marca dos sindicatos) · C (citações) · D1–D23 (dúvidas dos acordos) · E0–E8 (limites TAP/FTL) + anexo
+  E-A (perguntas para a ANAC). Depois da resposta: tirar a marca RASCUNHO da política e dos termos, preencher os 【…】, publicar.
+
+### 4. À espera dos sindicatos, da empresa ou de documentos
+- **SPAC e SNPVAC** (anexo D-A do pack): os dois números do Manual de Operações (desconto da pausa no repartido; diferença de
+  apresentação pilotos/cabine), easyJet e TAP; deliberações sobre "consecutivos" e as gralhas do BTE da TAP; autorização escrita
+  da marca; prova de pertença (2026-11-08 · 2026-11-02/03).
+- **Escala real da TAP** com os códigos (desbloqueia a TAP na importação); **recibos** com dias de baixa e o mês do variável;
+  códigos SBY/STBY/MTG/GND da easyJet; lista de distâncias do per diem; documentos reais para as Validades (paradas) (BLOCO 4 · 8).
+
+### 5. Pesquisa — `docs/pesquisa-pendente.md`
+- Tipo matinal/tardio em Portugal (ARO.OPS.230); tabela geotime do ROV da TAP; salário mínimo de 2027 (`fontes/pt/rmmg.txt`);
+  plataforma europeia de litígios (encerrada em 2025?); interpretações da EASA ainda não conferidas.
+
+### 6. Decisões tuas
+- **Negócio:** data de lançamento; CI; marca CrewPact (INPI/EUIPO, App Store Connect, `.pt`/`.eu`); ícone (em pausa até aos
+  sindicatos); edições por sindicato (login neutro com "Em parceria com…" recomendado); líquido estimado e comparação com o recibo.
+- **Produto:** mês do variável ("Ganhos da escala de novembro" ou modo recibo, A-200); aviso "hora da sincronização" no SNC
+  (A-085); radiação e estatísticas (A-268/269/275/276); linha do dia de serviço no pré-report; limites de escala de outros acordos
+  além da TAP; passkeys e palavras-passe vazadas; prateleira (relógio solar, reconciliação v1.1, sino fase 3, Radar).
+
+### 7. No fim: versão de teste (dev build) e lojas — `docs/dev-build.md`
+- Face ID real, PDF por ficheiro, voo ao vivo nativo, compras (RevenueCat), login Apple e Google, widgets, Live Activities, alarme
+  (AlarmKit), hotel pelo Apple Maps, passkeys; Android; iPhone pequeno e grande; beta com 2–3 tripulantes no TestFlight;
+  declaração de dados nas lojas; Supabase/Resend pagos e limites (e-mails por hora, DMARC).
 ---
 
 ## 2026-11-08 — Os dois números do Manual de Operações vão aos sindicatos
