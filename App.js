@@ -727,6 +727,7 @@ export default function App() {
           const crewCategory = resolved.crewCategory || localProfile?.crewCategory || user.crewCategory || null;
           const crewContract = resolved.crewContract || localProfile?.crewContract || user.crewContract || null;
           const serviceStart = resolved.serviceStart || localProfile?.serviceStart || user.serviceStart || null;
+          const serviceStartExact = !!(resolved.serviceStartExact ?? localProfile?.serviceStartExact ?? user.serviceStartExact);
           // TAP: a antiguidade de serviço conta-se da LARGADA (cabine Cl. 14.ª, n.º 3; pilotos "largada conjunta") — anuidades e senioridade.
           const largada = resolved.largada || localProfile?.largada || user.largada || null;
           const base = resolved.base || localProfile?.base || user.base || null;
@@ -756,7 +757,7 @@ export default function App() {
           // suave: sem linha guardada → 1 período com o valor atual → todos os meses como antes.
           const companyHistory = migrateCompany({ companyHistory: resolved.companyHistory || localProfile?.companyHistory || user.companyHistory, company: resolved.company, crewType: resolved.crewType || 'cabin', employment, serviceStart });
           const baseHistory = migrateBase({ baseHistory: resolved.baseHistory || localProfile?.baseHistory || user.baseHistory, base, serviceStart });
-          setProfile({ company: resolved.company, crewType: resolved.crewType || 'cabin', crewCategory, crewContract, crewFleet, crewHistory, companyHistory, baseHistory, serviceStart, largada, base, lifestyle, instructorRated, postFlightMin, vacationDaysYear, employment, aeCovered });
+          setProfile({ company: resolved.company, crewType: resolved.crewType || 'cabin', crewCategory, crewContract, crewFleet, crewHistory, companyHistory, baseHistory, serviceStart, serviceStartExact, largada, base, lifestyle, instructorRated, postFlightMin, vacationDaysYear, employment, aeCovered });
           setOnboarded(true);
           // Uma vez por conta: apaga dos metadados da conta o "Abrangido pelo AE" gravado antes do bloco 8b.
           AsyncStorage.getItem(`cp_aecov_local_${user.id}`).then((done) => {

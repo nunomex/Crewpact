@@ -51,6 +51,7 @@ export const buildDataExport = ({ account = {}, profile = {}, duties = {}, dayLo
       baseHistory: profile.baseHistory || null,         // linha do tempo da base (2026-11-03)
       base: profile.base || null,
       serviceStart: profile.serviceStart || null,
+      serviceStartExact: !!profile.serviceStartExact,
       lifestyle: !!profile.lifestyle,
       instructorRated: !!profile.instructorRated,
       postFlightMin: profile.postFlightMin || 0,    // serviço pós-voo/débrief (min, do OM)

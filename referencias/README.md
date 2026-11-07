@@ -169,3 +169,18 @@ de cada limite de horas (opção 4) + aviso curto no topo:
 O que se tira delas: o grupo diz o resultado e quantas regras tem ("A ver · 2"); cada cartão tem a categoria em
 pequeno e uma frase grande que diz o que se passa; no gráfico, a linha tracejada do limite e o número que falta
 (ou que passou) por baixo, em vez de uma percentagem.
+
+## perfil-dia-entrada/ — escolhida a 2026-11-08 (o dia da entrada na companhia, opcional)
+
+**Coluna do dia com "—"** (opção 1): a roda de mês e ano ganha a coluna do dia à esquerda (dia · mês · ano, a ordem
+portuguesa); o "—" no topo quer dizer "não sei o dia" — o valor de todos os perfis antigos.
+
+| Ficheiro | App | Mobbin |
+|---|---|---|
+| `dia-traco-open.webp` | Open | https://mobbin.com/screens/bd5cea65-5812-41c9-9c6d-1d28347e5808 |
+| `dia-traco-open-preenchido.webp` | Open | https://mobbin.com/screens/0e42ff79-e57a-487b-a313-63726cf9a52a |
+| `dia-mes-ano-lifesum.webp` | Lifesum | https://mobbin.com/screens/22824e3a-2c45-4eeb-a9bd-b446ed6fbf1b |
+
+O que se tira delas: cada coluna começa num traço (o "por saber" é uma escolha da própria roda, sem botão à parte); a
+ordem dia · mês · ano do Lifesum. Medido com a Hanken Grotesk (Playwright): "31" a 20 pt = 22,4 px numa coluna de 37 px
+úteis a 390 pt e 25,3 a 320 pt; "Novembro" 93,8 px em 128–163.

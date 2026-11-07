@@ -149,14 +149,18 @@ export default function OnboardingScreen() {
       .map((cc) => ({ cc, items: by[cc].sort((x, y) => x.name.localeCompare(y.name)) }));
   })();
 
+  // Mês e ano, com o dia opcional ('AAAA-MM' ou 'AAAA-MM-DD'): nunca no futuro.
   const isRealMonth = (v) => {
-    const m = /^(\d{4})-(\d{2})$/.exec((v || '').trim());
+    const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec((v || '').trim());
     if (!m) return false;
-    const y = +m[1], mo = +m[2];
+    const y = +m[1], mo = +m[2], d = m[3] ? +m[3] : null;
     if (y < new Date().getFullYear() - 100 || mo < 1 || mo > 12) return false;
+    if (d != null && (d < 1 || d > new Date(y, mo, 0).getDate())) return false;
     const now = new Date();
+    if (d != null && y === now.getFullYear() && mo === now.getMonth() + 1 && d > now.getDate()) return false;
     return y < now.getFullYear() || (y === now.getFullYear() && mo <= now.getMonth() + 1);
   };
+  const hasDay = (v) => /^\d{4}-\d{2}-\d{2}$/.test((v || '').trim());
 
   // As PERGUNTAS — copy do esboço aprovado (a explicação cita a lei: é o que nos distingue).
   const ymLabel = (v) => {
@@ -183,7 +187,7 @@ export default function OnboardingScreen() {
         sub: beforeHasAe && ae
           ? l(`Até aí, a app calcula com o acordo da ${beforeName}. A partir daí, com o da ${newName}. A antiguidade também conta deste mês.`, `Until then, the app uses the ${beforeName} agreement. From then on, the ${newName} one. Seniority also counts from this month.`)
           : l(`Até aí, os meses ficam com a ${beforeName}. A partir daí, contam com a ${newName}.`, `Until then, months stay with ${beforeName}. From then on, they count with ${newName}.`) }
-      : { q: l('Na companhia desde?', 'With the airline since?'), sub: l('A antiguidade entra no salário (anuidades, senioridade, prémio de permanência, subsídios do 1.º ano — conforme o acordo): sem ela, sai incompleto. Mês e ano chegam.', 'Seniority goes into your pay (service-year pay, long-service award, first-year allowances — depending on the agreement): without it, your pay is incomplete. Month and year are enough.') },
+      : { q: l('Na companhia desde?', 'With the airline since?'), sub: l('A antiguidade entra no salário (anuidades, senioridade, prémio de permanência, subsídios do 1.º ano — conforme o acordo): sem ela, sai incompleto. Mês e ano chegam; o dia, se o souberes, acerta o mês em que entraste.', 'Seniority goes into your pay (service-year pay, long-service award, first-year allowances — depending on the agreement): without it, your pay is incomplete. Month and year are enough; the day, if you know it, settles the month you joined.') },
   };
   const idx = Math.min(step, flow.length - 1);
   const field = flow[idx];
@@ -205,8 +209,9 @@ export default function OnboardingScreen() {
       crewContract: dd.companyHasContract ? d.crewContract : null,
       crewFleet: dd.companyHasFleet ? d.crewFleet : null,
       base: d.base || null,
-      // Mês/ano → dia 01 por convenção (o prémio salta por ANOS; o dia é irrelevante).
-      serviceStart: isRealMonth(d.serviceStart) ? `${d.serviceStart}-01` : null,
+      // Com o dia → a data inteira e a marca (o mês da entrada paga-se pelos dias); sem ele → dia 01 por convenção.
+      serviceStart: isRealMonth(d.serviceStart) ? (hasDay(d.serviceStart) ? d.serviceStart : `${d.serviceStart}-01`) : null,
+      serviceStartExact: isRealMonth(d.serviceStart) && hasDay(d.serviceStart),
     };
     // LINHA DO TEMPO DO CONTRATO (2026-11-03): categoria/contrato · companhia+tipo · base.
     // · "MUDEI" (mudança de companhia a sério): períodos novos a partir do mês de entrada na nova
@@ -532,12 +537,12 @@ export default function OnboardingScreen() {
             </>
           ) : field === 'serviceStart' ? (
             <>
-              <MonthYearWheel value={draft.serviceStart} lang={lang}
+              <MonthYearWheel withDay value={draft.serviceStart} lang={lang}
                 onChange={(v) => { setSaveError(null); setDraft((d) => ({ ...d, serviceStart: v })); }} />
               <Text style={[P.foot, o.after]}>
                 {!isRealMonth(draft.serviceStart)
-                  ? l('Roda ou toca no mês e no ano em que entraste.', 'Spin or tap the month and year you joined.')
-                  : movedNow && sinceTxt && draft.serviceStart <= beforeStart
+                  ? l('Roda ou toca no mês e no ano em que entraste. O dia é opcional (— é "não sei").', 'Spin or tap the month and year you joined. The day is optional (— means "don\'t know").')
+                  : movedNow && sinceTxt && draft.serviceStart.slice(0, 7) <= beforeStart
                     ? l(`Isto é antes de entrares na ${beforeName}: os meses antigos também mudam, como numa correção.`, `That is before you joined ${beforeName}: earlier months change too, like a correction.`)
                     : movedNow && beforeHasAe
                       ? l(`Os serviços de antes continuam a mostrar o dinheiro da ${beforeName}.`, `Earlier duties keep showing ${beforeName} pay.`)

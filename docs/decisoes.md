@@ -37,7 +37,8 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   Biblioteca (bónus, ADTY, FTL, valor horário TAP) (8b · BLOCO 1 · BLOCO 7 · 2026-11-08).
 - **Disrupção:** 2 alterações ao mesmo serviço (1 candidato); o visto longo cabe; cabine com repouso a bordo e diferença de
   apresentação; repartido com sala (BLOCO 5 · BLOCO 7 · 8b).
-- **Perfil e contas:** "Abrangido pelo AE" grava e repõe; TAP piloto (anuidades, formação) e TAP cabine (VS, chefia, tempo
+- **Perfil e contas:** "Na … desde" com a coluna do dia (— por defeito; o dia 31 num mês de 30 corta para 30; no mês atual não
+  passa de hoje; gravar e reabrir mostra o dia) e no onboarding; "Abrangido pelo AE" grava e repõe; TAP piloto (anuidades, formação) e TAP cabine (VS, chefia, tempo
   parcial); configuração (§0c, §0f), Perfil e Família (§0e), linha do tempo (§0g), limites TAP (§0h, kit de longo curso §0i);
   entrada (reenviar código, código errado, palavra-passe, mudar e-mail); reset de palavra-passe e reativar conta apagada; janelas
   com o cabeçalho novo (8b · BLOCO 6 · 2026-11-02/03 · `docs/verificacao-device.md`).
@@ -52,8 +53,7 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   (Cl. 20.ª) sem eventos; AC2 por cancelamento tardio; prestação complementar dos pilotos (Cl. 10.ª) (BLOCO 5 · BLOCO 6).
 - **easyJet:** média das variáveis nos subsídios; subsídios no ano da saída; WFLY + DDO no mesmo serviço; formação fora da base
   da cabine na importação (BLOCO 6).
-- **Campos por fazer (com Mobbin):** **o DIA da entrada** (Perfil "Na … desde" e onboarding; o motor já o usa —
-  `serviceStartExact`; referências mostradas a 2026-11-08, por escolher); formação inicial (A-218); subsídio de idioma; exercício efetivo do VE (TAP); datas de
+- **Campos por fazer (com Mobbin):** formação inicial (A-218); subsídio de idioma; exercício efetivo do VE (TAP); datas de
   atividade dos 9/3 e sazonais; reserva na configuração para o pós-voo da Ryanair/Hi Fly e para os números do Manual de Operações
   se os sindicatos não os derem (BLOCO 5 · 6 · 2026-11-08 Manual de Operações).
 - **Importação e formulário:** setor que não encaixa entre dias sem aviso (2026-11-04 madrugada); A-249 a A-251 e A-179 (pernas e
@@ -109,8 +109,10 @@ Mobbin primeiro; até ser dado, o mês da entrada fica "incerto". **Feito (o mot
   `serviceStartExact`), levado a `monthlyAe`, `aeMonthTotal`, `monthStats`, `yearStats`, `payStatus`, Início, Números e sino.
 - Textos: "Quanto recebo?" ("é o mês em que entraste e falta o dia"), Números ("falta o dia em que entraste"; "até mais X
   conforme … o dia em que entraste").
-- **Falta:** o campo do dia (Perfil e onboarding) — referências do Mobbin mostradas ao Nuno; até lá, todos os perfis ficam "dia
-  por saber" (o mês da entrada e os subsídios desse ano com intervalo — o máximo é o que a app dava antes).
+- **O campo do dia** (Nuno escolheu a opção 1 do Mobbin: Open + Lifesum, em `referencias/perfil-dia-entrada/`): a roda de mês
+  e ano (`MonthYearWheel`, `withDay`) ganha a coluna do dia à esquerda, a começar em "—" = não sei (o valor dos perfis antigos);
+  no Perfil ("Na … desde") e no onboarding; grava `serviceStartExact` nos metadados da conta (e na exportação RGPD). Medido com a
+  Hanken Grotesk: cabe a 390, 375 e 320 pt; dívida de desenho igual.
 - **Testes:** Dinheiro a menos 258 (o ano da admissão pela regra nova: sem o dia, certo e máximo; com o dia, um valor), stats 180
   (o ano = a soma dos meses, com e sem o dia); 34 suites verdes; export iOS ✓. **Nada visto no iPhone.**
 

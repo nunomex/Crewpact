@@ -84,16 +84,18 @@ export default function usePerfilActions() {
   };
   // Antiguidade — 'AAAA-MM-DD' (ou null para remover). Depois de uma mudança de companhia, é também a
   // data de entrada na atual: a fronteira das três linhas do tempo acompanha (moveEmploymentStart).
-  const saveServiceStart = (val) => {
+  // `exact`: o tripulante deu o DIA (serviceStartExact) — o mês da entrada e os subsídios desse ano contam pelos dias.
+  const saveServiceStart = (val, exact = false) => {
+    const ex = { serviceStartExact: !!(val && exact) };
     if (val && (companyHistory || []).length > 1) {
       const lines = moveEmploymentStart({ crewHistory, companyHistory, baseHistory }, String(val).slice(0, 7));
       // A categoria espelhada só muda se a atual tiver categoria (companhia sem AE: fica como estava).
       const lastCrew = lines.crewHistory[lines.crewHistory.length - 1];
       const cur = lastCrew && lastCrew.from >= companyStartYm(lines.companyHistory) ? currentCrew(lines.crewHistory) : null;
-      set({ serviceStart: val, ...lines, ...(cur ? { crewCategory: cur.category, crewContract: cur.contract } : {}), base: resolveBase(lines.baseHistory, currentYmNow()) });
+      set({ serviceStart: val, ...ex, ...lines, ...(cur ? { crewCategory: cur.category, crewContract: cur.contract } : {}), base: resolveBase(lines.baseHistory, currentYmNow()) });
       return;
     }
-    set({ serviceStart: val });
+    set({ serviceStart: val, ...ex });
   };
   // Data da largada (TAP: as anuidades e a senioridade contam dela — Cl. 14.ª, n.º 3) — 'AAAA-MM-DD' ou null.
   const saveLargada = (val) => set({ largada: val || null });

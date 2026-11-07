@@ -33,6 +33,7 @@ export const mapUser = (u) => ({
   companyHistory: u.user_metadata?.companyHistory || null,   // linha do tempo companhia+tipo (2026-11-03)
   baseHistory: u.user_metadata?.baseHistory || null,         // linha do tempo da base (2026-11-03)
   serviceStart: u.user_metadata?.serviceStart || null,   // data de início na companhia (AAAA-MM-DD) → antiguidade
+  serviceStartExact: !!u.user_metadata?.serviceStartExact,   // o DIA foi dado (senão o mês da entrada fica incerto)
   largada: u.user_metadata?.largada || null,             // TAP: data da largada (AAAA-MM-DD) → anuidades e senioridade (Cl. 14.ª, n.º 3)
   base:      u.user_metadata?.base     || null,          // base do tripulante (LIS/OPO/FAO) → "fora da base"
   lifestyle: u.user_metadata?.lifestyle || false,        // PPY como estilo de vida (Art. 66.9) → sem retenção

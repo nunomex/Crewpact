@@ -28,7 +28,7 @@ export default function PerfilPaginaScreen({ route, navigation }) {
   const kind = route?.params?.kind;
   const ctx = useContext(AppContext);
   const { lang, ae, company, crewCategory, crewContract, crewFleet, crewHistory, postFlightMin, postFlightSource,
-    vacationDaysYear, vacationSource, employment, aeCovered, serviceStart, largada, base, bases, countries, lifestyle,
+    vacationDaysYear, vacationSource, employment, aeCovered, serviceStart, serviceStartExact, largada, base, bases, countries, lifestyle,
     instructorRated, lockEnabled, remindersOn, toggleReminders, setLang, baseHistory, companyHistory, homeBaseAt, companyAt } = ctx;
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const A = usePerfilActions();
@@ -39,10 +39,12 @@ export default function PerfilPaginaScreen({ route, navigation }) {
   const pick = (fn, stay = false) => { select(); fn(); if (!stay) setTimeout(goBack, reduce ? 120 : BACK_MS); };
   // Estado das páginas com mais de uma escolha (todos os hooks no topo — regra do React).
   const startYm = serviceStart ? String(serviceStart).slice(0, 7) : '';
+  // Na roda da entrada: a data inteira quando o dia foi dado; senão só o mês (o dia fica em "—").
+  const startVal = serviceStart && serviceStartExact ? String(serviceStart).slice(0, 10) : startYm;
   const [selCrew, setSelCrew] = useState(kind === 'contrato' ? (crewContract || '12/12') : kind === 'frota' ? (crewFleet || 'NB') : crewCategory);
   const [from, setFrom] = useState(currentYmNow());
   const largadaYm = largada ? String(largada).slice(0, 7) : '';
-  const [ym, setYm] = useState(kind === 'largada' ? largadaYm : startYm);
+  const [ym, setYm] = useState(kind === 'largada' ? largadaYm : startVal);
   const [query, setQuery] = useState('');
   // Base e vínculo em dois passos (linha do tempo do contrato, esboço design/linha-do-tempo.html, aprovado):
   // a lista → "desde quando?" (mudei a partir de um mês · sempre foi assim).
@@ -121,17 +123,19 @@ export default function PerfilPaginaScreen({ route, navigation }) {
   if (kind === 'inicio') {
     const coName = company?.name || l('companhia', 'airline');
     const save = () => {
-      // Mês e ano chegam (o prémio de permanência salta por ANOS). Mesmo mês → guarda o dia que lá estava.
-      A.saveServiceStart(ym === startYm ? serviceStart : `${ym}-01`);
+      // Com o dia → a data inteira e a marca (serviceStartExact). Sem ele → o mês (dia 01 por convenção); mesmo mês de antes e
+      // sem dia antes → fica o que lá estava.
+      const hasDay = /^\d{4}-\d{2}-\d{2}$/.test(ym);
+      A.saveServiceStart(hasDay ? ym : (ym === startYm && !serviceStartExact ? serviceStart : `${ym.slice(0, 7)}-01`), hasDay);
       goBack();
     };
     return (
       <Pagina {...back}
         title={l(`Na ${coName} desde`, `With ${coName} since`)}
-        lead={l('A antiguidade entra no salário (anuidades, senioridade, prémio de permanência, subsídios do 1.º ano — conforme o acordo): sem ela, sai incompleto. Mês e ano chegam.', 'Seniority goes into your pay (service-year pay, long-service award, first-year allowances — depending on the agreement): without it, your pay is incomplete. Month and year are enough.')}
-        footer={<PrimaryButton label={l('Guardar', 'Save')} onPress={save} disabled={!/^\d{4}-\d{2}$/.test(ym) || ym === startYm} />}>
-        <MonthYearWheel value={startYm || null} onChange={setYm} lang={lang} />
-        <Text style={[P.foot, s.gap]}>{l('Roda ou toca no mês e no ano em que entraste.', 'Spin or tap the month and year you joined.')}</Text>
+        lead={l('A antiguidade entra no salário (anuidades, senioridade, prémio de permanência, subsídios do 1.º ano — conforme o acordo): sem ela, sai incompleto. Mês e ano chegam; o dia, se o souberes, acerta o mês em que entraste.', 'Seniority goes into your pay (service-year pay, long-service award, first-year allowances — depending on the agreement): without it, your pay is incomplete. Month and year are enough; the day, if you know it, settles the month you joined.')}
+        footer={<PrimaryButton label={l('Guardar', 'Save')} onPress={save} disabled={!/^\d{4}-\d{2}(-\d{2})?$/.test(ym) || ym === startVal} />}>
+        <MonthYearWheel withDay value={startVal || null} onChange={setYm} lang={lang} />
+        <Text style={[P.foot, s.gap]}>{l('O dia é opcional (— é "não sei"). Só conta no mês em que entraste, que se paga pelos dias, e nos subsídios desse ano.', 'The day is optional (— means "don\'t know"). It only matters in the month you joined, paid by the day, and in that year\'s allowances.')}</Text>
       </Pagina>
     );
   }
