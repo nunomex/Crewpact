@@ -52,7 +52,9 @@ export const admissionShare = (serviceStart, year, toMonth = 12) => {
 // (min, o certo) ou só depois do 1.º mês (max) — a app não sabe quando a suspensão se tornou previsível.
 const isoNext = (iso) => { const [y, m, d] = iso.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10); };
 const plusMonth = (iso) => { const [y, m, d] = iso.split('-').map(Number); const t = new Date(Date.UTC(y, m, d)); if (t.getUTCDate() !== d) t.setUTCDate(0); return t.toISOString().slice(0, 10); };
-export const suspensionShare = (events, year) => {
+// `minDays`: um acordo com prazo próprio em DIAS (cabine easyJet, Cl. 86.ª, n.º 2: "superior a 30 (trinta) dias") em vez do "mais
+// de um mês" do Código do Trabalho (art. 296.º).
+export const suspensionShare = (events, year, { minDays = null } = {}) => {
   const ds = [...new Set((events || []).filter((e) => e && e.type === 'sickDays' && /^\d{4}-\d{2}-\d{2}$/.test(String(e.date))).map((e) => String(e.date)))].sort();
   if (!ds.length) return null;
   const runs = []; let cur = null;
@@ -60,8 +62,9 @@ export const suspensionShare = (events, year) => {
   const Y = String(year);
   let all = 0, after = 0;
   for (const r of runs) {
-    const limit = plusMonth(r[0]);               // a partir daqui o impedimento já passou de um mês
-    if (r[r.length - 1] < limit) continue;       // um mês ou menos: não suspende (n.º 1)
+    // a partir daqui o impedimento já passou de um mês (ou dos `minDays` dias do acordo)
+    const limit = minDays != null ? (r.length > minDays ? r[minDays] : '9999-12-31') : plusMonth(r[0]);
+    if (r[r.length - 1] < limit) continue;       // um mês (ou os dias do acordo) ou menos: não suspende (n.º 1)
     all += r.filter((d) => d.startsWith(Y)).length;
     after += r.filter((d) => d.startsWith(Y) && d >= limit).length;
   }

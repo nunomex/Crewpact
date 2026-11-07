@@ -35,7 +35,7 @@ import { DUTY_WINDOWS, FLIGHT_WINDOWS } from './rules/flightTimeRules';
 import { QUADRO1_DIFF, QUADRO1_ELAPSED, TZ_REST_DIFF, TZ_REST_ELAPSED } from './constants/tables';
 import { parseHhmm, minToHhmm, durationMin } from './utils/time';
 import { acclimLetter } from './rules/acclimatisationRules';
-import { airportOffsetMin, legZulu, legsChainMs, chainReportMs } from '../data/zulu';
+import { airportOffsetMin, airportUtcMs, legZulu, legsChainMs, chainReportMs } from '../data/zulu';
 
 // Versão do MOTOR de cálculo FTL. Carimba cada registo diário derivado (dutyToFtlDay/
 // dayFtlFromDuties → dayLog), para que uma futura ERRATA (docs/ERRATA.md §E6) saiba com que
@@ -50,7 +50,9 @@ import { airportOffsetMin, legZulu, legsChainMs, chainReportMs } from '../data/z
 // v7 (2026-11-07): aviso das 18 h acordado sem dupla redução; standby com adiamento sem as 8 h do repartido.
 // v8 (2026-11-07): os instantes das pernas pela cadeia do serviço (legsChainMs) — o tempo decorrido sem o limite das 24 h.
 // v9 (2026-11-07): aeroporto da 1.ª partida sem fuso conhecido → a apresentação pela Zulu do calendário (chainReportMs).
-export const ENGINE_VERSION = 9;
+// v10 (2026-11-08): aclimatação — um serviço dos 6 dias antes sem pernas com horas situa-se pela rota (ou na base, se for em
+// terra); sem forma de o situar e se a letra do Quadro 1 mudasse com ele → por saber (antes saltava-se e dava D).
+export const ENGINE_VERSION = 10;
 
 // Uma atividade (manual ou da escala) → PSV + repouso + legalidade num só objeto.
 // input: { state, report, end?, sectors, splitBreakH?, inBase?, postFlightMin? }
@@ -418,7 +420,7 @@ const zuluTimingOf = (duty = {}, base = null, date = null, refMode = 'auto') => 
   // O instante da apresentação (ms UTC): as horas da escala, no dia `day`, menos o desvio do seu relógio.
   let reportMs = null;
   if (day) { const [y, m, d] = day.split('-').map(Number); reportMs = Date.UTC(y, m - 1, d, Math.floor(rep / 60), rep % 60) - digitsOff * 60000; }
-  return { bandShiftMin, elapsedAdjMin, reportMs, depOff, baseOff };
+  return { bandShiftMin, elapsedAdjMin, reportMs, depOff, baseOff, digitsOff };
 };
 
 // ORO.FTL.105(1) + Quadro 1: o estado de aclimatação de um serviço que começa a MAIS de 2 h da base. A referência é a
@@ -426,13 +428,54 @@ const zuluTimingOf = (duty = {}, base = null, date = null, refMode = 'auto') => 
 // conta-se daí. Sem nenhuma na escala mas com serviços anteriores → mais de 120 h → a coluna "≥ 120". Sem nenhum registo
 // anterior → não se sabe (unknown). Devolve { letter: 'in'|'B'|'D'|'X'|null, diffH, elapsedH, unknown }; null sem dados.
 // Limite assumido: a aclimatação de partida é a da base (rotações que saem da base e voltam a ela).
-const acclimOf = (duty, { base, date, duties }) => {
+// Onde e quando começou um serviço dos dias antes (para a referência do Quadro 1): pelas pernas com horas; sem elas, pela rota
+// (o 1.º aeroporto) ou, num serviço em terra sem rota (o calendário não lha dá), no aeroporto da ÚLTIMA CHEGADA antes dele — não
+// na base: uma assistência em Newark não é uma apresentação em Lisboa (2.ª revisão de 2026-11-08). Sem forma de o situar →
+// { unplaced } com a hora aproximada (na base): só serve para saber se pode estar entre a referência e o serviço (1.ª revisão:
+// saltá-lo dava D por engano).
+const GROUND_KINDS = new Set(['office', 'training', 'standby_home', 'reserve', 'standby_airport']);
+const isoBack = (iso, k) => { const [y, m, d] = String(iso).split('-').map(Number); const t = new Date(y, m - 1, d - k, 12); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; };
+const arrOf = (x) => {
+  const lg = Array.isArray(x.legs) && x.legs.length ? x.legs[x.legs.length - 1].arr : null;
+  if (lg) return lg;
+  const r = String(x.route || '').split(/[^A-Za-z]+/).filter(Boolean);
+  return r.length > 1 ? r[r.length - 1] : null;
+};
+// O aeroporto da última chegada antes de `s`: no próprio dia, os serviços que se apresentam antes; depois os dias anteriores (até 14).
+const lastArrivalBefore = (duties, iso, s) => {
+  const rep = parseHhmm(s.report_time);
+  for (let k = 0; k <= 14; k++) {
+    const x = duties && duties[isoBack(iso, k)];
+    if (!x || x.deleted) continue;
+    const list = [x, ...(Array.isArray(x.extra) ? x.extra : [])]
+      .filter((v) => v && v !== s && (k > 0 || (rep != null && parseHhmm(v.report_time) != null && parseHhmm(v.report_time) < rep)))
+      .sort((a, b) => (parseHhmm(b.report_time) ?? -1) - (parseHhmm(a.report_time) ?? -1));   // o mais tarde primeiro
+    for (const v of list) { const a = arrOf(v); if (a) return a; }
+  }
+  return null;
+};
+const placeOf = (s, base, iso, duties) => {
+  const z = zuluTimingOf(s, base, iso);
+  if (z.reportMs != null && z.depOff != null && z.baseOff != null) return { ms: z.reportMs, inBand: Math.abs(z.depOff - z.baseOff) <= 120 };
+  const b = String(base || '').trim().toUpperCase();
+  const ap0 = (Array.isArray(s.legs) && s.legs[0] && s.legs[0].dep) || String(s.route || '').split(/[^A-Za-z]+/).filter(Boolean)[0]
+    || (GROUND_KINDS.has(s.kind || 'flight') ? lastArrivalBefore(duties, iso, s) : null);
+  const ap = ap0 ? String(ap0).trim().toUpperCase() : null;
+  const ms = ap ? airportUtcMs(iso, s.report_time, ap) : null;
+  const dOff = ms != null ? airportOffsetMin(ap, ms) : null, bOff = ms != null ? airportOffsetMin(b, ms) : null;
+  if (ms != null && dOff != null && bOff != null) return { ms, inBand: Math.abs(dOff - bOff) <= 120 };
+  const rep = parseHhmm(s.report_time);
+  const [y, m, d] = String(iso).split('-').map(Number);
+  const approx = airportUtcMs(iso, s.report_time, b);
+  return { ms: approx != null ? approx : (rep != null ? Date.UTC(y, m - 1, d, Math.floor(rep / 60), rep % 60) : null), unplaced: true };
+};
+const acclimOf = (duty, { base, date, duties }, me0 = null) => {
   if (!duties || !date || !base) return null;
-  const me = zuluTimingOf(duty, base, date);
+  const me = me0 || zuluTimingOf(duty, base, date);
   if (me.reportMs == null || me.depOff == null || me.baseOff == null) return null;
   const diffH = Math.abs(me.depOff - me.baseOff) / 60;
   if (diffH <= 2) return { letter: 'in', diffH };
-  let refMs = null;
+  let refMs = null, unplacedMs = null;
   const [y, m, d] = String(date).split('-').map(Number);
   for (let k = 0; k <= 6; k++) {
     const t = new Date(y, m - 1, d - k, 12);
@@ -441,15 +484,72 @@ const acclimOf = (duty, { base, date, duties }) => {
     if (!x || x.deleted) continue;
     for (const s of [x, ...(Array.isArray(x.extra) ? x.extra : [])]) {
       if (!s || !s.report_time) continue;
-      const z = zuluTimingOf(s, base, iso);
-      if (z.reportMs == null || z.reportMs >= me.reportMs || z.depOff == null || z.baseOff == null) continue;
-      if (Math.abs(z.depOff - z.baseOff) <= 120 && (refMs == null || z.reportMs > refMs)) refMs = z.reportMs;
+      const p = placeOf(s, base, iso, duties);
+      if (p.ms == null || p.ms >= me.reportMs) continue;
+      if (p.unplaced) { if (unplacedMs == null || p.ms > unplacedMs) unplacedMs = p.ms; continue; }
+      if (p.inBand && (refMs == null || p.ms > refMs)) refMs = p.ms;
     }
   }
-  if (refMs != null) { const elapsedH = (me.reportMs - refMs) / 3600000; return { letter: acclimLetter(diffH, elapsedH), diffH, elapsedH }; }
   const anyEarlier = Object.keys(duties).some((iso) => iso < date && duties[iso] && !duties[iso].deleted);
-  if (anyEarlier) return { letter: acclimLetter(diffH, 1e6), diffH, elapsedH: null };
+  const letter = refMs != null ? acclimLetter(diffH, (me.reportMs - refMs) / 3600000) : anyEarlier ? acclimLetter(diffH, 1e6) : null;
+  // Um serviço por situar depois da referência: se tivesse começado na faixa da base, a referência seria ele. Se a letra mudasse
+  // → não se sabe (o motor dá o intervalo entre os três estados).
+  if (unplacedMs != null && (refMs == null || unplacedMs > refMs) && acclimLetter(diffH, (me.reportMs - unplacedMs) / 3600000) !== letter) {
+    return { letter: null, diffH, unknown: true };
+  }
+  if (refMs != null) return { letter, diffH, elapsedH: (me.reportMs - refMs) / 3600000 };
+  if (anyEarlier) return { letter, diffH, elapsedH: null };
   return { letter: null, diffH, unknown: true };
+};
+
+// ORO.FTL.105(9) (e 105(8)): a noite (02:00–04:59) mede-se "no fuso horário a que o tripulante está aclimatado" — não nas
+// horas da escala, que estão no fuso de cada aeroporto. Pelo Quadro 1, como no PSV: B → a hora da base; D → a hora local;
+// X ou por saber → as duas, e quem chama dá "incerto" quando discordam (`either: false`). Em faixa (≤ 2 h da base) o tripulante
+// está aclimatado a uma FAIXA de 2 h (ORO.FTL.105(1)) — qual hora dentro dela é convenção → o conservador: noturno se a hora da
+// partida, a da base ou a da chegada (se ainda na faixa) o derem (`either: true`, revisão de 2026-11-08).
+// Devolve os desvios (min) a somar às horas da escala para as ter em cada leitura, o ajuste do tempo decorrido (no longo curso
+// o fim em horas da escala está no fuso da chegada; o real vem da Zulu, até aos calços da ÚLTIMA perna — o período de serviço
+// inclui o posicionamento) e o instante da apresentação. Sem legs nem fusos → { shifts: [0] } (o relógio, como antes).
+// Um só zuluTimingOf por serviço: a recuperação chama-o para a escala toda.
+export const nightClockOf = (duty, { base = null, date = null, duties = null } = {}) => {
+  if (!duty || !duty.report_time) return { shifts: [0], either: true, elapsedAdjMin: 0, reportMs: null, acclim: null };
+  const z = zuluTimingOf(duty, base, date);
+  const ac = acclimOf(duty, { base, date, duties }, z);
+  const letter = ac ? (ac.unknown ? 'unknown' : ac.letter) : null;
+  const legs = Array.isArray(duty.legs) ? duty.legs : [];
+  let shifts = [z.bandShiftMin || 0], either = true;
+  if (z.depOff != null && z.digitsOff != null) {
+    // Os desvios no INSTANTE da apresentação (o zuluTimingOf lê-os ao meio-dia, que no dia da mudança de hora não é o da
+    // madrugada — 2.ª revisão de 2026-11-08); o do relógio da escala (digitsOff) é o da 1.ª partida.
+    const bU = String(base || '').trim().toUpperCase(), dep0 = legs.length ? String(legs[0].dep || '').trim().toUpperCase() : '';
+    const atRep = (code, fb) => (code && z.reportMs != null ? (airportOffsetMin(code, z.reportMs) ?? fb) : fb);
+    const depOff = atRep(dep0, z.depOff), baseOff = z.baseOff != null ? atRep(bU, z.baseOff) : null;
+    const sh = (off) => nrm(off - z.digitsOff);
+    if (letter === 'B' && baseOff != null) shifts = [sh(baseOff)];
+    else if (letter === 'D') shifts = [sh(depOff)];
+    else if ((letter === 'X' || letter === 'unknown') && baseOff != null) { shifts = [...new Set([sh(baseOff), sh(depOff)])]; either = false; }
+    else if (baseOff != null && Math.abs(depOff - baseOff) <= 120) {
+      // Em faixa: partida, base e chegada (esta só se ainda na faixa da base). Sem base conhecida fica só a hora local.
+      const out = [sh(depOff), sh(baseOff)];
+      const arr = legs.length ? legs[legs.length - 1].arr : null;
+      const arrOff = arr && z.reportMs != null ? airportOffsetMin(String(arr).toUpperCase(), z.reportMs) : null;
+      if (arrOff != null && Math.abs(arrOff - baseOff) <= 120) out.push(sh(arrOff));
+      shifts = [...new Set(out)];
+    } else if (baseOff == null) shifts = [sh(depOff)];
+  }
+  // Tempo decorrido até aos calços da última perna (posicionamento incluído), quando o fim registado é essa chegada.
+  let adj = z.elapsedAdjMin || 0;
+  const rep = parseHhmm(duty.report_time), end = parseHhmm(duty.block_on);
+  const lL = legs[legs.length - 1], off0 = legs.length ? parseHhmm(legs[0].off) : null;
+  if (date && lL && end != null && rep != null && off0 != null && parseHhmm(lL.on) === end) {
+    const ch = legsChainMs(date, legs, duty.report_time);
+    const c0 = ch[0], cL = ch[legs.length - 1];
+    if (c0 && c0.offMs != null && cL && cL.onMs != null) {
+      const real = Math.round((cL.onMs - c0.offMs) / 60000) + durationMin(rep, off0);
+      if (real > 0 && real <= 1440) adj = real - durationMin(rep, end);
+    }
+  }
+  return { shifts, either, elapsedAdjMin: adj, reportMs: z.reportMs, acclim: letter };
 };
 
 // O serviço é um PSV? ORO.FTL.105(12): o PSV "inclui um setor ou série de setores". Standby em casa, formação,

@@ -382,13 +382,15 @@ export const computeAeMonth = ({ category = 'FA', contract = '12/12', duties = [
 // A parte CERTA é o 1/14 da base. A média do variável (o acordo não diz que rubricas entram no CPV) e o 1/14 do subsídio de
 // idioma (a app não sabe as línguas) ficam de fora e o item diz isso (`incomplete`) — nunca um número inventado.
 // Natal numa baixa de mais de um mês: proporcional ao tempo de serviço (CT art. 263.º, n.º 2, c); 296.º) — certo e máximo.
-const SUSP_NOTE = { pt: 'Proporcional ao tempo de serviço: houve uma baixa de mais de um mês (Código do Trabalho, arts. 263.º e 296.º).', en: 'Pro rata to time worked: there was sick leave of more than a month (Labour Code, arts. 263 and 296).' };
+// A cabine tem prazo próprio: "superior a 30 (trinta) dias" (Cl. 86.ª, n.º 2), não o "mais de um mês" do Código do Trabalho.
+const SUSP_SHORT = { pt: 'baixa de mais de 30 dias (Cl. 86.ª, n.º 2)', en: 'sick leave over 30 days (Cl. 86(2))' };   // a linha dos Números
+const SUSP_NOTE = { pt: 'Proporcional ao tempo de serviço: houve uma baixa de mais de 30 dias (Cl. 86.ª, n.º 2; Código do Trabalho, arts. 263.º e 296.º).', en: 'Pro rata to time worked: there was sick leave of more than 30 days (Cl. 86(2); Labour Code, arts. 263 and 296).' };
 const applySuspension = (out, events, year) => {
-  const sh = suspensionShare(events, year);
+  const sh = suspensionShare(events, year, { minDays: 30 });
   const it = out.find((x) => x.id === 'natal');
   if (!sh || !it) return;
   const full = it.eur;
-  it.eur = r2(full * sh.min); it.max = r2(full * sh.max); it.suspension = true; it.suspNote = SUSP_NOTE;
+  it.eur = r2(full * sh.min); it.max = r2(full * sh.max); it.suspension = true; it.suspNote = SUSP_NOTE; it.suspShort = SUSP_SHORT;
 };
 const SUB_NOTE = {
   ferias: { pt: 'Sem a média do pagamento variável (o acordo não diz que rubricas entram) nem o 1/14 do subsídio de idioma.', en: 'Without the average variable pay (the agreement does not list what counts) or 1/14 of the language allowance.' },

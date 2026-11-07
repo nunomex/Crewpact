@@ -17,7 +17,8 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   Completar → folha das 3 opções); cabine com a apresentação dos pilotos; "O calendário está errado?" (horas reais, faltou um
   dado); dia com 2 serviços (o 2.º abre o seu Detalhe); DH ("DH ·" e sign-off derivado); estadia de 2 noites; "não se aplica —
   sem setores" (2026-11-08 Editar saiu · BLOCO 4 · BLOCO 6 · BLOCO 1).
-- **Início:** "Registar o sign-off" → horas reais; serviço noturno pela meia-noite; "incerto" e "dentro, com prolongamento";
+- **Início:** "Dentro dos limites?" com 5 setores na 2.ª noite seguida ("Não — 5 setores em noites seguidas") e com uma reserva
+  pelo meio ("Incerto"); "Registar o sign-off" → horas reais; serviço noturno pela meia-noite; "incerto" e "dentro, com prolongamento";
   "Tenho descanso?"/"Repouso até"; baixa (conta TAP e conta de cabine, "dia N do episódio"); 9/3 com "incerto"; fecho de novembro
   com o Natal; limites com DH antes, 2 voos no dia e assistência antes; "o que registaste está válido"; repouso depois de um
   repartido; folga sem nada marcado; disrupção e aviso de RDP (precisa de um atraso real); barra de baixo de dia e de noite;
@@ -29,7 +30,8 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
 - **Importação:** o calendário sintético do guião (repartido de 7 h, DH antes e depois, HSBY + voo, dia inteiro com horas,
   formação de 3 dias, aviso ⚠, repouso curto); reimportar com sign-off ("relidos", sem SNC); apagar e reimportar a doença de
   teste; formulário de correção (comandante instrutor, voo depois da meia-noite → DDO/IDO); validades (BLOCO 4 · 5 · 6 · 3).
-- **Números, Estatísticas, "Quanto recebo?":** % das 900 h e "faltam h:mm"; meses de 2024/25 e antes de fev-2024; "Extras do
+- **Números, Estatísticas, "Quanto recebo?":** Natal proporcional da cabine easyJet com "baixa de mais de 30 dias (Cl. 86.ª,
+  n.º 2)"; % das 900 h e "faltam h:mm"; meses de 2024/25 e antes de fev-2024; "Extras do
   mês"; subsídios (junho, novembro, abril, 14/14); conta TAP piloto e cabine com o motivo do incerto (BLOCO 1 · 5 · 6 · 8b).
 - **Relatórios, Prova, Biblioteca:** o rótulo "Registo pessoal" cabe; PDF 245, CSV, logbook; Prova do PSV, standby e radiação;
   Biblioteca (bónus, ADTY, FTL, valor horário TAP) (8b · BLOCO 1 · BLOCO 7 · 2026-11-08).
@@ -44,10 +46,11 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   de situação · `docs/05-verificacao.md`).
 
 ### 2. Acertos de código por fazer
-- **Cálculos:** suspensão do contrato na cabine easyJet — a Cl. 86.ª/2 diz "superior a 30 dias", o código usa "mais de um mês"
-  (BLOCO 8); 4 setores em noites seguidas ainda fora do "Dentro dos limites?" do Início (a importação já os vê) (BLOCO 2);
-  `nightOf` pelas horas da escala, não pelo fuso de aclimatação — pesa no longo curso (BLOCO 8); mês da admissão a meio do mês
-  (o `serviceStart` guarda só o mês) (BLOCO 5 · 8); valor "agora" do voo do mês da cabine TAP só pela hora da partida; máximo da
+- **Cálculos:** na recuperação, um serviço em terra sem pernas fora da base (assistência em GRU) ainda se classifica na hora
+  local, não na da aclimatação; na noite da mudança de hora (outubro) o `legsChainMs` resolve as horas repetidas 01:00–01:59
+  sempre para a 2.ª (pernas sem Zulu do calendário; dá mais avisos, não menos); o tz-lookup errou o Bahrein (corrigido à mão) —
+  conferir os outros aeroportos contra uma lista de fusos (2026-11-08 Três acertos); mês da admissão a meio do mês (o
+  `serviceStart` guarda só o mês) (BLOCO 5 · 8); valor "agora" do voo do mês da cabine TAP só pela hora da partida; máximo da
   assistência a 100 % no trimestre (2026-11-08 Os 4).
 - **TAP:** dias de estadia perdidos com outro serviço depois do voo no mesmo dia; horas da escala na hora do destino; doença
   (Cl. 20.ª) sem eventos; AC2 por cancelamento tardio; prestação complementar dos pilotos (Cl. 10.ª) (BLOCO 5 · BLOCO 6).
@@ -93,6 +96,48 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
 - Face ID real, PDF por ficheiro, voo ao vivo nativo, compras (RevenueCat), login Apple e Google, widgets, Live Activities, alarme
   (AlarmKit), hotel pelo Apple Maps, passkeys; Android; iPhone pequeno e grande; beta com 2–3 tripulantes no TestFlight;
   declaração de dados nas lojas; Supabase/Resend pagos e limites (e-mails por hora, DMARC).
+---
+
+## 2026-11-08 — Três acertos de cálculo e a recuperação no fuso de aclimatação (Opus 5.5) — o Nuno: "sim" · "vê bem se consegues corrigir"
+
+**Pedido:** os três acertos de segurança ou dinheiro sem desenho da lista (suspensão, noites no Início, noite pelo fuso de
+aclimatação); depois, a falha da mesma família que encontrei na recuperação. **Feito:**
+- **Suspensão do contrato na cabine easyJet:** a Cl. 86.ª, n.º 2 diz "superior a 30 (trinta) dias" — mais específica do que o "mais
+  de um mês" do Código do Trabalho (art. 296.º, que continua nos outros acordos). `suspensionShare(…, { minDays: 30 })`. Golden:
+  31 dias suspende, 30 não; um caso antigo do Natal FA passou de 1235,89 € para 1232,20 € (1346,55 × 334/365). Os Números citam a
+  cláusula (`suspShort`).
+- **Início, "Dentro dos limites?":** os 4 setores em noites seguidas (CS FTL.1.205(a)(1), FAQ EASA 47617) pela MESMA regra da
+  Simulação (`nightSectorIssues`): "Não — 5 setores em noites seguidas (máx. 4)" ou "Incerto" (o que pode quebrar a sequência, ou
+  a aclimatação). Vê todos os PSV noturnos do dia (um dia pode ter dois).
+- **Noite no fuso de aclimatação (ORO.FTL.105(9)):** `nightClockOf` no motor, pelo Quadro 1 como o PSV — B → hora da base; D →
+  hora local; X ou por saber → as duas leituras → incerto se discordam. **Em faixa (≤ 2 h da base) a "faixa de 2 h" é convenção
+  → o conservador:** noturno se a hora da partida, a da base ou a da chegada (ainda na faixa) o der. O tempo decorrido é o real
+  (Zulu), até aos calços da última perna (o posicionamento conta, é período de serviço); um bloco de vários serviços também.
+  Ex.: LIS 17:00 → GRU 00:30 locais acaba às 05:00 de Lisboa → noturno (pelas horas da escala não era).
+- **Recuperação (ORO.FTL.105(8)):** noturno, matinal e tardio no mesmo fuso, para as 60 h depois de 4 irregulares e a noite de
+  transição. O `recoveryIssues` corre matinal/tardio × as duas leituras (estas só quando há aclimatação X ou por saber); o incerto
+  diz o motivo (tipo de horário, aclimatação ou os dois). Com o tipo conhecido, a dúvida da aclimatação fica. Os intervalos e as
+  noites locais continuam nas horas da escala (o fim de cada serviço está no fuso de onde se repousa).
+- **Aclimatação (Quadro 1 — mexe no PSV, ENGINE_VERSION 10):** um serviço dos 6 dias antes sem pernas com horas situa-se pela rota
+  (ou na base, se for em terra); sem forma de o situar e se a letra mudasse com ele → por saber (antes saltava-se e dava D).
+- **Rapidez:** o desvio de cada fuso guarda-se por quarto de hora UTC (exato: as mudanças de hora caem sempre no início de um) e
+  o `nightClockOf` faz um só `zuluTimingOf`. Recuperação de uma escala de um ano: 24 → 44 ms; a janela da Simulação, 12 ms.
+- **Revisão independente (1.ª):** 4 erros confirmados — dia com 2 PSV noturnos (só se via o 1.º); serviço anterior sem pernas →
+  D; blocos de vários serviços pelo relógio; o texto do Natal proporcional nos Números com a regra do CT — e uma interpretação
+  (em faixa para leste a leitura nova era menos conservadora; decidido o conservador). Tudo corrigido, com golden primeiro.
+  **2.ª revisão (só ao que mudou):** 1 erro ALTO meu — um serviço em terra sem rota era dado como feito na base, mesmo fora (uma
+  assistência em Newark virava a referência do Quadro 1: B em vez de X, PSV com 2 h a mais) → situa-se no aeroporto da última
+  chegada antes dele. Mais: o fuso de um bloco que começa com uma assistência sem pernas (vem agora do 1.º serviço com pernas);
+  sem base, só a hora local; dois PSV noturnos no mesmo dia com um aviso cada; motivo "os dois" no incerto das noites; os desvios
+  no instante da apresentação (dia da mudança de hora). Fora do âmbito mas real, corrigido: o Bahrein caía no fuso de Teerão
+  (+3:30) e o desvio por aeroporto guardava-se por hora (30 min errados na mudança de hora da Terra Nova e de Adelaide) → por
+  quarto de hora. O `homeBaseAt` passou a estável (`useCallback`): o Início refazia a recuperação a cada render. A revisão
+  confirmou o resto: sem longo curso, a recuperação e a Simulação dão exatamente o mesmo de antes (1440 + 3000 escalas
+  aleatórias); a cache de fusos é exata (418 fusos, 2020–2030). **Por convenção:** com a chegada noutro fuso dentro da faixa
+  (BCN, MAD, TLV) aparecem avisos novos CERTOS (noites, transição tardio → matinal) — é a leitura conservadora escolhida.
+- **Testes:** Simulação 102, Dinheiro a menos 247, ftl-golden e zulu com os casos das duas revisões; 34 suites verdes; export
+  iOS ✓. **Nada visto no iPhone** (ver a lista: Início e Números).
+
 ---
 
 ## 2026-11-08 — Os dois números do Manual de Operações vão aos sindicatos

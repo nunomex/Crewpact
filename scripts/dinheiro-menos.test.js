@@ -225,7 +225,8 @@ has('TAP pilotos Cl. 8.ª/2 (suspensão)', TAPP, 'bem como no da suspensão do m
   eq('FO: Natal com suspensão (certo e máximo)', [n.eur, n.max], [2906.04, 3202.38]);
   eq('FO: baixa de 30 dias não suspende', eur(pil.annualItems('FO', { ym: '2026-11', index: pil.indexFactor('2026-11'), events: days('2026-03-01', 30, 'sickDays') }), 'natal'), 3489.16);
   const nc = item(cab.annualItems('FA', { ym: '2026-11', events: sick }), 'natal');
-  eq('FA: Natal com suspensão (certo e máximo)', [nc.eur, nc.max], [1121.53, 1235.89]);
+  // Cabine: "superior a 30 (trinta) dias" (Cl. 86.ª, n.º 2) → o máximo conta a suspensão desde o 31.º dia (31 dias), não o 32.º.
+  eq('FA: Natal com suspensão (certo e máximo)', [nc.eur, nc.max], [1121.53, 1232.2]);
 }
 
 // ═══ TAP: rubricas que faltavam (pedido do Nuno 2026-11-06) ════════════════════════════════════════════════════════════
@@ -482,6 +483,19 @@ has('Art. 44.º (posicionamento com paragens noturnas)', PIL, 'O pagamento de po
   // As estatísticas contam as mesmas noites.
   eq('estatísticas: 2 pernoitas', monthStats(st, { ym: '2026-03' }).nightStops, 2);
 }
-
+
+// Suspensão do contrato na cabine easyJet: o acordo diz "superior a 30 (trinta) dias" (Cl. 86.ª, n.º 2), mais específico do que
+// o "mais de um mês" do Código do Trabalho (art. 296.º, que continua para os outros acordos). Baixa de 1 a 31 de janeiro de 2025
+// (31 dias) → suspende; de 1 de fevereiro a 2 de março (30 dias) → não suspende.
+{
+  const cabT = R('ae/easyjetSnpvac.js');
+  const sick = (from, n) => Array.from({ length: n }, (_, i) => { const t = new Date(Date.UTC(+from.slice(0, 4), +from.slice(5, 7) - 1, +from.slice(8, 10) + i)); return { type: 'sickDays', date: t.toISOString().slice(0, 10) }; });
+  const nat = (events) => (cabT.annualItems('FA', { ym: '2025-11', events }) || []).find((x) => x.id === 'natal') || {};
+  eq('cabine easyJet: baixa de 31 dias (1–31 jan) suspende → Natal proporcional', !!nat(sick('2025-01-01', 31)).suspension, true);
+  eq('cabine easyJet: baixa de 30 dias (1 fev–2 mar) não suspende ("superior a 30")', !!nat(sick('2025-02-01', 30)).suspension, false);
+  // Os Números citam a regra do acordo (revisão de 2026-11-08: diziam "mais de um mês, CT" com a Cl. 86.ª a decidir).
+  eq('cabine easyJet: a nota curta dos Números cita a Cl. 86.ª', (nat(sick('2025-01-01', 31)).suspShort || {}).pt, 'baixa de mais de 30 dias (Cl. 86.ª, n.º 2)');
+  eq('fonte: Cl. 86.ª, n.º 2 literal', fs.readFileSync(path.resolve('fontes/ae-easyjet/easyjet-snpvac-2024.txt'), 'utf8').replace(/\s+/g, ' ').includes('não imputá- vel ao funcionário for superior a 30 (trinta) dias, o contrato de trabalho é suspenso') || fs.readFileSync(path.resolve('fontes/ae-easyjet/easyjet-snpvac-2024.txt'), 'utf8').replace(/\s+/g, ' ').includes('for superior a 30 (trinta) dias, o contrato de trabalho é suspenso'), true);
+}
 console.log(`\nDinheiro a menos (bloco 6): ${pass} ✓ · ${fail} ✗`);
 if (fail) { console.log(fails.join('\n')); process.exit(1); }

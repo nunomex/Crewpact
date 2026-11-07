@@ -26,16 +26,32 @@ const dtfFor = (tz) => {
   if (!f) { f = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }); DTF.set(tz, f); }
   return f;
 };
+// Guardado por fuso e por quarto de hora UTC: os desvios são múltiplos de 15 min e as mudanças de hora são a horas locais
+// certas, logo caem sempre no início de um quarto de hora UTC — dentro de um quarto de hora o desvio não muda (exato). A
+// recuperação e a noite no fuso de aclimatação (ORO.FTL.105(8)/(9)) pedem milhares de consultas por escala.
+const TZOFF = new Map();
 const tzOffsetMin = (tz, atUTC) => {
+  const ms = atUTC.getTime();
+  const key = `${tz}|${Math.floor(ms / 900000)}`;
+  const hit = TZOFF.get(key);
+  if (hit !== undefined) return hit;
   const dtf = dtfFor(tz);
   const p = {}; for (const x of dtf.formatToParts(atUTC)) p[x.type] = x.value;
   const asUTC = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
-  return Math.round((asUTC - atUTC.getTime()) / 60000);
+  const v = Math.round((asUTC - ms) / 60000);
+  if (TZOFF.size > 50000) TZOFF.clear();
+  TZOFF.set(key, v);
+  return v;
 };
 
 // Fuso IANA de um aeroporto (IATA/ICAO) pelas coordenadas. null se desconhecido. Guardado por código.
 const TZ_CACHE = new Map();
+// O tz-lookup erra perto de algumas fronteiras: os aeroportos conhecidos com o fuso errado (2.ª revisão de 2026-11-08: o Bahrein
+// caía no fuso de Teerão, +3:30 em vez de +3:00).
+const TZ_OVERRIDE = { BAH: 'Asia/Bahrain', OBBI: 'Asia/Bahrain' };
 export const airportTz = (code) => {
+  const ov = code ? TZ_OVERRIDE[String(code).toUpperCase()] : null;
+  if (ov) return ov;
   if (code && TZ_CACHE.has(code)) return TZ_CACHE.get(code);
   const co = code ? airportCoord(code) : null;
   let tz = null;
@@ -49,7 +65,8 @@ export const airportTz = (code) => {
 const OFF_CACHE = new Map();
 export const airportOffsetMin = (code, utcMs) => {
   if (!INTL_TZ_OK || !code || !Number.isFinite(utcMs)) return null;
-  const key = `${code}|${Math.floor(utcMs / 3600000)}`;
+  // Por quarto de hora (por hora errava 30 min na mudança de hora da Terra Nova e de Adelaide, que não caem à hora certa UTC).
+  const key = `${code}|${Math.floor(utcMs / 900000)}`;
   if (OFF_CACHE.has(key)) return OFF_CACHE.get(key);
   const tz = airportTz(code);
   let v = null;

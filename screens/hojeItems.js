@@ -50,6 +50,12 @@ export function buildTodayItems(ctx, lang) {
   // AE (`ctx.aeToday`, calculado no Início pelo motor ae/tapLimits.js). O do AE conta até 30 min depois
   // dos calços: compara-se o equivalente até aos calços.
   let legal = legalStatus(ftlSnap, dayLog);
+  // Noites seguidas com mais de 4 setores (CS FTL.1.205(a)(1)) — calculado no Início pela regra da Simulação (`ctx.nightToday`).
+  const nt = ctx.nightToday || null;
+  if (nt && legal.status !== 'bad') {
+    legal = nt.level === 'bad' ? { ...legal, status: 'bad', kind: 'nightOver', night: nt.it }
+      : (legal.status !== 'warn' ? { ...legal, status: 'warn', kind: 'nightUncertain', night: nt.it } : legal);
+  }
   const aeT = ctx.aeToday || null;
   if (aeT) {
     const hm = (v) => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(v || '')); return m ? +m[1] * 60 + +m[2] : null; };
@@ -78,6 +84,17 @@ export function buildTodayItems(ctx, lang) {
         + (legal.psv && legal.psv.max && legal.psv.maxHi ? ` · PSV ${legal.psv.result} (${legal.psv.max}–${legal.psv.maxHi})` : '');
       suggestion = l(`Para a lei decidir, falta: ${unknownsText(legal.unknowns, 'pt')}. Indica-o no serviço.`,
         `For the law to decide, missing: ${unknownsText(legal.unknowns, 'en')}. Add it to the duty.`);
+    } else if (legal.kind === 'nightOver') {
+      answer = l(`Não — ${legal.night.sectors} setores em noites seguidas (máx. ${legal.night.limit})`, `No — ${legal.night.sectors} sectors on consecutive nights (max ${legal.night.limit})`);
+      suggestion = l('Em serviços noturnos seguidos, no máximo 4 setores por serviço (CS FTL.1.205(a)(1)); seguidos = só repouso entre eles (FAQ EASA 47617). Confirma com a companhia.',
+        'On consecutive night duties, at most 4 sectors per duty (CS FTL.1.205(a)(1)); consecutive = only rest between them (EASA FAQ 47617). Confirm with the company.');
+    } else if (legal.kind === 'nightUncertain') {
+      answer = l(`Incerto — ${legal.night.sectors} setores à noite`, `Uncertain — ${legal.night.sectors} sectors at night`);
+      suggestion = legal.night.why === 'acclim'
+        ? l('Não se sabe a que fuso estás aclimatado (Quadro 1): conforme o fuso, um dos serviços é ou não noturno. Em noites seguidas, no máximo 4 setores (CS FTL.1.205(a)(1)).',
+          'Your acclimatisation is unknown (Table 1): depending on the time zone, one of the duties is or is not a night duty. On consecutive nights, at most 4 sectors (CS FTL.1.205(a)(1)).')
+        : l(`Entre a noite anterior e esta há uma reserva, uma assistência em casa, um serviço sem horas ou um serviço com pouco repouso: pode quebrar a sequência de noites seguidas (máx. 4 setores, CS FTL.1.205(a)(1)).${legal.night.why === 'both' ? ' E não se sabe a que fuso estás aclimatado (Quadro 1).' : ''}`,
+        `Between the previous night and this one there is a reserve, a home standby, a duty without times or a duty with little rest: it may break the run of consecutive nights (max 4 sectors, CS FTL.1.205(a)(1)).${legal.night.why === 'both' ? ' And your acclimatisation is unknown (Table 1).' : ''}`);
     } else if (legal.kind === 'standbyOver') {
       answer = l('Não — standby acima de 16 h', 'No — standby over 16 h');
       suggestion = l('O standby fora do aeroporto tem no máximo 16 h (CS FTL.1.225(b)(1)). Confirma com a companhia.',
@@ -172,7 +189,11 @@ export function buildTodayItems(ctx, lang) {
           ? l(`a recuperação antes de ${dd} tem ${x.hours} h; depois de ${x.disruptive} serviços irregulares tinha de ter 60 h`, `the recovery before ${dd} is ${x.hours} h; after ${x.disruptive} disruptive duties it needed 60 h`)
           : l(`de tardio/noturno para matinal a ${dd} sem uma noite local (8 h entre 22:00 e 08:00)`, `late/night to early start on ${dd} without a local night (8 h between 22:00 and 08:00)`);
       answer = `${answer} · ${x.uncertain ? l('incerto: ', 'uncertain: ') : ''}${what}`;
-      suggestion = x.uncertain
+      suggestion = x.uncertain && x.why === 'acclim'
+        ? l('Depende do fuso a que estás aclimatado (Quadro 1): pela hora da base e pela hora local, um dos serviços é ou não irregular (ORO.FTL.105(8)). Confirma com a companhia.', 'It depends on the time zone you are acclimatised to (Table 1): by base time and by local time, one of the duties is or is not disruptive (ORO.FTL.105(8)). Confirm with the company.')
+        : x.uncertain && x.why === 'both'
+        ? l('Depende do tipo de horário irregular (matinal ou tardio) da tua companhia e do fuso a que estás aclimatado (ORO.FTL.105(8), Quadro 1). Confirma com a companhia.', 'It depends on your company\'s disruptive-schedule type (early or late) and on the time zone you are acclimatised to (ORO.FTL.105(8), Table 1). Confirm with the company.')
+        : x.uncertain
         ? l('Depende do tipo de horário irregular (matinal ou tardio) que a autoridade deu à tua companhia (ORO.FTL.105(8)). Confirma com a companhia.', 'It depends on the disruptive-schedule type (early or late) your company was given by the authority (ORO.FTL.105(8)). Confirm with the company.')
         : l('ORO.FTL.235(d): recuperação de 36 h com 2 noites locais, no máximo 168 h entre elas, e 2 dias locais duas vezes por mês; 60 h depois de 4 irregulares (CS FTL.1.235(a)); 72 h com 3 noites ao mudar de base (CS FTL.1.200(b)). Confirma com a companhia.', 'ORO.FTL.235(d): 36 h recovery with 2 local nights, at most 168 h apart, and 2 local days twice a month; 60 h after 4 disruptive duties (CS FTL.1.235(a)); 72 h with 3 nights on a change of base (CS FTL.1.200(b)). Confirm with the company.');
       if (rec.status === 'bad' || status === 'ok' || status === 'neutral') status = status === 'bad' ? 'bad' : rec.status;
@@ -246,7 +267,7 @@ export function buildTodayItems(ctx, lang) {
     switch (it.id) {
       case 'legal':     return r.psv && r.psv.latest && r.kind === 'legal'
         ? { topic: l('Calços até', 'On-blocks by'), short: `${r.psv.latest}${r.psv.latestNextDay ? '+1' : ''}` }
-        : { topic: l('Limites', 'Limits'), short: r.kind === 'psvOver' ? (r.excess ? `+${r.excess}` : l('Excede', 'Over')) : (r.kind === 'limitOver' || r.kind === 'standbyOver') ? l('Excede', 'Over') : r.kind === 'psvUncertain' ? l('Incerto', 'Uncertain') : r.kind === 'noData' ? '—' : l('Dentro', 'Within') };
+        : { topic: l('Limites', 'Limits'), short: r.kind === 'psvOver' ? (r.excess ? `+${r.excess}` : l('Excede', 'Over')) : (r.kind === 'limitOver' || r.kind === 'standbyOver' || r.kind === 'nightOver') ? l('Excede', 'Over') : (r.kind === 'psvUncertain' || r.kind === 'nightUncertain') ? l('Incerto', 'Uncertain') : r.kind === 'noData' ? '—' : l('Dentro', 'Within') };
       case 'headroom':  return { topic: l('Margem', 'Margin'), short: r.kind === 'noData' ? '—' : it.status === 'bad' ? l('Excede', 'Over') : (r.headroomMin >= 60 ? `${Math.floor(r.headroomMin / 60)}h` : hhmm(r.headroomMin)) };
       case 'next':      return { topic: l('Próximo', 'Next'), short: r.none ? '—' : dateLbl(r.iso, todayISO, lang) };
       case 'rest':      return { topic: l('Descanso', 'Rest'), short: it.status === 'neutral' ? '—' : hhmm(r.actualMin) };

@@ -1,3 +1,4 @@
+import { nightSectorIssues } from '../data/simulation';
 import React, { useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated, Easing, AppState, RefreshControl, Linking, Platform, useWindowDimensions, LayoutAnimation } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -303,9 +304,17 @@ export default function HomeScreen({ navigation }) {
     return { onBlockMax: r.limit - 30, latest: fmtClock(r.latestOnBlock), latestNextDay: r.latestOnBlock >= (dayNum(todayISO) + 1) * 1440,
       over: r.status === 'excede', excess: r.value - r.limit };
   }, [duties, ae, base, isPilot, todayISO, crewFleet]);
+  // Noites seguidas com mais de 4 setores (CS FTL.1.205(a)(1)) no serviço de HOJE — a mesma regra da Simulação.
+  const nightToday = useMemo(() => {
+    const dt = duties && duties[todayISO];
+    if (!dt || dt.deleted) return null;
+    const is = nightSectorIssues(duties, todayISO, { postFlightMin, isPilot, cabinGapMin, splitAdminMin }, homeBaseAt, (f) => f.iso === todayISO)
+      .filter((x) => x.it.date === todayISO);
+    return is.find((x) => x.level === 'bad') || is[0] || null;
+  }, [duties, todayISO, postFlightMin, isPilot, cabinGapMin, splitAdminMin, homeBaseAt]);
   const todayItems = useMemo(
-    () => buildTodayItems({ ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, crewHistory, serviceStart, largada, lifestyle, aeEvents, validities, isPilot, todayISO, aeToday, postFlightMin, baseAt: homeBaseAt, companySlug: company && company.slug }, lang),
-    [ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, crewHistory, serviceStart, largada, lifestyle, aeEvents, validities, isPilot, todayISO, aeToday, postFlightMin, homeBaseAt, company, lang],
+    () => buildTodayItems({ ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, crewHistory, serviceStart, largada, lifestyle, aeEvents, validities, isPilot, todayISO, aeToday, nightToday, postFlightMin, baseAt: homeBaseAt, companySlug: company && company.slug }, lang),
+    [ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, crewHistory, serviceStart, largada, lifestyle, aeEvents, validities, isPilot, todayISO, aeToday, nightToday, postFlightMin, homeBaseAt, company, lang],
   );
   const questionItems = todayItems.filter((it) =>
     (it.id === 'legal' && it.status !== 'neutral')

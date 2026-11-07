@@ -220,7 +220,12 @@ export default function StatsScreen({ navigation }) {
     // Subsídios e prestações que caem no período (bloco 6): Natal, férias, prestação de abril, permanência, retenção.
     (A.annual > 0) && { k: 'subs', nm: l('Subsídios', 'Allowances'), ic: 'wallet', val: A.annual, sub: [
       ...new Set((A.annualItems || []).map((it) => annualLabel(it, lang))),
-    ].join(' · ') + ((A.annualItems || []).some((it) => it.incomplete) ? l(' — sem a média das variáveis, que o acordo não define', ' — without the variable-pay average, which the agreement does not define') : '') + ((A.annualItems || []).some((it) => it.suspension) ? l(' · Natal proporcional: baixa de mais de um mês (CT arts. 263.º e 296.º)', ' · Christmas pro rata: sick leave over a month (Labour Code arts. 263 and 296)') : '')
+    ].join(' · ') + ((A.annualItems || []).some((it) => it.incomplete) ? l(' — sem a média das variáveis, que o acordo não define', ' — without the variable-pay average, which the agreement does not define') : '') + ((A.annualItems || []).some((it) => it.suspension) ? (() => {
+      // A regra do acordo quando tem prazo próprio (cabine easyJet: Cl. 86.ª, n.º 2); senão a do Código do Trabalho.
+      const sp = (A.annualItems || []).find((it) => it.suspension && it.suspShort);
+      return sp ? l(` · Natal proporcional: ${sp.suspShort.pt}`, ` · Christmas pro rata: ${sp.suspShort.en}`)
+        : l(' · Natal proporcional: baixa de mais de um mês (CT arts. 263.º e 296.º)', ' · Christmas pro rata: sick leave over a month (Labour Code arts. 263 and 296)');
+    })() : '')
       + (() => { const up = (A.annualItems || []).reduce((a, it) => a + (it.max > it.eur ? it.max - it.eur : 0), 0); if (!(up > 0)) return ''; const its = (A.annualItems || []).filter((it) => it.max > it.eur);
         const raise = its.some((it) => it.tapRaise), other = its.some((it) => !it.tapRaise || it.suspension);
         const why = raise && other ? l('a leitura do acordo e a atualização do vencimento base, por confirmar', 'how the agreement is read and the base pay update, not yet confirmed')

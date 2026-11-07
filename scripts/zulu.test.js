@@ -20,11 +20,20 @@ Module._extensions['.js'] = function (m, filename) {
   m._compile(transform(fs.readFileSync(filename, 'utf8'), filename), filename);
 };
 
-const { airportZulu, airportTz, INTL_TZ_OK, legZulu, legDay, legsZulu } = require(path.resolve('data/zulu.js'));
+const { airportZulu, airportTz, airportOffsetMin, INTL_TZ_OK, legZulu, legDay, legsZulu } = require(path.resolve('data/zulu.js'));
 
 let pass = 0, fail = 0; const fails = [];
 const eq = (name, got, want) => { if (got === want) { pass++; } else { fail++; fails.push(`✗ ${name}: ${JSON.stringify(got)} ≠ ${JSON.stringify(want)}`); } };
 const eqj = (n, g, w) => eq(n, JSON.stringify(g), JSON.stringify(w));
+
+// 2.ª revisão (2026-11-08): o tz-lookup põe o Bahrein no fuso de Teerão (+3:30) — corrige-se à mão; e o desvio de um aeroporto
+// guarda-se por quarto de hora (por hora errava 30 min na mudança de hora da Terra Nova, −3:30 → −2:30 às 05:30Z de 8/3/2026).
+if (INTL_TZ_OK) {
+  eq('2.ª revisão: BAH no fuso do Bahrein', airportTz('BAH'), 'Asia/Bahrain');
+  eq('2.ª revisão: BAH +3:00', airportOffsetMin('BAH', Date.UTC(2026, 0, 10, 12)), 180);
+  eq('2.ª revisão: YYT 20 min antes da mudança de hora', airportOffsetMin('YYT', Date.UTC(2026, 2, 8, 5, 10)), -210);
+  eq('2.ª revisão: YYT 15 min depois', airportOffsetMin('YYT', Date.UTC(2026, 2, 8, 5, 45)), -150);
+}
 
 eq('Intl/timeZone disponível (Node)', INTL_TZ_OK, true);
 // Revisão do 8b: na noite de 24 para 25/10/2026 Lisboa recua 1 h às 02:00. LIS 22:45 (verão, 21:45Z) → OPO 04:00 do dia 25

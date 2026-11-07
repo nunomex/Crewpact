@@ -945,7 +945,9 @@ export default function App() {
   const baseHistory = profile?.baseHistory || [];
   const nowYm = isoDay().slice(0, 7);
   const base = (baseHistory.length ? resolveBase(baseHistory, nowYm) : null) || profile?.base || null;   // CÓDIGO IATA (ex. LIS)
-  const homeBaseAt = (when) => (baseHistory.length ? resolveBase(baseHistory, when || nowYm) : base);
+  // Estável entre renders (useCallback): o Início tem-na nas dependências dos cálculos — uma função nova a cada render refazia a
+  // recuperação e as noites seguidas a cada render (2.ª revisão de 2026-11-08). Depende do perfil, não do `|| []` (novo a cada vez).
+  const homeBaseAt = useCallback((when) => (baseHistory.length ? resolveBase(baseHistory, when || nowYm) : base), [profile?.baseHistory, base, nowYm]);
   // Base completa resolvida do catálogo (cidade/país) por (companhia, código). null se
   // não houver base ou o catálogo ainda não tiver carregado — os consumidores usam `base`
   // (o código) como fallback, por isso nada parte sem o catálogo.

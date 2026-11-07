@@ -1004,6 +1004,65 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('105(8): tardio pelo sign-off', computeRecovery({ [day(5)]: { report_time: '14:00', block_on: '22:45', signOff: '23:15', sectors: 2 }, [day(7)]: svc('05:30', '12:00') }, { base: 'LIS' }).duties[0].lateFinish, true);
 }
 
+// ─────────── ORO.FTL.105(8): irregulares no fuso de aclimatação (2026-11-08) ───────────
+// "Horário irregular: ... um PSV ... que se sobreponha, comece ou termine em qualquer parte do dia ou da noite em que um membro
+// da tripulação está aclimatado" — no longo curso as horas da escala estão no fuso de cada aeroporto (apresentação no da partida,
+// calços no da chegada). O recoveryIssues mede noturno/matinal/tardio no fuso de aclimatação (nightClockOf do motor, o critério do
+// PSV); com a aclimatação X ou por saber, as duas leituras (hora da base e hora local) → o aviso que só uma dá fica INCERTO.
+{
+  const { recoveryIssues, recoveryStatus } = require(path.resolve('data/today.js'));
+  const { computeRecovery } = ftl;
+  const svc = (report, end) => ({ report_time: report, block_on: end, sectors: 2, kind: 'flight' });
+  const fl = (report, on, route, off) => { const [dep, arr] = route.split('-'); return { report_time: report, block_on: on, sectors: 1, kind: 'flight', route, legs: [{ dep, arr, off, on }] }; };
+  const C = { postFlightMin: 30, base: 'LIS' };
+  const r60 = (list) => JSON.stringify(list.filter((x) => x.type === 'recovery60').map((x) => [x.date, x.disruptive, !!x.uncertain, x.why || null]));
+  const J = (x) => JSON.stringify(x);
+  // (1) Julho (LIS UTC+1, GRU UTC−3). Recuperação até 4/7; 3 matinais (05:30) a 4, 5 e 6; a 7 LIS→GRU: apresentação 13:00,
+  // calços 20:00 em GRU (23:00Z) → com o pós-voo acaba às 00:30 de Lisboa = TARDIO (fim entre 23:00 e 01:59 no matinal e entre
+  // 00:00 e 01:59 no tardio, ORO.FTL.105(8)). Pelas horas da escala (13:00–20:30) não seria. Depois 38 h em GRU com 2 noites
+  // (recuperação) → 4 irregulares → a recuperação devia ter 60 h (CS FTL.1.235(a)(2)).
+  const esc1 = {
+    '2026-07-01': svc('06:00', '12:00'),
+    '2026-07-04': svc('05:30', '13:00'), '2026-07-05': svc('05:30', '13:00'), '2026-07-06': svc('05:30', '13:00'),
+    '2026-07-07': fl('13:00', '20:00', 'LIS-GRU', '14:00'),
+    '2026-07-09': fl('10:30', '01:00', 'GRU-LIS', '11:30'),
+  };
+  eq('105(8): LIS→GRU acaba às 00:30 de Lisboa → 4.º irregular → recuperação de 60 h em falta', r60(recoveryIssues(esc1, C)), J([['2026-07-09', 4, false, null]]));
+  eq('105(8): sem o fuso (computeRecovery sozinho, como antes) → 3 irregulares, sem aviso', computeRecovery(esc1, C).issues.some((x) => x.type === 'recovery60'), false);
+  // (2) Janeiro (LIS UTC+0, EWR UTC−5: 5 h, linha "≤ 6"). Matinais a 4, 5 e 6 (o de 6 é a ida LIS→EWR); a 8, regresso de
+  // Newark às 04:30 locais (09:30 de Lisboa), 52 h depois da ida → Quadro 1: X (estado desconhecido). Pela hora local é
+  // noturno (sobrepõe 02:00–04:59, ORO.FTL.105(9)), pela da base não → o 4.º irregular é incerto → o aviso das 60 h é INCERTO,
+  // com o motivo "aclimatação" (não depende do tipo de horário: os matinais das 05:30 são-no nos dois tipos).
+  const esc2 = {
+    '2026-01-01': svc('06:00', '12:00'),
+    '2026-01-04': svc('05:30', '13:00'), '2026-01-05': svc('05:30', '13:00'),
+    '2026-01-06': fl('05:30', '09:30', 'LIS-EWR', '06:30'),
+    '2026-01-08': fl('04:30', '17:00', 'EWR-LIS', '05:30'),
+    '2026-01-10': svc('06:00', '12:00'),
+  };
+  eq('105(8): aclimatação X, noturno só pela hora local → 60 h incerto (motivo: aclimatação)', r60(recoveryIssues(esc2, C)), J([['2026-01-10', 4, true, 'acclim']]));
+  // Com o tipo de horário conhecido, a dúvida da aclimatação continua (o recoveryStatus já não a apaga).
+  const st = recoveryStatus(esc2, '2026-01-09', { ...C, disruptiveType: 'early' });
+  eq('105(8): tipo conhecido, aclimatação X → continua incerto (warn)', J([st.status, st.issues.filter((x) => x.type === 'recovery60').map((x) => [!!x.uncertain, x.why])]), J(['warn', [[true, 'acclim']]]));
+  // Os avisos que só dependem do tipo de horário continuam incertos com o motivo "tipo": 3 matinais às 05:30 e um 4.º às 06:30
+  // (matinal só no tipo tardio, 05:00–06:59, ORO.FTL.105(8)) → as 60 h só faltam no tipo tardio.
+  const esc3 = {
+    '2026-11-01': svc('08:00', '14:00'),
+    '2026-11-04': svc('05:30', '13:00'), '2026-11-05': svc('05:30', '13:00'), '2026-11-06': svc('05:30', '13:00'),
+    '2026-11-07': svc('06:30', '13:00'), '2026-11-09': svc('08:00', '14:00'),
+  };
+  eq('CS 235(a)(2): o 4.º irregular só no tipo tardio → 60 h incerto, motivo tipo', r60(recoveryIssues(esc3, C)), J([['2026-11-09', 4, true, 'type']]));
+  // Em faixa, a faixa de 2 h lê-se pelo conservador (partida, base ou chegada) e NÃO dá "incerto" de aclimatação: LIS 20:00 →
+  // BCN 23:20 locais + pós-voo = 23:50 de Barcelona (22:50 de Lisboa) → tardio no tipo matinal (23:00–01:59) pela hora de
+  // Barcelona; no tipo tardio (00:00–01:59) não → o aviso das 60 h só depende do tipo.
+  const esc4 = {
+    '2026-07-01': svc('06:00', '12:00'),
+    '2026-07-04': svc('05:30', '13:00'), '2026-07-05': svc('05:30', '13:00'), '2026-07-06': svc('05:30', '13:00'),
+    '2026-07-07': fl('20:00', '23:20', 'LIS-BCN', '21:00'), '2026-07-10': svc('06:00', '12:00'),
+  };
+  eq('105(8): em faixa, a chegada a Barcelona conta (conservador) e só o tipo fica em dúvida', r60(recoveryIssues(esc4, C)), J([['2026-07-10', 4, true, 'type']]));
+}
+
 // ─────────── ORO.FTL.105(1) + Quadro 1: aclimatação no longo curso (auditoria A-152/A-169) ───────────
 // Fora da faixa de 2 h, o estado sai do Quadro 1 pela diferença de fuso e pelo tempo decorrido desde a apresentação na
 // hora de referência: B → Quadro 2 na hora da base; D → Quadro 2 na hora local; X → Quadro 3 (estado desconhecido).
@@ -1028,6 +1087,15 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   // Sem a ida na escala (o 1.º registo): não se sabe o estado → intervalo de Quadro 3 a Quadro 2 local.
   const unk = ftlForDuty(back, { base: 'LIS', date: '2026-01-12', duties: { '2026-01-12': back } });
   eq('Sem a ida: aclimatação por saber → intervalo 11:00 a 13:00', JSON.stringify([unk.fdp.maxFdpStr, unk.fdp.maxHiStr, unk.fdp.exact]), JSON.stringify(['11:00', '13:00', false]));
+  // 2.ª revisão (2026-11-08): um serviço em terra sem rota (o calendário não lha dá) situa-se no aeroporto da ÚLTIMA CHEGADA antes
+  // dele — aqui Newark —, não na base: a assistência em Newark a 11 não é referência → continua X a 12 (dava B: Quadro 2, 2 h a mais).
+  const sbE = { kind: 'standby_airport', report_time: '09:00', block_on: '13:00', sectors: 0 };
+  eq('2.ª revisão: assistência em Newark (sem rota) não é referência → X', ftlForDuty(back, { base: 'LIS', date: '2026-01-12', duties: { '2026-01-10': out, '2026-01-11': sbE, '2026-01-12': back } }).acclim.letter, 'X');
+  // nightClockOf sem base: só a hora local (a chegada só entra dentro da faixa da base, que aqui não se sabe).
+  const { nightClockOf } = ftl;
+  eq('2.ª revisão: nightClockOf sem base → só a hora local', JSON.stringify(nightClockOf({ report_time: '10:00', block_on: '13:30', sectors: 1, legs: [{ dep: 'LIS', arr: 'JFK', off: '11:00', on: '13:30' }] }, { date: '2026-01-10' }).shifts), '[0]');
+  // Dia da mudança de hora (25/10): os desvios leem-se no instante da apresentação (00:30, ainda hora de verão) → só a hora local.
+  eq('2.ª revisão: LIS→FAO às 00:30 no dia da mudança de hora → só a hora local', JSON.stringify(nightClockOf({ report_time: '00:30', block_on: '01:20', sectors: 1, legs: [{ dep: 'LIS', arr: 'FAO', off: '00:50', on: '01:20' }] }, { base: 'LIS', date: '2026-10-25' }).shifts), '[0]');
   eq('Sem a ida: o que falta', JSON.stringify(unk.fdp.unknowns), JSON.stringify(['acclimatisation']));
   // Dentro da faixa de 2 h (Barcelona, +1 h) não há Quadro 1.
   const bcn = { report_time: '15:15', block_on: '17:15', sectors: 1, legs: [{ dep: 'BCN', arr: 'LIS', off: '16:00', on: '17:15', offZ: '15:00', onZ: '16:15' }] };

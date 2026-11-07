@@ -3,7 +3,7 @@
 // DECOMPOSIÇÃO do cálculo), SEM texto de UI nem idioma — a HojeScreen/HojeDetail é que
 // formata. Sem LLM: tudo sai dos motores golden-tested, por isso as sugestões e o
 // "como cheguei aqui" são factuais (a regra que deteta a condição é a que faz a conta).
-import { computeDutyTime, computeFlightTime, restAfterDuty, computeRecovery, computeTimeZoneRest, localNightsIn, nthLocalNightEnd, isFdpDuty } from '../ftl';
+import { computeDutyTime, computeFlightTime, restAfterDuty, computeRecovery, computeTimeZoneRest, localNightsIn, nthLocalNightEnd, isFdpDuty, nightClockOf } from '../ftl';
 import { monthlyAe, aeMonthTotal } from './perdiem';
 import { eventCounts } from './aeEvents';
 
@@ -290,21 +290,42 @@ export function restUntilAfter(duties = {}, iso, ctx = {}) {
 // sem ela avaliam-se os dois tipos e um aviso que só um dá fica INCERTO ("a lei é que manda").
 // Todos os avisos de recuperação da escala, com `uncertain` quando só um dos dois tipos de horário os dá (o recoveryStatus e a
 // Simulação usam este). `ctx` = { postFlightMin, base, baseAt, disruptiveType }.
+// Noturno, matinal e tardio no fuso a que o tripulante está aclimatado (ORO.FTL.105(8)) — o nightClockOf do motor (o critério do
+// PSV), uma vez por serviço e reutilizado nas corridas. Com a aclimatação X ou por saber há duas leituras (hora da base e hora
+// local): 'lo' (o que as duas dão) e 'hi' (o que alguma dá). Um aviso é CERTO se todas as corridas o dão; senão é incerto,
+// com o motivo `why`: 'type' (tipo de horário), 'acclim' (aclimatação) ou 'both'.
 export function recoveryIssues(duties = {}, ctx = {}) {
   const { postFlightMin = 0, base = null, baseAt = null, disruptiveType = null } = ctx || {};
   const known = disruptiveType === 'early' || disruptiveType === 'late' ? disruptiveType : null;
-  const run = (type) => computeRecovery(duties, { postFlightMin, base, baseAt, type }).issues;
+  const baseOf = (iso) => (typeof baseAt === 'function' ? baseAt(iso) : base) || null;
+  const clocks = new Map();
+  const clockOf = (s, date, i) => {
+    const k = `${date}|${i}`;
+    if (!clocks.has(k)) clocks.set(k, nightClockOf(s, { base: baseOf(date), date, duties }));
+    return clocks.get(k);
+  };
   const key = (x) => `${x.type}|${x.date}`;
-  if (known) return run(known).map((x) => ({ ...x, uncertain: false }));
-  const e = run('early'), l = run('late');
-  const lk = new Set(l.map(key)), ek = new Set(e.map(key));
-  return [...e.map((x) => ({ ...x, uncertain: !lk.has(key(x)) })), ...l.filter((x) => !ek.has(key(x))).map((x) => ({ ...x, uncertain: true }))];
+  const runs = (known ? [known] : ['early', 'late']).map((type) => {
+    const lo = computeRecovery(duties, { postFlightMin, base, baseAt, type, clockOf, acclim: 'lo' });
+    const hi = lo.twoReads ? computeRecovery(duties, { postFlightMin, base, baseAt, type, clockOf, acclim: 'hi' }) : lo;
+    return { lo: lo.issues, hi: hi.issues, loK: new Set(lo.issues.map(key)), hiK: new Set(hi.issues.map(key)) };
+  });
+  const seen = new Map();
+  for (const r of runs) for (const x of [...r.lo, ...r.hi]) if (!seen.has(key(x))) seen.set(key(x), x);
+  const out = [];
+  for (const [k, x] of seen) {
+    if (runs.every((r) => r.loK.has(k))) { out.push({ ...x, uncertain: false }); continue; }
+    const acclimDiff = runs.some((r) => r.hiK.has(k) && !r.loK.has(k));
+    const typeDiff = runs.length > 1 && (runs[0].loK.has(k) !== runs[1].loK.has(k) || runs[0].hiK.has(k) !== runs[1].hiK.has(k));
+    out.push({ ...x, uncertain: true, why: acclimDiff && typeDiff ? 'both' : acclimDiff ? 'acclim' : 'type' });
+  }
+  return out;
 }
 
 export function recoveryStatus(duties = {}, todayISO, ctx = {}) {
   const known = ctx && (ctx.disruptiveType === 'early' || ctx.disruptiveType === 'late');
-  // Com o tipo conhecido os avisos são certos (sem a marca `uncertain`, como antes).
-  const issues = recoveryIssues(duties, ctx).map((x) => (known ? (({ uncertain: _u, ...y }) => y)(x) : x));
+  // Com o tipo conhecido, os avisos certos perdem a marca `uncertain` (como antes); a dúvida da aclimatação fica.
+  const issues = recoveryIssues(duties, ctx).map((x) => (known && !x.uncertain ? (({ uncertain: _u, ...y }) => y)(x) : x));
   const add = (iso, n) => { const [y, m, d] = iso.split('-').map(Number); const t = new Date(y, m - 1, d + n, 12); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; };
   const lo = add(todayISO, -1), hi = add(todayISO, 14);
   const near = issues.filter((x) => x.date >= lo && x.date <= hi).sort((a, b) => (a.date < b.date ? -1 : 1));

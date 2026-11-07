@@ -230,6 +230,72 @@ for (const [who, C] of [['piloto', PIL], ['cabine', CAB]]) {
   // E3: um serviço sem horas no próprio dia de uma das noites também pode estar entre elas → incerto.
   const gsd = simulateDuty(sim('2026-11-11', F('23:00', '05:45', 5)), { ...PIL, duties: { '2026-11-09': { ...F('23:00', '05:00', 4), extra: [{ kind: 'office', report_time: null, block_on: null, sectors: 0 }] } } });
   eq('A-245: escritório sem horas no dia da 1.ª noite → incerto', (issue(gsd, 'nightSectors') || {}).level, 'unc');
+  // O Início usa a MESMA regra para o serviço de hoje (nightSectorIssues com o alvo do dia): noites de 9 e 10, 5 setores no dia 10.
+  const { nightSectorIssues } = require(path.resolve('data/simulation.js'));
+  const escH = { '2026-11-09': F('23:00', '05:00', 4), '2026-11-10': F('23:00', '05:45', 5) };
+  const ih = nightSectorIssues(escH, '2026-11-10', { postFlightMin: 0, isPilot: true }, () => null, (f) => f.iso === '2026-11-10');
+  eq('Início: o serviço de hoje com 5 setores na 2.ª noite seguida → excede', ih.map((x) => [x.level, x.it.date, x.it.sectors]), [['bad', '2026-11-10', 5]]);
+  eq('Início: um dia sem noite não tem aviso', nightSectorIssues(escH, '2026-11-12', { postFlightMin: 0, isPilot: true }, () => null, (f) => f.iso === '2026-11-12'), []);
+  // ── Noite no fuso de aclimatação (ORO.FTL.105(9): "no fuso horário a que o tripulante está aclimatado"), não nas horas da
+  // escala, que estão no fuso de cada aeroporto. Base LIS, julho (LIS UTC+1, GRU UTC−3: 4 h).
+  const { fdpsBetween } = require(path.resolve('data/simulation.js'));
+  const LG = F('17:00', '00:30', 1, 'LIS-GRU', { legs: [{ dep: 'LIS', arr: 'GRU', off: '18:00', on: '00:30' }] });
+  const SH = F('21:00', '22:15', 1, 'GRU-VCP', { legs: [{ dep: 'GRU', arr: 'VCP', off: '21:30', on: '22:15' }] });
+  const PO = { postFlightMin: 30, isPilot: true };
+  const nf = (esc, iso) => fdpsBetween(esc, iso, iso, PO, () => 'LIS').map((f) => [f.night, !!f.nightUnc]);
+  // (1) Em faixa (parte da base): LIS 17:00 → GRU 00:30 locais = 03:30Z; com o pós-voo acaba às 05:00 de Lisboa → noturno.
+  // Pelas horas da escala (17:00–01:00) não seria.
+  eq('Aclimatação: LIS→GRU acaba às 05:00 de Lisboa → noturno (tempo decorrido real)', nf({ '2026-07-10': LG }, '2026-07-10'), [[true, false]]);
+  // (2) Estado B (Quadro 1: menos de 48 h desde a última apresentação na faixa da base): em GRU às 21:00 locais = 01:00 de
+  // Lisboa, até 02:45 de Lisboa → noturno pela hora da base. Pela hora local (21:00–22:45) não seria.
+  eq('Aclimatação B: GRU 21:00–22:45 locais = 01:00–02:45 de Lisboa → noturno', nf({ '2026-07-10': LG, '2026-07-11': SH }, '2026-07-11'), [[true, false]]);
+  // (3) Por saber (o 1.º registo da escala, fora da faixa): pela base é noturno, pela hora local não → incerto.
+  eq('Aclimatação por saber: as duas leituras discordam → incerto', nf({ '2026-07-11': SH }, '2026-07-11'), [[true, true]]);
+  // (4) Estado D (120 h ou mais: aclimatado ao fuso local): 21:00–22:45 em GRU → não noturno.
+  eq('Aclimatação D: 21:00–22:45 locais → não noturno', nf({ '2026-07-01': F('08:00', '12:00', 2), '2026-07-11': SH }, '2026-07-11'), [[false, false]]);
+  // A regra dos 4 setores vê-o: noite em Lisboa (9, 5 setores) e o LIS→GRU de 10 (noturno pela hora de Lisboa) → seguidas.
+  const escG = { '2026-07-09': F('22:00', '04:00', 5), '2026-07-10': LG };
+  eq('Aclimatação: a noite anterior com 5 setores fica seguida do LIS→GRU → excede',
+    nightSectorIssues(escG, '2026-07-10', PO, () => 'LIS', (f) => f.iso === '2026-07-10').map((x) => [x.level, x.it.date, x.it.sectors]), [['bad', '2026-07-09', 5]]);
+  // Com a aclimatação por saber, a noite que só uma leitura dá → incerto, com o motivo.
+  const escU = { '2026-07-11': SH, '2026-07-12': F('22:00', '04:00', 5, 'GRU-GIG') };
+  const iu = nightSectorIssues(escU, '2026-07-11', PO, () => 'LIS', (f) => f.iso === '2026-07-11');
+  eq('Aclimatação por saber: 5 setores na noite seguinte → incerto, motivo aclimatação', iu.map((x) => [x.level, x.it.date, x.it.why]), [['unc', '2026-07-12', 'acclim']]);
+  // ── Revisão independente (2026-11-08) ──
+  // R1: um dia com 2 PSV noturnos (A 01:00–04:30 · reserva 08:00–12:00 · B 22:00–03:00 com 5 setores) e a noite seguinte só com
+  // repouso pelo meio (C 23:00–04:00): o par B–C não tem dúvida → B excede. Antes só se olhava à volta do 1.º bloco (A–B: incerto).
+  const RSV = { kind: 'reserve', report_time: '08:00', block_on: '12:00', sectors: 0, flight_minutes: 0 };
+  const esc2b = { '2026-11-10': { ...F('01:00', '04:30', 2), extra: [RSV, F('22:00', '03:00', 5)] }, '2026-11-11': F('23:00', '04:00', 3) };
+  eq('Revisão R1: dia com 2 PSV noturnos → o 2.º excede pela noite seguinte',
+    nightSectorIssues(esc2b, '2026-11-10', PO, () => 'LIS', (f) => f.iso === '2026-11-10').filter((x) => x.it.date === '2026-11-10').map((x) => [x.level, x.it.sectors]), [['bad', 5]]);
+  // R2: o serviço anterior sem pernas situa-se pela rota (LIS→GRU: apresentação em Lisboa, na faixa da base) → B → noturno.
+  eq('Revisão R2: o anterior sem pernas, com rota → B → noturno', nf({ '2026-07-10': F('17:00', '00:30', 1, 'LIS-GRU'), '2026-07-11': SH }, '2026-07-11'), [[true, false]]);
+  // Sem pernas nem rota não se situa: pela base seria B (32 h), sem ele D → a letra muda → por saber → incerto.
+  eq('Revisão R2: o anterior sem pernas nem rota → por saber → incerto', nf({ '2026-07-10': F('17:00', '00:30', 1), '2026-07-11': SH }, '2026-07-11'), [[true, true]]);
+  // R3: um bloco de 2 serviços (base OPO: OPO→LIS 14:00–15:00 e, 1:45 depois, LIS→EWR 18:15 → 21:30 locais = 01:30Z): com o
+  // pós-voo acaba às 03:00 de Lisboa/Porto → noturno, como o mesmo trajeto num só serviço. Antes ficava o tempo do relógio.
+  const opo = F('13:00', '15:00', 1, 'OPO-LIS', { legs: [{ dep: 'OPO', arr: 'LIS', off: '14:00', on: '15:00' }] });
+  const ewr = F('17:15', '21:30', 1, 'LIS-EWR', { legs: [{ dep: 'LIS', arr: 'EWR', off: '18:15', on: '21:30' }] });
+  eq('Revisão R3: bloco de 2 serviços até às 03:00 da base → noturno', fdpsBetween({ '2026-07-10': { ...opo, extra: [ewr] } }, '2026-07-10', '2026-07-10', PO, () => 'OPO').map((f) => [f.night, !!f.nightUnc]), [[true, false]]);
+  // R3b: a última perna é um posicionamento (GRU→GIG em DH): o período de serviço acaba nos calços dela (ORO.FTL.105(9) fala do
+  // período de serviço). LIS 13:00 → GRU 20:00 (23:00Z), DH GRU→GIG 21:00–22:00 (01:00Z) + pós-voo = 02:30 de Lisboa → noturno.
+  const dhd = F('13:00', '22:00', 1, 'LIS-GRU-GIG', { legs: [{ dep: 'LIS', arr: 'GRU', off: '14:00', on: '20:00' }, { dep: 'GRU', arr: 'GIG', off: '21:00', on: '22:00', dh: true }] });
+  eq('Revisão R3b: posicionamento no fim conta para a noite', nf({ '2026-07-10': dhd }, '2026-07-10'), [[true, false]]);
+  // R4: em faixa a "faixa de 2 h" (ORO.FTL.105(1)) é uma convenção → o conservador: noturno se a hora da partida, da base ou da
+  // chegada (dentro da faixa) o der. LIS 21:30 → BCN 02:15 locais + pós-voo = 02:45 de Barcelona (01:45 de Lisboa) → noturno, sem
+  // "incerto"; com a noite anterior de 5 setores → excede (como antes de medir no fuso de aclimatação).
+  const bcn = F('21:30', '02:15', 1, 'LIS-BCN', { legs: [{ dep: 'LIS', arr: 'BCN', off: '22:30', on: '02:15' }] });
+  eq('Revisão R4: LIS→BCN até às 02:45 de Barcelona → noturno (faixa conservadora)', nf({ '2026-07-10': bcn }, '2026-07-10'), [[true, false]]);
+  eq('Revisão R4: a noite anterior com 5 setores → excede',
+    nightSectorIssues({ '2026-07-09': F('22:00', '04:00', 5), '2026-07-10': bcn }, '2026-07-10', PO, () => 'LIS', (f) => f.iso === '2026-07-10').map((x) => [x.level, x.it.date, x.it.sectors]), [['bad', '2026-07-09', 5]]);
+  // ── 2.ª revisão (2026-11-08) ──
+  // Uma assistência no aeroporto (sem pernas) antes do voo, no mesmo bloco: o fuso vem do voo (B → hora de Lisboa) → noturno.
+  const SBA = { kind: 'standby_airport', report_time: '19:30', block_on: '21:00', sectors: 0, flight_minutes: 0 };
+  eq('2.ª revisão: assistência antes do voo no mesmo bloco → o fuso vem do voo → noturno', nf({ '2026-07-10': LG, '2026-07-11': { ...SBA, extra: [SH] } }, '2026-07-11'), [[true, false]]);
+  // Dois PSV noturnos no mesmo dia, os dois com mais de 4 setores → um aviso cada, com os seus setores.
+  const esc2c = { '2026-11-10': { ...F('01:00', '04:30', 6), extra: [F('22:00', '03:00', 5)] }, '2026-11-11': F('23:00', '04:00', 3) };
+  eq('2.ª revisão: 2 PSV noturnos no mesmo dia acima de 4 setores → um aviso cada',
+    nightSectorIssues(esc2c, '2026-11-10', PO, () => 'LIS', (f) => f.iso === '2026-11-10').filter((x) => x.it.date === '2026-11-10').map((x) => [x.level, x.it.sectors]), [['bad', 6], ['bad', 5]]);
   // A citação da FAQ confere-se na cópia em fontes/ (como as outras fontes).
   const faq = require('fs').readFileSync(require('path').resolve('fontes/easa/faq-47617.txt'), 'utf8');
   const simSrc = require('fs').readFileSync(require('path').resolve('data/simulation.js'), 'utf8').replace(/\s*\/\/\s*/g, ' ').replace(/\s+/g, ' ');

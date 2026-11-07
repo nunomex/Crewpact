@@ -13,7 +13,7 @@
 //   • todos os períodos do ORO.FTL.210 que contêm o dia, para trás e para a frente (A-165);
 //   • os limites do acordo da TAP, o mais apertado (A-258).
 // Sem um facto de que a lei precisa → "incerto" com o que falta, nunca um valor inventado ("a lei é que manda").
-import { reconcileDayLog, dayFtlFromDuties, ftlForDuty, fatigueFromDuty, limitsAround, localNightsIn, isFdpDuty, parseHhmm, durationMin } from '../ftl';
+import { reconcileDayLog, dayFtlFromDuties, ftlForDuty, fatigueFromDuty, limitsAround, localNightsIn, isFdpDuty, parseHhmm, durationMin, nightClockOf } from '../ftl';
 import { NIGHT_SECTOR_LIMIT } from '../ftl/rules/fdpRules';
 import { restAround, recoveryIssues } from './today';
 import { fdpForDuty, evaluateTapLimits } from '../ae/tapLimits';
@@ -61,8 +61,11 @@ const nightOf = (start, end) => {
   return null;
 };
 
-// Os PSV (blocos do dia) de [from, to], com início/fim em instantes, setores e se são noturnos.
-const fdpsBetween = (duties, from, to, opts, baseOf) => {
+// Os PSV (blocos do dia) de [from, to], com início/fim em instantes, setores e se são noturnos. `start`/`end` ficam nas horas
+// da escala (os intervalos entre serviços medem-se nelas, como antes); a NOITE mede-se no fuso de aclimatação (nightClockOf do
+// motor, ORO.FTL.105(9)) com o tempo decorrido real: `nightUnc` quando a aclimatação não se sabe e as duas leituras discordam.
+// Exportado para o golden.
+export const fdpsBetween = (duties, from, to, opts, baseOf) => {
   const out = [];
   for (let iso = from; iso <= to; iso = addDays(iso, 1)) {
     const d = duties[iso];
@@ -78,9 +81,28 @@ const fdpsBetween = (duties, from, to, opts, baseOf) => {
       const endClk = so != null ? so : (on != null ? on + ((last.kind || 'flight') === 'flight' ? (opts.postFlightMin || 0) : 0) : null);
       if (rep == null || endClk == null) continue;
       const start = at(iso, rep);
-      const end = new Date(+start + durationMin(rep, endClk % 1440) * 60000);
-      const nd = nightOf(start, end);
-      out.push({ iso, start, end, sectors: ms.reduce((s, m) => s + (Number(m.sectors) || 0), 0), night: !!nd, nightDay: nd, sim: ms.some((m) => m[SIM]) });
+      const clockMin = durationMin(rep, endClk % 1440);
+      const end = new Date(+start + clockMin * 60000);
+      // O tempo decorrido real (fusos no longo curso): da apresentação do 1.º serviço do bloco ao fim do último, pelos instantes
+      // de cada um (revisão de 2026-11-08: num bloco de vários ficava o do relógio). Sem instantes → o relógio.
+      // O fuso vem do 1.º serviço do bloco COM pernas (uma assistência no aeroporto antes do voo não as tem — 2.ª revisão).
+      const ncs = ms.map((m) => nightClockOf(m, { base: baseOf(iso), date: iso, duties }));
+      const ri = ms.findIndex((m, i) => Array.isArray(m.legs) && m.legs.length && ncs[i].reportMs != null);
+      const nc = ri >= 0 ? ncs[ri] : ncs[0];
+      let realMin = clockMin + nc.elapsedAdjMin > 0 ? clockMin + nc.elapsedAdjMin : clockMin;
+      if (ms.length > 1) {
+        // Instante de cada apresentação: o seu, ou (antes do serviço com pernas) o dele menos a diferença no relógio.
+        const repOf = (m) => parseHhmm(m.report_time);
+        const msOf = (i) => (ncs[i].reportMs != null ? ncs[i].reportMs
+          : ri >= 0 && i <= ri && repOf(ms[i]) != null ? ncs[ri].reportMs - durationMin(repOf(ms[i]), repOf(ms[ri])) * 60000 : null);
+        const L = ms.length - 1, s0 = msOf(0), sL = msOf(L), lRep = repOf(last);
+        const r = s0 != null && sL != null && lRep != null ? Math.round((sL - s0) / 60000) + durationMin(lRep, endClk % 1440) + ncs[L].elapsedAdjMin : null;
+        realMin = r != null && r > 0 && r <= 2880 ? r : clockMin;
+      }
+      const reads = nc.shifts.map((s) => { const rs = at(iso, rep + s); return nightOf(rs, new Date(+rs + realMin * 60000)); });
+      const nd = reads.find(Boolean) || null;
+      // Em faixa (`either`) qualquer leitura noturna basta (conservador); em X ou por saber, leituras diferentes → incerto.
+      out.push({ iso, start, end, sectors: ms.reduce((s, m) => s + (Number(m.sectors) || 0), 0), night: !!nd, nightDay: nd, nightUnc: !!nd && !nc.either && reads.some((r) => !r), sim: ms.some((m) => m[SIM]) });
     }
   }
   return out.sort((a, b) => +a.start - +b.start);
@@ -120,6 +142,52 @@ const dutyBetween = (duties, a, b) => {
       out = 'maybe';
     }
   }
+  return out;
+};
+
+// Noites seguidas com mais de 4 setores (CS FTL.1.205(a)(1)) à volta do PSV `isTarget` do dia `date`: [{ level: 'bad'|'unc', it }].
+// A Simulação usa-a para o serviço simulado; o Início para o serviço de hoje (`isTarget = f.iso === date`) — a mesma regra nos
+// dois (antes o "Dentro dos limites?" do Início não a via). Regras: ver o comentário no simulateDuty.
+export const nightSectorIssues = (hypo, date, fdpOpts, baseOf, isTarget) => {
+  const own = fdpsBetween(hypo, date, date, fdpOpts, baseOf);
+  const fdps = own.some((f) => isTarget(f) && f.night) ? fdpsBetween(hypo, addDays(date, -4), addDays(date, 4), fdpOpts, baseOf) : own;
+  // Todos os PSV noturnos do alvo (um dia pode ter dois — revisão de 2026-11-08: só se via o 1.º).
+  const targets = fdps.map((f, i) => (isTarget(f) && f.night ? i : -1)).filter((i) => i >= 0);
+  const out = [];
+  if (!targets.length) return out;
+  const seen = new Map();
+  for (const si of targets) for (const dir of [-1, 1]) {
+    // a noite vizinha: passa os PSV de dia pelo meio (que se avaliam com as mesmas regras dos intervalos — 2.ª revisão, E1)
+    const mids = [];
+    let j = si + dir;
+    while (fdps[j] && !fdps[j].night) { mids.push(fdps[j]); j += dir; }
+    const o = fdps[j];
+    if (!o) continue;
+    const [a, b] = dir < 0 ? [o, fdps[si]] : [fdps[si], o];
+    if (+b.start - +a.end >= RECOVERY_MS && localNightsIn(a.end, b.start) >= 2) continue;   // separados por uma recuperação
+    let between = dutyBetween(hypo, a, b);
+    for (const m of mids) {
+      if (between === 'yes') break;
+      const gA = (+m.start - +a.end) / 3600000, gB = (+b.start - +m.end) / 3600000;
+      if (gA < 3 || gB < 3) continue;                            // colado a uma das noites: faz parte dela
+      between = gA >= 10 && gB >= 10 ? 'yes' : 'maybe';
+    }
+    if (between === 'yes') continue;                                                         // um serviço de dia pelo meio
+    const gapNights = Math.max(0, Math.round((+b.nightDay - +a.nightDay) / 86400000) - 1);
+    // Incerto: um serviço pelo meio que pode quebrar a sequência, ou uma das noites só o é numa das leituras da aclimatação.
+    const accU = !!(a.nightUnc || b.nightUnc);
+    const level = between === 'maybe' || accU ? 'unc' : 'bad';
+    const why = between === 'maybe' && accU ? 'both' : between === 'maybe' ? 'between' : 'acclim';
+    for (const f of [a, b]) {
+      if (f.sectors <= NIGHT_SECTOR_LIMIT) continue;
+      // Um aviso por PSV (dois PSV noturnos no mesmo dia podem exceder os dois — 2.ª revisão).
+      const fk = `${f.iso}|${+f.start}`;
+      const prev = seen.get(fk);
+      if (prev && (prev.level === 'bad' || level === 'unc')) continue;
+      seen.set(fk, { level, it: { type: 'nightSectors', date: f.iso, sectors: f.sectors, limit: NIGHT_SECTOR_LIMIT, gapNights, ...(level === 'unc' ? { doubt: true, why } : {}), rule: SIM_RULES.nightSectors } });
+    }
+  }
+  for (const v of seen.values()) out.push(v);
   return out;
 };
 
@@ -209,43 +277,11 @@ export const simulateDuty = (sim, ctx = {}) => {
   //   • um repouso de recuperação (36 h com 2 noites locais, ORO.FTL.235(d)), ou
   //   • um serviço de dia pelo meio — um PSV, escritório, formação, posicionamento ou assistência no aeroporto — com 10 h ou mais
   //     de repouso de cada lado (a menos de 3 h de uma das noites faz parte dela; de 3 a 10 h é dúvida).
-  // Serviço noturno = sobrepõe 02:00–04:59 (ORO.FTL.105(9)), nas horas da escala (a hora local da partida). Ver dutyBetween: a
+  // Serviço noturno = sobrepõe 02:00–04:59 (ORO.FTL.105(9)) no fuso de aclimatação (fdpsBetween → nightClockOf). Ver dutyBetween: a
   // reserva e a assistência em casa pelo meio são dúvida (não são repouso, ORO.FTL.105(21), nem claramente serviço).
   // Só se o próprio serviço for noturno é que se olha para os vizinhos (poupa o cálculo de 9 dias a cada serviço de dia).
-  const fdpOpts = { postFlightMin, isPilot, cabinGapMin, splitAdminMin };
-  const own = fdpsBetween(hypo, date, date, fdpOpts, baseOf);
-  const fdps = own.some((f) => f.sim && f.night) ? fdpsBetween(hypo, addDays(date, -4), addDays(date, 4), fdpOpts, baseOf) : own;
-  const si = fdps.findIndex((f) => f.sim);
-  if (si >= 0 && fdps[si].night) {
-    const seen = new Map();
-    for (const dir of [-1, 1]) {
-      // a noite vizinha: passa os PSV de dia pelo meio (que se avaliam com as mesmas regras dos intervalos — 2.ª revisão, E1)
-      const mids = [];
-      let j = si + dir;
-      while (fdps[j] && !fdps[j].night) { mids.push(fdps[j]); j += dir; }
-      const o = fdps[j];
-      if (!o) continue;
-      const [a, b] = dir < 0 ? [o, fdps[si]] : [fdps[si], o];
-      if (+b.start - +a.end >= RECOVERY_MS && localNightsIn(a.end, b.start) >= 2) continue;   // separados por uma recuperação
-      let between = dutyBetween(hypo, a, b);
-      for (const m of mids) {
-        if (between === 'yes') break;
-        const gA = (+m.start - +a.end) / 3600000, gB = (+b.start - +m.end) / 3600000;
-        if (gA < 3 || gB < 3) continue;                            // colado a uma das noites: faz parte dela
-        between = gA >= 10 && gB >= 10 ? 'yes' : 'maybe';
-      }
-      if (between === 'yes') continue;                                                         // um serviço de dia pelo meio
-      const gapNights = Math.max(0, Math.round((+b.nightDay - +a.nightDay) / 86400000) - 1);
-      const level = between === 'maybe' ? 'unc' : 'bad';
-      for (const f of [a, b]) {
-        if (f.sectors <= NIGHT_SECTOR_LIMIT) continue;
-        const prev = seen.get(f.iso);
-        if (prev && (prev.level === 'bad' || level === 'unc')) continue;
-        seen.set(f.iso, { level, it: { type: 'nightSectors', date: f.iso, sectors: f.sectors, limit: NIGHT_SECTOR_LIMIT, gapNights, ...(level === 'unc' ? { doubt: true } : {}), rule: R.nightSectors } });
-      }
-    }
-    for (const { level, it } of seen.values()) add(level, it);
-  }
+  // A mesma regra que o Início usa para o serviço de hoje (nightSectorIssues, mais abaixo).
+  for (const { level, it } of nightSectorIssues(hypo, date, { postFlightMin, isPilot, cabinGapMin, splitAdminMin }, baseOf, (f) => f.sim)) add(level, it);
 
   // ── ORO.FTL.210: todos os períodos que contêm o dia ──
   const windows = limitsAround(hypoLog, date);
@@ -345,7 +381,10 @@ export const issueText = (it, lang = 'pt', simDate = null) => {
       return l(`${who}: ${it.nightsActual} de ${it.nightsRequired} noites locais`, `${who}: ${it.nightsActual} of ${it.nightsRequired} local nights`);
     }
     case 'recovery': {
-      const u = it.uncertain ? l(' (depende do tipo de horário)', ' (depends on the schedule type)') : '';
+      const u = !it.uncertain ? ''
+        : it.why === 'acclim' ? l(' (depende do fuso a que estás aclimatado)', ' (depends on the time zone you are acclimatised to)')
+        : it.why === 'both' ? l(' (depende do tipo de horário e do fuso a que estás aclimatado)', ' (depends on the schedule type and the time zone you are acclimatised to)')
+        : l(' (depende do tipo de horário)', ' (depends on the schedule type)');
       if (it.kind === 'recovery168') return l(`mais de 168 h sem repouso de recuperação${u}`, `over 168 h without recovery rest${u}`);
       if (it.kind === 'recovery60') return l(`a recuperação tem de ter 60 h${u}`, `the recovery rest must be 60 h${u}`);
       if (it.kind === 'transitionNight') return l(`falta 1 noite local antes do matinal${u}`, `1 local night missing before the early start${u}`);
@@ -353,9 +392,12 @@ export const issueText = (it, lang = 'pt', simDate = null) => {
       if (it.kind === 'baseChange') return l(`mudança de base sem 72 h de repouso${u}`, `base change without 72 h of rest${u}`);
       return l(`repouso de recuperação${u}`, `recovery rest${u}`);
     }
-    case 'nightSectors': return it.doubt
-      ? l(`${it.sectors} setores à noite: entre as duas noites há uma reserva, uma assistência em casa, um serviço sem horas ou um serviço com menos de 10 h de repouso de um dos lados — pode quebrar a sequência (máx. ${it.limit})`,
-        `${it.sectors} sectors at night: between the two nights there is a reserve, a home standby, a duty without times or a duty with less than 10 h of rest on one side — it may break the sequence (max ${it.limit})`)
+    case 'nightSectors': return it.doubt && it.why === 'acclim'
+      ? l(`${it.sectors} setores à noite: não se sabe a que fuso estás aclimatado (Quadro 1) e, conforme o fuso, um dos serviços é ou não noturno — podem não ser noites seguidas (máx. ${it.limit})`,
+        `${it.sectors} sectors at night: your acclimatisation is unknown (Table 1) and, depending on the time zone, one of the duties is or is not a night duty — the nights may not be consecutive (max ${it.limit})`)
+      : it.doubt
+      ? l(`${it.sectors} setores à noite: entre as duas noites há uma reserva, uma assistência em casa, um serviço sem horas ou um serviço com menos de 10 h de repouso de um dos lados — pode quebrar a sequência${it.why === 'both' ? '; e não se sabe a que fuso estás aclimatado (Quadro 1)' : ''} (máx. ${it.limit})`,
+        `${it.sectors} sectors at night: between the two nights there is a reserve, a home standby, a duty without times or a duty with less than 10 h of rest on one side — it may break the sequence${it.why === 'both' ? '; and your acclimatisation is unknown (Table 1)' : ''} (max ${it.limit})`)
       : !it.gapNights
         ? l(`${it.sectors} setores em noites seguidas (máx. ${it.limit})`, `${it.sectors} sectors on consecutive nights (max ${it.limit})`)
         : l(`${it.sectors} setores em noites seguidas: só repouso entre elas, mesmo com ${it.gapNights === 1 ? '1 noite livre' : `${it.gapNights} noites livres`} (FAQ EASA 47617) (máx. ${it.limit})`,

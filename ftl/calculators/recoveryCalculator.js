@@ -8,11 +8,15 @@
 //  • 4 ou mais noturnos, matinais ou tardios entre duas recuperações → a segunda tem pelo menos 60 h (CS 235(a)(2)).
 //  • Na base, a passagem de tardio/noturno para matinal: o repouso entre os dois inclui 1 noite local (CS 235(a)(1)).
 //
-// As horas são as da escala (o relógio da base: a aclimatação é a da base — a do longo curso fica por modelar). O fim de
+// Noturno, matinal e tardio medem-se "no fuso a que o tripulante está aclimatado" (ORO.FTL.105(8)/(9)): quem chama passa
+// `clockOf(serviço, data, i)` → { shifts, elapsedAdjMin } (o nightClockOf do motor — o critério do PSV, com o tempo decorrido
+// real no longo curso); sem ele ficam as horas da escala (como antes). Com duas leituras (aclimatação X ou por saber) `acclim`
+// escolhe: 'lo' — só o que as duas dão; 'hi' — o que alguma dá (o recoveryIssues corre as duas e marca o incerto). Os
+// intervalos e as noites locais continuam nas horas da escala: o fim de cada serviço está no fuso de onde se repousa. O fim de
 // cada serviço é o sign-off, ou os calços + pós-voo nos voos. Os dias sem serviço dentro do período da escala contam
 // como livres; fora dele não se sabe (não se avisa).
 import { classifyDisruptive } from './disruptiveCalculator';
-import { parseHhmm } from '../utils/time';
+import { parseHhmm, durationMin } from '../utils/time';
 import { isFdpDuty } from '../rules/fdpRules';
 
 const H = 3600000;
@@ -55,16 +59,19 @@ export const nthLocalNightEnd = (start, n) => {
   return null;
 };
 
-// input: duties { 'YYYY-MM-DD': duty (+ extra) }; ctx { postFlightMin, base, baseAt(iso), type: 'early'|'late' }.
+// input: duties { 'YYYY-MM-DD': duty (+ extra) }; ctx { postFlightMin, base, baseAt(iso), type: 'early'|'late', clockOf, acclim }.
 // Devolve { duties: [{date, start, end, night, earlyStart, lateFinish, disruptive}], recoveries: [{start, end, h}],
-//           issues: [{ type: 'recovery168'|'recovery60'|'transitionNight', date, ... }] }.
-export const computeRecovery = (duties = {}, { postFlightMin = 0, base = null, baseAt = null, type = 'early' } = {}) => {
+//           issues: [{ type: 'recovery168'|'recovery60'|'transitionNight', date, ... }], twoReads (houve duas leituras) }.
+export const computeRecovery = (duties = {}, { postFlightMin = 0, base = null, baseAt = null, type = 'early', clockOf = null, acclim = 'hi' } = {}) => {
   const baseOf = (iso) => String((typeof baseAt === 'function' ? baseAt(iso) : base) || '').trim().toUpperCase();
   const rows = [];
+  let twoReads = false;
   for (const date of Object.keys(duties).sort()) {
     const d = duties[date];
     if (!d || d.deleted) continue;
-    for (const s of [d, ...(Array.isArray(d.extra) ? d.extra : [])]) {
+    const list = [d, ...(Array.isArray(d.extra) ? d.extra : [])];
+    for (let i = 0; i < list.length; i++) {
+      const s = list[i];
       if (!s || !s.report_time) continue;
       const rep = parseHhmm(s.report_time);
       const so = parseHhmm(s.signOff), on = parseHhmm(s.block_on);
@@ -75,7 +82,21 @@ export const computeRecovery = (duties = {}, { postFlightMin = 0, base = null, b
       let end = at(date, endClk % 1440, Math.floor(endClk / 1440));
       if (+end <= +start) end = new Date(+end + 24 * H);
       const endMin = endClk % 1440;
-      const dis = classifyDisruptive({ reportMin: rep, endMin, type });
+      // No fuso de aclimatação: cada leitura desloca as horas da escala e usa o tempo decorrido real.
+      const nc = clockOf ? clockOf(s, date, i) : null;
+      const shifts = nc && Array.isArray(nc.shifts) && nc.shifts.length ? nc.shifts : [0];
+      const clk = durationMin(rep, endMin), adj = (nc && nc.elapsedAdjMin) || 0;
+      const real = clk + adj > 0 ? clk + adj : clk;
+      const reads = shifts.map((sh) => { const r = (((rep + sh) % 1440) + 1440) % 1440; return classifyDisruptive({ reportMin: r, endMin: (r + real) % 1440, type }); });
+      // Em faixa (`either`) qualquer leitura basta (a faixa de 2 h é convenção → o conservador); só a aclimatação X ou por saber
+      // dá duas leituras em dúvida.
+      const either = !nc || nc.either !== false;
+      if (reads.length > 1 && !either) twoReads = true;
+      const pick = (f) => (acclim === 'lo' && !either ? reads.every(f) : reads.some(f));
+      const dis = {
+        night: pick((x) => x.night), earlyStart: pick((x) => x.earlyStart), lateFinish: pick((x) => x.lateFinish),
+        disruptive: pick((x) => x.disruptive), nightOrLate: pick((x) => x.night || x.lateFinish),
+      };
       const dep = Array.isArray(s.legs) && s.legs.length ? s.legs[0].dep : String(s.route || '').split(/[^A-Za-z]+/).filter(Boolean)[0];
       rows.push({ date, start, end, ...dis, kind: s.kind || 'flight', fdp: isFdpDuty(s), depAtBase: !dep || !baseOf(date) ? null : String(dep).toUpperCase() === baseOf(date) });
     }
@@ -109,7 +130,7 @@ export const computeRecovery = (duties = {}, { postFlightMin = 0, base = null, b
   // Tardio/noturno → matinal na base: 1 noite local no repouso entre os dois.
   for (const g of gaps) {
     const prev = rows[g.i - 1], next = rows[g.i];
-    if (!(prev.night || prev.lateFinish) || !next.earlyStart) continue;
+    if (!prev.nightOrLate || !next.earlyStart) continue;
     if (!prev.fdp || !next.fdp) continue;     // "the rest period between the 2 FDPs" — só entre dois PSV
     if (next.depAtBase === false) continue;   // fora da base, a regra não se aplica
     if (g.nights < 1) issues.push({ type: 'transitionNight', date: next.date });
@@ -144,6 +165,6 @@ export const computeRecovery = (duties = {}, { postFlightMin = 0, base = null, b
   return {
     duties: rows.map((r) => ({ date: r.date, start: r.start, end: r.end, night: r.night, earlyStart: r.earlyStart, lateFinish: r.lateFinish, disruptive: r.disruptive })),
     recoveries: recoveries.map((g) => ({ start: g.start, end: g.end, h: Math.floor(g.ms / H) })),
-    issues,
+    issues, twoReads,
   };
 };
