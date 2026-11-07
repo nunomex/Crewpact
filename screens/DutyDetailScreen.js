@@ -18,7 +18,7 @@ import { nightStopStation, hotelMapsUrl, hotelTelUrl } from '../data/hotels';
 import HotelSheet from '../components/HotelSheet';
 import ProvaSheet from '../components/ProvaSheet';
 import { provaFor } from '../data/prova';
-import { legZulu } from '../data/zulu';
+import { legZulu, legsZulu } from '../data/zulu';
 import { fdpForDuty, docFor, dayNum } from '../ae/tapLimits';
 import { plainFor, fmtDur, fmtClock } from '../data/tapLimitsText';
 import { AE_DEEPLINKS } from '../data/library';
@@ -174,7 +174,10 @@ export default function DutyDetailScreen({ route, navigation }) {
   const firstLeg = legs[0] || null, lastLeg = legs[legs.length - 1] || null;
   const tv = (hhmm) => { const z = toZulu(date, hhmm); return z ? `${hhmm}  ·  ${z}Z` : hhmm; };
   const zRef = duty.report_time || (firstLeg && firstLeg.off) || null;   // o dia de cada hora (data/zulu.js, legDay)
-  const tvL = (hhmm, leg, which) => { const z = legZulu(date, leg, which, zRef) || toZulu(date, hhmm); return z ? `${hhmm}  ·  ${z}Z` : hhmm; };
+  // As horas Zulu de todas as pernas pela cadeia do serviço (apresentação → partida → chegada…; data/zulu.js, legsZulu).
+  const legsZ = legsZulu(date, legs, duty.report_time || null);
+  const zOf = (leg, which) => { const i = legs.indexOf(leg); return i >= 0 && legsZ[i] ? legsZ[i][which] : legZulu(date, leg, which, zRef); };
+  const tvL = (hhmm, leg, which) => { const z = zOf(leg, which) || toZulu(date, hhmm); return z ? `${hhmm}  ·  ${z}Z` : hhmm; };
   const routeStr = stations.length > 1 ? stations.join(' → ') : (duty.route || l('Voo', 'Flight'));
   const headMain = isFlight
     ? routeStr
@@ -285,7 +288,7 @@ export default function DutyDetailScreen({ route, navigation }) {
           <>
             <Sec icon="plane">{l('Setores', 'Sectors')}</Sec>
             <Panel rows={legs.map((lg) => {
-              const zo = legZulu(date, lg, 'off', zRef), zn = legZulu(date, lg, 'on', zRef);
+              const zo = zOf(lg, 'off'), zn = zOf(lg, 'on');
               return {
                 k: `${lg.dh ? 'DH · ' : ''}${lg.flightNo ? `${lg.flightNo} · ` : ''}${lg.dep || '?'}→${lg.arr || '?'}`,
                 node: (

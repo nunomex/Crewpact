@@ -102,10 +102,19 @@ Golden primeiro em cada um; `npm test` verde (33 suites); pacote iOS gerado sem 
   Escala e Início passam a apresentação); o aviso das 18 h acordado do standby deixou de reduzir o teto duas vezes (podia
   NÃO avisar — não era conservador); com adiamento o standby não leva as 8 h do repartido; o número das horas ao lado do
   teto de 900 h é a soma legal do ano; o motivo do "incerto" do ano vem dos meses (`uncertainReasons`). Ficam sem ecrã, mas
-  certos e testados: `hourlyRange` (TAP pilotos) e o `kpi` do `vh` (TAP cabine).
+  certos e testados: `hourlyRange` (TAP pilotos) e o `kpi` do `vh` (TAP cabine) — depois mostrados na Biblioteca (ver abaixo).
   3.ª revisão (curta): apanhou a chegada passada para o dia seguinte DUAS vezes no motor (PSV errado 1 h nas VÉSPERAS das
-  mudanças de hora) — corrigido, o motor usa o `legDay` uma só vez; golden de 23/10 e 27/03. Limite conhecido do `legDay`
-  (só relógio): voo + fuso ≥ 24 h (leste longínquo) ou negativo (linha de mudança de data) — só pesa na noite da mudança de hora.
+  mudanças de hora) — corrigido, o motor usa o `legDay` uma só vez; golden de 23/10 e 27/03.
+  **Limite do relógio e contas sem ecrã — FEITOS (o Nuno: "temos que corrigir isto"), ENGINE_VERSION 8:** a CADEIA do serviço
+  (`legsChainMs`/`legsZulu`, data/zulu.js): cada hora é um instante UTC — a partida o 1.º candidato (D−1..D+2) que não vem antes
+  do momento anterior (a apresentação ou a chegada anterior), a chegada o 1.º entre 0 e 22 h depois da partida. Já não depende
+  de voo + fuso caber em 24 h nem da linha de mudança de data (LIS→NRT 16 h: PSV 17:15; NRT→HNL 7:30). O motor usa-a no tempo
+  decorrido do PSV e no voo depois da meia-noite; Detalhe, Escala e Início nas horas Zulu. O valor horário (TAP pilotos L1/L2 e
+  TAP cabine) aparece em € da tua categoria, com o intervalo, na Biblioteca → O teu AE (a explicação de cada item).
+  4.ª revisão: a partida marcada uns minutos antes da chegada anterior saltava 24 h (PSV 9:00 em vez de 13:00) → folga de 3 h
+  na cadeia, e o motor volta ao relógio se os instantes não fizerem sentido; "para ti" só com a categoria do perfil; a cadeia
+  uma vez por serviço na Escala. Fica: com o aeroporto da 1.ª partida sem fuso conhecido, a 1.ª partida fica no dia da
+  apresentação (o PSV não muda; só pesa na noite da mudança de hora).
 - **Era para depois (da revisão):** E4 — na TAP pilotos só a BASE mostra o intervalo; Natal, férias, `pendingAnnual` e as
   horas L1/L2 (3 %/6 % do VB) saem no mínimo como certos (conservador, mas devia ser intervalo); reparo 5 — TAP cabine 2026 sem
   o intervalo do KPI de 2 %; reparo 2 — o voo depois da meia-noite reparte-se pelas horas locais de cada aeroporto (longo curso:

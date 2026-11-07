@@ -17,7 +17,7 @@ import { monthlyAe, serviceMoney, aeIndex, awayNights } from '../data/perdiem';
 import { sncToRegister } from '../data/disruption';
 import { nightStopStation, hotelMapsUrl } from '../data/hotels';
 import HotelSheet from '../components/HotelSheet';
-import { legZulu } from '../data/zulu';
+import { legZulu, legsZulu } from '../data/zulu';
 import DutyFormSheet from '../components/DutyFormSheet';
 import RosterImportSheet from '../components/RosterImportSheet';
 import CalendarPickerSheet from '../components/CalendarPickerSheet';
@@ -484,9 +484,10 @@ export default function EscalaScreen({ navigation, route }) {
 
           {(shown.length || (nsIdx === idx && hotelRow)) ? (
             <View>
-              {shown.map((lg, i) => {
-                const zRef = d.report_time || (shown[0] && shown[0].off) || null;   // o dia de cada hora (legDay)
-                const zo = legZulu(sel, lg, 'off', zRef), zn = legZulu(sel, lg, 'on', zRef);
+              {(() => { const shownZ = legsZulu(sel, shown, d.report_time || null); return shown.map((lg, i) => {   // a cadeia uma vez
+                // As horas Zulu pela cadeia do serviço (data/zulu.js, legsZulu): o dia e o fuso certos de cada hora.
+                const zs = shownZ[i] || {};
+                const zo = zs.off || null, zn = zs.on || null;
                 const zDiff = (zo && zo !== lg.off) || (zn && zn !== lg.on);   // Zulu só quando difere da hora local
                 return (
                   <View key={i} style={s.row}>
@@ -498,7 +499,7 @@ export default function EscalaScreen({ navigation, route }) {
                     </View>
                   </View>
                 );
-              })}
+              }); })()}
               {legs.length > 3 && canExpand ? (
                 <TouchableOpacity style={s.row} activeOpacity={0.7} accessibilityRole="button" accessibilityState={{ expanded: !collapsed }}
                   onPress={() => {

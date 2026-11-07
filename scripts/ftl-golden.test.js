@@ -772,6 +772,23 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   // limite antigo de 3 h ao tempo decorrido deitava-o fora e dava 8:15 (relógios misturados).
   const dGru = ftl.ftlForDuty({ report_time: '21:15', block_on: '05:30', sectors: 1, flight_minutes: 660, legs: [{ dep: 'LIS', arr: 'GRU', off: '22:30', on: '05:30', offZ: '21:30', onZ: '08:30' }] }, { date: '2026-07-10', base: 'LIS', isPilot: true });
   eq('E3: LIS→GRU, PSV real 12:15', dGru.fdp.actualFdpStr, '12:15');
+  // A cadeia: o mesmo voo SEM as horas Zulu (só as locais e os aeroportos) dá as mesmas 12:15 — e LIS→NRT (voo + fuso > 24 h no
+  // relógio: 08:00 → 09:00 do dia seguinte, 16 h de voo) dá o PSV real, não 1 h.
+  const dGru2 = ftl.ftlForDuty({ report_time: '21:15', block_on: '05:30', sectors: 1, flight_minutes: 660, legs: [{ dep: 'LIS', arr: 'GRU', off: '22:30', on: '05:30' }] }, { date: '2026-07-10', base: 'LIS', isPilot: true });
+  eq('Cadeia: LIS→GRU só com horas locais → 12:15', dGru2.fdp.actualFdpStr, '12:15');
+  const dNrt = ftl.ftlForDuty({ report_time: '06:45', block_on: '09:00', sectors: 1, flight_minutes: 960, legs: [{ dep: 'LIS', arr: 'NRT', off: '08:00', on: '09:00' }] }, { date: '2026-11-10', base: 'LIS', isPilot: true });
+  eq('Cadeia: LIS→NRT 16 h → PSV real 17:15', dNrt.fdp.actualFdpStr, '17:15');
+  // 4.ª revisão: a partida seguinte uns minutos ANTES da chegada anterior (chegada atrasada, partida com a hora programada)
+  // saltava 24 h → PSV 9:00 em vez de 13:00. Agora há folga de 3 h. Apresentação 20:00, LIS→FNC 21:00–22:45, FNC→GRU 22:40–05:00.
+  const dTol = ftl.ftlForDuty({ report_time: '20:00', block_on: '05:00', sectors: 2, flight_minutes: 555, legs: [{ dep: 'LIS', arr: 'FNC', off: '21:00', on: '22:45' }, { dep: 'FNC', arr: 'GRU', off: '22:40', on: '05:00' }] }, { date: '2026-07-10', base: 'LIS', isPilot: true });
+  eq('Cadeia: partida 5 min antes da chegada anterior → PSV 13:00', dTol.fdp.actualFdpStr, '13:00');
+  const eTol = ftl.dutyToFtlDay({ report_time: '06:00', block_on: '09:00', sectors: 2, flight_minutes: 125, legs: [{ dep: 'LIS', arr: 'OPO', off: '07:00', on: '08:05' }, { dep: 'OPO', arr: 'LIS', off: '08:00', on: '09:00' }] }, { date: '2026-07-10', base: 'LIS' });
+  eq('Cadeia: serviço de manhã sem voo depois da meia-noite', eTol.vooNextMin || 0, 0);
+  const eTolZ = ftl.dutyToFtlDay({ report_time: '06:00', block_on: '06:30', sectors: 1, flight_minutes: 60, legs: [{ dep: 'LIS', arr: 'OPO', off: '05:30', on: '06:30', offZ: '04:30', onZ: '05:30' }] }, { date: '2026-07-10', base: 'LIS' });
+  eq('Cadeia: offZ um pouco antes da apresentação fica no mesmo dia', eTolZ.vooNextMin || 0, 0);
+  // E o voo depois da meia-noite pela cadeia: LIS→GRU só com as horas locais, com a data → 9:30 depois da meia-noite de Lisboa.
+  const eGru2 = ftl.dutyToFtlDay({ report_time: '21:15', block_on: '05:30', sectors: 1, flight_minutes: 660, legs: [{ dep: 'LIS', arr: 'GRU', off: '22:30', on: '05:30' }] }, { date: '2026-07-10', base: 'LIS', isPilot: true });
+  eqj('Cadeia: LIS→GRU, 9:30 de voo e de serviço depois da meia-noite (sem pós-voo)', [eGru2.vooNextMin, eGru2.servicoNextMin], [570, 570]);
   // Serviço que não passa a meia-noite: nada a repartir.
   eq('A-173: serviço diurno sem parte seguinte', logNt[iso(2)].servicoNextMin || 0, 0);
   // Entradas antigas (só horas) continuam a contar.

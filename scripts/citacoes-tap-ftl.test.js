@@ -83,7 +83,21 @@ const tapOk = (name, side, txt, subj) => {
   if (subj) check(`${name}: a cláusula é sobre ${subj} → ${out.map((c) => `${c.reg} ${c.n} "${c.title}"`).join(', ')}`, out.some((c) => subj.test(c.title)));
 };
 
-const { AE_TAP_PILOT, AE_TAP_CABIN, AE_PILOT, AE_CABIN, FTL } = R('data/infoCatalog.js');
+const { AE_TAP_PILOT, AE_TAP_CABIN, AE_PILOT, AE_CABIN, FTL, domainsFor } = R('data/infoCatalog.js');
+// Revisão do 8b: o valor horário em € da tua categoria aparece na explicação (antes as contas existiam sem ecrã).
+{
+  const P = { red: '#f00', onInkFaint: '#999' };
+  const itemOf = (cards, name) => cards.find((c) => c.k === 'ae').data.groups.flatMap((g) => g.items).find((it) => it.name === name);
+  const pil = domainsFor(P, { ae: R('ae/tapSpac.js'), crewCategory: 'CTE', ym: '2026-03' });
+  check('TAP pilotos: hora L1 do CTE em 2026 = de 258,67 a 266,35 €', /Para ti \(CTE, 2026\): de 258,67 a 266,35 € por hora\./.test(itemOf(pil, 'Hora de voo · Limite 1').f));
+  check('TAP pilotos: hora L2 do CTE em 2026 = de 517,34 a 532,70 €', /de 517,34 a 532,70 €/.test(itemOf(pil, 'Hora de voo · Limite 2').f));
+  const cab = domainsFor(P, { ae: R('ae/tapSnpvac.js'), crewCategory: 'CAB3', ym: '2026-03' });
+  check('TAP cabine: vencimento horário do CAB 3 em 2026 = de 50,52 a 51,53 €', /Para ti \(CAB3, 2026\): de 50,52 a 51,53 € por hora\./.test(itemOf(cab, 'Vencimento horário').f));
+  const cab25 = domainsFor(P, { ae: R('ae/tapSnpvac.js'), crewCategory: 'CAB3', ym: '2025-03' });
+  check('TAP cabine 2025: um valor só (46,78 €)', /Para ti \(CAB3, 2025\): 46,78 € por hora\./.test(itemOf(cab25, 'Vencimento horário').f));
+  check('categoria desconhecida → sem "para ti"', !/Para ti/.test(itemOf(domainsFor(P, { ae: R('ae/tapSpac.js'), crewCategory: null, ym: '2026-03' }), 'Hora de voo · Limite 1').f));
+  check('o catálogo fixo não muda', !/Para ti/.test(AE_TAP_PILOT.groups.flatMap((g) => g.items).map((it) => it.f).join(' ')));
+}
 const { provaFor } = R('data/prova.js');
 const tapSpac = R('ae/tapSpac.js'), tapSnpvac = R('ae/tapSnpvac.js');
 const ezySpac = R('ae/easyjetSpac.js'), ezySnpvac = R('ae/easyjetSnpvac.js');

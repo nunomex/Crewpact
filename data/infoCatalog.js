@@ -143,7 +143,12 @@ export const AE_TAP_CABIN = { word: 'O teu AE', groups: [
 // pela BIBLIOTECA REAL (data/library.js — URLs verificados, golden test:library).
 const eur = (n) => (n == null ? null : (+n).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/, ' '));
 const countItems = (d) => d.groups.reduce((n, g) => n + g.items.length, 0);
-export function domainsFor(P, { ae = null, crewCategory = null } = {}) {
+// O valor horário em € da TUA categoria, acrescentado à explicação do item (a linha e a percentagem ficam). Com o VB do ano em
+// intervalo (TAP: a atualização por confirmar), "de X a Y €" — nunca um valor só quando a lei não o decide.
+const eurRange = (r) => (!r || r.min == null ? null : r.max != null && r.max > r.min ? `de ${eur(r.min)} a ${eur(r.max)} €` : `${eur(r.min)} €`);
+const withNote = (data, notes) => ({ ...data, groups: data.groups.map((g) => ({ ...g, items: g.items.map((it) => (notes[it.name] ? { ...it, f: `${it.f} ${notes[it.name]}` } : it)) })) });
+const ymNowOf = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; };
+export function domainsFor(P, { ae = null, crewCategory = null, ym = null } = {}) {
   const ftl = { k: 'ftl', ic: 'shield', name: 'FTL', sub: 'A LEI · EASA', stat: '900', u: 'h', ks: 'voo / ano civil · 8 limites', word: 'A lei', accent: P.red, data: FTL };
   const fontes = (ks) => ({ k: 'fontes', ic: 'book', name: 'Fontes', sub: 'OFICIAIS', stat: '', u: '', ks, word: 'Fontes', accent: P.onInkFaint, lib: true });
   const aeId = ae && ae.AE_ID;
@@ -162,10 +167,23 @@ export function domainsFor(P, { ae = null, crewCategory = null } = {}) {
   if (aeId === 'tap-spac') {
     const row = crewCategory === 'CTE' ? 'CTE' : 'OP';
     const val = ae.PER_DIEM && ae.PER_DIEM[row] ? ae.PER_DIEM[row].A_mc : 202.5;
-    return [ftl, card('TAP · SPAC', eur(val), `per diem A (MC) · ${row} · €/dia`, AE_TAP_PILOT), fontes('EUR-Lex · EASA · DRE')];
+    // Valor horário (Tabela A-3.3) da tua categoria, com o VB do ano em intervalo (indexRange) — revisão do 8b.
+    // Só com a TUA categoria ("para ti" não pode ser o exemplo de outra).
+    const m = ym || ymNowOf(), cat = (ae.CATEGORIES || []).includes(crewCategory) ? crewCategory : null;
+    const h1 = cat && ae.hourlyRange ? eurRange(ae.hourlyRange(cat, 1, m)) : null, h2 = cat && ae.hourlyRange ? eurRange(ae.hourlyRange(cat, 2, m)) : null;
+    const data = withNote(AE_TAP_PILOT, {
+      ...(h1 ? { 'Hora de voo · Limite 1': `Para ti (${cat}, ${m.slice(0, 4)}): ${h1} por hora.` } : {}),
+      ...(h2 ? { 'Hora de voo · Limite 2': `Para ti (${cat}, ${m.slice(0, 4)}): ${h2} por hora.` } : {}),
+    });
+    return [ftl, card('TAP · SPAC', eur(val), `per diem A (MC) · ${row} · €/dia`, data), fontes('EUR-Lex · EASA · DRE')];
   }
   if (aeId === 'tap-snpvac') {
-    return [ftl, card('TAP · SNPVAC', eur(ae.AC1_DAY != null ? ae.AC1_DAY : 150), 'AC1 · €/dia de voo', AE_TAP_CABIN), fontes('EUR-Lex · EASA · DRE')];
+    // Vencimento horário (RRRGS Cl. 14.ª) da tua categoria; em 2026 com o KPI por confirmar (Cl. 3.ª, n.º 3) — revisão do 8b.
+    const m = ym || ymNowOf(), cat = (ae.CATEGORIES || []).includes(crewCategory) ? crewCategory : null;
+    const lo = cat && ae.vh ? ae.vh(cat, 1, m) : null, hi = cat && ae.vh ? ae.vh(cat, 1, m, true) : null;
+    const v = eurRange(lo == null ? null : { min: lo, max: hi });
+    const data = v ? withNote(AE_TAP_CABIN, { 'Vencimento horário': `Para ti (${cat}, ${m.slice(0, 4)}): ${v} por hora.` }) : AE_TAP_CABIN;
+    return [ftl, card('TAP · SNPVAC', eur(ae.AC1_DAY != null ? ae.AC1_DAY : 150), 'AC1 · €/dia de voo', data), fontes('EUR-Lex · EASA · DRE')];
   }
   // Sem AE modelado (FTL-only / pending) → a lei + fontes.
   return [ftl, fontes('EUR-Lex · EASA')];

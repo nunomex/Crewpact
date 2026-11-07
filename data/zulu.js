@@ -61,7 +61,8 @@ export const airportOffsetMin = (code, utcMs) => {
 // Hora LOCAL "HH:MM" no aeroporto `code`, no dia `dateISO` → Zulu "HH:MM".
 // null quando não dá (sem Intl, aeroporto desconhecido, ou hora inválida) → o chamador
 // faz fallback (toZulu do dispositivo).
-export const airportZulu = (dateISO, hhmm, code) => {
+// O INSTANTE (ms UTC) da hora local "HH:MM" no aeroporto `code`, no dia `dateISO`. null quando não dá.
+export const airportUtcMs = (dateISO, hhmm, code) => {
   const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm || '');
   if (!INTL_TZ_OK || !dateISO || !m) return null;
   const tz = airportTz(code);
@@ -70,9 +71,10 @@ export const airportZulu = (dateISO, hhmm, code) => {
   const wall = Date.UTC(Y, Mo - 1, D, +m[1], +m[2]);          // hora-de-parede tratada como UTC, ajusta-se
   let off = tzOffsetMin(tz, new Date(wall)), utc = wall - off * 60000;
   off = tzOffsetMin(tz, new Date(utc)); utc = wall - off * 60000;   // refina na fronteira do DST
-  const d = new Date(utc);
-  return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+  return utc;
 };
+const fmtZ = (ms) => { const d = new Date(ms); return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`; };
+export const airportZulu = (dateISO, hhmm, code) => { const ms = airportUtcMs(dateISO, hhmm, code); return ms == null ? null : fmtZ(ms); };
 
 // Fallback: hora local DO DISPOSITIVO → Zulu. Espelha appContext.toZulu, mas mantém este
 // módulo PURO (sem React/RN) para os testes golden o poderem carregar.
@@ -103,10 +105,60 @@ export const legDay = (dateISO, leg, which, ref = null) => {
   if (off != null) return on < off ? nextIso(offDay) : offDay;
   return (r != null && on < r) ? nextIso(dateISO) : dateISO;
 };
+// ── A cadeia do serviço (revisão do 8b) ──
+// Cada hora vira um INSTANTE real: a partida é o 1.º instante (no fuso do aeroporto, de D−1 a D+2) que não vem antes do momento
+// anterior (a apresentação, no fuso da 1.ª partida, ou a chegada da perna anterior); a chegada é o 1.º instante entre 0 e 22 h
+// depois da partida. Não depende de voo + fuso caber em 24 h (leste longínquo, oeste com fuso grande, linha de mudança de data).
+// A Zulu autoritativa (offZ/onZ) entra da mesma maneira, como hora UTC. Sem fuso conhecido numa perna → null nessa hora (o
+// chamador usa legZulu, que cai no relógio do dispositivo).
+const shiftIso = (iso, n) => { const t = new Date(`${iso}T12:00:00Z`); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
+const zMs = (iso, hhmm) => { const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm || ''); if (!m) return null; const [Y, Mo, D] = iso.split('-').map(Number); return Date.UTC(Y, Mo - 1, D, +m[1], +m[2]); };
+const candMs = (iso, n, leg, which) => {
+  const day = shiftIso(iso, n);
+  if (leg[which + 'Z']) return zMs(day, leg[which + 'Z']);
+  return airportUtcMs(day, leg[which], which === 'off' ? leg.dep : leg.arr);
+};
+const MAX_SECTOR_MS = 22 * 3600000;
+// Folga para trás: uma partida pode estar marcada uns minutos antes da chegada anterior (chegada atrasada, partida com a hora
+// programada) ou antes da apresentação (dado). 3 h nunca deixa entrar o candidato de 24 h antes (4.ª revisão do 8b).
+const BACK_SLACK_MS = 3 * 3600000;
+export const legsChainMs = (dateISO, legs = [], reportHhmm = null) => {
+  if (!dateISO || !Array.isArray(legs) || !legs.length) return [];
+  let prev = reportHhmm && legs[0] ? airportUtcMs(dateISO, reportHhmm, legs[0].dep) : null;
+  return legs.map((leg) => {
+    if (!leg) return { offMs: null, onMs: null };
+    let offMs = null;
+    if (leg.off || leg.offZ) {
+      if (prev == null) offMs = candMs(dateISO, 0, leg, 'off');
+      else for (let n = -1; n <= 2 && offMs == null; n++) { const c = candMs(dateISO, n, leg, 'off'); if (c != null && c >= prev - BACK_SLACK_MS) offMs = c; }
+    }
+    let onMs = null;
+    if ((leg.on || leg.onZ) && offMs != null) {
+      for (let n = -1; n <= 3 && onMs == null; n++) { const c = candMs(dateISO, n, leg, 'on'); if (c != null && c > offMs && c - offMs <= MAX_SECTOR_MS) onMs = c; }
+    }
+    if (onMs != null) prev = onMs; else if (offMs != null) prev = offMs;
+    return { offMs, onMs };
+  });
+};
+// As horas Zulu "HH:MM" de cada perna pela cadeia; o que a cadeia não resolve cai no legZulu (relógio/dispositivo).
+export const legsZulu = (dateISO, legs = [], reportHhmm = null) => {
+  const ch = legsChainMs(dateISO, legs, reportHhmm);
+  const ref = reportHhmm || (legs[0] && legs[0].off) || null;
+  return (legs || []).map((leg, i) => ({
+    off: ch[i] && ch[i].offMs != null ? fmtZ(ch[i].offMs) : legZulu(dateISO, leg, 'off', ref),
+    on: ch[i] && ch[i].onMs != null ? fmtZ(ch[i].onMs) : legZulu(dateISO, leg, 'on', ref),
+  }));
+};
+
 export const legZulu = (dateISO, leg, which, ref = null) => {
   if (!leg) return null;
   if (leg[which + 'Z']) return leg[which + 'Z'];
   const ap = which === 'off' ? leg.dep : leg.arr;
   const day = legDay(dateISO, leg, which, ref);
+  if (which === 'on' && (leg.off || leg.offZ)) {
+    // A chegada pelo instante da partida (0–22 h depois): não depende do relógio caber em 24 h.
+    const ch = legsChainMs(legDay(dateISO, leg, 'off', ref), [leg]);
+    if (ch[0] && ch[0].onMs != null) return fmtZ(ch[0].onMs);
+  }
   return airportZulu(day, leg[which], ap) || deviceZulu(day, leg[which]);
 };

@@ -20,7 +20,7 @@ import { useFocusEffect, useScrollToTop, useIsFocused } from '@react-navigation/
 import { t } from '../data/i18n';
 import { select } from '../data/haptics';
 import { AppContext, toZulu } from '../data/appContext';
-import { airportZulu, legZulu } from '../data/zulu';
+import { airportZulu, legZulu, legsZulu } from '../data/zulu';
 import QuestionDetailSheet from '../components/QuestionDetailSheet';
 import { buildTodayItems } from './hojeItems';
 import { fdpForDuty, dayNum } from '../ae/tapLimits';
@@ -550,7 +550,12 @@ export default function HomeScreen({ navigation }) {
   const ndOnLeg = ndOpLegs.length
     ? ndOpLegs[ndOpLegs.length - 1]
     : (flight && flight.arrTime ? { on: flight.arrTime, arr: (flightStatus && flightStatus.arr && flightStatus.arr.iata) || null } : null);
-  const ndStoredOnZ = (flight && ndOnLeg && ndOnLeg.on) ? legZulu(flight.dateISO, ndOnLeg, 'on', (ndReg && ndReg.report_time) || (ndOpLegs[0] && ndOpLegs[0].off) || null) : null;
+  // A chegada do último setor pela cadeia do serviço (data/zulu.js): o dia e o fuso certos, também no longo curso.
+  const ndStoredOnZ = (flight && ndOnLeg && ndOnLeg.on)
+    ? ((ndReg && Array.isArray(ndReg.legs) && ndReg.legs.includes(ndOnLeg))
+      ? (legsZulu(flight.dateISO, ndReg.legs, ndReg.report_time || null)[ndReg.legs.indexOf(ndOnLeg)] || {}).on || null
+      : legZulu(flight.dateISO, ndOnLeg, 'on', (ndReg && ndReg.report_time) || (ndOpLegs[0] && ndOpLegs[0].off) || null))
+    : null;
   // Só com o ÚLTIMO setor seguido: o registo compara-se com os calços do último (é o que o App também limpa).
   const syncBehind = !!(trackingLast && flightStatus && ndStoredOnZ && recordBehindLive(flightStatus, ndStoredOnZ));
   // Só o Início vê o feed ao vivo → é aqui que se MARCA o sinal persistente (idempotente).

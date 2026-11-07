@@ -35,7 +35,7 @@ import { DUTY_WINDOWS, FLIGHT_WINDOWS } from './rules/flightTimeRules';
 import { QUADRO1_DIFF, QUADRO1_ELAPSED, TZ_REST_DIFF, TZ_REST_ELAPSED } from './constants/tables';
 import { parseHhmm, minToHhmm, durationMin } from './utils/time';
 import { acclimLetter } from './rules/acclimatisationRules';
-import { airportOffsetMin, legZulu } from '../data/zulu';
+import { airportOffsetMin, legZulu, legsChainMs, airportUtcMs } from '../data/zulu';
 
 // Versão do MOTOR de cálculo FTL. Carimba cada registo diário derivado (dutyToFtlDay/
 // dayFtlFromDuties → dayLog), para que uma futura ERRATA (docs/ERRATA.md §E6) saiba com que
@@ -48,7 +48,8 @@ import { airportOffsetMin, legZulu } from '../data/zulu';
 // v5 (2026-11-07, bloco 8b): parte depois da meia-noite (servicoNextMin/vooNextMin); teto da cabine com a diferença; sala no repartido.
 // v6 (2026-11-07, revisão do 8b): voo depois da meia-noite pelas horas Zulu; standby (8) e (9); tempo decorrido no longo curso.
 // v7 (2026-11-07): aviso das 18 h acordado sem dupla redução; standby com adiamento sem as 8 h do repartido.
-export const ENGINE_VERSION = 7;
+// v8 (2026-11-07): os instantes das pernas pela cadeia do serviço (legsChainMs) — o tempo decorrido sem o limite das 24 h.
+export const ENGINE_VERSION = 8;
 
 // Uma atividade (manual ou da escala) → PSV + repouso + legalidade num só objeto.
 // input: { state, report, end?, sectors, splitBreakH?, inBase?, postFlightMin? }
@@ -375,19 +376,31 @@ const zuluTimingOf = (duty = {}, base = null, date = null, refMode = 'auto') => 
   // Uma hora "antes" da apresentação no relógio é do dia seguinte (o serviço passa a meia-noite): converte-se com o fuso
   // DESSE dia — na noite da mudança de hora o desvio muda às 01:00/02:00 (revisão do 8b, E5: o PSV saía com 1 h a menos
   // em outubro e 1 h a mais em março).
-  // O dia de cada hora escolhe-o o `legDay` (data/zulu.js), com a apresentação como referência: uma vez só.
-  const off0 = parseHhmm(l0.off), offZ0 = parseHhmm(day ? legZulu(day, l0, 'off', duty.report_time) : l0.offZ);
+  // Os instantes vêm da CADEIA do serviço (data/zulu.js, legsChainMs): apresentação → partida → chegada → partida seguinte, cada
+  // hora no fuso do seu dia; não depende de voo + fuso caber em 24 h. Sem fuso conhecido, o legZulu (relógio).
+  const chain = day ? legsChainMs(day, legs, duty.report_time) : [];
+  const fmtMs = (ms) => { const d = new Date(ms); return d.getUTCHours() * 60 + d.getUTCMinutes(); };
+  const off0 = parseHhmm(l0.off);
+  const offZ0 = chain[0] && chain[0].offMs != null ? fmtMs(chain[0].offMs) : parseHhmm(day ? legZulu(day, l0, 'off', duty.report_time) : l0.offZ);
   if (off0 == null || offZ0 == null) return { bandShiftMin: 0, elapsedAdjMin: 0, reportMs: null };
   const digitsOff = nrm(off0 - offZ0);                          // o relógio das horas da escala (desvio UTC)
   const reportZ = ((offZ0 - durationMin(rep, off0)) % 1440 + 1440) % 1440;
   // Tempo decorrido: só quando o fim registado é a chegada do último setor (senão não se sabe o relógio do fim).
   let elapsedAdjMin = 0;
-  const onN = parseHhmm(lN.on), onZN = parseHhmm(day ? legZulu(day, lN, 'on', duty.report_time) : lN.onZ), end = parseHhmm(duty.block_on);
+  const iN = fl.length - 1, cN = chain[iN];
+  const onN = parseHhmm(lN.on), onZN = cN && cN.onMs != null ? fmtMs(cN.onMs) : parseHhmm(day ? legZulu(day, lN, 'on', duty.report_time) : lN.onZ), end = parseHhmm(duty.block_on);
   if (onN != null && onZN != null && end != null && end === onN) {
-    const adj = durationMin(reportZ, onZN) - durationMin(rep, end);
-    // Até 12 h: um longo curso tem fusos de 3 h ou mais (LIS→GRU 4 h). O limite antigo de 3 h deitava fora o tempo decorrido e
-    // o PSV contava-se em relógios misturados (21:15 LIS → 05:30 GRU dava 8:15 em vez de 12:15 — revisão do 8b, E3).
-    if (Math.abs(adj) <= 720) elapsedAdjMin = adj;
+    // Com os dois instantes, o tempo decorrido é a diferença real (apresentação = 1.ª partida − o que o relógio diz antes dela).
+    const inst0 = !!(chain[0] && chain[0].offMs != null && cN && cN.onMs != null);
+    const realInst = inst0 ? Math.round((cN.onMs - chain[0].offMs) / 60000) + durationMin(rep, off0) : null;
+    // Instantes sem sentido (fora de 0–24 h) → volta ao relógio, em vez de deitar o tempo decorrido fora (4.ª revisão do 8b).
+    const inst = realInst != null && realInst > 0 && realInst <= 1440;
+    const realMin = inst ? realInst : durationMin(reportZ, onZN);
+    const adj = realMin - durationMin(rep, end);
+    // Com os instantes da cadeia, o PSV real (0 a 24 h) manda. Só com o relógio, até 12 h de ajuste: um longo curso tem fusos de
+    // 3 h ou mais (LIS→GRU 4 h); o limite antigo de 3 h deitava-o fora (21:15 LIS → 05:30 GRU dava 8:15 em vez de 12:15 —
+    // revisão do 8b, E3).
+    if (inst ? (realMin > 0 && realMin <= 1440) : Math.abs(adj) <= 720) elapsedAdjMin = adj;
   }
   // Hora de referência.
   let bandShiftMin = 0;
@@ -618,7 +631,7 @@ const extCountBefore = (duties, date, state = 'acc') => {
 const afterMidnightMin = (startMin, durMin) => (startMin == null || !(durMin > 0)) ? 0 : Math.max(0, Math.min(durMin, startMin + durMin - 1440));
 // Tempo de voo depois da meia-noite, pelas pernas (sem posicionamentos) ou, sem pernas, pelos calços do serviço. Sem horas de
 // todas as pernas → 0 (fica no dia da apresentação, como antes). Reparte o `flight_minutes` na proporção das pernas.
-const vooAfterMidnightMin = (duty = {}, startMin) => {
+const vooAfterMidnightMin = (duty = {}, startMin, date = null) => {
   const fm = Math.round(duty.flight_minutes || 0);
   if (!fm || startMin == null) return 0;
   const all = (Array.isArray(duty.legs) && duty.legs.length) ? duty.legs.filter(Boolean) : [];
@@ -626,6 +639,19 @@ const vooAfterMidnightMin = (duty = {}, startMin) => {
     : (duty.block_off ? [{ off: duty.block_off, on: duty.block_on }] : []);
   if (!legs.length) return 0;
   const midRel = 1440 - startMin;   // a meia-noite, em minutos desde o início
+  // Com a data e os fusos: os instantes da cadeia do serviço (data/zulu.js) — a meia-noite é a do relógio da escala (o da 1.ª
+  // partida), contada desde o instante da apresentação; cada perna conta o que dela cai depois. Sem fusos, o relógio (abaixo).
+  if (date && all.length) {
+    const rep = `${String(Math.floor(startMin / 60)).padStart(2, '0')}:${String(startMin % 60).padStart(2, '0')}`;
+    const repMs = airportUtcMs(date, rep, all[0].dep), ch = legsChainMs(date, all, rep);
+    const op = all.map((l, i) => [l, ch[i]]).filter(([l]) => !l.dh);
+    if (repMs != null && op.length && op.every(([, c]) => c && c.offMs != null && c.onMs != null)) {
+      const midMs = repMs + midRel * 60000;
+      let totC = 0, afterC = 0;
+      for (const [, c] of op) { totC += c.onMs - c.offMs; afterC += Math.max(0, c.onMs - Math.max(c.offMs, midMs)); }
+      return totC ? Math.min(fm, Math.round(fm * afterC / totC)) : 0;
+    }
+  }
   // Com as horas Zulu de todas as pernas, cada uma passa para o relógio da escala (o desvio da 1.ª partida): as horas locais de
   // cada aeroporto misturam fusos e, no longo curso, repartiam mal à volta da meia-noite (revisão do 8b, reparo 2).
   // O relógio da escala é o da 1.ª perna do SERVIÇO (com os posicionamentos), o mesmo do zuluTimingOf (revisão do 8b, E2).
@@ -751,7 +777,7 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = n
     // A parte depois da meia-noite (dia local seguinte, bloco 8b): o período de serviço desde a apresentação; no standby em
     // casa, a mesma proporção dos 25 %. O standby anterior fica no dia da apresentação.
     servicoNextMin: (d.dutyPeriodMin && repMin != null ? Math.round(afterMidnightMin(((repMin - (d.startEarlierMin || 0)) % 1440 + 1440) % 1440, d.dutyPeriodMin) * baseServicoMin / d.dutyPeriodMin) : 0) || undefined,
-    vooNextMin: vooAfterMidnightMin(duty, repMin) || undefined,
+    vooNextMin: vooAfterMidnightMin(duty, repMin, date) || undefined,
     rest: { [place]: d.rest.restMin != null ? toH(d.rest.restMin) : 0, [`${place}Prev`]: fullServicoH, ts: Date.now() },
   };
 };

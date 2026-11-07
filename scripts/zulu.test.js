@@ -20,7 +20,7 @@ Module._extensions['.js'] = function (m, filename) {
   m._compile(transform(fs.readFileSync(filename, 'utf8'), filename), filename);
 };
 
-const { airportZulu, airportTz, INTL_TZ_OK, legZulu, legDay } = require(path.resolve('data/zulu.js'));
+const { airportZulu, airportTz, INTL_TZ_OK, legZulu, legDay, legsZulu } = require(path.resolve('data/zulu.js'));
 
 let pass = 0, fail = 0; const fails = [];
 const eq = (name, got, want) => { if (got === want) { pass++; } else { fail++; fails.push(`✗ ${name}: ${JSON.stringify(got)} ≠ ${JSON.stringify(want)}`); } };
@@ -38,6 +38,23 @@ const lg2 = { dep: 'OPO', arr: 'LIS', off: '03:30', on: '04:30' };
 eqj('legZulu: 2.ª perna depois da meia-noite (ref 22:00)', [legZulu('2026-10-24', lg2, 'off', '22:00'), legZulu('2026-10-24', lg2, 'on', '22:00')], ['03:30', '04:30']);
 // Em março (29/03/2026, adianta 1 h às 01:00): LIS 23:00 (inverno, 23:00Z) → FNC 03:00 do dia 29 (verão, 02:00Z).
 eq('legZulu: março, chegada 03:00 do dia 29 → 02:00Z', legZulu('2026-03-28', { dep: 'LIS', arr: 'FNC', off: '23:00', on: '03:00' }, 'on'), '02:00');
+// A cadeia (revisão do 8b): já não depende de voo + fuso caber em 24 h nem do relógio "chegada antes da partida".
+// Voo + fuso ≥ 24 h (o limite do relógio): LIS 08:00 (inverno, 08:00Z) → NRT 09:00 do dia seguinte (UTC+9 = 00:00Z, 16 h de
+// voo). No relógio a chegada vem DEPOIS da partida → o relógio dizia "mesmo dia" (−8 h de voo); a cadeia acha as 16 h.
+const chNrt = require(path.resolve('data/zulu.js')).legsChainMs('2026-11-10', [{ dep: 'LIS', arr: 'NRT', off: '08:00', on: '09:00' }], '06:45')[0];
+eq('cadeia: LIS 08:00 → NRT 09:00 (+1) = 16 h de voo', (chNrt.onMs - chNrt.offMs) / 3600000, 16);
+// Linha de mudança de data: NRT 21:00 (12:00Z) → HNL 09:30 do MESMO dia no relógio local (19:30Z, 7:30 de voo). O relógio
+// ("chegada antes da partida → dia seguinte") dava 31:30 de voo; a cadeia dá 7:30.
+const chHnl = require(path.resolve('data/zulu.js')).legsChainMs('2026-11-10', [{ dep: 'NRT', arr: 'HNL', off: '21:00', on: '09:30' }], '19:45')[0];
+eq('cadeia: NRT 21:00 → HNL 09:30 (linha de data) = 7:30 de voo', (chHnl.onMs - chHnl.offMs) / 60000, 450);
+// Leste: LIS 21:00 (21:00Z) → HKG 18:00 do dia seguinte (10:00Z).
+eqj('cadeia: LIS 21:00 → HKG 18:00 (+1) = 21:00Z → 10:00Z', legsZulu('2026-11-10', [{ dep: 'LIS', arr: 'HKG', off: '21:00', on: '18:00' }], '19:45')[0], { off: '21:00', on: '10:00' });
+// 2.ª perna depois da meia-noite, noutro fuso: apresentação LIS 22:00, LIS→FNC 22:45–00:30, FNC→LIS 01:15–02:50 (no inverno, mesmo fuso).
+eqj('cadeia: 2 pernas pela meia-noite', legsZulu('2026-11-10', [{ dep: 'LIS', arr: 'FNC', off: '22:45', on: '00:30' }, { dep: 'FNC', arr: 'LIS', off: '01:15', on: '02:50' }], '22:00').map((z) => [z.off, z.on]), [['22:45', '00:30'], ['01:15', '02:50']]);
+// E a noite da mudança de hora pela cadeia.
+eq('cadeia: noite de 24/10, chegada 04:00 → 04:00Z', legsZulu('2026-10-24', [lgDst], '22:00')[0].on, '04:00');
+// Uma perna sozinha (legZulu): a chegada pelo instante da partida também no leste longínquo.
+eq('legZulu: LIS 21:00 → HKG 18:00 (+1) = 10:00Z', legZulu('2026-11-10', { dep: 'LIS', arr: 'HKG', off: '21:00', on: '18:00' }, 'on'), '10:00');
 // A Zulu autoritativa manda sempre.
 eq('legZulu: onZ do calendário manda', legZulu('2026-10-24', { ...lgDst, onZ: '04:05' }, 'on'), '04:05');
 eq('Fuso LGW', airportTz('LGW'), 'Europe/London');
