@@ -819,6 +819,29 @@ const fdpOn = (res, id, date) => rule(res, id).findings.find((f) => f.date === d
   const m = rule(run('cabin', mar), 'C34').findings.find((x) => x.window === 'mes-voo' && x.period === '2026-03');
   eq('voo de 31 mar sem pernas: março entre 94h39 e 96h09 → incerto (o AE dá 95 h)', m && [m.status, m.reason], ['incerto', 'meia-noite']);
 
+  // R3 — cabine: o "Dia" começa "às 0h00 locais" (Cl. 4.ª, n.º 9) e a hora local é a "do local de onde o tripulante de cabine se
+  // encontra e realiza o descanso" (n.º 13) — não a da base. Num voo PDL→LIS que passa a meia-noite, a da partida (PDL, −1 h) ou a
+  // da chegada (LIS): as duas leituras. 23 × 4h05 = 93h55 em março; 31/03 PDL 22:30 (22:30Z = 23:30 LIS) → LIS 02:00 (01:00Z):
+  // pela hora de PDL caem 1h30 em março (95h25, excede 95 h); pela de Lisboa 0h30 (94h25, dentro) → incerto, motivo hora-local.
+  {
+    const marL = Object.fromEntries(days('2026-03-01', 23).map((d) => [d, F('08:00', '08:30', '12:35', 2, 'LIS-OPO-LIS', { flight_minutes: 245 })]));
+    marL['2026-03-31'] = FZ('21:45', [['PDL', 'LIS', '22:30', '02:00', '22:30', '01:00']], { flight_minutes: 150 });
+    const mL = rule(run('cabin', marL), 'C34').findings.find((x) => x.window === 'mes-voo' && x.period === '2026-03');
+    eq('R3 cabine: voo PDL→LIS pela meia-noite, março 94h25 (Lisboa) ou 95h25 (PDL) → incerto, hora local', mL && [mL.status, mL.reason], ['incerto', 'hora-local']);
+    eq('R3 cabine: o aviso leva o intervalo (94h25 a 95h25)', mL && [mL.value, mL.valueMax], [5665, 5725]);
+    // Pilotos: o Dia é "às zero horas locais da base" (Cl. 6.ª, n.º 9) → só a da base, nunca a dúvida da hora local.
+    ok('R3 pilotos: sem a dúvida da hora local', !run('pilot', marL).rules.some((r) => r.findings.some((f) => f.reason === 'hora-local')));
+    // E5: nas janelas de 7 dias as duas leituras combinam-se janela a janela — nunca dois avisos iguais sobrepostos.
+    const wk = {};
+    days('2026-03-05', 5).forEach((d) => { wk[d] = S('office', '08:00', '16:00'); });
+    wk['2026-03-10'] = FZ('22:00', [['LIS', 'GRU', '23:15', '07:45', '23:15', '10:45']], { flight_minutes: 690 });
+    days('2026-03-12', 5).forEach((d) => { wk[d] = S('office', '08:00', '16:45'); });
+    wk['2026-03-17'] = S('office', '08:00', '10:00');
+    const w7 = rule(run('cabin', wk), 'C34').findings.filter((x) => x.window === '7d-servico');
+    const overl = w7.some((x, i) => w7.some((y, j) => j > i && x.status === y.status && !(y.from > x.to || x.from > y.to)));
+    ok('E5 cabine: janelas de 7 dias sem avisos repetidos (e há avisos)', w7.length > 0 && !overl);
+    eq('fonte: cabine Cl. 4.ª, n.º 13 literal', fs.readFileSync(path.resolve('fontes/ae-tap/tap-snpvac-2024.txt'), 'utf8').replace(/\s+/g, ' ').includes('Hora do local de onde o tripulante de cabine se encontra e realiza o descanso'), true);
+  }
   // A-133 — zonas geográficas: a Cl. 6.ª, n.º 53 define-as como as faixas de 15° do fuso ("geralmente coincidente com o fuso
   // horário"): LIS na zona −1, GIG na −3 → 2 zonas → aclimatizado (Cl. 43.ª, n.º 2 c)). A variação de longitude não é a zona.
   const gig = run('pilot', {
@@ -857,7 +880,17 @@ const fdpOn = (res, id, date) => rule(res, id).findings.find((f) => f.date === d
     '2026-04-08': F('08:00', '08:30', '14:00', 2, 'LIS-OPO-LIS'),
   });
   const f15 = rule(c15, 'C15').findings.find((x) => x.date === '2026-04-07');
-  eq('A-138 4 aterragens no dia 6 (acaba no FNC), regresso no dia 7 (1 aterragem), voo no dia 8: o AE não diz se é só o PSV do regresso ou qualquer da rotação → incerto', f15 && [f15.status, f15.reason, f15.doubt], ['incerto', 'quatro-aterragens', 'rotacao']);
+  // A Cl. 23.ª, n.º 1, a) resolve-o: "Após a realização de um período de serviço de voo com 4 aterragens o tripulante de cabine tem
+  // direito ao gozo de uma folga de 48 horas nos termos do definido na alínea a) do número 13 da cláusula 20.ª" — qualquer PSV.
+  eq('A-138 4 aterragens no dia 6 (acaba no FNC), regresso no dia 7, voo no dia 8: a Cl. 23.ª, n.º 1, a) dá a folga → excede', f15 && [f15.status, f15.reason, f15.doubt], ['excede', 'quatro-aterragens', undefined]);
+  eq('fonte: Cl. 23.ª, n.º 1, a) literal', require('fs').readFileSync(path.resolve('fontes/ae-tap/tap-snpvac-2024.txt'), 'utf8').replace(/\s+/g, ' ').includes('Após a realização de um período de serviço de voo com 4 aterragens o tripulante de cabine tem direito ao gozo de uma folga de 48 horas'), true);
+  // 2.ª revisão, E4: com um aeroporto desconhecido na rotação não se sabe se é médio curso (a Cl. 23.ª é de médio curso) → incerto.
+  const c15u = run('cabin', {
+    '2026-04-06': F('06:00', '06:30', '15:00', 4, 'LIS-OPO-ZZZ-FAO-FNC'),
+    '2026-04-07': F('09:00', '09:45', '11:30', 1, 'FNC-LIS'),
+    '2026-04-08': F('08:00', '08:30', '14:00', 2, 'LIS-OPO-LIS'),
+  });
+  eq('A-138 com aeroporto desconhecido na rotação → incerto', (rule(c15u, 'C15').findings.find((x) => x.date === '2026-04-07') || {}).status, 'incerto');
   const c15b = run('cabin', { '2026-04-06': F('06:00', '06:30', '15:00', 4, 'LIS-OPO-LIS-FAO-LIS'), '2026-04-07': F('08:00', '08:30', '14:00', 2, 'LIS-OPO-LIS') });
   eq('o próprio PSV com 4 aterragens acaba na base, voo no dia seguinte → excede', (rule(c15b, 'C15').findings.find((x) => x.date === '2026-04-06') || {}).status, 'excede');
 

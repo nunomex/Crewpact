@@ -19,6 +19,7 @@ import { restAround, recoveryIssues } from './today';
 import { fdpForDuty, evaluateTapLimits } from '../ae/tapLimits';
 import { isProblem, fmtClock, clauseShort, ruleTitle } from './tapLimitsText';
 import { unknownsText } from './ftlUnknowns';
+import { NONFLIGHT_KINDS } from './calendarParse';
 
 // A regra de cada aviso (o artigo; onde é o acordo, a cláusula vai no próprio aviso).
 export const SIM_RULES = {
@@ -86,6 +87,41 @@ const fdpsBetween = (duties, from, to, opts, baseOf) => {
 };
 
 const RECOVERY_MS = 36 * 3600000;
+
+// O que está entre os PSV noturnos `a` e `b` quebra a sequência de noites (FAQ EASA 47617: "only separated by a rest period")?
+//   'yes'   — um serviço claro (escritório, formação, posicionamento, assistência no aeroporto), de dia, separado dos dois PSV
+//             por 10 h ou mais de cada lado (o repouso mínimo mais baixo, ORO.FTL.235(b));
+//   'maybe' — não se sabe: um serviço sem horas (até um PSV sem apresentação, que o fdpsBetween não vê), uma reserva ou uma
+//             assistência em casa (não são repouso, "free of all duties, standby and reserve", ORO.FTL.105(21), nem claramente
+//             serviço), ou um serviço com 3 a 10 h de intervalo (não é claramente separado por um repouso);
+//   'no'    — só repouso pelo meio. Um serviço a menos de 3 h de um dos PSV faz parte dele (o posicionamento antes de operar
+//             conta como PSV, ORO.FTL.215(a)) → não separa.
+// Revisão do 8b (E1–E3).
+const BREAK_KINDS = new Set(['office', 'training', 'positioning', 'standby_airport']);
+const DOUBT_KINDS = new Set(['standby_home', 'reserve']);
+const dutyBetween = (duties, a, b) => {
+  let out = 'no';
+  for (let iso = a.iso; iso <= b.iso; iso = addDays(iso, 1)) {
+    const d = duties[iso];
+    if (!d || d.deleted) continue;
+    for (const m of [d, ...(Array.isArray(d.extra) ? d.extra : [])].filter(Boolean)) {
+      const kind = m.kind || 'flight';
+      if (kind !== 'flight' && !BREAK_KINDS.has(kind) && !DOUBT_KINDS.has(kind) && !NONFLIGHT_KINDS.includes(kind)) continue;
+      const rep = parseHhmm(m.report_time), endClk = parseHhmm(m.signOff) != null ? parseHhmm(m.signOff) : parseHhmm(m.block_on);
+      if (rep == null || endClk == null) { out = 'maybe'; continue; }   // sem horas (mesmo no dia de a ou b): pode estar entre eles
+      if (isFdpDuty(m)) continue;                                // os PSV com horas já estão no fdpsBetween (vizinhos não noturnos)
+      const start = at(iso, rep), end = new Date(+start + durationMin(rep, endClk) * 60000);
+      if (!(+start >= +a.end && +end <= +b.start)) continue;
+      if (DOUBT_KINDS.has(kind)) { out = 'maybe'; continue; }    // reserva / assistência em casa, de dia ou de noite: dúvida
+      if (nightOf(start, end)) continue;                         // um serviço noturno continua a sequência
+      const gapA = (+start - +a.end) / 3600000, gapB = (+b.start - +end) / 3600000;
+      if (gapA < 3 || gapB < 3) continue;                        // colado a um PSV: faz parte dele
+      if (BREAK_KINDS.has(kind) && gapA >= 10 && gapB >= 10) return 'yes';
+      out = 'maybe';
+    }
+  }
+  return out;
+};
 
 export const simulateDuty = (sim, ctx = {}) => {
   const { duties = {}, dayLog = {}, postFlightMin = 0, isPilot = false, base = null, baseAt = null, cabinGapMin, splitAdminMin, disruptiveType = null, tap = null, mode = 'replace' } = ctx || {};
@@ -168,11 +204,13 @@ export const simulateDuty = (sim, ctx = {}) => {
   }
 
   // ── Noites seguidas: 4 setores por serviço (CS FTL.1.205(a)(1)) ──
-  // "Consecutive night duties" — o texto não define "consecutive" (vai para o advogado). Dois PSV noturnos seguidos na escala:
-  //   • em noites SEGUIDAS (as janelas 02:00–04:59 em dias seguidos) → seguidas, sem dúvida → excede com mais de 4 setores;
-  //   • separados por um repouso de recuperação (36 h com 2 noites locais, ORO.FTL.235(d)) → já não são seguidos;
-  //   • com noites livres pelo meio mas sem recuperação → o texto não decide → INCERTO ("a lei é que manda": nem "excede" nem
-  //     "dentro" inventados).
+  // "Consecutive night duties": a FAQ da EASA 47617 — "'Consecutive' is referring to two night duties only separated by a rest
+  // period" (revisão do 8b). Dois PSV noturnos são seguidos se entre eles só houver repouso; a sequência quebra-se com:
+  //   • um repouso de recuperação (36 h com 2 noites locais, ORO.FTL.235(d)), ou
+  //   • um serviço de dia pelo meio — um PSV, escritório, formação, posicionamento ou assistência no aeroporto — com 10 h ou mais
+  //     de repouso de cada lado (a menos de 3 h de uma das noites faz parte dela; de 3 a 10 h é dúvida).
+  // Serviço noturno = sobrepõe 02:00–04:59 (ORO.FTL.105(9)), nas horas da escala (a hora local da partida). Ver dutyBetween: a
+  // reserva e a assistência em casa pelo meio são dúvida (não são repouso, ORO.FTL.105(21), nem claramente serviço).
   // Só se o próprio serviço for noturno é que se olha para os vizinhos (poupa o cálculo de 9 dias a cada serviço de dia).
   const fdpOpts = { postFlightMin, isPilot, cabinGapMin, splitAdminMin };
   const own = fdpsBetween(hypo, date, date, fdpOpts, baseOf);
@@ -180,18 +218,30 @@ export const simulateDuty = (sim, ctx = {}) => {
   const si = fdps.findIndex((f) => f.sim);
   if (si >= 0 && fdps[si].night) {
     const seen = new Map();
-    for (const j of [si - 1, si + 1]) {
+    for (const dir of [-1, 1]) {
+      // a noite vizinha: passa os PSV de dia pelo meio (que se avaliam com as mesmas regras dos intervalos — 2.ª revisão, E1)
+      const mids = [];
+      let j = si + dir;
+      while (fdps[j] && !fdps[j].night) { mids.push(fdps[j]); j += dir; }
       const o = fdps[j];
-      if (!o || !o.night) continue;
-      const [a, b] = j < si ? [o, fdps[si]] : [fdps[si], o];
+      if (!o) continue;
+      const [a, b] = dir < 0 ? [o, fdps[si]] : [fdps[si], o];
       if (+b.start - +a.end >= RECOVERY_MS && localNightsIn(a.end, b.start) >= 2) continue;   // separados por uma recuperação
+      let between = dutyBetween(hypo, a, b);
+      for (const m of mids) {
+        if (between === 'yes') break;
+        const gA = (+m.start - +a.end) / 3600000, gB = (+b.start - +m.end) / 3600000;
+        if (gA < 3 || gB < 3) continue;                            // colado a uma das noites: faz parte dela
+        between = gA >= 10 && gB >= 10 ? 'yes' : 'maybe';
+      }
+      if (between === 'yes') continue;                                                         // um serviço de dia pelo meio
       const gapNights = Math.max(0, Math.round((+b.nightDay - +a.nightDay) / 86400000) - 1);
-      const level = gapNights === 0 ? 'bad' : 'unc';
+      const level = between === 'maybe' ? 'unc' : 'bad';
       for (const f of [a, b]) {
         if (f.sectors <= NIGHT_SECTOR_LIMIT) continue;
         const prev = seen.get(f.iso);
         if (prev && (prev.level === 'bad' || level === 'unc')) continue;
-        seen.set(f.iso, { level, it: { type: 'nightSectors', date: f.iso, sectors: f.sectors, limit: NIGHT_SECTOR_LIMIT, gapNights, rule: R.nightSectors } });
+        seen.set(f.iso, { level, it: { type: 'nightSectors', date: f.iso, sectors: f.sectors, limit: NIGHT_SECTOR_LIMIT, gapNights, ...(level === 'unc' ? { doubt: true } : {}), rule: R.nightSectors } });
       }
     }
     for (const { level, it } of seen.values()) add(level, it);
@@ -303,10 +353,13 @@ export const issueText = (it, lang = 'pt', simDate = null) => {
       if (it.kind === 'baseChange') return l(`mudança de base sem 72 h de repouso${u}`, `base change without 72 h of rest${u}`);
       return l(`repouso de recuperação${u}`, `recovery rest${u}`);
     }
-    case 'nightSectors': return !it.gapNights
-      ? l(`${it.sectors} setores em noites seguidas (máx. ${it.limit})`, `${it.sectors} sectors on consecutive nights (max ${it.limit})`)
-      : l(`${it.sectors} setores à noite com ${it.gapNights === 1 ? '1 noite livre' : `${it.gapNights} noites livres`} pelo meio: o texto não diz se são «noites seguidas» (máx. ${it.limit})`,
-        `${it.sectors} sectors at night with ${it.gapNights === 1 ? '1 free night' : `${it.gapNights} free nights`} between: the text does not say if they are "consecutive nights" (max ${it.limit})`);
+    case 'nightSectors': return it.doubt
+      ? l(`${it.sectors} setores à noite: entre as duas noites há uma reserva, uma assistência em casa, um serviço sem horas ou um serviço com menos de 10 h de repouso de um dos lados — pode quebrar a sequência (máx. ${it.limit})`,
+        `${it.sectors} sectors at night: between the two nights there is a reserve, a home standby, a duty without times or a duty with less than 10 h of rest on one side — it may break the sequence (max ${it.limit})`)
+      : !it.gapNights
+        ? l(`${it.sectors} setores em noites seguidas (máx. ${it.limit})`, `${it.sectors} sectors on consecutive nights (max ${it.limit})`)
+        : l(`${it.sectors} setores em noites seguidas: só repouso entre elas, mesmo com ${it.gapNights === 1 ? '1 noite livre' : `${it.gapNights} noites livres`} (FAQ EASA 47617) (máx. ${it.limit})`,
+          `${it.sectors} sectors on consecutive nights: only rest between them, even with ${it.gapNights === 1 ? '1 free night' : `${it.gapNights} free nights`} (EASA FAQ 47617) (max ${it.limit})`);
     case 'limit': {
       const t = (LIMIT_TXT[it.key] || {})[it.id];
       const what = it.key === 'voo' ? l('voo', 'flight') : l('serviço', 'duty');

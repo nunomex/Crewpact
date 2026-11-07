@@ -21,8 +21,8 @@ verificadores cada); agrupados, cerca de 70 problemas.
 **Bloco 7 (textos e citações) FEITO a 2026-11-06** — ver a entrada "BLOCO 7" abaixo. Falta vê-lo no iPhone. O ecrã FtlDetail foi apagado (decisão do Nuno, 2026-11-07).
 **Bloco 8 (dúvidas → advogado) FEITO a 2026-11-07** — pack em **`docs/pack-advogado.md`**. Ver a entrada "BLOCO 8" abaixo.
 **Bloco 8b (erros novos da triagem) FEITO a 2026-11-07** — ver a entrada "BLOCO 8b" abaixo (falta ver no iPhone e publicar a
-política/termos — PUBLICADOS a 2026-11-07). Fica da triagem, por corrigir: noites seguidas (FAQ 47617),
-A-138, R3, AVSEC 1182/71 e as leituras não-conservadoras à espera do advogado. Fora dos blocos: A-249 a A-251 (formulário
+política/termos — PUBLICADOS a 2026-11-07). Os 4 que ficavam da triagem — FEITOS a 2026-11-08 (entrada abaixo). Ficam
+as leituras não-conservadoras à espera do advogado. Fora dos blocos: A-249 a A-251 (formulário
 manual) e A-218 (a formação inicial não paga pernoita).
 **Regra do Nuno (2026-11-06): "a lei é que manda", sempre.** Sem um facto de que a lei precisa → perguntar, ou "incerto"
 com o que falta. Nunca um valor inventado, nem "o mais restritivo". Ver a entrada "A LEI É QUE MANDA" abaixo.
@@ -39,6 +39,37 @@ tabela secundária (Áustria/Irlanda/Malta = matinal; Portugal = sem escolha pub
 leitura automática. A easyJet deixou de ser assumida matinal: os dois tipos para todos, até haver documento oficial.
 **Depois disso:** o esboço `design/inicio-v6.html` e o modo escuro (adiados pela auditoria).
 **Por ver no iPhone (de antes):** a disrupção e o aviso de RDP; uma conta de CABINE.
+
+---
+
+## 2026-11-08 — Os 4 que ficavam da triagem (Opus 5.5) — o Nuno: "corrigir isto"
+
+Golden primeiro em cada um; `npm test` verde; pacote iOS gerado sem erros.
+- **Noites seguidas (CS FTL.1.205(a)(1), 4 setores):** pela FAQ EASA 47617 ("'Consecutive' is referring to two night duties only
+  separated by a rest period"): seguidas se só houver repouso entre elas → "excede" (antes "incerto" com noites livres pelo
+  meio); quebra-se com uma recuperação (235(d)) ou um serviço não noturno pelo meio — PSV, escritório, formação, posicionamento
+  ou assistência (105(10)); a reserva não conta (230). `dutyBetween` em data/simulation.js.
+- **A-138 (TAP cabine):** a Cl. 23.ª, n.º 1, a) resolve — a folga de 48 h vale depois de QUALQUER PSV da rotação com 4
+  aterragens → "excede" (antes "incerto", leitura estrita).
+- **R3 (TAP cabine, C34):** os dias começam "às 0h00 locais" (Cl. 4.ª, n.º 9), hora "do local de onde o tripulante de cabine se
+  encontra e realiza o descanso" (n.º 13), não a da base. Num voo entre fusos pela meia-noite, as duas leituras (partida e
+  chegada): excede nas duas → excede; só numa → incerto, motivo `hora-local`. Pilotos ficam na base (Cl. 6.ª, n.º 9).
+- **AVSEC (pilotos):** deixou de alargar o fim de semana para segunda (Reg. 1182/71, art. 3.º, n.º 4 — dúvida no pack, E8); a
+  nota explica. Pack E4 e E8 atualizados (o que a app faz agora); Word gerado.
+- **Revisão independente:** 5 erros + 6 reparos, corrigidos. Noites: o que fica ENTRE as duas noites decide-se em 3 casos —
+  quebra (serviço claro de dia com ≥ 10 h de cada lado), não quebra (só repouso, ou serviço a < 3 h de um PSV: faz parte dele,
+  ORO.FTL.215(a)), incerto (serviço sem horas, reserva ou assistência em casa — não são repouso, ORO.FTL.105(21) — ou 3–10 h);
+  o texto do aviso diz qual. C34: as duas leituras combinam-se JANELA A JANELA (`rollingCheck2`/`calendarCheck2`/
+  `calendarCheckU2`) — sem avisos duplicados nas janelas de 7 dias, e o "incerto" leva o intervalo. A-138: a Cl. 23.ª é de
+  médio curso → no longo curso continua a dúvida. FAQ 47617 copiada para `fontes/easa/` (teste confere a citação); AVSEC: a
+  Prova mostra o art. 3.º, n.º 4 citado na nota; saiu o código do salto de fim de semana.
+  2.ª revisão: 4 erros, corrigidos — um PSV de dia pelo meio segue as mesmas regras dos intervalos (antes quebrava sempre);
+  reserva/assistência em casa noturna também é dúvida; serviço sem horas no dia de uma das noites é dúvida; A-138 só certa
+  com médio curso SABIDO (aeroporto desconhecido → incerto). O "agora" das 7 dias da cabine mostra a leitura maior. Fica (reparo):
+  o valor "agora" do voo do mês continua pela leitura da partida; o máximo da assistência a 100 % no trimestre perde-se quando
+  a leitura a 25 % já é "incerto" pela hora local (o estado está certo).
+- **Ver no iPhone:** Simulação com duas noites e uma folga pelo meio; Escala/limites de uma conta TAP cabine com um voo
+  dos Açores pela meia-noite; validade AVSEC a cair num sábado.
 
 ---
 

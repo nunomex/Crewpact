@@ -1841,9 +1841,13 @@ const checkC15 = (svcs, rotOf, absent, fleetOf, fdpOf) => {
     const rot = rotOf.get(s);
     const lastOfRot = !!(rot && rot.closed && rot.last === s);
     // A-138: "no regresso à base ... após um período de serviço de voo que inclua quatro aterragens" — também quando esse
-    // PSV acabou fora da base, noutro dia da rotação.
-    const fourLen = (s.sectors || 0) >= 4;
-    const four = fourLen || !!(lastOfRot && rot.svcs.some((x) => x.kind === 'flight' && (x.sectors || 0) >= 4));
+    // PSV acabou fora da base, noutro dia da rotação. A Cl. 23.ª, n.º 1, a) decide-o ("Após a realização de um período de serviço
+    // de voo com 4 aterragens o tripulante de cabine tem direito ao gozo de uma folga de 48 horas nos termos do definido na
+    // alínea a) do número 13 da cláusula 20.ª"): QUALQUER PSV com 4 aterragens → é a leitura certa, não só a estrita.
+    // A Cl. 23.ª está nas operações de MÉDIO curso: no longo curso a rotação continua com as duas leituras (n.º 13 a) da Cl. 20.ª).
+    const fourRot = !!(lastOfRot && rot.svcs.some((x) => x.kind === 'flight' && (x.sectors || 0) >= 4));
+    const four = (s.sectors || 0) >= 4 || fourRot;
+    const fourLen = (s.sectors || 0) >= 4 || (fourRot && !rot.lc && !rot.unknown);   // médio curso só se SABIDO (2.ª revisão, E4)
     const lcLen = s.mc === false, lcStr = lcLen || (lastOfRot && rot.lc);
     if (!four && !lcStr) return;
     const head = { date: s.date, lc: lcStr };
@@ -1877,7 +1881,8 @@ const checkC15 = (svcs, rotOf, absent, fleetOf, fdpOf) => {
       radLen = r24a || r24b || r24c ? 1440 : r12 || r12LR ? 720 : 0;
       radStr = r24a || r24bS || r24cS ? 1440 : r12 || r12LR || r12LRs || r12Str ? 720 : 0;
     }
-    // Só pela leitura "qualquer PSV da rotação" (n.os 13 e 14 têm a mesma construção) a folga é devida → "incerto", nunca "excede".
+    // Só pela leitura "qualquer PSV da rotação" a folga é devida → "incerto", nunca "excede" (o n.º 14 e, no longo curso, o n.º 13;
+    // no médio curso a Cl. 23.ª, n.º 1, a) decide os 4 aterragens — A-138).
     const onlyStr = !fourLen && !lcLen && !f96Len;
     const needLen = onlyStr ? 0 : (f96Len ? 5760 : 2880) + (f96Len ? 0 : radLen);
     const needStr = Math.max(needLen, (f96Str ? 5760 : 2880) + (f96Str ? 0 : radStr));
@@ -1942,17 +1947,19 @@ const addSplit = (byDay, a, b, w = 1) => {
 
 // O tempo de voo pelos dias, para as verificações: o que se sabe (`exact`) e os voos que passam da meia-noite sem as horas de
 // cada perna (`unc`): a parte do dia seguinte fica entre lo2 e hi2 (o voo cabe entre os calços de saída e os de chegada).
-const flightPieces = (svcs) => {
+// `shOf(s)` = o desvio (min) do relógio dos DIAS em relação ao da base (cabine: a hora local, Cl. 4.ª, n.º 13; pilotos 0).
+const flightPieces = (svcs, shOf = () => 0) => {
   const exact = new Map(), unc = [];
   svcs.forEach((s) => {
     if (!s.flightMin) return;
-    if (Array.isArray(s.legs) && s.legs.length && s.legs.reduce((a, l) => a + (l.on - l.off), 0) === s.flightMin) { s.legs.forEach((l) => addSplit(exact, l.off, l.on)); return; }
-    if (s.firstOff != null && s.end - s.firstOff === s.flightMin) { addSplit(exact, s.firstOff, s.end); return; }
-    const a = s.firstOff != null ? s.firstOff : s.start;
-    const d1 = Math.floor(a / DAY), d2 = Math.floor((s.end - 1) / DAY);
+    const sh = shOf(s) || 0;
+    if (Array.isArray(s.legs) && s.legs.length && s.legs.reduce((a, l) => a + (l.on - l.off), 0) === s.flightMin) { s.legs.forEach((l) => addSplit(exact, l.off + sh, l.on + sh)); return; }
+    if (s.firstOff != null && s.end - s.firstOff === s.flightMin) { addSplit(exact, s.firstOff + sh, s.end + sh); return; }
+    const a = (s.firstOff != null ? s.firstOff : s.start) + sh, e = s.end + sh;
+    const d1 = Math.floor(a / DAY), d2 = Math.floor((e - 1) / DAY);
     if (d1 === d2 || d2 !== d1 + 1) { const d = d1 === d2 ? d1 : s.dn; exact.set(d, (exact.get(d) || 0) + s.flightMin); return; }
     const M = d2 * DAY, F = s.flightMin;
-    const hi2 = Math.min(F, s.end - M), lo2 = Math.min(hi2, Math.max(0, F - (M - a)));   // (tempo de voo maior do que calços a calços: dados maus)
+    const hi2 = Math.min(F, e - M), lo2 = Math.min(hi2, Math.max(0, F - (M - a)));   // (tempo de voo maior do que calços a calços: dados maus)
     unc.push({ d1, F, lo2, hi2 });
   });
   return { exact, unc };
@@ -2001,6 +2008,55 @@ const calendarCheckU = (P, keyOf, limit, label) => {
     if (!worst || hi > worst.value) worst = { value: hi, period: k, limit, window: label };
     const st = lo > limit ? 'excede' : hi > limit ? 'incerto' : null;
     if (st) exceed.push({ window: label, period: k, value: lo, ...(hi !== lo ? { valueMax: hi } : {}), limit, status: st, ...(st === 'incerto' ? { reason: 'meia-noite' } : {}) });
+  }
+  return { exceed, worst };
+};
+
+// ── Duas leituras do relógio dos dias (cabine, Cl. 4.ª, n.º 13: a hora local da partida ou da chegada) ──
+// Combinam-se JANELA A JANELA (revisão do 8b, E5: juntar avisos já agrupados desalinhava as janelas de 7 dias): o menor valor
+// decide o "excede", o maior o "incerto"; o aviso leva o intervalo (`value`–`valueMax`) e o motivo `hora-local`.
+const runPush = (out, d, st, lo, hi, n, limit, label, reason) => {
+  const prev = out[out.length - 1];
+  if (prev && prev.toDn === d - 1 && prev.status === st) {
+    prev.toDn = d; prev.to = isoOf(d); prev.value = Math.max(prev.value, lo);
+    const mx = Math.max(prev.valueMax != null ? prev.valueMax : prev.value, hi); if (mx !== prev.value) prev.valueMax = mx; else delete prev.valueMax;
+  } else out.push({ window: label, from: isoOf(d - n + 1), to: isoOf(d), toDn: d, value: lo, ...(hi !== lo ? { valueMax: hi } : {}), limit, status: st, ...(reason ? { reason } : {}) });
+};
+const rollingCheck2 = (A, B, n, limit, d0, d1, label) => {
+  const out = []; let worst = null;
+  for (let d = d0; d <= d1; d++) {
+    let a = 0, b = 0;
+    for (let k = d - n + 1; k <= d; k++) { a += A.get(k) || 0; b += B.get(k) || 0; }
+    const lo = Math.min(a, b), hi = Math.max(a, b);
+    if (!worst || hi > worst.value) worst = { value: hi, from: isoOf(d - n + 1), to: isoOf(d) };
+    const st = lo > limit ? 'excede' : hi > limit ? 'incerto' : null;
+    if (st) runPush(out, d, st, lo, hi, n, limit, label, st === 'incerto' ? 'hora-local' : null);
+  }
+  return { exceed: out.map(({ toDn, ...f }) => f), worst: worst ? { ...worst, limit, window: label } : null };
+};
+const periodSums = (byDay, keyOf) => { const m = new Map(); for (const [d, v] of byDay) { const k = keyOf(d); m.set(k, (m.get(k) || 0) + v); } return m; };
+const calendarCheck2 = (A, B, keyOf, limit, label) => {
+  const sa = periodSums(A, keyOf), sb = periodSums(B, keyOf);
+  const exceed = []; let worst = null;
+  for (const k of [...new Set([...sa.keys(), ...sb.keys()])].sort()) {
+    const a = sa.get(k) || 0, b = sb.get(k) || 0, lo = Math.min(a, b), hi = Math.max(a, b);
+    if (!worst || hi > worst.value) worst = { value: hi, period: k, limit, window: label };
+    const st = lo > limit ? 'excede' : hi > limit ? 'incerto' : null;
+    if (st) exceed.push({ window: label, period: k, value: lo, ...(hi !== lo ? { valueMax: hi } : {}), limit, status: st, ...(st === 'incerto' ? { reason: 'hora-local' } : {}) });
+  }
+  return { exceed, worst };
+};
+const calendarCheckU2 = (PA, PB, keyOf, limit, label) => {
+  const ra = periodRanges(PA, keyOf), rb = periodRanges(PB, keyOf);
+  const exceed = []; let worst = null;
+  for (const k of [...new Set([...ra.keys(), ...rb.keys()])].sort()) {
+    const [la, ha] = ra.get(k) || [0, 0], [lb, hb] = rb.get(k) || [0, 0];
+    const lo = Math.min(la, lb), hi = Math.max(ha, hb);
+    if (!worst || hi > worst.value) worst = { value: hi, period: k, limit, window: label };
+    const st = lo > limit ? 'excede' : hi > limit ? 'incerto' : null;
+    // o motivo: as duas leituras do relógio discordam (hora-local) ou é o voo sem pernas a passar da meia-noite (meia-noite)
+    const reason = st !== 'incerto' ? null : (Math.max(la, lb) > limit || Math.min(ha, hb) <= limit ? 'hora-local' : 'meia-noite');
+    if (st) exceed.push({ window: label, period: k, value: lo, ...(hi !== lo ? { valueMax: hi } : {}), limit, status: st, ...(reason ? { reason } : {}) });
   }
   return { exceed, worst };
 };
@@ -2116,31 +2172,45 @@ export const evaluateTapLimits = ({ crewType = 'cabin', duties = {}, events = []
     pushIf('C15', checkC15(timed, rotOf, absent, fleetOf, fdpOf));
     push('C23', [...fdpFindings(false), ...checkC23Rotations(chains)]);   // "dividido pelo número de períodos de serviço de voo"
     pushIf('C26', fdpFindings(true));
-    // C34 — voo (mês, trimestre, ano civis) e serviço (7 dias, mês, trimestre, ano)
-    const flyP = flightPieces(timed);
-    const duty = new Map(), duty100 = new Map();
-    const sbEnd = standbyEnds(timed);
-    timed.forEach((s) => {
-      if (s.incomplete) return;
-      const end = sbEnd.has(s) ? sbEnd.get(s) : s.kind === 'positioning' ? s.end + 30 : s.workEnd;   // o posicionamento conta como PSV (Cl. 4.ª, n.º 28)
-      const w = s.kind === 'standby_home' ? 0.25 : s.kind === 'reserve' ? 0 : 1;
-      addSplit(duty, s.start, end, w);
-      addSplit(duty100, s.start, end, s.kind === 'reserve' ? 0 : 1);
-    });
+    // C34 — voo (mês, trimestre, ano civis) e serviço (7 dias, mês, trimestre, ano). Os DIAS da cabine começam "às 0h00 locais"
+    // (Cl. 4.ª, n.º 9) e a hora local é a "do local de onde o tripulante de cabine se encontra e realiza o descanso" (n.º 13) — não
+    // a da base (R3, revisão do 8b). Num voo entre fusos, a da partida ou a da chegada: as duas leituras; "excede" só se as duas
+    // excedem, "incerto" (hora-local) se só uma. Fora dos voos (escritório, assistência) e sem as horas UTC, a da base.
+    const cabSh = (which) => (s) => {
+      if (s.bo == null || !isFlightLike(s.kind)) return 0;
+      const v = shiftOf(s, which === 'dep' ? s.airports[0] : lastAp(s), s.start);
+      return v == null ? 0 : v;
+    };
+    const c34With = (shOf) => {
+      const flyP = flightPieces(timed, shOf);
+      const duty = new Map(), duty100 = new Map();
+      const sbEnd = standbyEnds(timed);
+      timed.forEach((s) => {
+        if (s.incomplete) return;
+        const end = sbEnd.has(s) ? sbEnd.get(s) : s.kind === 'positioning' ? s.end + 30 : s.workEnd;   // o posicionamento conta como PSV (Cl. 4.ª, n.º 28)
+        const w = s.kind === 'standby_home' ? 0.25 : s.kind === 'reserve' ? 0 : 1;
+        const sh = shOf(s);
+        addSplit(duty, s.start + sh, end + sh, w);
+        addSplit(duty100, s.start + sh, end + sh, s.kind === 'reserve' ? 0 : 1);
+      });
+      return { flyP, duty, duty100 };
+    };
+    const A = c34With(cabSh('dep')), B = c34With(cabSh('arr'));
+    const { flyP, duty } = A;   // os valores "agora" pela hora do local de partida (onde descansou antes do serviço)
     // A-140: a assistência em casa conta a 25 % "para efeitos dos limites semanais, mensais e anuais" (Cl. 17.ª, n.º 11 c)): o
     // trimestre não está na lista → também a 100 %; só a 100 % a passar → incerto.
-    const q25 = calendarCheck(duty, quarterKey, 28800, 'trimestre-servico');
-    const q100 = calendarCheck(duty100, quarterKey, 28800, 'trimestre-servico');
+    const q25 = calendarCheck2(A.duty, B.duty, quarterKey, 28800, 'trimestre-servico');
+    const q100 = calendarCheck2(A.duty100, B.duty100, quarterKey, 28800, 'trimestre-servico');
     const qInc = q100.exceed.filter((x) => !q25.exceed.some((y) => y.period === x.period))
-      .map((x) => ({ ...x, value: [...duty].filter(([d]) => quarterKey(d) === x.period).reduce((a, [, v]) => a + v, 0), valueMax: x.value, status: 'incerto', reason: 'assistencia-trimestre' }));
+      .map((x) => { const s25 = periodSums(A.duty, quarterKey).get(x.period) || 0; return { ...x, value: Math.min(s25, periodSums(B.duty, quarterKey).get(x.period) || 0), valueMax: x.valueMax != null ? x.valueMax : x.value, status: 'incerto', reason: 'assistencia-trimestre' }; });
     const c34 = [
-      calendarCheckU(flyP, monthKey, 5700, 'mes-voo'), calendarCheckU(flyP, quarterKey, 17100, 'trimestre-voo'), calendarCheckU(flyP, yearKey, 54000, 'ano-voo'),
-      rollingCheck(duty, 7, 3300, d0, d1, '7d-servico'), calendarCheck(duty, monthKey, 10800, 'mes-servico'),
-      { exceed: [...q25.exceed, ...qInc], worst: q25.worst }, calendarCheck(duty, yearKey, 108000, 'ano-servico'),
+      calendarCheckU2(A.flyP, B.flyP, monthKey, 5700, 'mes-voo'), calendarCheckU2(A.flyP, B.flyP, quarterKey, 17100, 'trimestre-voo'), calendarCheckU2(A.flyP, B.flyP, yearKey, 54000, 'ano-voo'),
+      rollingCheck2(A.duty, B.duty, 7, 3300, d0, d1, '7d-servico'), calendarCheck2(A.duty, B.duty, monthKey, 10800, 'mes-servico'),
+      { exceed: [...q25.exceed, ...qInc], worst: q25.worst }, calendarCheck2(A.duty, B.duty, yearKey, 108000, 'ano-servico'),
     ];
     push('C34', c34.flatMap((c) => c.exceed), c34.map((c) => c.worst).filter(Boolean), {
       current: [
-        { window: '7d-servico', value: sumWin(duty, t, 7), limit: 3300 },
+        { window: '7d-servico', value: Math.max(sumWin(A.duty, t, 7), sumWin(B.duty, t, 7)), limit: 3300 },   // a leitura maior (as duas horas locais)
         { window: 'mes-servico', period: periodOf(monthKey, t), value: sumPeriod(duty, monthKey, t), limit: 10800 },
         curP('mes-voo', sumPeriodP(flyP, monthKey, t), 5700, { period: periodOf(monthKey, t) }),
         curP('trimestre-voo', sumPeriodP(flyP, quarterKey, t), 17100, { period: periodOf(quarterKey, t) }),

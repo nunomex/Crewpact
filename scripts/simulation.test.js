@@ -200,12 +200,41 @@ for (const [who, C] of [['piloto', PIL], ['cabine', CAB]]) {
   // Separadas por uma recuperação (36 h com 2 noites locais) já não são seguidas.
   const s = simulateDuty(sim('2026-11-12', F('23:00', '05:45', 5)), { ...PIL, duties: { '2026-11-09': F('23:00', '05:00', 4) } });
   eq('A-245: depois de uma recuperação já não são seguidas', has(s, 'nightSectors'), false);
-  // Uma noite livre pelo meio (noites de 9→10 e 11→12; 41:30 com 1 noite local, sem recuperação): o texto não define
-  // "consecutive" → incerto, nunca um "excede" nem um "dentro" inventados (vai para o advogado).
+  // Uma noite livre pelo meio (noites de 9→10 e 11→12; 41:30 com 1 noite local, sem recuperação). A FAQ da EASA 47617:
+  // "'Consecutive' is referring to two night duties only separated by a rest period" — só um repouso pelo meio → seguidas → excede.
   const g = simulateDuty(sim('2026-11-11', F('23:00', '05:45', 5)), { ...PIL, duties: { '2026-11-09': F('23:00', '05:00', 4) } });
   const gi = issue(g, 'nightSectors');
-  eq('A-245: noite livre pelo meio → incerto', gi ? [gi.level, gi.gapNights] : null, ['unc', 1]);
-  eq('A-245: noite livre pelo meio → veredicto', g.verdict, 'unc');
+  eq('A-245: noite livre pelo meio, só repouso → seguidas (FAQ 47617)', gi ? [gi.level, gi.gapNights] : null, ['bad', 1]);
+  eq('A-245: noite livre pelo meio → veredicto', g.verdict, 'bad');
+  // Um serviço NÃO noturno pelo meio, separado por repouso (escritório no dia 10, 16:00–20:00: 11 h depois do PSV de 9, 27 h antes
+  // do de 11) quebra a sequência (FAQ 47617).
+  const go = simulateDuty(sim('2026-11-11', F('23:00', '05:45', 5)), { ...PIL, duties: { '2026-11-09': F('23:00', '05:00', 4), '2026-11-10': { kind: 'office', report_time: '16:00', block_on: '20:00', sectors: 0 } } });
+  eq('A-245: escritório de dia pelo meio → já não são seguidas', has(go, 'nightSectors'), false);
+  // A reserva e a assistência em casa não são repouso ("free of all duties, standby and reserve", ORO.FTL.105(21)) mas também
+  // não são claramente um serviço → duas leituras → incerto (revisão do 8b, E3).
+  const gr = simulateDuty(sim('2026-11-11', F('23:00', '05:45', 5)), { ...PIL, duties: { '2026-11-09': F('23:00', '05:00', 4), '2026-11-10': { kind: 'reserve', report_time: '10:00', block_on: '16:00', sectors: 0 } } });
+  eq('A-245: reserva pelo meio → incerto', (issue(gr, 'nightSectors') || {}).level, 'unc');
+  // Um serviço sem horas pelo meio: pode ser de dia (quebra) ou não → incerto (E1).
+  const gn = simulateDuty(sim('2026-11-11', F('23:00', '05:45', 5)), { ...PIL, duties: { '2026-11-09': F('23:00', '05:00', 4), '2026-11-10': { kind: 'office', report_time: null, block_on: null, sectors: 0 } } });
+  eq('A-245: escritório sem horas pelo meio → incerto', (issue(gn, 'nightSectors') || {}).level, 'unc');
+  // Um posicionamento colado ao PSV (21:00–23:30, apresentação às 00:30) não é separado por repouso → não quebra (E2).
+  const gp = simulateDuty(sim('2026-11-11', F('00:30', '05:45', 5)), { ...PIL, duties: { '2026-11-09': F('23:00', '05:00', 4), '2026-11-10': { kind: 'positioning', report_time: '21:00', block_on: '23:30', sectors: 0 } } });
+  eq('A-245: posicionamento colado ao PSV não quebra → excede', (issue(gp, 'nightSectors') || {}).level, 'bad');
+  // 2.ª revisão, E1: um PSV de dia (ou assistência no aeroporto, que é PSV) pelo meio segue as mesmas regras dos intervalos.
+  // a: 9/11 22:00–02:00 (5 setores); PSV no dia 10 08:00–12:00 (5:30 depois de a) → incerto, não "quebra".
+  const gf = simulateDuty(sim('2026-11-11', F('00:30', '05:45', 5)), { ...PIL, duties: { '2026-11-09': F('22:00', '02:00', 5), '2026-11-10': F('08:00', '12:00', 2) } });
+  eq('A-245: PSV de dia a 5:30 de uma noite → incerto', (issue(gf, 'nightSectors') || {}).level, 'unc');
+  // E2: uma reserva ou assistência em casa NOTURNA pelo meio também é dúvida (não é repouso nem claramente serviço).
+  const gsn = simulateDuty(sim('2026-11-11', F('23:00', '05:45', 5)), { ...PIL, duties: { '2026-11-09': F('22:00', '02:30', 5), '2026-11-10': { kind: 'reserve', report_time: '20:00', block_on: '06:00', sectors: 0 } } });
+  eq('A-245: reserva noturna pelo meio → incerto', (issue(gsn, 'nightSectors') || {}).level, 'unc');
+  // E3: um serviço sem horas no próprio dia de uma das noites também pode estar entre elas → incerto.
+  const gsd = simulateDuty(sim('2026-11-11', F('23:00', '05:45', 5)), { ...PIL, duties: { '2026-11-09': { ...F('23:00', '05:00', 4), extra: [{ kind: 'office', report_time: null, block_on: null, sectors: 0 }] } } });
+  eq('A-245: escritório sem horas no dia da 1.ª noite → incerto', (issue(gsd, 'nightSectors') || {}).level, 'unc');
+  // A citação da FAQ confere-se na cópia em fontes/ (como as outras fontes).
+  const faq = require('fs').readFileSync(require('path').resolve('fontes/easa/faq-47617.txt'), 'utf8');
+  const simSrc = require('fs').readFileSync(require('path').resolve('data/simulation.js'), 'utf8').replace(/\s*\/\/\s*/g, ' ').replace(/\s+/g, ' ');
+  const quote = "'Consecutive' is referring to two night duties only separated by a rest period";
+  eq('fonte: FAQ EASA 47617 literal em fontes/ e citada na Simulação', [faq.includes(quote), simSrc.includes(quote)], [true, true]);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────

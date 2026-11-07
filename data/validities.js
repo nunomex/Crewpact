@@ -82,7 +82,9 @@ const PILOT = [
   { id: 'lang', label: t('Inglês ICAO', 'ICAO English'), level: true, rule: { calc: 'date', law: [L.fcl055a, L.fcl055c], note: t('A validade é a escrita no averbamento da licença. O nível 6 não expira.', 'The validity is the date on the licence endorsement. Level 6 does not expire.') } },
   { id: 'crm', label: t('CRM', 'CRM'), rule: { calc: 'date', law: [L.crmFc], note: t('O regulamento não dá validade ao CRM dos pilotos: são módulos repartidos por cada período de 3 anos. Escreve a data que o operador marca.', 'The regulation gives pilots\' CRM no validity period: modules spread over each 3-year period. Enter the date your operator records.') } },
   { id: 'dg', label: t('Dangerous Goods', 'Dangerous Goods'), rule: { calc: 'date', law: [L.dgTi], note: t('O prazo vem das Instruções Técnicas da ICAO, que não são públicas: escreve a data do certificado.', 'The period comes from the ICAO Technical Instructions, which are not public: enter the certificate date.') } },
-  { id: 'asec', label: t('Segurança (AVSEC)', 'Aviation Security'), rule: { calc: 'done', years: 5, from: 'day', weekend: true, law: [L.avsec5, L.prazo3c, L.prazo34], note: t('Formação contínua pelo menos uma vez em cada 5 anos (ou antes de voltar, depois de mais de 6 meses sem estas funções). Se o último dia for sábado ou domingo, a app passa-o para segunda-feira; se for feriado, acaba no dia útil seguinte (art. 3.º, n.º 4), que a app não sabe.', 'Recurrent training at least every 5 years (or before resuming, after more than 6 months without these duties). If the last day is a Saturday or Sunday the app moves it to Monday; if it is a public holiday it ends on the next working day (Art. 3(4)), which the app does not know.') } },
+  // Revisão do 8b: o alargamento ao dia útil seguinte (Reg. 1182/71, art. 3.º, n.º 4) não se sabe se vale para uma periodicidade
+  // de formação (pack do advogado, E8) → a app usa o próprio dia (a leitura que nunca deixa a formação caducar sem aviso).
+  { id: 'asec', label: t('Segurança (AVSEC)', 'Aviation Security'), rule: { calc: 'done', years: 5, from: 'day', law: [L.avsec5, L.prazo3c, L.prazo34], note: t('Formação contínua pelo menos uma vez em cada 5 anos (ou antes de voltar, depois de mais de 6 meses sem estas funções). A app conta até ao mesmo dia, mesmo que calhe a um fim de semana: se a regra dos prazos (Reg. 1182/71, art. 3.º, n.º 4) se aplica a esta formação, pode ir até ao dia útil seguinte — confirma com o operador.', 'Recurrent training at least every 5 years (or before resuming, after more than 6 months without these duties). The app counts to the same day, even at a weekend: if the time-limit rule (Reg. 1182/71, Art. 3(4)) applies to this training, it may run to the next working day — check with your operator.') } },
   { id: 'faid', label: t('Primeiros socorros', 'First Aid'), rule: { calc: 'date', law: [L.fc145g], note: t('O regulamento não dá aos pilotos um prazo próprio de primeiros socorros: escreve a data que o operador marca.', 'The regulation sets pilots no separate first-aid period: enter the date your operator records.') } },
   { id: 'passport', label: t('Passaporte', 'Passport'), rule: { calc: 'date', law: [] } },
 ];
@@ -184,13 +186,6 @@ export const addMonthsSameDay = (iso, months) => {
   const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
   return `${y}-${p2(m)}-${p2(Math.min(p[2], last))}`;
 };
-// Sábado ou domingo → segunda-feira (Reg. 1182/71, art. 3.º, n.º 4; os feriados a app não sabe).
-export const skipWeekend = (iso) => {
-  const p = parts(iso);
-  if (!p) return iso;
-  const wd = new Date(Date.UTC(p[0], p[1] - 1, p[2])).getUTCDay();
-  return wd === 6 ? isoUTC(new Date(Date.UTC(p[0], p[1] - 1, p[2] + 2))) : wd === 0 ? isoUTC(new Date(Date.UTC(p[0], p[1] - 1, p[2] + 1))) : iso;
-};
 // Nos "três últimos meses do prazo de validade" (meses de calendário: ORO.CC.140 e) 2)).
 export const inLastThreeMonths = (doneISO, prevExpiryISO) => {
   const d = parts(doneISO), e = parts(prevExpiryISO);
@@ -204,7 +199,7 @@ export const inLastThreeMonths = (doneISO, prevExpiryISO) => {
 export const computeExpiry = ({ type, isPilot = false, program = null, doneISO, prevExpiryISO = null } = {}) => {
   const r = ruleForType(type, isPilot, program);
   if (r.calc !== 'done' || !isRealISODate(doneISO)) return null;
-  if (r.years) { const e = addYearsSameDay(doneISO, r.years); return { expiry: r.weekend ? skipWeekend(e) : e, from: 'done', rule: r }; }
+  if (r.years) { const e = addYearsSameDay(doneISO, r.years); return { expiry: e, from: 'done', rule: r }; }
   if (r.window3 && isRealISODate(prevExpiryISO) && inLastThreeMonths(doneISO, prevExpiryISO)) {
     return { expiry: addMonthsSameDay(prevExpiryISO, r.months), from: 'prev', rule: r };   // "a partir da data de termo inicial"
   }

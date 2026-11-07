@@ -98,6 +98,11 @@ cada frase no texto e calcula com ela.
   confirmar antes de publicar — pacote do advogado) e o destaque do próprio INE sobre o IPC (a página do INE não deixa
   descarregar sem navegador).
 
+## FAQ da EASA (`easa/faq-47617.txt`) — 8 de novembro de 2026
+
+Extrato curto (citação) da FAQ 47617, "consecutive" nas noites (CS FTL.1.205(a)(1)), com o endereço e a data. O teste
+`scripts/simulation.test.js` confere que a frase citada na Simulação está na cópia. As FAQ não são vinculativas (pack E0).
+
 ## Radiação cósmica (`eu/euratom-2013-59-pt.txt`, `pt/dl-108-2018-republicado.txt`) — auditoria, bloco 7 (6 de novembro de 2026)
 
 O teste `scripts/citacoes-tap-ftl.test.js` (corre no `npm run test:citacoes`) confere cada frase que a Prova e a Biblioteca

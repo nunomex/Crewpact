@@ -125,9 +125,12 @@ eq('trienais: a renovação antecipada não conta da data anterior', cab('trienn
 
 // Piloto: segurança (Reg. 2015/1998, 11.4.3 a)) — 5 anos, até ao mesmo dia (Reg. 1182/71, art. 3.º, n.º 2 c)).
 const pil = (type, done) => (computeExpiry({ type, isPilot: true, doneISO: done }) || {}).expiry || null;
-eq('piloto AVSEC 15-03-2026 → 15-03-2031 é sábado → segunda 17-03-2031 (art. 3.º, n.º 4)', pil('asec', '2026-03-15'), '2031-03-17');
-eq('revisão E11: AVSEC feito a 14-03-2021 → 14-03-2026 é sábado → 16-03-2026', pil('asec', '2021-03-14'), '2026-03-16');
-eq('AVSEC num dia útil fica', pil('asec', '2026-03-16'), '2031-03-17');
+// Revisão do 8b: se uma periodicidade de formação é um "prazo" do Reg. 1182/71 (art. 3.º, n.º 4: sábado/domingo → dia útil
+// seguinte) é dúvida (pack do advogado, E8). Alargar até 2 dias pode deixar a formação caducada sem a app o dizer → a app NÃO
+// alarga: acaba no próprio dia, mesmo ao fim de semana, e a nota explica.
+eq('piloto AVSEC 15-03-2026 → 15-03-2031 (sábado) fica no sábado', pil('asec', '2026-03-15'), '2031-03-15');
+eq('AVSEC feito a 14-03-2021 → 14-03-2026 (sábado) fica no sábado', pil('asec', '2021-03-14'), '2026-03-14');
+eq('AVSEC num dia útil fica', pil('asec', '2026-03-16'), '2031-03-16');
 eq('piloto AVSEC 29-02-2024 → 28-02-2029 (o dia não existe)', pil('asec', '2024-02-29'), '2029-02-28');
 eq('addYearsSameDay', [addYearsSameDay('2026-01-31', 1), addYearsSameDay('2028-02-29', 4)], ['2027-01-31', '2032-02-29']);
 

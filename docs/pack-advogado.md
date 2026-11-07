@@ -638,8 +638,10 @@ dúvidas que eu tinha. Pelo menos numa, a autoridade espanhola (AESA) publicou a
   - Nos pilotos o texto é diferente: "às zero horas locais da base".
 - **Exemplo:** descanso em Ponta Delgada (uma hora a menos do que Lisboa). Um serviço acaba às 00h30 de Lisboa, que são
   23h30 locais. Esses 30 minutos contam no dia anterior (hora do local de descanso) ou no seguinte (hora da base)?
-- **A aplicação hoje:** usa a hora da base. Vou corrigir para a hora do local de descanso, salvo se discordar.
-- **Pergunta:** e um voo que passa a meia-noite noutro fuso, sem descanso pelo meio?
+- **A aplicação hoje:** usa a hora local (já não a da base). Num voo entre fusos que passa a meia-noite calcula as duas
+  leituras, a hora da partida e a da chegada: diz "excede" só se as duas excedem, e "incerto" se só uma excede.
+- **Pergunta:** num voo que passa a meia-noite entre dois fusos, sem descanso pelo meio, conta a hora do local de partida
+  ou a do local de chegada?
 
 ### E5. TAP: "períodos noturnos consecutivos"
 
@@ -696,9 +698,9 @@ destas?
   - Regulamento (UE) 2015/1998, 11.4.3, a): formação de segurança "pelo menos uma vez em cada 5 anos".
   - Regulamento (CEE, Euratom) n.º 1182/71, art. 3.º, n.º 4: "Se o último dia de um prazo (…) for um dia feriado, um
     domingo ou um sábado, o prazo termina com o decurso da última hora do dia útil seguinte".
-- **A aplicação hoje:** quando o último dia cai ao fim de semana, passa-o para segunda-feira. Isto pode alargar a validade
-  até dois dias.
-- **Pergunta:** uma periodicidade de formação é um "prazo" para o 1182/71? Se não for, deixo de alargar.
+- **A aplicação hoje:** não alarga. A validade acaba no próprio dia, mesmo ao fim de semana, e a nota explica que pode ir
+  até ao dia útil seguinte se o art. 3.º, n.º 4 se aplicar.
+- **Pergunta:** uma periodicidade de formação é um "prazo" para o 1182/71? Se for, passo a alargar.
 
 ### Anexo E-A — Perguntas que penso enviar à ANAC (para a sua opinião)
 
