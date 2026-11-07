@@ -128,7 +128,8 @@ async function loadLockPref(uid) {
 function HomeStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Home"      component={HomeScreen} />    </Stack.Navigator>
+      <Stack.Screen name="Home"      component={HomeScreen} />
+    </Stack.Navigator>
   );
 }
 
@@ -138,7 +139,8 @@ function EscalaStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="EscalaMain" component={EscalaScreen} />
-      <Stack.Screen name="DutyDetail" component={DutyDetailScreen} />    </Stack.Navigator>
+      <Stack.Screen name="DutyDetail" component={DutyDetailScreen} />
+    </Stack.Navigator>
   );
 }
 
@@ -168,7 +170,8 @@ function PerfilStack() {
       <Stack.Screen name="Relatorios" component={RelatoriosScreen} />
       <Stack.Screen name="Disrupcao" component={DisrupcaoScreen} />
       <Stack.Screen name="Estabilidade" component={EstabilidadeScreen} />
-      <Stack.Screen name="Biblioteca" component={InfoScreen} />    </Stack.Navigator>
+      <Stack.Screen name="Biblioteca" component={InfoScreen} />
+    </Stack.Navigator>
   );
 }
 
