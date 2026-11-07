@@ -7,6 +7,19 @@ não se copiam imagens, textos nem marcas.
   GitHub. Se faltarem noutra máquina, abrem-se pelos links abaixo.
 - Coleção no Mobbin (privada, só o Nuno vê): https://mobbin.com/collections/f3bf6d11-9a73-49d0-afee-61b3e57755b8
 
+## servico-completar/ — escolhidas a 2026-11-08
+
+**O serviço: o que vem do calendário só se lê; o que a lei precisa e o calendário não traz, completa-se** (o "Editar serviço" sai):
+
+| Ficheiro | App | Mobbin |
+|---|---|---|
+| `servico-completar/n26-detalhe-transacao.webp` | N26 | https://mobbin.com/screens/41bcff70-1135-4d7f-b5ba-f486e590c20d |
+| `servico-completar/starling-detalhe-transacao.webp` | Starling | https://mobbin.com/screens/24a187b2-47b5-43d7-8e04-86c1bf1b7cd1 |
+| `servico-completar/apple-wallet-report-issue.webp` | Apple Wallet | https://mobbin.com/screens/b18dc3f9-ff03-4e74-b9fd-2ed5ea2e07f1 |
+
+O que se tira delas: N26 — secções separadas, "Details" (da fonte, só leitura) e, por baixo, o que o utilizador acrescenta;
+Starling — um cartão que diz onde e porquê completar; Apple Wallet — uma saída discreta no fundo quando a fonte está errada.
+
 ## design-system/ — escolhidas a 2026-11-02
 
 **✕ das janelas à direita, título à esquerda** (design-system §10, opção A):

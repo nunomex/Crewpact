@@ -3,152 +3,262 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>CrewPact · Detalhe do serviço (read-only)</title>
+<title>CrewPact · Detalhe do serviço v2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  :root{ --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --yellow:#FFB800; --ok:#118A55; --okSoft:#E7F3EC; --warn:#E86A10; --warnSoft:#FBEAD9; --red:#C6362B; --redSoft:#F7E9E7; --info:#EAF2F7; }
+  /* Tokens da pele (data/constants.js PELE). Medidos: grey 4,51 · greyOnSoft sobre warnSoft 5,54 · warnText sobre warnSoft 5,51 (token NOVO)
+     · affordance (setas, borda das opções) 3,74 — as cores vivas falham AA < 18 px (§6). */
+  :root{ --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --greyOnSoft:#5E5E57; --affordance:#86847D; --line:#ECEAE4; --soft:#F4F2ED; --yellow:#FFB800;
+    --ok:#118A55; --okSoft:#E7F3EC; --okText:#0B6B42; --warn:#E86A10; --warnSoft:#FBEAD2; --warnText:#9A4508; --red:#C6362B; --redSoft:#F7E9E7; }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:#0f1218;color:#e8ebf0;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:30px 20px 70px;display:flex;flex-direction:column;align-items:center;gap:16px}
-  .lead{max-width:620px;text-align:center}
-  .lead h1{font-size:19px;font-weight:800;color:#fff}
-  .lead p{margin-top:8px;font-size:12.5px;color:#96a0ad;line-height:1.55}.lead b{color:#fff}
+  body{background:#0f1218;color:#e8ebf0;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:32px 16px 72px;display:flex;flex-direction:column;align-items:center;gap:24px}
+  .lead{max-width:760px;text-align:center}
+  .lead h1{font-size:20px;font-weight:800;color:#fff}
+  .lead p{margin-top:8px;font-size:13px;color:#a3acb8;line-height:1.55}.lead b{color:#fff}
+  .row{display:flex;flex-wrap:wrap;gap:24px;justify-content:center}
+  .cap{width:394px;max-width:96vw;font-size:12px;color:#a3acb8;line-height:1.5;text-align:center;margin-top:8px}.cap b{color:#fff}
 
-  .ph{width:394px;max-width:96vw;height:820px;border-radius:44px;border:9px solid #04060a;overflow:hidden;position:relative;background:var(--paper);color:var(--ink)}
+  /* telemóvel 390 pt de largura útil (394 com a moldura) */
+  .ph{width:394px;max-width:96vw;height:844px;border-radius:44px;border:2px solid #04060a;overflow:hidden;position:relative;background:var(--paper);color:var(--ink)}
   .scr{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none}.scr::-webkit-scrollbar{display:none}
-  .status{display:flex;justify-content:space-between;padding:12px 22px 0;font-size:11px;font-weight:700}
-  .hdr{display:flex;align-items:center;padding:12px 18px 0}
-  .hdr .bk{width:34px;height:34px;border-radius:11px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--ink)}
-  .side{position:absolute;right:9px;top:106px;transform:rotate(90deg);transform-origin:right top;font-size:10px;font-weight:800;letter-spacing:3px;color:var(--ink);white-space:nowrap;z-index:30}
-  .side .y{color:var(--yellow)}
-  .body{padding:4px 22px 0}
+  .status{display:flex;justify-content:space-between;padding:12px 24px 0;font-size:12px;font-weight:700}
+  .hdr{display:flex;align-items:center;padding:12px 16px 0}
+  .ibtn{width:36px;height:36px;border-radius:18px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+  .side{position:absolute;right:8px;top:132px;transform:rotate(90deg);transform-origin:right top;font-size:11px;font-weight:800;letter-spacing:3px;color:var(--ink);white-space:nowrap;z-index:30}
+  .body{padding:4px 24px 0}
 
-  /* herói — eyebrow + fantasma (FDP) + rota + estado */
-  .eyb{font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--grey);margin-top:10px}.eyb b{color:var(--ink)}
+  /* herói */
+  .eyb{font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--grey);margin-top:12px}.eyb b{color:var(--ink)}
   .dhero{position:relative;height:120px;margin-top:2px}
   .dghost{position:absolute;right:0;top:-16px;font-family:'Barlow Condensed';font-weight:700;font-size:130px;line-height:1;letter-spacing:-4px;color:var(--ghost);font-variant-numeric:tabular-nums}
-  .dword{position:absolute;left:0;bottom:26px;font-family:'Barlow Condensed';font-weight:700;font-size:46px;line-height:.9;letter-spacing:-.5px;white-space:nowrap}
-  .dkick{position:absolute;left:2px;bottom:8px;font-size:12.5px;font-weight:700;color:var(--grey)}
-  .dword svg,.k svg,.no svg{vertical-align:middle}
-  .stbar{margin-top:2px}
-  .pill{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;padding:5px 11px;border-radius:999px}
-  .pill.ok{background:var(--okSoft);color:var(--ok)} .pill.ok [data-ic]{color:var(--ok)}
-  .pill.warn{background:var(--warnSoft);color:var(--warn)}
-  .pill.red{background:var(--redSoft);color:var(--red)}
+  .dword{position:absolute;left:0;bottom:24px;font-family:'Barlow Condensed';font-weight:700;font-size:44px;line-height:.9;white-space:nowrap}
+  .dkick{position:absolute;left:2px;bottom:4px;font-size:13px;font-weight:700;color:var(--grey)}
+  .dword svg{vertical-align:middle}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;padding:6px 12px;border-radius:999px}
+  .pill.ok{background:var(--okSoft);color:var(--okText)}
+  .pill.warn{background:var(--warnSoft);color:var(--warnText)}
   .hr{height:1.5px;background:var(--ink);margin:12px 0 0}
 
-  /* secções + painéis */
-  .sec{display:flex;align-items:center;gap:7px;font-size:10px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;color:var(--grey);margin:20px 2px 9px}
-  .sec [data-ic]{color:var(--grey)}
-  .panel{border:1px solid var(--line);border-radius:16px;background:var(--paper);padding:0 15px}
-  .prow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+  /* secções: rótulo à esquerda, a ORIGEM dos dados à direita (N26: "Details" vs o que acrescentas) */
+  .sec{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--grey);margin:24px 2px 8px}
+  .sec .src{margin-left:auto;display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--grey)}
+  .panel{border:1px solid var(--line);border-radius:16px;background:var(--paper);padding:0 16px}
+  .prow{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;padding:12px 0;border-top:1px solid var(--line)}
   .prow:first-child{border-top:0}
-  .k{font-size:12.5px;font-weight:600;color:var(--grey)}
-  .v{font-size:12.5px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums;text-align:right}
-  .v.z{display:block;font-size:10.5px;font-weight:700;color:#9a8a5a;margin-top:2px}
-  .v.ok{color:var(--ok)} .v.red{color:var(--red)} .v.warn{color:var(--warn)}
+  .k{font-size:13px;font-weight:500;color:var(--grey)}
+  .v{font-size:13px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;text-align:right}
   .vwrap{text-align:right}
-  .fat{display:inline-flex;align-items:center;gap:5px;background:var(--okSoft);border-radius:999px;padding:3px 9px}
-  .fat .dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
-  .fat .t{font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--ok)}
+  .sub{display:block;font-size:11px;font-weight:500;color:var(--grey);margin-top:2px;font-variant-numeric:tabular-nums}
+  .tagreal{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--ink);background:var(--soft);border-radius:6px;padding:1px 6px;margin-right:6px;vertical-align:1px}
 
-  /* partilhar chegada — pílula tracejada */
-  .share{display:flex;align-items:center;justify-content:center;gap:8px;border:1.5px dashed #C7C4BB;border-radius:14px;padding:11px;margin-top:12px;font-size:12.5px;font-weight:800;color:var(--ink)}
-  .share [data-ic]{color:var(--ink)}
+  /* COMPLETAR — linhas tocáveis com valor e seta (cada uma abre uma folha só com esse dado) */
+  .crow{display:flex;align-items:center;gap:12px;min-height:52px;padding:12px 0;border-top:1px solid var(--line)}
+  .crow:first-child{border-top:0}
+  .crow .t{font-size:13px;font-weight:700;color:var(--ink)}
+  .crow .d{font-size:11px;font-weight:500;color:var(--grey);margin-top:2px}
+  .crow .val{margin-left:auto;font-size:13px;font-weight:500;color:var(--grey);white-space:nowrap}
+  .crow .chev{color:var(--affordance);flex:0 0 auto}
+    .crow.need .val{color:var(--warnText);font-weight:800}
+  .crow.need .chev{color:var(--warnText)}
+  .crow.need .val::before{content:'';display:inline-block;width:8px;height:8px;border-radius:4px;background:var(--warn);margin-right:6px;vertical-align:1px}
+  .note{font-size:11px;font-weight:500;color:var(--grey);line-height:15px;margin:8px 2px 0}
 
-  /* hotel da pernoita */
-  .hotel{display:flex;align-items:center;gap:11px;border:1px solid var(--line);border-radius:16px;padding:11px 13px}
-  .hotel .ic{width:38px;height:38px;border-radius:11px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--ink);flex:0 0 auto}
-  .hotel .nm{font-size:13.5px;font-weight:800}
-  .hotel .no{font-size:10.5px;font-weight:600;color:var(--grey);margin-top:1px}
-  .hotel .acts{margin-left:auto;display:flex;gap:7px}
-  .hpill{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:800;border-radius:999px;padding:6px 10px}
-  .hpill.map{background:var(--info);color:#2C6E8F} .hpill.map [data-ic]{color:#2C6E8F}
-  .hpill.call{background:var(--okSoft);color:var(--ok)} .hpill.call [data-ic]{color:var(--ok)}
+  /* cartão do "falta um dado" (Starling) — só aparece com um "incerto" */
+  .need-card{display:flex;gap:12px;background:var(--warnSoft);border-radius:16px;padding:12px 16px;margin-bottom:8px}
+  .need-card .ic{color:var(--warnText);flex:0 0 auto;margin-top:2px}
+  .need-card .t{font-size:13px;font-weight:700;color:var(--ink)}
+  .need-card .d{font-size:12px;font-weight:500;color:var(--ink);line-height:17px;margin-top:2px}
 
-  /* ações */
-  .edit{display:flex;align-items:center;justify-content:center;gap:9px;background:var(--ink);color:#fff;border-radius:14px;padding:15px;margin-top:22px;font-size:14px;font-weight:800}
-  .edit [data-ic]{color:var(--yellow)}
-  .foot{font-size:10.5px;font-weight:600;color:var(--grey);line-height:1.55;margin:14px 2px 0}
-  .navpad{height:26px}
+  /* a saída discreta (Apple Wallet: "Report an Issue") */
+  .escape{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;margin-top:24px;font-size:13px;font-weight:700;color:var(--ink)}
+  .escape .u{text-decoration:underline;text-underline-offset:3px;text-decoration-color:#C7C4BB}
+  .foot{font-size:11px;font-weight:500;color:var(--grey);line-height:15px;margin:8px 2px 0;text-align:center}
+  .navpad{height:32px}
+
+  /* folha (PeleSheet: ação curta, sem ✕ — a pega e o toque fora fecham, §11) */
+  .dim{position:absolute;inset:0;background:rgba(20,20,20,.38)}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--paper);border-radius:24px 24px 0 0;padding:8px 24px 32px}
+  .grab{width:36px;height:5px;border-radius:3px;background:#D6D3CB;margin:0 auto 16px}
+  .shT{font-family:'Barlow Condensed';font-weight:700;font-size:22px;letter-spacing:-.2px}
+  .shD{font-size:13px;font-weight:500;color:var(--grey);line-height:19px;margin-top:4px}
+  .shD b{color:var(--ink);font-weight:700}
+  .opt{display:flex;align-items:center;gap:12px;min-height:56px;padding:12px 16px;border:1px solid var(--line);border-radius:16px;margin-top:8px}
+  .opt .t{font-size:13px;font-weight:700}
+  .opt .d{font-size:11px;font-weight:500;color:var(--grey);margin-top:2px;line-height:15px}
+  .radio{width:22px;height:22px;border-radius:11px;border:2px solid var(--affordance);flex:0 0 auto;margin-left:auto}
+  .opt.on{border:2px solid var(--ink);padding:11px 15px}
+  .opt.on .radio{border:7px solid var(--ink)}
+  .opt .go{margin-left:auto;color:var(--affordance);flex:0 0 auto}
+  .opt .oic{width:36px;height:36px;border-radius:18px;background:var(--soft);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .cite{font-size:11px;font-weight:500;color:var(--grey);margin-top:12px;line-height:15px}
+  .primary{display:flex;align-items:center;justify-content:center;min-height:52px;background:var(--ink);color:#fff;border-radius:16px;margin-top:16px;font-size:15px;font-weight:700}
 </style>
 </head>
 <body>
   <div class="lead">
-    <h1>Detalhe do serviço — read-only</h1>
-    <p>Fiel ao <b>DutyDetailScreen.js</b>: herói com rota + estado FTL, e os painéis <b>Horário · Setores · FTL/Segurança · Pernoita · Pagamento</b>, tudo derivado dos motores (nada guardado). Ecrã <b>empurrado</b> → ‹ voltar + Editar/Apagar; sem pílula/FAB. Exemplo de <b>piloto</b> (cabine muda os €, não o layout).</p>
+    <h1>Detalhe do serviço — v2: o calendário só se lê, o resto completa-se</h1>
+    <p>O <b>"Editar serviço" sai</b>, e com ele o toque longo na Escala. As horas, a rota e os setores <b>vêm do calendário</b> e só se leem
+      (o que se mudasse à mão a sincronização repunha). A secção <b>Completar</b> junta os factos que a lei ou o teu acordo precisam e o
+      calendário nunca traz — só os que contam para ti e para este serviço. Referências: <b>N26</b> (secções da fonte vs. o que acrescentas),
+      <b>Starling</b> (o cartão que diz onde completar), <b>Apple Wallet</b> (a saída discreta quando a fonte está errada) — em
+      <code>referencias/servico-completar/</code>.</p>
   </div>
 
-  <div class="ph"><div class="scr">
-    <div class="status"><span>9:41</span><span>▮▮▮ ⌁ 87%</span></div>
-    <div class="hdr"><span class="bk"><i data-ic="back" data-ic-size="18"></i></span></div>
-    <div class="side">VOO · <span class="y">EJU7625</span></div>
-    <div class="body">
-
-      <!-- herói -->
-      <div class="eyb">Voo · Qui 24 jul · <b>hoje</b></div>
-      <div class="dhero">
-        <div class="dghost">2:20</div>
-        <div class="dword">LIS <i data-ic="arrow-dots" data-ic-size="26"></i> FNC</div>
-        <div class="dkick">EJU7625 · 1 setor · pernoita</div>
-      </div>
-      <div class="stbar"><span class="pill ok"><i data-ic="check" data-ic-size="12"></i> Dentro do limite FTL</span></div>
-      <div class="hr"></div>
-
-      <!-- HORÁRIO -->
-      <div class="sec"><i data-ic="clock" data-ic-size="13"></i> Horário</div>
-      <div class="panel">
-        <div class="prow"><span class="k">Apresentação</span><span class="vwrap"><span class="v">05:30</span><span class="v z">04:30Z</span></span></div>
-        <div class="prow"><span class="k">Block off</span><span class="vwrap"><span class="v">05:45</span><span class="v z">04:45Z</span></span></div>
-        <div class="prow"><span class="k">Block on</span><span class="vwrap"><span class="v">07:20</span><span class="v z">06:20Z</span></span></div>
-        <div class="prow"><span class="k">Fim de serviço</span><span class="v">07:50</span></div>
-        <div class="prow"><span class="k">Block hours</span><span class="v">1:35</span></div>
-        <div class="prow"><span class="k">Duty hours</span><span class="v">2:20</span></div>
-      </div>
-
-      <!-- SETORES -->
-      <div class="sec"><i data-ic="departs" data-ic-size="13"></i> Setores</div>
-      <div class="panel">
-        <div class="prow"><span class="k">EJU7625 · LIS <i data-ic="arrow-dots" data-ic-size="12"></i> FNC</span><span class="vwrap"><span class="v">05:45 → 07:20</span><span class="v z">04:45 → 06:20Z</span></span></div>
-      </div>
-      <div class="share"><i data-ic="share" data-ic-size="15"></i> partilhar chegada com alguém</div>
-
-      <!-- FTL · SEGURANÇA -->
-      <div class="sec"><i data-ic="gauge" data-ic-size="13"></i> FTL · Segurança</div>
-      <div class="panel">
-        <div class="prow"><span class="k">FDP realizado</span><span class="v">2:20</span></div>
-        <div class="prow"><span class="k">PSV máx (FDP)</span><span class="v">13:00</span></div>
-        <div class="prow"><span class="k">Repouso mínimo após</span><span class="v">12:00</span></div>
-        <div class="prow"><span class="k">Fadiga</span><span class="fat"><span class="dot"></span><span class="t">Baixa</span></span></div>
-      </div>
-
-      <!-- PERNOITA -->
-      <div class="sec"><i data-ic="bed" data-ic-size="13"></i> Pernoita · FNC</div>
-      <div class="hotel">
-        <div class="ic"><i data-ic="bed" data-ic-size="19"></i></div>
-        <div><div class="nm">Pestana Casino Park</div><div class="no"><i data-ic="shuttle" data-ic-size="12"></i> pickup 05:40</div></div>
-        <div class="acts">
-          <span class="hpill map"><i data-ic="pin" data-ic-size="12"></i> Mapas</span>
-          <span class="hpill call"><i data-ic="phone" data-ic-size="12"></i> Ligar</span>
+  <div class="row">
+    <!-- ── 1 · Detalhe, com uma hora real registada ── -->
+    <div>
+    <div class="ph"><div class="scr">
+      <div class="status"><span>9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+      <div class="hdr"><span class="ibtn" aria-label="Voltar"><i data-ic="back" data-ic-size="18"></i></span></div>
+      <div class="side">VOO · EJU7625</div>
+      <div class="body">
+        <div class="eyb">Voo · Qui 24 jul · <b>hoje</b></div>
+        <div class="dhero">
+          <div class="dghost">2:55</div>
+          <div class="dword">LIS <i data-ic="arrow-dots" data-ic-size="26"></i> FNC</div>
+          <div class="dkick">EJU7625 · 1 setor · pernoita</div>
         </div>
-      </div>
+        <span class="pill ok"><i data-ic="check" data-ic-size="12"></i> Dentro do limite FTL</span>
+        <div class="hr"></div>
 
-      <!-- PAGAMENTO -->
-      <div class="sec"><i data-ic="wallet" data-ic-size="13"></i> Pagamento · detalhes</div>
-      <div class="panel">
-        <div class="prow"><span class="k">Per-diem (AE)</span><span class="v ok">+23,75 €</span></div>
-        <div class="prow"><span class="k">Setores</span><span class="v">1</span></div>
-        <div class="prow"><span class="k">Paragem nocturna</span><span class="v ok">+46,00 €</span></div>
-        <div class="prow"><span class="k">Fonte</span><span class="v" style="color:var(--grey)">Calendário</span></div>
-      </div>
+        <div class="sec"><i data-ic="clock" data-ic-size="13"></i> Horário <span class="src"><i data-ic="cal" data-ic-size="12"></i> do calendário</span></div>
+        <div class="panel">
+          <div class="prow"><span class="k">Apresentação</span><span class="vwrap"><span class="v">05:30</span><span class="sub">04:30Z</span></span></div>
+          <div class="prow"><span class="k">Calços fora</span><span class="vwrap"><span class="v">05:45</span><span class="sub">04:45Z</span></span></div>
+          <div class="prow"><span class="k">Calços dentro</span><span class="vwrap"><span class="v"><span class="tagreal">real</span>07:55</span><span class="sub">06:55Z · previsto 07:20</span></span></div>
+          <div class="prow"><span class="k">Fim de serviço</span><span class="vwrap"><span class="v"><span class="tagreal">real</span>08:25</span><span class="sub">previsto 07:50</span></span></div>
+          <div class="prow"><span class="k">Horas de voo · serviço</span><span class="v">2:10 · 2:55</span></div>
+        </div>
 
-      <!-- ações -->
-      <div class="edit"><i data-ic="edit" data-ic-size="16"></i> Editar serviço</div>
-      <div class="foot">Importado do calendário — para o remover, corrige na fonte (eCrew) e toca <b>Sincronizar</b> na Escala; os cancelados aparecem na revisão para confirmares.</div>
-      <div class="foot">Valores FTL/AE estimados — confirma sempre na fonte oficial.</div>
-      <div class="navpad"></div>
+        <div class="sec"><i data-ic="gauge" data-ic-size="13"></i> FTL · Segurança</div>
+        <div class="panel">
+          <div class="prow"><span class="k">PSV realizado</span><span class="v">2:25</span></div>
+          <div class="prow"><span class="k">PSV máximo</span><span class="v">13:00</span></div>
+          <div class="prow"><span class="k">Repouso mínimo a seguir</span><span class="v">12:00</span></div>
+        </div>
+
+        <div class="sec"><i data-ic="edit" data-ic-size="13"></i> Completar</div>
+        <div class="panel">
+          <div class="crow"><div><div class="t">Discrição do comandante</div><div class="d">ORO.FTL.205(f)</div></div><span class="val">Não houve</span><i class="chev" data-ic="chevron" data-ic-size="14"></i></div>
+          <div class="crow"><div><div class="t">Apresentação adiada</div><div class="d">CS FTL.1.205(d)</div></div><span class="val">Não</span><i class="chev" data-ic="chevron" data-ic-size="14"></i></div>
+          <div class="crow"><div><div class="t">Assistência antes do voo</div><div class="d">CS FTL.1.225</div></div><span class="val">Não</span><i class="chev" data-ic="chevron" data-ic-size="14"></i></div>
+          <div class="crow"><div><div class="t">Pernoita</div><div class="d">Art. 39.º · 2 setores nominais</div></div><span class="val">FNC</span><i class="chev" data-ic="chevron" data-ic-size="14"></i></div>
+        </div>
+        <div class="note">Só o que a lei ou o teu acordo precisam e o calendário não traz.</div>
+
+        <div class="sec"><i data-ic="wallet" data-ic-size="13"></i> Pagamento</div>
+        <div class="panel">
+          <div class="prow"><span class="k">Per diem</span><span class="v">+23,75 €</span></div>
+          <div class="prow"><span class="k">Pernoita</span><span class="v">+46,00 €</span></div>
+        </div>
+
+        <div class="escape"><span class="u">O calendário está errado?</span><i data-ic="chevron" data-ic-size="13"></i></div>
+        <div class="foot">Valores estimados — confirma sempre na fonte oficial.</div>
+        <div class="navpad"></div>
+      </div>
+    </div></div>
+    <div class="cap"><b>1 · Normal.</b> "Do calendário" à direita do rótulo diz de onde vêm as horas. Uma hora real (atraso) aparece com o selo
+      <b>REAL</b> e a prevista por baixo; o PSV conta pela real. O botão "Editar serviço" deixou de existir.</div>
     </div>
-  </div></div>
+
+    <!-- ── 2 · Incerto: falta um dado (repartido sem saber o alojamento) ── -->
+    <div>
+    <div class="ph"><div class="scr">
+      <div class="status"><span>9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+      <div class="hdr"><span class="ibtn" aria-label="Voltar"><i data-ic="back" data-ic-size="18"></i></span></div>
+      <div class="side">VOO · EJU7611</div>
+      <div class="body">
+        <div class="eyb">Voo · Sex 25 jul</div>
+        <div class="dhero">
+          <div class="dghost">14:30</div>
+          <div class="dword">LIS <i data-ic="arrow-dots" data-ic-size="26"></i> LIS</div>
+          <div class="dkick">4 setores · pausa de 7:30 em terra</div>
+        </div>
+        <span class="pill warn"><i data-ic="alert" data-ic-size="12"></i> Incerto · falta 1 dado</span>
+        <div class="hr"></div>
+
+        <div class="sec"><i data-ic="gauge" data-ic-size="13"></i> FTL · Segurança</div>
+        <div class="panel">
+          <div class="prow"><span class="k">PSV realizado</span><span class="v">14:30</span></div>
+          <div class="prow"><span class="k">PSV máximo</span><span class="vwrap"><span class="v">12:30 a 15:30</span><span class="sub">depende do alojamento na pausa</span></span></div>
+        </div>
+
+        <div class="sec"><i data-ic="edit" data-ic-size="13"></i> Completar</div>
+        <div class="need-card">
+          <i class="ic" data-ic="alert" data-ic-size="16"></i>
+          <div><div class="t">Para a lei decidir, falta 1 dado</div>
+            <div class="d">Num serviço repartido, o PSV máximo depende do alojamento que a companhia deu na pausa (CS FTL.1.220).</div></div>
+        </div>
+        <div class="panel">
+          <div class="crow need"><div><div class="t">Alojamento na pausa</div><div class="d">CS FTL.1.220(d) e (e)</div></div><span class="val">Por indicar</span><i class="chev" data-ic="chevron" data-ic-size="14"></i></div>
+          <div class="crow"><div><div class="t">Discrição do comandante</div><div class="d">ORO.FTL.205(f)</div></div><span class="val">Não houve</span><i class="chev" data-ic="chevron" data-ic-size="14"></i></div>
+          <div class="crow"><div><div class="t">Apresentação adiada</div><div class="d">CS FTL.1.205(d)</div></div><span class="val">Não</span><i class="chev" data-ic="chevron" data-ic-size="14"></i></div>
+        </div>
+
+        <div class="sec"><i data-ic="clock" data-ic-size="13"></i> Horário <span class="src"><i data-ic="cal" data-ic-size="12"></i> do calendário</span></div>
+        <div class="panel">
+          <div class="prow"><span class="k">Apresentação</span><span class="v">06:00</span></div>
+          <div class="prow"><span class="k">Pausa em terra</span><span class="v">10:30 → 18:00</span></div>
+          <div class="prow"><span class="k">Calços dentro</span><span class="v">20:30</span></div>
+        </div>
+        <div class="navpad"></div>
+      </div>
+    </div></div>
+    <div class="cap"><b>2 · Incerto.</b> Quando um número fica "incerto" por falta de um dado, a secção <b>Completar sobe</b> para logo a
+      seguir ao FTL, com o cartão que explica porquê e a linha em falta realçada. Sem dados em falta, o cartão não existe.</div>
+    </div>
+
+    <!-- ── 3 · A folha de UM dado ── -->
+    <div>
+    <div class="ph"><div class="scr">
+      <div class="status"><span>9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+      <div class="hdr"><span class="ibtn"><i data-ic="back" data-ic-size="18"></i></span></div>
+      <div class="body">
+        <div class="eyb">Voo · Sex 25 jul</div>
+        <div class="dhero"><div class="dghost">14:30</div><div class="dword">LIS <i data-ic="arrow-dots" data-ic-size="26"></i> LIS</div></div>
+      </div>
+    </div>
+    <div class="dim"></div>
+    <div class="sheet">
+      <div class="grab"></div>
+      <div class="shT">Alojamento na pausa</div>
+      <div class="shD">Pausa de <b>7:30</b> em terra, das 10:30 às 18:00. O que a companhia deu?</div>
+      <div class="opt"><div><div class="t">Sem alojamento</div><div class="d">O PSV não pode ser prolongado</div></div><span class="radio"></span></div>
+      <div class="opt on"><div><div class="t">Uma sala, sem quarto</div><div class="d">Com condições para descansar, mas sem cama</div></div><span class="radio"></span></div>
+      <div class="opt"><div><div class="t">Um quarto</div><div class="d">Alojamento adequado (ORO.FTL.105(4))</div></div><span class="radio"></span></div>
+      <div class="cite">Com uma sala, a EASA e a autoridade espanhola leem a regra de forma diferente: a app mostra as duas (12:30 a 15:30).</div>
+      <div class="primary">Guardar</div>
+    </div>
+    </div>
+    <div class="cap"><b>3 · Uma folha por dado.</b> Tocar numa linha abre uma folha curta só com esse dado (sem ✕: a pega e o toque fora
+      fecham). Um só botão largo no fundo. A explicação diz o que muda e porquê, na língua do tripulante.</div>
+    </div>
+
+    <!-- ── 4 · "O calendário está errado?" ── -->
+    <div>
+    <div class="ph"><div class="scr">
+      <div class="status"><span>9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+      <div class="hdr"><span class="ibtn"><i data-ic="back" data-ic-size="18"></i></span></div>
+      <div class="body">
+        <div class="eyb">Voo · Qui 24 jul · <b>hoje</b></div>
+        <div class="dhero"><div class="dghost">2:55</div><div class="dword">LIS <i data-ic="arrow-dots" data-ic-size="26"></i> FNC</div></div>
+      </div>
+    </div>
+    <div class="dim"></div>
+    <div class="sheet">
+      <div class="grab"></div>
+      <div class="shT">O calendário está errado?</div>
+      <div class="shD">A escala vem do calendário e a app não a muda. Há duas coisas que podes acrescentar aqui:</div>
+      <div class="opt"><span class="oic"><i data-ic="clock" data-ic-size="17"></i></span><div><div class="t">Registar as horas reais</div><div class="d">Calços e fim de serviço quando houve atraso — a lei conta o real</div></div><i class="go" data-ic="chevron" data-ic-size="14"></i></div>
+      <div class="opt"><span class="oic"><i data-ic="cal" data-ic-size="17"></i></span><div><div class="t">Faltou um dado no calendário</div><div class="d">Por exemplo, a hora de apresentação. Só aparece quando falta</div></div><i class="go" data-ic="chevron" data-ic-size="14"></i></div>
+      <div class="cite">Outra coisa errada (rota, dia, serviço que não existe)? Corrige na fonte (eCrew) e toca em Sincronizar na Escala: a app propõe a mudança para confirmares.</div>
+    </div>
+    </div>
+    <div class="cap"><b>4 · A saída discreta.</b> Só pelo link no fundo do Detalhe. Duas portas, cada uma com o seu formulário curto. O resto
+      corrige-se na fonte — a regra 4 do projeto.</div>
+    </div>
+  </div>
 
   <script src="icons.js"></script>
 </body>

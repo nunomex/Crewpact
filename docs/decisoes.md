@@ -42,6 +42,34 @@ leitura automática. A easyJet deixou de ser assumida matinal: os dois tipos par
 
 ---
 
+## 2026-11-08 — O "Editar serviço" saiu: a escala só se lê, o resto completa-se (Opus 5.5)
+
+**Pergunta do Nuno:** "a opção editar serviço não faz sentido, pois não? A escala vem do calendário ou do PDF." **Análise:** metade
+certa — as horas, a rota e os setores vêm da fonte (regra 4: o que se mudasse à mão a sincronização repunha); mas o formulário
+também era o único sítio para os factos que a lei (FTL) ou o acordo precisam e o calendário nunca traz (discrição, adiamento,
+assistência antes, tripulação reforçada, alojamento na pausa, apresentação dos pilotos, prolongamento planeado, pernoita, papel,
+DHC em económica, folga trabalhada, tipo de escritório/formação). **Decidido (Nuno: "faz o recomendado"):**
+- **Referências** (Mobbin, em `referencias/servico-completar/`): N26 (secções da fonte vs. o que acrescentas), Starling (o cartão
+  que diz onde completar), Apple Wallet (a saída discreta quando a fonte está errada). Esboço `design/detalhe-servico.html` v2
+  (o v1 foi para `design/arquivo/`), medido: 390 pt sem nada a passar, letra ≥ 11, toque ≥ 44, contraste calculado.
+- **Construído:** `data/dutyComplete.js` (puro, `test:completar` 27 — que linhas, valor, `need`, folha, o que gravar; horas reais
+  e dado em falta) · `components/FactSheet.js` (a folha de UM dado: escolha, hora, horas) · Detalhe do serviço: Horário e Setores
+  só leitura com "do calendário"/"do PDF" e a hora REAL ao lado da prevista (a escala publicada `snap`); secção **Completar**
+  (sobe para logo a seguir ao FTL quando falta um dado, com o cartão); pílula **Incerto** (antes dizia "Dentro" com um incerto);
+  a saída "O calendário está errado?" com duas portas (horas reais · faltou um dado) — o resto corrige-se na fonte. Os serviços
+  extra abrem o seu Detalhe (`idx`). Estilos do ecrã migrados para `TXT`/`SPACE` (dívida de design −3, chão gravado). Cores novas
+  na pele: `warnText` #9A4508 (5,51 sobre o warnSoft) e `affordance` #86847D (3,74).
+- **Saiu:** o botão "Editar serviço", o toque longo na Escala, o "Editar" dos serviços extra (passou a "Ver"), o formulário na
+  Escala. O formulário inteiro fica só na Simulação e na correção da importação (título "Corrigir a leitura"). O Início ("Registar
+  o sign-off") abre as horas reais.
+- **Não testado:** nada visto no iPhone; sem revisão independente (é UI — a verificação é no device). **Ver no iPhone:** Detalhe de
+  um voo (Horário com "do calendário"; uma hora real registada com o selo REAL e a prevista); um repartido sem o alojamento
+  (pílula Incerto, Completar a seguir ao FTL, cartão, folha das 3 opções → o PSV deixa de ser incerto); conta de cabine (linha da
+  apresentação dos pilotos); "O calendário está errado?" → horas reais e "faltou um dado" num serviço sem apresentação; um dia com 2
+  serviços (o 2.º abre o seu Detalhe e grava no sítio certo); a Escala sem o toque longo; o Início → "Registar o sign-off".
+
+---
+
 ## 2026-11-08 — Os 4 que ficavam da triagem (Opus 5.5) — o Nuno: "corrigir isto"
 
 Golden primeiro em cada um; `npm test` verde; pacote iOS gerado sem erros.

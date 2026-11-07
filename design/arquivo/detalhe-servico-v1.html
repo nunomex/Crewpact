@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Detalhe do serviço (read-only)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{ --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --yellow:#FFB800; --ok:#118A55; --okSoft:#E7F3EC; --warn:#E86A10; --warnSoft:#FBEAD9; --red:#C6362B; --redSoft:#F7E9E7; --info:#EAF2F7; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0f1218;color:#e8ebf0;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:30px 20px 70px;display:flex;flex-direction:column;align-items:center;gap:16px}
+  .lead{max-width:620px;text-align:center}
+  .lead h1{font-size:19px;font-weight:800;color:#fff}
+  .lead p{margin-top:8px;font-size:12.5px;color:#96a0ad;line-height:1.55}.lead b{color:#fff}
+
+  .ph{width:394px;max-width:96vw;height:820px;border-radius:44px;border:9px solid #04060a;overflow:hidden;position:relative;background:var(--paper);color:var(--ink)}
+  .scr{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none}.scr::-webkit-scrollbar{display:none}
+  .status{display:flex;justify-content:space-between;padding:12px 22px 0;font-size:11px;font-weight:700}
+  .hdr{display:flex;align-items:center;padding:12px 18px 0}
+  .hdr .bk{width:34px;height:34px;border-radius:11px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+  .side{position:absolute;right:9px;top:106px;transform:rotate(90deg);transform-origin:right top;font-size:10px;font-weight:800;letter-spacing:3px;color:var(--ink);white-space:nowrap;z-index:30}
+  .side .y{color:var(--yellow)}
+  .body{padding:4px 22px 0}
+
+  /* herói — eyebrow + fantasma (FDP) + rota + estado */
+  .eyb{font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--grey);margin-top:10px}.eyb b{color:var(--ink)}
+  .dhero{position:relative;height:120px;margin-top:2px}
+  .dghost{position:absolute;right:0;top:-16px;font-family:'Barlow Condensed';font-weight:700;font-size:130px;line-height:1;letter-spacing:-4px;color:var(--ghost);font-variant-numeric:tabular-nums}
+  .dword{position:absolute;left:0;bottom:26px;font-family:'Barlow Condensed';font-weight:700;font-size:46px;line-height:.9;letter-spacing:-.5px;white-space:nowrap}
+  .dkick{position:absolute;left:2px;bottom:8px;font-size:12.5px;font-weight:700;color:var(--grey)}
+  .dword svg,.k svg,.no svg{vertical-align:middle}
+  .stbar{margin-top:2px}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;padding:5px 11px;border-radius:999px}
+  .pill.ok{background:var(--okSoft);color:var(--ok)} .pill.ok [data-ic]{color:var(--ok)}
+  .pill.warn{background:var(--warnSoft);color:var(--warn)}
+  .pill.red{background:var(--redSoft);color:var(--red)}
+  .hr{height:1.5px;background:var(--ink);margin:12px 0 0}
+
+  /* secções + painéis */
+  .sec{display:flex;align-items:center;gap:7px;font-size:10px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;color:var(--grey);margin:20px 2px 9px}
+  .sec [data-ic]{color:var(--grey)}
+  .panel{border:1px solid var(--line);border-radius:16px;background:var(--paper);padding:0 15px}
+  .prow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+  .prow:first-child{border-top:0}
+  .k{font-size:12.5px;font-weight:600;color:var(--grey)}
+  .v{font-size:12.5px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums;text-align:right}
+  .v.z{display:block;font-size:10.5px;font-weight:700;color:#9a8a5a;margin-top:2px}
+  .v.ok{color:var(--ok)} .v.red{color:var(--red)} .v.warn{color:var(--warn)}
+  .vwrap{text-align:right}
+  .fat{display:inline-flex;align-items:center;gap:5px;background:var(--okSoft);border-radius:999px;padding:3px 9px}
+  .fat .dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+  .fat .t{font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--ok)}
+
+  /* partilhar chegada — pílula tracejada */
+  .share{display:flex;align-items:center;justify-content:center;gap:8px;border:1.5px dashed #C7C4BB;border-radius:14px;padding:11px;margin-top:12px;font-size:12.5px;font-weight:800;color:var(--ink)}
+  .share [data-ic]{color:var(--ink)}
+
+  /* hotel da pernoita */
+  .hotel{display:flex;align-items:center;gap:11px;border:1px solid var(--line);border-radius:16px;padding:11px 13px}
+  .hotel .ic{width:38px;height:38px;border-radius:11px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--ink);flex:0 0 auto}
+  .hotel .nm{font-size:13.5px;font-weight:800}
+  .hotel .no{font-size:10.5px;font-weight:600;color:var(--grey);margin-top:1px}
+  .hotel .acts{margin-left:auto;display:flex;gap:7px}
+  .hpill{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:800;border-radius:999px;padding:6px 10px}
+  .hpill.map{background:var(--info);color:#2C6E8F} .hpill.map [data-ic]{color:#2C6E8F}
+  .hpill.call{background:var(--okSoft);color:var(--ok)} .hpill.call [data-ic]{color:var(--ok)}
+
+  /* ações */
+  .edit{display:flex;align-items:center;justify-content:center;gap:9px;background:var(--ink);color:#fff;border-radius:14px;padding:15px;margin-top:22px;font-size:14px;font-weight:800}
+  .edit [data-ic]{color:var(--yellow)}
+  .foot{font-size:10.5px;font-weight:600;color:var(--grey);line-height:1.55;margin:14px 2px 0}
+  .navpad{height:26px}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Detalhe do serviço — read-only</h1>
+    <p>Fiel ao <b>DutyDetailScreen.js</b>: herói com rota + estado FTL, e os painéis <b>Horário · Setores · FTL/Segurança · Pernoita · Pagamento</b>, tudo derivado dos motores (nada guardado). Ecrã <b>empurrado</b> → ‹ voltar + Editar/Apagar; sem pílula/FAB. Exemplo de <b>piloto</b> (cabine muda os €, não o layout).</p>
+  </div>
+
+  <div class="ph"><div class="scr">
+    <div class="status"><span>9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+    <div class="hdr"><span class="bk"><i data-ic="back" data-ic-size="18"></i></span></div>
+    <div class="side">VOO · <span class="y">EJU7625</span></div>
+    <div class="body">
+
+      <!-- herói -->
+      <div class="eyb">Voo · Qui 24 jul · <b>hoje</b></div>
+      <div class="dhero">
+        <div class="dghost">2:20</div>
+        <div class="dword">LIS <i data-ic="arrow-dots" data-ic-size="26"></i> FNC</div>
+        <div class="dkick">EJU7625 · 1 setor · pernoita</div>
+      </div>
+      <div class="stbar"><span class="pill ok"><i data-ic="check" data-ic-size="12"></i> Dentro do limite FTL</span></div>
+      <div class="hr"></div>
+
+      <!-- HORÁRIO -->
+      <div class="sec"><i data-ic="clock" data-ic-size="13"></i> Horário</div>
+      <div class="panel">
+        <div class="prow"><span class="k">Apresentação</span><span class="vwrap"><span class="v">05:30</span><span class="v z">04:30Z</span></span></div>
+        <div class="prow"><span class="k">Block off</span><span class="vwrap"><span class="v">05:45</span><span class="v z">04:45Z</span></span></div>
+        <div class="prow"><span class="k">Block on</span><span class="vwrap"><span class="v">07:20</span><span class="v z">06:20Z</span></span></div>
+        <div class="prow"><span class="k">Fim de serviço</span><span class="v">07:50</span></div>
+        <div class="prow"><span class="k">Block hours</span><span class="v">1:35</span></div>
+        <div class="prow"><span class="k">Duty hours</span><span class="v">2:20</span></div>
+      </div>
+
+      <!-- SETORES -->
+      <div class="sec"><i data-ic="departs" data-ic-size="13"></i> Setores</div>
+      <div class="panel">
+        <div class="prow"><span class="k">EJU7625 · LIS <i data-ic="arrow-dots" data-ic-size="12"></i> FNC</span><span class="vwrap"><span class="v">05:45 → 07:20</span><span class="v z">04:45 → 06:20Z</span></span></div>
+      </div>
+      <div class="share"><i data-ic="share" data-ic-size="15"></i> partilhar chegada com alguém</div>
+
+      <!-- FTL · SEGURANÇA -->
+      <div class="sec"><i data-ic="gauge" data-ic-size="13"></i> FTL · Segurança</div>
+      <div class="panel">
+        <div class="prow"><span class="k">FDP realizado</span><span class="v">2:20</span></div>
+        <div class="prow"><span class="k">PSV máx (FDP)</span><span class="v">13:00</span></div>
+        <div class="prow"><span class="k">Repouso mínimo após</span><span class="v">12:00</span></div>
+        <div class="prow"><span class="k">Fadiga</span><span class="fat"><span class="dot"></span><span class="t">Baixa</span></span></div>
+      </div>
+
+      <!-- PERNOITA -->
+      <div class="sec"><i data-ic="bed" data-ic-size="13"></i> Pernoita · FNC</div>
+      <div class="hotel">
+        <div class="ic"><i data-ic="bed" data-ic-size="19"></i></div>
+        <div><div class="nm">Pestana Casino Park</div><div class="no"><i data-ic="shuttle" data-ic-size="12"></i> pickup 05:40</div></div>
+        <div class="acts">
+          <span class="hpill map"><i data-ic="pin" data-ic-size="12"></i> Mapas</span>
+          <span class="hpill call"><i data-ic="phone" data-ic-size="12"></i> Ligar</span>
+        </div>
+      </div>
+
+      <!-- PAGAMENTO -->
+      <div class="sec"><i data-ic="wallet" data-ic-size="13"></i> Pagamento · detalhes</div>
+      <div class="panel">
+        <div class="prow"><span class="k">Per-diem (AE)</span><span class="v ok">+23,75 €</span></div>
+        <div class="prow"><span class="k">Setores</span><span class="v">1</span></div>
+        <div class="prow"><span class="k">Paragem nocturna</span><span class="v ok">+46,00 €</span></div>
+        <div class="prow"><span class="k">Fonte</span><span class="v" style="color:var(--grey)">Calendário</span></div>
+      </div>
+
+      <!-- ações -->
+      <div class="edit"><i data-ic="edit" data-ic-size="16"></i> Editar serviço</div>
+      <div class="foot">Importado do calendário — para o remover, corrige na fonte (eCrew) e toca <b>Sincronizar</b> na Escala; os cancelados aparecem na revisão para confirmares.</div>
+      <div class="foot">Valores FTL/AE estimados — confirma sempre na fonte oficial.</div>
+      <div class="navpad"></div>
+    </div>
+  </div></div>
+
+  <script src="icons.js"></script>
+</body>
+</html>

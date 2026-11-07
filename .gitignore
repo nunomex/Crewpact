@@ -22,3 +22,6 @@ referencias/**/*.jpg
 # Fontes oficiais: o PDF do BTE fica no PC (identificado por SHA-256 em fontes/README.md); o texto
 # extraído (.txt) é versionado — o teste das citações confere cada regra contra ele.
 fontes/**/*.pdf
+
+# Capturas do navegador de teste (Playwright MCP)
+.playwright-mcp/

@@ -1087,7 +1087,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
             </View>
             <PeleSide label={simulate ? l('SIMULAÇÃO', 'SIMULATION') : l('NOVO', 'NEW')} accent={l('SERVIÇOS', 'SERVICES')} />
             <ScrollView style={{ flex: 1 }} contentContainerStyle={s.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-              <Text style={s.eyb}>{simulate ? l('Simulação de serviço', 'Service simulation') : l('Novo serviço', 'New service')}</Text>
+              <Text style={s.eyb}>{simulate ? l('Simulação de serviço', 'Service simulation') : l('Corrigir a leitura', 'Fix the reading')}</Text>
               <View style={s.hero}>
                 <Text style={s.ghost} pointerEvents="none" numberOfLines={1} allowFontScaling={false}>{String(DUTY_KINDS.length).padStart(2, '0')}</Text>
                 <Text style={s.word} numberOfLines={1} allowFontScaling={false}>{l('Serviços', 'Services')}</Text>
@@ -1117,7 +1117,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
             <PeleSide label={simulate ? l('SIMULAÇÃO', 'SIMULATION') : l('NOVO', 'NEW')} accent={kindLabel.toUpperCase()} />
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
             <ScrollView style={{ flex: 1 }} contentContainerStyle={s.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-              <Text style={s.eyb}>{simulate ? l('Simulação de serviço', 'Service simulation') : isEdit ? l('Editar serviço', 'Edit service') : l('Novo serviço', 'New service')}</Text>
+              <Text style={s.eyb}>{simulate ? l('Simulação de serviço', 'Service simulation') : l('Corrigir a leitura', 'Fix the reading')}</Text>
               <View style={s.hero}>
                 <Text style={s.ghost} pointerEvents="none" numberOfLines={1} allowFontScaling={false}>{dayNum}</Text>
                 <Text style={s.word} numberOfLines={1} allowFontScaling={false}>{kindLabel}</Text>

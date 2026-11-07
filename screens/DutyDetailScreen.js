@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PELE, PELE_FONT, GUTTER, BRAND, TXT, SPACE, RADIUS } from '../data/constants';
@@ -6,7 +6,9 @@ import Icon from '../components/Icon';
 import IconButton from '../components/IconButton';
 import PeleSide from '../components/PeleSide';
 import PeleHeader from '../components/PeleHeader';
-import DutyFormSheet from '../components/DutyFormSheet';
+import FactSheet from '../components/FactSheet';
+import PeleSheet from '../components/PeleSheet';
+import { completeRows, realTimesPatch, missingFields, plannedOf, isClock } from '../data/dutyComplete';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t } from '../data/i18n';
 import { select, warning, success } from '../data/haptics';
@@ -26,24 +28,31 @@ import { AE_DEEPLINKS } from '../data/library';
 const minToHhmm = (min) => { if (!min) return ''; const h = Math.floor(min / 60), m = min % 60; return `${h}:${String(m).padStart(2, '0')}`; };
 const clkMin = (str) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(str || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; };
 
-// Detalhe de um serviço (read-only) — o "Ver tudo" da folha do dia. Fiel a design/detalhe-servico.html:
-// herói (rota + FANTASMA=FDP + estado FTL) + painéis Horário·Setores·FTL/Segurança·Pernoita·Pagamento.
-// Tudo derivado dos motores (computeDuty/fatigueFromDuty + ae.perDiem) — a duty NÃO guarda FDP/per-diem.
-// "Editar" abre o DutyFormSheet partilhado; apagar SÓ nos manuais (a fonte manda nos importados).
+// Detalhe de um serviço — o "Ver tudo" da folha do dia. Fiel a design/detalhe-servico.html (v2, aprovado 2026-11-08):
+// herói (rota + FANTASMA=FDP + estado FTL) + Horário · Setores (vêm do calendário: SÓ SE LEEM — regra 4) · FTL/Segurança ·
+// COMPLETAR (os factos que a lei ou o acordo precisam e o calendário não traz, um de cada vez — data/dutyComplete.js) ·
+// Pernoita · Pagamento. O "Editar serviço" saiu: a saída "O calendário está errado?" leva às horas reais ou ao dado em falta.
+// Tudo derivado dos motores — a duty NÃO guarda FDP/per-diem. Apagar SÓ nos manuais (a fonte manda nos importados).
 export default function DutyDetailScreen({ route, navigation }) {
   const ctxAll = useContext(AppContext);
-  const { lang, duties, crewAt, removeDuty, saveDuty, notify } = ctxAll;
+  const { lang, duties, crewAt, removeDuty, saveDuty, updateDutyService, notify } = ctxAll;
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const tabSpace = useTabBarSpace();
-  const [editing, setEditing] = useState(false);
+  const [fact, setFact] = useState(null);           // a linha do "Completar" aberta (a folha de UM dado)
+  const lastFact = useRef(null);                    // a folha desce com o conteúdo (não pisca vazia ao fechar)
+  if (fact) lastFact.current = fact;
+  const sf = fact || lastFact.current;
+  const [fixOpen, setFixOpen] = useState(false);    // "O calendário está errado?" — as duas portas
+  const [realOpen, setRealOpen] = useState(false);  // porta 1: as horas reais
+  const [missOpen, setMissOpen] = useState(false);  // porta 2: o dado que faltou no calendário
   const [edited, setEdited] = useState(false);
   const [hotelOpen, setHotelOpen] = useState(false);   // folha "Hotel da pernoita" (registar/editar)
   const [prova, setProva] = useState(null);            // folha da PROVA ("a lei deste número")
 
   const date = route.params?.date;
-  // `edit` (Início v6, tecla "Registar o sign-off"): abre logo o formulário — sem obrigar a procurar o "Editar".
+  // `edit` (Início v6, tecla "Registar o sign-off"): abre logo as HORAS REAIS (o formulário inteiro saiu, 2026-11-08).
   const editReq = route.params?.edit;
-  useEffect(() => { if (editReq) setEditing(true); }, [editReq]);
+  useEffect(() => { if (editReq) setRealOpen(true); }, [editReq]);
   // LINHA DO TEMPO DO CONTRATO (2026-11-03): o acordo, a companhia (a Prova cita o AE dela) e a base
   // DESTE dia — um serviço antigo noutra companhia mostra o dinheiro e a lei dessa companhia.
   const ae = date ? ctxAll.aeAt(date) : ctxAll.ae;
@@ -54,7 +63,10 @@ export default function DutyDetailScreen({ route, navigation }) {
   const isPilotD = date ? ctxAll.companyAt(date).crewType === 'pilot' : ctxAll.isPilot;
   const baseD = date ? ctxAll.homeBaseAt(date) : ctxAll.base;
   const provaCtx = { companySlug: coD && coD.slug, companyName: coD && coD.name, isPilot: isPilotD, lang };
-  const duty = date ? duties[date] : null;
+  // `idx` (2026-11-08): 0 = o serviço principal do dia; n = o n.º serviço extra (o "Editar" da Escala saiu — abrem aqui).
+  const idx = Math.max(0, Number(route.params?.idx) || 0);
+  const day = date ? duties[date] : null;
+  const duty = !day ? null : idx > 0 ? ((Array.isArray(day.extra) ? day.extra : [])[idx - 1] || null) : day;
   const goBack = () => {
     if (edited) navigation.navigate('EscalaMain', { flashDuty: date, flashTs: Date.now() });
     else navigation.goBack();
@@ -83,7 +95,7 @@ export default function DutyDetailScreen({ route, navigation }) {
     </View>
   );
 
-  if (!duty || duty.deleted) {
+  if (!duty || (day && day.deleted)) {
     return (
       <SafeAreaView style={s.safe} edges={['top']}>
         <BackBtn />
@@ -98,6 +110,15 @@ export default function DutyDetailScreen({ route, navigation }) {
   const isFlight = kind === 'flight';
   const isManual = !duty.source || duty.source === 'manual';
   const todayISO = isoDay();
+  const tx = (v) => (v == null ? '' : typeof v === 'string' ? v : (lang === 'en' ? v.en : v.pt) || v.pt || '');
+  // Grava UM facto: o serviço inteiro com só esse campo mudado (o saveDuty pede o serviço todo; a origem, a escala publicada
+  // e as pernas ficam). Os extra gravam-se no seu lugar.
+  const saveSvc = (patch, msg) => {
+    if (idx > 0) updateDutyService && updateDutyService(date, idx - 1, { ...duty, ...patch });
+    else saveDuty && saveDuty(date, { ...duty, ...patch });
+    success(); setEdited(true);
+    notify && notify(msg || l('Guardado', 'Saved'));
+  };
   const hasEnd = !!(duty.report_time && duty.block_on);
 
   // ── Motor FTL (só com report; realizados só com block-on) — débrief SÓ em voo (ORO.FTL.235c). ──
@@ -157,6 +178,11 @@ export default function DutyDetailScreen({ route, navigation }) {
   // L5 e L10, bloco 6): per diem, posicionamento, pernoita e o dia sem voo (formação, escritório, assistência; TAP por dia).
   const stations = String(duty.route || '').split(/[^A-Za-z]+/).map((x) => x.toUpperCase()).filter(Boolean);
   const catD = crewAt(date).category;   // categoria EM VIGOR no mês desta duty (effective-dated)
+  // COMPLETAR (data/dutyComplete.js): só as linhas que contam para este tripulante e este serviço; as que faltam para a lei
+  // decidir (`need`, o motor disse "incerto" por esse facto) vêm primeiro e sobem a secção para logo a seguir ao FTL.
+  const rows = completeRows(duty, { isPilot: isPilotD, ae, category: catD, instructorRated: !!ctxAll.instructorRated,
+    unknowns: (d && d.fdp && d.fdp.unknowns) || [], extRefused: d ? d.extRefused : null });
+  const needRows = rows.filter((r) => r.need);
   const money = (ae && catD) ? serviceMoney(ae, catD, duty, { date, fleet: crewAt(date).fleet, daySvcs: [duty, ...(Array.isArray(duty.extra) ? duty.extra : [])] }) : null;
   const perDiem = money ? money.perDiem : null;
   const nsEur = money ? money.nightStop : null;   // TAP: estadia só nos dias sem voo (bloco 5) — serviceMoney não a dá por serviço
@@ -182,7 +208,7 @@ export default function DutyDetailScreen({ route, navigation }) {
   const headMain = isFlight
     ? routeStr
     : (duty.block_on && duty.block_on !== duty.report_time ? `${duty.report_time} – ${duty.block_on}` : (duty.report_time || '—'));
-  const sources = { manual: l('Manual', 'Manual'), calendar: l('Calendário', 'Calendar'), pdf: 'PDF' };
+  const fixTitle = isManual ? l('As horas estão erradas?', 'Are the times wrong?') : duty.source === 'pdf' ? l('O PDF está errado?', 'Is the PDF wrong?') : l('O calendário está errado?', 'Is the calendar wrong?');
 
   // ── Herói (mockup): fantasma = FDP realizado (ou duty hours); kick = nº de voo · setores · pernoita ──
   const heroGhost = (d && hasEnd && d.fdp && d.fdp.actualFdpStr) || (d && d.dutyPeriodStr) || '';
@@ -200,6 +226,8 @@ export default function DutyDetailScreen({ route, navigation }) {
       ? { tone: 'red', txt: l('Excede o limite do acordo', 'Exceeds the agreement limit') }
     : over
       ? { tone: 'red', txt: l('Excede o limite FTL', 'Exceeds FTL limit') }
+    : (d && d.isFdp && d.fdp && d.fdp.uncertain)
+      ? { tone: 'warn', txt: needRows.length ? (needRows.length === 1 ? l('Incerto · falta 1 dado', 'Uncertain · 1 fact missing') : l(`Incerto · faltam ${needRows.length} dados`, `Uncertain · ${needRows.length} facts missing`)) : l('Incerto', 'Uncertain') }
       : { tone: 'ok', txt: l('Dentro do limite FTL', 'Within FTL limit') };
 
   // Fadiga — cores da pele
@@ -233,6 +261,11 @@ export default function DutyDetailScreen({ route, navigation }) {
               accessibilityRole="button" accessibilityLabel={`${it.k} — ${l('ver a lei', 'see the law')}`}>
               {inner}
             </TouchableOpacity>
+          ) : it.go ? (
+            <TouchableOpacity key={i} style={[s.row, i === 0 && s.rowFirst]} activeOpacity={0.7} onPress={() => { select(); it.go(); }}
+              accessibilityRole="button" accessibilityLabel={`${it.k}${typeof it.v === 'string' ? ` — ${it.v}` : ''}`}>
+              {inner}
+            </TouchableOpacity>
           ) : (
             <View key={i} style={[s.row, i === 0 && s.rowFirst]}>{inner}</View>
           );
@@ -240,9 +273,110 @@ export default function DutyDetailScreen({ route, navigation }) {
       </View>
     );
   };
-  const Sec = ({ icon, children }) => (
-    <View style={s.sec}><Icon name={icon} size={13} color={PELE.grey} /><Text style={s.secTxt}>{children}</Text></View>
+  // Secção: o rótulo à esquerda e, à direita, de ONDE vêm os dados (N26: "Details" da fonte vs. o que acrescentas).
+  const Sec = ({ icon, children, src }) => (
+    <View style={s.sec}>
+      <Icon name={icon} size={13} color={PELE.grey} /><Text style={s.secTxt}>{children}</Text>
+      {src ? <View style={s.secSrc}><Icon name="cal" size={12} color={PELE.grey} /><Text style={s.secSrcT}>{src}</Text></View> : null}
+    </View>
   );
+  const srcLbl = duty.source === 'pdf' ? l('do PDF', 'from the PDF') : duty.source === 'calendar' ? l('do calendário', 'from the calendar') : null;
+  // Uma hora REAL (registada pelo tripulante) ao lado da prevista da escala publicada (`snap`): o selo "real" e, por baixo, a Zulu
+  // e a prevista. O motor conta pela real (ORO.FTL.105(12)).
+  const timeRow = (k, field, z) => {
+    const v = duty[field];
+    if (!v) return null;
+    const plan = plannedOf(duty, field);
+    const sub = [z ? `${z}Z` : null, plan ? l(`previsto ${plan}`, `planned ${plan}`) : null].filter(Boolean).join(' · ');
+    return { k, v, node: (
+      <View style={{ alignItems: 'flex-end' }}>
+        <View style={s.realLine}>
+          {plan ? <View style={s.realTag}><Text style={s.realTagT}>{l('real', 'actual')}</Text></View> : null}
+          <Text style={s.rowV}>{v}</Text>
+        </View>
+        {sub ? <Text style={s.rowVZ}>{sub}</Text> : null}
+      </View>
+    ) };
+  };
+  const missing = missingFields(duty);
+  const schedule = (
+    <>
+      <Sec icon="clock" src={srcLbl}>{l('Horário', 'Schedule')}</Sec>
+      <Panel rows={[
+        timeRow(l('Apresentação', 'Report'), 'report_time', duty.report_time ? toZulu(date, duty.report_time) : null),
+        timeRow(l('Calços fora', 'Off-blocks'), 'block_off', duty.block_off ? (zOf(firstLeg, 'off') || toZulu(date, duty.block_off)) : null),
+        timeRow(l('Calços dentro', 'On-blocks'), 'block_on', duty.block_on ? (zOf(lastLeg, 'on') || toZulu(date, duty.block_on)) : null),
+        timeRow(l('Fim de serviço', 'Sign-off'), 'signOff', duty.signOff ? toZulu(date, duty.signOff) : null),
+        duty.flight_minutes && { k: l('Horas de voo', 'Flight hours'), v: minToHhmm(duty.flight_minutes) },
+        (d && d.dutyPeriodStr) && { k: l('Horas de serviço', 'Duty hours'), v: d.dutyPeriodStr },
+      ]} />
+      {/* Setores — off/on de cada setor (só leitura). Soma dos block = horas de voo. */}
+      {isFlight && legs.length ? (
+        <>
+          <Sec icon="plane" src={srcLbl}>{l('Setores', 'Sectors')}</Sec>
+          <Panel rows={legs.map((lg) => {
+            const zo = zOf(lg, 'off'), zn = zOf(lg, 'on');
+            return {
+              k: `${lg.dh ? 'DH · ' : ''}${lg.flightNo ? `${lg.flightNo} · ` : ''}${lg.dep || '?'}→${lg.arr || '?'}`,
+              node: (
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={s.rowV}>{`${lg.off || '—'} → ${lg.on || '—'}`}</Text>
+                  {(zo || zn) ? <Text style={s.rowVZ}>{`${zo || '—'} → ${zn || '—'}Z`}</Text> : null}
+                </View>
+              ),
+            };
+          })} />
+        </>
+      ) : null}
+    </>
+  );
+  // COMPLETAR — uma linha por facto; a que falta (need) com o ponto e "Por indicar"; o cartão do Starling só com um "incerto".
+  const completar = rows.length ? (
+    <>
+      <Sec icon="edit">{l('Completar', 'Complete')}</Sec>
+      {needRows.length ? (
+        <View style={s.needCard}>
+          <Icon name="alert" size={16} color={PELE.warnText} />
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={s.needT}>{needRows.length === 1 ? l('Para a lei decidir, falta 1 dado', 'For the law to decide, 1 fact is missing') : l(`Para a lei decidir, faltam ${needRows.length} dados`, `For the law to decide, ${needRows.length} facts are missing`)}</Text>
+            <Text style={s.needD}>{tx(needRows[0].sheet.intro)}</Text>
+          </View>
+        </View>
+      ) : null}
+      <View style={s.panel}>
+        {rows.map((r, i) => (
+          <TouchableOpacity key={r.id} style={[s.crow, i === 0 && s.rowFirst]} activeOpacity={0.7} onPress={() => { select(); setFact(r); }}
+            accessibilityRole="button" accessibilityLabel={`${tx(r.title)}: ${tx(r.value)}`} accessibilityHint={l('Abre para indicar', 'Opens to fill in')}>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={s.crowT}>{tx(r.title)}</Text>
+              {r.cite ? <Text style={s.crowD} numberOfLines={1}>{r.cite}</Text> : null}
+            </View>
+            {r.need ? <View style={s.needDot} /> : null}
+            <Text style={[s.crowV, r.need && s.crowVNeed]} numberOfLines={1}>{tx(r.value)}</Text>
+            <Icon name="chevron" size={14} color={r.need ? PELE.warnText : PELE.affordance} />
+          </TouchableOpacity>
+        ))}
+      </View>
+      {!needRows.length ? <Text style={s.note}>{l('Só o que a lei ou o teu acordo precisam e o calendário não traz.', 'Only what the law or your agreement needs and the calendar does not bring.')}</Text> : null}
+    </>
+  ) : null;
+  // As horas reais (porta 1): voo = calços fora/dentro e fim de serviço; os outros serviços = início e fim.
+  const snapV = (f) => (duty.snap && duty.snap[f]) || null;
+  const planHint = (f) => (snapV(f) ? { pt: `Na escala: ${snapV(f)}`, en: `Rostered: ${snapV(f)}` } : null);
+  const realFields = isFlight ? [
+    { key: 'off', type: 'time', label: { pt: 'Calços fora', en: 'Off-blocks' }, value: duty.block_off || '', optional: true, hint: planHint('block_off') },
+    { key: 'on', type: 'time', label: { pt: 'Calços dentro', en: 'On-blocks' }, value: duty.block_on || '', optional: true, hint: planHint('block_on') },
+    { key: 'signOff', type: 'time', label: { pt: 'Fim de serviço (sign-off)', en: 'Sign-off' }, value: duty.signOff || '', optional: true, hint: { pt: 'Depois do débrief. Vazio = calços dentro + o pós-voo do teu perfil.', en: 'After the debrief. Empty = on-blocks + your profile\'s post-flight time.' } },
+  ] : [
+    { key: 'start', type: 'time', label: { pt: 'Início', en: 'Start' }, value: duty.report_time || '', hint: planHint('report_time') },
+    { key: 'end', type: 'time', label: { pt: 'Fim', en: 'End' }, value: duty.block_on || '', optional: true, hint: planHint('block_on') },
+  ];
+  const realPatch = (v) => (isFlight
+    ? realTimesPatch(duty, { off: v.off && v.off !== duty.block_off ? v.off : null, on: v.on && v.on !== duty.block_on ? v.on : null, signOff: v.signOff || null })
+    : { report_time: isClock(v.start) ? v.start : duty.report_time, block_on: isClock(v.end) ? v.end : (duty.block_on || null) });
+  const missFields = missing.map((f) => ({ key: f.key, type: 'time', label: f.label, value: '' }));
+  const missPatch = (v) => Object.fromEntries(missing.filter((f) => isClock(v[f.key])).map((f) => [f.key, v[f.key]]));
+
 
   const fatPill = fat ? (
     <View style={[s.fatPill, { backgroundColor: fatBg(fat.band) }]}>
@@ -265,43 +399,15 @@ export default function DutyDetailScreen({ route, navigation }) {
           kick={kickParts.length ? kickParts.join(' · ') : undefined}
         />
         <View style={s.stbar}>
-          <View style={[s.pill, statusPill.tone === 'red' ? s.pillRed : statusPill.tone === 'ok' ? s.pillOk : s.pillNeutral]}>
-            {statusPill.tone === 'ok' ? <Icon name="check" size={12} color={PELE.ok} /> : statusPill.tone === 'red' ? <Icon name="alert" size={12} color={PELE.red} /> : null}
-            <Text style={[s.pillTxt, { color: statusPill.tone === 'red' ? PELE.red : statusPill.tone === 'ok' ? PELE.ok : PELE.grey }]}>{statusPill.txt}</Text>
+          <View style={[s.pill, statusPill.tone === 'red' ? s.pillRed : statusPill.tone === 'ok' ? s.pillOk : statusPill.tone === 'warn' ? s.pillWarn : s.pillNeutral]}>
+            {statusPill.tone === 'ok' ? <Icon name="check" size={12} color={PELE.okText} /> : statusPill.tone === 'red' ? <Icon name="alert" size={12} color={PELE.red} /> : statusPill.tone === 'warn' ? <Icon name="alert" size={12} color={PELE.warnText} /> : null}
+            <Text style={[s.pillTxt, { color: statusPill.tone === 'red' ? PELE.red : statusPill.tone === 'ok' ? PELE.okText : statusPill.tone === 'warn' ? PELE.warnText : PELE.grey }]}>{statusPill.txt}</Text>
           </View>
           {duty.dirty ? <View style={s.pendRow}><View style={s.pendDot} /><Text style={s.pendTxt}>{t('duties.pending', lang)}</Text></View> : null}
         </View>
         <View style={s.hr} />
 
-        <Sec icon="clock">{l('Horário', 'Schedule')}</Sec>
-        <Panel rows={[
-          duty.report_time && { k: l('Apresentação', 'Report'), v: tv(duty.report_time) },
-          duty.block_off && { k: l('Block off', 'Block off'), v: tvL(duty.block_off, firstLeg, 'off') },
-          duty.block_on && { k: l('Block on', 'Block on'), v: tvL(duty.block_on, lastLeg, 'on') },
-          duty.signOff && { k: l('Fim de serviço', 'Sign-off'), v: tv(duty.signOff) },
-          duty.flight_minutes && { k: 'Block hours', v: minToHhmm(duty.flight_minutes) },
-          (d && d.dutyPeriodStr) && { k: 'Duty hours', v: d.dutyPeriodStr },
-        ]} />
-
-        {/* Setores — off/on de cada setor (read-only). Soma dos block = Block hours. */}
-        {isFlight && legs.length ? (
-          <>
-            <Sec icon="plane">{l('Setores', 'Sectors')}</Sec>
-            <Panel rows={legs.map((lg) => {
-              const zo = zOf(lg, 'off'), zn = zOf(lg, 'on');
-              return {
-                k: `${lg.dh ? 'DH · ' : ''}${lg.flightNo ? `${lg.flightNo} · ` : ''}${lg.dep || '?'}→${lg.arr || '?'}`,
-                node: (
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={s.rowV}>{`${lg.off || '—'} → ${lg.on || '—'}`}</Text>
-                    {(zo || zn) ? <Text style={s.rowVZ}>{`${zo || '—'} → ${zn || '—'}Z`}</Text> : null}
-                  </View>
-                ),
-              };
-            })} />
-          </>
-        ) : null}
-
+        {!needRows.length ? schedule : null}
 
         {/* Sem hora de report → o motor devolve null e a secção FTL desaparecia em SILÊNCIO
             (device 2026-09-03). Honestidade: dizer que o PSV não foi calculado e como corrigir. */}
@@ -309,7 +415,7 @@ export default function DutyDetailScreen({ route, navigation }) {
           <>
             <Sec icon="gauge">{l('FTL · Segurança', 'FTL · Safety')}</Sec>
             <Panel rows={[
-              { k: l('PSV', 'FDP'), v: l('não calculado — sem hora de report no calendário · Editar para corrigir', 'not calculated — no report time in the calendar · Edit to fix'), color: PELE.warn },
+              { k: l('PSV', 'FDP'), v: l('não calculado — falta a hora de apresentação', 'not calculated — the report time is missing'), color: PELE.warnText, go: () => setMissOpen(true) },
             ]} />
           </>
         ) : null}
@@ -382,6 +488,9 @@ export default function DutyDetailScreen({ route, navigation }) {
           </>
         ) : null}
 
+        {completar}
+        {needRows.length ? schedule : null}
+
         {/* Pernoita — hotel da estação (catálogo pessoal, por IATA) — mapas + ligar. */}
         {duty.nightStop ? (() => {
           const st = nightStopStation(duty, baseD);
@@ -437,29 +546,29 @@ export default function DutyDetailScreen({ route, navigation }) {
           })(),
           duty.dayOffWorked && { k: l('Folga publicada trabalhada', 'Worked published day off'), v: duty.dayOffWorked === 'ddo' ? 'DDO' : duty.dayOffWorked === 'wfly' ? 'WFLY' : 'IDO', color: PELE.warn },
           duty.kind === 'office' && duty.officeType === 'ofc8' && { k: l('Dia de escritório', 'Office day'), v: l('Dia inteiro (OFC8) · 3 setores', 'Full day (OFC8) · 3 sectors') },
-          duty.source && { k: l('Fonte', 'Source'), v: sources[duty.source] || duty.source, color: PELE.grey },
         ]} />
 
         {/* Outros períodos de serviço do MESMO dia (210/245) — lista compacta. */}
-        {Array.isArray(duty.extra) && duty.extra.length ? (
+        {idx === 0 && Array.isArray(duty.extra) && duty.extra.length ? (
           <>
             <Sec icon="ellipsis">{l('Outros serviços neste dia', 'Other services this day')}</Sec>
             <Panel rows={duty.extra.map((sv, i) => {
               const rr = ftlForDuty(sv, { postFlightMin: ctxAll.postFlightMin || 0, isPilot: isPilotD, base: baseD, date, cabinGapMin: gapD, splitAdminMin: ctxAll.splitAdminMin });
               const lbl = (!sv.kind || sv.kind === 'flight') ? (sv.route || l('Voo', 'Flight')) : t('duties.kind.' + sv.kind, lang);
               const psv = (rr && rr.isFdp && rr.fdp.actualFdpStr) ? rr.fdp.actualFdpStr : null;   // só PSV de quem tem setores
-              return { k: `${i + 2}. ${lbl}`, v: `${sv.report_time || '—'} → ${sv.block_on || '—'}${psv ? `  ·  PSV ${psv}` : ''}` };
+              return { k: `${i + 2}. ${lbl}`, v: `${sv.report_time || '—'} → ${sv.block_on || '—'}${psv ? `  ·  PSV ${psv}` : ''}`, go: () => navigation.push('DutyDetail', { date, idx: i + 1 }) };
             })} />
             <Text style={s.foot}>{l('Os serviços do dia somam nos 28 dias (210). Vê o repouso entre eles na folha do dia.', 'The day’s services sum over 28 days (210). See the rest between them in the day detail.')}</Text>
           </>
         ) : null}
 
-        <TouchableOpacity onPress={() => { select(); setEditing(true); }} activeOpacity={0.9} style={s.editBtn} accessibilityRole="button" accessibilityLabel={l('Editar serviço', 'Edit duty')}>
-          <Icon name="edit" size={16} color={BRAND.onDark} />
-          <Text style={s.editTxt}>{l('Editar serviço', 'Edit duty')}</Text>
+        {/* A saída discreta (Apple Wallet "Report an Issue"): as horas reais ou o dado que faltou — o resto corrige-se na fonte. */}
+        <TouchableOpacity style={s.escape} activeOpacity={0.7} onPress={() => { select(); setFixOpen(true); }} accessibilityRole="button">
+          <Text style={s.escapeT}>{fixTitle}</Text>
+          <Icon name="chevron" size={13} color={PELE.ink} />
         </TouchableOpacity>
 
-        {isManual ? (
+        {isManual && idx === 0 ? (
           <TouchableOpacity style={s.delBtn} activeOpacity={0.8} onPress={confirmDelete}>
             <Icon name="trash" size={16} color={PELE.red} />
             <Text style={s.delTxt}>{l('Apagar serviço', 'Delete duty')}</Text>
@@ -473,8 +582,45 @@ export default function DutyDetailScreen({ route, navigation }) {
         <Text style={s.foot}>{t('common.ftlEstimate', lang)}</Text>
       </ScrollView>
 
-      {/* Edição (opção autossuficiente) — o form partilhado; ao guardar, o context atualiza-se e o ecrã reflete. */}
-      <DutyFormSheet visible={!!editing} date={date} onClose={() => setEditing(false)} onSaved={() => { setEditing(false); setEdited(true); }} />
+      {/* A folha de UM dado do Completar. */}
+      <FactSheet visible={!!fact} onClose={() => setFact(null)} lang={lang}
+        title={sf ? sf.title : ''} intro={sf ? sf.sheet.intro : null} cite={sf ? sf.cite : null} note={sf ? sf.sheet.note : null}
+        fields={sf ? sf.sheet.fields : []} valid={sf ? sf.valid : null}
+        onSave={(v) => { const r = fact; setFact(null); saveSvc(r.apply(v), l(`${tx(r.title)} · guardado`, `${tx(r.title)} · saved`)); }} />
+      {/* "O calendário está errado?" — duas portas, cada uma com o seu formulário curto. */}
+      <PeleSheet visible={fixOpen} onClose={() => setFixOpen(false)}>
+        <Text style={s.fixT} accessibilityRole="header">{fixTitle}</Text>
+        <Text style={s.fixD}>{isManual ? l('Há duas coisas que podes acrescentar aqui:', 'There are two things you can add here:') : l('A escala vem da fonte e a app não a muda. Há duas coisas que podes acrescentar aqui:', 'The roster comes from the source and the app does not change it. There are two things you can add here:')}</Text>
+        <TouchableOpacity style={s.fixOpt} activeOpacity={0.8} onPress={() => { select(); setFixOpen(false); setTimeout(() => setRealOpen(true), 280); }} accessibilityRole="button">
+          <View style={s.fixIc}><Icon name="clock" size={17} color={PELE.ink} /></View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={s.crowT}>{l('Registar as horas reais', 'Record the actual times')}</Text>
+            <Text style={s.crowD}>{isFlight ? l('Calços e fim de serviço quando houve atraso — a lei conta o real', 'Blocks and sign-off when there was a delay — the law counts the actual') : l('Início e fim, se não foram os da escala', 'Start and end, if they were not the rostered ones')}</Text>
+          </View>
+          <Icon name="chevron" size={14} color={PELE.affordance} />
+        </TouchableOpacity>
+        {missing.length ? (
+          <TouchableOpacity style={s.fixOpt} activeOpacity={0.8} onPress={() => { select(); setFixOpen(false); setTimeout(() => setMissOpen(true), 280); }} accessibilityRole="button">
+            <View style={s.fixIc}><Icon name="cal" size={17} color={PELE.ink} /></View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={s.crowT}>{l('Faltou um dado', 'Something was missing')}</Text>
+              <Text style={s.crowD}>{l(`Falta: ${missing.map((f) => f.label.pt.toLowerCase()).join(', ')}`, `Missing: ${missing.map((f) => f.label.en.toLowerCase()).join(', ')}`)}</Text>
+            </View>
+            <Icon name="chevron" size={14} color={PELE.affordance} />
+          </TouchableOpacity>
+        ) : null}
+        {!isManual ? <Text style={s.fixFoot}>{duty.source === 'pdf'
+          ? l('Outra coisa errada (rota, dia, serviço que não existe)? Importa na Escala o PDF atualizado: a app propõe a mudança para confirmares.', 'Something else wrong (route, day, a duty that does not exist)? Import the updated PDF in the roster: the app proposes the change for you to confirm.')
+          : l('Outra coisa errada (rota, dia, serviço que não existe)? Corrige na fonte (eCrew) e toca em Sincronizar na Escala: a app propõe a mudança para confirmares.', 'Something else wrong (route, day, a duty that does not exist)? Fix it at the source (eCrew) and tap Sync in the roster: the app proposes the change for you to confirm.')}</Text> : null}
+      </PeleSheet>
+      <FactSheet visible={realOpen} onClose={() => setRealOpen(false)} lang={lang}
+        title={{ pt: 'Horas reais', en: 'Actual times' }} intro={{ pt: 'O que aconteceu de facto. A escala publicada fica guardada ao lado, como prevista.', en: 'What actually happened. The published roster stays alongside, as planned.' }}
+        cite="ORO.FTL.105(12)" fields={realFields}
+        onSave={(v) => { setRealOpen(false); saveSvc(realPatch(v), l('Horas reais guardadas', 'Actual times saved')); }} />
+      <FactSheet visible={missOpen} onClose={() => setMissOpen(false)} lang={lang}
+        title={{ pt: 'Faltou um dado', en: 'Something was missing' }} intro={{ pt: 'O calendário não trouxe isto. Sem ele, a app não consegue calcular o PSV.', en: 'The calendar did not bring this. Without it, the app cannot calculate the FDP.' }}
+        fields={missFields}
+        onSave={(v) => { setMissOpen(false); saveSvc(missPatch(v), l('Guardado', 'Saved')); }} />
       {/* Hotel da pernoita — registar/editar o hotel desta estação (catálogo pessoal). */}
       <HotelSheet visible={hotelOpen} onClose={() => setHotelOpen(false)} station={duty && duty.nightStop ? nightStopStation(duty, baseD) : null} />
       <ProvaSheet visible={!!prova} onClose={() => setProva(null)} prova={prova} lang={lang} />
@@ -487,37 +633,63 @@ const s = StyleSheet.create({
   topbar: { flexDirection: 'row', paddingHorizontal: GUTTER, paddingTop: 8 },
   scroll: { paddingHorizontal: GUTTER, paddingTop: 2 },
 
-  stbar: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4, flexWrap: 'wrap' },
-  pill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 11, paddingVertical: 5, borderRadius: 999 },
+  stbar: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, marginTop: SPACE.xs, flexWrap: 'wrap' },
+  pill: { flexDirection: 'row', alignItems: 'center', gap: SPACE.s, paddingHorizontal: SPACE.md, paddingVertical: SPACE.s, borderRadius: RADIUS.pill },
   pillOk: { backgroundColor: PELE.okSoft },
   pillRed: { backgroundColor: PELE.redSoft },
+  pillWarn: { backgroundColor: PELE.warnSoft },
   pillNeutral: { backgroundColor: PELE.soft },
-  pillTxt: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase' },
-  pendRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  pillTxt: { ...TXT.tag },
+  pendRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.s },
   pendDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: PELE.warn },
-  pendTxt: { fontSize: 10.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.4, textTransform: 'uppercase', color: PELE.grey },
-  hr: { height: 1.5, backgroundColor: PELE.ink, marginTop: 12 },
+  pendTxt: { ...TXT.tag, color: PELE.grey },
+  hr: { height: 1.5, backgroundColor: PELE.ink, marginTop: SPACE.md },
 
-  // Secções + painéis
-  sec: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 20, marginBottom: 9 },
-  secTxt: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 10, letterSpacing: 1.3, textTransform: 'uppercase', color: PELE.grey },
-  panel: { borderWidth: 1, borderColor: PELE.line, borderRadius: 16, backgroundColor: PELE.paper, paddingHorizontal: 15 },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 12, borderTopWidth: 1, borderTopColor: PELE.line },
+  // Secções + painéis (a escala, design-system §9)
+  sec: { flexDirection: 'row', alignItems: 'center', gap: SPACE.s, marginTop: SPACE.xl, marginBottom: SPACE.sm },
+  secTxt: { ...TXT.eyebrow, color: PELE.grey },
+  secSrc: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: SPACE.xs },
+  secSrcT: { ...TXT.caption, color: PELE.grey },
+  panel: { borderWidth: 1, borderColor: PELE.line, borderRadius: RADIUS.lg, backgroundColor: PELE.paper, paddingHorizontal: SPACE.lg },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.md, minHeight: 44, paddingVertical: SPACE.md, borderTopWidth: 1, borderTopColor: PELE.line },
   rowFirst: { borderTopWidth: 0 },
-  rowK: { flex: 1, fontSize: 12.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey },
-  rowV: { fontSize: 12.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.ink, fontVariant: ['tabular-nums'], textAlign: 'right' },
+  rowK: { ...TXT.body, flex: 1, color: PELE.grey },
+  rowV: { ...TXT.bodyStrong, color: PELE.ink, fontVariant: ['tabular-nums'], textAlign: 'right' },
+  // Hora real ao lado da prevista
+  realLine: { flexDirection: 'row', alignItems: 'center', gap: SPACE.s },
+  realTag: { backgroundColor: PELE.soft, borderRadius: RADIUS.xs, paddingHorizontal: SPACE.s, paddingVertical: SPACE.xxs },
+  realTagT: { ...TXT.tag, color: PELE.ink },
+  // Completar
+  crow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, minHeight: 52, paddingVertical: SPACE.md, borderTopWidth: 1, borderTopColor: PELE.line },
+  crowT: { ...TXT.bodyStrong, color: PELE.ink },
+  crowD: { ...TXT.caption, color: PELE.grey, marginTop: SPACE.xxs },
+  crowV: { ...TXT.body, color: PELE.grey, maxWidth: '45%', textAlign: 'right' },
+  crowVNeed: { ...TXT.bodyStrong, color: PELE.warnText },
+  needDot: { width: 8, height: 8, borderRadius: RADIUS.pill, backgroundColor: PELE.warn },
+  needCard: { flexDirection: 'row', gap: SPACE.md, backgroundColor: PELE.warnSoft, borderRadius: RADIUS.lg, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, marginBottom: SPACE.sm },
+  needT: { ...TXT.bodyStrong, color: PELE.ink },
+  needD: { ...TXT.footnote, color: PELE.ink, marginTop: SPACE.xxs },
+  note: { ...TXT.caption, color: PELE.grey, marginTop: SPACE.sm, marginHorizontal: SPACE.xxs },
+  // A saída discreta e as suas duas portas
+  escape: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACE.s, minHeight: 44, marginTop: SPACE.xl },
+  escapeT: { ...TXT.bodyStrong, color: PELE.ink, textDecorationLine: 'underline', textDecorationColor: PELE.affordance },
+  fixT: { ...TXT.title, color: PELE.ink },
+  fixD: { ...TXT.body, color: PELE.grey, marginTop: SPACE.xs, marginBottom: SPACE.xs },
+  fixOpt: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, minHeight: 56, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, borderWidth: 1, borderColor: PELE.line, borderRadius: RADIUS.lg, marginTop: SPACE.sm },
+  fixIc: { width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
+  fixFoot: { ...TXT.caption, color: PELE.grey, marginTop: SPACE.md, marginBottom: SPACE.sm },
   // Limites do acordo: a marca "AE" ao lado do valor e a explicação com as duas fontes (D1).
   aeVal: { flexDirection: 'row', alignItems: 'center', gap: SPACE.s },
   aeTag: { backgroundColor: PELE.ink, borderRadius: RADIUS.xs, paddingHorizontal: SPACE.s, paddingVertical: SPACE.xxs },
   aeTagT: { ...TXT.tag, color: BRAND.signal },
   aeWhy: { ...TXT.footnote, color: PELE.grey, marginTop: SPACE.sm, marginHorizontal: SPACE.xs },
-  rowLaw: { fontSize: 9.5, fontFamily: PELE_FONT.bodyBold, color: PELE.grey, marginTop: 2 },   // § inline da PROVA (metadado)
+  rowLaw: { ...TXT.caption, color: PELE.grey, marginTop: SPACE.xxs },   // § inline da PROVA (metadado)
   rowLawS: { color: BRAND.signal },
-  rowVZ: { fontSize: 10.5, fontFamily: PELE_FONT.bodyBold, color: PELE.grey, fontVariant: ['tabular-nums'], textAlign: 'right', marginTop: 2, letterSpacing: 0.2 },
+  rowVZ: { ...TXT.caption, color: PELE.grey, fontVariant: ['tabular-nums'], textAlign: 'right', marginTop: SPACE.xxs },
 
   fatPill: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
   fatDot: { width: 7, height: 7, borderRadius: 99 },
-  fatTxt: { fontSize: 10, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.3, textTransform: 'uppercase' },
+  fatTxt: { ...TXT.tag },
 
 
   // Hotel da pernoita
@@ -534,11 +706,9 @@ const s = StyleSheet.create({
   hotelAddTxt: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.grey },
 
   // Ações
-  editBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: PELE.ink, borderRadius: 14, paddingVertical: 15, marginTop: 22 },
-  editTxt: { fontSize: 14, fontFamily: PELE_FONT.bodyBold, color: PELE.paper },
-  delBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 12, marginTop: 10 },
-  delTxt: { color: PELE.red, fontSize: 13, fontFamily: PELE_FONT.bodyBold },
+  delBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACE.s, minHeight: 44, marginTop: SPACE.sm },
+  delTxt: { ...TXT.bodyStrong, color: PELE.red },
 
-  muted: { fontSize: 13, color: PELE.grey, lineHeight: 19 },
-  foot: { fontSize: 10.5, fontFamily: PELE_FONT.body, color: PELE.grey, lineHeight: 16, marginTop: 14, paddingHorizontal: 2 },
+  muted: { ...TXT.body, color: PELE.grey },
+  foot: { ...TXT.caption, color: PELE.grey, marginTop: SPACE.md, paddingHorizontal: SPACE.xxs },
 });

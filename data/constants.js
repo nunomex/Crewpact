@@ -145,6 +145,10 @@ export const PELE = {
   // Início v6 (2026-11-03, medidos no esboço design/inicio-v6.html): o cinzento sobre o `soft` dava 4,03
   // e o verde 3,92 → tons de TEXTO próprios para os secundários e as pílulas calmas (5,84 · 5,64).
   greyOnSoft: '#5E5E57', okText: '#0B6E43',
+  // Detalhe do serviço v2 (2026-11-08, medidos no esboço design/detalhe-servico.html): o laranja de TEXTO ("Por indicar", o
+  // selo "Incerto") — 5,51 sobre o warnSoft (o warn vivo falha AA < 18 px) — e o tom das setas e das bordas das opções, 3,74
+  // sobre o papel (componentes tocáveis pedem 3:1; o #A8A69E dava 2,44).
+  warnText: '#9A4508', affordance: '#86847D',
   plate: '#141414',   // a placa do painel de partidas (ao vivo) — de dia é a tinta
 };
 // A PLACA do painel de partidas (Início v6, estados ao vivo): é sempre escura, de dia e de noite, por isso

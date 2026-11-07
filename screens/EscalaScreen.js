@@ -18,7 +18,6 @@ import { sncToRegister } from '../data/disruption';
 import { nightStopStation, hotelMapsUrl } from '../data/hotels';
 import HotelSheet from '../components/HotelSheet';
 import { legZulu, legsZulu } from '../data/zulu';
-import DutyFormSheet from '../components/DutyFormSheet';
 import RosterImportSheet from '../components/RosterImportSheet';
 import CalendarPickerSheet from '../components/CalendarPickerSheet';
 import PrimaryButton from '../components/PrimaryButton';
@@ -42,7 +41,8 @@ const REVEAL = 200;   // ao tocar num dia: quanto da folha do dia tem de ficar �
 // (só fora do mês corrente) · o resumo numa linha. Grelha: número (hoje = círculo de tinta, escolhido = anel)
 // + etiqueta a 11 pt (preta no voo com o destino, clara no resto; lua = pernoita; 2.ª camada = 2 serviços);
 // dia vazio = só o número. Por baixo, o DIA ESCOLHIDO numa folha encaixada (sem Modal): a pega encolhe o mês
-// para a semana. A escala vem do calendário (criar à mão morreu 2026-07-10); editar = correção (toque longo).
+// para a semana. A escala vem do calendário (criar à mão morreu 2026-07-10). Editar também saiu (2026-11-08): o Detalhe do
+// serviço só lê a escala e completa os factos que a lei precisa (design/detalhe-servico.html v2).
 export default function EscalaScreen({ navigation, route }) {
   const { lang, duties, dayLog, user, company, ae: aeNow, aeAt, homeBaseAt, crewAt, postFlightMin, rosterChanges, checkRosterChanges, liveSync, notify, removeDutyService,
     calendarId, setCalendarId, calendarName, setCalendarName, addAeEvents, aeEvents, removeAeEvent, hotels, rosterLog, isPilot } = useContext(AppContext);
@@ -56,9 +56,6 @@ export default function EscalaScreen({ navigation, route }) {
   // Mês visível (1.º dia). Default = mês de hoje.
   const [monthDate, setMonthDate] = useState(() => { const t0 = new Date(); return new Date(t0.getFullYear(), t0.getMonth(), 1); });
   const [selIso, setSelIso] = useState(() => isoDay());   // dia escolhido (a folha por baixo mostra-o)
-  const [dutyDate, setDutyDate] = useState(null); // dia a editar → formulário
-  const [dutyAppend, setDutyAppend] = useState(false);
-  const [dutyEditExtra, setDutyEditExtra] = useState(null); // índice do serviço extra a editar (null = não)
   const [hotelOpen, setHotelOpen] = useState(false);
   const [hotelStation, setHotelStation] = useState(null);
   const [secExpand, setSecExpand] = useState(false); // expandir a lista de setores se for cheia
@@ -93,8 +90,8 @@ export default function EscalaScreen({ navigation, route }) {
   const [gridTip, setGridTip] = useState(false);
   const escBusyRef = useRef(false);
   useEffect(() => {
-    escBusyRef.current = !!(dutyDate || importOpen || hubOpen || hotelOpen || calPickerOpen || monthPickerOpen);
-  }, [dutyDate, importOpen, hubOpen, hotelOpen, calPickerOpen, monthPickerOpen]);
+    escBusyRef.current = !!(importOpen || hubOpen || hotelOpen || calPickerOpen || monthPickerOpen);
+  }, [importOpen, hubOpen, hotelOpen, calPickerOpen, monthPickerOpen]);
   useFocusEffect(useCallback(() => {
     let on = true; let tId = null;
     if (user?.id) {
@@ -342,9 +339,8 @@ export default function EscalaScreen({ navigation, route }) {
     return (
       <TouchableOpacity key={iso} activeOpacity={0.7} style={[s.cell, { width: cellW }, iso === flashIso && s.cellFlash]}
         accessibilityRole="button" accessibilityLabel={a11y} accessibilityState={{ selected: isSel }}
-        accessibilityHint={isDuty ? l('Toque mostra o dia · toque longo edita', 'Tap shows the day · long press edits') : l('Toque mostra o dia', 'Tap shows the day')}
-        onPress={() => openDay(iso)}
-        onLongPress={isDuty ? () => { select(); setDutyDate(iso); } : undefined}>
+        accessibilityHint={l('Toque mostra o dia', 'Tap shows the day')}
+        onPress={() => openDay(iso)}>
         <View style={[s.num, isToday ? s.numToday : isSel ? s.numSel : null]}>
           <Text style={[s.numTxt, isToday && s.numTxtToday]} allowFontScaling={false}>{dd}</Text>
         </View>
@@ -525,11 +521,11 @@ export default function EscalaScreen({ navigation, route }) {
             </View>
           ) : null}
 
-          {/* Serviço EXTRA (idx>0): editar/apagar individual. Apagar SÓ manuais (o calendário é a fonte). */}
+          {/* Serviço EXTRA (idx>0): ver o seu Detalhe (o Completar vive lá); apagar SÓ manuais (o calendário é a fonte). */}
           {multi && idx > 0 ? (
             <View style={s.svcActs}>
-              <TouchableOpacity onPress={() => { setDutyAppend(false); setDutyEditExtra(idx - 1); setDutyDate(sel); }} hitSlop={8} style={s.svcAct} activeOpacity={0.7} accessibilityRole="button">
-                <Icon name="edit" size={14} color={PELE.ink} /><Text style={s.rowLink}>{l('Editar', 'Edit')}</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('DutyDetail', { date: sel, idx })} hitSlop={8} style={s.svcAct} activeOpacity={0.7} accessibilityRole="button">
+                <Icon name="chevron" size={14} color={PELE.ink} /><Text style={s.rowLink}>{l('Ver', 'View')}</Text>
               </TouchableOpacity>
               {prim.source === 'manual' ? (
                 <TouchableOpacity onPress={() => { const iso = sel, ix = idx - 1; Alert.alert(l('Apagar serviço', 'Delete service'), l('Apagar este serviço do dia? Os outros mantêm-se.', 'Delete this service? The others stay.'), [{ text: l('Cancelar', 'Cancel'), style: 'cancel' }, { text: l('Apagar', 'Delete'), style: 'destructive', onPress: () => removeDutyService(iso, ix) }]); }} hitSlop={8} style={s.svcAct} activeOpacity={0.7} accessibilityRole="button">
@@ -750,9 +746,6 @@ export default function EscalaScreen({ navigation, route }) {
         )}
       </View>
 
-      {/* Formulário SÓ para EDITAR-como-correção (toque longo / serviço extra). */}
-      <DutyFormSheet visible={!!dutyDate} onClose={() => { setDutyDate(null); setDutyAppend(false); setDutyEditExtra(null); }} date={dutyDate} append={dutyAppend} editExtra={dutyEditExtra}
-        onSaved={(iso) => { setFlashIso(iso); setTimeout(() => setFlashIso(null), 900); }} />
       <RosterImportSheet visible={importOpen} initialSource={importSource} onConnect={connectCalendar}
         onDone={({ saved, source }) => {
           if (!saved) return;
