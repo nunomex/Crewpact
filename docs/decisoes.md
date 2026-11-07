@@ -85,8 +85,7 @@ gerado sem erros. Nenhum valor em € nem nenhum limite mudou: só o que se lê.
   Simulação. Saíram: `screens/FtlDetailScreen.js` e as rotas; `FTL_SECTIONS`, `FTL_LIMITS`, `FTL_DEFINITIONS`, `FTL_ARTICLES` e
   `ftlSectionTitle` de `data/ftl.js` (as tabelas do motor ficam); as calculadoras desmontadas PsvCalc, LimitsCalc e RestCalc.
   O teste tranca a ausência (se voltar, volta com teste). Guardião do design: a dívida desceu (novo chão gravado).
-  **Por fazer (limpeza à parte):** ~60 chaves `ftl.*` do i18n sem uso (quase todas desde julho, com o FtlHub) — conferir usos
-  dinâmicos antes de apagar.
+  **Limpeza feita (2026-11-07):** 68 chaves `ftl.*` do i18n sem uso apagadas (pt e en; nenhum uso dinâmico; ficam as 78 em uso).
 - **Revisão independente (2.º agente, só com o código e as fontes):** 0 erros, 7 reparos, todos aplicados — a exclusão do
   e-learning da TAP cabine é do RUPT Cl. 38.ª, n.º 5, b) e c) (só e-learning, não a formação presencial); a Prova do standby
   diz a regra da noite (CS FTL.1.225(b)(9)); "greve de uma agência externa ou de um subcontratante" na Escala; repouso mínimo
