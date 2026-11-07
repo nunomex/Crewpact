@@ -113,8 +113,8 @@ Golden primeiro em cada um; `npm test` verde (33 suites); pacote iOS gerado sem 
   TAP cabine) aparece em € da tua categoria, com o intervalo, na Biblioteca → O teu AE (a explicação de cada item).
   4.ª revisão: a partida marcada uns minutos antes da chegada anterior saltava 24 h (PSV 9:00 em vez de 13:00) → folga de 3 h
   na cadeia, e o motor volta ao relógio se os instantes não fizerem sentido; "para ti" só com a categoria do perfil; a cadeia
-  uma vez por serviço na Escala. Fica: com o aeroporto da 1.ª partida sem fuso conhecido, a 1.ª partida fica no dia da
-  apresentação (o PSV não muda; só pesa na noite da mudança de hora).
+  uma vez por serviço na Escala. Aeroporto da 1.ª partida sem fuso conhecido: com a Zulu do calendário, o fuso da apresentação
+  sai da própria perna (`chainReportMs`, ENGINE_VERSION 9). Sem fuso NEM Zulu não há como saber: fica o relógio do telemóvel.
 - **Era para depois (da revisão):** E4 — na TAP pilotos só a BASE mostra o intervalo; Natal, férias, `pendingAnnual` e as
   horas L1/L2 (3 %/6 % do VB) saem no mínimo como certos (conservador, mas devia ser intervalo); reparo 5 — TAP cabine 2026 sem
   o intervalo do KPI de 2 %; reparo 2 — o voo depois da meia-noite reparte-se pelas horas locais de cada aeroporto (longo curso:

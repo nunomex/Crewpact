@@ -122,9 +122,25 @@ const MAX_SECTOR_MS = 22 * 3600000;
 // Folga para trás: uma partida pode estar marcada uns minutos antes da chegada anterior (chegada atrasada, partida com a hora
 // programada) ou antes da apresentação (dado). 3 h nunca deixa entrar o candidato de 24 h antes (4.ª revisão do 8b).
 const BACK_SLACK_MS = 3 * 3600000;
+// O instante da apresentação: no fuso do aeroporto da 1.ª partida; sem ele, mas com a Zulu do calendário, o desvio do relógio sai
+// da própria perna (off local − offZ, entre −12 h e +14 h) — o relógio da escala é o da 1.ª partida. null se não dá.
+export const chainReportMs = (dateISO, legs = [], reportHhmm = null) => {
+  if (!dateISO || !reportHhmm || !Array.isArray(legs) || !legs[0]) return null;
+  let prev = airportUtcMs(dateISO, reportHhmm, legs[0].dep);
+  if (prev == null && legs[0].off && legs[0].offZ) {
+    const a = /^(\d{1,2}):(\d{2})$/.exec(legs[0].off), z = /^(\d{1,2}):(\d{2})$/.exec(legs[0].offZ), r = zMs(dateISO, reportHhmm);
+    if (a && z && r != null) {
+      let d = ((+a[1]) * 60 + (+a[2])) - ((+z[1]) * 60 + (+z[2]));
+      while (d > 14 * 60) d -= 1440;
+      while (d < -12 * 60) d += 1440;
+      prev = r - d * 60000;
+    }
+  }
+  return prev;
+};
 export const legsChainMs = (dateISO, legs = [], reportHhmm = null) => {
   if (!dateISO || !Array.isArray(legs) || !legs.length) return [];
-  let prev = reportHhmm && legs[0] ? airportUtcMs(dateISO, reportHhmm, legs[0].dep) : null;
+  let prev = chainReportMs(dateISO, legs, reportHhmm);
   return legs.map((leg) => {
     if (!leg) return { offMs: null, onMs: null };
     let offMs = null;

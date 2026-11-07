@@ -786,6 +786,10 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('Cadeia: serviço de manhã sem voo depois da meia-noite', eTol.vooNextMin || 0, 0);
   const eTolZ = ftl.dutyToFtlDay({ report_time: '06:00', block_on: '06:30', sectors: 1, flight_minutes: 60, legs: [{ dep: 'LIS', arr: 'OPO', off: '05:30', on: '06:30', offZ: '04:30', onZ: '05:30' }] }, { date: '2026-07-10', base: 'LIS' });
   eq('Cadeia: offZ um pouco antes da apresentação fica no mesmo dia', eTolZ.vooNextMin || 0, 0);
+  // Aeroporto sem fuso conhecido, com a Zulu do calendário: a meia-noite é a do relógio da escala, pela própria perna.
+  // Apresentação 22:00 (UTC−3 → 01:00Z), voo 22:30–02:30 local (01:30Z–05:30Z): 2:30 depois da meia-noite local.
+  const eNoTz = ftl.dutyToFtlDay({ report_time: '22:00', block_on: '02:30', sectors: 1, flight_minutes: 240, legs: [{ dep: 'ZZZ', arr: 'ZZY', off: '22:30', on: '02:30', offZ: '01:30', onZ: '05:30' }] }, { date: '2026-11-10' });
+  eq('Cadeia: sem fuso conhecido, pela offZ → 2:30 de voo depois da meia-noite', eNoTz.vooNextMin, 150);
   // E o voo depois da meia-noite pela cadeia: LIS→GRU só com as horas locais, com a data → 9:30 depois da meia-noite de Lisboa.
   const eGru2 = ftl.dutyToFtlDay({ report_time: '21:15', block_on: '05:30', sectors: 1, flight_minutes: 660, legs: [{ dep: 'LIS', arr: 'GRU', off: '22:30', on: '05:30' }] }, { date: '2026-07-10', base: 'LIS', isPilot: true });
   eqj('Cadeia: LIS→GRU, 9:30 de voo e de serviço depois da meia-noite (sem pós-voo)', [eGru2.vooNextMin, eGru2.servicoNextMin], [570, 570]);

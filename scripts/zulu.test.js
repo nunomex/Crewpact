@@ -55,6 +55,12 @@ eqj('cadeia: 2 pernas pela meia-noite', legsZulu('2026-11-10', [{ dep: 'LIS', ar
 eq('cadeia: noite de 24/10, chegada 04:00 → 04:00Z', legsZulu('2026-10-24', [lgDst], '22:00')[0].on, '04:00');
 // Uma perna sozinha (legZulu): a chegada pelo instante da partida também no leste longínquo.
 eq('legZulu: LIS 21:00 → HKG 18:00 (+1) = 10:00Z', legZulu('2026-11-10', { dep: 'LIS', arr: 'HKG', off: '21:00', on: '18:00' }, 'on'), '10:00');
+// Aeroporto da 1.ª partida SEM fuso conhecido, mas com a Zulu do calendário: o fuso da apresentação tira-se da própria perna
+// (off local − offZ). Apresentação 23:30 num aeroporto a UTC−3 (02:30Z do dia 11), partida 00:30 local = 03:30Z do dia 11
+// (antes ficava no dia 10, 24 h antes).
+const chNoTz = require(path.resolve('data/zulu.js')).legsChainMs('2026-11-10', [{ dep: 'ZZZ', arr: 'ZZY', off: '00:30', on: '02:30', offZ: '03:30', onZ: '05:30' }], '23:30')[0];
+eq('cadeia: sem fuso, pela offZ → partida a 11/11 03:30Z', new Date(chNoTz.offMs).toISOString().slice(0, 16), '2026-11-11T03:30');
+eq('cadeia: sem fuso, a chegada 2 h depois', (chNoTz.onMs - chNoTz.offMs) / 60000, 120);
 // A Zulu autoritativa manda sempre.
 eq('legZulu: onZ do calendário manda', legZulu('2026-10-24', { ...lgDst, onZ: '04:05' }, 'on'), '04:05');
 eq('Fuso LGW', airportTz('LGW'), 'Europe/London');

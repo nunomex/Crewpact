@@ -35,7 +35,7 @@ import { DUTY_WINDOWS, FLIGHT_WINDOWS } from './rules/flightTimeRules';
 import { QUADRO1_DIFF, QUADRO1_ELAPSED, TZ_REST_DIFF, TZ_REST_ELAPSED } from './constants/tables';
 import { parseHhmm, minToHhmm, durationMin } from './utils/time';
 import { acclimLetter } from './rules/acclimatisationRules';
-import { airportOffsetMin, legZulu, legsChainMs, airportUtcMs } from '../data/zulu';
+import { airportOffsetMin, legZulu, legsChainMs, chainReportMs } from '../data/zulu';
 
 // Versão do MOTOR de cálculo FTL. Carimba cada registo diário derivado (dutyToFtlDay/
 // dayFtlFromDuties → dayLog), para que uma futura ERRATA (docs/ERRATA.md §E6) saiba com que
@@ -49,7 +49,8 @@ import { airportOffsetMin, legZulu, legsChainMs, airportUtcMs } from '../data/zu
 // v6 (2026-11-07, revisão do 8b): voo depois da meia-noite pelas horas Zulu; standby (8) e (9); tempo decorrido no longo curso.
 // v7 (2026-11-07): aviso das 18 h acordado sem dupla redução; standby com adiamento sem as 8 h do repartido.
 // v8 (2026-11-07): os instantes das pernas pela cadeia do serviço (legsChainMs) — o tempo decorrido sem o limite das 24 h.
-export const ENGINE_VERSION = 8;
+// v9 (2026-11-07): aeroporto da 1.ª partida sem fuso conhecido → a apresentação pela Zulu do calendário (chainReportMs).
+export const ENGINE_VERSION = 9;
 
 // Uma atividade (manual ou da escala) → PSV + repouso + legalidade num só objeto.
 // input: { state, report, end?, sectors, splitBreakH?, inBase?, postFlightMin? }
@@ -643,7 +644,7 @@ const vooAfterMidnightMin = (duty = {}, startMin, date = null) => {
   // partida), contada desde o instante da apresentação; cada perna conta o que dela cai depois. Sem fusos, o relógio (abaixo).
   if (date && all.length) {
     const rep = `${String(Math.floor(startMin / 60)).padStart(2, '0')}:${String(startMin % 60).padStart(2, '0')}`;
-    const repMs = airportUtcMs(date, rep, all[0].dep), ch = legsChainMs(date, all, rep);
+    const repMs = chainReportMs(date, all, rep), ch = legsChainMs(date, all, rep);
     const op = all.map((l, i) => [l, ch[i]]).filter(([l]) => !l.dh);
     if (repMs != null && op.length && op.every(([, c]) => c && c.offMs != null && c.onMs != null)) {
       const midMs = repMs + midRel * 60000;
