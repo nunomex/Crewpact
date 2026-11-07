@@ -23,6 +23,8 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   com o Natal; limites com DH antes, 2 voos no dia e assistência antes; "o que registaste está válido"; repouso depois de um
   repartido; folga sem nada marcado; disrupção e aviso de RDP (precisa de um atraso real); barra de baixo de dia e de noite;
   iPhone pequeno, letra grande, VoiceOver (2026-11-08 · 8b · A LEI É QUE MANDA · BLOCOS 1–7 · 2026-11-02/04).
+- **Limites TAP cabine:** com um voo entre fusos pela meia-noite, o "agora" do mês/trimestre/ano e o gráfico dos 7 dias pela
+  leitura maior; trimestre com assistência em casa E a hora local — "Entre X e Y" com os dois motivos (2026-11-08 C34).
 - **Escala:** sem toque longo, "Ver" nos serviços extra; conta TAP cabine com um voo dos Açores pela meia-noite; alerta de SNC
   com o texto longo (2026-11-08 · BLOCO 7).
 - **Simulação:** duas noites com uma folga pelo meio; dia livre e dia com serviço; "Quanto falta aos limites?"; resultado em
@@ -47,8 +49,6 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   de situação · `docs/05-verificacao.md`).
 
 ### 2. Acertos de código por fazer
-- **Cálculos:** valor "agora" do voo do mês da cabine TAP só pela hora da partida; máximo da
-  assistência a 100 % no trimestre (2026-11-08 Os 4).
 - **TAP:** dias de estadia perdidos com outro serviço depois do voo no mesmo dia; horas da escala na hora do destino; doença
   (Cl. 20.ª) sem eventos; AC2 por cancelamento tardio; prestação complementar dos pilotos (Cl. 10.ª) (BLOCO 5 · BLOCO 6).
 - **easyJet:** média das variáveis nos subsídios; subsídios no ano da saída; WFLY + DDO no mesmo serviço; formação fora da base
@@ -93,6 +93,24 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
 - Face ID real, PDF por ficheiro, voo ao vivo nativo, compras (RevenueCat), login Apple e Google, widgets, Live Activities, alarme
   (AlarmKit), hotel pelo Apple Maps, passkeys; Android; iPhone pequeno e grande; beta com 2–3 tripulantes no TestFlight;
   declaração de dados nas lojas; Supabase/Resend pagos e limites (e-mails por hora, DMARC).
+---
+
+## 2026-11-08 — C34 da cabine TAP: o "agora" pela leitura maior e o trimestre com as duas dúvidas (Opus 5.5) — o Nuno: "vamos a esses dois"
+
+Os dois reparos que a 2.ª revisão dos "4 da triagem" deixou (R3: o Dia da cabine começa às 0h00 do sítio onde se descansa —
+Cl. 4.ª, n.os 9 e 13 — e num voo entre fusos pela meia-noite há duas leituras, a da partida e a da chegada):
+- **O "agora"** (o valor do período em curso nos Limites): só os 7 dias usavam a leitura maior; o mês, o trimestre e o ano (voo e
+  serviço) ficavam pela hora da partida → agora todos pela MAIOR (no voo, cada ponta do intervalo da meia-noite pela maior), e o
+  gráfico dos 7 dias também, ponto a ponto (o ponto de hoje = o "agora"). Golden: LIS→PDL a 31/03 23:30 → 00:30 locais, março
+  94h25 ou 95h25 → o "agora" 95h25.
+- **O trimestre com assistência em casa** (A-140: a 25 % "nos limites semanais, mensais e anuais", Cl. 17.ª, n.º 11 c); o
+  trimestre não está na lista → 25 % ou 100 %): as duas dúvidas juntam-se no MESMO aviso — o certo é a leitura menor a 25 %, o
+  possível a maior a 100 %; o motivo diz qual decide, ou os dois (`reasons`: hora local + assistência), e o texto diz os dois.
+  Antes, se a leitura a 25 % já era incerta pela hora local, o máximo a 100 % perdia-se. Golden: 59 dias de escritório + 3
+  assistências + o LIS→PDL → de 479h15 a 498h15, incerto pelos dois motivos (dava até 480h15).
+- **Testes:** ae-tap-limits (+4); 34 suites verdes; export iOS ✓. Sem revisão independente (acerto pequeno, com os casos no
+  golden). **Nada visto no iPhone.**
+
 ---
 
 ## 2026-11-08 — O mês da entrada pelos dias (Opus 5.5) — o Nuno: "corrige isso" · "Pedir o dia (Recomendado)"

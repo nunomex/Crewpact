@@ -829,6 +829,28 @@ const fdpOn = (res, id, date) => rule(res, id).findings.find((f) => f.date === d
     const mL = rule(run('cabin', marL), 'C34').findings.find((x) => x.window === 'mes-voo' && x.period === '2026-03');
     eq('R3 cabine: voo PDL→LIS pela meia-noite, março 94h25 (Lisboa) ou 95h25 (PDL) → incerto, hora local', mL && [mL.status, mL.reason], ['incerto', 'hora-local']);
     eq('R3 cabine: o aviso leva o intervalo (94h25 a 95h25)', mL && [mL.value, mL.valueMax], [5665, 5725]);
+    // O "agora" (o valor do período em curso) pela LEITURA MAIOR das duas horas locais, como nos 7 dias (2026-11-08: o do mês e o
+    // do trimestre ficavam pela hora da partida). LIS→PDL a 31/03, LIS 23:30 (22:30Z) → PDL 00:30 (00:30Z): pela hora de Lisboa caem
+    // 30 min em março, pela de Ponta Delgada 1h30 → março 94h25 ou 95h25 → o "agora" mostra 95h25 (5725 min).
+    const marA = Object.fromEntries(days('2026-03-01', 23).map((d) => [d, F('08:00', '08:30', '12:35', 2, 'LIS-OPO-LIS', { flight_minutes: 245 })]));
+    marA['2026-03-31'] = FZ('22:45', [['LIS', 'PDL', '23:30', '00:30', '22:30', '00:30']], { flight_minutes: 120 });
+    const curA = rule(run('cabin', marA, { today: '2026-03-31' }), 'C34').current || [];
+    eq('R3 cabine: o "agora" do voo do mês pela leitura maior (95h25)', (curA.find((c) => c.window === 'mes-voo') || {}).value, 5725);
+    eq('R3 cabine: o "agora" do voo do trimestre pela leitura maior (95h25)', (curA.find((c) => c.window === 'trimestre-voo') || {}).value, 5725);
+    // O gráfico dos 7 dias também pela leitura maior: o ponto de hoje é o "agora" (sem isto, num voo entre fusos não batiam).
+    const rA = rule(run('cabin', marA, { today: '2026-03-31' }), 'C34');
+    const pt = ((rA.series || {}).points || []).find((x) => x.today);
+    eq('R3 cabine: o ponto de hoje no gráfico dos 7 dias = o "agora"', pt && pt.value, (curA.find((c) => c.window === '7d-servico') || {}).value);
+    // A-140 com a hora local: 59 dias de escritório de 8 h (472 h) + 3 assistências em casa de 8 h (6 h a 25 %, 24 h a 100 %) + o
+    // serviço do LIS→PDL (22:45 → 01:00Z com o pós-voo: 1h15 em março pela hora de Lisboa, 2h15 pela de Ponta Delgada). A 25 %:
+    // 479h15 ou 480h15 (incerto pela hora local); a 100 %: 497h15 ou 498h15. O aviso vai de 479h15 a 498h15, com os dois motivos
+    // (antes perdia o máximo a 100 % porque a leitura a 25 % já era incerta).
+    const qL = {};
+    days('2026-01-01', 90).filter((d) => { const w = new Date(d + 'T12:00:00Z').getUTCDay(); return w >= 1 && w <= 5; }).slice(0, 59).forEach((d) => { qL[d] = S('office', '09:00', '17:00'); });
+    days('2026-01-01', 90).filter((d) => new Date(d + 'T12:00:00Z').getUTCDay() === 6).slice(0, 3).forEach((d) => { qL[d] = S('standby_home', '06:00', '14:00'); });
+    qL['2026-03-31'] = marA['2026-03-31'];
+    const fq = rule(run('cabin', qL), 'C34').findings.find((x) => x.window === 'trimestre-servico' && x.period === '2026-T1');
+    eq('A-140 + hora local: o trimestre de 479h15 a 498h15, incerto pelos dois motivos', fq && [fq.status, fq.value, fq.valueMax, fq.reasons || [fq.reason]], ['incerto', 28755, 29895, ['hora-local', 'assistencia-trimestre']]);
     // Pilotos: o Dia é "às zero horas locais da base" (Cl. 6.ª, n.º 9) → só a da base, nunca a dúvida da hora local.
     ok('R3 pilotos: sem a dúvida da hora local', !run('pilot', marL).rules.some((r) => r.findings.some((f) => f.reason === 'hora-local')));
     // E5: nas janelas de 7 dias as duas leituras combinam-se janela a janela — nunca dois avisos iguais sobrepostos.

@@ -147,15 +147,17 @@ export const describe = (id, f, lang = 'pt', crewType = 'pilot') => {
       const lH = f.limitMax != null && f.status === 'excede' ? l(`${H(f.limit)} ou ${H(f.limitMax)}`, `${H(f.limit)} or ${H(f.limitMax)}`) : lH0;
       // Leituras (auditoria, bloco 3): o voo que passa da meia-noite sem as pernas; a frota; a assistência em casa no trimestre.
       if (f.status === 'incerto' && (f.reason === 'meia-noite' || f.reason === 'assistencia-trimestre' || f.reason === 'frota' || f.reason === 'assistencia-planeamento' || f.reason === 'hora-local')) {
+        // Um aviso pode ter duas dúvidas ao mesmo tempo (`reasons`: a hora local e a assistência no trimestre) — dizem-se as duas.
         const range = f.valueMax != null ? l(`Entre ${fmtDur(f.value)} e ${fmtDur(f.valueMax)}`, `Between ${fmtDur(f.value)} and ${fmtDur(f.valueMax)}`) : vH;
         const lim = f.limitMax != null ? l(`${fmtDur(f.limit)} ou ${fmtDur(f.limitMax)}`, `${fmtDur(f.limit)} or ${fmtDur(f.limitMax)}`) : fmtDur(f.limit);
-        const det = {
+        const DET = {
           'meia-noite': l('Um voo passa da meia-noite e a escala não tem as horas de cada perna: não se sabe quanto cai em cada dia.', 'A flight crosses midnight and the roster has no times for each leg: it is not known how much falls on each day.'),
           'assistencia-trimestre': l('A assistência em casa conta a 25 % nos limites semanais, mensais e anuais (Cl. 17.ª, n.º 11 c)); para o trimestre o AE não diz.', 'Home standby counts at 25 % for weekly, monthly and annual limits (Cl. 17, no. 11 c)); the CLA says nothing for the quarter.'),
           frota: l('Sem a frota do mês não se sabe se o limite é 75 h (A320) ou 80 h (A330).', 'Without the month\'s fleet it is not known whether the limit is 75 h (A320) or 80 h (A330).'),
           'assistencia-planeamento': l('Há voos que saíram de assistências: não eram do planeamento mensal publicado (Cl. 15.ª, n.º 3).', 'Some flights came from standbys: they were not in the published monthly roster (Cl. 15, no. 3).'),
           'hora-local': l('O dia começa às 0h00 locais, a hora do local onde estás e descansas (Cl. 4.ª, n.os 9 e 13): num voo entre fusos que passa a meia-noite, a da partida ou a da chegada — o AE não diz qual.', 'The day starts at 00:00 local time, the time where you are and rest (Cl. 4, nos. 9 and 13): on a flight between time zones past midnight, departure or arrival time — the CLA does not say which.'),
-        }[f.reason];
+        };
+        const det = (Array.isArray(f.reasons) && f.reasons.length ? f.reasons : [f.reason]).map((r) => DET[r]).filter(Boolean).join(' ');
         const span = f.from ? l(` De ${day(f.from)} a ${day(f.to)}.`, ` From ${day(f.from)} to ${day(f.to)}.`) : '';
         return { say: l(`${range} ${what} ${where} (máx. ${lim})`, `${range} ${what} ${where} (max. ${lim})`), det: det + span };
       }

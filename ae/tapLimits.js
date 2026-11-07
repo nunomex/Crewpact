@@ -2196,29 +2196,51 @@ export const evaluateTapLimits = ({ crewType = 'cabin', duties = {}, events = []
       return { flyP, duty, duty100 };
     };
     const A = c34With(cabSh('dep')), B = c34With(cabSh('arr'));
-    const { flyP, duty } = A;   // os valores "agora" pela hora do local de partida (onde descansou antes do serviço)
+    // Os valores "agora" e o gráfico dos 7 dias pela leitura MAIOR das duas horas locais (abaixo).
     // A-140: a assistência em casa conta a 25 % "para efeitos dos limites semanais, mensais e anuais" (Cl. 17.ª, n.º 11 c)): o
-    // trimestre não está na lista → também a 100 %; só a 100 % a passar → incerto.
+    // trimestre não está na lista → também a 100 %. As duas dúvidas (a 25 % ou a 100 %; a hora da partida ou a da chegada) juntam-se
+    // no mesmo aviso: o certo é a leitura menor a 25 %, o possível a maior a 100 %; o motivo diz qual das dúvidas decide (as duas,
+    // se for o caso — 2026-11-08: o máximo a 100 % perdia-se quando a leitura a 25 % já era incerta pela hora local).
     const q25 = calendarCheck2(A.duty, B.duty, quarterKey, 28800, 'trimestre-servico');
-    const q100 = calendarCheck2(A.duty100, B.duty100, quarterKey, 28800, 'trimestre-servico');
-    const qInc = q100.exceed.filter((x) => !q25.exceed.some((y) => y.period === x.period))
-      .map((x) => { const s25 = periodSums(A.duty, quarterKey).get(x.period) || 0; return { ...x, value: Math.min(s25, periodSums(B.duty, quarterKey).get(x.period) || 0), valueMax: x.valueMax != null ? x.valueMax : x.value, status: 'incerto', reason: 'assistencia-trimestre' }; });
+    const s25A = periodSums(A.duty, quarterKey), s25B = periodSums(B.duty, quarterKey), s100A = periodSums(A.duty100, quarterKey), s100B = periodSums(B.duty100, quarterKey);
+    const qFind = [];
+    for (const k of [...new Set([...s25A.keys(), ...s25B.keys(), ...s100A.keys(), ...s100B.keys()])].sort()) {
+      const v25 = [s25A.get(k) || 0, s25B.get(k) || 0], v100 = [s100A.get(k) || 0, s100B.get(k) || 0], lim = 28800;
+      const lo = Math.min(...v25), hi = Math.max(...v100);
+      const st = lo > lim ? 'excede' : hi > lim ? 'incerto' : null;
+      if (!st) continue;
+      const straddles = (v) => Math.min(...v) <= lim && Math.max(...v) > lim;
+      const reasons = st !== 'incerto' ? [] : [
+        (straddles(v25) || straddles(v100)) ? 'hora-local' : null,                                              // as duas horas locais discordam
+        (Math.max(...v25) <= lim && Math.max(...v100) > lim) || (Math.min(...v25) <= lim && Math.min(...v100) > lim) ? 'assistencia-trimestre' : null,   // 25 % ou 100 %
+      ].filter(Boolean);
+      const reason = reasons.length === 1 ? reasons[0] : reasons.length ? 'assistencia-trimestre' : null;
+      qFind.push({ window: 'trimestre-servico', period: k, value: lo, ...(hi !== lo ? { valueMax: hi } : {}), limit: lim, status: st, ...(reason ? { reason } : {}), ...(reasons.length > 1 ? { reasons } : {}) });
+    }
     const c34 = [
       calendarCheckU2(A.flyP, B.flyP, monthKey, 5700, 'mes-voo'), calendarCheckU2(A.flyP, B.flyP, quarterKey, 17100, 'trimestre-voo'), calendarCheckU2(A.flyP, B.flyP, yearKey, 54000, 'ano-voo'),
       rollingCheck2(A.duty, B.duty, 7, 3300, d0, d1, '7d-servico'), calendarCheck2(A.duty, B.duty, monthKey, 10800, 'mes-servico'),
-      { exceed: [...q25.exceed, ...qInc], worst: q25.worst }, calendarCheck2(A.duty, B.duty, yearKey, 108000, 'ano-servico'),
+      { exceed: qFind, worst: q25.worst }, calendarCheck2(A.duty, B.duty, yearKey, 108000, 'ano-servico'),
     ];
+    const maxDuty = (keyOf) => Math.max(sumPeriod(A.duty, keyOf, t), sumPeriod(B.duty, keyOf, t));
+    const maxFly = (keyOf) => { const [la, ha] = sumPeriodP(A.flyP, keyOf, t), [lb, hb] = sumPeriodP(B.flyP, keyOf, t); return [Math.max(la, lb), Math.max(ha, hb)]; };
     push('C34', c34.flatMap((c) => c.exceed), c34.map((c) => c.worst).filter(Boolean), {
       current: [
-        { window: '7d-servico', value: Math.max(sumWin(A.duty, t, 7), sumWin(B.duty, t, 7)), limit: 3300 },   // a leitura maior (as duas horas locais)
-        { window: 'mes-servico', period: periodOf(monthKey, t), value: sumPeriod(duty, monthKey, t), limit: 10800 },
-        curP('mes-voo', sumPeriodP(flyP, monthKey, t), 5700, { period: periodOf(monthKey, t) }),
-        curP('trimestre-voo', sumPeriodP(flyP, quarterKey, t), 17100, { period: periodOf(quarterKey, t) }),
-        { window: 'trimestre-servico', period: periodOf(quarterKey, t), value: sumPeriod(duty, quarterKey, t), limit: 28800 },
-        curP('ano-voo', sumPeriodP(flyP, yearKey, t), 54000, { period: periodOf(yearKey, t) }),
-        { window: 'ano-servico', period: periodOf(yearKey, t), value: sumPeriod(duty, yearKey, t), limit: 108000 },
+        // O "agora" de cada janela pela LEITURA MAIOR das duas horas locais (o lado seguro, como nos avisos); no voo, cada ponta do
+        // intervalo da meia-noite pela maior.
+        { window: '7d-servico', value: Math.max(sumWin(A.duty, t, 7), sumWin(B.duty, t, 7)), limit: 3300 },
+        { window: 'mes-servico', period: periodOf(monthKey, t), value: maxDuty(monthKey), limit: 10800 },
+        curP('mes-voo', maxFly(monthKey), 5700, { period: periodOf(monthKey, t) }),
+        curP('trimestre-voo', maxFly(quarterKey), 17100, { period: periodOf(quarterKey, t) }),
+        { window: 'trimestre-servico', period: periodOf(quarterKey, t), value: maxDuty(quarterKey), limit: 28800 },
+        curP('ano-voo', maxFly(yearKey), 54000, { period: periodOf(yearKey, t) }),
+        { window: 'ano-servico', period: periodOf(yearKey, t), value: maxDuty(yearKey), limit: 108000 },
       ],
-      series: monthSeries(duty, 7, t, 3300, '7d-servico'),
+      // O gráfico dos 7 dias pela leitura maior, ponto a ponto (o ponto de hoje é o "agora").
+      series: (() => {
+        const sa = monthSeries(A.duty, 7, t, 3300, '7d-servico'), sb = monthSeries(B.duty, 7, t, 3300, '7d-servico');
+        return { ...sa, points: sa.points.map((p, i) => ({ ...p, value: Math.max(p.value, sb.points[i] ? sb.points[i].value : 0) })) };
+      })(),
     });
     // cabine: a hora do local de partida e a do local de chegada (Cl. 4.ª, n.º 13); sem UTC, a da base
     const cabClocks = (s) => (s.bo == null || !isFlightLike(s.kind) ? [0] : [...new Set([shiftOf(s, s.airports[0], s.start), shiftOf(s, lastAp(s), s.start)].map((x) => (x == null ? 0 : x)))]);
