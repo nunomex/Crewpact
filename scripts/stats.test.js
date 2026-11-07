@@ -176,18 +176,31 @@ eq('aeAt maio/2026 = TAP cabine', aeAtL1('2026-05').AE_ID, 'tap-snpvac');
 const NOW_DEC = new Date('2026-12-15T12:00:00');
 // A data de entrada é a da TAP (maio de 2026): o subsídio de Natal da TAP em dezembro é proporcional (Cl. 17.ª, n.º 2: "No ano
 // de admissão (...) na proporção do tempo de trabalho prestado") → 1 627,02 × 8/12 = 1 084,68 € (bloco 6).
-const ySplit = yearStats({}, { year: 2026, aeAt: aeAtL1, crewHistory: L1.crewHistory, now: NOW_DEC, serviceStart: '2026-05-01' });
+// Com o DIA dado (entrou a 1 de maio): o mês da entrada inteiro.
+const ySplit = yearStats({}, { year: 2026, aeAt: aeAtL1, crewHistory: L1.crewHistory, now: NOW_DEC, serviceStart: '2026-05-01', startExact: true });
 eq('ano 2026 com mudança: base = 4×1346,57 + 8×1627,02', ySplit.aeYtd.base, 18402.44);
 eq('ano 2026 com mudança: abono só nos meses easyJet (4×78,55)', ySplit.aeYtd.cash, 314.2);
 eq('ano 2026 com mudança: subsídio de Natal da TAP, proporcional', ySplit.aeYtd.annual, 1084.68);
 eq('ano 2026 com mudança: total', ySplit.aeYtd.total, 19801.32);
+// Sem o dia (a data guarda-se ao mês): maio vai de 1 dia (1 627,02 ÷ 30 = 54,23) ao mês todo, e o Natal de 7 meses e 1/31 a 8/12
+// → o certo: base 4×1346,57 + 7×1627,02 + 54,23 = 16 829,65 €; Natal 1 627,02 × (7 + 1/31) ÷ 12 = 953,47 €; o ano fica incerto.
+const yU = yearStats({}, { year: 2026, aeAt: aeAtL1, crewHistory: L1.crewHistory, now: NOW_DEC, serviceStart: '2026-05-01' });
+eq('ano 2026 com mudança, dia por saber: base certa', yU.aeYtd.base, 16829.65);
+eq('ano 2026 com mudança, dia por saber: Natal certo', yU.aeYtd.annual, 953.47);
+eq('ano 2026 com mudança, dia por saber: incerto pelo dia da entrada', [yU.aeYtd.uncertain, (yU.aeYtd.uncertainReasons || []).includes('admission')], [true, true]);
 // Sem a linha do tempo (o comportamento antigo): o ano inteiro calculado com a TAP.
 const yOld = yearStats({}, { year: 2026, ae: getAe('tap', 'cabin'), crewHistory: [{ category: 'CAB2', contract: '12/12', from: '2026-05' }], now: NOW_DEC });
 eq('sem linha do tempo: 12×1627,02 (o erro que a linha corrige)', yOld.aeYtd.base, 19524.24);
 // O Ano bate com a soma dos Meses (cada mês com o SEU acordo).
 let sumMonths = 0;
-for (let mo = 1; mo <= 12; mo++) { const ym = `2026-${String(mo).padStart(2, '0')}`; sumMonths += monthStats({}, { ym, ae: aeAtL1(ym), crewHistory: L1.crewHistory, now: NOW_DEC, serviceStart: '2026-05-01' }).aeMonth.total; }
+let sumMonthsU = 0;
+for (let mo = 1; mo <= 12; mo++) {
+  const ym = `2026-${String(mo).padStart(2, '0')}`;
+  sumMonths += monthStats({}, { ym, ae: aeAtL1(ym), crewHistory: L1.crewHistory, now: NOW_DEC, serviceStart: '2026-05-01', startExact: true }).aeMonth.total;
+  sumMonthsU += monthStats({}, { ym, ae: aeAtL1(ym), crewHistory: L1.crewHistory, now: NOW_DEC, serviceStart: '2026-05-01' }).aeMonth.total;
+}
 eq('ano = soma dos meses (com mudança de companhia)', +sumMonths.toFixed(2), ySplit.aeYtd.total);
+eq('ano = soma dos meses (com mudança, dia da entrada por saber)', +sumMonthsU.toFixed(2), yU.aeYtd.total);
 // Mudar para uma companhia SEM AE modelado: os meses novos ficam sem dinheiro, os antigos mantêm-se.
 const L2 = startEmployment(L0, { company: 'hifly', crewType: 'cabin', category: null, base: 'LIS', from: '2026-05' });
 const aeAtL2 = (ym) => { const r = resolveCompany(L2.companyHistory, ym); return getAe(r.company, r.crewType); };

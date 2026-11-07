@@ -66,7 +66,7 @@ function MonthBar({ ratio, color, delay }) {
 // Estatísticas (PELE) — dial adaptativo no topo (Ganhos com AE · Segurança sem AE) + cards que
 // abrem folhas de detalhe. Re-skin: TODOS os cálculos (data/stats.js · ftl · AE) ficam intactos.
 export default function StatsScreen({ navigation }) {
-  const { lang, duties, dayLog, ae: aeNow, aeAt, crewAt, companyHistory, companyAt, airlines, homeBaseAt, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, company, aeEvents, vacationDaysYear, user, isPilot, base, rosterLog, serviceStart, largada, lifestyle } = useContext(AppContext);
+  const { lang, duties, dayLog, ae: aeNow, aeAt, crewAt, companyHistory, companyAt, airlines, homeBaseAt, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, company, aeEvents, vacationDaysYear, user, isPilot, base, rosterLog, serviceStart, serviceStartExact, largada, lifestyle } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const tabSpace = useTabBarSpace();
@@ -124,8 +124,8 @@ export default function StatsScreen({ navigation }) {
   })();
   const st = useMemo(
     () => isYear
-      ? yearStats(duties, { year, ae, aeAt, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt, serviceStart, largada, lifestyle })
-      : monthStats(duties, { ym, ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt, serviceStart, largada, lifestyle }),
+      ? yearStats(duties, { year, ae, aeAt, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt, serviceStart, startExact: serviceStartExact, largada, lifestyle })
+      : monthStats(duties, { ym, ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt, serviceStart, startExact: serviceStartExact, largada, lifestyle }),
     [isYear, duties, year, ym, ae, aeNow, companyHistory, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, serviceStart, largada, lifestyle], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
@@ -193,7 +193,8 @@ export default function StatsScreen({ navigation }) {
   // O motivo vem dos próprios meses (stats.js, `uncertainReasons`), não da companhia atual (um ano pode ter duas).
   const reasons = isYear ? (A.uncertainReasons || []) : (A.baseRange ? [A.baseRange.reason || 'activity'] : []);
   const whyTap = l('atualização do vencimento base por confirmar', 'base pay update not confirmed'), whyAct = l('faltam as datas de atividade', 'activity dates missing');
-  const uncWhy = [reasons.some((r) => /^tap/.test(r)) ? whyTap : null, reasons.some((r) => !/^tap/.test(r)) ? whyAct : null].filter(Boolean).join('; ') || whyAct;
+  const whyAdm = l('falta o dia em que entraste', 'the day you joined is missing');
+  const uncWhy = [reasons.some((r) => /^tap/.test(r)) ? whyTap : null, reasons.includes('admission') ? whyAdm : null, reasons.some((r) => !/^tap/.test(r) && r !== 'admission') ? whyAct : null].filter(Boolean).join('; ') || whyAct;
   const baseUnc = !isYear && A.baseRange ? ` · ${l('incerto', 'uncertain')}: ${fmtEur0(A.baseRange.min)} ${l('a', 'to')} ${fmtEur0(A.baseRange.max)} (${uncWhy})` : (isYear && A.uncertain ? ` · ${l('incerto', 'uncertain')} (${uncWhy})` : '');
   const baseSub = (isYear ? `${l('salário base acumulado', 'accrued base salary')} · ${st.aeYtd?.monthsElapsed || 0} ${l('meses', 'months')}` : `${l('salário base', 'base salary')} · ${monthName}`) + baseUnc;
   // Mês sem tabela do acordo (antes da 1.ª tabela publicada, ou antes da admissão): não há € — diz-se porquê (bloco 5).
@@ -227,9 +228,10 @@ export default function StatsScreen({ navigation }) {
         : l(' · Natal proporcional: baixa de mais de um mês (CT arts. 263.º e 296.º)', ' · Christmas pro rata: sick leave over a month (Labour Code arts. 263 and 296)');
     })() : '')
       + (() => { const up = (A.annualItems || []).reduce((a, it) => a + (it.max > it.eur ? it.max - it.eur : 0), 0); if (!(up > 0)) return ''; const its = (A.annualItems || []).filter((it) => it.max > it.eur);
-        const raise = its.some((it) => it.tapRaise), other = its.some((it) => !it.tapRaise || it.suspension);
-        const why = raise && other ? l('a leitura do acordo e a atualização do vencimento base, por confirmar', 'how the agreement is read and the base pay update, not yet confirmed')
-          : raise ? l('a atualização do vencimento base, por confirmar', 'the base pay update, not yet confirmed') : l('a leitura do acordo', 'how the agreement is read');
+        // O que pode subir: a leitura do acordo (suspensão…), a atualização do VB da TAP e o dia em que entraste (ano da admissão).
+        const raise = its.some((it) => it.tapRaise), adm = its.some((it) => it.admission), other = its.some((it) => it.suspension || (!it.tapRaise && !it.admission));
+        const why = [other ? l('a leitura do acordo', 'how the agreement is read') : null, raise ? l('a atualização do vencimento base, por confirmar', 'the base pay update, not yet confirmed') : null,
+          adm ? l('o dia em que entraste', 'the day you joined') : null].filter(Boolean).join(l(' e ', ' and '));
         return l(` · até mais ${fmtEur0(up)} conforme ${why}`, ` · up to ${fmtEur0(up)} more depending on ${why}`); })() },
     (extrasSum !== 0) && { k: 'extras', nm: l('Extras', 'Extras'), ic: 'plus', val: extrasSum, sub: l('escala (papéis · OFC) + eventos (DDO · doença; nos dias de baixa a base sai, CT art. 255.º)', 'roster (roles · OFC) + events (DDO · sick; on sick days the base is not paid, Labour Code art. 255)') + ((!isYear && A.extrasMax > (A.extras || 0)) ? l(` · e-learning: até mais ${fmtEur0(A.extrasMax - (A.extras || 0))} (o acordo não diz se as 24 h contam as 8 primeiras)`, ` · e-learning: up to ${fmtEur0(A.extrasMax - (A.extras || 0))} more (the agreement does not say if the 24 h include the first 8)`) : '') },
   ].filter(Boolean);

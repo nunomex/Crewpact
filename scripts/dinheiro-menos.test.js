@@ -49,6 +49,7 @@ const eq = (name, got, want) => {
   const g = JSON.stringify(got), w = JSON.stringify(want);
   if (g === w) pass++; else { fail++; fails.push(`  ✗ ${name}\n      lei:   ${w}\n      motor: ${g}`); }
 };
+const eqj = eq;   // aqui o eq já compara por JSON
 const has = (name, txt, phrase) => { if (txt.includes(flat(phrase))) pass++; else { fail++; fails.push(`  ✗ ${name}: frase não encontrada na fonte → "${phrase}"`); } };
 const item = (list, id) => (list || []).find((i) => i.id === id) || null;
 const eur = (list, id) => { const i = item(list, id); return i ? i.eur : null; };
@@ -81,15 +82,34 @@ has('Cl. 48.ª/9 (9/3: média dos 12 meses)', CAB, 'Os subsídios de férias e d
   eq('cabine FA 9/3 nov-2026: Natal pela média', eur(cab.annualItems('FA', { ym: '2026-11', contract: '9/3', fullShare: 1 }), 'natal'), 1094.09);
   // FA1 2026 = salário mínimo 920 € × 14 / 14.
   eq('cabine FA1 nov-2026: Natal', eur(cab.annualItems('FA1', { ym: '2026-11' }), 'natal'), 920);
-  // Ano da contratação (março de 2026): Natal 10/12 = 1 122,14 €; férias em junho pelos meses até junho (4/12 = 448,86 €)
-  // e o resto (julho a dezembro, 6/12 = 673,29 €) em janeiro de 2027.
+  // Ano da contratação (março de 2026): "proporcionalmente nos anos de contratação" (Cl. 51.ª/1) — os meses desde o da entrada, o
+  // da entrada pela parte trabalhada. A data guarda-se ao mês: SEM o dia, o mês da entrada vai de 1 dia (entrou a 31) ao mês todo
+  // (entrou a 1) → incerto: o certo e o máximo (o máximo é o que a app dava). Com o dia (16 de março: 16 dos 31 dias), um valor.
+  const sub = 18852 / 14, rr = (x) => Math.round(x * 100) / 100;
   const ss = '2026-03-01';
-  eq('cabine admissão mar-2026: Natal 10/12', eur(cab.annualItems('FA', { ym: '2026-11', serviceStart: ss }), 'natal'), 1122.14);
-  eq('cabine admissão mar-2026: férias em junho 4/12', eur(cab.annualItems('FA', { ym: '2026-06', serviceStart: ss }), 'ferias'), 448.86);
-  eq('cabine admissão mar-2026: o resto em janeiro 6/12', eur(cab.annualItems('FA', { ym: '2027-01', serviceStart: ss }), 'ferias'), 673.29);
-  // Admissão em setembro de 2026: junho nada; janeiro de 2027 = setembro a dezembro (4/12 = 448,86 €).
+  const nat = item(cab.annualItems('FA', { ym: '2026-11', serviceStart: ss }), 'natal');
+  eqj('cabine admissão mar-2026, dia por saber: Natal de 9 meses e 1/31 a 10 meses', [nat.eur, nat.max, !!nat.admission], [rr(sub * (9 + 1 / 31) / 12), 1122.14, true]);
+  const nat16 = item(cab.annualItems('FA', { ym: '2026-11', serviceStart: '2026-03-16', startExact: true }), 'natal');
+  eqj('cabine admissão 16-mar-2026: Natal de 9 meses e 16/31', [nat16.eur, nat16.max || null], [rr(sub * (9 + 16 / 31) / 12), null]);
+  eq('cabine admissão 1-mar-2026 (dia dado): Natal 10/12', eur(cab.annualItems('FA', { ym: '2026-11', serviceStart: ss, startExact: true }), 'natal'), 1122.14);
+  const fj = item(cab.annualItems('FA', { ym: '2026-06', serviceStart: ss }), 'ferias');
+  eqj('cabine admissão mar-2026: férias em junho de 3 meses e 1/31 a 4/12', [fj.eur, fj.max], [rr(sub * (3 + 1 / 31) / 12), 448.86]);
+  eq('cabine admissão mar-2026: o resto em janeiro 6/12 (julho a dezembro, sem o mês da entrada)', eur(cab.annualItems('FA', { ym: '2027-01', serviceStart: ss }), 'ferias'), 673.29);
+  // Admissão em setembro de 2026: junho nada; janeiro de 2027 = setembro (parte) a dezembro.
   eq('cabine admissão set-2026: junho sem férias', item(cab.annualItems('FA', { ym: '2026-06', serviceStart: '2026-09-01' }), 'ferias'), null);
-  eq('cabine admissão set-2026: janeiro 4/12', eur(cab.annualItems('FA', { ym: '2027-01', serviceStart: '2026-09-01' }), 'ferias'), 448.86);
+  const fs9 = item(cab.annualItems('FA', { ym: '2027-01', serviceStart: '2026-09-01' }), 'ferias');
+  eqj('cabine admissão set-2026: janeiro de 3 meses e 1/30 a 4/12', [fs9.eur, fs9.max], [rr(sub * (3 + 1 / 30) / 12), 448.86]);
+  // O VENCIMENTO do mês da entrada: a "remuneração base diária" (base ÷ 30, a convenção dos acordos — a mesma do complemento de
+  // doença, Cl. 61.ª) × os dias desde a entrada, nunca mais do que o mês; o mês todo se entrou no dia 1. Antes: o mês inteiro.
+  const b = cab.monthlyBase('FA', { ym: '2026-03' });
+  const m0 = monthlyAe({}, 'FA', '12/12', cab, { ym: '2026-03' });
+  const m16 = monthlyAe({}, 'FA', '12/12', cab, { ym: '2026-03', serviceStart: '2026-03-16', startExact: true });
+  eqj('cabine entrada a 16-mar: base de 16 dias (÷ 30), sem incerto', [m16.base, m16.baseRange || null, m16.total], [rr(b * 16 / 30), null, rr(m0.total - b + rr(b * 16 / 30))]);
+  const mU = monthlyAe({}, 'FA', '12/12', cab, { ym: '2026-03', serviceStart: ss });
+  eqj('cabine entrada em março, dia por saber: base de 1 dia ao mês todo', [mU.base, mU.baseRange], [rr(b / 30), { min: rr(b / 30), max: b, reason: 'admission' }]);
+  eq('cabine entrada a 1-fev (dia dado): o mês todo', monthlyAe({}, 'FA', '12/12', cab, { ym: '2026-02', serviceStart: '2026-02-01', startExact: true }).base, cab.monthlyBase('FA', { ym: '2026-02' }));
+  eq('cabine entrada a 2-fev: 27 dias ÷ 30', monthlyAe({}, 'FA', '12/12', cab, { ym: '2026-02', serviceStart: '2026-02-02', startExact: true }).base, rr(cab.monthlyBase('FA', { ym: '2026-02' }) * 27 / 30));
+  eq('cabine depois do mês da entrada: o mês todo', monthlyAe({}, 'FA', '12/12', cab, { ym: '2026-04', serviceStart: ss }).base, cab.monthlyBase('FA', { ym: '2026-04' }));
   eq('cabine antes da admissão: nada', cab.annualItems('FA', { ym: '2026-06', serviceStart: '2026-07-01' }).length, 0);
   eq('cabine admitido antes: janeiro sem resto', cab.annualItems('FA', { ym: '2027-01', serviceStart: '2020-01-01' }).length, 0);
 }
@@ -110,11 +130,16 @@ has('Art. 36.º/2 (diferença em dezembro)', PIL, 'a diferença será calculada 
   eq('piloto FO nov-2024: Natal', eur(pil.annualItems('FO', { ym: '2024-11' }), 'natal'), 3410.71);
   eq('piloto FO PPY 8/12 nov-2024: Natal', eur(pil.annualItems('FO', { ym: '2024-11', contract: 'PPY 8/12' }), 'natal'), 2273.81);
   // Ano da contratação (maio de 2024): 8/12 nos dois. Contratado em setembro: Natal 4/12 = 1 136,90 €; férias 4/12 em dezembro.
-  eq('piloto admissão mai-2024: férias 8/12', eur(pil.annualItems('FO', { ym: '2024-06', serviceStart: '2024-05-01' }), 'ferias'), 2273.81);
-  eq('piloto admissão mai-2024: Natal 8/12', eur(pil.annualItems('FO', { ym: '2024-11', serviceStart: '2024-05-01' }), 'natal'), 2273.81);
+  // Sem o dia da entrada: o mês da entrada vai de 1 dia ao mês todo (o máximo é o que a app dava); com o dia, um valor.
+  const subFO = 47750 / 14, r2t = (x) => Math.round(x * 100) / 100;
+  const pf = item(pil.annualItems('FO', { ym: '2024-06', serviceStart: '2024-05-01' }), 'ferias');
+  eqj('piloto admissão mai-2024: férias de 7 meses e 1/31 a 8/12', [pf.eur, pf.max], [r2t(subFO * (7 + 1 / 31) / 12), 2273.81]);
+  const pn = item(pil.annualItems('FO', { ym: '2024-11', serviceStart: '2024-05-01' }), 'natal');
+  eqj('piloto admissão mai-2024: Natal de 7 meses e 1/31 a 8/12', [pn.eur, pn.max, !!pn.admission], [r2t(subFO * (7 + 1 / 31) / 12), 2273.81, true]);
+  eq('piloto admissão 20-mai-2024: Natal de 7 meses e 12/31', eur(pil.annualItems('FO', { ym: '2024-11', serviceStart: '2024-05-20', startExact: true }), 'natal'), r2t(subFO * (7 + 12 / 31) / 12));
   eq('piloto admissão set-2024: junho nada', item(pil.annualItems('FO', { ym: '2024-06', serviceStart: '2024-09-01' }), 'ferias'), null);
-  eq('piloto admissão set-2024: Natal 4/12', eur(pil.annualItems('FO', { ym: '2024-11', serviceStart: '2024-09-01' }), 'natal'), 1136.9);
-  eq('piloto admissão set-2024: férias 4/12 em dezembro', eur(pil.annualItems('FO', { ym: '2024-12', serviceStart: '2024-09-01' }), 'ferias'), 1136.9);
+  eqj('piloto admissão set-2024: Natal de 3 meses e 1/30 a 4/12', [eur(pil.annualItems('FO', { ym: '2024-11', serviceStart: '2024-09-01' }), 'natal'), item(pil.annualItems('FO', { ym: '2024-11', serviceStart: '2024-09-01' }), 'natal').max], [r2t(subFO * (3 + 1 / 30) / 12), 1136.9]);
+  eq('piloto admissão 1-set-2024 (dia dado): férias 4/12 em dezembro', eur(pil.annualItems('FO', { ym: '2024-12', serviceStart: '2024-09-01', startExact: true }), 'ferias'), 1136.9);
   // O ano soma 14/14: FO 12/12 em 2024 (janeiro ainda é a tabela de setembro de 2023; fevereiro em diante, a de 2024).
   // jan: 46 000/14 = 3 285,71 · fev a dez: 11 × 3 410,71 = 37 517,81 · subsídios: 2 × 3 410,71 = 6 821,42 · e a prestação
   // complementar de abril (Art. 45.º; Anexo I.8 "A partir de 1 de abril de 2024": FO 1 000,00 €) → 48 624,94 €.
@@ -152,8 +177,13 @@ has('RTTP Cl. 7.ª (83,3 %)', TAPC, 'a) 10 meses por ano - 83,3 %');
   eq('TAP CAB3 férias sem férias registadas: mês por saber', item(tapC.annualItems('CAB3', { ym: '2026-07', ...ctx, events: [] }), 'ferias'), null);
   // 2024 (Cl. 39.ª/2-3): um mês de vencimento fixo (VB 1 871,05 + VS 8 × 18,7105 = 149,68) + 675 × 10/12 = 562,50 → 2 583,23 €.
   eq('TAP CAB3 férias 2024 (transitória)', eur(tapC.annualItems('CAB3', { ym: '2024-07', ...ctx, events: days('2024-08-05', 2, 'vacDays') }), 'ferias'), 2583.23);
-  // Ano da admissão (março de 2026): Natal × 10/12 de 2 020,73 (sem anuidades) = 1 683,94 €.
-  eq('TAP CAB3 admissão mar-2026: Natal 10/12', eur(tapC.annualItems('CAB3', { ym: '2026-12', serviceStart: '2026-03-01', history: H }), 'natal'), 1683.94);
+  // Ano da admissão (março de 2026): "na proporção do tempo de serviço" (RRRGS Cl. 17.ª) — Natal × 10/12 de 2 020,73 (sem
+  // anuidades) = 1 683,94 € se entrou no dia 1; sem o dia, o certo é de 9 meses e 1/31.
+  eq('TAP CAB3 admissão 1-mar-2026 (dia dado): Natal 10/12', eur(tapC.annualItems('CAB3', { ym: '2026-12', serviceStart: '2026-03-01', startExact: true, history: H }), 'natal'), 1683.94);
+  const tn = item(tapC.annualItems('CAB3', { ym: '2026-12', serviceStart: '2026-03-01', history: H }), 'natal');
+  eqj('TAP CAB3 admissão mar-2026, dia por saber: o certo de 9 meses e 1/31, com a marca', [tn.eur, !!tn.admission, tn.max >= 1683.94], [Math.round(2020.73 * (9 + 1 / 31) / 12 * 100) / 100, true, true]);
+  const tm = monthlyAe({}, 'CAB3', '12/12', tapC, { ym: '2026-03', serviceStart: '2026-03-01', history: H });
+  eq('TAP CAB3 mês da entrada, dia por saber: base incerta pelo dia', tm.baseRange && tm.baseRange.reason, 'admission');
   // Tempo parcial (RTTP Cl. 7.ª): 10 meses = 83,3 % → 2 020,73 × 0,833 = 1 683,27 €.
   eq('TAP RTTP 10 meses: vencimento', tapC.monthlyBase('CAB3', { ym: '2026-02', contract: 'TP 10', serviceStart: '2026-01-01', history: H }), 1683.27);
   eq('TAP RTTP contratos', tapC.CONTRACTS, ['12/12', 'TP 10', 'TP 9', 'TP 8', 'TP 7', 'TP 6']);
@@ -190,9 +220,12 @@ has('TAP pilotos Cl. 8.ª/1 (Natal = RB)', TAPP, 'O piloto tem direito, anualmen
   eq('TAP OP3 dez-2024: Natal = RB', eur(tapP.annualItems('OP3', { ym: '2024-12', ...ctx }), 'natal'), 7199.5);
   eq('TAP OP3 dez-2024: total do mês', monthlyAe({}, 'OP3', '12/12', tapP, { ym: '2024-12', ...ctx }).total, 14399);
   eq('TAP OP3 férias a 2-set-2024 → agosto', eur(tapP.annualItems('OP3', { ym: '2024-08', ...ctx, events: days('2024-09-02', 3, 'vacDays') }), 'ferias'), 7199.5);
-  // OP1 admitido em março de 2024: sem anuidades nem senioridade no ano; Natal 10/12 de 4 420 = 3 683,33 €.
+  // OP1 admitido em março de 2024: sem anuidades nem senioridade no ano; Natal "na proporção do tempo de trabalho prestado"
+  // (Cl. 8.ª, n.º 2): 10/12 de 4 420 = 3 683,33 € se entrou no dia 1; sem o dia, o certo é de 9 meses e 1/31 (até 3 683,33 €).
   eq('TAP OP1 1.º ano: RB = VB', tapP.monthlyBase('OP1', { ym: '2024-12', serviceStart: '2024-03-01' }), 4420);
-  eq('TAP OP1 1.º ano: Natal 10/12', eur(tapP.annualItems('OP1', { ym: '2024-12', serviceStart: '2024-03-01' }), 'natal'), 3683.33);
+  eq('TAP OP1 1.º ano, entrada a 1 de março (dia dado): Natal 10/12', eur(tapP.annualItems('OP1', { ym: '2024-12', serviceStart: '2024-03-01', startExact: true }), 'natal'), 3683.33);
+  const op1 = item(tapP.annualItems('OP1', { ym: '2024-12', serviceStart: '2024-03-01' }), 'natal');
+  eqj('TAP OP1 1.º ano, dia por saber: o certo de 9 meses e 1/31, o máximo pelo menos 10/12', [op1.eur, op1.max >= 3683.33, !!op1.admission], [Math.round(4420 * (9 + 1 / 31) / 12 * 100) / 100, true, true]);
   // CTE desde janeiro de 1985: 38 anuidades → máximo 32 (VE 5 200,00); 39 anos de VS (4 753,13) → RB 18 078,13 €.
   eq('TAP CTE: VE no máximo de 32 anuidades', tapP.seniority('CTE', { ym: '2024-07', serviceStart: '1985-01-01' }).anuidades, 32);
   eq('TAP CTE jul-2024: RB', tapP.monthlyBase('CTE', { ym: '2024-07', serviceStart: '1985-01-01' }), 18078.13);
@@ -483,7 +516,7 @@ has('Art. 44.º (posicionamento com paragens noturnas)', PIL, 'O pagamento de po
   // As estatísticas contam as mesmas noites.
   eq('estatísticas: 2 pernoitas', monthStats(st, { ym: '2026-03' }).nightStops, 2);
 }
-
+
 // Suspensão do contrato na cabine easyJet: o acordo diz "superior a 30 (trinta) dias" (Cl. 86.ª, n.º 2), mais específico do que
 // o "mais de um mês" do Código do Trabalho (art. 296.º, que continua para os outros acordos). Baixa de 1 a 31 de janeiro de 2025
 // (31 dias) → suspende; de 1 de fevereiro a 2 de março (30 dias) → não suspende.

@@ -46,13 +46,14 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   de situação · `docs/05-verificacao.md`).
 
 ### 2. Acertos de código por fazer
-- **Cálculos:** mês da admissão a meio do mês (o `serviceStart` guarda só o mês) (BLOCO 5 · 8); valor "agora" do voo do mês da cabine TAP só pela hora da partida; máximo da
+- **Cálculos:** valor "agora" do voo do mês da cabine TAP só pela hora da partida; máximo da
   assistência a 100 % no trimestre (2026-11-08 Os 4).
 - **TAP:** dias de estadia perdidos com outro serviço depois do voo no mesmo dia; horas da escala na hora do destino; doença
   (Cl. 20.ª) sem eventos; AC2 por cancelamento tardio; prestação complementar dos pilotos (Cl. 10.ª) (BLOCO 5 · BLOCO 6).
 - **easyJet:** média das variáveis nos subsídios; subsídios no ano da saída; WFLY + DDO no mesmo serviço; formação fora da base
   da cabine na importação (BLOCO 6).
-- **Campos por fazer (com Mobbin):** formação inicial (A-218); subsídio de idioma; exercício efetivo do VE (TAP); datas de
+- **Campos por fazer (com Mobbin):** **o DIA da entrada** (Perfil "Na … desde" e onboarding; o motor já o usa —
+  `serviceStartExact`; referências mostradas a 2026-11-08, por escolher); formação inicial (A-218); subsídio de idioma; exercício efetivo do VE (TAP); datas de
   atividade dos 9/3 e sazonais; reserva na configuração para o pós-voo da Ryanair/Hi Fly e para os números do Manual de Operações
   se os sindicatos não os derem (BLOCO 5 · 6 · 2026-11-08 Manual de Operações).
 - **Importação e formulário:** setor que não encaixa entre dias sem aviso (2026-11-04 madrugada); A-249 a A-251 e A-179 (pernas e
@@ -92,6 +93,27 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
 - Face ID real, PDF por ficheiro, voo ao vivo nativo, compras (RevenueCat), login Apple e Google, widgets, Live Activities, alarme
   (AlarmKit), hotel pelo Apple Maps, passkeys; Android; iPhone pequeno e grande; beta com 2–3 tripulantes no TestFlight;
   declaração de dados nas lojas; Supabase/Resend pagos e limites (e-mails por hora, DMARC).
+---
+
+## 2026-11-08 — O mês da entrada pelos dias (Opus 5.5) — o Nuno: "corrige isso" · "Pedir o dia (Recomendado)"
+
+**O problema:** o `serviceStart` guarda só o mês (`AAAA-MM-01`) → quem entra a meio do mês recebia na app o vencimento do mês
+inteiro, e o mês da entrada contava inteiro nos subsídios do ano da admissão. **Decidido (Nuno):** pedir o DIA, opcional, com
+Mobbin primeiro; até ser dado, o mês da entrada fica "incerto". **Feito (o motor):**
+- `ae/tables.js`: `entryFrac` (a parte trabalhada do mês da entrada: com o dia, (dias do mês − dia + 1) ÷ dias do mês; sem ele, de
+  1 dia ao mês todo), `admissionRange` (a fração do ano da admissão, certo e máximo — "proporcional nos anos de contratação",
+  Cl. 51.ª/Art. 36.º; RRRGS Cl. 8.ª/17.ª; CT art. 263.º, n.º 2, a)) e `entryMonthBase` (o vencimento do mês da entrada: base ÷ 30
+  × os dias desde a entrada, nunca mais do que o mês — a convenção dos acordos já usada na doença; no pacote do advogado).
+- Os quatro acordos: Natal e férias do ano da admissão com o certo e o máximo e a marca `admission`; `monthlyAe` reduz o
+  vencimento do mês da entrada e dá o intervalo (`baseRange`, motivo `admission`). Sinal novo `startExact` (perfil
+  `serviceStartExact`), levado a `monthlyAe`, `aeMonthTotal`, `monthStats`, `yearStats`, `payStatus`, Início, Números e sino.
+- Textos: "Quanto recebo?" ("é o mês em que entraste e falta o dia"), Números ("falta o dia em que entraste"; "até mais X
+  conforme … o dia em que entraste").
+- **Falta:** o campo do dia (Perfil e onboarding) — referências do Mobbin mostradas ao Nuno; até lá, todos os perfis ficam "dia
+  por saber" (o mês da entrada e os subsídios desse ano com intervalo — o máximo é o que a app dava antes).
+- **Testes:** Dinheiro a menos 258 (o ano da admissão pela regra nova: sem o dia, certo e máximo; com o dia, um valor), stats 180
+  (o ano = a soma dos meses, com e sem o dia); 34 suites verdes; export iOS ✓. **Nada visto no iPhone.**
+
 ---
 
 ## 2026-11-08 — Os três que ficavam: terra fora da base, hora repetida e os fusos de todos os aeroportos (Opus 5.5) — o Nuno: "corrige isto"

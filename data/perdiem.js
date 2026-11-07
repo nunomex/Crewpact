@@ -3,7 +3,7 @@
 import { sectorDistanceNM } from './airports';
 import { eventCounts } from './aeEvents';
 import { isMediumHaul } from '../ae/tapLimits';
-import { ymShift } from '../ae/tables';
+import { ymShift, entryMonthBase } from '../ae/tables';
 import { resolveCrew } from './crewHistory';
 
 // Índice do MÊS de uma data (pilotos easyJet: IPC desde 1-fev-2025; TAP pilotos: o degrau do VB, que o per diem ignora). Os
@@ -295,7 +295,9 @@ export const awayNights = (duties = {}, ym = null) => {
 // nightStops €, extras, total) + positioning, annual (subsídios e prestações do mês), chefia (TAP) + meta — ou null.
 // `serviceStart` (data de entrada), `history` (linha do tempo da categoria), `events` (as férias, para o mês do subsídio da TAP)
 // e `lifestyle` (PPY como estilo de vida) servem as prestações que dependem deles (bloco 6, L1/L3/L4/L11).
-export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1, fleet, fullShare, serviceStart = null, largada = null, history = null, events = [], lifestyle = false } = {}) => {
+// `startExact`: o tripulante deu o DIA da entrada (a data guarda-se ao mês) — sem ele, o mês da entrada e os subsídios desse ano
+// ficam incertos (ae/tables.js: entryFrac, admissionRange, entryMonthBase).
+export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1, fleet, fullShare, serviceStart = null, startExact = false, largada = null, history = null, events = [], lifestyle = false } = {}) => {
   if (!ae || !category || !ae.computeAeMonth) return null;
   if (ym && ae.hasTableFor && !ae.hasTableFor(category, ym)) return null;   // sem tabela nesse mês → o mês não dá € (bloco 5)
   const byDay = !!ae.PER_DIEM_BY_DAY;   // TAP: ajudas de custo por dia de calendário (tapCalendarDays)
@@ -476,6 +478,18 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
   }
   const month = ae.computeAeMonth({ category, contract, duties: flights, nightStops, extraSectors, index, fleet, ym, fullShare, serviceStart, largada, history });
   if (!month) return null;
+  // O mês da ENTRADA: o vencimento pelos dias desde a entrada (base ÷ 30 × dias, nunca mais do que o mês); sem o dia → incerto,
+  // de 1 dia ao mês todo (antes pagava-se sempre o mês todo). Um intervalo que o acordo já desse (KPI da TAP…) escala com ele.
+  const eb = entryMonthBase(month.base, serviceStart, ym, startExact);
+  if (eb && eb.min < month.base) {
+    const k = eb.min / month.base, kMax = eb.max / month.base, br = month.baseRange;
+    const nb = r2(eb.min);
+    month.total = r2(month.total - month.base + nb);
+    month.baseRange = (eb.max > eb.min || br)
+      ? { min: r2((br ? br.min : month.base) * k), max: r2((br ? br.max : month.base) * kMax), reason: eb.max > eb.min ? 'admission' : br.reason }
+      : null;
+    month.base = nb;
+  }
   // Acertos depois do motor do acordo (as parcelas continuam a somar ao total):
   const bump = (field, v) => { if (!v) return; month[field] = r2((month[field] || 0) + v); month.total = r2(month.total + v); };
   if (groundEur) { bump('perDiem', groundEur); month.variable = r2((month.variable || 0) + groundEur); }
@@ -488,7 +502,7 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
   if (posMin) { month.total = r2(month.total + posMin); month.variable = r2((month.variable || 0) + posMin); }
   // Subsídios e prestações que caem neste mês (annualItems de cada acordo). Fora do `variable`: são fixos do ano.
   const annualItems = (ym && typeof ae.annualItems === 'function')
-    ? ae.annualItems(category, { ym, contract, index, fullShare, serviceStart, largada, history, events: events || [], lifestyle })
+    ? ae.annualItems(category, { ym, contract, index, fullShare, serviceStart, startExact, largada, history, events: events || [], lifestyle })
     : [];
   month.annualItems = annualItems;
   month.annual = r2(annualItems.reduce((a, x) => a + (x.eur || 0), 0));
@@ -511,10 +525,10 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
 // mostrarem o MESMO número. `monthlyAe.total` já inclui base + abono (cabine, UMA vez)
 // + per-diem + pernoita + escritório/ADTY; somamos só os EXTRAS manuais do mês.
 // extras = mapa de contadores { <id>: n }. Devolve número (€), ou null sem ae/categoria.
-export const aeMonthTotal = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1, extras = {}, fleet, fullShare, serviceStart = null, largada = null, history = null, events = [], lifestyle = false } = {}) => {
+export const aeMonthTotal = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1, extras = {}, fleet, fullShare, serviceStart = null, startExact = false, largada = null, history = null, events = [], lifestyle = false } = {}) => {
   if (!ae || !category) return null;
   if (ym && ae.hasTableFor && !ae.hasTableFor(category, ym)) return null;   // sem tabela nesse mês → sem €
-  const m = monthlyAe(duties, category, contract, ae, { ym, index, fleet, fullShare, serviceStart, largada, history, events, lifestyle });
+  const m = monthlyAe(duties, category, contract, ae, { ym, index, fleet, fullShare, serviceStart, startExact, largada, history, events, lifestyle });
   const baseTotal = m ? m.total : (ae.monthlyBase ? (ae.monthlyBase(category, { contract, index, ym, fullShare, serviceStart, largada, history }) || 0) : 0);
   const xt = ae.monthExtras ? ae.monthExtras(category, extras, { index, ym, contract, fullShare }) : null;
   return +(baseTotal + (xt ? xt.total : 0)).toFixed(2);

@@ -19,7 +19,7 @@ import SheetHeader from './SheetHeader';
 // "N novidades" que SÓ EXISTE quando há por ler — o botão desaparece quando não tem nada
 // para dizer, à Apple/Living Interface). `night` = tema noturno do Início.
 export default function NotificationsBell({ variant = 'bell', night = false }) {
-  const { profile, lang, readNotifIds, setReadNotifIds, rosterChanges, validities, isPilot, dayLog, duties, ae, aeAt, crewAt, crewFleet, aeEvents, serviceStart, largada, crewHistory, lifestyle } = useContext(AppContext);
+  const { profile, lang, readNotifIds, setReadNotifIds, rosterChanges, validities, isPilot, dayLog, duties, ae, aeAt, crewAt, crewFleet, aeEvents, serviceStart, serviceStartExact, largada, crewHistory, lifestyle } = useContext(AppContext);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const [open, setOpen] = useState(false);
@@ -46,7 +46,7 @@ export default function NotificationsBell({ variant = 'bell', night = false }) {
     if (aeM && crewAt) {
       const at = crewAt(ym);
       const index = aeM.indexFactor ? aeM.indexFactor(ym) : 1;   // por mês (A-041)
-      const tot = at && at.category ? aeMonthTotal(duties, at.category, at.contract || '12/12', aeM, { ym, index, extras: eventCounts(aeEvents || [], ym, duties, aeM.SICK_FIRST3 !== false), fleet: at.fleet || crewFleet, serviceStart, largada, history: crewHistory, events: aeEvents || [], lifestyle }) : null;
+      const tot = at && at.category ? aeMonthTotal(duties, at.category, at.contract || '12/12', aeM, { ym, index, extras: eventCounts(aeEvents || [], ym, duties, aeM.SICK_FIRST3 !== false), fleet: at.fleet || crewFleet, serviceStart, startExact: !!serviceStartExact, largada, history: crewHistory, events: aeEvents || [], lifestyle }) : null;
       if (tot != null) totalEur = `${tot.toFixed(2).replace('.', ',')} €`;
     }
     const label = (() => { const m = new Date(`${ym}-15T12:00:00`).toLocaleDateString(locale, { month: 'long', year: 'numeric' }); return m.charAt(0).toUpperCase() + m.slice(1); })();

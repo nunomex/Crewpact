@@ -222,7 +222,7 @@ export function buildTodayItems(ctx, lang) {
   }
 
   // 5 · Quanto recebo? (só AE)
-  const pay = payStatus({ duties, ae, crewCategory, crewContract, crewFleet, aeEvents, serviceStart: ctx.serviceStart, largada: ctx.largada, crewHistory: ctx.crewHistory, lifestyle: ctx.lifestyle });
+  const pay = payStatus({ duties, ae, crewCategory, crewContract, crewFleet, aeEvents, serviceStart: ctx.serviceStart, startExact: !!ctx.serviceStartExact, largada: ctx.largada, crewHistory: ctx.crewHistory, lifestyle: ctx.lifestyle });
   if (pay) {
     items.push({
       id: 'pay',
@@ -232,6 +232,8 @@ export function buildTodayItems(ctx, lang) {
       suggestion: pay.baseRange
         ? (pay.baseRange.reason === 'tapKpi'
           ? l(`Incerto: a base deste mês vai de ${fmtEur0(pay.baseRange.min, lang)} a ${fmtEur0(pay.baseRange.max, lang)} — os 2 % adicionais de 2026 dependem do resultado da TAP em 2025 e do novo regulamento de tripulações (RRRGS Cl. 3.ª)`, `Uncertain: this month's base is ${fmtEur0(pay.baseRange.min, lang)} to ${fmtEur0(pay.baseRange.max, lang)} — the extra 2% for 2026 depends on TAP's 2025 result and the new crew composition rules (RRRGS Cl. 3)`)
+          : pay.baseRange.reason === 'admission'
+          ? l(`Incerto: a base deste mês vai de ${fmtEur0(pay.baseRange.min, lang)} a ${fmtEur0(pay.baseRange.max, lang)} — é o mês em que entraste e falta o dia (paga-se a base ÷ 30 por dia desde a entrada)`, `Uncertain: this month's base is ${fmtEur0(pay.baseRange.min, lang)} to ${fmtEur0(pay.baseRange.max, lang)} — it is the month you joined and the day is missing (base ÷ 30 per day since joining)`)
           : pay.baseRange.reason === 'tapRaise'
           ? l(`Incerto: a base deste mês vai de ${fmtEur0(pay.baseRange.min, lang)} a ${fmtEur0(pay.baseRange.max, lang)} — a atualização do vencimento base não está publicada no BTE`, `Uncertain: this month's base is ${fmtEur0(pay.baseRange.min, lang)} to ${fmtEur0(pay.baseRange.max, lang)} — the base pay update is not published in the BTE`)
           : l(`Incerto: a base deste mês vai de ${fmtEur0(pay.baseRange.min, lang)} a ${fmtEur0(pay.baseRange.max, lang)} — faltam as datas de atividade do teu contrato`, `Uncertain: this month's base is ${fmtEur0(pay.baseRange.min, lang)} to ${fmtEur0(pay.baseRange.max, lang)} — your contract's activity dates are missing`))

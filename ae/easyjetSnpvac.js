@@ -6,7 +6,7 @@
 // Módulo PURO (sem React Native) — testável por golden. Estimativa de apoio;
 // NÃO substitui o processamento salarial oficial. Categorias: FA1, FA, CMP, CM.
 
-import { pickTable, ymParts, admissionShare, beforeStart, suspensionShare } from './tables';
+import { pickTable, ymParts, admissionRange, beforeStart, suspensionShare } from './tables';
 
 export const AE_ID = 'easyjet-snpvac';
 export const AE_LABEL = 'Easyjet · SNPVAC (cabine)';
@@ -389,27 +389,29 @@ const applySuspension = (out, events, year) => {
   const sh = suspensionShare(events, year, { minDays: 30 });
   const it = out.find((x) => x.id === 'natal');
   if (!sh || !it) return;
-  const full = it.eur;
-  it.eur = r2(full * sh.min); it.max = r2(full * sh.max); it.suspension = true; it.suspNote = SUSP_NOTE; it.suspShort = SUSP_SHORT;
+  const full = it.eur, fullMax = it.max != null ? it.max : it.eur;   // o ano da admissão sem o dia já traz certo e máximo
+  it.eur = r2(full * sh.min); it.max = r2(fullMax * sh.max); it.suspension = true; it.suspNote = SUSP_NOTE; it.suspShort = SUSP_SHORT;
 };
 const SUB_NOTE = {
   ferias: { pt: 'Sem a média do pagamento variável (o acordo não diz que rubricas entram) nem o 1/14 do subsídio de idioma.', en: 'Without the average variable pay (the agreement does not list what counts) or 1/14 of the language allowance.' },
   natal: { pt: 'Sem o 1/14 do subsídio de idioma, se o tiveres.', en: 'Without 1/14 of the language allowance, if you get it.' },
 };
-export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceStart = null, events = [] } = {}) => {
+export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceStart = null, startExact = false, events = [] } = {}) => {
   const p = ymParts(ym);
   if (!p || beforeStart(serviceStart, ym)) return [];
   const sub = (refYm) => { const a = annualBase(cat, tableAt(refYm), refYm); return a == null ? null : (a * contractFactor(contract) * index) / SALARY_INSTALMENTS; };
   const out = [];
-  const push = (id, v, share) => { if (v != null && share > 0) out.push({ id, eur: r2(v * share), incomplete: true, note: SUB_NOTE[id], cite: 'Cl. 51.ª' }); };
+  // `rng` = a fração { min, max } (admissionRange): no ano da admissão sem o dia → o certo e o máximo, com a marca `admission`.
+  const push = (id, v, rng) => { if (v != null && rng.max > 0) out.push({ id, eur: r2(v * rng.min), ...(rng.max > rng.min ? { max: r2(v * rng.max), admission: true } : {}), incomplete: true, note: SUB_NOTE[id], cite: 'Cl. 51.ª' }); };
   const s = ymParts(serviceStart);
   if (p.m === 11) {
-    push('natal', sub(ym), admissionShare(serviceStart, p.y, 12));
-    applySuspension(out, events, p.y);   // baixa de mais de um mês (CT art. 263.º, n.º 2, c), e 296.º)
+    push('natal', sub(ym), admissionRange(serviceStart, p.y, 12, startExact));
+    applySuspension(out, events, p.y);   // baixa de mais de 30 dias (Cl. 86.ª, n.º 2; CT art. 263.º, n.º 2, c))
   }
-  if (p.m === 6) push('ferias', sub(ym), (s && s.y === p.y) ? Math.max(0, 7 - s.m) / 12 : 1);
+  // Junho: no ano da contratação, os meses até junho (Cl. 51.ª/4).
+  if (p.m === 6) push('ferias', sub(ym), admissionRange(serviceStart, p.y, 6, startExact));
   // Janeiro: "os restantes meses" do ano da contratação (julho a dezembro, ou desde a entrada se foi depois de junho).
-  if (p.m === 1 && s && s.y === p.y - 1) push('ferias', sub(`${p.y - 1}-12`), (13 - Math.max(7, s.m)) / 12);
+  if (p.m === 1 && s && s.y === p.y - 1) push('ferias', sub(`${p.y - 1}-12`), s.m >= 7 ? admissionRange(serviceStart, p.y - 1, 12, startExact) : { min: 6 / 12, max: 6 / 12 });
   return out;
 };
 

@@ -937,6 +937,9 @@ export default function App() {
   // Antiguidade: guardamos a DATA de início (metadata, estável) e derivamos os anos
   // completos de serviço — alimenta o prémio de permanência (AE piloto, Anexo I.9).
   const serviceStart = profile?.serviceStart || null;  // 'AAAA-MM-DD'
+  // O DIA da entrada só conta quando o tripulante o deu (a data guarda-se ao mês: AAAA-MM-01) — sem ele, o mês da entrada e os
+  // subsídios desse ano ficam incertos (ae/tables.js: entryFrac, admissionRange, entryMonthBase).
+  const serviceStartExact = !!profile?.serviceStartExact;
   const largada = profile?.largada || null;            // 'AAAA-MM-DD' — TAP: anuidades e senioridade contam daqui (bloco 6)
   // LINHA DO TEMPO DO CONTRATO (2026-11-03): a companhia e a base também têm datas — três linhas
   // separadas (categoria/contrato · companhia+tipo · base). `base` = a base EM VIGOR hoje;
@@ -1095,7 +1098,7 @@ export default function App() {
     user, setUser: handleSetUser, logout,
     suppressAuth,
     profile, setProfile,
-    airlines, bases, countries, company, crewType, isPilot, cabinGapMin, splitAdminMin, crewCategory, crewContract, crewFleet, postFlightMin, postFlightSource, vacationDaysYear, vacationSource, employment, aeCovered: aeCoveredOverride, covered, crewHistory, crewAt, companyHistory, baseHistory, companyAt, aeAt, homeBaseAt, serviceStart, largada, serviceYears, base, baseObj, lifestyle, instructorRated, ae, caps, aeStatus,
+    airlines, bases, countries, company, crewType, isPilot, cabinGapMin, splitAdminMin, crewCategory, crewContract, crewFleet, postFlightMin, postFlightSource, vacationDaysYear, vacationSource, employment, aeCovered: aeCoveredOverride, covered, crewHistory, crewAt, companyHistory, baseHistory, companyAt, aeAt, homeBaseAt, serviceStart, serviceStartExact, largada, serviceYears, base, baseObj, lifestyle, instructorRated, ae, caps, aeStatus,
     aeExtras, setAeExtras,
     aeEvents, addAeEvents, removeAeEvent,
     openExtra: () => setExtraOpen(true),

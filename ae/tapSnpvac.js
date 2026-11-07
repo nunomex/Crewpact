@@ -12,7 +12,7 @@
 // de haver "C/C", o supervisor passa a S/C 1..S/C 7. Per-diem e pernoita = "ajudas de
 // custo complementares" POR DIA DE CALENDÁRIO (cl. 7.ª), não por setor.
 
-import { pickTable, ymParts, ymShift, vacationPayYm, admissionShare, beforeStart, suspensionShare } from './tables';
+import { pickTable, ymParts, ymShift, vacationPayYm, admissionRange, beforeStart, suspensionShare } from './tables';
 
 export const AE_ID = 'tap-snpvac';
 export const AE_LABEL = 'TAP · SNPVAC (cabine)';
@@ -202,21 +202,22 @@ const feriasEur = (cat, { year, payYm, contract, index, serviceStart, largada, h
   else if (year === 2024) extra = 675 * 10 / 12;
   return r2((b + extra) * contractFactor(contract));
 };
-export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceStart = null, largada = null, history = null, events = [] } = {}) => {
+export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceStart = null, startExact = false, largada = null, history = null, events = [] } = {}) => {
   const p = ymParts(ym);
   if (!p || beforeStart(serviceStart, ym) || !hasTableFor(cat, ym)) return [];
   const out = [];
   if (p.m === 12) {
+    const adm = admissionRange(serviceStart, p.y, 12, startExact);   // o ano da admissão: certo e máximo sem o dia da entrada
     const b = monthlyBase(cat, { contract, index, ym, serviceStart, largada, history });
     // Baixa de mais de um mês no ano: proporcional ao tempo de serviço (CT art. 263.º, n.º 2, c), e 296.º — a Cl. 17.ª só fala da
     // admissão e da cessação; a lei completa-a) — certo e máximo.
     const sh = suspensionShare(events, p.y);
-    const v = b == null ? null : b * admissionShare(serviceStart, p.y);
+    const v = b == null ? null : b * adm.min;
     const bK = kpiApplies(cat, ym) ? monthlyBase(cat, { contract, index, ym, serviceStart, largada, history, kpi: true }) : b;
-    const vK = bK == null ? null : bK * admissionShare(serviceStart, p.y);
+    const vK = bK == null ? null : bK * adm.max;
     if (v != null) {
       const eur = r2(sh ? v * sh.min : v), max = r2(sh ? vK * sh.max : vK);
-      out.push({ id: 'natal', eur, cite: 'RRRGS Cl. 17.ª', ...(max > eur ? { max } : {}), ...(sh ? { suspension: true } : {}), ...(bK > b ? { tapRaise: true } : {}) });
+      out.push({ id: 'natal', eur, cite: 'RRRGS Cl. 17.ª', ...(max > eur ? { max } : {}), ...(sh ? { suspension: true } : {}), ...(bK > b ? { tapRaise: true } : {}), ...(adm.max > adm.min ? { admission: true } : {}) });
     }
   }
   for (const year of [p.y, p.y + 1]) {

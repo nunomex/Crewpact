@@ -38,12 +38,38 @@ export const vacationPayYm = (events, year) => {
     .map((e) => String(e.date)).sort()[0];
   return first ? ymShift(first.slice(0, 7), -1) : null;
 };
-// Fração do ano de ADMISSÃO paga num subsídio "proporcional nos anos de contratação" (meses desde o da entrada, inclusive,
-// até `toMonth`): a data de entrada guarda-se ao mês (dia 1), por isso o mês da entrada conta inteiro.
-export const admissionShare = (serviceStart, year, toMonth = 12) => {
+// O mês da ENTRADA na companhia. A data guarda-se ao mês (AAAA-MM-01); o dia só conta quando o tripulante o deu (`startExact`).
+// Com o dia → a parte trabalhada é (dias do mês − dia + 1) ÷ dias do mês; sem ele → de 1 dia (entrou no último) ao mês todo
+// (entrou no dia 1): incerto — "a lei é que manda" (antes contava sempre o mês todo). { min, max } em fração do mês.
+const dimOf = (y, m) => new Date(Date.UTC(y, m, 0)).getUTCDate();
+const entryDay = (serviceStart, dim) => Math.min(dim, Math.max(1, Number(String(serviceStart || '').slice(8, 10)) || 1));
+export const entryFrac = (serviceStart, startExact = false) => {
   const s = ymParts(serviceStart);
-  if (!s || s.y !== year) return 1;
-  return Math.max(0, toMonth - s.m + 1) / 12;
+  if (!s) return { min: 1, max: 1 };
+  const dim = dimOf(s.y, s.m);
+  if (startExact) { const f = (dim - entryDay(serviceStart, dim) + 1) / dim; return { min: f, max: f }; }
+  return { min: 1 / dim, max: 1 };
+};
+// Fração do ano de ADMISSÃO paga num subsídio "proporcional nos anos de contratação" (os acordos; "proporcional ao tempo de
+// serviço prestado", Código do Trabalho, art. 263.º, n.º 2, a)): os meses desde o da entrada até `toMonth`, o da entrada pela
+// parte trabalhada (entryFrac). { min, max } — o certo e o máximo; 1 fora do ano da admissão, 0 se `toMonth` vem antes da entrada.
+export const admissionRange = (serviceStart, year, toMonth = 12, startExact = false) => {
+  const s = ymParts(serviceStart);
+  if (!s || s.y !== year) return { min: 1, max: 1 };
+  if (toMonth < s.m) return { min: 0, max: 0 };
+  const f = entryFrac(serviceStart, startExact);
+  return { min: (toMonth - s.m + f.min) / 12, max: (toMonth - s.m + f.max) / 12 };
+};
+// O vencimento do mês da ENTRADA: a "remuneração base diária" (base ÷ 30 — a convenção dos acordos: a mesma do complemento de
+// doença e das férias não gozadas; no pacote do advogado) × os dias desde a entrada, nunca mais do que o mês; o mês todo se
+// entrou no dia 1. Sem o dia → de 1 dia ao mês todo. { min, max } em € (por arredondar), ou null fora do mês da entrada.
+export const entryMonthBase = (b, serviceStart, ym, startExact = false) => {
+  const s = ymParts(serviceStart), p = ymParts(ym);
+  if (!s || !p || s.y !== p.y || s.m !== p.m || !(b > 0)) return null;
+  const dim = dimOf(s.y, s.m);
+  const of = (n) => (n >= dim ? b : Math.min(b, (b * n) / 30));
+  if (startExact) { const v = of(dim - entryDay(serviceStart, dim) + 1); return { min: v, max: v }; }
+  return { min: of(1), max: b };
 };
 // Natal numa baixa longa (Código do Trabalho, fontes/pt): a doença suspende o contrato quando "se prolongue por mais de um mês"
 // (art. 296.º, n.º 1; ou antes, quando for previsível — n.º 3) e o Natal "é proporcional ao tempo de serviço prestado no ano
