@@ -97,6 +97,15 @@ Golden primeiro em cada um; `npm test` verde (33 suites); pacote iOS gerado sem 
   repartido com adiamento pode dar 8 h no standby sem a extensão (raro, não reproduzido); as telas que mostram Zulu ainda
   convertem a chegada depois da meia-noite com o dia da partida (só a vista).
   **Pack:** D23 (a leitura dos 2 % do KPI da TAP cabine e o CAB 0); Word num só ficheiro, `docs/pack-advogado.docx`.
+  **Os reparos que ficavam — FEITOS (o Nuno: "corrigir isto"), ENGINE_VERSION 7:** a hora Zulu nos ecrãs (`legDay`/`legZulu`
+  com `ref`: a partida antes da apresentação e a chegada antes da partida são do dia seguinte → o fuso desse dia; Detalhe,
+  Escala e Início passam a apresentação); o aviso das 18 h acordado do standby deixou de reduzir o teto duas vezes (podia
+  NÃO avisar — não era conservador); com adiamento o standby não leva as 8 h do repartido; o número das horas ao lado do
+  teto de 900 h é a soma legal do ano; o motivo do "incerto" do ano vem dos meses (`uncertainReasons`). Ficam sem ecrã, mas
+  certos e testados: `hourlyRange` (TAP pilotos) e o `kpi` do `vh` (TAP cabine).
+  3.ª revisão (curta): apanhou a chegada passada para o dia seguinte DUAS vezes no motor (PSV errado 1 h nas VÉSPERAS das
+  mudanças de hora) — corrigido, o motor usa o `legDay` uma só vez; golden de 23/10 e 27/03. Limite conhecido do `legDay`
+  (só relógio): voo + fuso ≥ 24 h (leste longínquo) ou negativo (linha de mudança de data) — só pesa na noite da mudança de hora.
 - **Era para depois (da revisão):** E4 — na TAP pilotos só a BASE mostra o intervalo; Natal, férias, `pendingAnnual` e as
   horas L1/L2 (3 %/6 % do VB) saem no mínimo como certos (conservador, mas devia ser intervalo); reparo 5 — TAP cabine 2026 sem
   o intervalo do KPI de 2 %; reparo 2 — o voo depois da meia-noite reparte-se pelas horas locais de cada aeroporto (longo curso:

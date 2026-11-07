@@ -173,7 +173,8 @@ export default function DutyDetailScreen({ route, navigation }) {
   const legs = Array.isArray(duty.legs) ? duty.legs : [];
   const firstLeg = legs[0] || null, lastLeg = legs[legs.length - 1] || null;
   const tv = (hhmm) => { const z = toZulu(date, hhmm); return z ? `${hhmm}  ·  ${z}Z` : hhmm; };
-  const tvL = (hhmm, leg, which) => { const z = legZulu(date, leg, which) || toZulu(date, hhmm); return z ? `${hhmm}  ·  ${z}Z` : hhmm; };
+  const zRef = duty.report_time || (firstLeg && firstLeg.off) || null;   // o dia de cada hora (data/zulu.js, legDay)
+  const tvL = (hhmm, leg, which) => { const z = legZulu(date, leg, which, zRef) || toZulu(date, hhmm); return z ? `${hhmm}  ·  ${z}Z` : hhmm; };
   const routeStr = stations.length > 1 ? stations.join(' → ') : (duty.route || l('Voo', 'Flight'));
   const headMain = isFlight
     ? routeStr
@@ -284,7 +285,7 @@ export default function DutyDetailScreen({ route, navigation }) {
           <>
             <Sec icon="plane">{l('Setores', 'Sectors')}</Sec>
             <Panel rows={legs.map((lg) => {
-              const zo = legZulu(date, lg, 'off'), zn = legZulu(date, lg, 'on');
+              const zo = legZulu(date, lg, 'off', zRef), zn = legZulu(date, lg, 'on', zRef);
               return {
                 k: `${lg.dh ? 'DH · ' : ''}${lg.flightNo ? `${lg.flightNo} · ` : ''}${lg.dep || '?'}→${lg.arr || '?'}`,
                 node: (

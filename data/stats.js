@@ -116,6 +116,7 @@ export const yearStats = (duties = {}, { year, ae = null, aeAt = null, category 
     const index = lastAe && lastAe.indexFactor ? lastAe.indexFactor(`${y}-12`) : 1;   // o índice do fim do ano (só para mostrar)
     let estimated = false;
     let baseY = 0, cashY = 0, perDiemY = 0, nightY = 0, extrasY = 0, eventsY = 0, totalY = 0, wrY = 0, missY = 0, noTable = false, uncertain = false;
+    const uncReasons = new Set();   // o motivo de cada mês incerto (datas de atividade, atualização do VB da TAP…)
     let posY = 0, annualY = 0, incomplete = false, seniorityUnknown = false;
     const annualItemsY = [];
     for (let mo = 0; mo < monthsElapsed; mo++) {
@@ -129,7 +130,7 @@ export const yearStats = (duties = {}, { year, ae = null, aeAt = null, category 
       if (ae.hasTableFor && !ae.hasTableFor(catM, ym)) { noTable = true; continue; }   // sem tabela nesse mês: não soma (bloco 5)
       const m = monthlyAe(duties, catM, ctrM || '12/12', ae, { ym, index, fleet: fleetM || fleet, serviceStart, largada, history, events, lifestyle });   // à categoria e à frota desse mês (frota → coluna A no TAP)
       if (m) {
-        if (m.baseRange) uncertain = true;
+        if (m.baseRange) { uncertain = true; uncReasons.add(m.baseRange.reason || 'activity'); }
         if (m.seniority && m.seniority.unknown) seniorityUnknown = true;
         baseY += m.base || 0; cashY += m.cashHandling || 0; perDiemY += m.perDiem || 0;
         nightY += m.nightStops || 0; extrasY += m.extras || 0; totalY += m.total || 0;
@@ -159,7 +160,7 @@ export const yearStats = (duties = {}, { year, ae = null, aeAt = null, category 
       nightStops: +nightY.toFixed(2), extras: +extrasY.toFixed(2), events: +eventsY.toFixed(2),
       positioning: +posY.toFixed(2), annual: +annualY.toFixed(2), annualItems: annualItemsY, incomplete, pendingAnnual, seniorityUnknown,
       total: +totalY.toFixed(2), monthsElapsed, index,
-      estimated, noTable, uncertain,
+      estimated, noTable, uncertain, uncertainReasons: [...uncReasons],
       withRoute: wrY, missing: missY,
     };
   }

@@ -754,6 +754,10 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   // E em março (29/03/2026, adianta 1 h às 01:00): 22:00 → 04:00 são 5 h reais.
   const dDst2 = ftl.ftlForDuty({ report_time: '22:00', block_on: '04:00', sectors: 1, legs: [{ dep: 'LIS', arr: 'OPO', off: '22:45', on: '04:00' }] }, { date: '2026-03-28', base: 'LIS' });
   eq('E5: PSV na noite da hora de verão = 5:00 reais', dDst2.fdp.actualFdpStr, '05:00');
+  // E nas VÉSPERAS (23/10 e 27/03) nada muda: 6:00. A 2.ª revisão apanhou a chegada passada para o dia seguinte DUAS vezes
+  // (o fuso de D+2) — nos dias 24/10 e 28/03 dava certo por acaso.
+  const psvOn = (date) => ftl.ftlForDuty({ report_time: '22:00', block_on: '04:00', sectors: 1, legs: [{ dep: 'LIS', arr: 'OPO', off: '22:45', on: '04:00' }] }, { date, base: 'LIS' }).fdp.actualFdpStr;
+  eqj('E5: véspera das mudanças de hora = 6:00', [psvOn('2026-10-23'), psvOn('2026-03-27'), psvOn('2026-10-22')], ['06:00', '06:00', '06:00']);
   // Revisão do 8b, reparo 2: com as horas Zulu, o voo reparte-se no relógio da escala. LIS 22:30 (21:30Z) → GRU 05:30 locais
   // (08:30Z): 11 h de voo; no relógio de Lisboa a chegada é às 09:30 → 9:30 depois da meia-noite (as horas locais davam 5:30).
   const eGru = ftl.dutyToFtlDay({ report_time: '21:15', block_on: '05:30', sectors: 1, flight_minutes: 660, legs: [{ dep: 'LIS', arr: 'GRU', off: '22:30', on: '05:30', offZ: '21:30', onZ: '08:30' }] });
@@ -1086,6 +1090,10 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('Reparo 10: standby 7 h + repouso a bordo → sem redução (16:00)', dR10.fdp.maxFdpStr, '16:00');
   const dR10b = computeDuty({ state: 'acc', report: '15:00', end: '23:00', sectors: 1, isPilot: true, preStandby: { type: 'other', standbyH: 7, startMin: M('08:00') } });
   eq('Reparo 10: sem repouso a bordo, as 6 h continuam (reduz 1 h)', dR10b.fdp.stdbyReductionMin, 60);
+  // Revisão do 8b: o aviso das 18 h acordado (CS FTL.1.225(b)(2)) com um teto JÁ reduzido não reduz outra vez. Standby em casa
+  // de 10 h com teto já reduzido a 9:00, sem o fim do serviço: 10 h + 9 h = 19 h > 18 h → aviso (reduzido 2 vezes dava 15 h).
+  eq('Standby: aviso das 18 h com o teto já reduzido', ftl.computeStandby({ type: 'other', standbyH: 10, maxFdpMin: 540, reduced: true }).awakeOver, true);
+  eq('Standby: reduced não muda o teto', ftl.computeStandby({ type: 'other', standbyH: 10, maxFdpMin: 540, reduced: true }).reducedMaxFdpMin, 540);
   // Repouso a bordo abaixo de 90 min consecutivos (CS FTL.1.205(c)(1)(ii)) → não permitido.
   eq('Cabine com 1:15 de repouso a bordo → não permitido', computeDuty({ state: 'acc', report: '06:00', end: '20:00', sectors: 2, augmented: { restClass: 'c1', additionalCrew: 2, fcRestClass: 'c1', cabinRestMin: 75 } }).fdp.notAllowed, true);
   // Piloto da auditoria A-142: 3 pilotos, classe 3, 10:00 → 00:10 = PSV 14:10 > 14:00 → excede 0:10, calços até às 00:00.

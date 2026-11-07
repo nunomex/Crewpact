@@ -550,7 +550,7 @@ export default function HomeScreen({ navigation }) {
   const ndOnLeg = ndOpLegs.length
     ? ndOpLegs[ndOpLegs.length - 1]
     : (flight && flight.arrTime ? { on: flight.arrTime, arr: (flightStatus && flightStatus.arr && flightStatus.arr.iata) || null } : null);
-  const ndStoredOnZ = (flight && ndOnLeg && ndOnLeg.on) ? legZulu(flight.dateISO, ndOnLeg, 'on') : null;
+  const ndStoredOnZ = (flight && ndOnLeg && ndOnLeg.on) ? legZulu(flight.dateISO, ndOnLeg, 'on', (ndReg && ndReg.report_time) || (ndOpLegs[0] && ndOpLegs[0].off) || null) : null;
   // Só com o ÚLTIMO setor seguido: o registo compara-se com os calços do último (é o que o App também limpa).
   const syncBehind = !!(trackingLast && flightStatus && ndStoredOnZ && recordBehindLive(flightStatus, ndStoredOnZ));
   // Só o Início vê o feed ao vivo → é aqui que se MARCA o sinal persistente (idempotente).

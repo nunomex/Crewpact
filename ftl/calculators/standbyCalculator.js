@@ -12,7 +12,9 @@ import { minToHhmm } from '../utils/time';
 //                  máximo (auditoria A-164/A-246: somar o máximo dava "excede" a serviços dentro dos limites).
 //   extended = PSV prolongado por repouso a bordo ou serviço repartido (6 h → 8 h).
 //   startMin = hora de início do standby (min do dia) — ativa o carve-out noturno (b)(9).
-export const computeStandby = ({ type = 'airport', standbyH = 0, maxFdpMin = null, actualFdpMin = null, extended = false, startMin = null } = {}) => {
+// `reduced` = o `maxFdpMin` dado JÁ tem a redução do standby (o motor chama-a para os avisos depois de reduzir o teto) → não se
+// reduz outra vez (revisão do 8b: o aviso das 18 h acordado usava o teto reduzido duas vezes e podia não aparecer).
+export const computeStandby = ({ type = 'airport', standbyH = 0, maxFdpMin = null, actualFdpMin = null, extended = false, startMin = null, reduced = false } = {}) => {
   const sbMin = Math.round(standbyH * 60);
   let reductionMin = 0, dutyCountMin = 0, combinedMaxMin = null, overMaxStandby = false, awakeOver = false, combinedOver = false;
   let reducedMaxFdpMin = null;
@@ -21,7 +23,7 @@ export const computeStandby = ({ type = 'airport', standbyH = 0, maxFdpMin = nul
     dutyCountMin = sbMin;                                            // ORO.FTL.225(c): conta 100 % como serviço
     combinedMaxMin = AIRPORT_COMBINED_MAX_H * 60;                    // (a)(2)(ii): standby + PSV ≤ 16 h
     // O teto é o MENOR dos dois (A-143/A-164): (i) o máximo menos o standby acima de 4 h; (ii) 16 h menos o standby.
-    if (maxFdpMin != null) reducedMaxFdpMin = Math.max(0, Math.min(maxFdpMin - reductionMin, combinedMaxMin - sbMin));
+    if (maxFdpMin != null) reducedMaxFdpMin = reduced ? maxFdpMin : Math.max(0, Math.min(maxFdpMin - reductionMin, combinedMaxMin - sbMin));
     combinedOver = actualFdpMin != null && (sbMin + actualFdpMin) > combinedMaxMin;
   } else {
     const freeH = extended ? OTHER_STANDBY_FREE_EXT_H : OTHER_STANDBY_FREE_H;
@@ -35,7 +37,7 @@ export const computeStandby = ({ type = 'airport', standbyH = 0, maxFdpMin = nul
     reductionMin = Math.max(0, (sbMin - nightOv) - freeH * 60);      // > 6 h (8 h) reduz o PSV máx
     dutyCountMin = Math.round(sbMin * OTHER_STANDBY_DUTY_PCT);       // 25 % conta como serviço
     overMaxStandby = standbyH > OTHER_STANDBY_MAX_H;                 // máximo 16 h
-    if (maxFdpMin != null) reducedMaxFdpMin = Math.max(0, maxFdpMin - reductionMin);
+    if (maxFdpMin != null) reducedMaxFdpMin = reduced ? maxFdpMin : Math.max(0, maxFdpMin - reductionMin);
     // (b)(2): standby + PSV não deve passar 18 h acordado — com o PSV real; sem fim conhecido, o teto já reduzido.
     const fdpForAwake = actualFdpMin != null ? actualFdpMin : reducedMaxFdpMin;
     awakeOver = fdpForAwake != null && fdpForAwake > 0 && (sbMin + fdpForAwake) > MAX_AWAKE_H * 60;

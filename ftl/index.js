@@ -47,7 +47,8 @@ import { airportOffsetMin, legZulu } from '../data/zulu';
 // v4 (2026-11-06, bloco 4): o serviço sem apresentação leva o máximo possível (servicoMaxMin); posicionamento (`dh`) nas pernas.
 // v5 (2026-11-07, bloco 8b): parte depois da meia-noite (servicoNextMin/vooNextMin); teto da cabine com a diferença; sala no repartido.
 // v6 (2026-11-07, revisão do 8b): voo depois da meia-noite pelas horas Zulu; standby (8) e (9); tempo decorrido no longo curso.
-export const ENGINE_VERSION = 6;
+// v7 (2026-11-07): aviso das 18 h acordado sem dupla redução; standby com adiamento sem as 8 h do repartido.
+export const ENGINE_VERSION = 7;
 
 // Uma atividade (manual ou da escala) → PSV + repouso + legalidade num só objeto.
 // input: { state, report, end?, sectors, splitBreakH?, inBase?, postFlightMin? }
@@ -145,7 +146,8 @@ export const computeDuty = ({
     if (preStandby && preStandby.standbyH > 0 && m != null) {
       // CS FTL.1.225(b)(8): com o PSV prolongado por repouso a bordo ou por repartido, as 6 h de (6)/(7) passam a 8 h
       // (revisão do 8b, reparo 10: a app usava sempre 6 h).
-      const sbExt = (modifier === 'augmented') || ((b.extMin || 0) > 0 && splitBreakH > 0);
+      // Com um adiamento (CS 205(d)) o máximo já não leva a extensão do repartido → só as 6 h.
+      const sbExt = (modifier === 'augmented') || (modifier !== 'delayed' && (b.extMin || 0) > 0 && splitBreakH > 0);
       // CS FTL.1.225(b)(9): a noite (23:00–07:00) não conta para a redução "until the crew member is contacted by the
       // operator". A app não sabe a hora do contacto → o garantido conta a noite toda (contacto logo no início), o possível
       // nada dela (contacto na apresentação) — revisão do 8b, E4.
@@ -196,7 +198,7 @@ export const computeDuty = ({
   // Avisos do standby (CS 225) com o PSV REAL do serviço e o teto possível.
   let stdbyOver = false, stdbyOverKind = null;
   if (preStandby && preStandby.standbyH > 0) {
-    const sb = computeStandby({ type: preStandby.type, standbyH: preStandby.standbyH, maxFdpMin: maxHiMin, actualFdpMin: actual, startMin: preStandby.startMin != null ? preStandby.startMin : null });
+    const sb = computeStandby({ type: preStandby.type, standbyH: preStandby.standbyH, maxFdpMin: maxHiMin, actualFdpMin: actual, startMin: preStandby.startMin != null ? preStandby.startMin : null, reduced: true });
     if (sb.combinedOver) { stdbyOver = true; stdbyOverKind = 'combined'; }
     else if (sb.awakeOver) { stdbyOver = true; stdbyOverKind = 'awake'; }
     else if (sb.overMaxStandby) { stdbyOver = true; stdbyOverKind = 'maxStandby'; }
@@ -373,14 +375,14 @@ const zuluTimingOf = (duty = {}, base = null, date = null, refMode = 'auto') => 
   // Uma hora "antes" da apresentação no relógio é do dia seguinte (o serviço passa a meia-noite): converte-se com o fuso
   // DESSE dia — na noite da mudança de hora o desvio muda às 01:00/02:00 (revisão do 8b, E5: o PSV saía com 1 h a menos
   // em outubro e 1 h a mais em março).
-  const dayOf = (hm) => { if (!day || hm == null || hm >= rep) return day; const t = new Date(`${day}T12:00:00Z`); t.setUTCDate(t.getUTCDate() + 1); return t.toISOString().slice(0, 10); };
-  const off0 = parseHhmm(l0.off), offZ0 = parseHhmm(day ? legZulu(dayOf(off0), l0, 'off') : l0.offZ);
+  // O dia de cada hora escolhe-o o `legDay` (data/zulu.js), com a apresentação como referência: uma vez só.
+  const off0 = parseHhmm(l0.off), offZ0 = parseHhmm(day ? legZulu(day, l0, 'off', duty.report_time) : l0.offZ);
   if (off0 == null || offZ0 == null) return { bandShiftMin: 0, elapsedAdjMin: 0, reportMs: null };
   const digitsOff = nrm(off0 - offZ0);                          // o relógio das horas da escala (desvio UTC)
   const reportZ = ((offZ0 - durationMin(rep, off0)) % 1440 + 1440) % 1440;
   // Tempo decorrido: só quando o fim registado é a chegada do último setor (senão não se sabe o relógio do fim).
   let elapsedAdjMin = 0;
-  const onN = parseHhmm(lN.on), onZN = parseHhmm(day ? legZulu(dayOf(onN), lN, 'on') : lN.onZ), end = parseHhmm(duty.block_on);
+  const onN = parseHhmm(lN.on), onZN = parseHhmm(day ? legZulu(day, lN, 'on', duty.report_time) : lN.onZ), end = parseHhmm(duty.block_on);
   if (onN != null && onZN != null && end != null && end === onN) {
     const adj = durationMin(reportZ, onZN) - durationMin(rep, end);
     // Até 12 h: um longo curso tem fusos de 3 h ou mais (LIS→GRU 4 h). O limite antigo de 3 h deitava fora o tempo decorrido e

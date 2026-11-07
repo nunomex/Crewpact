@@ -168,12 +168,14 @@ export default function StatsScreen({ navigation }) {
   const kindLabel = (k) => t('duties.kind.' + k, lang);
 
   // 900 h no ano civil (ORO.FTL.210(b)(2)) em minutos: a barra pára nos 100 %, o texto não (A-262). O limite conta por DIA LOCAL
-  // (um voo de 31/12 que passa a meia-noite conta a parte de 1/1 no ano seguinte — bloco 8b) → a mesma soma do 210 do Início;
-  // as horas do ano, mais acima, contam pelo dia do serviço (como um logbook).
+  // (um voo de 31/12 que passa a meia-noite conta a parte de 1/1 no ano seguinte — bloco 8b) → a mesma soma do 210 do Início.
+  // O número do mosaico e da folha "Voo" é esta soma; as barras por mês contam pelo dia do serviço (como um logbook).
   const legalYearMin = isYear ? sumCalendarYearMin(dayLog || {}, 'voo', new Date(+year, 6, 1)) : st.flightMin;
   const yearFlightGap = { over: legalYearMin > ANNUAL_FLIGHT_LIMIT_H * 60, overMin: Math.max(0, legalYearMin - ANNUAL_FLIGHT_LIMIT_H * 60), headroomMin: Math.max(0, ANNUAL_FLIGHT_LIMIT_H * 60 - legalYearMin) };
   const flightPct = Math.floor((legalYearMin / (ANNUAL_FLIGHT_LIMIT_H * 60)) * 100);
   const flightRatio = Math.min(1, legalYearMin / (ANNUAL_FLIGHT_LIMIT_H * 60));
+  // O número ao lado da percentagem do teto é a MESMA soma (ano civil por dia local) — senão, num voo de 31/12, "900,4 h · 99 %".
+  const flightShownH = isYear ? Math.floor(legalYearMin / 6) / 10 : st.flightHours;   // trunca, como a percentagem (899,95 h ≠ "900 h · 99 %")
   const chartData = isYear ? st.months : st.days;   // 12 meses · ou dias do mês
   const maxBar = Math.max(1, ...chartData.map((m) => m.flightMin));
   const kindsPresent = STAT_KINDS.filter((k) => st.byKind[k] > 0);
@@ -188,8 +190,10 @@ export default function StatsScreen({ navigation }) {
   const total = A.total || 0;
   const extrasSum = (A.extras || 0) + (A.events || 0) + (A.cash || 0);
   // 9/3 e sazonais sem as datas de atividade: a base do mês é incerta (Cl. 48.ª/80.ª; bloco 5) — diz-se o intervalo.
-  const tapRaise = !!(A.baseRange && /^tap/.test(A.baseRange.reason || '')) || (isYear && !!aeNow && /^tap-/.test(aeNow.AE_ID || ''));
-  const uncWhy = tapRaise ? l('atualização do vencimento base por confirmar', 'base pay update not confirmed') : l('faltam as datas de atividade', 'activity dates missing');
+  // O motivo vem dos próprios meses (stats.js, `uncertainReasons`), não da companhia atual (um ano pode ter duas).
+  const reasons = isYear ? (A.uncertainReasons || []) : (A.baseRange ? [A.baseRange.reason || 'activity'] : []);
+  const whyTap = l('atualização do vencimento base por confirmar', 'base pay update not confirmed'), whyAct = l('faltam as datas de atividade', 'activity dates missing');
+  const uncWhy = [reasons.some((r) => /^tap/.test(r)) ? whyTap : null, reasons.some((r) => !/^tap/.test(r)) ? whyAct : null].filter(Boolean).join('; ') || whyAct;
   const baseUnc = !isYear && A.baseRange ? ` · ${l('incerto', 'uncertain')}: ${fmtEur0(A.baseRange.min)} ${l('a', 'to')} ${fmtEur0(A.baseRange.max)} (${uncWhy})` : (isYear && A.uncertain ? ` · ${l('incerto', 'uncertain')} (${uncWhy})` : '');
   const baseSub = (isYear ? `${l('salário base acumulado', 'accrued base salary')} · ${st.aeYtd?.monthsElapsed || 0} ${l('meses', 'months')}` : `${l('salário base', 'base salary')} · ${monthName}`) + baseUnc;
   // Mês sem tabela do acordo (antes da 1.ª tabela publicada, ou antes da admissão): não há € — diz-se porquê (bloco 5).
@@ -504,7 +508,7 @@ export default function StatsScreen({ navigation }) {
               <TouchableOpacity style={s.btile} activeOpacity={0.85} onPress={() => openSheet('voo')}>
                 <View style={s.btTop}><View style={s.btIc}><Icon name="plane" size={19} color={PELE.ink} /></View><Text style={s.btIdx}>{idx.voo}</Text></View>
                 <Text style={s.btName}>{l('Voo', 'Flight')}</Text>
-                <Text style={s.btKey}>{fmtH(st.flightHours)}</Text>
+                <Text style={s.btKey}>{fmtH(flightShownH)}</Text>
                 <Text style={s.btCap}>{isYear ? `${flightPct}% ${l('do teto', 'of cap')}` : `${l('em', 'in')} ${monthName.toLowerCase()}`}</Text>
               </TouchableOpacity>
 
@@ -601,7 +605,7 @@ export default function StatsScreen({ navigation }) {
           <TouchableOpacity style={s.sClose} onPress={() => setSheet(null)} hitSlop={6}><Icon name="minus" size={16} color={PELE.grey} /></TouchableOpacity>
         </View>
         <View style={s.vhero}>
-          <Text style={s.vbig}><CountUp value={st.flightHours} format={(n) => n.toLocaleString(locale, { maximumFractionDigits: 1 })} style={s.vbig} delay={120} /><Text style={s.vbigU}> h</Text></Text>
+          <Text style={s.vbig}><CountUp value={flightShownH} format={(n) => n.toLocaleString(locale, { maximumFractionDigits: 1 })} style={s.vbig} delay={120} /><Text style={s.vbigU}> h</Text></Text>
           {isYear ? <View style={s.vpct}><Text style={s.vpctN}>{flightPct}%</Text><Text style={s.vpctL}>{l('do teto', 'of cap')}</Text></View> : null}
         </View>
         {isYear ? <GrowBar ratio={flightRatio} color={PELE.ink} track={s.vbar} fill={s.vbarFill} /> : null}

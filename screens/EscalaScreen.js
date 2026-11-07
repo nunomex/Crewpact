@@ -485,7 +485,8 @@ export default function EscalaScreen({ navigation, route }) {
           {(shown.length || (nsIdx === idx && hotelRow)) ? (
             <View>
               {shown.map((lg, i) => {
-                const zo = legZulu(sel, lg, 'off'), zn = legZulu(sel, lg, 'on');
+                const zRef = d.report_time || (shown[0] && shown[0].off) || null;   // o dia de cada hora (legDay)
+                const zo = legZulu(sel, lg, 'off', zRef), zn = legZulu(sel, lg, 'on', zRef);
                 const zDiff = (zo && zo !== lg.off) || (zn && zn !== lg.on);   // Zulu só quando difere da hora local
                 return (
                   <View key={i} style={s.row}>

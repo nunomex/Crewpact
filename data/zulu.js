@@ -86,9 +86,27 @@ const deviceZulu = (dateISO, hhmm) => {
 // Zulu de um SETOR por PRIORIDADE (helper único, usado em todo o lado p/ não divergir):
 //   1) AUTORITATIVA (offZ/onZ do calendário/API)  2) MANUAL → fuso do AEROPORTO (origem p/ off,
 //   destino p/ on)  3) último recurso → fuso do DISPOSITIVO. `which` = 'off' | 'on'.
-export const legZulu = (dateISO, leg, which) => {
+// O DIA de cada hora (a conversão usa o fuso desse dia — na noite da mudança de hora o desvio muda às 01:00/02:00):
+//   • a partida é do dia seguinte se, no relógio, vem antes da `ref` (a apresentação do serviço, ou a 1.ª partida);
+//   • a chegada é do dia seguinte à partida se, no relógio, vem antes dela (o voo passa a meia-noite).
+// Sem `ref` a partida fica no dia `dateISO` (como antes). Revisão do 8b: os ecrãs mostravam a chegada depois da meia-noite
+// com o fuso do dia anterior.
+const hmOf = (s) => { const m = /^(\d{1,2}):(\d{2})$/.exec(s || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; };
+const nextIso = (iso) => { const t = new Date(`${iso}T12:00:00Z`); t.setUTCDate(t.getUTCDate() + 1); return t.toISOString().slice(0, 10); };
+export const legDay = (dateISO, leg, which, ref = null) => {
+  if (!dateISO || !leg) return dateISO;
+  const off = hmOf(leg.off), r = hmOf(ref);
+  const offDay = (off != null && r != null && off < r) ? nextIso(dateISO) : dateISO;
+  if (which === 'off') return offDay;
+  const on = hmOf(leg.on);
+  if (on == null) return offDay;
+  if (off != null) return on < off ? nextIso(offDay) : offDay;
+  return (r != null && on < r) ? nextIso(dateISO) : dateISO;
+};
+export const legZulu = (dateISO, leg, which, ref = null) => {
   if (!leg) return null;
   if (leg[which + 'Z']) return leg[which + 'Z'];
   const ap = which === 'off' ? leg.dep : leg.arr;
-  return airportZulu(dateISO, leg[which], ap) || deviceZulu(dateISO, leg[which]);
+  const day = legDay(dateISO, leg, which, ref);
+  return airportZulu(day, leg[which], ap) || deviceZulu(day, leg[which]);
 };

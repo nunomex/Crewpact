@@ -409,5 +409,11 @@ eq('fallback: total base+perDiem inalterado', ra.aeYtd.total, 20100);
   eq('split: sem acordo → null', monthSplit(NOV, { ym: '2026-11', todayISO: '2026-11-04' }), null);
 }
 
+// Revisão do 8b: o "incerto" do ano diz o motivo dos próprios meses. TAP pilotos 2026: o VB do ano é um intervalo (tapRaise).
+{
+  const tapP = getAe('tap', 'pilot');
+  const ry = yearStats({}, { year: 2026, ae: tapP, category: 'CTE', contract: '12/12', now: new Date('2026-04-15T12:00:00') });
+  eq('ano TAP pilotos: incerto pelo VB (tapRaise)', JSON.stringify([ry.aeYtd.uncertain, ry.aeYtd.uncertainReasons]), JSON.stringify([true, ['tapRaise']]));
+}
 console.log(`\n${fail === 0 ? '✅' : '❌'}  stats: ${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);
