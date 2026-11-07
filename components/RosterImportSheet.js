@@ -166,7 +166,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
       const fl = dt ? crewAt(dt).fleet : crewFleet;
       const day = [c.duty, ...(Array.isArray(c.duty.extra) ? c.duty.extra : [])];
       for (const sv of day) {
-        const mny = serviceMoney(aeD, catD, sv, { date: dt, fleet: fl, daySvcs: day });
+        const mny = serviceMoney(aeD, catD, sv, { date: dt, fleet: fl, daySvcs: day, baseAt: homeBaseAt });
         const add = (mny.perDiem || 0) + (mny.positioning || 0);
         if (add) perDiem = +((perDiem || 0) + add).toFixed(2);
         if (mny.nightStop != null) nsEur = mny.nightStop;

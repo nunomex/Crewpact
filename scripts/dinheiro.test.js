@@ -32,7 +32,7 @@ const pil = R('ae/easyjetSpac.js');
 const tapC = R('ae/tapSnpvac.js');
 const tapP = R('ae/tapSpac.js');
 const { eventCounts, paidSickDays } = R('data/aeEvents.js');
-const { monthlyAe, aeMonthTotal, extrasMonthEur } = R('data/perdiem.js');
+const { monthlyAe, aeMonthTotal, extrasMonthEur, serviceMoney } = R('data/perdiem.js');
 const { yearStats } = R('data/stats.js');
 const { disruptionsByDuty, sncToRegister } = R('data/disruption.js');
 const { startsAfter } = R('data/crewHistory.js');
@@ -242,6 +242,25 @@ has('TAP cabine Cl. 7.ª/1 a) (+30 min)', TAPC, 'o seu término após trinta min
   const cross = { '2026-10-31': { kind: 'flight', route: 'GRU-LIS', report_time: '21:00', block_on: '11:30' } };
   eq('TAP: 1-nov em curso conta em novembro', monthlyAe(cross, 'CTE', '12/12', tapP, { ym: '2026-11', fleet: 'WB' }).perDiem, 300);
   eq('TAP: 31-out conta em outubro', monthlyAe(cross, 'CTE', '12/12', tapP, { ym: '2026-10', fleet: 'WB' }).perDiem, 300);
+  // A estadia conta do último VOO (ou posicionamento) do dia, não do último serviço: LIS-MAD a 2 com pernoita e uma assistência no
+  // aeroporto de Madrid à tarde; MAD-LIS a 4 → 2 × AC1 e o dia 3 de AC2 (Cl. 7.ª, n.º 2, b)). Antes a assistência apagava a estadia.
+  const rotSb = {
+    '2026-11-02': { kind: 'flight', route: 'LIS-MAD', report_time: '08:00', block_on: '10:30', nightStop: true, extra: [{ kind: 'standby_airport', report_time: '14:00', block_on: '16:00' }] },
+    '2026-11-04': { kind: 'flight', route: 'MAD-LIS', report_time: '09:00', block_on: '10:15' },
+  };
+  eq('TAP cabine: assistência depois do voo não apaga a estadia (2 × AC1 + 1 AC2)', (({ perDiem, nightStops }) => [perDiem, nightStops])(monthlyAe(rotSb, 'CAB3', '12/12', tapC, { ym: '2026-11' })), [300, 80]);
+  // Os dias de calendário na hora da BASE ("das 0h00 às 23h59, horas locais da base", cabine Cl. 7.ª; pilotos RUPT Cl. 6.ª, n.º 9),
+  // pelas horas UTC das pernas: o regresso GRU-LIS apresenta-se às 21:00 de São Paulo a 4 de abril = 01:00 de Lisboa do dia 5 →
+  // o dia 4 é de estadia (B), não de voo (A). LIS-GRU 1-abr 22:00 → GRU 05:30 (08:30Z); GRU 22:00 (01:00Z de 5) → LIS 11:30.
+  // A: 1, 2 e 5 (3 × 300 = 900) · B: 3 e 4 (2 × 180 = 360). Pelas horas da escala dava 4 A + 1 B.
+  const lcZ = {
+    '2026-04-01': { kind: 'flight', route: 'LIS-GRU', report_time: '22:00', block_on: '05:30', nightStop: true, legs: [{ dep: 'LIS', arr: 'GRU', off: '23:00', on: '05:30' }] },
+    '2026-04-04': { kind: 'flight', route: 'GRU-LIS', report_time: '21:00', block_on: '11:30', legs: [{ dep: 'GRU', arr: 'LIS', off: '22:00', on: '11:30' }] },
+  };
+  const mz = monthlyAe(lcZ, 'CTE', '12/12', tapP, { ym: '2026-04', fleet: 'WB', baseAt: 'LIS' });
+  eq('TAP CTE: dias na hora da base → 3 A + 2 B', [mz.perDiem, mz.nightStops], [900, 360]);
+  eq('TAP CTE: sem a base, as horas da escala (como antes) → 4 A + 1 B', (({ perDiem, nightStops }) => [perDiem, nightStops])(monthlyAe(lcZ, 'CTE', '12/12', tapP, { ym: '2026-04', fleet: 'WB' })), [1200, 180]);
+  eq('TAP CTE: o valor do serviço de regresso na hora da base (1 dia A)', serviceMoney(tapP, 'CTE', lcZ['2026-04-04'], { date: '2026-04-04', fleet: 'WB', baseAt: 'LIS' }).perDiem, 300);
 }
 
 // ═══ M7 · Instrutor (pilotos easyJet) — Art. 42.º: "por cada dia ... em terra, incluindo em simulador" ═══

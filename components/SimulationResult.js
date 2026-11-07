@@ -48,7 +48,7 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
   // pernoita; TAP por dia (bloco 5/6).
   let perDiem = null, nsEur = null;
   if (ae && cat) {
-    const mny = serviceMoney(ae, cat, duty, { date: duty.duty_date, fleet: crewAt(duty.duty_date).fleet || crewFleet });
+    const mny = serviceMoney(ae, cat, duty, { date: duty.duty_date, fleet: crewAt(duty.duty_date).fleet || crewFleet, baseAt: homeBaseAt });
     const pd = (mny.perDiem || 0) + (mny.positioning || 0);
     if (mny.perDiem != null || mny.positioning != null) perDiem = +pd.toFixed(2);
     nsEur = mny.nightStop;

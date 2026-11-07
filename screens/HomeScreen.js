@@ -580,7 +580,7 @@ export default function HomeScreen({ navigation }) {
   let dayPerDiem = null;
   if (flight && ae && crewCategory && flight.route) {
     // O MESMO valor que entra no mês (o índice do mês incluído — auditoria L10, bloco 6).
-    dayPerDiem = serviceMoney(ae, crewCategory, flight, { date: flight.dateISO || todayISO, fleet: crewFleet }).perDiem;
+    dayPerDiem = serviceMoney(ae, crewCategory, flight, { date: flight.dateISO || todayISO, fleet: crewFleet, baseAt: homeBaseAt }).perDiem;
   }
   const loadingFlight = !flight && syncing && !syncDone && calOk;
   const isNonFlight = !!(flight && flight.kind && flight.kind !== 'flight');
@@ -757,7 +757,7 @@ export default function HomeScreen({ navigation }) {
     ? `${Math.floor(todayEnded.flight_minutes / 60)}:${String(todayEnded.flight_minutes % 60).padStart(2, '0')}` : null;
   let pdToday = null;
   if (todayEnded && !closeMulti && ae && crewCategory && todayEnded.route) {
-    pdToday = serviceMoney(ae, crewCategory, todayEnded, { date: todayISO, fleet: crewFleet }).perDiem;   // índice do mês (L10)
+    pdToday = serviceMoney(ae, crewCategory, todayEnded, { date: todayISO, fleet: crewFleet, baseAt: homeBaseAt }).perDiem;   // índice do mês (L10)
   }
   // Acordar sugerido (véspera): report − 75 min (estimativa: vestir + caminho).
   const wakeMs = (homeState === 'vespera' && reportMs != null) ? reportMs - TUNE.wakeBefore * 60000 : null;
@@ -810,10 +810,10 @@ export default function HomeScreen({ navigation }) {
   const monthAe = useMemo(() => {
     if (!ae || !crewCategory) return null;
     try {
-      const st0 = monthStats(duties, { ym: todayISO.slice(0, 7), ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, serviceStart, startExact: serviceStartExact, largada, lifestyle });
+      const st0 = monthStats(duties, { ym: todayISO.slice(0, 7), ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, serviceStart, startExact: serviceStartExact, largada, lifestyle, baseAt: homeBaseAt });
       return (st0 && st0.aeMonth) || null;
     } catch { return null; }
-  }, [duties, ae, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, todayISO, serviceStart, serviceStartExact, largada, lifestyle]);
+  }, [duties, ae, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, todayISO, serviceStart, serviceStartExact, largada, lifestyle, homeBaseAt]);
   const monthMoney = monthAe ? monthAe.total : null;
   // 9/3 e sazonais sem as datas de atividade (Cl. 48.ª/80.ª): o mês é INCERTO — diz-se, com o intervalo da base (bloco 5).
   const monthUnc = monthAe && monthAe.baseRange ? monthAe.baseRange : null;
@@ -822,9 +822,9 @@ export default function HomeScreen({ navigation }) {
   const monthSplitNow = useMemo(() => {
     if (!ae || !crewCategory) return null;   // fecho (título) + o cartão do mês em todos os estados
     try {
-      return monthSplit(duties, { ym: todayISO.slice(0, 7), ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, todayISO, serviceStart, startExact: serviceStartExact, largada, lifestyle });
+      return monthSplit(duties, { ym: todayISO.slice(0, 7), ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, todayISO, serviceStart, startExact: serviceStartExact, largada, lifestyle, baseAt: homeBaseAt });
     } catch { return null; }
-  }, [homeState, duties, ae, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, todayISO, serviceStart, serviceStartExact, largada, lifestyle]);
+  }, [homeState, duties, ae, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, todayISO, serviceStart, serviceStartExact, largada, lifestyle, homeBaseAt]);
   const dayOfMonth = new Date().getDate();
   const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
   const monthPct = Math.round((dayOfMonth / daysInMonth) * 100);

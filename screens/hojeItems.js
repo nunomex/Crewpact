@@ -222,7 +222,7 @@ export function buildTodayItems(ctx, lang) {
   }
 
   // 5 · Quanto recebo? (só AE)
-  const pay = payStatus({ duties, ae, crewCategory, crewContract, crewFleet, aeEvents, serviceStart: ctx.serviceStart, startExact: !!ctx.serviceStartExact, largada: ctx.largada, crewHistory: ctx.crewHistory, lifestyle: ctx.lifestyle });
+  const pay = payStatus({ duties, ae, crewCategory, crewContract, crewFleet, aeEvents, serviceStart: ctx.serviceStart, startExact: !!ctx.serviceStartExact, largada: ctx.largada, crewHistory: ctx.crewHistory, lifestyle: ctx.lifestyle, baseAt: ctx.baseAt || null });
   if (pay) {
     items.push({
       id: 'pay',

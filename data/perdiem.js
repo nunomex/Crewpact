@@ -5,6 +5,7 @@ import { eventCounts } from './aeEvents';
 import { isMediumHaul } from '../ae/tapLimits';
 import { ymShift, entryMonthBase } from '../ae/tables';
 import { resolveCrew } from './crewHistory';
+import { legsChainMs, chainReportMs, airportOffsetMin } from './zulu';
 
 // Índice do MÊS de uma data (pilotos easyJet: IPC desde 1-fev-2025; TAP pilotos: o degrau do VB, que o per diem ignora). Os
 // valores de cada serviço usam o MESMO índice do total do mês (auditoria L10: A-043/A-071/A-193/A-209/A-239).
@@ -142,7 +143,25 @@ const isoAdd = (iso, n) => {
 };
 const clockMin = (x) => { const mm = /^(\d{1,2}):([0-5]\d)$/.exec(String(x || '')); return mm ? (+mm[1]) * 60 + (+mm[2]) : null; };
 const codesOf = (route) => String(route || '').split('-').map((c) => c.trim().toUpperCase()).filter(Boolean);
-export const tapCalendarDays = (duties = {}, ym) => {
+// Os dias de calendário de um serviço na hora da BASE (cabine Cl. 7.ª: "das 0h00 às 23h59, horas locais da base"; pilotos RUPT
+// Cl. 6.ª, n.º 9: "começa às zero horas locais da base"), pelos instantes das pernas: da apresentação ao fim (os calços + 30 min,
+// alínea a), ou o sign-off). As horas da escala podem vir na hora do destino; sem os instantes ou sem a base → null (o relógio).
+const baseDaysOf = (s, date, base) => {
+  if (!base || !Array.isArray(s.legs) || !s.legs.length) return null;
+  const legs = s.legs.filter(Boolean);
+  const rep = chainReportMs(date, legs, s.report_time);
+  const ch = legsChainMs(date, legs, s.report_time);
+  const last = ch[ch.length - 1];
+  if (rep == null || !last || last.onMs == null) return null;
+  const so = clockMin(s.signOff), lastOn = clockMin(legs[legs.length - 1].on);
+  const endMs = so != null && lastOn != null ? last.onMs + ((((so - lastOn) % 1440) + 1440) % 1440) * 60000 : last.onMs + 30 * 60000;
+  const dayAt = (ms) => { const off = airportOffsetMin(base, ms); return off == null ? null : new Date(ms + off * 60000).toISOString().slice(0, 10); };
+  const a = dayAt(rep), b = dayAt(endMs);
+  return a && b && b >= a ? { start: a, end: b } : null;
+};
+// `baseAt` (código ou função do dia): os dias na hora da base (baseDaysOf); sem ela, as horas da escala.
+export const tapCalendarDays = (duties = {}, ym, { baseAt = null } = {}) => {
+  const baseOf = (d) => String((typeof baseAt === 'function' ? baseAt(d) : baseAt) || '').trim().toUpperCase() || null;
   const flightDay = new Map();   // date → distâncias (NM) dos serviços que tocam esse dia
   const haulDay = new Map();     // date → 'long' | 'medium' | 'unknown' (pilotos, RUPT Cl. 32.ª/37.ª; o pior caso do dia é o longo)
   const groundDay = new Map();   // date → serviços sem voo (assistência, formação, escritório) — a Cl. 8.ª (cabine) e a 9.ª (pilotos)
@@ -154,6 +173,9 @@ export const tapCalendarDays = (duties = {}, ym) => {
     const list = [d, ...(Array.isArray(d.extra) ? d.extra : [])].filter(Boolean)
       .sort((a, b) => (clockMin(a.report_time) ?? 0) - (clockMin(b.report_time) ?? 0));
     const dayNight = list.some((s) => s.nightStop);
+    // A estadia conta do último VOO (ou posicionamento) do dia: uma assistência ou um escritório lá fora depois do voo não a
+    // apagam (antes só o último serviço do dia podia ser "fora").
+    const lastFly = list.reduce((k, x, j) => (((x.kind || 'flight') === 'flight' || x.kind === 'positioning') ? j : k), -1);
     list.forEach((s, i) => {
       const kind = s.kind || 'flight';
       if (kind === 'standby_airport' || kind === 'standby_home' || kind === 'training' || kind === 'office') {
@@ -172,27 +194,30 @@ export const tapCalendarDays = (duties = {}, ym) => {
         dists = dists.filter((x) => x != null);
         if (!dists.length) dists = [0];   // DHC sem distância: conta o dia (o valor sai da coluna de médio curso)
       }
-      // Dias em que o serviço está "em curso": do dia da apresentação ao do fim (sign-off, ou calços + 30 min).
-      const r = clockMin(s.report_time);
-      const so = clockMin(s.signOff), bo = clockMin(s.block_on);
-      let span = 0;
-      if (r != null && (so != null || bo != null)) {
-        const end = so != null ? so + (so < r ? 1440 : 0) : bo + (bo < r ? 1440 : 0) + 30;
-        span = Math.floor(end / 1440);
+      // Dias em que o serviço está "em curso": do dia da apresentação ao do fim (sign-off, ou calços + 30 min) — na hora da base
+      // quando há os instantes das pernas; senão pelas horas da escala.
+      const bd = baseDaysOf(s, date, baseOf(date));
+      let startDate = date, endDate = date;
+      if (bd) { startDate = bd.start; endDate = bd.end; } else {
+        const r = clockMin(s.report_time);
+        const so = clockMin(s.signOff), bo = clockMin(s.block_on);
+        if (r != null && (so != null || bo != null)) {
+          const end = so != null ? so + (so < r ? 1440 : 0) : bo + (bo < r ? 1440 : 0) + 30;
+          endDate = isoAdd(date, Math.floor(end / 1440));
+        }
       }
       // A operação (pilotos NB): médio curso se todos os pontos estão na área e o repouso fica a ≤ 30° de longitude da partida;
       // um DH não é voo efetivo → a coluna da frota (nota da Tabela A-3.2), isto é, médio no NB.
       const mh = kind === 'flight' ? isMediumHaul(codesOf(s.route), 'pilot') : true;
       const haul = mh === false ? 'long' : mh === true ? 'medium' : 'unknown';
-      for (let k = 0; k <= span; k++) {
-        const day = isoAdd(date, k);
+      for (let day = startDate; day <= endDate; day = isoAdd(day, 1)) {
         if (!flightDay.has(day)) flightDay.set(day, []);
         flightDay.get(day).push(...dists);
         const prev = haulDay.get(day);
         haulDay.set(day, prev === 'long' || haul === 'long' ? 'long' : (prev === 'unknown' || haul === 'unknown') ? 'unknown' : 'medium');
       }
       const codes = codesOf(s.route);
-      svcs.push({ date, endDate: isoAdd(date, span), from: codes[0] || null, to: codes[codes.length - 1] || null, away: dayNight && i === list.length - 1 });
+      svcs.push({ date: startDate, endDate, from: codes[0] || null, to: codes[codes.length - 1] || null, away: dayNight && i === lastFly });
     });
   }
   const stayDays = [];
@@ -297,7 +322,8 @@ export const awayNights = (duties = {}, ym = null) => {
 // e `lifestyle` (PPY como estilo de vida) servem as prestações que dependem deles (bloco 6, L1/L3/L4/L11).
 // `startExact`: o tripulante deu o DIA da entrada (a data guarda-se ao mês) — sem ele, o mês da entrada e os subsídios desse ano
 // ficam incertos (ae/tables.js: entryFrac, admissionRange, entryMonthBase).
-export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1, fleet, fullShare, serviceStart = null, startExact = false, largada = null, history = null, events = [], lifestyle = false } = {}) => {
+// `baseAt`: a base (código ou função do dia) — na TAP os dias de calendário contam-se na hora da base (tapCalendarDays).
+export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1, fleet, fullShare, serviceStart = null, startExact = false, largada = null, history = null, events = [], lifestyle = false, baseAt = null } = {}) => {
   if (!ae || !category || !ae.computeAeMonth) return null;
   if (ym && ae.hasTableFor && !ae.hasTableFor(category, ym)) return null;   // sem tabela nesse mês → o mês não dá € (bloco 5)
   const byDay = !!ae.PER_DIEM_BY_DAY;   // TAP: ajudas de custo por dia de calendário (tapCalendarDays)
@@ -396,7 +422,7 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
   // ── TAP: tudo por dia de calendário (Cl. 7.ª/8.ª cabine · Cl. 9.ª pilotos; bloco 6, L5) ──
   let groundEur = 0, groundMaxDelta = 0, complEur = 0, chefia = 0, extrasMaxDelta = 0;
   if (byDay) {
-    const td = tapCalendarDays(duties, ym || '');
+    const td = tapCalendarDays(duties, ym || '', { baseAt });
     td.flightDays.forEach((f) => flights.push(ae.GROUND_PER_DIEM ? { dists: f.dists, longHaul: f.longHaul } : f.dists));
     const stays = new Set(td.stayDays);
     withRoute = td.withRoute; missing = td.missing;
@@ -469,7 +495,7 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
     const prev = ym ? ymShift(ym, -1) : null;
     const catPrev = prev && Array.isArray(history) && history.length ? (resolveCrew(history, prev).category || category) : category;   // o direito nasce no mês das ajudas
     if (ae.isChefia && ae.isChefia(catPrev) && ae.CHEFIA_PCT && ym) {
-      const tp = tapCalendarDays(duties, prev);
+      const tp = tapCalendarDays(duties, prev, { baseAt });
       const ac1 = ae.perDiem(catPrev, [1], 1, undefined, prev), ac2 = ae.nightStop(catPrev, 1, prev);
       if (ac1 != null && ac2 != null) chefia = r2((tp.flightDays.length * ac1 + tp.stayDays.length * ac2) * ae.CHEFIA_PCT);
     }
@@ -525,10 +551,10 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
 // mostrarem o MESMO número. `monthlyAe.total` já inclui base + abono (cabine, UMA vez)
 // + per-diem + pernoita + escritório/ADTY; somamos só os EXTRAS manuais do mês.
 // extras = mapa de contadores { <id>: n }. Devolve número (€), ou null sem ae/categoria.
-export const aeMonthTotal = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1, extras = {}, fleet, fullShare, serviceStart = null, startExact = false, largada = null, history = null, events = [], lifestyle = false } = {}) => {
+export const aeMonthTotal = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1, extras = {}, fleet, fullShare, serviceStart = null, startExact = false, largada = null, history = null, events = [], lifestyle = false, baseAt = null } = {}) => {
   if (!ae || !category) return null;
   if (ym && ae.hasTableFor && !ae.hasTableFor(category, ym)) return null;   // sem tabela nesse mês → sem €
-  const m = monthlyAe(duties, category, contract, ae, { ym, index, fleet, fullShare, serviceStart, startExact, largada, history, events, lifestyle });
+  const m = monthlyAe(duties, category, contract, ae, { ym, index, fleet, fullShare, serviceStart, startExact, largada, history, events, lifestyle, baseAt });
   const baseTotal = m ? m.total : (ae.monthlyBase ? (ae.monthlyBase(category, { contract, index, ym, fullShare, serviceStart, largada, history }) || 0) : 0);
   const xt = ae.monthExtras ? ae.monthExtras(category, extras, { index, ym, contract, fullShare }) : null;
   return +(baseTotal + (xt ? xt.total : 0)).toFixed(2);
@@ -549,7 +575,7 @@ export const extrasMonthEur = (ae, category, events = [], ym, { duties = null, i
 // MESMO índice do total do mês — a soma dos serviços bate com o mês. Devolve { perDiem, positioning, positioningMax, nightStop,
 // other: { lbl: {pt, en}, eur, max? } } (null onde não há). `daySvcs` = os serviços do dia (assistência chamada = há voo no dia).
 // TAP: o € é do DIA (AC1 / per diem A, B, complemento) — num dia com voo, um serviço sem voo não paga à parte.
-export const serviceMoney = (ae, category, svc, { date, fleet, daySvcs = null } = {}) => {
+export const serviceMoney = (ae, category, svc, { date, fleet, daySvcs = null, baseAt = null } = {}) => {
   const out = { perDiem: null, positioning: null, positioningMax: null, nightStop: null, other: null };
   if (!ae || !category || !svc) return out;
   const kind = svc.kind || 'flight';
@@ -563,7 +589,7 @@ export const serviceMoney = (ae, category, svc, { date, fleet, daySvcs = null } 
       const flown = day.filter(Boolean).slice().sort((a, b) => (clockMin(a.report_time) ?? 0) - (clockMin(b.report_time) ?? 0))
         .filter((x) => (x.kind || 'flight') === 'flight' || x.kind === 'positioning');
       if (flown.indexOf(svc) > 0) { out.dayCounted = true; return out; }
-      const td = tapCalendarDays({ [date]: { ...(flown[0] || svc), extra: flown.slice(1) } }, '');
+      const td = tapCalendarDays({ [date]: { ...(flown[0] || svc), extra: flown.slice(1) } }, '', { baseAt });
       let sum = 0, ok = false;
       for (const f of td.flightDays) {
         const v = ae.perDiem(category, f.dists, idx, fleet, f.date, { longHaul: f.longHaul == null ? undefined : f.longHaul });
