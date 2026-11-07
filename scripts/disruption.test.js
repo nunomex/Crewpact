@@ -35,6 +35,7 @@ const eq = (name, got, want) => {
   else { fail++; fails.push(`  ✗ ${name}\n      esperado: ${JSON.stringify(want)}\n      obtido:   ${JSON.stringify(got)}`); }
 };
 const check = (name, cond) => { if (cond) { pass++; } else { fail++; fails.push(`  ✗ ${name}`); } };
+const eqj = (n, g, w) => eq(n, JSON.stringify(g), JSON.stringify(w));
 
 const mk = (over = {}) => ({
   id: 'x', dutyDate: '2026-07-14', detectedAt: '2026-07-14T09:12', source: 'calendar', route: 'LIS-FNC-LIS',
@@ -180,6 +181,13 @@ check('prova: método e limitações presentes', html.includes('DETETADA pela ap
   eq('início antecipado 2 h 30 → SNC', (sncToRegister([ch('2026-11-09T10:00', ['08:00', '12:00'], ['05:30', '12:00'])], { isPilot: true })[0] || {}).dStartMin, -150);
   eq('mudança de 1 h 30 → nenhum', sncToRegister([ch('2026-11-09T10:00', ['08:00', '12:00'], ['08:00', '13:30'])], { isPilot: true }).length, 0);
   eq('dois serviços com SNC → dois, por data', sncToRegister([...tres, { ...ch('2026-11-10T09:00', ['08:00', '12:00'], ['08:00', '15:00']), dutyDate: '2026-11-11', before: { report: '08:00', end: '12:00', sectors: 2, kind: 'flight' } }], { isPilot: true }).map((x) => x.date), ['2026-11-10', '2026-11-11']);
+  // Bloco 8b: a Escala e o ecrã Disrupção dão a MESMA resposta (antes, na cabine, a Escala juntava as mudanças do próprio
+  // dia ao SNC). Cabine: D-1 +3 h (SNC) e no próprio dia +2 h (RDP) → a Escala propõe o SNC de +3 h, como a Disrupção.
+  const { disruptionsByDuty } = require(path.resolve('data/disruption.js'));
+  const cab2 = [ch('2026-11-09T10:00', ['08:00', '12:00'], ['08:00', '15:00']), ch('2026-11-10T06:00', ['08:00', '15:00'], ['08:00', '17:00'])];
+  const sncDis = disruptionsByDuty(cab2, { isPilot: false }).filter((c) => c.type === 'snc').map((c) => [c.dutyDate, c.dEndMin]);
+  eqj('cabine: Escala = Disrupção (SNC de +3 h)', sncToRegister(cab2, { isPilot: false }).map((x) => [x.date, x.dEndMin]), sncDis);
+  eqj('cabine: … e é o de +3 h (só as mudanças antes do dia)', sncDis, [[D, 180]]);
   const sp = fs.readFileSync(path.resolve('fontes/ae-easyjet/easyjet-spac-2023.txt'), 'utf8').replace(/\s+/g, ' ');
   check('fonte: Art. 63.º n.º 4 literal no BTE', sp.includes('O pagamento será devido comparando o novo serviço com o planeado em escala nas 48 horas antecedentes'));
 }

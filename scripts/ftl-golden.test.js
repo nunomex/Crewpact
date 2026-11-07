@@ -55,6 +55,7 @@ const eq = (name, got, want) => {
   if (got === want) { pass++; }
   else { fail++; fails.push(`  ✗ ${name}\n      esperado: ${want}\n      obtido:   ${got}`); }
 };
+var eqj = (n, g, w) => eq(n, JSON.stringify(g), JSON.stringify(w));   // comparação por JSON (blocos sem o seu eqj)
 const fdpMax = (o) => computeFdp(o).maxFdpMin;
 
 // ─────────────────────────────── FDP — Quadro 2 (aclimatado) ───────────────────────────────
@@ -707,6 +708,52 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   // Com 59:30 feitos, a margem é 0:30 (a app dizia "faltam 1 h").
   const w7b = computeDutyTime({ [iso(28)]: { servicoMin: 3570, servico: 59.5 } }, ref).find((w) => w.id === '7d');
   eq('A-172: 59:30 → faltam 30 min', w7b.headroomMin, 30);
+  // Bloco 8b (A-173): o serviço que passa a meia-noite reparte-se pelos dias locais (ORO.FTL.105(15) "dia local" começa às
+  // 00h00) — as horas depois da meia-noite são do dia seguinte. A app somava tudo no dia do report e o período de 7 dias que
+  // começa no dia seguinte perdia-as. Serviço 22:00 de 01/11 → 08:00 de 02/11 (10 h: 2 h + 8 h) + 52 h de 02 a 08/11.
+  const dNt = { [iso(1)]: { report_time: '22:00', block_on: '08:00', sectors: 1, flight_minutes: 540, legs: [{ off: '22:30', on: '07:30' }] } };
+  for (let i = 2; i <= 5; i++) dNt[iso(i)] = { report_time: '10:00', block_on: '20:00', sectors: 2 };   // 4 × 10 h
+  dNt[iso(8)] = { report_time: '06:00', block_on: '18:00', sectors: 2 };                               // 12 h
+  const logNt = reconcileDayLog(dNt, {});
+  eq('A-173: a entrada guarda as 8 h depois da meia-noite', logNt[iso(1)].servicoNextMin, 480);
+  eq('A-173: e as 7:30 de voo depois da meia-noite (pelas pernas)', logNt[iso(1)].vooNextMin, 450);
+  const w7nt = computeDutyTime(logNt, new Date(2026, 10, 8, 12)).find((w) => w.id === '7d');
+  eq('A-173: 7 dias de 02 a 08/11 = 52 h + 8 h = 60:00', w7nt.doneMin, 3600);
+  const a7 = ftl.limitsAround(logNt, iso(8)).find((w) => w.id === '7d');
+  eq('A-173: limitsAround vê o mesmo período (60:00)', a7.doneMin, 3600);
+  // Com mais 1 h no dia 8 (13 h) o período passa: 61 h → excede (a app dava 53 h "dentro").
+  const logNt2 = reconcileDayLog({ ...dNt, [iso(8)]: { report_time: '06:00', block_on: '19:00', sectors: 2 } }, {});
+  eq('A-173: 61 h → excede', computeDutyTime(logNt2, new Date(2026, 10, 8, 12)).find((w) => w.id === '7d').over, true);
+  // O total não muda: o período de 01 a 07/11 tem as 2 h do dia 1 + 8 h + 40 h = 50 h, e o de 28 dias soma tudo uma vez.
+  eq('A-173: 01 a 07/11 = 50:00', computeDutyTime(logNt, new Date(2026, 10, 7, 12)).find((w) => w.id === '7d').doneMin, 3000);
+  eq('A-173: 28 dias contam o serviço inteiro uma vez (62 h)', computeDutyTime(logNt, new Date(2026, 10, 28, 12)).find((w) => w.id === '28d').doneMin, 3720);
+  eq('A-173: voo de 28 dias também uma vez (9 h)', computeFlightTime(logNt, new Date(2026, 10, 28, 12)).find((w) => w.id === '28d').doneMin, 540);
+  // Revisão do 8b, E1: o Início olha para o período que acaba HOJE; a parte de amanhã do serviço de hoje está no que acaba
+  // amanhã → o pior dos dois. 05–09/11: 5 × 10:30; 10/11: 20:00 → 04:30 (4:00 + 4:30). Às 18:00 de 10/11: 61:00 → excede.
+  const dE1 = {}; for (let i = 5; i <= 9; i++) dE1[iso(i)] = { report_time: '06:00', block_on: '16:30', sectors: 2 };
+  dE1[iso(10)] = { report_time: '20:00', block_on: '04:30', sectors: 1 };
+  const wE1 = computeDutyTime(reconcileDayLog(dE1, {}), new Date(2026, 10, 10, 18)).find((w) => w.id === '7d');
+  eqj('E1: o Início vê 61:00 e excede (dizia 56:30 "dentro")', [wE1.doneMin, wE1.over], [3660, true]);
+  // Revisão do 8b, E2: a Simulação/importação do serviço noturno vê o período que começa no dia seguinte. 10/11: 22:00 → 06:00;
+  // 11–15/11: 5 × 9 h; 17/11: 10 h → 11 a 17/11 = 6 + 45 + 10 = 61:00.
+  const dE2 = { [iso(10)]: { report_time: '22:00', block_on: '06:00', sectors: 1 } };
+  for (let i = 11; i <= 15; i++) dE2[iso(i)] = { report_time: '08:00', block_on: '17:00', sectors: 2 };
+  dE2[iso(17)] = { report_time: '08:00', block_on: '18:00', sectors: 2 };
+  const aE2 = ftl.limitsAround(reconcileDayLog(dE2, {}), iso(10)).find((w) => w.id === '7d');
+  eqj('E2: limitsAround do dia 10 vê 11 a 17/11 = 61:00', [aE2.doneMin, aE2.over, aE2.from, aE2.to], [3660, true, iso(11), iso(17)]);
+  // Revisão do 8b, reparo 1: com a 2.ª notificação o PSV começa antes da apresentação (CS 205(d)(1)(ii)) → a parte depois da
+  // meia-noite conta desde aí. Apresentação 23:00, PSV desde as 22:00, calços 05:30 → 5:30 depois da meia-noite (não 6:30).
+  const dR1 = ftl.dutyToFtlDay({ report_time: '23:00', block_on: '05:30', sectors: 1, special: { delayedFrom: '20:00', delayed1: '22:00', notice2: '21:00' } });
+  eqj('Reparo 1: serviço 7:30 desde as 22:00 → 5:30 no dia seguinte', [dR1.servicoMin, dR1.servicoNextMin], [450, 330]);
+  // Revisão do 8b, E5 (hora de verão): na noite de 24 para 25/10/2026 os relógios de Lisboa recuam 1 h às 02:00. Serviço das
+  // 22:00 às 04:00 → 7 h reais (ORO.FTL.105(12)); a chegada depois da meia-noite convertia-se com o fuso do dia 24 → 6 h.
+  const dDst = ftl.ftlForDuty({ report_time: '22:00', block_on: '04:00', sectors: 1, legs: [{ dep: 'LIS', arr: 'OPO', off: '22:45', on: '04:00' }] }, { date: '2026-10-24', base: 'LIS' });
+  eq('E5: PSV na noite da hora de inverno = 7:00 reais', dDst.fdp.actualFdpStr, '07:00');
+  // E em março (29/03/2026, adianta 1 h às 01:00): 22:00 → 04:00 são 5 h reais.
+  const dDst2 = ftl.ftlForDuty({ report_time: '22:00', block_on: '04:00', sectors: 1, legs: [{ dep: 'LIS', arr: 'OPO', off: '22:45', on: '04:00' }] }, { date: '2026-03-28', base: 'LIS' });
+  eq('E5: PSV na noite da hora de verão = 5:00 reais', dDst2.fdp.actualFdpStr, '05:00');
+  // Serviço que não passa a meia-noite: nada a repartir.
+  eq('A-173: serviço diurno sem parte seguinte', logNt[iso(2)].servicoNextMin || 0, 0);
   // Entradas antigas (só horas) continuam a contar.
   eq('dayLog antigo (horas) ainda soma', computeDutyTime({ [iso(28)]: { servico: 10 } }, ref).find((w) => w.id === '7d').doneMin, 600);
   // A-161: um voo sem hora de report não desaparece dos 210. 20 × LIS-FNC-LIS de 5:30 sem "RP" = 110 h de voo > 100 h.
@@ -1001,6 +1048,22 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('Cabine c2 com 2:00 de repouso → 15:00', computeDuty({ state: 'acc', report: '06:00', end: '20:00', sectors: 2, augmented: { restClass: 'c2', additionalCrew: 2, fcRestClass: 'c1', cabinRestMin: 120 } }).fdp.maxFdpStr, '15:00');
   // A classe da cabine manda quando a técnica vai mais longe: técnica c1 +2 = 17:00, cabine em classe 3 (máx 16:00).
   eq('Cabine c3 com técnica a 17:00 → 16:00', computeDuty({ state: 'acc', report: '06:00', end: '20:00', sectors: 2, augmented: { restClass: 'c3', additionalCrew: 2, fcRestClass: 'c1', cabinRestMin: 180 } }).fdp.maxFdpStr, '16:00');
+  // A diferença de apresentação (ORO.FTL.205(c)) prolonga o PSV DA CABINE, e a tabela (c)(3) lê-se pelo PSV da cabine:
+  // a classe e o repouso a bordo da cabine limitam o total JÁ com a diferença (bloco 8b: a app somava a diferença depois e
+  // dava classe 3 a 16:45 "dentro", quando a tabela diz "Not allowed" acima de 16:00).
+  const cabGap = (end, cls, rest, gap) => computeDuty({ state: 'acc', report: '06:00', end, sectors: 2, isPilot: false, cabinReportGapMin: gap, augmented: { restClass: cls, additionalCrew: 2, fcRestClass: 'c1', cabinRestMin: rest } });
+  eq('Cabine c3 + 45 min de diferença: teto continua 16:00', cabGap('22:40', 'c3', 180, 45).fdp.maxFdpStr, '16:00');
+  eq('Cabine c3 + 45 min: PSV 16:40 → excede 0:40', cabGap('22:40', 'c3', 180, 45).fdp.excessStr, '00:40');
+  eq('Cabine c2 + 45 min: teto continua 17:00', cabGap('23:30', 'c2', 240, 45).fdp.maxFdpStr, '17:00');
+  eq('Cabine c2 + 45 min: PSV 17:30 → excede 0:30', cabGap('23:30', 'c2', 240, 45).fdp.over, true);
+  // Repouso curto também limita com a diferença: c2 com 2:00 → 15:00, mesmo com os pilotos 30 min depois.
+  eq('Cabine c2, 2:00 de repouso + 30 min: teto 15:00', cabGap('20:00', 'c2', 120, 30).fdp.maxFdpStr, '15:00');
+  // Onde a técnica limita (c1, 4:00 de repouso → a classe vai a 18:00), a diferença ainda soma: 17:00 + 0:45 = 17:45.
+  eq('Cabine c1 + 45 min: técnica 17:00 + 0:45 = 17:45', cabGap('23:30', 'c1', 240, 45).fdp.maxFdpStr, '17:45');
+  // Revisão do 8b, E3: as 6 h da CS 220(d) são da pausa LÍQUIDA. Pausa bruta 6:15 às 10:00 (líquida 5:45, sem WOCL): as duas
+  // leituras contam 5:45 → exato, sem a dúvida da sala.
+  const dE3 = computeDuty({ state: 'acc', report: '06:00', end: '20:00', sectors: 4, splitBreakH: 6.25, splitBreakStart: '10:00', accommodation: 'basic' });
+  eqj('E3: pausa líquida 5:45 com sala → exato, sem dúvida', [dE3.fdp.exact, dE3.fdp.uncertain, dE3.fdp.unknowns], [true, false, []]);
   // Repouso a bordo abaixo de 90 min consecutivos (CS FTL.1.205(c)(1)(ii)) → não permitido.
   eq('Cabine com 1:15 de repouso a bordo → não permitido', computeDuty({ state: 'acc', report: '06:00', end: '20:00', sectors: 2, augmented: { restClass: 'c1', additionalCrew: 2, fcRestClass: 'c1', cabinRestMin: 75 } }).fdp.notAllowed, true);
   // Piloto da auditoria A-142: 3 pilotos, classe 3, 10:00 → 00:10 = PSV 14:10 > 14:00 → excede 0:10, calços até às 00:00.
@@ -1135,7 +1198,10 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   ];
   const splitBad = dayFtlFromDuties(splitPair('basic'));
   eq('Split ilegal: 1 FDP combinado = 17:00', splitBad.psv.result, '17:00');
-  eq('Split ilegal: máx 16:00 (base 13:00 + ext 3:00)', splitBad.psv.max, '16:00');
+  // Bloco 8b: com só uma sala numa pausa de 10 h, a FAQ EASA 47628 não dá extensão (garantido 13:00); a AESA dá +3:00
+  // (possível 16:00). 17:00 passa os dois → excede pelo possível.
+  eqj('Split ilegal: 13:00 (EASA) a 16:00 (AESA)', [splitBad.psv.max, splitBad.psv.maxHi], ['13:00', '16:00']);
+  eqj('Split ilegal: falta a leitura da sala', splitBad.psv.unknowns, ['splitAccRule']);
   eq('Split ilegal: excede → over', splitBad.psv.over, true);
   eq('Split ilegal: excesso +01:00', splitBad.psv.excess, '01:00');
   eq('Split ilegal: serviço (210) conta a pausa → 17h', splitBad.servico, 17);
@@ -1199,7 +1265,10 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
     { report_time: '06:00', block_on: '08:00', sectors: 1, flight_minutes: 120, accommodation: acc },
     { report_time: '16:00', block_on: '22:30', sectors: 1, flight_minutes: 300 },
   ];
-  eq('Split 8h alojamento não adequado: máx 16:00', dayFtlFromDuties(mk('basic'), {}).psv.max, '16:00');
+  eqj('Split 8h só com sala: 13:00 (EASA) a 16:00 (AESA)', [dayFtlFromDuties(mk('basic'), {}).psv.max, dayFtlFromDuties(mk('basic'), {}).psv.maxHi], ['13:00', '16:00']);
+  // 15:00 de PSV com sala: passa o garantido e não o possível → incerto (a app dava "dentro").
+  const mk15 = [{ ...mk('basic')[0] }, { ...mk('basic')[1], block_on: '21:00' }];
+  eqj('Split 8h só com sala, 15:00 → incerto', [dayFtlFromDuties(mk15, {}).psv.over, !!dayFtlFromDuties(mk15, {}).psv.uncertain], [false, true]);
   eq('Split 8h alojamento não adequado: 16:30 > 16:00 → over', dayFtlFromDuties(mk('basic'), {}).psv.over, true);
   eq('Split 8h SEM alojamento (dito): sem extensão (13:00)', dayFtlFromDuties(mk('none'), {}).psv.max, '13:00');
   eq('Split 8h COM alojamento: máx 16:45 (pausa toda conta)', dayFtlFromDuties(mk(true), {}).psv.max, '16:45');

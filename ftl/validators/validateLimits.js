@@ -1,11 +1,19 @@
 // Validação dos limites cumulativos (ORO.FTL.210) — serviço + voo, em minutos inteiros.
 import { DUTY_WINDOWS, FLIGHT_WINDOWS } from '../rules/flightTimeRules';
-import { sumWindowDaysMin, sumCalendarYearMin, entryMin, windowResult } from '../calculators/cumulativeCalculator';
+import { sumWindowDaysMin, sumCalendarYearMin, entryMin, nextMin, dayMin, windowResult } from '../calculators/cumulativeCalculator';
 import { computeFlightTime } from '../calculators/flightTimeCalculator';
 import { isoDay } from '../utils/time';
 
-export const computeDutyTime = (dayLog = {}, ref = new Date()) =>
-  DUTY_WINDOWS.map((w) => windowResult(w, 'servico', sumWindowDaysMin(dayLog, 'servico', w.days, ref)));
+// O serviço de HOJE pode passar a meia-noite (bloco 8b): a parte de amanhã conta no período que acaba amanhã, que também o
+// contém → vê-se o pior dos dois (revisão do 8b, E1: o Início dizia "dentro" num serviço que fazia passar os 7 dias).
+export const spillsToNextDay = (dayLog, ref, key) => nextMin(dayLog[isoDay(ref)], key) > 0;
+export const nextDayOf = (ref) => { const t = new Date(ref); t.setDate(t.getDate() + 1); return t; };
+export const computeDutyTime = (dayLog = {}, ref = new Date()) => {
+  const spill = spillsToNextDay(dayLog, ref, 'servico');
+  return DUTY_WINDOWS.map((w) => windowResult(w, 'servico', Math.max(
+    sumWindowDaysMin(dayLog, 'servico', w.days, ref),
+    spill ? sumWindowDaysMin(dayLog, 'servico', w.days, nextDayOf(ref)) : 0)));
+};
 
 export const validateLimits = (dayLog = {}, ref = new Date()) => {
   const duty = computeDutyTime(dayLog, ref);
@@ -36,24 +44,27 @@ export const limitsAround = (dayLog = {}, date) => {
     return out;
   };
   // Os períodos de N dias que contêm o dia: acabam entre `date` e `date` + N − 1. Somas por deslizamento sobre os 2N − 1 dias à
-  // volta (um ciclo por período; a importação pergunta por centenas de dias).
+  // volta (um ciclo por período; a importação pergunta por centenas de dias). Se o serviço do dia passa a meia-noite, a parte de
+  // amanhã também está no período que acaba em `date` + N (revisão do 8b, E2) → mais um período.
   const daysWin = (w, key) => {
     const N = w.days;
-    const isos = Array.from({ length: 2 * N - 1 }, (_, k) => isoDay(shift(k - (N - 1))));
+    const ext = nextMin(dayLog[isoDay(D)], key) > 0 ? 1 : 0;
+    const isos = Array.from({ length: 2 * N - 1 + ext }, (_, k) => isoDay(shift(k - (N - 1))));
     const ents = isos.map((iso) => dayLog[iso]);
-    const vals = ents.map((e) => entryMin(e, key));
+    // Por DIA LOCAL (bloco 8b, A-173): a parte depois da meia-noite de um serviço conta no dia seguinte.
+    const vals = isos.map((iso) => dayMin(dayLog, iso, key));
     let sum = vals.slice(0, N).reduce((a, b) => a + b, 0), bestK = 0, bestSum = sum;
-    for (let k = 1; k < N; k++) { sum += vals[k + N - 1] - vals[k - 1]; if (sum > bestSum) { bestSum = sum; bestK = k; } }
+    for (let k = 1; k < N + ext; k++) { sum += vals[k + N - 1] - vals[k - 1]; if (sum > bestSum) { bestSum = sum; bestK = k; } }
     const out = { ...windowResult(w, key, bestSum), from: isos[bestK], to: isos[bestK + N - 1] };
     // Serviços sem apresentação (bloco 4): o serviço deles é um MÍNIMO; com o MÁXIMO possível (servicoMaxMin) um período que
     // não passa pode passar → "incerto" (nem "dentro" nem "excede" inventados). Só o serviço — o tempo de voo é exato.
     if (key !== 'servico' || out.over) return out;
     const est = ents.map((e) => (e && typeof e.servicoMaxMin === 'number' ? 1 : 0));
     if (!est.some(Boolean)) return out;
-    const mxv = ents.map((e, k) => (est[k] ? e.servicoMaxMin : vals[k]));
+    const mxv = ents.map((e, k) => (est[k] ? vals[k] + e.servicoMaxMin - entryMin(e, key) : vals[k]));
     let mx = mxv.slice(0, N).reduce((a, b) => a + b, 0), ne = est.slice(0, N).reduce((a, b) => a + b, 0);
     let worst = ne ? { mx, ne, k: 0 } : null;
-    for (let k = 1; k < N; k++) {
+    for (let k = 1; k < N + ext; k++) {
       mx += mxv[k + N - 1] - mxv[k - 1]; ne += est[k + N - 1] - est[k - 1];
       if (ne && (!worst || mx > worst.mx)) worst = { mx, ne, k };
     }
@@ -64,14 +75,27 @@ export const limitsAround = (dayLog = {}, date) => {
   for (const w of FLIGHT_WINDOWS) {
     if (w.kind === 'calendarYear') {
       const y = D.getFullYear();
-      out.push({ ...windowResult(w, 'voo', sumCalendarYearMin(dayLog, 'voo', D)), from: `${y}-01-01`, to: `${y}-12-31` });
+      const yr = { ...windowResult(w, 'voo', sumCalendarYearMin(dayLog, 'voo', D)), from: `${y}-01-01`, to: `${y}-12-31` };
+      // Voo de 31/12 que passa a meia-noite: a parte de 1/1 conta no ano seguinte (revisão do 8b, E2) → o pior dos dois.
+      const nx = shift(1);
+      if (nx.getFullYear() !== y && nextMin(dayLog[isoDay(D)], 'voo') > 0) {
+        const ny = { ...windowResult(w, 'voo', sumCalendarYearMin(dayLog, 'voo', nx)), from: `${y + 1}-01-01`, to: `${y + 1}-12-31` };
+        out.push(ny.doneMin > yr.doneMin ? ny : yr);
+      } else out.push(yr);
     } else if (w.kind === 'months12') {
       // A mesma soma do sumMonthsMin ((ref − 12 meses, ref]), com somas acumuladas: o registo de um ano inteiro somava-se
       // uma vez por cada dia com registo à frente.
       // As linhas e as somas acumuladas guardam-se por dayLog (a importação pergunta por centenas de dias da mesma escala).
       let cached = ROWS12.get(dayLog);
       if (!cached) {
-        const rows0 = Object.keys(dayLog).sort().map((k) => ({ t: +new Date(k + 'T00:00:00'), m: entryMin(dayLog[k], 'voo') }));
+        // Por dia local: a parte de voo depois da meia-noite passa para o dia seguinte (bloco 8b).
+        const byDay = {};
+        for (const k of Object.keys(dayLog)) {
+          const n = nextMin(dayLog[k], 'voo');
+          byDay[k] = (byDay[k] || 0) + entryMin(dayLog[k], 'voo') - n;
+          if (n) { const d = new Date(k + 'T12:00:00'); d.setDate(d.getDate() + 1); const k2 = isoDay(d); byDay[k2] = (byDay[k2] || 0) + n; }
+        }
+        const rows0 = Object.keys(byDay).sort().map((k) => ({ t: +new Date(k + 'T00:00:00'), m: byDay[k] }));
         const P0 = [0]; rows0.forEach((r) => P0.push(P0[P0.length - 1] + r.m));
         cached = { rows: rows0, P: P0 };
         ROWS12.set(dayLog, cached);

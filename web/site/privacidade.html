@@ -41,7 +41,7 @@
   <div class="todo">【RASCUNHO】 Preparado a partir do funcionamento real da aplicação. Regiões VERIFICADAS a 2026-07-11: Supabase e Resend ambos UE (Irlanda — eu-west-1). Antes de publicar: preencher os 【…】 restantes (entidade, data) e submeter a revisão por advogado.</div>
 
   <h2>1 · Responsável pelo tratamento</h2>
-  <p>【NOME/ENTIDADE RESPONSÁVEL】, contactável em <a href="mailto:privacidade@crewpact.app">privacidade@crewpact.app</a> 【confirmar/criar este endereço; pode ser o mesmo suporte@】.</p>
+  <p>【NOME/ENTIDADE RESPONSÁVEL】, contactável em <a href="mailto:privacidade@crewpact.app">privacidade@crewpact.app</a>.</p>
 
   <h2>2 · A nossa abordagem</h2>
   <div class="box">
@@ -53,11 +53,12 @@
   <div class="tblwrap">
   <table>
     <tr><th>Categoria</th><th>Exemplos</th><th>Onde vive</th><th>Finalidade</th></tr>
-    <tr><td><b>Conta</b></td><td>Nome, email, palavra-passe (armazenada de forma cifrada/hash pelo fornecedor de autenticação)</td><td>Servidor (Supabase)</td><td>Criar e proteger a tua conta; comunicações de serviço</td></tr>
-    <tr><td><b>Perfil profissional</b></td><td>Companhia, tipo de tripulação, categoria, contrato, frota, base, data de início na companhia</td><td>Servidor (metadados da conta)</td><td>Aplicar a lei FTL e o AE corretos ao teu caso</td></tr>
+    <tr><td><b>Conta</b></td><td>Nome, email e, se a definires, palavra-passe (armazenada de forma cifrada/hash pelo fornecedor de autenticação). A entrada faz-se por um código enviado para o teu email</td><td>Servidor (Supabase)</td><td>Criar e proteger a tua conta; comunicações de serviço</td></tr>
+    <tr><td><b>Perfil profissional</b></td><td>Companhia, tipo de tripulação, categoria, contrato, frota, base e vínculo (por conta de outrem, agência ou independente), cada um com as datas em que mudou; data de início na companhia e, na TAP, data da largada; qualificação de instrutor</td><td>Servidor (metadados da conta)</td><td>Aplicar a lei FTL e o AE corretos a cada mês, incluindo os meses passados</td></tr>
+    <tr><td><b>Abrangido pelo AE</b></td><td>Se o acordo de empresa se aplica a ti (sim/não). Como um "não" pode indicar que não és filiado no sindicato, este dado nunca sai do teu telemóvel</td><td>Dispositivo</td><td>Decidir se a estimativa salarial do AE se aplica</td></tr>
     <tr><td><b>Escala / serviços</b></td><td>Datas, horas de report/voo, rotas, números de voo, tipo de serviço, pernoitas</td><td>Dispositivo + cópia sincronizada no servidor</td><td>Mostrar a tua escala em qualquer sessão; alimentar os cálculos no dispositivo</td></tr>
     <tr><td><b>Validades de documentos</b></td><td>Apenas campos-chave introduzidos por ti (tipo, datas, referência)</td><td>Dispositivo</td><td>Avisar de expirações. <b>Não guardamos ficheiros nem fotografias de documentos.</b></td></tr>
-    <tr><td><b>Eventos de remuneração</b></td><td>Datas de férias, ausências, extras (ex.: dias de folga trabalhados)</td><td>Dispositivo</td><td>Estimativa salarial segundo o AE</td></tr>
+    <tr><td><b>Eventos de remuneração</b></td><td>Datas de férias, ausências (incluindo os dias de baixa por doença, só as datas), extras (ex.: dias de folga trabalhados)</td><td>Dispositivo</td><td>Estimativa salarial segundo o AE</td></tr>
     <tr><td><b>Hotéis de pernoita</b></td><td>Nome/nota/telefone do hotel por estação</td><td>Dispositivo</td><td>Conveniência nas pernoitas</td></tr>
     <tr><td><b>Partilha com família</b></td><td>Dados do voo partilhado (rota, horas, nº de voo) e a etiqueta que escolheres para a pessoa (ex.: "Mãe")</td><td>Servidor (página pública acessível por ligação)</td><td>Duas formas, ambas criadas por ti: ligação <b>pontual</b> (expira em 24 horas) e ligação <b>de família</b> (permanente até a revogares na app; mostra apenas a chegada do próprio dia — nunca a escala nem o histórico)</td></tr>
   </table>

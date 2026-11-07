@@ -51,7 +51,8 @@ export const splitExtensionMin = (breakH) => {
 // Alojamento na pausa (CS FTL.1.220(d)(e)): 'suitable' (adequado: quarto) · 'basic' (há alojamento, mas não adequado)
 // · 'none'. `true` (registos antigos) = adequado; `false`/vazio = nenhum.
 export const splitAccLevel = (accommodation) =>
-  (accommodation === true || accommodation === 'suitable') ? 'suitable' : accommodation === 'basic' ? 'basic' : 'none';
+  (accommodation === true || accommodation === 'suitable') ? 'suitable' : accommodation === 'basic' ? 'basic'
+    : accommodation === 'basic-easa' ? 'basicEasa' : 'none';
 export const SPLIT_BASIC_CAP_MIN = 360;   // CS 220(e)(2): a parte acima de 6 h não conta sem alojamento adequado
 
 // CS FTL.1.220(b)(d)(e): pausa CONTÁVEL para a extensão. (b) exclui sempre 30 min de pré/pós-voo + deslocação.
@@ -66,6 +67,17 @@ export const splitCountedBreakMin = (breakMin, breakStartMin = null, accommodati
   const net = breakMin - Math.max(SPLIT_ADMIN_MIN, adminMin == null ? SPLIT_ADMIN_MIN : adminMin);   // 220(b)
   if (net < SPLIT_MIN_BREAK_H * 60) return 0;              // 220(a): pausa líquida ≥ 3 h
   if (acc === 'suitable') return net;
+  // Bloco 8b — leitura da EASA (FAQ 47628): a CS 220(d) EXIGE alojamento adequado numa pausa de 6 h ou mais ou que invada o
+  // WOCL; com alojamento só "não adequado", essa pausa não prolonga nada. A AESA lê o contrário ((e)(2): só não conta a parte
+  // acima de 6 h e a do WOCL — o ramo 'basic' abaixo). O motor usa esta como o GARANTIDO e a da AESA como o POSSÍVEL.
+  // Sem a hora de início não se sabe se toca o WOCL → o garantido assume que toca.
+  if (acc === 'basicEasa') {
+    const s0 = breakStartMin == null ? null : ((breakStartMin % 1440) + 1440) % 1440;
+    // As 6 h são da pausa LÍQUIDA ((b): "The break excludes the time allowed for post and pre-flight duties and travelling");
+    // o WOCL mede-se na pausa bruta (não se sabe onde cai o tempo do Manual de Operações → o garantido assume o pior).
+    if (net >= SPLIT_BASIC_CAP_MIN || s0 == null || woclOverlapMin(s0, (s0 + breakMin) % 1440) > 0) return 0;
+    return net;
+  }
   const capped = Math.min(net, SPLIT_BASIC_CAP_MIN);       // exclui a parte > 6 h
   if (breakStartMin == null) return capped;
   const s = ((breakStartMin % 1440) + 1440) % 1440;

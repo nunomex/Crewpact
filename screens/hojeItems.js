@@ -209,7 +209,9 @@ export function buildTodayItems(ctx, lang) {
       status: 'neutral',
       answer: `${fmtEur0(pay.total, lang)} · ${l('este mês (estimativa)', 'this month (estimate)')}`,
       suggestion: pay.baseRange
-        ? l(`Incerto: a base deste mês vai de ${fmtEur0(pay.baseRange.min, lang)} a ${fmtEur0(pay.baseRange.max, lang)} — faltam as datas de atividade do teu contrato`, `Uncertain: this month's base is ${fmtEur0(pay.baseRange.min, lang)} to ${fmtEur0(pay.baseRange.max, lang)} — your contract's activity dates are missing`)
+        ? (pay.baseRange.reason === 'tapRaise'
+          ? l(`Incerto: a base deste mês vai de ${fmtEur0(pay.baseRange.min, lang)} a ${fmtEur0(pay.baseRange.max, lang)} — a atualização do vencimento base não está publicada no BTE`, `Uncertain: this month's base is ${fmtEur0(pay.baseRange.min, lang)} to ${fmtEur0(pay.baseRange.max, lang)} — the base pay update is not published in the BTE`)
+          : l(`Incerto: a base deste mês vai de ${fmtEur0(pay.baseRange.min, lang)} a ${fmtEur0(pay.baseRange.max, lang)} — faltam as datas de atividade do teu contrato`, `Uncertain: this month's base is ${fmtEur0(pay.baseRange.min, lang)} to ${fmtEur0(pay.baseRange.max, lang)} — your contract's activity dates are missing`))
         : pay.expired ? l('Valores de referência · AE até jan-2026', 'Reference values · agreement to Jan-2026') : null,
       raw: pay,
     });

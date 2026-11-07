@@ -19,9 +19,11 @@ verificadores cada); agrupados, cerca de 70 problemas.
 **Bloco 5 (dinheiro a mais, M1–M11) FEITO a 2026-11-06** — ver a entrada "BLOCO 5" abaixo. Falta vê-lo no iPhone e as pendências da entrada.
 **Bloco 6 (dinheiro a menos, L1–L13) FEITO a 2026-11-06** — ver a entrada "BLOCO 6" abaixo. Falta vê-lo no iPhone e as pendências da entrada.
 **Bloco 7 (textos e citações) FEITO a 2026-11-06** — ver a entrada "BLOCO 7" abaixo. Falta vê-lo no iPhone. O ecrã FtlDetail foi apagado (decisão do Nuno, 2026-11-07).
-**A seguir, pela ordem do relatório** (golden-first a partir do texto oficial em `fontes/`; um bloco por sessão):
-8. **Dúvidas → advogado** (A-240, A-241 e as dos blocos 5 e 6; tabela "Dúvidas de leitura" do relatório) — "vamos ao
-   advogado". Fora dos blocos: A-249 a A-251 (formulário manual) e A-218 (a formação inicial não paga pernoita).
+**Bloco 8 (dúvidas → advogado) FEITO a 2026-11-07** — pack em **`docs/pack-advogado.md`**. Ver a entrada "BLOCO 8" abaixo.
+**Bloco 8b (erros novos da triagem) FEITO a 2026-11-07** — ver a entrada "BLOCO 8b" abaixo (falta ver no iPhone e publicar a
+política/termos atualizados em crewpact.app, com o OK do Nuno). Fica da triagem, por corrigir: noites seguidas (FAQ 47617),
+A-138, R3, AVSEC 1182/71 e as leituras não-conservadoras à espera do advogado. Fora dos blocos: A-249 a A-251 (formulário
+manual) e A-218 (a formação inicial não paga pernoita).
 **Regra do Nuno (2026-11-06): "a lei é que manda", sempre.** Sem um facto de que a lei precisa → perguntar, ou "incerto"
 com o que falta. Nunca um valor inventado, nem "o mais restritivo". Ver a entrada "A LEI É QUE MANDA" abaixo.
 **Factos por saber — pesquisa na internet de 2026-11-06** (até lá a app dá "incerto" perto do limite). A lista para
@@ -37,6 +39,106 @@ tabela secundária (Áustria/Irlanda/Malta = matinal; Portugal = sem escolha pub
 leitura automática. A easyJet deixou de ser assumida matinal: os dois tipos para todos, até haver documento oficial.
 **Depois disso:** o esboço `design/inicio-v6.html` e o modo escuro (adiados pela auditoria).
 **Por ver no iPhone (de antes):** a disrupção e o aviso de RDP; uma conta de CABINE.
+
+---
+
+## 2026-11-07 — AUDITORIA, BLOCO 8b: os erros novos da triagem (Opus 5.5) — o Nuno: "corrige isto"
+
+Golden primeiro em cada um; `npm test` verde (33 suites); pacote iOS gerado sem erros. ENGINE_VERSION 5 (o dayLog recalcula).
+- **Segurança 1 — cabine com repouso a bordo:** a diferença de apresentação (ORO.FTL.205(c)) somava-se DEPOIS do teto da
+  tabela CS FTL.1.205(c)(3) → classe 3 a 16:45 "dentro" ("Not allowed" acima de 16:00). Agora a classe e o repouso a bordo
+  da cabine limitam o total já com a diferença; só o PSV da técnica recebe a diferença por cima (`cabCap`, `ftl/index.js`).
+- **Segurança 2 — serviço pela meia-noite (A-173):** cada entrada do dayLog guarda `servicoNextMin`/`vooNextMin` (a parte
+  depois das 00:00; o voo pelas pernas ou pelos calços, sem pernas fica no dia da apresentação) e as somas das janelas 7/14/
+  28 dias, ano civil e 12 meses passam-na para o dia seguinte (`dayMin`, `nextMin`, `sumRangeMin`). A dúvida dias civis vs
+  168 h continua no pack (anexo E-A, ANAC).
+- **Segurança 3 — repartido com "Sala":** garantido = FAQ EASA 47628 (pausa ≥ 6 h ou no WOCL sem alojamento adequado não
+  prolonga; sem a hora de início assume que toca o WOCL), possível = AESA ((e)(2)); facto em falta `splitAccRule`, só quando as
+  leituras diferem. A 8 h de pausa com sala: 13:00 a 16:00 (a app dava 16:00 certo).
+- **SNC da cabine:** `sncToRegister` (Escala) passa a ser `disruptionsByDuty` filtrado — uma só regra nos dois ecrãs.
+- **VB dos pilotos TAP:** `indexRange` — mínimo (adiamento 2024/25 + só 2 %: 2024 ×1, 2025 ×1,02, 2026 ×1,02³) e máximo (+3 %
+  a 1-jan: ×1,03, ×1,03², ×1,03³); o índice do motor é o MÍNIMO; `baseRange` com `reason: 'tapRaise'` → "incerto" com o
+  motivo certo no "Quanto recebo?" e nas Estatísticas. 2024 passou a estimado. CTE 2024: 8 125,00 a 8 368,75 €.
+- **Também:** texto "sem estimativas" da TAP cabine (A-101) → diz que o KPI de 2 % fica de fora; comentário das férias TAP.
+- **RGPD/legal (o Nuno: "também vais corrigir isto?"):** "Abrangido pelo AE" SÓ no telemóvel (cache `cp_profile_*`; o Perfil
+  manda `aeCovered: null` ao servidor e a app limpa a cópia antiga uma vez por conta, flag `cp_aecov_local_<uid>`); Termos §2
+  sem "de legalidade"; PDF do 245 = "Registo pessoal · modelo do ORO.FTL.245" + declaração "tal como registados na
+  aplicação"; Privacidade §3 com a linha do tempo, o vínculo, a largada, a entrada por código, o "Abrangido" (dispositivo) e
+  as datas de baixa (dispositivo); marcadores dos e-mails tirados. Copiado para `web/site/` — **NÃO publicado** (falta o OK).
+- **Pack:** `docs/pack-advogado.md` atualizado com estas mudanças; Word em `docs/pack-advogado-v2.docx` (o
+  `pack-advogado.docx` antigo ficou preso por duas instâncias do Word sem janela, abertas pelo agente — fechar no Gestor de
+  tarefas e apagar o antigo/`~$ck-advogado.docx`).
+- **Revisão independente (2.º agente, só com o código e as fontes):** 5 erros + 10 reparos. Corrigidos no mesmo dia, golden primeiro:
+  E1 o Início/Números/notificações só viam o período que acaba hoje → com a parte de amanhã, o pior dos dois (`computeDutyTime`,
+  `computeFlightTime`); E2 a Simulação/importação não viam o período que começa no dia seguinte → `limitsAround` com mais um
+  período e o ano seguinte num voo de 31/12; E3 as 6 h da sala medem-se na pausa LÍQUIDA (CS 220(b)); E5 (já vinha de antes) a
+  chegada depois da meia-noite convertia-se para Zulu com o fuso do dia anterior → na noite da hora de inverno o PSV saía com
+  1 h a menos (22:00→04:00 = 7 h, dava 6 h) — `zuluTimingOf` usa o dia de cada hora; reparo 1 (a parte depois da meia-noite
+  conta desde o início real do PSV na 2.ª notificação), 3 (rótulo da sala), 4 (Estatísticas pelo `AE_ID`), 6 (comentários do VB:
+  a nota diz "mínima adicional" de 1 %).
+- **Fica para depois (da revisão):** E4 — na TAP pilotos só a BASE mostra o intervalo; Natal, férias, `pendingAnnual` e as
+  horas L1/L2 (3 %/6 % do VB) saem no mínimo como certos (conservador, mas devia ser intervalo); reparo 5 — TAP cabine 2026 sem
+  o intervalo do KPI de 2 %; reparo 2 — o voo depois da meia-noite reparte-se pelas horas locais de cada aeroporto (longo curso:
+  ~20 min mal repartidos; o total certo); reparo 7 — entradas manuais sem `src:'duty'` não repartem; reparo 8 — "horas do ano"
+  nas Estatísticas (por data) e o ano civil do 210 (à meia-noite) diferem num voo de 31/12; reparo 10 (já vinha de antes) —
+  standby anterior com repouso a bordo/repartido devia dar 8 h e não 6 h (CS 225(b)(8)), erro conservador. As telas que mostram
+  Zulu (Detalhe, Escala, Família, Início) ainda convertem a chegada depois da meia-noite com o dia da partida (só a vista).
+- **App.js:** o `.gitattributes` diz LF mas o ficheiro estava guardado com CRLF → normalizado num commit à parte.
+- **Ver no iPhone:** Relatórios (o rótulo novo cabe?); "Quanto recebo?" e Estatísticas numa conta TAP piloto (incerto com o
+  motivo); Perfil → Abrangido (grava e repõe ao reabrir); um repartido com Sala ("incerto" com o texto da sala); cabine com
+  repouso a bordo e diferença de apresentação; Início/Números com um serviço noturno a passar a meia-noite.
+
+---
+
+## 2026-11-07 — AUDITORIA, BLOCO 8: o pack do advogado (Opus 5.5) — "vamos ao advogado"
+
+**Feito:** `docs/pack-advogado.md`, escrito para o advogado (direito do trabalho + RGPD), com as perguntas numeradas:
+A (antes do lançamento: entidade, Termos, Privacidade, art. 9.º, saúde, PDFs que o tripulante assina, sincronia de folgas) ·
+B (licença SPAC/SNPVAC, marca) · C (citação de textos oficiais, CDADC art. 7.º) · D (22 dúvidas dos AE, com € e a leitura
+conservadora) · E (8 dúvidas de limites TAP/FTL + peso das FAQ EASA + anexo de 5 perguntas para a ANAC). Nenhum código mudou.
+Triagem feita por 2 agentes (Opus) contra o código atual e `fontes/`: das ~50 dúvidas da auditoria e ~30 pendências
+"advogado", muitas já estavam RESOLVIDAS pelos blocos 1–7 ou pelo próprio texto (A-013, A-047, A-055, A-133, A-136, A-137,
+A-141, A-157, A-175/257, A-176, A-177, A-219, A-283/284/287, Cl. 51.ª/4, abono dos 9/3, FA1 1345 €).
+
+**Factos novos apurados:**
+- A política publicada está DESATUALIZADA: não lista a linha do tempo, o vínculo, o "Abrangido pelo AE" (vai para o servidor
+  em `user_metadata` — indício de filiação, art. 9.º), largada, frota, instrutor; nem a entrada por código. Os marcadores
+  "confirmar/criar este endereço" já não fazem sentido (os e-mails existem). Corrigir depois da resposta do advogado.
+- Os dias de doença (`aeEvents`) ficam SÓ no telemóvel (AsyncStorage); não vão para o servidor.
+- Termos §2 diz "cálculo FTL de legalidade" (contradiz o §3); §12 remete para a plataforma europeia de litígios (encerrada
+  em 2025, a confirmar).
+- O PDF do 245 diz "registo legal" e o tripulante declara "com exatidão… em conformidade com o ORO.FTL.245" → advogado (A6).
+- FAQ EASA respondem: 47617 ("consecutive" = só separados por repouso), 47599 (discrição sobre prolongamento), 47628
+  (repartido pede alojamento ADEQUADO — a AESA espanhola diz o contrário).
+
+**Erros novos encontrados na triagem (NÃO corrigidos — bloco 8b):**
+- **Segurança:**
+  1. Cabine com repouso a bordo: o gap de apresentação soma-se DEPOIS do teto, e passa o "Not allowed" da CS FTL.1.205(c)(3)
+     (classe 3, PSV 16:40 → app "dentro"; `ftl/index.js:155`).
+  2. A-173: o serviço que passa a meia-noite soma-se todo no dia do report → as janelas de 7/14/28 dias perdem horas
+     (`sumWindowDaysMin`, `limitsAround`).
+  3. Repartido com "Sala": a app dá a leitura da AESA como certa → devia ser intervalo/"incerto" (`splitCountedBreakMin`).
+- Noites seguidas: "incerto" onde a FAQ 47617 diz consecutivo; `fdpsBetween` não vê serviços não-PSV; `nightOf` pelo
+  relógio do telemóvel, não pelo fuso de aclimatação.
+- TAP: A-138 a Cl. 23.ª n.º 1 a) resolve (devia dar "excede", dá "incerto"); R3 "Dia" da cabine pela base, contra a Cl. 4.ª
+  n.º 13; AVSEC alarga pelo Reg. 1182/71 sem base clara.
+- **Dinheiro:**
+  1. SNC da cabine: `disruptionsByDuty` (Disrupção/Relatórios/Auditoria) e `sncToRegister` (Escala) dão respostas diferentes.
+  2. Suspensão do contrato na cabine easyJet: a Cl. 86.ª/2 diz "superior a 30 dias", `suspensionShare` usa "mais de um mês".
+  3. VB dos pilotos TAP 2024/2025 abaixo do mínimo do BTE (adiamento não publicado), 2024 sem marca de estimativa.
+  4. `infoCatalog.js:120` "sem estimativas" (A-101).
+  5. O `serviceStart` guarda SÓ o mês (`AAAA-MM-01`) — a linha 246 deste ficheiro dizia que tinha o dia.
+  6. Comentário obsoleto em `ae/tapSpac.js:203`.
+- Leituras não-conservadoras ainda em uso, à espera do advogado: RDP ≥ 119 e atraso operacional; ADTY de 4h00; CMP pela
+  linha do chefe; bandas do per diem nos decimais; SBY/STBY pagos como ADTY.
+
+**Decisões pendentes do Nuno (produto, não lei):** aviso "hora da sincronização" no SNC (A-085); campo "formação inicial"
+(A-218); dia de admissão (ou "incerto" no 1.º mês, e o dia da largada em janeiro na TAP); mês do variável ("Ganhos da escala
+de novembro" vs modo recibo, A-200); aplicar já a FAQ 47617 ("excede" em vez de "incerto"); aclimatação de partida = base;
+radiação/estatísticas A-268/269/275/276. No pack ficaram 3 intenções a confirmar: E4 (passar o "Dia" da cabine TAP à hora do
+local de descanso), D9 ("a confirmar" no SNC depois de 31-01-2027), D22 (mostrar os dois VB da TAP).
+**Para preencher pelo Nuno no pack:** o apelido na linha de autor. **Pedir aos sindicatos/empresa:** Anexo D-A.
+**Sugestão:** passar `aeCovered` a só-local já (cabe sem esperar pelo advogado).
 
 ---
 

@@ -52,6 +52,7 @@ const eq = (name, got, want) => {
   if (got === want) { pass++; }
   else { fail++; fails.push(`  ✗ ${name}\n      esperado: ${want}\n      obtido:   ${got}`); }
 };
+var eqj = (n, g, w) => eq(n, JSON.stringify(g), JSON.stringify(w));
 
 // ─────────── Anexo I.1 — Salário anual base (€, a partir 1 fev 2024) ───────────
 eq('Base CPT', BASE_ANNUAL.CPT, 122000);
@@ -563,16 +564,25 @@ eq('TAP senioridade CTE (1,5% VB)', tapPilot.vs('CTE'), 121.88);    // 0.015×81
   eq('TAP mês CTE: total', r.total, 8575);
 }
 // Índice = degraus EM VIGOR no ano (adiamentos 2024/2025 jan→31-dez, assembleia 22-03-2024)
+// Bloco 8b ("a lei é que manda"): o BTE garante +2 % a 1-jan e +1 % só com o KPI (nota da Tabela A-3.1); o adiamento de
+// 2024/2025 votado no SPAC não está no BTE (pack do advogado, D22). O índice do motor é o MÍNIMO (adiamento e só +2 %); o
+// máximo é +3 % a 1-jan em cada ano. Antes a app dava 2024 como exato e 2026 no máximo (1,03³).
 eq('TAP index 2023 = 1', tapPilot.indexFactor(2023), 1);
-eq('TAP index 2024 = 1 (aumento ADIADO p/ 31-dez-2024)', tapPilot.indexFactor(2024), 1);
-eq('TAP index 2025 = 1 degrau (o de 2024, desde 31-dez)', tapPilot.indexFactor(2025), 1.03);
-eq('TAP index 2026 = 3 degraus (31-dez-2025 + 1-jan-2026)', tapPilot.indexFactor(2026), 1.092727);
-eq('TAP index 2027 congela (fim vigência)', tapPilot.indexFactor(2027), 1.092727);   // sem teto sobrestimaria
-eq('TAP index 2030 ainda congelado', tapPilot.indexFactor(2030), 1.092727);
-eq('TAP 2024 NÃO estimado (vigora a tabela golden 2023)', tapPilot.isIndexEstimated(2024), false);
-eq('TAP 2025 estimado (degrau aplicado)', tapPilot.isIndexEstimated(2025), true);
+eqj('TAP 2024: 1 a 1,03', tapPilot.indexRange(2024), { min: 1, max: 1.03 });
+eqj('TAP 2025: 1,02 a 1,03²', tapPilot.indexRange(2025), { min: 1.02, max: 1.0609 });
+eqj('TAP 2026: 1,02³ a 1,03³', tapPilot.indexRange(2026), { min: 1.061208, max: 1.092727 });
+eq('TAP index do motor = o mínimo (2026)', tapPilot.indexFactor(2026), 1.061208);
+eqj('TAP 2027 congela (fim da vigência)', tapPilot.indexRange(2027), tapPilot.indexRange(2026));   // sem teto sobrestimaria
+eqj('TAP 2030 ainda congelado', tapPilot.indexRange(2030), tapPilot.indexRange(2026));
+eq('TAP 2024 estimado (o VB atualizado não é publicado)', tapPilot.isIndexEstimated(2024), true);
 eq('TAP index 2023 não estimado', tapPilot.isIndexEstimated(2023), false);
-eq('TAP base CTE indexada 2026', tapPilot.monthlyBase('CTE', { index: tapPilot.indexFactor(2026) }), 8878.41);  // 8125×1.092727 (sem antiguidade)
+// CTE 2024: a app dava 8 125,00 € como exato. Pelo BTE seriam 8 287,50 € (+2 %) a 8 368,75 € (+3 % com o KPI); o adiamento
+// não publicado pode deixá-lo em 8 125,00 € → intervalo de 8 125,00 a 8 368,75 €.
+const cte24 = tapPilot.computeAeMonth({ category: 'CTE', ym: '2024-06', index: tapPilot.indexFactor('2024-06') });
+eqj('TAP CTE 2024: base 8 125,00 a 8 368,75 → incerto', [cte24.base, cte24.baseRange.min, cte24.baseRange.max, cte24.baseRange.reason], [8125, 8125, 8368.75, 'tapRaise']);
+const cte26 = tapPilot.computeAeMonth({ category: 'CTE', ym: '2026-03', index: tapPilot.indexFactor('2026-03') });
+eqj('TAP CTE 2026: 8 622,31 a 8 878,41', [cte26.baseRange.min, cte26.baseRange.max], [8622.31, 8878.41]);
+eq('TAP 2023: base certa, sem intervalo', tapPilot.computeAeMonth({ category: 'CTE', ym: '2023-06' }).baseRange, null);
 eq('TAP vigência até dez-2026', tapPilot.AE_VALID_UNTIL, '2026-12-31');
 eq('TAP não expirado em jun-2026', tapPilot.isAgreementExpired(new Date('2026-06-23')), false);
 eq('TAP expirado em jan-2027', tapPilot.isAgreementExpired(new Date('2027-01-02')), true);

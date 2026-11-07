@@ -29,7 +29,7 @@ import { isNightDuty, overlapsWOCL } from './calculators/woclCalculator';
 import { validateDuty } from './validators/validateDuty';
 import { validateRest } from './validators/validateRest';
 import { validateLimits, computeDutyTime, limitsAround } from './validators/validateLimits';
-import { entryMin } from './calculators/cumulativeCalculator';
+import { entryMin, nextMin } from './calculators/cumulativeCalculator';
 import { withinBand, fmtBandRange, bandRangeMins, splitCountedBreakMin, splitAccLevel, SPLIT_ADMIN_MIN, SPLIT_MIN_BREAK_H, isFdpDuty } from './rules/fdpRules';
 import { DUTY_WINDOWS, FLIGHT_WINDOWS } from './rules/flightTimeRules';
 import { QUADRO1_DIFF, QUADRO1_ELAPSED, TZ_REST_DIFF, TZ_REST_ELAPSED } from './constants/tables';
@@ -45,7 +45,7 @@ import { airportOffsetMin, legZulu } from '../data/zulu';
 // v2 (2026-11-06): auditoria dos cálculos, bloco 1 — as entradas v1 recalculam-se sozinhas (reconcileDayLog).
 // v3 (2026-11-06, "a lei é que manda"): sem um facto de que a lei precisa → intervalo (garantido/possível) e incerto.
 // v4 (2026-11-06, bloco 4): o serviço sem apresentação leva o máximo possível (servicoMaxMin); posicionamento (`dh`) nas pernas.
-export const ENGINE_VERSION = 4;
+export const ENGINE_VERSION = 5;
 
 // Uma atividade (manual ou da escala) → PSV + repouso + legalidade num só objeto.
 // input: { state, report, end?, sectors, splitBreakH?, inBase?, postFlightMin? }
@@ -87,12 +87,19 @@ export const computeDuty = ({
   //   • cabinReportGapMin null — a apresentação dos pilotos, para a cabine (ORO.FTL.205(c)).
   // `undefined` nos dois últimos = não se aplica (calculadoras e chamadas antigas: comportamento de sempre).
   const accUnknown = accommodation === 'unknown';
-  const accLo = accUnknown ? 'none' : accommodation, accHi = accUnknown ? 'suitable' : accommodation;
+  // Alojamento só "não adequado" (Sala): o garantido é a leitura da EASA, o possível a da AESA (CS 220(d)/(e); bloco 8b).
+  const accBasic = !accUnknown && splitAccLevel(accommodation) === 'basic';
+  const accLo = accUnknown ? 'none' : accBasic ? 'basic-easa' : accommodation, accHi = accUnknown ? 'suitable' : accommodation;
   const aug = augmented && augmented.restClass ? augmented : null;
   const cabAugUnknown = !!aug && !isPilot && (aug.additionalCrew == null || aug.fcRestClass == null || aug.cabinRestMin == null);
   const sectorUnknown = !!aug && longestSectorMin === null && (sectors | 0) <= 2;
   const unknowns = [];
   if (accUnknown && splitBreakH > 0) unknowns.push('accommodation');
+  // Só é um facto em falta quando as duas leituras dão pausas contáveis diferentes (pausa ≥ 6 h ou no WOCL).
+  if (accBasic && splitBreakH > 0) {
+    const brk = Math.round(splitBreakH * 60);
+    if (splitCountedBreakMin(brk, splitStartMin, 'basic') !== splitCountedBreakMin(brk, splitStartMin, 'basic-easa')) unknowns.push('splitAccRule');
+  }
   // CS FTL.1.220(b): o desconto da pausa é o do Manual de Operações. Sem ele (null): garantido sem extensão (um desconto
   // que pode ser tão grande quanto o OM disser), possível com o mínimo de 30 min. undefined = 30 (calculadoras).
   const admUnknown = splitAdminMin === null;
@@ -145,6 +152,14 @@ export const computeDuty = ({
   const gaps = (isPilot || cabinReportGapMin === undefined || reportMin == null) ? [0]
     : cabinReportGapMin === null ? Array.from({ length: 61 }, (_, i) => i)
     : [Math.max(0, cabinReportGapMin)];
+  // Cabine com repouso a bordo: a diferença prolonga o PSV DA CABINE, e a tabela CS FTL.1.205(c)(3) ("Maximum extended
+  // FDP" → repouso mínimo da cabine) lê-se por esse PSV. A classe e o repouso a bordo da cabine limitam o total JÁ com a
+  // diferença; só o PSV da técnica ((c)(2)/(4)) recebe a diferença por cima (bloco 8b).
+  const cabCap = (r) => {
+    if (isPilot || r.modifier !== 'augmented' || !r.augInfo) return Infinity;
+    const caps = [r.augInfo.classMaxMin, r.augInfo.restCapMin].filter((v) => v != null);
+    return caps.length ? Math.min(...caps) : Infinity;
+  };
   let lo = null, hi = null, loR = null, hiR = null, anyAllowed = false, naR = null;
   for (const g of gaps) {
     const band = reportMin == null ? null : (reportMin + g) % 1440;
@@ -152,7 +167,7 @@ export const computeDuty = ({
     const rl = maxOf(band, 'lo'), rh = maxOf(band, 'hi');
     if (rh.m != null) anyAllowed = true;
     if (!naR && rl.na) naR = rl;
-    const l = rl.m == null ? null : rl.m + ext, h = rh.m == null ? null : rh.m + ext;
+    const l = rl.m == null ? null : Math.min(rl.m + ext, cabCap(rl)), h = rh.m == null ? null : Math.min(rh.m + ext, cabCap(rh));
     if (l != null && (lo == null || l < lo)) { lo = l; loR = rl; }
     if (rl.m == null && rh.m != null) { lo = 0; loR = loR || rh; }   // garantido nenhum, possível algum
     if (h != null && (hi == null || h > hi)) { hi = h; hiR = rh; }
@@ -215,6 +230,7 @@ export const computeDuty = ({
   }
   return {
     reportMin, endMin, sectors, state, inBase,
+    startEarlierMin: startEarlierMin || 0,   // o PSV começa este tanto antes da apresentação (CS 205(d)(1)(ii))
     postFlightMin: postFlightMin || 0,
     dutyPeriodMin, dutyPeriodStr: dutyPeriodMin != null ? minToHhmm(dutyPeriodMin) : null,
     latestOnBlockMin: latestMin,
@@ -344,13 +360,17 @@ const zuluTimingOf = (duty = {}, base = null, date = null, refMode = 'auto') => 
   const fl = fdpLegsOf(legs);
   const l0 = legs[0], lN = fl[fl.length - 1];   // o fim do PSV: o último setor operado (105(12))
   const day = date || null;
-  const off0 = parseHhmm(l0.off), offZ0 = parseHhmm(day ? legZulu(day, l0, 'off') : l0.offZ);
+  // Uma hora "antes" da apresentação no relógio é do dia seguinte (o serviço passa a meia-noite): converte-se com o fuso
+  // DESSE dia — na noite da mudança de hora o desvio muda às 01:00/02:00 (revisão do 8b, E5: o PSV saía com 1 h a menos
+  // em outubro e 1 h a mais em março).
+  const dayOf = (hm) => { if (!day || hm == null || hm >= rep) return day; const t = new Date(`${day}T12:00:00Z`); t.setUTCDate(t.getUTCDate() + 1); return t.toISOString().slice(0, 10); };
+  const off0 = parseHhmm(l0.off), offZ0 = parseHhmm(day ? legZulu(dayOf(off0), l0, 'off') : l0.offZ);
   if (off0 == null || offZ0 == null) return { bandShiftMin: 0, elapsedAdjMin: 0, reportMs: null };
   const digitsOff = nrm(off0 - offZ0);                          // o relógio das horas da escala (desvio UTC)
   const reportZ = ((offZ0 - durationMin(rep, off0)) % 1440 + 1440) % 1440;
   // Tempo decorrido: só quando o fim registado é a chegada do último setor (senão não se sabe o relógio do fim).
   let elapsedAdjMin = 0;
-  const onN = parseHhmm(lN.on), onZN = parseHhmm(day ? legZulu(day, lN, 'on') : lN.onZ), end = parseHhmm(duty.block_on);
+  const onN = parseHhmm(lN.on), onZN = parseHhmm(day ? legZulu(dayOf(onN), lN, 'on') : lN.onZ), end = parseHhmm(duty.block_on);
   if (onN != null && onZN != null && end != null && end === onN) {
     const adj = durationMin(reportZ, onZN) - durationMin(rep, end);
     if (Math.abs(adj) <= 180) elapsedAdjMin = adj;
@@ -579,6 +599,29 @@ const extCountBefore = (duties, date, state = 'acc') => {
   return n;
 };
 
+// Dia local (ORO.FTL.105(15)): as horas depois da meia-noite são do dia seguinte (bloco 8b, A-173). Minutos de um período que
+// começa em `startMin` (relógio) e dura `durMin` que caem depois da meia-noite.
+const afterMidnightMin = (startMin, durMin) => (startMin == null || !(durMin > 0)) ? 0 : Math.max(0, Math.min(durMin, startMin + durMin - 1440));
+// Tempo de voo depois da meia-noite, pelas pernas (sem posicionamentos) ou, sem pernas, pelos calços do serviço. Sem horas de
+// todas as pernas → 0 (fica no dia da apresentação, como antes). Reparte o `flight_minutes` na proporção das pernas.
+const vooAfterMidnightMin = (duty = {}, startMin) => {
+  const fm = Math.round(duty.flight_minutes || 0);
+  if (!fm || startMin == null) return 0;
+  const legs = (Array.isArray(duty.legs) && duty.legs.length) ? duty.legs.filter((l) => l && !l.dh)
+    : (duty.block_off ? [{ off: duty.block_off, on: duty.block_on }] : []);
+  if (!legs.length) return 0;
+  const midRel = 1440 - startMin;   // a meia-noite, em minutos desde o início
+  let tot = 0, after = 0;
+  for (const l of legs) {
+    const off = parseHhmm(l.off), on = parseHhmm(l.on);
+    if (off == null || on == null) return 0;
+    let a = off - startMin; while (a < 0) a += 1440;
+    const dur = durationMin(off, on);
+    tot += dur; after += Math.max(0, Math.min(dur, a + dur - midRel));
+  }
+  return tot ? Math.min(fm, Math.round(fm * after / tot)) : 0;
+};
+
 // Entrada do dayLog de um serviço SEM hora de report (ver dutyToFtlDay). null se não houver nada para contar.
 const noReportEntry = (duty = {}, { postFlightMin = 0 } = {}) => {
   const isFl = (duty.kind || 'flight') === 'flight';
@@ -599,6 +642,7 @@ const noReportEntry = (duty = {}, { postFlightMin = 0 } = {}) => {
     src: 'duty', engineVer: ENGINE_VERSION, servicoEst: true, servicoMaxMin,
     psv: { result: null, max: null, over: false, excess: null, latest: null, latestNextDay: false, extended: false, noReport: true, fdp: isFl, kind: duty.kind || null, ts: Date.now() },
     servicoMin, servico: servicoMin / 60, vooMin, voo: vooMin / 60, rest: {},
+    servicoNextMin: afterMidnightMin(off, servicoMin) || undefined, vooNextMin: vooAfterMidnightMin(duty, off) || undefined,
   };
 };
 
@@ -682,6 +726,10 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = n
     },
     servicoMin, servico: servicoMin / 60,
     vooMin, voo: vooMin / 60,
+    // A parte depois da meia-noite (dia local seguinte, bloco 8b): o período de serviço desde a apresentação; no standby em
+    // casa, a mesma proporção dos 25 %. O standby anterior fica no dia da apresentação.
+    servicoNextMin: (d.dutyPeriodMin && repMin != null ? Math.round(afterMidnightMin(((repMin - (d.startEarlierMin || 0)) % 1440 + 1440) % 1440, d.dutyPeriodMin) * baseServicoMin / d.dutyPeriodMin) : 0) || undefined,
+    vooNextMin: vooAfterMidnightMin(duty, repMin) || undefined,
     rest: { [place]: d.rest.restMin != null ? toH(d.rest.restMin) : 0, [`${place}Prev`]: fullServicoH, ts: Date.now() },
   };
 };
@@ -786,10 +834,12 @@ export const dayFtlFromDuties = (list = [], opts = {}) => {
   // O que os serviços sem report podem acrescentar no máximo (ver noReportEntry): soma-se ao mínimo do dia.
   const estMax = noRep.reduce((s, p) => s + ((typeof p.entry.servicoMaxMin === 'number' ? p.entry.servicoMaxMin : entryMin(p.entry, 'servico')) - entryMin(p.entry, 'servico')), 0);
   const withMax = (entry) => (noRep.length ? { ...entry, servicoMaxMin: entryMin(entry, 'servico') + estMax } : entry);
+  // A parte depois da meia-noite de vários serviços somados (bloco 8b).
+  const nextOf = (list) => { const sv = list.reduce((s, e) => s + nextMin(e, 'servico'), 0), vo = list.reduce((s, e) => s + nextMin(e, 'voo'), 0); return { servicoNextMin: sv || undefined, vooNextMin: vo || undefined }; };
   if (!paired.length) {
     if (noRep.length === 1) return withB(noRep[0].entry, []);
     const sMin = extraMin('servico'), vMin = extraMin('voo');
-    return withB(withMax({ ...noRep[0].entry, servicoMin: sMin, servico: sMin / 60, vooMin: vMin, voo: vMin / 60, parts: noRep.map((p) => p.entry.psv) }), []);
+    return withB(withMax({ ...noRep[0].entry, servicoMin: sMin, servico: sMin / 60, vooMin: vMin, voo: vMin / 60, ...nextOf(noRep.map((p) => p.entry)), parts: noRep.map((p) => p.entry.psv) }), []);
   }
   // Ordena cronologicamente pelo report → os serviços do dia ficam por ordem (1.º, 2.º, …).
   paired.sort((a, b) => (parseHhmm(a.duty.report_time) ?? 0) - (parseHhmm(b.duty.report_time) ?? 0));
@@ -797,7 +847,7 @@ export const dayFtlFromDuties = (list = [], opts = {}) => {
   if (entries.length === 1 && !noRep.length) return withB(entries[0], blk1(paired[0]));
   if (entries.length === 1) {
     const sMin = entryMin(entries[0], 'servico') + extraMin('servico'), vMin = entryMin(entries[0], 'voo') + extraMin('voo');
-    return withB(withMax({ ...entries[0], servicoMin: sMin, servico: sMin / 60, vooMin: vMin, voo: vMin / 60, servicoEst: true, parts: [...entries, ...noRep.map((p) => p.entry)].map((e) => e.psv) }), blk1(paired[0]));
+    return withB(withMax({ ...entries[0], servicoMin: sMin, servico: sMin / 60, vooMin: vMin, voo: vMin / 60, servicoEst: true, ...nextOf([entries[0], ...noRep.map((p) => p.entry)]), parts: [...entries, ...noRep.map((p) => p.entry)].map((e) => e.psv) }), blk1(paired[0]));
   }
   const r1 = (n) => +(Number(n) || 0).toFixed(1);
   // Base vs fora do INTERVALO = onde o serviço ANTERIOR acabou (é aí que repousas). Local fiável
@@ -845,9 +895,14 @@ export const dayFtlFromDuties = (list = [], opts = {}) => {
       route: last.route || null,                    // fim do FDP combinado = onde o ÚLTIMO serviço aterra (base/fora)
       accommodation: first.accommodation || false,   // alojamento na pausa (opt-in): 'basic' | true (adequado) — 220 d/e
     };
-    return dutyToFtlDay(combined, opts) || blk[0].entry;
+    const ce = dutyToFtlDay(combined, opts);
+    if (!ce) return blk[0].entry;
+    // O FDP combinado não leva as pernas: o voo depois da meia-noite é a soma do de cada serviço (todos do mesmo dia).
+    const vn = blk.reduce((s, p) => s + nextMin(p.entry, 'voo'), 0);
+    return { ...ce, vooNextMin: vn || undefined };
   };
   const blockEntries = blocks.map(blockEntry);
+  const nextSum = (key) => [...blockEntries, ...noRep.map((p) => p.entry)].reduce((s, e) => s + nextMin(e, key), 0);
   // Minutos inteiros (A-148): somam-se os blocos e os serviços sem report.
   const servicoMin = blockEntries.reduce((s, e) => s + entryMin(e, 'servico'), 0) + extraMin('servico');
   const vooMin = blockEntries.reduce((s, e) => s + entryMin(e, 'voo'), 0) + extraMin('voo');
@@ -863,6 +918,7 @@ export const dayFtlFromDuties = (list = [], opts = {}) => {
   return withB(withMax({
     src: 'duty', engineVer: ENGINE_VERSION, psv: worst.psv,
     servicoMin, servico: servicoMin / 60, vooMin, voo: vooMin / 60, servicoEst: noRep.length ? true : undefined,
+    servicoNextMin: nextSum('servico') || undefined, vooNextMin: nextSum('voo') || undefined,
     rest: last.rest, parts: [...entries, ...noRep.map((p) => p.entry)].map((e) => e.psv), between, split, restShort,
   }), blocks.map((blk, i) => ({ psv: blockEntries[i].psv, members: blk.map((p) => p.duty) })));
 };

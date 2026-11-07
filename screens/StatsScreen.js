@@ -185,7 +185,9 @@ export default function StatsScreen({ navigation }) {
   const total = A.total || 0;
   const extrasSum = (A.extras || 0) + (A.events || 0) + (A.cash || 0);
   // 9/3 e sazonais sem as datas de atividade: a base do mês é incerta (Cl. 48.ª/80.ª; bloco 5) — diz-se o intervalo.
-  const baseUnc = !isYear && A.baseRange ? ` · ${l('incerto', 'uncertain')}: ${fmtEur0(A.baseRange.min)} ${l('a', 'to')} ${fmtEur0(A.baseRange.max)} (${l('faltam as datas de atividade', 'activity dates missing')})` : (isYear && A.uncertain ? ` · ${l('incerto (faltam as datas de atividade)', 'uncertain (activity dates missing)')}` : '');
+  const tapRaise = !!(A.baseRange && A.baseRange.reason === 'tapRaise') || (isYear && !!aeNow && aeNow.AE_ID === 'tap-spac');
+  const uncWhy = tapRaise ? l('atualização do vencimento base por publicar', 'base pay update not published') : l('faltam as datas de atividade', 'activity dates missing');
+  const baseUnc = !isYear && A.baseRange ? ` · ${l('incerto', 'uncertain')}: ${fmtEur0(A.baseRange.min)} ${l('a', 'to')} ${fmtEur0(A.baseRange.max)} (${uncWhy})` : (isYear && A.uncertain ? ` · ${l('incerto', 'uncertain')} (${uncWhy})` : '');
   const baseSub = (isYear ? `${l('salário base acumulado', 'accrued base salary')} · ${st.aeYtd?.monthsElapsed || 0} ${l('meses', 'months')}` : `${l('salário base', 'base salary')} · ${monthName}`) + baseUnc;
   // Mês sem tabela do acordo (antes da 1.ª tabela publicada, ou antes da admissão): não há € — diz-se porquê (bloco 5).
   // TAP: o subsídio de férias paga-se no mês antes das férias; sem férias registadas o mês não se sabe (fica fora da soma).

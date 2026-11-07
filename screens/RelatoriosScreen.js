@@ -279,7 +279,7 @@ export default function RelatoriosScreen({ navigation }) {
         <TouchableOpacity style={[s.card, (!svcCount || busy) && s.cardOff]} activeOpacity={0.85} onPress={openPdf} disabled={busy}
           accessibilityRole="button" accessibilityLabel={l('Gerar o Registo FTL.245 em PDF', 'Generate the FTL.245 record as PDF')}>
           <View style={s.cBody}>
-            <Text style={s.cK}>{l('ORO.FTL.245 · registo legal', 'ORO.FTL.245 · legal record')}</Text>
+            <Text style={s.cK}>{l('Registo pessoal · modelo do ORO.FTL.245', 'Personal record · ORO.FTL.245 template')}</Text>
             <Text style={s.cName} numberOfLines={1}>{l('Tempos de voo e serviço', 'Flight and duty times')}</Text>
             <Text style={s.cLine} numberOfLines={1}>{busy ? l('A gerar…', 'Generating…')
               : svcCount ? `${svcCount} ${l(svcCount === 1 ? 'período de serviço' : 'períodos de serviço', svcCount === 1 ? 'duty period' : 'duty periods')} · PDF ${l('assinável', 'signable')}`

@@ -30,7 +30,7 @@ import { AppContext, isoDay } from './data/appContext';
 import { t } from './data/i18n';
 import { supabase } from './data/supabase';
 import { hasPendingReset, clearPendingReset } from './data/pendingReset';
-import { mapUser } from './data/auth';
+import { mapUser, updateProfile } from './data/auth';
 import { fetchProfile, fetchAirlines, fetchBases, fetchCountries } from './data/db';
 import { getAeForProfile, aeStatus as aeStatusFor } from './ae';
 import { capabilitiesFor, resolvePostFlight, resolveVacationDays } from './data/capabilities';
@@ -747,7 +747,8 @@ export default function App() {
           // independente) é o eixo legal; `aeCovered` é o override (raro: empregado não filiado).
           // Default: empregado + coberto → ZERO disrupção para quem já existe.
           const employment = resolved.employment || localProfile?.employment || user.employment || 'employee';
-          const aeCovered = resolved.aeCovered ?? localProfile?.aeCovered ?? user.aeCovered ?? true;
+          // Só local (RGPD art. 9.º, bloco 8b): o cache do telemóvel manda; o servidor deixou de o guardar.
+          const aeCovered = localProfile?.aeCovered ?? resolved.aeCovered ?? true;
           // Categoria/contrato EFFECTIVE-DATED: linha do tempo (metadados). Migração suave do
           // modelo antigo (escalar) → 1 período = valor atual cobre o passado (sem disrupção).
           const crewHistory = migrateCrew({ crewHistory: resolved.crewHistory || localProfile?.crewHistory || user.crewHistory, crewCategory, crewContract, crewFleet, serviceStart });
@@ -757,6 +758,11 @@ export default function App() {
           const baseHistory = migrateBase({ baseHistory: resolved.baseHistory || localProfile?.baseHistory || user.baseHistory, base, serviceStart });
           setProfile({ company: resolved.company, crewType: resolved.crewType || 'cabin', crewCategory, crewContract, crewFleet, crewHistory, companyHistory, baseHistory, serviceStart, largada, base, lifestyle, instructorRated, postFlightMin, vacationDaysYear, employment, aeCovered });
           setOnboarded(true);
+          // Uma vez por conta: apaga dos metadados da conta o "Abrangido pelo AE" gravado antes do bloco 8b.
+          AsyncStorage.getItem(`cp_aecov_local_${user.id}`).then((done) => {
+            if (done) return;
+            updateProfile({ aeCovered: null }).then((r) => { if (r && r.ok) AsyncStorage.setItem(`cp_aecov_local_${user.id}`, '1').catch(() => {}); }).catch(() => {});
+          }).catch(() => {});
         } else {
           setOnboarded(false);
         }

@@ -64,7 +64,13 @@ export default function usePerfilActions() {
       : { employment: val, from: companyStartYm(companyHistory), correct: true });
     set({ companyHistory: hist, employment: resolveCompany(hist, currentYmNow()).employment || val });
   };
-  const saveAeCovered = (val) => set({ aeCovered: val });
+  // "Abrangido pelo AE": o "não" é um indício de não filiação sindical (RGPD art. 9.º) → fica SÓ no telemóvel (o cache local
+  // do perfil) e a cópia antiga nos metadados da conta apaga-se (bloco 8b; pack do advogado, A4).
+  const saveAeCovered = (val) => {
+    setProfile((p) => ({ ...p, aeCovered: val }));
+    updateProfile({ aeCovered: null }, lang).catch(() => {});
+    success();
+  };
   // Base — guardada como CÓDIGO, com DATAS (linha do tempo do contrato, 2026-11-03): decide o "fora da
   // base" (repouso 12 h/10 h, pernoitas, Auditoria). `from` = transferência a partir desse mês (os meses
   // antes ficam com a base antiga); sem `from` = correção ("sempre foi esta") desde a entrada na

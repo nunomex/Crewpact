@@ -51,20 +51,35 @@ export const VE_MAX = 32;      // Cl. 4.ª, n.º 3: "não pode exceder 32"
 // vigência (31-12-2026) — sem teto, um YTD de 2027+ sobrestimaria a base.
 export const INDEX_BASE_YEAR = 2023;   // ano dos valores da Tabela A-3.1
 export const INDEX_LAST_YEAR = 2026;   // fim da vigência (31-12-2026) — a indexação congela aqui
-export const ANNUAL_RAISE = 0.03;      // +2% fixo + 1% KPI (melhor evidência pública)
-// Degraus EM VIGOR durante o ano (adiamentos incluídos): ≤2024 → 0 · 2025 → 1 · ≥2026 → 3.
-export const indexFactor = (year, { raise = ANNUAL_RAISE } = {}) => {
-  const y = +String(year == null ? '' : year).slice(0, 4) || INDEX_BASE_YEAR;   // aceita o ano ou o mês (YYYY-MM)
+export const ANNUAL_RAISE = 0.03;      // +2% fixo + 1% KPI (o que o AE prevê com o KPI: "atualização salarial mínima adicional" de 1%)
+export const ANNUAL_RAISE_MIN = 0.02;  // o fixo (nota da Tabela A-3.1)
+// Bloco 8b ("a lei é que manda"): o BTE garante +2% a 1-jan e +1% só com a condição do KPI; o adiamento de 2024/2025 votado em
+// assembleia do SPAC NÃO está publicado no BTE (pack do advogado, D22). Sem esses factos o VB do ano é um INTERVALO:
+//   • mínimo = o mais baixo possível: com o adiamento e sem o KPI → 2024 a base 2023; 2025 um degrau de 2%; 2026 três de 2%;
+//   • máximo = o que o BTE prevê com o KPI: +3% a 1-jan em cada ano (2024 1,03; 2025 1,03²; 2026 1,03³). A nota diz "mínima"
+//     adicional de 1% — um KPI maior não está modelado (leitura assumida; pack D22).
+// O índice do motor é o MÍNIMO (nunca promete a mais); o mês mostra o intervalo (`baseRange`, "incerto").
+const yearOf = (year) => +String(year == null ? '' : year).slice(0, 4) || INDEX_BASE_YEAR;   // aceita o ano ou o mês (YYYY-MM)
+export const indexRange = (year) => {
+  const y = Math.min(yearOf(year), INDEX_LAST_YEAR);
+  if (y <= INDEX_BASE_YEAR) return { min: 1, max: 1 };
+  const n = y - INDEX_BASE_YEAR;
+  const minSteps = y <= 2024 ? 0 : (y === 2025 ? 1 : 3);
+  return { min: +Math.pow(1 + ANNUAL_RAISE_MIN, minSteps).toFixed(6), max: +Math.pow(1 + ANNUAL_RAISE, n).toFixed(6) };
+};
+// `raise` explícito = a conta antiga (degraus com adiamento) a essa taxa — só para quem a pede.
+export const indexFactor = (year, { raise } = {}) => {
+  if (raise == null) return indexRange(year).min;
+  const y = yearOf(year);
   const steps = y <= 2024 ? 0 : (y === 2025 ? 1 : 3);
   return steps ? +Math.pow(1 + raise, steps).toFixed(6) : 1;
 };
-// O VB escalado NUNCA é publicado → estimado = qualquer ano com degrau aplicado.
-// 2024 DEIXOU de ser estimado (o adiamento fez vigorar a tabela golden de 2023).
-export const isIndexEstimated = (year, opts) => indexFactor(year, opts) > 1;
+// O VB atualizado NUNCA é publicado → estimado em qualquer ano depois de 2023.
+export const isIndexEstimated = (year) => yearOf(year) > INDEX_BASE_YEAR;
 // Nota de metodologia p/ a UI (≠ easyJet, que indexa ao IPC do INE): aqui o índice é a regra do AE.
 export const indexNote = (year, lang = 'pt') => lang === 'en'
-  ? `2023 base (BTE) + CLA steps in force in ${year} (+3%/yr; 2024/2025 deferred to 31 Dec) · estimate — official updated values not published.`
-  : `Base 2023 (BTE) + degraus AE em vigor em ${year} (+3%/ano; 2024/2025 adiados p/ 31-dez) · estimativa — valores oficiais atualizados não publicados.`;
+  ? `2023 base (BTE) · ${year}: between the lowest possible (the 2024/2025 deferral voted by SPAC, not published in the BTE, and only the fixed +2%) and what the agreement sets with the KPI (+3% on 1 Jan) · official updated values not published.`
+  : `Base 2023 (BTE) · ${year}: entre o mais baixo possível (o adiamento de 2024/2025 votado no SPAC, não publicado no BTE, e só os +2% fixos) e o que o acordo prevê com o KPI (+3% a 1 de janeiro) · valores oficiais atualizados não publicados.`;
 
 // Vigência (BTE 29/2023): valores-base 2023; AE vigente até 31-12-2026.
 export const AE_VALID_FROM = '2023-01-01';
@@ -200,7 +215,7 @@ export const GROUND_PER_DIEM = true;
 export const nightStop = (cat, _index = 1, ym) => { const T = tableAt(ym); return T ? rowOf(cat, T).B : null; };
 
 // Férias/ano (RUPT Cl. 45.ª, BTE 29/2023): 42 dias de CALENDÁRIO por ano civil
-// (unidade ≠ easyJet, que conta dias úteis). Piso de 38 por perda com faltas (Cl. 33.ª).
+// (unidade ≠ easyJet, que conta dias úteis). As ausências longas reduzem até 30 dias (RUPT Cl. 45.ª, n.os 5 e 6); o piso de 38 é só da troca de faltas por férias (AE Cl. 33.ª, n.º 2).
 // Ano de admissão: "regime previsto na lei geral" (Cl. 22.ª/2) → camada da lei no resolver.
 export const VAC_UNIT = 'calendario';
 export const vacationDays = () => 42;
@@ -249,9 +264,14 @@ export const computeAeMonth = ({ category = 'OP3', contract = '12/12', duties = 
   const extras = 0;   // TAP não tem prestação por setor nominal (escritório/ADTY cobertos por per diem A)
   const variable = r2(perDiemTotal + nightTotal + extras);
   const sv = seniority(category, { ym, serviceStart, largada, history, index });
+  // O VB do ano é um intervalo (ver indexRange): a base vai do mínimo ao máximo → "incerto" (bloco 8b).
+  const ir = indexRange(ym);
+  const baseRange = ir.max > ir.min
+    ? { min: monthlyBase(category, { contract, index: ir.min, ym, serviceStart, largada, history }), max: monthlyBase(category, { contract, index: ir.max, ym, serviceStart, largada, history }), reason: 'tapRaise' }
+    : null;
   return {
     category, contract, base, perDiem: perDiemTotal, nightStops: nightTotal, extras,
-    variable, total: r2(base + variable),
+    variable, total: r2(base + variable), baseRange,
     seniority: { ve: sv.ve, vs: sv.vs, anuidades: sv.anuidades, anos: sv.anos, unknown: sv.unknown, fromEntry: sv.fromEntry },
   };
 };
