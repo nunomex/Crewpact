@@ -556,11 +556,14 @@ export default function EscalaScreen({ navigation, route }) {
 
     // Faixa de REPOUSO ENTRE serviços (235 + split duty 220). Texto a tinta, a cor fica no ponto.
     const restChip = (rb, i) => {
-      const tone = rb.kind === 'rest' ? PELE.ok : rb.kind === 'split' ? PELE.warn : PELE.red;
-      const bg = rb.kind === 'rest' ? PELE.okSoft : rb.kind === 'split' ? PELE.warnSoft : PELE.redSoft;
+      const tone = rb.kind === 'rest' ? PELE.ok : (rb.kind === 'split' || rb.kind === 'either') ? PELE.warn : PELE.red;
+      const bg = rb.kind === 'rest' ? PELE.okSoft : (rb.kind === 'split' || rb.kind === 'either') ? PELE.warnSoft : PELE.redSoft;
       const place = rb.place === 'away' ? l('fora', 'away') : l('base', 'base');
       const txt = rb.kind === 'rest'
         ? l(`Repouso entre serviços · ${fmtM(rb.gapMin)} (mín ${fmtM(rb.requiredMin)} ${place}) ✓`, `Rest between · ${fmtM(rb.gapMin)} (min ${fmtM(rb.requiredMin)}) ✓`)
+        // 10 h ou mais, menos do que o repouso do caso: a lei admite as duas leituras (ORO.FTL.105(6)) — incerto.
+        : rb.kind === 'either'
+          ? l(`Incerto · ${fmtM(rb.gapMin)} entre serviços (mín ${fmtM(rb.requiredMin)} ${place}) → serviço repartido ou repouso curto`, `Uncertain · ${fmtM(rb.gapMin)} between duties (min ${fmtM(rb.requiredMin)}) → split duty or short rest`)
         : rb.kind === 'split'
           ? l(`Split duty · ${fmtM(rb.gapMin)} < mín ${fmtM(rb.requiredMin)} → conta como 1 serviço (220)`, `Split duty · ${fmtM(rb.gapMin)} < min → counts as one FDP (220)`)
           : l(`Muito perto · ${fmtM(rb.gapMin)} (< 3h) → é o mesmo serviço`, `Too close · ${fmtM(rb.gapMin)} (< 3h) → same duty`);

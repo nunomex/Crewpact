@@ -3,7 +3,7 @@
 // DECOMPOSIÇÃO do cálculo), SEM texto de UI nem idioma — a HojeScreen/HojeDetail é que
 // formata. Sem LLM: tudo sai dos motores golden-tested, por isso as sugestões e o
 // "como cheguei aqui" são factuais (a regra que deteta a condição é a que faz a conta).
-import { computeDutyTime, computeFlightTime, restAfterDuty, computeRecovery, computeTimeZoneRest, localNightsIn, nthLocalNightEnd, isFdpDuty, nightClockOf } from '../ftl';
+import { computeDutyTime, computeFlightTime, restAfterDuty, computeRecovery, computeTimeZoneRest, localNightsIn, nthLocalNightEnd, isFdpDuty, nightClockOf, SHORTEST_REST_MIN, REDUCED_REST_BASE_MIN, REDUCED_REST_AWAY_MIN } from '../ftl';
 import { monthlyAe, aeMonthTotal } from './perdiem';
 import { eventCounts } from './aeEvents';
 
@@ -21,12 +21,14 @@ export function legalStatus(ftlSnap = {}, dayLog = {}, ref = new Date()) {
   const psv = ftlSnap?.psv || null;
   const psvData = psv ? { result: psv.result, max: psv.max, maxHi: psv.maxHi || null, extended: !!psv.extended && !psv.over, extRefused: psv.extRefused || null, over: !!psv.over, excess: psv.excess ?? null, latest: psv.latest || null, latestNextDay: !!psv.latestNextDay } : null;
   if (psv && psv.over) return { id: 'legal', status: 'bad', kind: 'psvOver', excess: psv.excess ?? null, psv: psvData, windows };
-  // "A lei é que manda": falta um facto de que a lei precisa e o PSV fica entre o garantido e o possível → incerto.
-  if (psv && psv.uncertain) return { id: 'legal', status: 'warn', kind: 'psvUncertain', unknowns: psv.unknowns || [], psv: psvData, windows };
   // Standby fora do aeroporto acima de 16 h (CS FTL.1.225(b)(1)) — não é PSV, mas tem limite próprio.
   if (psv && psv.sbOver) return { id: 'legal', status: 'bad', kind: 'standbyOver', psv: psvData, windows };
+  // O que excede DE CERTEZA vem antes do incerto (2026-11-11, 2.ª revisão independente): um PSV incerto escondia um limite do
+  // ORO.FTL.210 já passado.
   const overWin = windows.find((w) => w.over);
   if (overWin) return { id: 'legal', status: 'bad', kind: 'limitOver', cat: overWin.key, windowId: overWin.id, days: overWin.days, psv: psvData, windows };
+  // "A lei é que manda": falta um facto de que a lei precisa e o PSV fica entre o garantido e o possível → incerto.
+  if (psv && psv.uncertain) return { id: 'legal', status: 'warn', kind: 'psvUncertain', unknowns: psv.unknowns || [], psv: psvData, windows };
   if (!hasFtlData(dayLog) && !psv) return { id: 'legal', status: 'neutral', kind: 'noData', psv: psvData, windows };
   return { id: 'legal', status: 'ok', kind: 'legal', psv: psvData, windows };
 }
@@ -97,7 +99,12 @@ const restServices = (duties = {}, ctx = {}) => {
   // `blk` = o índice do 1.º serviço do bloco; `bStart` = o início do bloco.
   for (let i = 0; i < svcs.length; i++) {
     const v = svcs[i], p = svcs[i - 1];
-    const joined = !!(p && p.iso === v.iso && p.end && p.ra && Math.round((+v.start - +p.end) / 60000) < p.ra.requiredMin);
+    const gapMin = p && p.end ? Math.round((+v.start - +p.end) / 60000) : null;
+    const joined = !!(p && p.iso === v.iso && p.end && p.ra && gapMin < p.ra.requiredMin);
+    // 10 h ou mais, mas menos do que o repouso do caso: intervalo de um PSV só OU repouso entre dois (ftl restBetweenDuties
+    // 'either'). Fica junto (a leitura do PSV único, a que pede mais repouso a seguir) e leva a marca da dúvida.
+    v.either = joined && gapMin >= SHORTEST_REST_MIN;
+    v.joinGapMin = joined ? gapMin : null;
     v.blk = joined ? p.blk : i;
     v.bStart = joined ? p.bStart : v.start;
   }
@@ -123,7 +130,79 @@ const requirementAfter = (svcs, prev, next = null) => {
     if (next && next.ra && next.ra.extended) extOption = 'consecutive';
     requiredMin += extOption === 'i' ? 120 : 240;
   }
-  return { prevDutyMin, floorMin, requiredMin, extOption };
+  // As pernas de um serviço do bloco não formam um PSV (ftl legsBrokenKind → `ra.legsDoubt`): o mínimo depende da leitura, e a
+  // app não escolhe. `loMin` = o exigido em TODAS as leituras; `hiMin` = o que chega em todas.
+  //   · 10 h ou mais em terra a meio ('rest') podem ser dois serviços: o "serviço precedente" seria só o último, mais curto —
+  //     de certo fica o piso (12 h na base, 10 h fora);
+  //   · se o serviço cabia no prolongamento planeado, o repouso a seguir podia levar as horas do ORO.FTL.205(d)(1).
+  let loMin = requiredMin, hiMin = requiredMin;
+  // O REPOUSO ANTES deste bloco foi, talvez, um repouso reduzido (ver reducedBand): então este aumenta pela diferença
+  // (CS FTL.1.235(c)(3)) — o que chega em todas as leituras sobe.
+  let reducedBefore = 0;
+  {
+    const pp = before(svcs, bs(prev))[0] || null;
+    if (pp && pp.end && pp.ra && pp.blk !== prev.blk) {
+      const ppNeed = Math.max(Math.round((+pp.end - +bs(pp)) / 60000), pp.ra.floorMin);
+      const preRest = Math.round((+bs(prev) - +pp.end) / 60000);
+      const band = reducedBand(preRest, ppNeed, pp);
+      if (band) { reducedBefore = band.diffMin; hiMin += band.diffMin; }
+    }
+  }
+  const sameBlk = svcs.filter((x) => x.blk === prev.blk);
+  const doubts = sameBlk.map((x) => x.ra && x.ra.legsDoubt).filter(Boolean);
+  // Dois serviços do bloco com 10 h ou mais entre eles ('either'): podem ser dois PSV — o precedente seria só o último.
+  const eitherIn = sameBlk.some((x) => x.either);
+  if (eitherIn) doubts.push({ kind: 'rest', either: true });
+  if (doubts.length) {
+    if (doubts.some((x) => x.kind === 'rest')) loMin = Math.min(loMin, floorMin);
+    if (!prev.ra.extended && doubts.some((x) => x.extMaybe)) hiMin = Math.max(hiMin, requirementAfter(svcs, { ...prev, ra: { ...prev.ra, extended: true } }, next).requiredMin);
+  }
+  return { prevDutyMin, floorMin, requiredMin, extOption, loMin, hiMin, doubtKind: doubts.length ? (doubts.every((x) => x.either) ? 'breakOrRest' : 'legTimes') : (reducedBefore ? 'reducedRestAfter' : null), reducedBefore };
+};
+// O REPOUSO REDUZIDO (ORO.FTL.235(c) · CS FTL.1.235(c) — 2026-11-11, noite 10). Um repouso abaixo do mínimo do 235(a)/(b) mas
+// com pelo menos 12 h na base / 10 h fora ((c)(1)) é legal se a companhia tiver repouso reduzido, com gestão do risco de fadiga
+// ((c)(2)); a app não o sabe → não é "curto" em todas as leituras. Devolve { floorMin, diffMin } (a diferença para o mínimo
+// normal: o repouso seguinte aumenta-a, (c)(3), e o PSV seguinte reduz-se nela, (c)(4)) ou null se não se aplica:
+//   · só reduz o mínimo do 235(a)/(b): depois de um PSV prolongado (205(d)(1)) ou com os pisos de 14 h (fuso, repouso a bordo)
+//     o mínimo é outro e fica como estava;
+//   · no máximo 2 entre recuperações ((c)(5)) — a app não os conta: di-lo no texto.
+const reducedBand = (actualMin, normalMin, prev) => {
+  if (!prev || !prev.ra || prev.ra.extended) return null;
+  const std = prev.ra.inBase ? 720 : 600;
+  if (prev.ra.floorMin !== std) return null;
+  const floor = prev.ra.inBase ? REDUCED_REST_BASE_MIN : REDUCED_REST_AWAY_MIN;
+  if (!(actualMin < normalMin) || actualMin < floor) return null;
+  return { floorMin: floor, diffMin: normalMin - actualMin };
+};
+// O PSV a seguir a um repouso reduzido reduz-se pela diferença (CS 235(c)(4)): se nem o máximo POSSÍVEL menos a diferença
+// chega para o PSV do serviço seguinte, nem como repouso reduzido é legal. Só se sabe quando o bloco seguinte é um serviço só.
+// O máximo possível conta com o prolongamento planeado (ORO.FTL.205(d)), que nenhum texto proíbe depois de um repouso reduzido.
+// "Após um repouso reduzido não pode ser prestado serviço de voo repartido" (ORO.FTL.220(c)): se o bloco seguinte é um
+// repartido CERTO (dois serviços com 3 h ou mais e menos de 10 h entre eles), nunca cabe. Com 10 h ou mais entre eles ('either')
+// podem ser dois PSV: conta o 1.º serviço.
+const nextFitsReduced = (svcs, next, diffMin) => {
+  if (!next || !next.ra) return true;
+  const blk = svcs.filter((x) => x.blk === next.blk);
+  if (blk.some((x) => x !== blk[0] && !x.either && x.joinGapMin != null && x.joinGapMin >= 180)) return false;
+  const first = blk[0], last = blk[blk.length - 1];
+  const whole = blk.every((x) => x === first || !x.either);   // um PSV só (serviços pegados) ou o 1.º de dois
+  const end = whole ? last : first;
+  if (!first.ra || !end.ra || end.ra.psvMin == null || first.ra.psvMaxHiMin == null) return true;
+  const psvMin = Math.round((+end.start - +first.start) / 60000) + end.ra.psvMin;
+  const maxMin = Math.max(first.ra.psvMaxHiMin, first.ra.psvExtMaxMin != null ? first.ra.psvExtMaxMin : 0);
+  return psvMin <= maxMin - diffMin;
+};
+// O veredicto do repouso com as duas leituras: curto só abaixo do mínimo de todas, certo só acima de todas, no meio incerto.
+const restVerdict = (actualMin, req, nightsShort, svcs = null, prev = null, next = null) => {
+  // (O repouso a seguir a um repouso reduzido AUMENTA pela diferença, CS 235(c)(3): não pode ser outra vez reduzido — com
+  // `reducedBefore` um repouso abaixo do mínimo é curto nas duas leituras.)
+  if (!nightsShort && actualMin < req.loMin && prev && !req.reducedBefore) {
+    const band = reducedBand(actualMin, req.loMin, prev);
+    if (band && nextFitsReduced(svcs || [], next, band.diffMin)) return { status: 'unc', kind: 'reducedRest', requiredMin: req.loMin, reducedFloorMin: band.floorMin, diffMin: band.diffMin };
+  }
+  if (nightsShort || actualMin < req.loMin) return { status: 'bad', requiredMin: req.loMin };
+  if (actualMin < req.hiMin) return { status: 'unc', kind: req.doubtKind || 'legTimes', requiredMin: req.loMin, requiredHiMin: req.hiMin };
+  return { status: 'ok', requiredMin: req.hiMin };
 };
 
 // CS FTL.1.235(b)(3)(i) e (4): de volta à base depois de uma ROTAÇÃO (serviços com repouso fora da base) com 4 h de fuso ou
@@ -167,12 +246,14 @@ export function restStatus(duties = {}, todayISO, ref = new Date(), ctx = {}) {
   const actualMin = Math.round((+next.start - +prev.end) / 60000);
   // Antes de um serviço que não é PSV a lei não fixa mínimo (ORO.FTL.235(a)/(b): "antes de um PSV").
   if (!blockHasFdp(svcs, next)) return { id: 'rest', status: 'ok', kind: 'notFdp', actualMin, requiredMin: null, prevIso: prev.iso, nextIso: next.iso };
-  const { prevDutyMin, floorMin, requiredMin, extOption } = requirementAfter(svcs, prev, next);
+  const req = requirementAfter(svcs, prev, next);
+  const { prevDutyMin, floorMin, extOption } = req;
   const nightsRequired = rotationNights(svcs, prev, next);
   const nightsActual = nightsRequired ? localNightsIn(prev.end, next.start) : null;
-  const short = actualMin < requiredMin || (nightsRequired > 0 && nightsActual < nightsRequired);
+  const v = restVerdict(actualMin, req, nightsRequired > 0 && nightsActual < nightsRequired, svcs, prev, next);
   return {
-    id: 'rest', status: short ? 'bad' : 'ok', actualMin, requiredMin, floorMin, prevDutyMin,
+    // 'warn' + kind 'legTimes' = incerto: o serviço anterior tem as horas das pernas que não batem certo.
+    id: 'rest', ...v, status: v.status === 'unc' ? 'warn' : v.status, actualMin, floorMin, prevDutyMin,
     prevIso: prev.iso, nextIso: next.iso, place: prev.ra.inBase ? 'base' : 'away', reason: prev.ra.reason, extOption,
     nightsRequired: nightsRequired || null, nightsActual,
   };
@@ -228,11 +309,12 @@ export function restAround(duties = {}, pick, ctx = {}) {
     if (!a.end) return { ...base, status: 'unc', kind: 'noPrevEnd' };
     const actualMin = Math.round((+b.start - +a.end) / 60000);
     if (!blockHasFdp(svcs, b)) return { ...base, status: 'na', kind: 'notFdp', actualMin, requiredMin: null };
-    const { prevDutyMin, floorMin, requiredMin, extOption } = requirementAfter(svcs, a, b);
+    const req = requirementAfter(svcs, a, b);
+    const { prevDutyMin, floorMin, extOption } = req;
     const nightsRequired = rotationNights(svcs, a, b);
     const nightsActual = nightsRequired ? localNightsIn(a.end, b.start) : null;
-    const short = actualMin < requiredMin || (nightsRequired > 0 && nightsActual < nightsRequired);
-    return { ...base, status: short ? 'bad' : 'ok', actualMin, requiredMin, floorMin, prevDutyMin, reason: a.ra.reason, extOption, nightsRequired: nightsRequired || null, nightsActual };
+    // 'unc' + kind 'legTimes': as pernas do serviço anterior não batem certo e o mínimo depende das horas certas.
+    return { ...base, ...restVerdict(actualMin, req, nightsRequired > 0 && nightsActual < nightsRequired, svcs, a, b), actualMin, floorMin, prevDutyMin, reason: a.ra.reason, extOption, nightsRequired: nightsRequired || null, nightsActual };
   };
   let need = null;
   if (last.end) {
@@ -250,8 +332,10 @@ export function restAround(duties = {}, pick, ctx = {}) {
     const actualMin = Math.round((+first.start - +eb.end) / 60000);
     if (!blockHasFdp(svcs, first)) beforeR = { ...base, status: 'na', kind: 'notFdp', actualMin, requiredMin: null };
     else {
+      // "Curto" só abaixo do mínimo de TODAS as leituras: sem a apresentação não se sabe onde nem quanto durou o serviço, e
+      // com 10 h ou mais (o mínimo do repouso reduzido fora da base, CS FTL.1.235(c)(1)) o repouso pode ser legal → incerto.
       const lowMin = Math.max(eb.floorLowMin, eb.dutyLowMin);
-      beforeR = actualMin < lowMin ? { ...base, status: 'bad', actualMin, requiredMin: lowMin } : { ...base, status: 'unc', kind: 'noReport', actualMin };
+      beforeR = actualMin < Math.min(lowMin, REDUCED_REST_AWAY_MIN) ? { ...base, status: 'bad', actualMin, requiredMin: lowMin } : { ...base, status: 'unc', kind: 'noReport', actualMin };
     }
   }
   const lastEnd = last.end || last.start;
@@ -261,8 +345,11 @@ export function restAround(duties = {}, pick, ctx = {}) {
     const maxMin = Math.round((+ea.off - +last.end) / 60000);
     if (!ea.fdp) afterR = { ...base, status: 'na', kind: 'notFdp', actualMin: maxMin, requiredMin: null };
     else {
-      const { requiredMin } = requirementAfter(svcs, last, null);
-      afterR = maxMin < requiredMin ? { ...base, status: 'bad', actualMin: maxMin, requiredMin } : { ...base, status: 'unc', kind: 'noReport', actualMin: maxMin };
+      // "Curto" só abaixo do mínimo de todas as leituras (`loMin`: as pernas do anterior podem não bater certo).
+      const reqA = requirementAfter(svcs, last, null);
+      const { loMin } = reqA;
+      const bandA = !reqA.reducedBefore && maxMin < loMin ? reducedBand(maxMin, loMin, last) : null;   // só como repouso reduzido → não é curto de certeza
+      afterR = (maxMin < loMin && !bandA) ? { ...base, status: 'bad', actualMin: maxMin, requiredMin: loMin } : { ...base, status: 'unc', kind: 'noReport', actualMin: maxMin };
     }
   }
   return { before: beforeR, after: afterR, need };

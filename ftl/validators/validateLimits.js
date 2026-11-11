@@ -60,6 +60,9 @@ export const limitsAround = (dayLog = {}, date) => {
     // não passa pode passar → "incerto" (nem "dentro" nem "excede" inventados). Só o serviço — o tempo de voo é exato.
     if (key !== 'servico' || out.over) return out;
     const est = ents.map((e) => (e && typeof e.servicoMaxMin === 'number' ? 1 : 0));
+    // (o máximo também pode vir das DUAS LEITURAS de um dia — um PSV repartido ou dois, a assistência até à apresentação ou
+    // não: `servicoMaxReadings`, ftl/index.js — e não de uma apresentação em falta: diz-se qual é o caso, `readDays`)
+    const rdg = ents.map((e) => (e && typeof e.servicoMaxMin === 'number' && e.servicoMaxReadings ? 1 : 0));
     if (!est.some(Boolean)) return out;
     const mxv = ents.map((e, k) => (est[k] ? vals[k] + e.servicoMaxMin - entryMin(e, key) : vals[k]));
     let mx = mxv.slice(0, N).reduce((a, b) => a + b, 0), ne = est.slice(0, N).reduce((a, b) => a + b, 0);
@@ -68,7 +71,7 @@ export const limitsAround = (dayLog = {}, date) => {
       mx += mxv[k + N - 1] - mxv[k - 1]; ne += est[k + N - 1] - est[k - 1];
       if (ne && (!worst || mx > worst.mx)) worst = { mx, ne, k };
     }
-    if (worst && worst.mx > out.limitMin) return { ...out, uncertain: true, doneMaxMin: worst.mx, estDays: worst.ne, maxFrom: isos[worst.k], maxTo: isos[worst.k + N - 1] };
+    if (worst && worst.mx > out.limitMin) return { ...out, uncertain: true, doneMaxMin: worst.mx, estDays: worst.ne, readDays: rdg.slice(worst.k, worst.k + N).reduce((a, b) => a + b, 0), maxFrom: isos[worst.k], maxTo: isos[worst.k + N - 1] };
     return out;
   };
   const out = DUTY_WINDOWS.map((w) => daysWin(w, 'servico'));

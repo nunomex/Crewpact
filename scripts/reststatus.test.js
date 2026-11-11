@@ -84,11 +84,22 @@ eq('A-144: sem sign-off, pós-voo de 30 min → curto', pick(restStatus({
   '2026-11-10': { report_time: '07:00', block_on: '17:30' },
   '2026-11-11': { report_time: '05:45', block_on: '09:00' },
 }, T2, at(T2, '20:00'), { postFlightMin: 30 })), { status: 'bad', prevIso: '2026-11-10', nextIso: '2026-11-11', actualMin: 705, requiredMin: 720 });
-// A-160 (a): 06:00 → calços 19:30 + 30 min = 14:00 de serviço; report às 09:45 → 13:45 < 14:00 → CURTO (a app dizia ✓).
-eq('A-160 (a): mínimo = o serviço (14:00) → curto', pick(restStatus({
+// A-160 (a): 06:00 → calços 19:30 + 30 min = 14:00 de serviço; report às 09:45 → 13:45 < 14:00 (a app dizia ✓).
+// 2026-11-11 (noite 10): 13:45 está abaixo do mínimo normal (14:00) mas acima das 12 h do repouso REDUZIDO (ORO.FTL.235(c),
+// CS FTL.1.235(c)(1)): só é legal se a companhia tiver repouso reduzido — a app não o sabe → incerto ('warn', kind 'reducedRest'), não
+// "curto". Com 11:45 (abaixo das 12 h) é curto em qualquer leitura.
+eq('A-160 (a): mínimo = o serviço (14:00) → 13:45 só como repouso reduzido: incerto', pick(restStatus({
   '2026-11-10': { report_time: '06:00', block_on: '19:30' },
   '2026-11-11': { report_time: '09:45', block_on: '13:00' },
-}, T2, at(T2, '21:00'), { postFlightMin: 30 })), { status: 'bad', prevIso: '2026-11-10', nextIso: '2026-11-11', actualMin: 825, requiredMin: 840 });
+}, T2, at(T2, '21:00'), { postFlightMin: 30 })), { status: 'warn', prevIso: '2026-11-10', nextIso: '2026-11-11', actualMin: 825, requiredMin: 840 });
+eq('A-160 (a): … diz porquê e a diferença', (({ kind, reducedFloorMin, diffMin }) => ({ kind, reducedFloorMin, diffMin }))(restStatus({
+  '2026-11-10': { report_time: '06:00', block_on: '19:30' },
+  '2026-11-11': { report_time: '09:45', block_on: '13:00' },
+}, T2, at(T2, '21:00'), { postFlightMin: 30 })), { kind: 'reducedRest', reducedFloorMin: 720, diffMin: 15 });
+eq('A-160 (a): com 11:45 → curto em qualquer leitura', pick(restStatus({
+  '2026-11-10': { report_time: '06:00', block_on: '19:30' },
+  '2026-11-11': { report_time: '07:45', block_on: '11:00' },
+}, T2, at(T2, '21:00'), { postFlightMin: 30 })), { status: 'bad', prevIso: '2026-11-10', nextIso: '2026-11-11', actualMin: 705, requiredMin: 840 });
 // A-160 (b): dois serviços no dia (06:00–10:00 e 18:00–23:30); report às 08:00 → conta desde as 23:30 → 8:30 → CURTO.
 // Revisão do bloco 2 (2026-11-06): as 8:00 entre os dois não chegam ao mínimo (12 h), por isso não são um período de repouso
 // — é um só PSV repartido (CS FTL.1.220: "the break on the ground within the FDP") e o período de serviço precedente vai das
@@ -97,12 +108,13 @@ eq('A-160 (b): o último serviço do dia', pick(restStatus({
   '2026-11-10': { report_time: '06:00', block_on: '10:00', extra: [{ report_time: '18:00', block_on: '23:30', kind: 'flight' }] },
   '2026-11-11': { report_time: '08:00', block_on: '12:00' },
 }, T2, at(T2, '23:45'))), { status: 'bad', prevIso: '2026-11-10', nextIso: '2026-11-11', actualMin: 510, requiredMin: 1050 });
-// Repartido 06:00–09:00 + 14:00–19:00 (+30 = 19:30): período de serviço 13:30; report a 11 às 08:00 → 12:30 < 13:30 → CURTO.
+// Repartido 06:00–09:00 + 14:00–19:00 (+30 = 19:30): período de serviço 13:30; report a 11 às 08:00 → 12:30 < 13:30. Com 12:30
+// (≥ as 12 h do repouso reduzido, CS FTL.1.235(c)(1)) só é legal como repouso reduzido → incerto (noite 10; antes "curto").
 // Entre as duas metades (11:00), o próximo é o de dia 11 — a 2.ª metade é o mesmo serviço, não um repouso antes dela.
 {
   const sp = { '2026-11-10': { report_time: '06:00', block_on: '09:00', extra: [{ report_time: '14:00', block_on: '19:00', kind: 'flight' }] }, '2026-11-11': { report_time: '08:00', block_on: '12:00' } };
-  eq('repartido: o mínimo é o período de serviço do bloco', pick(restStatus(sp, T2, at(T2, '20:00'), { postFlightMin: 30 })), { status: 'bad', prevIso: '2026-11-10', nextIso: '2026-11-11', actualMin: 750, requiredMin: 810 });
-  eq('repartido: entre as metades, o próximo é o de amanhã', pick(restStatus(sp, T2, at(T2, '11:00'), { postFlightMin: 30 })), { status: 'bad', prevIso: '2026-11-10', nextIso: '2026-11-11', actualMin: 750, requiredMin: 810 });
+  eq('repartido: o mínimo é o período de serviço do bloco', pick(restStatus(sp, T2, at(T2, '20:00'), { postFlightMin: 30 })), { status: 'warn', prevIso: '2026-11-10', nextIso: '2026-11-11', actualMin: 750, requiredMin: 810 });
+  eq('repartido: entre as metades, o próximo é o de amanhã', pick(restStatus(sp, T2, at(T2, '11:00'), { postFlightMin: 30 })), { status: 'warn', prevIso: '2026-11-10', nextIso: '2026-11-11', actualMin: 750, requiredMin: 810 });
 }
 // ORO.FTL.235(a)/(b): o mínimo é "antes de um PSV". Antes de um escritório a lei não fixa mínimo → sem "curto".
 {

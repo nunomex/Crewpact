@@ -54,7 +54,11 @@ import { airportOffsetMin, airportUtcMs, legZulu, legsChainMs, chainReportMs, se
 // se for em terra); sem forma de o situar e se a letra do Quadro 1 mudasse com ele → por saber (antes saltava-se e dava D);
 // fusos dos aeroportos conferidos contra a IANA (data/tzOverride.js); a hora repetida da noite em que a hora atrasa pela
 // duração de voo possível (data/zulu.js).
-export const ENGINE_VERSION = 11;   // 11 (2026-11-11): a cauda de um posicionamento noutro fuso conta pelo tempo decorrido
+// v11 (2026-11-11): a cauda de um posicionamento noutro fuso conta pelo tempo decorrido.
+// v12 (2026-11-11, noites 8 a 10): pernas que não formam um PSV → sem repartido, PSV incerto; dois serviços no dia com 10 h ou
+// mais entre eles → as duas leituras ('either'); assistência + voo com 10 h ou mais → as duas leituras; o tempo entre serviços
+// pelo real na noite da mudança de hora; o pior bloco do dia: excede > incerto > dentro.
+export const ENGINE_VERSION = 12;
 
 // Uma atividade (manual ou da escala) → PSV + repouso + legalidade num só objeto.
 // input: { state, report, end?, sectors, splitBreakH?, inBase?, postFlightMin? }
@@ -301,7 +305,83 @@ export const fdpLegsOf = (legs) => {
   legs.forEach((l, i) => { if (l && !l.dh) last = i; });
   return last < 0 ? legs : legs.slice(0, last + 1);
 };
-export const splitFromLegs = (legs0) => {
+// AS PERNAS DE UM SERVIÇO TÊM DE FORMAR UM PSV (achado no iPhone a 2026-11-11; a regra sai toda da lei — o Nuno: "tem de ser
+// como está na lei"). Com a volta a sair antes de a ida chegar (17:30–20:35 e 19:50–21:30) somavam-se 24 h à pausa negativa
+// (−45 min → 23 h 15) e dava "repartido". As pernas só têm HH:MM; o que a lei diz do tempo em terra entre duas pernas:
+//   · ORO.FTL.105(13) e (24): o setor vai do primeiro movimento da aeronave à sua imobilização. O mesmo tripulante não está
+//     em dois setores ao mesmo tempo (é uma impossibilidade de facto): uma partida antes da chegada anterior são horas erradas.
+//   · ORO.FTL.105(6): "Intervalo" é um período "durante um período de serviço de voo INFERIOR A UM PERÍODO DE REPOUSO". O
+//     repouso mais curto que a lei admite é de 10 horas: longe da base (ORO.FTL.235(b)), na base com alojamento adequado
+//     (235(a)(2)) e no repouso reduzido fora da base (CS FTL.1.235(c)(1)). Logo, 10 h ou mais em terra entre duas pernas já
+//     podem ser um repouso: NÃO são, de certeza, um intervalo deste PSV — ou é um repouso (são dois serviços), ou as horas
+//     estão erradas. É a regra com que a leitura do calendário já separa os serviços (data/calendarParse.js REST_FLOOR_MS,
+//     bloco 4 da auditoria). Entre as 10 h e o repouso que se aplicaria ao caso (o serviço precedente, ou 12 h na base —
+//     235(a)(1)) o texto admite duas leituras; a app não escolhe: o PSV fica incerto. Uma "pausa" de 23 h 15 não é um
+//     intervalo em leitura nenhuma.
+// `legsBrokenKind` = porque é que as pernas, como estão, NÃO formam um PSV: 'before' (uma partida antes da chegada anterior:
+// é um PSV só, com horas erradas) · 'rest' (10 h ou mais em terra: podem ser dois serviços) · null (formam). `legsBroken` = o
+// mesmo, sim ou não. O motor então não tira daqui um repartido e o PSV fica "incerto" (ftlForDuty: faltam as horas certas das
+// pernas) — mas o serviço CONTA (ORO.FTL.210).
+//   · Com o dia do serviço e os fusos: pelos INSTANTES da cadeia do serviço (data/zulu.js legsChainMs — a mesma que dá o PSV
+//     real): a Zulu do calendário, ou a hora local no fuso do aeroporto. A cadeia deixa no mesmo dia uma partida até 3 h antes
+//     da chegada anterior (vê-se a partida antes da chegada) e passa para o dia seguinte a que vem mais atrás (vê-se um
+//     tempo em terra de 21 h ou mais).
+//   · Sem o dia, ou com uma hora que a cadeia não resolve (aeroporto sem fuso e sem Zulu): pelo relógio, para a frente — a
+//     partida antes da chegada aparece como um tempo em terra de quase 24 h.
+//   · O que falta (uma perna sem horas) não conta: nunca se afirma o que não se vê.
+// O que NÃO se apanha: pernas guardadas fora de ordem com a 2.ª toda antes da 1.ª e menos de 10 h para a frente (12:00–13:00
+// e 20:00–21:00 trocadas) — no relógio é um intervalo possível. Só à mão: o calendário ordena pelo instante.
+const HOUR_MS = 3600000;
+// O repouso mais curto que a lei admite (ORO.FTL.235(b)): o número vem do computeRest, a fonte única do repouso.
+export const SHORTEST_REST_MIN = computeRest({ prevDutyMin: 0, inBase: false }).restMin;
+export { REDUCED_REST_BASE_MIN, REDUCED_REST_AWAY_MIN } from './rules/reducedRestRules';
+// A HORA REPETIDA (a noite em que a hora atrasa: a mesma hora local acontece duas vezes, com 1 h de intervalo). Uma hora local
+// SEM Zulu que caia nela tem duas leituras, e a cadeia escolhe uma. Para afirmar "a partida vem antes da chegada" usa-se a
+// leitura que mais o evita: a chegada na 1.ª vez (a mais cedo) e a partida na 2.ª (a mais tarde) — chegar às 02:48 e sair às
+// 02:26 pode ser um intervalo de 38 min. Só se afirma o que existe em todas as leituras.
+const apOff = (ap, ms) => (ap ? airportOffsetMin(String(ap).toUpperCase(), ms) : null);
+const earliestOn = (leg, ms) => { const o = apOff(leg.arr, ms), a = apOff(leg.arr, ms - HOUR_MS); return !leg.onZ && o != null && a != null && a > o ? ms - HOUR_MS : ms; };
+const latestOff = (leg, ms) => { const o = apOff(leg.dep, ms), b = apOff(leg.dep, ms + HOUR_MS); return !leg.offZ && o != null && b != null && o > b ? ms + HOUR_MS : ms; };
+// O tempo em terra (min) entre cada perna e a seguinte: { groundMin, before } — `before` = a partida vem antes da chegada
+// anterior (só com os instantes). null onde falta uma das duas horas.
+const legGaps = (legs, { date = null, report = null } = {}) => {
+  const out = new Array(Math.max(0, legs.length - 1)).fill(null);
+  const ch = date ? legsChainMs(date, legs, report) : null;
+  const solved = !!ch && legs.every((l, i) => (!(l.off || l.offZ) || (ch[i] && ch[i].offMs != null)) && (!(l.on || l.onZ) || (ch[i] && ch[i].onMs != null)));
+  for (let i = 0; i < legs.length - 1; i++) {
+    const a = legs[i], b = legs[i + 1];
+    if (solved) {
+      const on = ch[i].onMs, off = ch[i + 1].offMs;
+      if (on == null || off == null) continue;
+      out[i] = { groundMin: Math.max(0, Math.round((off - on) / 60000)), before: latestOff(b, off) < earliestOn(a, on) };
+    } else {
+      const on = parseHhmm(a.on), off = parseHhmm(b.off);
+      if (on == null || off == null) continue;
+      out[i] = { groundMin: durationMin(on, off), before: false };
+    }
+  }
+  return out;
+};
+// `opts` = { date, report } — o dia e a apresentação do serviço (situam as pernas no tempo; sem eles decide o relógio).
+export const legsBrokenKind = (legs0, opts = {}) => {
+  const legs = Array.isArray(legs0) ? legs0.filter(Boolean) : [];
+  if (legs.length < 2) return null;
+  let kind = null;
+  for (const g of legGaps(legs, opts || {})) {
+    if (!g) continue;
+    if (g.before) return 'before';
+    if (g.groundMin >= SHORTEST_REST_MIN) kind = 'rest';
+  }
+  return kind;
+};
+export const legsBroken = (legs0, opts = {}) => !!legsBrokenKind(legs0, opts);
+// Split duty a partir das LEGS (CS FTL.1.220): o MAIOR intervalo em terra ≥3h entre setores (on-block da perna anterior →
+// off-block da seguinte, com volta à meia-noite). "A single break" → só o maior conta. DERIVADO das legs (não persistido à
+// parte) → sempre coerente com as horas reais e sobrevive a gravar/reler (as legs vão no roster_meta). {0,null} se não houver.
+// Se as pernas não formam um PSV (`legsBrokenKind`), não há intervalo que se conheça: `{ 0, null, broken: 'before'|'rest' }`.
+export const splitFromLegs = (legs0, opts = {}) => {
+  const broken = legsBrokenKind(legs0, opts);   // todas as pernas, com o posicionamento do fim
+  if (broken) return { splitBreakH: 0, splitBreakStart: null, broken };
   const legs = fdpLegsOf(legs0);
   if (!Array.isArray(legs) || legs.length < 2) return { splitBreakH: 0, splitBreakStart: null };
   let bestMin = 0, start = null;
@@ -313,6 +393,7 @@ export const splitFromLegs = (legs0) => {
   }
   return { splitBreakH: bestMin / 60, splitBreakStart: start };
 };
+
 
 // O MAIOR setor (min de voo, calços a calços) — para a hora a mais do CS FTL.1.205(c)(4). Prefere a Zulu das legs
 // (instantes, sem misturar fusos); sem Zulu, o relógio (com volta à meia-noite); sem legs e com 1 setor, o tempo de
@@ -621,7 +702,7 @@ export const ftlForDuty = (duty = {}, ctx = {}) => {
   const sp = duty.special || {};
   // Split duty (CS FTL.1.220): `splitBreakH` EXPLÍCITO (bloco combinado do dayFtlFromDuties, ou form)
   // ganha; senão DERIVA a maior pausa em terra ≥3h das próprias legs.
-  const der = splitFromLegs(duty.legs);
+  const der = splitFromLegs(duty.legs, { date, report: duty.report_time || null });
   const isFdp = isFdpDuty(duty);
   const tzDiffH = tzDiffOf(duty, base, date);   // CS FTL.1.235(b)(3)(ii): fuso do PSV face à base
   // Aclimatação (Quadro 1) — só com a escala à volta (ctx.duties): B → hora da base, D → hora local, X → Quadro 3.
@@ -677,15 +758,54 @@ export const ftlForDuty = (duty = {}, ctx = {}) => {
   const ef = extFitOf(duty, d, { state: stateEff, isFdp, sp, der });
   let extUsed = false, extRefused = null;
   if (ef.fits) {
+    let maybe3rd = false;
     if (ctx.duties && ctx.date) {
+      const cnt = extCountBefore(ctx.duties, ctx.date, state);
       if (!extPlannedOf(duty, state)) extRefused = 'notPlanned';
-      else if (1 + extCountBefore(ctx.duties, ctx.date, state) > EXT_MAX_PER_7D) { extUsed = true; extRefused = '2in7'; }
+      else if (1 + cnt.n > EXT_MAX_PER_7D) { extUsed = true; extRefused = '2in7'; }
+      // Com um dia anterior de pernas erradas (não se sabe se foi um prolongamento) este pode ser o 2.º ou o 3.º: incerto, abaixo.
+      else if (1 + cnt.n + cnt.maybe > EXT_MAX_PER_7D) { extUsed = true; maybe3rd = true; }
       else { extUsed = true; d = computeDuty({ ...args, extended: true }); }   // legal: o máximo é o do prolongamento
     } else extUsed = true;   // sem a escala: marca-se (conta para os 2 em 7 dias) e o repouso sobe; o veredicto não muda
     // Planeado mas recusado, ou sem a escala para decidir: o máximo fica o do Quadro 2 e o repouso a seguir sobe na mesma.
     if (extUsed && (extRefused !== null || !(ctx.duties && ctx.date))) d = computeDuty({ ...args, restExtended: true });
+    // "A lei é que manda": entre o Quadro 2 (se este for o 3.º) e o prolongamento (se for o 2.º) → incerto, com o que falta.
+    if (maybe3rd) d = widenDuty([computeDuty({ ...args, restExtended: true }), computeDuty({ ...args, extended: true })], 'extCount');
   }
-  return { ...d, isFdp, kind, pf, inBase: ib, extUsed, extRefused, tzDiffH, tzSignedH: tzSignedOf(duty, base, date), acclim: ac };
+  // As pernas não formam um PSV (legsBrokenKind): o serviço CONTA (ORO.FTL.210) — a apresentação e os últimos calços dão o PSV
+  // e o período de serviço —, mas falta um facto de que a lei precisa: as horas certas das pernas. "A lei é que manda": o PSV
+  // fica INCERTO, com o que falta (`legTimes`), entre o máximo GARANTIDO (o do Quadro 2) e o POSSÍVEL em todas as leituras:
+  //   · um repartido que as horas erradas não deixam ver — o intervalo cabe no PSV e é inferior a 10 h (105(6)); o máximo sobe
+  //     até 50 % dele, tirado o pré e pós-voo (CS FTL.1.220(b) e (c)), com o alojamento que o tripulante indicou (por
+  //     indicar: até ao caso mais favorável, o alojamento adequado);
+  //   · ou o prolongamento planeado (ORO.FTL.205(d)), se o serviço cabia nele.
+  // Nunca "dentro" (uma das horas está errada, e pode ser a do fim). "Excede" só acima do máximo possível, e só quando é de
+  // certeza um PSV único ('before'); com 10 h ou mais em terra ('rest') podem ser dois serviços: fica incerto.
+  let extMaybe = false;
+  if (der.broken && isFdp && d.fdp) {
+    const act = d.fdp.actualFdpMin;
+    // O prolongamento só é uma leitura possível se o serviço cabia nele, era planeado e ainda cabe nos "2 em 7 dias" (com dois
+    // prolongamentos CERTOS antes já não cabe — 3.ª passagem independente).
+    extMaybe = extFitOf(duty, d, { state: stateEff, isFdp, sp, der: { ...der, broken: null } }).fits && extPlannedOf(duty, state)
+      && !(ctx.duties && ctx.date && 1 + extCountBefore(ctx.duties, ctx.date, state).n > EXT_MAX_PER_7D);
+    // Cada variante em todas as leituras da aclimatação, quando ela está por saber (como acima): senão o máximo possível
+    // ficava só pela hora "auto" e um serviço fora da base dava "excede" sem o ser em todas as leituras.
+    const reads = (a) => {
+      if (!(ac && ac.unknown)) return [computeDuty(a)];
+      const zB = zuluTimingOf(duty, base, date, 'base'), zD = zuluTimingOf(duty, base, date, 'dep');
+      return [computeDuty({ ...a, state: 'acc', bandShiftMin: zB.bandShiftMin }), computeDuty({ ...a, state: 'acc', bandShiftMin: zD.bandShiftMin }), computeDuty({ ...a, state: 'unk' })];
+    };
+    const variants = [d];
+    // (o alojamento é o que o tripulante disse do serviço; por indicar, o motor já dá o intervalo até ao mais favorável)
+    if (act != null) variants.push(...reads({ ...args, splitBreakH: Math.min(SHORTEST_REST_MIN - 1, act) / 60, splitBreakStart: null }));
+    if (extMaybe) variants.push(...reads({ ...args, extended: true }));
+    const w = widenDuty(variants, 'legTimes');
+    let fdp = { ...w.fdp, unknowns: Array.from(new Set([...(w.fdp.unknowns || []), 'legTimes'])) };
+    if (der.broken === 'rest' || !fdp.over) fdp = { ...fdp, over: false, excessMin: 0, excessStr: null, uncertain: true };
+    const disc = (d.discretion && !fdp.over) ? { ...d.discretion, over: false, uncertain: true } : d.discretion;
+    d = { ...w, fdp, discretion: disc, ...validateDuty({ fdp, reportMin: d.reportMin, endMin: d.endMin, sectors: d.sectors }) };
+  }
+  return { ...d, isFdp, kind, pf, inBase: ib, extUsed, extRefused, tzDiffH, tzSignedH: tzSignedOf(duty, base, date), acclim: ac, legsBroken: der.broken || undefined, extMaybe: extMaybe || undefined };
 };
 
 // Junta vários resultados do computeDuty (um por leitura possível de um facto que falta) num só: o máximo GARANTIDO é o
@@ -711,6 +831,10 @@ const extFitOf = (duty, d, { state, isFdp, sp, der }) => {
   // 205(d) é "para tripulantes aclimatados": no estado X (Quadro 3) não há prolongamento.
   if (state !== 'acc' || !isFdp || sp.discretion || sp.augmented || !d.fdp.exact || !d.fdp.over) return { fits: false };
   if ((duty.splitBreakH || der.splitBreakH || 0) >= SPLIT_MIN_BREAK_H) return { fits: false };   // 205(d)(4)
+  // As pernas não formam um PSV (legsBroken): não se sabe se houve intervalo. ESCOLHA da app, não é a letra do 205(d)(4) (que
+  // só proíbe juntar o prolongamento ao do repartido): a um serviço com as horas das pernas erradas não se dá o prolongamento —
+  // fica o máximo do Quadro 2, como antes desta correção. (O repouso a seguir também não leva as 2 h do 205(d)(1)(i).)
+  if (der.broken) return { fits: false };   // 'before' ou 'rest'
   const rep = parseHhmm(duty.report_time), end = parseHhmm(duty.block_on);
   if (rep == null || end == null) return { fits: false };
   const e = computeFdp({ state, reportMin: rep, endMin: end, sectors: duty.sectors || 0, extended: true });
@@ -732,19 +856,21 @@ const extPlannedOf = (duty, state = 'acc') => {
 // O 3.º numa janela de 7 dias é o que passa o limite ("não mais do que duas vezes em cada período de 7 dias
 // consecutivos"): qualquer janela com 3 contém o mais recente e os outros dois nos 6 dias antes dele.
 const EXT_MAX_PER_7D = 2;
+// Devolve { n, maybe }: `n` = os prolongamentos certos; `maybe` = os dias cujas pernas não formam um PSV (legsBroken) e que, pela
+// apresentação e pelo fim, cabiam no prolongamento planeado — não se sabe se o foram (podiam ser um repartido).
 const extCountBefore = (duties, date, state = 'acc') => {
   const [y, m, dd] = String(date).split('-').map(Number);
-  let n = 0;
+  let n = 0, maybe = 0;
   for (let k = 1; k <= 6; k++) {
     const t = new Date(y, m - 1, dd - k, 12);
     const iso = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
     const x = duties[iso];
     if (!x || x.deleted || !x.report_time || !x.block_on) continue;
     const dx = computeDuty({ state, report: x.report_time, end: x.block_on, sectors: x.sectors || 0 });
-    const derx = splitFromLegs(x.legs);
-    if (extFitOf(x, dx, { state, isFdp: isFdpDuty(x), sp: x.special || {}, der: derx }).fits && extPlannedOf(x, state)) n++;
+    const derx = splitFromLegs(x.legs, { date: iso, report: x.report_time || null });
+    if (extFitOf(x, dx, { state, isFdp: isFdpDuty(x), sp: x.special || {}, der: { ...derx, broken: null } }).fits && extPlannedOf(x, state)) { if (derx.broken) maybe++; else n++; }
   }
-  return n;
+  return { n, maybe };
 };
 
 // Dia local (ORO.FTL.105(15)): as horas depois da meia-noite são do dia seguinte (bloco 8b, A-173). Minutos de um período que
@@ -855,9 +981,13 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = n
   // Discrição do comandante (ORO.FTL.205(f)) USADA neste serviço — declarada em `special`.
   // O excesso DENTRO da margem (+2h; +3h com repouso a bordo) é LEGAL (e reportável ao
   // operador); só ALÉM da margem é ilegal. Sem a marca, o teto planeado manda (como antes).
+  // Com as pernas que não batem certo (`legTimes`, ftlForDuty) a margem conta-se sobre o máximo POSSÍVEL: declarar a discrição
+  // não transforma um incerto em "excede" (3.ª passagem independente). `ltOver` = excede em todas as leituras.
+  const lt = (d.fdp.unknowns || []).includes('legTimes');
   const disc205 = sp.discretion
-    ? computeDiscretion({ maxFdpMin: d.fdp.maxFdpMin, actualFdpMin: d.fdp.actualFdpMin, restMin: d.rest.restMin, inFlightRest: !!sp.augmented })
+    ? computeDiscretion({ maxFdpMin: (lt && d.fdp.maxHiMin != null) ? d.fdp.maxHiMin : d.fdp.maxFdpMin, actualFdpMin: d.fdp.actualFdpMin, restMin: d.rest.restMin, inFlightRest: !!sp.augmented })
     : null;
+  const ltOver = lt ? (!!d.fdp.over && (!disc205 || !!disc205.over)) : null;
   // Standby de AEROPORTO com alojamento (ORO.FTL.225(e) cumprido): é STANDBY — conta 100%
   // como serviço p/ 210/235 (225(c)) mas NÃO é PSV, logo a tabela 205 não o julga. SEM
   // alojamento a lei trata-o como "duty at the airport" (225(d)): o PSV conta desde o
@@ -880,13 +1010,14 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = n
       state: d.state, sectors: d.sectors, result: d.fdp.actualFdpStr, max: sbAcc ? null : d.fdp.maxFdpStr,
       // "A lei é que manda": com um facto em falta, `max` é o GARANTIDO e `maxHi` o POSSÍVEL; entre os dois → incerto.
       maxHi: (sbAcc || d.fdp.exact) ? undefined : d.fdp.maxHiStr, exact: d.fdp.exact,
-      uncertain: (sbAcc || d.fdp.exact) ? undefined : ((disc205 ? !!disc205.uncertain : !!d.fdp.uncertain) || undefined),
+      // (com o máximo exato só há "incerto" quando as horas das pernas não batem certo — `legTimes`, ftlForDuty)
+      uncertain: sbAcc ? undefined : lt ? (!ltOver || undefined) : d.fdp.exact ? undefined : ((disc205 ? !!disc205.uncertain : !!d.fdp.uncertain) || undefined),
       unknowns: (d.fdp.unknowns && d.fdp.unknowns.length) ? d.fdp.unknowns : undefined,
       band: d.fdp.band, start: duty.report_time, end: duty.block_on,
       endNextDay: repMin != null && endMin != null && endMin < repMin,
       // Hora-limite de calços (2026-11-03) — o Início mostra-a no dia do voo. Standby com alojamento não é PSV.
       latest: sbAcc ? null : d.latestOnBlockStr, latestNextDay: sbAcc ? false : d.latestOnBlockNextDay,
-      over: sbAcc ? false : (disc205 ? disc205.over : d.fdp.over),
+      over: sbAcc ? false : lt ? ltOver : (disc205 ? disc205.over : d.fdp.over),
       excess: sbAcc ? null : ((disc205 && disc205.used && !disc205.over) ? null : d.fdp.excessStr),
       extended: usedExtension, extRefused: d.extRefused || undefined, ts: Date.now(),
       acclim: (d.acclim && d.acclim.letter !== 'in') ? (d.acclim.letter || 'unknown') : undefined,   // Quadro 1
@@ -926,24 +1057,59 @@ export const restAfterDuty = (prev, { inBase = true, base = null, postFlightMin 
   const endMin = soPrev != null ? soPrev : (onPrev != null ? (onPrev + pfPrev) % 1440 : null);
   if (endMin == null) return null;
   let dutyMin = repPrev != null ? endMin - repPrev : 0; while (dutyMin < 0) dutyMin += 1440;
+  // Com o dia, o período de serviço é tempo DECORRIDO (os instantes do relógio do dispositivo, como em data/today.js): só muda
+  // nas duas noites da mudança de hora (a 25/10, 00:00 → 11:30 são 12:30 reais).
+  if (repPrev != null && date && /^\d{4}-\d{2}-\d{2}$/.test(String(date))) {
+    const at = (min, add = 0) => { const x = new Date(`${date}T00:00:00`); x.setDate(x.getDate() + add); x.setHours(Math.floor(min / 60), min % 60, 0, 0); return +x; };
+    const s0 = at(repPrev); let e0 = at(endMin); if (e0 <= s0) e0 = at(endMin, 1);
+    const real = Math.round((e0 - s0) / 60000);
+    if (Number.isFinite(real) && real > 0) dutyMin = real;
+  }
   const pr = repPrev != null ? ftlForDuty(prev, { inBase, base, postFlightMin, isPilot, date }) : null;
   const ib = pr ? pr.inBase : inBase;
   const aug = prev.special && prev.special.augmented;
   const r = computeRest({ prevDutyMin: dutyMin, inBase: ib, tzDiffH: pr ? pr.tzDiffH : 0, inflightRest: !!(aug && aug.restClass), extended: !!(pr && pr.extUsed) });
-  return { endMin, dutyMin, inBase: ib, floorMin: r.floorMin, requiredMin: r.restMin, requiredPostOnlyMin: r.restPostOnlyMin, extended: r.extended, reason: r.reason, tzSignedH: pr ? pr.tzSignedH : 0 };
+  // `legsDoubt`: as pernas deste serviço não formam um PSV (ftlForDuty) — o repouso a seguir depende da leitura (data/today.js).
+  const legsDoubt = pr && pr.legsBroken ? { kind: pr.legsBroken, extMaybe: !!pr.extMaybe } : null;
+  // O PSV deste serviço (realizado e máximo possível): para saber se cabia REDUZIDO depois de um repouso reduzido (CS 235(c)(4)).
+  const psvMin = pr && pr.isFdp && pr.fdp ? pr.fdp.actualFdpMin : null;
+  const psvMaxHiMin = pr && pr.isFdp && pr.fdp ? (pr.fdp.maxHiMin != null ? pr.fdp.maxHiMin : pr.fdp.maxFdpMin) : null;
+  // … e o máximo com o prolongamento da CS FTL.1.205(b), se a hora e os setores o admitem (planeado ou não: não se sabe).
+  let psvExtMaxMin = null;
+  if (pr && pr.isFdp && repPrev != null && onPrev != null) {
+    const e = computeFdp({ state: 'acc', reportMin: repPrev, endMin: onPrev, sectors: prev.sectors || 0, extended: true });
+    if (e && !e.notAllowed && e.maxFdpMin != null) psvExtMaxMin = e.maxFdpMin;
+  }
+  return { endMin, dutyMin, inBase: ib, floorMin: r.floorMin, requiredMin: r.restMin, requiredPostOnlyMin: r.restPostOnlyMin, extended: r.extended, reason: r.reason, tzSignedH: pr ? pr.tzSignedH : 0, legsDoubt, psvMin, psvMaxHiMin, psvExtMaxMin };
 };
 
-export const restBetweenDuties = (prev, next, { inBase = true, postFlightMin = 0 } = {}) => {
+// `date` (o dia dos dois serviços): o tempo entre eles é tempo DECORRIDO — mede-se pelos instantes do relógio do dispositivo,
+// como o repouso em data/today.js (restServices). Só muda nas duas noites da mudança de hora (2026-11-11, noite 10: no relógio,
+// 00:50 → 13:00 são 12:10; a 29/03 são 11:10 reais). Sem o dia, o relógio, como antes.
+export const restBetweenDuties = (prev, next, { inBase = true, postFlightMin = 0, date = null } = {}) => {
   if (!prev || !next) return null;
   const repNext = parseHhmm(next.report_time);
-  const ra = restAfterDuty(prev, { inBase, postFlightMin });
+  const ra = restAfterDuty(prev, { inBase, postFlightMin, date });
   if (!ra || repNext == null) return null;
   const endPrev = ra.endMin, prevDutyMin = ra.dutyMin;
   let gapMin = repNext - endPrev; while (gapMin < 0) gapMin += 1440;          // next reporta depois do fim de prev
+  if (date && /^\d{4}-\d{2}-\d{2}$/.test(String(date))) {
+    const at = (min, add = 0) => { const x = new Date(`${date}T00:00:00`); x.setDate(x.getDate() + add); x.setHours(Math.floor(min / 60), min % 60, 0, 0); return +x; };
+    const repPrev = parseHhmm(prev.report_time);
+    let endMs = at(endPrev); if (repPrev != null && endMs <= at(repPrev)) endMs = at(endPrev, 1);   // o fim passou a meia-noite
+    let nextMs = at(repNext); if (nextMs < endMs) nextMs = at(repNext, 1);
+    const real = Math.round((nextMs - endMs) / 60000);
+    if (Number.isFinite(real) && real >= 0) gapMin = real;
+  }
   const place = ra.inBase ? 'base' : 'away';
   const minRest = ra.requiredMin;                                             // a regra única (restAfterDuty)
+  // 'either' (2026-11-11, noite 8): 10 h ou mais, mas menos do que o repouso que se aplica ao caso (12 h na base, ou o serviço
+  // anterior). "Intervalo" é INFERIOR a um período de repouso (ORO.FTL.105(6)) e 10 h já são um repouso possível (235(b); na
+  // base com alojamento adequado, 235(a)(2); CS FTL.1.235(c)(1)): o texto admite as duas leituras — um intervalo de um PSV só
+  // (repartido), ou um repouso entre dois PSV (curto, sem alojamento adequado). A app não escolhe. Antes: 'split'.
   let kind, legal;
   if (gapMin >= minRest) { kind = 'rest'; legal = true; }
+  else if (gapMin >= SHORTEST_REST_MIN) { kind = 'either'; legal = null; }
   else if (gapMin >= 180) { kind = 'split'; legal = true; }                   // ≥3h → split duty (1 FDP)
   else { kind = 'continuous'; legal = false; }                               // <3h → não são 2 serviços
   return { gapMin, requiredMin: minRest, kind, legal, place, prevDutyMin };
@@ -963,7 +1129,11 @@ export const restBetweenDuties = (prev, next, { inBase = true, postFlightMin = 0
 // voo — reduz o máximo (casa > 6 h, com a janela 23:00–07:00 de fora; aeroporto > 4 h e o teto de 16 h) e soma ao 210
 // (casa 25 %, aeroporto 100 %). Vale para o standby em casa e para o de aeroporto COM alojamento; o de aeroporto sem
 // alojamento é "serviço no aeroporto" e o PSV conta desde a sua apresentação (ORO.FTL.225(d)) — fica no mesmo PSV.
-const foldStandbyIntoFlight = (list, inBaseOf, postFlightMin) => {
+// `foldEither` (2026-11-11, noite 10): quando entre o fim da assistência e a apresentação há 10 h ou mais, mas menos do que o
+// repouso do caso ('either'), há duas leituras — a assistência só acaba na apresentação (CS FTL.1.225(b)(5): dobra-se no voo),
+// ou houve um repouso mínimo no meio e esse tempo não conta como assistência (GM1 CS FTL.1.225(b)). `true` = a 1.ª leitura
+// (a de sempre; o voo leva `preStandby.either`); `false` = a 2.ª (a assistência fica à parte, com `restAfter`).
+const foldStandbyIntoFlight = (list, inBaseOf, postFlightMin, date = null, foldEither = true) => {
   const sorted = list.filter(Boolean).slice().sort((a, b) => (parseHhmm(a.report_time) ?? 0) - (parseHhmm(b.report_time) ?? 0));
   const out = [];
   for (let i = 0; i < sorted.length; i++) {
@@ -971,10 +1141,11 @@ const foldStandbyIntoFlight = (list, inBaseOf, postFlightMin) => {
     const foldable = sb && (sb.kind === 'standby_home' || (sb.kind === 'standby_airport' && sb.accommodation))
       && nx && (nx.kind || 'flight') === 'flight' && !(nx.special && nx.special.preStandby);
     if (foldable) {
-      const gap = restBetweenDuties(sb, nx, { inBase: inBaseOf(sb), postFlightMin });
+      const gap = restBetweenDuties(sb, nx, { inBase: inBaseOf(sb), postFlightMin, date });
       const st = parseHhmm(sb.report_time), rp = parseHhmm(nx.report_time);
+      if (gap && gap.kind === 'either' && !foldEither) { out.push({ ...sb, restAfter: true }); continue; }
       if (gap && gap.kind !== 'rest' && st != null && rp != null) {
-        const preStandby = { type: sb.kind === 'standby_airport' ? 'airport' : 'other', standbyH: durationMin(st, rp) / 60, startMin: st, folded: true };
+        const preStandby = { type: sb.kind === 'standby_airport' ? 'airport' : 'other', standbyH: durationMin(st, rp) / 60, startMin: st, folded: true, ...(gap.kind === 'either' ? { either: true } : {}) };
         out.push({ ...nx, special: { ...(nx.special || {}), preStandby } });
         i++;
         continue;
@@ -985,15 +1156,38 @@ const foldStandbyIntoFlight = (list, inBaseOf, postFlightMin) => {
   return out;
 };
 
+// AS DUAS LEITURAS de uma assistência seguida de um voo com 10 h ou mais entre os dois (ver foldStandbyIntoFlight). As contas do
+// dia (serviço, voo, repouso) são as da leitura de sempre — a assistência até à apresentação, o máximo, nunca a menos. O
+// VEREDICTO do PSV: "excede" só se excede nas duas leituras; "dentro" só se está dentro nas duas; senão incerto, com o que
+// falta (`standbyRest`: se houve um repouso mínimo antes da apresentação).
 export const dayFtlFromDuties = (list = [], opts = {}) => {
+  const a = dayFtlCore(list, opts, true);
+  if (!a || !a.sbEither) return a;
+  const { sbEither: _s, ...resA } = a;
+  const b0 = dayFtlCore(list, opts, false);
+  if (!b0) return resA;
+  const st = (r) => (r.psv.over ? 2 : r.psv.uncertain ? 1 : 0);
+  // O SERVIÇO do dia (ORO.FTL.210) nas duas leituras: a assistência conta até à apresentação, ou só o que durou (CS
+  // FTL.1.225(b)(3): 25 % em casa; no aeroporto, tudo). O certo é o menor; o possível, o maior.
+  const maxOf = (r) => (typeof r.servicoMaxMin === 'number' ? r.servicoMaxMin : entryMin(r, 'servico'));
+  const sLo = Math.min(entryMin(resA, 'servico'), entryMin(b0, 'servico')), sHi = Math.max(maxOf(resA), maxOf(b0));
+  const lower = entryMin(b0, 'servico') <= entryMin(resA, 'servico') ? b0 : resA;
+  const range = sHi > sLo ? { servicoMin: sLo, servico: sLo / 60, servicoNextMin: lower.servicoNextMin, servicoMaxMin: sHi, servicoMaxReadings: true } : {};
+  if (st(resA) === st(b0) && st(resA) !== 1) return { ...resA, ...range };
+  const psv = { ...resA.psv, over: false, excess: null, uncertain: true, unknowns: Array.from(new Set([...(resA.psv.unknowns || []), 'standbyRest'])) };
+  const folded = (m) => !!(m && m.special && m.special.preStandby && m.special.preStandby.either);
+  return { ...resA, ...range, psv, ...(resA.blocks ? { blocks: resA.blocks.map((bl) => (bl.members.some(folded) ? { ...bl, psv } : bl)) } : {}) };
+};
+const dayFtlCore = (list = [], opts = {}, foldEither = true) => {
+  const sbTag = (entry, arr0) => (foldEither && entry && arr0.some((d) => d && d.special && d.special.preStandby && d.special.preStandby.either) ? { ...entry, sbEither: true } : entry);
   const gapInBase0 = (prev) => { const away = endsAwayReliable(prev, opts.base); return away == null ? (opts.inBase !== false) : !away; };
-  const arr = foldStandbyIntoFlight(Array.isArray(list) ? list : [list], gapInBase0, opts.postFlightMin || 0);
+  const arr = foldStandbyIntoFlight(Array.isArray(list) ? list : [list], gapInBase0, opts.postFlightMin || 0, opts.date || null, foldEither);
   // Mantém a duty CRUA ao lado do registo FTL (precisa-se das horas p/ o repouso entre serviços).
   const all = arr.map((d) => ({ duty: d, entry: dutyToFtlDay(d, opts) })).filter((p) => p.entry);
   if (!all.length) return null;
   // `opts.withBlocks` (Simulação, auditoria A-248): junta os blocos de PSV do dia, cada um com os seus serviços, para o herói
   // mostrar o PSV do bloco do serviço simulado — o mesmo cálculo do veredicto. Não vai para o dayLog (fica fora por omissão).
-  const withB = (entry, blks) => (opts.withBlocks ? { ...entry, blocks: blks } : entry);
+  const withB = (entry, blks) => sbTag(opts.withBlocks ? { ...entry, blocks: blks } : entry, arr);
   const blk1 = (p) => [{ psv: p.entry.psv, members: [p.duty] }];
   // Serviços SEM report (A-161): somam ao 210 (voo sempre; serviço estimado), mas não entram nos blocos de PSV nem no
   // repouso — não se sabe quando começaram.
@@ -1002,7 +1196,9 @@ export const dayFtlFromDuties = (list = [], opts = {}) => {
   const extraMin = (key) => noRep.reduce((s, p) => s + entryMin(p.entry, key), 0);
   // O que os serviços sem report podem acrescentar no máximo (ver noReportEntry): soma-se ao mínimo do dia.
   const estMax = noRep.reduce((s, p) => s + ((typeof p.entry.servicoMaxMin === 'number' ? p.entry.servicoMaxMin : entryMin(p.entry, 'servico')) - entryMin(p.entry, 'servico')), 0);
-  const withMax = (entry) => (noRep.length ? { ...entry, servicoMaxMin: entryMin(entry, 'servico') + estMax } : entry);
+  // `readMax` (definido mais abaixo, quando há blocos): o que as DUAS LEITURAS de um 'either' podem acrescentar ao serviço do dia.
+  let readMax = 0;
+  const withMax = (entry) => ((noRep.length || readMax) ? { ...entry, servicoMaxMin: entryMin(entry, 'servico') + estMax + readMax, ...(readMax ? { servicoMaxReadings: true } : {}) } : entry);
   // A parte depois da meia-noite de vários serviços somados (bloco 8b).
   const nextOf = (list) => { const sv = list.reduce((s, e) => s + nextMin(e, 'servico'), 0), vo = list.reduce((s, e) => s + nextMin(e, 'voo'), 0); return { servicoNextMin: sv || undefined, vooNextMin: vo || undefined }; };
   if (!paired.length) {
@@ -1027,10 +1223,17 @@ export const dayFtlFromDuties = (list = [], opts = {}) => {
   // (sem nulos) é o que a UI consome.
   const gaps = [];
   for (let i = 0; i < paired.length - 1; i++) {
-    gaps.push(restBetweenDuties(paired[i].duty, paired[i + 1].duty, { inBase: gapInBase(paired[i].duty), postFlightMin: opts.postFlightMin || 0 }));
+    const g = restBetweenDuties(paired[i].duty, paired[i + 1].duty, { inBase: gapInBase(paired[i].duty), postFlightMin: opts.postFlightMin || 0, date: opts.date || null });
+    // A leitura "houve um repouso mínimo depois da assistência" (foldStandbyIntoFlight, `restAfter`): é um repouso.
+    // … e a assistência (que não é PSV) também não se junta ao serviço de ANTES dela.
+    const sbRest = g && ((g.kind === 'either' && paired[i].duty.restAfter) || (g.kind !== 'rest' && paired[i + 1].duty.restAfter));
+    gaps.push(sbRest ? { ...g, kind: 'rest', legal: true } : g);
   }
   const between = gaps.filter(Boolean);
-  const split = between.some((b) => b.kind === 'split');         // algum par é split duty (1 FDP)
+  // `split` = algum par ficou junto num PSV só para as contas do dia (repartido certo, ou a leitura A de um 'either');
+  // `either` = algum par pode ser intervalo OU repouso (as duas leituras) — o veredicto olha para as duas, abaixo.
+  const split = between.some((b) => b.kind === 'split' || b.kind === 'either');
+  const either = between.some((b) => b.kind === 'either');
   const restShort = between.some((b) => b.kind === 'continuous'); // algum par perto demais (não são 2)
   // BLOCOS de FDP (CS FTL.1.220): um intervalo 'rest' (≥ mínimo de repouso 235) SEPARA em 2 FDP;
   // 'split'/'continuous' MANTÊM no mesmo FDP — a pausa conta como FDP ("the break itself is fully
@@ -1049,8 +1252,8 @@ export const dayFtlFromDuties = (list = [], opts = {}) => {
     const first = blk[0].duty, last = blk[blk.length - 1].duty;
     let splitBreakH = 0, splitBreakStart = null;
     for (let i = 0; i < blk.length - 1; i++) {
-      const rb = restBetweenDuties(blk[i].duty, blk[i + 1].duty, { inBase: gapInBase(blk[i].duty), postFlightMin: opts.postFlightMin || 0 });
-      if (!rb || rb.kind !== 'split') continue;   // só uma pausa 'split' (≥3h) estende; 'continuous' (<3h) não
+      const rb = restBetweenDuties(blk[i].duty, blk[i + 1].duty, { inBase: gapInBase(blk[i].duty), postFlightMin: opts.postFlightMin || 0, date: opts.date || null });
+      if (!rb || (rb.kind !== 'split' && rb.kind !== 'either')) continue;   // só uma pausa ≥3h estende; 'continuous' (<3h) não
       const on = parseHhmm(blk[i].duty.block_on), rep = parseHhmm(blk[i + 1].duty.report_time);
       if (on == null || rep == null) continue;
       let gross = rep - on; while (gross < 0) gross += 1440;   // on-block(prev) → report(next) = terra bruta (220b tira 30m dentro do motor)
@@ -1064,21 +1267,71 @@ export const dayFtlFromDuties = (list = [], opts = {}) => {
       route: last.route || null,                    // fim do FDP combinado = onde o ÚLTIMO serviço aterra (base/fora)
       accommodation: first.accommodation || false,   // alojamento na pausa (opt-in): 'basic' | true (adequado) — 220 d/e
     };
-    const ce = dutyToFtlDay(combined, opts);
-    if (!ce) return blk[0].entry;
+    const ce0 = dutyToFtlDay(combined, opts);
+    if (!ce0) return blk[0].entry;
+    // O FDP combinado não leva as pernas: se as de algum dos serviços não formam um PSV (`legTimes`), a dúvida passa para ele.
+    const lt = blk.some((p) => p.entry && p.entry.psv && (p.entry.psv.unknowns || []).includes('legTimes'));
+    const ce = !lt ? ce0 : { ...ce0, psv: { ...ce0.psv, uncertain: ce0.psv.over ? ce0.psv.uncertain : true, unknowns: Array.from(new Set([...(ce0.psv.unknowns || []), 'legTimes'])) } };
     // O FDP combinado não leva as pernas: o voo depois da meia-noite é a soma do de cada serviço (todos do mesmo dia).
     const vn = blk.reduce((s, p) => s + nextMin(p.entry, 'voo'), 0);
     return { ...ce, vooNextMin: vn || undefined };
   };
-  const blockEntries = blocks.map(blockEntry);
+  // AS DUAS LEITURAS de um 'either' (ver restBetweenDuties). Os blocos de cima são a leitura A (um PSV repartido): é ela que dá o
+  // serviço e o voo do dia (o intervalo conta todo como PSV, ORO.FTL.220(b) — o máximo, nunca a menos). O VEREDICTO do PSV de um
+  // bloco com um 'either' lá dentro olha também para a leitura B (dois PSV com um repouso no meio):
+  //   · a leitura B é LEGAL se os PSV separados estão dentro e o repouso chega: na base, com alojamento adequado (235(a)(2):
+  //     10 h) e não inferior ao serviço anterior; é ILEGAL de certeza se um PSV excede ou o repouso é curto de certeza — fora
+  //     da base, ou inferior ao serviço anterior, ou sem alojamento adequado (dito pelo tripulante: nenhum, ou só uma sala);
+  //   · o dia é ilegal ("excede") só se o é nas duas leituras; "dentro" só se o é nas duas; senão incerto, com o que falta
+  //     (`breakOrRest`). (Ilegal nas duas: mostra-se o PSV da leitura A — na B o que falha é o repouso entre os dois.)
+  const suitable = (x) => x === true || x === 'suitable';
+  const notSuitable = (x) => x === 'none' || x === 'basic';
+  const blockEntryBoth = (blk) => {
+    const a = blockEntry(blk);
+    const idx = blk.map((p) => paired.indexOf(p));
+    const cuts = idx.slice(0, -1).filter((k) => gaps[k] && gaps[k].kind === 'either');
+    if (!cuts.length) return a;
+    const subs = [[blk[0]]];
+    for (let j = 1; j < blk.length; j++) { if (cuts.includes(idx[j - 1])) subs.push([blk[j]]); else subs[subs.length - 1].push(blk[j]); }
+    const bs = subs.map(blockEntry);
+    const overB = bs.some((e) => e.psv.over), uncB = bs.some((e) => e.psv.uncertain);
+    // O "serviço precedente" do repouso da leitura B (ORO.FTL.235(a)(1)/(b)) é o PSV inteiro que vem antes — que pode já ser
+    // um repartido de vários serviços: da apresentação do 1.º desse sub-bloco ao fim do serviço k (revisão independente).
+    const prevDutyB = (k) => {
+      let j = k; while (j > idx[0] && !cuts.includes(j - 1)) j--;
+      const r0 = parseHhmm(paired[j].duty.report_time), r1 = parseHhmm(paired[k + 1].duty.report_time);
+      return (r0 == null || r1 == null) ? gaps[k].prevDutyMin : Math.max(gaps[k].prevDutyMin, durationMin(r0, r1) - gaps[k].gapMin);
+    };
+    // Acréscimos ao mínimo que o restAfterDuty já calcula (as horas do prolongamento, 205(d)(1); o piso de 14 h depois de
+    // repouso a bordo): com eles o repouso de 10 h não é legal DE CERTEZA — fica incerto.
+    const extras = (k) => gaps[k].requiredMin > Math.max(gaps[k].prevDutyMin, 720);
+    const restOkB = cuts.every((k) => gaps[k].place === 'base' && suitable(paired[k].duty.accommodation) && gaps[k].gapMin >= prevDutyB(k) && !extras(k));
+    // O repouso da leitura B só é curto DE CERTEZA abaixo do mínimo do repouso reduzido (CS FTL.1.235(c)(1): 12 h na base, 10 h
+    // fora — e um 'either' tem sempre 10 h ou mais): na base, com menos de 12 h e sem alojamento adequado (dito), ou inferior
+    // ao serviço anterior. Entre o mínimo reduzido e o normal depende de a companhia ter repouso reduzido → não é "de certeza".
+    const restBadB = cuts.some((k) => gaps[k].place === 'base' && gaps[k].gapMin < 720 && (notSuitable(paired[k].duty.accommodation) || gaps[k].gapMin < prevDutyB(k)));
+    // O SERVIÇO do bloco para os limites do ORO.FTL.210 também depende da leitura: como um PSV repartido o intervalo conta todo
+    // (ORO.FTL.220(b)); como dois PSV, não. Fica o CERTO (o menor) e o POSSÍVEL (`servicoMaxMin`, o maior) — um limite só
+    // "excede" com o certo; com o possível fica incerto (ftl/validators/validateLimits.js). O voo é o mesmo.
+    const sA = entryMin(a, 'servico'), sB = bs.reduce((s, e) => s + entryMin(e, 'servico'), 0);
+    const range = sB < sA ? { servicoMin: sB, servico: sB / 60, servicoNextMin: (bs.reduce((s, e) => s + nextMin(e, 'servico'), 0)) || undefined, servicoMaxMin: sA, servicoMaxReadings: true } : {};
+    if (a.psv.over && (overB || restBadB)) return { ...a, ...range };
+    if (!a.psv.over && !a.psv.uncertain && !overB && !uncB && restOkB) return { ...a, ...range };
+    return { ...a, ...range, psv: { ...a.psv, over: false, excess: null, uncertain: true, unknowns: Array.from(new Set([...(a.psv.unknowns || []), 'breakOrRest'])) } };
+  };
+  const blockEntries = blocks.map(blockEntryBoth);
+  readMax = blockEntries.reduce((s, e) => s + (e.servicoMaxReadings ? e.servicoMaxMin - entryMin(e, 'servico') : 0), 0);
   const nextSum = (key) => [...blockEntries, ...noRep.map((p) => p.entry)].reduce((s, e) => s + nextMin(e, key), 0);
   // Minutos inteiros (A-148): somam-se os blocos e os serviços sem report.
   const servicoMin = blockEntries.reduce((s, e) => s + entryMin(e, 'servico'), 0) + extraMin('servico');
   const vooMin = blockEntries.reduce((s, e) => s + entryMin(e, 'voo'), 0) + extraMin('voo');
   // PSV do dia = o PIOR bloco (legalidade sobre os FDP combinados): prioriza o que EXCEDE.
   const excMin = (p) => { const m = /^(\d{1,2}):(\d{2})$/.exec(String((p && p.excess) || '')); return m ? (+m[1]) * 60 + (+m[2]) : 0; };
+  // Um bloco INCERTO vem antes de um que está dentro (revisão independente, noite 9): senão o dia ficava "dentro" com um PSV
+  // incerto lá dentro.
+  const rank = (e) => (e.psv.over ? 2 : e.psv.uncertain ? 1 : 0);
   const worst = blockEntries.reduce((a, b) => {
-    if (!!b.psv.over !== !!a.psv.over) return b.psv.over ? b : a;
+    if (rank(b) !== rank(a)) return rank(b) > rank(a) ? b : a;
     return excMin(b.psv) > excMin(a.psv) ? b : a;
   });
   const last = blockEntries[blockEntries.length - 1];
@@ -1088,7 +1341,7 @@ export const dayFtlFromDuties = (list = [], opts = {}) => {
     src: 'duty', engineVer: ENGINE_VERSION, psv: worst.psv,
     servicoMin, servico: servicoMin / 60, vooMin, voo: vooMin / 60, servicoEst: noRep.length ? true : undefined,
     servicoNextMin: nextSum('servico') || undefined, vooNextMin: nextSum('voo') || undefined,
-    rest: last.rest, parts: [...entries, ...noRep.map((p) => p.entry)].map((e) => e.psv), between, split, restShort,
+    rest: last.rest, parts: [...entries, ...noRep.map((p) => p.entry)].map((e) => e.psv), between, split, restShort, either: either || undefined,
   }), blocks.map((blk, i) => ({ psv: blockEntries[i].psv, members: blk.map((p) => p.duty) })));
 };
 

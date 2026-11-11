@@ -88,5 +88,41 @@ eq('sem apresentação → só esse campo', C.missingFields({ ...voo, report_tim
 eq('com tudo → nada', C.missingFields(voo), []);
 
 if (fail) { console.log(fails.join('\n')); }
+// ── As horas das pernas que não batem certo (2026-11-11, noite 10) ──
+// Um serviço JÁ guardado com a volta a sair antes de a ida chegar (17:30–20:35 e 19:50–21:30) só se corrigia pela importação.
+// O motor dá o PSV como incerto e diz o que falta (`legTimes`, ORO.FTL.105(13) e (24)): a linha "Horas das pernas" do
+// Completar deixa corrigi-las no Detalhe, perna a perna.
+{
+  const ov = { kind: 'flight', duty_date: '2026-11-20', report_time: '16:30', block_off: '17:30', block_on: '21:30', sectors: 2, flight_minutes: 285, route: 'LIS-FNC-LIS',
+    legs: [{ flightNo: 'EZY1', dep: 'LIS', arr: 'FNC', off: '17:30', on: '20:35', offZ: '17:30', onZ: '20:35' }, { flightNo: 'EZY2', dep: 'FNC', arr: 'LIS', off: '19:50', on: '21:30', offZ: '19:50', onZ: '21:30' }] };
+  const unk = ftl.ftlForDuty(ov, { isPilot: true, base: 'LIS', date: '2026-11-20', postFlightMin: 30 }).fdp.unknowns;
+  eq('pernas que não batem certo: o motor diz o que falta', unk, ['legTimes']);
+  const rows = C.completeRows(ov, { isPilot: true, ae: ejPil, category: 'FO', unknowns: unk });
+  const row = rows[0];
+  eq('… e o Completar põe "Horas das pernas" em primeiro, a pedir resposta', [row.id, row.need, row.cite], ['legTimes', true, 'ORO.FTL.105(13)']);
+  eq('… com a partida e a chegada de cada perna, já preenchidas com as da escala', row.sheet.fields.map((f) => [f.key, f.type, f.value]), [['off0', 'time', '17:30'], ['on0', 'time', '20:35'], ['off1', 'time', '19:50'], ['on1', 'time', '21:30']]);
+  eq('… os rótulos dizem a perna e os aeroportos', row.sheet.fields.map((f) => f.label.pt), ['Perna 1 · LIS→FNC · partida', 'Perna 1 · LIS→FNC · chegada', 'Perna 2 · FNC→LIS · partida', 'Perna 2 · FNC→LIS · chegada']);
+  // Sem mexer em nada não se grava (as horas continuam sem bater certo); com uma hora que não é hora, também não.
+  eq('… as mesmas horas não são uma correção', row.valid({ off0: '17:30', on0: '20:35', off1: '19:50', on1: '21:30' }), false);
+  eq('… uma hora inválida não passa', row.valid({ off0: '17:30', on0: '20:35', off1: '21:2', on1: '23:00' }), false);
+  eq('… horas que continuam sobrepostas não passam', row.valid({ off0: '17:30', on0: '20:35', off1: '20:00', on1: '21:30' }), false);
+  // A 1.ª partida não pode ficar antes da apresentação (16:30): o PSV conta da apresentação.
+  eq('… uma partida antes da apresentação não passa', row.valid({ off0: '16:00', on0: '20:35', off1: '21:20', on1: '23:00' }), false);
+  const fixed = { off0: '17:30', on0: '20:35', off1: '21:20', on1: '23:00' };
+  eq('… a volta às 21:20–23:00 passa', row.valid(fixed), true);
+  const patch = row.apply(fixed);
+  // A perna corrigida perde a Zulu do calendário dessas horas (recalcula-se pelo fuso); os calços do serviço e o tempo de voo
+  // acompanham: 3:05 + 1:40 = 4:45 (ORO.FTL.105(13): o tempo decorrido de cada setor).
+  eq('… o que se grava: as pernas, os calços e o tempo de voo', [patch.legs.map((l) => [l.off, l.on, l.offZ || null, l.onZ || null]), patch.block_off, patch.block_on, patch.flight_minutes],
+    [[['17:30', '20:35', '17:30', '20:35'], ['21:20', '23:00', null, null]], '17:30', '23:00', 285]);
+  const after = ftl.ftlForDuty({ ...ov, ...patch }, { isPilot: true, base: 'LIS', date: '2026-11-20', postFlightMin: 30 });
+  eq('… e o PSV deixa de estar incerto: 6:30 de 11:15', [after.fdp.actualFdpStr, after.fdp.maxFdpStr, !!after.fdp.uncertain, after.fdp.unknowns], ['06:30', '11:15', false, []]);
+  eq('sem a dúvida das pernas, a linha não aparece', ids(C.completeRows({ ...ov, ...patch }, { isPilot: true, ae: ejPil, category: 'FO', unknowns: [] })).includes('legTimes'), false);
+  // Um posicionamento no fim: o fim do serviço (sign-off lido da escala) acompanha a chegada dele.
+  const dh = { ...ov, signOff: '21:30', sectors: 1, legs: [ov.legs[0], { ...ov.legs[1], dh: true }], block_on: '20:35' };
+  const pDh = C.completeRows(dh, { isPilot: true, ae: ejPil, category: 'FO', unknowns: ['legTimes'] })[0].apply(fixed);
+  eq('… com posicionamento no fim: calços do último setor operado e sign-off na chegada do DH', [pDh.block_on, pDh.signOff], ['20:35', '23:00']);
+}
+
 console.log(`completar o serviço — ${pass} passou, ${fail} falhou (${pass + fail} asserções)`);
 process.exit(fail ? 1 : 0);

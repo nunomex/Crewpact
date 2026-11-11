@@ -392,6 +392,9 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
                 const ic = info.kind === 'ready' ? { name: 'checkmark', bg: PELE.okSoft, fg: PELE.ok }
                   : info.kind === 'removed' ? { name: 'close', bg: PELE.redSoft, fg: PELE.red }
                   : { name: 'time-outline', bg: PELE.warnSoft, fg: PELE.warn };
+                // As horas das pernas não batem certo (ftl legsBroken): o dia ENTRA (a lei conta todo o serviço, ORO.FTL.210) e fica
+                // incerto — a linha diz o que falta e abre a correção ao toque.
+                const legsIssue = (c.action !== 'delete' && c.prospect) ? c.prospect.issues.find((x) => x.type === 'fdpUncertain' && (x.unknowns || []).includes('legTimes')) : null;
                 const issue = info.kind === 'fix'
                   ? (info.badAp ? l(`Aeroporto "${info.badAp}" não reconhecido`, `Airport "${info.badAp}" not recognised`)
                     : info.reason === 'end' ? l('Sem hora de fim — corrige para contar', 'No end time — fix to count')
@@ -403,12 +406,12 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
                     ? (() => { const it = c.prospect.issues.find((x) => x.level === 'bad'); return it ? `⚠ ${issueText(it, lang, c.duty.duty_date)}` : null; })()
                   // O "incerto" também se diz (risco R6 do bloco 4): falta um facto que a lei precisa, ou o sítio não bate.
                   : (c.prospect && c.prospect.verdict === 'unc')
-                    ? (() => { const it = c.prospect.issues.find((x) => x.level === 'unc'); return it ? l(`Incerto — ${issueText(it, lang, c.duty.duty_date)}`, `Uncertain — ${issueText(it, lang, c.duty.duty_date)}`) : null; })()
+                    ? (() => { const it = legsIssue || c.prospect.issues.find((x) => x.level === 'unc'); const fix = legsIssue ? l(' · toca para corrigir', ' · tap to fix') : ''; return it ? l(`Incerto — ${issueText(it, lang, c.duty.duty_date)}${fix}`, `Uncertain — ${issueText(it, lang, c.duty.duty_date)}${fix}`) : null; })()
                   : info.kind === 'info' ? l('Sem rota — não conta para per-diem', 'No route — no per-diem') : null;
                 const issueWarn = info.kind === 'fix' || !!(c.prospect && (c.prospect.verdict === 'bad' || c.prospect.verdict === 'unc'));
-                const tappable = info.kind === 'fix' || info.kind === 'removed';
+                const tappable = info.kind === 'fix' || info.kind === 'removed' || !!legsIssue;
                 return (
-                  <TouchableOpacity key={c.duty.duty_date + c.kind} onPress={() => (info.kind === 'fix' ? correct(c) : info.kind === 'removed' ? toggle(c) : null)} activeOpacity={tappable ? 0.7 : 1} style={[s.crow, info.kind === 'fix' && s.crowFix, info.kind === 'removed' && c.selected && s.crowDel]}>
+                  <TouchableOpacity key={c.duty.duty_date + c.kind} onPress={() => ((info.kind === 'fix' || legsIssue) ? correct(c) : info.kind === 'removed' ? toggle(c) : null)} activeOpacity={tappable ? 0.7 : 1} style={[s.crow, info.kind === 'fix' && s.crowFix, info.kind === 'removed' && c.selected && s.crowDel]}>
                     <View style={[s.statIc, { backgroundColor: ic.bg }]}><Ionicons name={ic.name} size={18} color={ic.fg} /></View>
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <View style={s.cDayRow}>

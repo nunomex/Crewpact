@@ -32,12 +32,57 @@ const val = (d, k) => {
   return String(v).trim().toUpperCase();
 };
 // Um snap gravado antes de levar o OFC e o e-learning (A-230) não os tem: valem os do serviço guardado (não é uma mudança).
+// O mesmo para as PERNAS e o tempo de voo (2026-11-11): um snap anterior não os tem. As pernas publicadas são as do serviço
+// guardado SE o tripulante não lhes mexeu:
+//   · os calços guardados são os do snap (as horas reais mexem na 1.ª saída e na última chegada — realTimesPatch); e
+//   · cada hora de cada perna ainda tem a sua Zulu do calendário (revisão independente): o formulário e as horas reais apagam a
+//     Zulu da hora em que mexem, também numa perna do meio — sem isto, a correção de uma perna do meio feita pelo tripulante
+//     passava por "publicada", a sincronização dava "alterado" e aplicá-la desfazia a correção.
+// Se mexeu, ou se as pernas não trazem Zulu (PDF), não se sabe quais eram as publicadas: não se comparam (como antes) — nunca
+// um "alterado" ou um conflito inventado sobre o que o tripulante escreveu.
 const LATE_SNAP_KEYS = ['officeType', 'eLearning'];
+const untouchedLegs = (legs) => Array.isArray(legs) && legs.some((l) => l && (l.off || l.on))
+  && legs.every((l) => !l || ((!l.off || !!l.offZ) && (!l.on || !!l.onZ)));
 const withLateKeys = (snap, stored) => {
   if (!snap || !stored) return snap;
   const add = {};
   for (const k of LATE_SNAP_KEYS) if (!(k in snap) && stored[k] !== undefined) add[k] = stored[k];
+  if (!('legs' in snap) && untouchedLegs(stored.legs) && val(snap, 'block_off') === val(stored, 'block_off') && val(snap, 'block_on') === val(stored, 'block_on')) {
+    add.legs = stored.legs;
+    if (!('flight_minutes' in snap) && stored.flight_minutes != null) add.flight_minutes = stored.flight_minutes;
+  }
   return Object.keys(add).length ? { ...snap, ...add } : snap;
+};
+
+// AS PERNAS (achado no iPhone a 2026-11-11). Os campos de cima são as pontas do serviço: mudar a chegada da 1.ª perna de um
+// serviço de 2 setores dava "igual" e a escala guardada ficava velha sem aviso. As horas de cada perna decidem o tempo de voo
+// (ORO.FTL.105(13), somado nos limites do ORO.FTL.210) e a pausa do serviço repartido (CS FTL.1.220(a): 3 h seguidas em
+// terra); o posicionamento (`dh`) não é setor (ORO.FTL.215) e a app não o conta como tempo de voo (leitura da casa, bloco 4:
+// o 215 só diz que conta todo como serviço). Compara-se, perna a perna e pela ordem: partida,
+// chegada e se é posicionamento. A hora Zulu, o número de voo e a aeronave não contam (não mudam as contas).
+//   · null = o serviço não traz horas de pernas: não se sabe → não se comparam pernas (compara-se o tempo de voo, abaixo).
+const clockOf = (v) => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(v == null ? '' : v).trim()); return m ? `${m[1].padStart(2, '0')}:${m[2]}` : '—'; };
+const legRows = (s) => {
+  const legs = s && Array.isArray(s.legs) ? s.legs.filter(Boolean) : [];
+  if (!legs.some((l) => l.off || l.on)) return null;
+  return legs.map((l) => `${l.dh ? 'DH ' : ''}${clockOf(l.off)}-${clockOf(l.on)}`);
+};
+const hmOf = (min) => `${Math.floor(min / 60)}:${String(min % 60).padStart(2, '0')}`;
+const legDiffs = (b, a, tag) => {
+  const rb = legRows(b), ra = legRows(a);
+  if (rb && ra) {
+    // Número de pernas diferente: uma linha só (a rota e os setores já dizem o resto).
+    if (rb.length !== ra.length) return [{ key: 'legs', label: { pt: 'Pernas', en: 'Legs' }, before: rb.length, after: ra.length, ...tag }];
+    const out = [];
+    rb.forEach((x, i) => { if (x !== ra[i]) out.push({ key: 'leg', leg: i + 1, label: { pt: `Perna ${i + 1}`, en: `Leg ${i + 1}` }, before: x, after: ra[i], ...tag }); });
+    return out;
+  }
+  // Sem as horas das pernas de um dos lados (serviço posto à mão sem elas, por exemplo): o tempo de voo, se os dois o têm.
+  const fb = b.flight_minutes, fa = a.flight_minutes;
+  if (fb != null && fa != null && Math.round(Number(fb) || 0) !== Math.round(Number(fa) || 0)) {
+    return [{ key: 'flight_minutes', label: { pt: 'Tempo de voo', en: 'Flight time' }, before: hmOf(Math.round(Number(fb) || 0)), after: hmOf(Math.round(Number(fa) || 0)), ...tag }];
+  }
+  return [];
 };
 
 // Serviços de um DIA (primária + `extra`), ORDENADOS por report (depois off-block), para uma
@@ -64,6 +109,8 @@ const servicesOf = (d) => {
 
 // Diferenças entre dois DIAS (cada um: primária + `extra`), serviço-a-serviço. [] se iguais.
 // Serviço a mais/menos conta como diferença. Compatível com single-serviço (n=1 → sem tag `service`).
+// Em cada serviço: os campos de DIFF_FIELDS e depois as pernas (`leg` por perna mudada, `legs` se o número mudou) ou, sem as
+// horas das pernas de um dos lados, o tempo de voo (`flight_minutes`) — ver legDiffs.
 export const diffDuty = (before, after) => {
   const bs = servicesOf(before), as = servicesOf(after);
   const n = Math.max(bs.length, as.length);
@@ -76,6 +123,7 @@ export const diffDuty = (before, after) => {
         const x = val(b, f.key), y = val(a, f.key);
         if (String(x) !== String(y)) out.push({ key: f.key, label: f.label, before: b[f.key] ?? null, after: a[f.key] ?? null, ...tag });
       }
+      out.push(...legDiffs(b, a, tag));
     } else if (b && !a) {
       out.push({ key: 'service_removed', label: { pt: 'Serviço a menos', en: 'Service removed' }, before: b.route ?? b.report_time ?? null, after: null, service: i + 1 });
     } else if (a && !b) {

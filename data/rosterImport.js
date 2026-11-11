@@ -1,7 +1,7 @@
 // Importação de escala: atividade do calendário (getDutiesInRange) → linha de `duty`
 // (tabela `duties`), e validação prospetiva (legalidade do PSV + impacto nos
 // acumulados 210). Módulo PURO (sem expo-calendar) — testável por golden.
-import { dayFtlFromDuties, limitsAround, ftlForDuty, fatigueFromDuty, reconcileDayLog } from '../ftl';
+import { dayFtlFromDuties, limitsAround, ftlForDuty, fatigueFromDuty, reconcileDayLog, legsBroken } from '../ftl';
 import { classify } from './rosterDiff';
 import { airportCoord } from './airports';
 import { simulateDuty, SIM_RULES, placeGapIssues } from './simulation';
@@ -12,6 +12,9 @@ const NONFLIGHT = new Set(['standby_airport', 'standby_home', 'positioning', 'of
 // O que falta a um serviço importado para o motor o poder contar (auditoria A-220/A-229/A-237): um não-voo sem início ou sem
 // fim; um voo sem as horas das pernas (o PDF não deixou casar as rotas com as horas). Um voo sem APRESENTAÇÃO entra (o tempo de
 // voo conta sempre, ORO.FTL.105(13); o serviço fica estimado e o PSV incerto). null = nada em falta.
+// As pernas que NÃO BATEM CERTO (uma partida antes da chegada anterior, achado no iPhone a 2026-11-11) não são "em falta": o
+// serviço tem apresentação e fim, logo CONTA (ORO.FTL.210 — o Nuno: "seguir o que diz a lei"). Entra, e o motor dá o PSV como
+// incerto até as horas se corrigirem (ftl/index.js legsBroken, `legTimes`).
 export const missingOf = (s) => {
   if (!s) return null;
   const kind = s.kind || 'flight';
@@ -86,7 +89,9 @@ export const dutyFromActivity = (act, base = null) => {
   const route = chain && chain.length >= 2 && chain.every((c) => c && c !== '—') ? chain.join('-') : null;
   const kind = op.length ? 'flight' : 'positioning';
   const sectors = op.length;
-  const timesOk = !act.needsFix && legs.every((l) => l.depTime && l.arrTime);
+  // `needsFix: 'legs'` (PDF: as pernas do bloco do dia não batem certo): as horas lidas FICAM e o serviço entra — o motor dá-o
+  // como incerto (ftl legsBroken) e a folha deixa corrigi-lo.
+  const timesOk = (!act.needsFix || act.needsFix === 'legs') && legs.every((l) => l.depTime && l.arrTime);
   const lastLeg = legs[legs.length - 1];
   const dhAfter = lastOp && lastLeg !== lastOp && lastLeg.dh;
   return {
@@ -173,8 +178,12 @@ export const dutyFromNonFlight = (it, base = null) => {
 // serviços do dia não muda as contas (o motor ordena-os pela apresentação).
 export const promoteMissing = (duty, kind) => {
   if (!duty || !Array.isArray(duty.extra) || !duty.extra.length) return { duty, kind };
+  // Depois, o serviço cujas pernas não batem certo (ftl legsBroken): entra na mesma, mas é esse que a folha abre para corrigir.
+  // Primeiro o que tem uma hora em falta (esse bloqueia a importação), em qualquer serviço do dia; só depois o das pernas.
+  const brk = (s) => !!s && legsBroken(s.legs, { date: duty.duty_date || null, report: s.report_time || null });
   if (missingOf({ ...duty, kind })) return { duty, kind };
-  const i = duty.extra.findIndex((e) => missingOf(e));
+  let i = duty.extra.findIndex((e) => missingOf(e));
+  if (i < 0) { if (brk({ ...duty, kind })) return { duty, kind }; i = duty.extra.findIndex((e) => brk(e)); }
   if (i < 0) return { duty, kind };
   const ex = duty.extra[i];
   const prim = svcFields({ ...duty, kind });
@@ -188,9 +197,12 @@ export const promoteMissing = (duty, kind) => {
 export const READER_VERSION = 2;
 // O snap (a escala publicada, base do 3-vias e o plano do ORO.FTL.205(d)) — o mesmo no gravar e na verificação (E4: sem ele,
 // um prolongamento planeado na escala era julgado "excede"). Leva o fim do DH lido (`signOff`, E6) e a versão da leitura.
+// Leva também as PERNAS e o tempo de voo publicados (2026-11-11): sem eles, a mudança de uma perna do meio não se detetava na
+// sincronização (data/rosterDiff.js legDiffs). A versão da leitura não muda — o agrupamento é o mesmo; um snap sem `legs` é
+// anterior e trata-se em rosterDiff.js (withLateKeys).
 const snapOfCandidate = (c) => {
   const d = c.duty || {};
-  const snap = { report_time: d.report_time, block_off: d.block_off, block_on: d.block_on, route: d.route, sectors: d.sectors, kind: c.kind || d.kind || 'flight', officeType: d.officeType || null, eLearning: !!d.eLearning, signOff: d.signOff || null, v: READER_VERSION };
+  const snap = { report_time: d.report_time, block_off: d.block_off, block_on: d.block_on, route: d.route, sectors: d.sectors, kind: c.kind || d.kind || 'flight', officeType: d.officeType || null, eLearning: !!d.eLearning, signOff: d.signOff || null, flight_minutes: d.flight_minutes || 0, legs: d.legs || null, v: READER_VERSION };
   // O snap é a escala como foi PUBLICADA: sem o que o tripulante escreveu (papel, folga trabalhada, alojamento, a marca).
   if ((d.extra || []).length) snap.extra = (d.extra || []).map(({ source: _s, edited: _e, role: _r, dayOffWorked: _w, accommodation: _a, ...f }) => f);
   return snap;

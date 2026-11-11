@@ -18,6 +18,7 @@
 // são devolvidas para a folha as sugerir (A-236).
 import { codesFor } from './rosterCodes';
 import { buildDuties } from './calendarParse';
+import { legsBroken } from '../ftl';
 
 const pad = (n) => String(n).padStart(2, '0');
 const RE_DATE  = /\b(\d{2})\/(\d{2})\/(\d{4})\b/;                 // 01/04/2025
@@ -155,21 +156,29 @@ export function parseEasyjetRoster(text, company, opts = {}) {
       continue;
     }
     // Instantes: as horas do dia, cada perna depois da anterior (passar a meia-noite → dia seguinte).
+    // PERNAS SOBREPOSTAS (achado a 2026-11-11): uma perna que sai ANTES de a anterior chegar (17:30–20:35 e 19:50–21:30) também
+    // passava para o dia seguinte — e o dia partia-se em dois serviços, com 23 h de "repouso" inventado e o voo a dobrar. Uma
+    // perna do bloco de um dia não pode sair 24 h ou mais depois da 1.ª saída desse dia (seria do bloco do dia seguinte): se
+    // sai, e o motor confirma (ftl legsOverlap), as horas não batem certo → a corrigir, com as horas lidas à vista (105(13)).
     let prevEnd = flightReport ? mkDate(b.iso, flightReport) : null;
+    let firstStart = null, tooFar = false;
     const out = legs.map((l, i) => {
       let startDate = l.off ? mkDate(b.iso, l.off) : null;
       let endDate = l.on ? mkDate(b.iso, l.on) : null;
       if (startDate && prevEnd && startDate < prevEnd) { startDate = new Date(+startDate + DAY); endDate = endDate && new Date(+endDate + DAY); }
       if (startDate && endDate && endDate < startDate) endDate = new Date(+endDate + DAY);
+      if (startDate && firstStart == null) firstStart = startDate;
+      else if (startDate && +startDate - +firstStart >= DAY) tooFar = true;
       if (endDate) prevEnd = endDate;
       const rep = i === 0 && flightReport ? { report: flightReport, reportDate: mkDate(b.iso, flightReport) } : { report: null };
       return { flightNo: l.flightNo, depAirport: l.dep, arrAirport: l.arr, depTime: l.off, arrTime: l.on, startDate, endDate, dateISO: b.iso, ...rep, ...(l.dh ? { dh: true } : {}) };
     });
+    if (!needsFix && tooFar && legsBroken(legs, { date: b.iso, report: flightReport || null })) needsFix = 'legs';
     const route = [out[0].depAirport, ...out.map((l) => l.arrAirport)].join('-');
     const sectors = out.filter((l) => !l.dh).length;
     if (needsFix) fixActs.push({ dateISO: b.iso, sectors, legs: out, needsFix });
     else legsAll.push(...out);
-    diag.push({ iso: b.iso, kind: sectors ? 'flight' : 'positioning', label: out.map((l) => l.flightNo).filter(Boolean).join(' ') || route, route, report: flightReport, sectors, ...(needsFix ? { warn: 'horas por confirmar' } : {}) });
+    diag.push({ iso: b.iso, kind: sectors ? 'flight' : 'positioning', label: out.map((l) => l.flightNo).filter(Boolean).join(' ') || route, route, report: flightReport, sectors, ...(needsFix ? { warn: needsFix === 'legs' ? 'horas das pernas não batem certo' : 'horas por confirmar' } : {}) });
   }
   // As pernas de todos os dias, agrupadas como no calendário (o repouso mínimo separa serviços).
   const activities = [...buildDuties(legsAll, opts), ...fixActs].sort((a, b) => (a.dateISO < b.dateISO ? -1 : a.dateISO > b.dateISO ? 1 : 0));

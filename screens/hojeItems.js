@@ -164,6 +164,21 @@ export function buildTodayItems(ctx, lang) {
       // CS FTL.1.235(b)(3)(i)/(4): depois de uma rotação com fuso, contam as NOITES LOCAIS na base, não só as horas.
       answer = `${l('Não', 'No')} · ${rest.nightsActual} ${l('de', 'of')} ${rest.nightsRequired} ${l('noites locais na base', 'local nights at home base')}`;
       suggestion = l('Depois de uma rotação com 4 h de fuso ou mais, o repouso na base conta-se em noites locais (8 h entre 22:00 e 08:00) — CS FTL.1.235(b)(3). Confirma com a companhia.', 'After a rotation with a 4 h time difference or more, rest at home base is counted in local nights (8 h between 22:00 and 08:00) — CS FTL.1.235(b)(3). Confirm with the company.');
+    } else if (rest.kind === 'reducedRest') {
+      // Abaixo do mínimo normal, mas com as 12 h (base) / 10 h (fora) do repouso reduzido (ORO.FTL.235(c), CS FTL.1.235(c)).
+      answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} (${l('mín', 'min')} ${hhmm(rest.requiredMin)})`;
+      suggestion = l(`Abaixo do mínimo: só é legal como repouso reduzido, se a tua companhia o tiver (CS FTL.1.235(c), com gestão do risco de fadiga). Nesse caso o PSV seguinte reduz ${hhmm(rest.diffMin)}, o repouso seguinte aumenta ${hhmm(rest.diffMin)}, e só pode haver 2 entre recuperações. Confirma com a companhia.`, `Below the minimum: only legal as reduced rest, if your operator has it (CS FTL.1.235(c), under fatigue risk management). Then the next FDP is reduced by ${hhmm(rest.diffMin)}, the next rest extended by ${hhmm(rest.diffMin)}, and at most 2 are allowed between recovery rests. Confirm with the company.`);
+    } else if (rest.kind === 'reducedRestAfter') {
+      answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} (${l('mín. entre', 'min between')} ${hhmm(rest.requiredMin)} ${l('e', 'and')} ${hhmm(rest.requiredHiMin)})`;
+      suggestion = l('O repouso anterior ficou abaixo do mínimo: se foi um repouso reduzido, este aumenta pela diferença (CS FTL.1.235(c)(3)). Confirma com a companhia.', 'The previous rest was below the minimum: if it was a reduced rest, this one is extended by the difference (CS FTL.1.235(c)(3)). Confirm with the company.');
+    } else if (rest.kind === 'breakOrRest') {
+      // Os dois serviços anteriores têm 10 h ou mais entre eles: um PSV repartido ou dois PSV (ORO.FTL.105(6)) — o mínimo depende.
+      answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} (${l('mín. entre', 'min between')} ${hhmm(rest.requiredMin)} ${l('e', 'and')} ${hhmm(rest.requiredHiMin)})`;
+      suggestion = l('Os dois serviços anteriores têm 10 h ou mais entre eles: a lei admite lê-los como um serviço repartido ou como dois serviços com um repouso no meio, e o repouso mínimo a seguir é diferente em cada leitura. Confirma com a companhia.', 'The two previous duties are 10 h or more apart: the law allows reading them as one split duty or as two duties with a rest in between, and the minimum rest that follows differs. Confirm with the company.');
+    } else if (rest.kind === 'legTimes') {
+      // O serviço anterior tem as horas das pernas que não batem certo: o mínimo depende das horas certas (ORO.FTL.235, 205(d)(1)).
+      answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} (${l('mín. entre', 'min between')} ${hhmm(rest.requiredMin)} ${l('e', 'and')} ${hhmm(rest.requiredHiMin)})`;
+      suggestion = l('As horas das pernas do serviço anterior não batem certo: o repouso mínimo depende das horas certas. Corrige-as na importação da escala.', 'The leg times of the previous duty do not add up: the minimum rest depends on the correct times. Fix them in the roster import.');
     } else if (rest.status === 'bad') {
       answer = `${l('Não', 'No')} · ${hhmm(rest.actualMin)} (${l('mín', 'min')} ${hhmm(rest.requiredMin)})`;
       suggestion = l('Repouso abaixo do mínimo — deve estender e o PSV seguinte reduz. Confirma com a companhia.', 'Rest below the minimum — it must extend and the next FDP reduces. Confirm with the company.');

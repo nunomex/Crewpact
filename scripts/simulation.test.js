@@ -86,9 +86,11 @@ for (const [who, C] of [['piloto', PIL], ['cabine', CAB]]) {
   //     Mínimo fora da base = máx(10 h, 4:30) = 10:00 → excede.
   const r2 = simulateDuty(sim('2026-11-10', F('07:00', '08:45', 1, 'FNC-LIS')), { ...C, duties: { '2026-11-09': F('19:30', '23:30', 1, 'LIS-FNC') } });
   eq(`A-242(2) ${who}: fora da base`, { st: r2.rest.before.status, a: r2.rest.before.actualMin, r: r2.rest.before.requiredMin, pl: r2.rest.before.place }, { st: 'bad', a: 420, r: 600, pl: 'away' });
-  // (3) O serviço anterior manda quando é maior: escritório 06:00–20:00 (14:00); simulado às 08:00 → 12:00 < 14:00.
+  // (3) O serviço anterior manda quando é maior: escritório 06:00–20:00 (14:00); simulado às 08:00 → 12:00 < 14:00. Com 12:00
+  //     certas (o mínimo do repouso reduzido na base, CS FTL.1.235(c)(1)) só é legal como repouso reduzido → incerto (2026-11-11, noite
+  //     10; antes "curto").
   const r3 = simulateDuty(sim('2026-11-10', F('08:00', '12:00', 2, 'LIS-OPO-LIS')), { ...C, duties: { '2026-11-09': OFC('06:00', '20:00') } });
-  eq(`A-242(3) ${who}: serviço anterior maior`, { st: r3.rest.before.status, a: r3.rest.before.actualMin, r: r3.rest.before.requiredMin }, { st: 'bad', a: 720, r: 840 });
+  eq(`A-242(3) ${who}: serviço anterior maior`, { st: r3.rest.before.status, k: r3.rest.before.kind, a: r3.rest.before.actualMin, r: r3.rest.before.requiredMin }, { st: 'unc', k: 'reducedRest', a: 720, r: 840 });
   // (4) Tardio → matinal na base (CS FTL.1.235(a)(1)): fim às 01:30 de dia 10, simulado às 05:30 de dia 11. 28 h chegam
   //     para o mínimo, mas não têm nenhuma noite local de 8 h (22:00–05:30 = 7:30; 01:30–08:00 = 6:30). Largada às 01:30 é
   //     tardia nos dois tipos (23:00–01:59 e 00:00–01:59) e a entrada às 05:30 é matinal nos dois → certo, não incerto.
@@ -124,15 +126,16 @@ for (const [who, C] of [['piloto', PIL], ['cabine', CAB]]) {
 }
 
 // Revisão do bloco 2: depois de um PSV REPARTIDO, o "período de serviço precedente" é o do bloco todo (ORO.FTL.235(a)(1)).
-// 06:00–09:00 + 14:00–19:00 (+30): o bloco vai das 06:00 às 19:30 = 13:30; a 11 às 08:00 → 12:30 < 13:30 → excede.
+// 06:00–09:00 + 14:00–19:00 (+30): o bloco vai das 06:00 às 19:30 = 13:30; a 11 às 08:00 → 12:30 < 13:30. Com 12:30 (≥ as 12 h
+// do repouso reduzido, CS FTL.1.235(c)(1)) só é legal como repouso reduzido → incerto (2026-11-11, noite 10; antes "curto").
 {
   const day = { ...F('06:00', '09:00', 2, 'LIS-OPO-LIS', { accommodation: 'basic' }) };
   const next = F('08:00', '12:00', 2, 'LIS-OPO-LIS');
   const a = simulateDuty(sim('2026-11-10', F('14:00', '19:00', 2, 'LIS-FAO-LIS')), { ...PIL, mode: 'append', duties: { '2026-11-10': day, '2026-11-11': next } });
-  eq('repartido (simulado = 2.ª metade): repouso depois', { st: a.rest.after.status, a: a.rest.after.actualMin, r: a.rest.after.requiredMin, need: a.rest.need.requiredMin }, { st: 'bad', a: 750, r: 810, need: 810 });
+  eq('repartido (simulado = 2.ª metade): repouso depois', { st: a.rest.after.status, a: a.rest.after.actualMin, r: a.rest.after.requiredMin, need: a.rest.need.requiredMin }, { st: 'unc', a: 750, r: 810, need: 810 });
   const b = simulateDuty(sim('2026-11-10', day), { ...PIL, duties: { '2026-11-10': { ...day, extra: [F('14:00', '19:00', 2, 'LIS-FAO-LIS')] }, '2026-11-11': next } });
-  eq('repartido (simulado = 1.ª metade): o repouso a seguir é o do bloco', { st: b.rest.after.status, r: b.rest.after.requiredMin, n: b.rest.after.nextIso }, { st: 'bad', r: 810, n: '2026-11-11' });
-  eq('repartido: veredicto', [a.verdict, b.verdict], ['bad', 'bad']);
+  eq('repartido (simulado = 1.ª metade): o repouso a seguir é o do bloco', { st: b.rest.after.status, r: b.rest.after.requiredMin, n: b.rest.after.nextIso }, { st: 'unc', r: 810, n: '2026-11-11' });
+  eq('repartido: veredicto', [a.verdict, b.verdict], ['unc', 'unc']);
 }
 // ORO.FTL.235(a)/(b): o mínimo é "antes de um PSV"; a noite local da CS 235(a)(1) é "between the 2 FDPs". Voo até às 00:00 e
 // escritório às 06:00 → sem mínimo antes do escritório e sem transição → dentro.

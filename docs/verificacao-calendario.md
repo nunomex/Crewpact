@@ -43,6 +43,38 @@ que o eCrew escreveria — cada um testa um ramo do parser:
    → o cancelado só apaga se marcado.
 6. **Números**: o mês soma o que os dias mostram (caminho único — o total do Perfil,
    Cálculos e Números tem de ser o MESMO).
+7. **Pernas que não batem certo** (correção de 2026-11-11): dois eventos no mesmo dia com a
+   volta a sair antes de a ida chegar (ida 17:30–20:35, volta 19:50–21:30) → sincronizar →
+   o dia ENTRA (visto verde, com o €) e a linha diz "Incerto — falta saber as horas certas
+   das pernas: as da escala não batem certo (ORO.FTL.105) · toca para corrigir", com as
+   duas horas à vista; tocar abre o formulário com elas; acertar a volta (21:20–23:00) → o
+   aviso sai. Confirmar SEM corrigir: o dia fica na Escala e conta (serviço 5:30 com 30 min
+   de pós-voo; voo 4:45); no Detalhe e no Início o PSV máximo é 11:15–13:30 (garantido e
+   possível), sem "repartido", com "Incerto — falta as horas certas das pernas…". Com a volta certa pela meia-noite (ida
+   até 23:50, volta 00:30–01:30) → entra sem aviso e sem "repartido".
+8. **Perna do meio** (correção de 2026-11-11): num dia de 2 voos já importado, mudar no
+   calendário só a CHEGADA do 1.º voo (a partida do 1.º e a chegada do 2.º ficam) →
+   sincronizar → pontinho âmbar + "Perna 1 06:40-08:15→06:40-08:35". Repor a hora →
+   sincronizar → nada a rever.
+9. **Dois serviços no mesmo dia** (correção de 2026-11-11): dois voos de manhã (apresentação
+   05:00, chegada 08:40) e um à noite (apresentação 19:10, chegada 21:55), tudo em Lisboa —
+   10 h entre o fim do 1.º (com o pós-voo) e o 2.º. Na Escala, a linha entre os dois diz
+   "Incerto · 10:00 entre serviços (mín 12:00 base) → serviço repartido ou repouso curto"; o
+   PSV fica "incerto" com "falta saber se o tempo em terra … foi um intervalo … ou um
+   repouso" (antes: "excede"). Com o 2.º às 18:40 (9 h 30) → repartido, como antes; às 21:10
+   (12 h) → dois serviços com repouso, como antes.
+10. **Horas das pernas no Detalhe** (2026-11-11): com o dia do passo 7 importado SEM corrigir,
+    abrir o Detalhe → secção Completar com "Horas das pernas · Não batem certo" em primeiro
+    → a folha mostra a partida e a chegada de cada perna → com as mesmas horas não deixa
+    gravar; acertar a volta (21:20–23:00) → grava, o PSV deixa de estar incerto e a linha
+    desaparece.
+11. **Repouso reduzido** (2026-11-11): um serviço de 13 h (apresentação 06:00, chegada 18:30)
+    e, no dia seguinte, apresentação às 07:30 (12 h 30 depois) → "Tenho descanso?" diz
+    "Incerto · 12:30 (mín 13:00)" com o texto do repouso reduzido (antes: "Não"). Com a
+    apresentação às 06:45 (11 h 45) → "Não", como antes.
+12. **Assistência + voo** (2026-11-11): assistência em casa 08:00–10:00 e um voo com
+    apresentação às 20:30 e chegada às 02:00 → o PSV fica "incerto" com "falta saber se
+    entre a assistência e a apresentação houve um repouso mínimo…" (antes: "excede 1:00").
 
 ## C · Colheita (o produto da sessão)
 

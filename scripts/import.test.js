@@ -101,15 +101,16 @@ for (const [gapLbl, off2, on2] of [['6h01', '14:16', '15:51'], ['7h00', '15:15',
   // base ou fora: ficam dois serviços, e o repouso entre eles é verificado depois (curto, se não houver alojamento).
   eq('A-227: 11:30 na base → podem ser dois (235(a)(2): 10 h com alojamento)', acts(evs).length, 2);
   eq('A-227: 11:30 sem saber a base → dois', acts(evs, {}).length, 2);
-  // Revisão E1: um intervalo mais curto do que o serviço anterior mas de 10 h ou mais é um REPOUSO CURTO (infração do 235), não
-  // um PSV: dia 10 das 06:00 aos calços das 17:30 no OPO; dia 11 com apresentação às 04:45 → 11:15 de intervalo.
+  // Revisão E1: um intervalo mais curto do que o serviço anterior mas de 10 h ou mais é um REPOUSO (abaixo do mínimo do 235), não
+  // um PSV. 2026-11-11 (noite 10): fora da base, com 10 h ou mais, só é legal como repouso reduzido (CS FTL.1.235(c)(1)) → o dia entra
+  // com o aviso como INCERTO (antes: "curto", estado 'warn'): dia 10 das 06:00 aos calços das 17:30 no OPO; dia 11 com apresentação às 04:45 → 11:15 de intervalo.
   const e1 = [ev('EZY1 LIS-TFS', '2026-10-10T07:00:00', '2026-10-10T09:50:00', { notes: 'RP 06:00' }), ev('EZY2 TFS-LIS', '2026-10-10T10:40:00', '2026-10-10T13:30:00'),
     ev('EZY3 LIS-OPO', '2026-10-10T16:30:00', '2026-10-10T17:30:00'), ev('EZY4 OPO-LIS', '2026-10-11T05:30:00', '2026-10-11T06:30:00', { notes: 'RP 04:45' }),
     ev('EZY5 LIS-FNC', '2026-10-11T07:45:00', '2026-10-11T09:25:00')];
   eq('E1: 11:15 depois de 11:30 de serviço → dois serviços', acts(e1).map((x) => [x.dateISO, x.report, x.legs.length]), [['2026-10-10', '06:00', 3], ['2026-10-11', '04:45', 2]]);
   const ce1 = buildImportCandidates({ activities: acts(e1), ...PIL });
   const d11 = ce1.find((c) => c.duty.duty_date === '2026-10-11');
-  eq('E1: … e o repouso curto aparece (10:45 desde o fim do serviço, de 12:00: o serviço anterior)', [d11.status, d11.prospect.issues.some((i) => i.type === 'restBefore' && i.actualMin === 645 && i.requiredMin === 720)], ['warn', true]);
+  eq('E1: … e o repouso abaixo do mínimo aparece (10:45 desde o fim do serviço, de 12:00: o serviço anterior), como incerto', [d11.status, d11.prospect.verdict, d11.prospect.issues.some((i) => i.type === 'restBefore' && i.level === 'unc' && i.kind === 'reducedRest' && i.actualMin === 645 && i.requiredMin === 720)], ['ok', 'unc', true]);
   // Nunca um serviço de 24 h ou mais (as horas HH:MM dariam a volta ao relógio): 9 h de intervalo, mas o 2.º dia acaba às 08:00.
   const e1b = [ev('EZY1 LIS-TFS', '2026-10-12T07:00:00', '2026-10-12T09:50:00', { notes: 'RP 06:00' }), ev('EZY2 TFS-LIS', '2026-10-12T14:40:00', '2026-10-12T17:30:00'),
     ev('EZY3 LIS-OPO', '2026-10-13T02:30:00', '2026-10-13T03:30:00'), ev('EZY4 OPO-LIS', '2026-10-13T07:00:00', '2026-10-13T08:00:00')];
@@ -534,10 +535,12 @@ EJU8004 [320] OPO - LIS A21:40 - A22:40`, 'easyjet');
   const plain = importSaveFields({ duty: { duty_date: '2026-10-23', kind: 'flight', report_time: '06:00', block_off: '07:00', block_on: '09:00', sectors: 1, flight_minutes: 120, route: 'LIS-OPO', special: null }, kind: 'flight' }, 'calendar', null);
   eq('… sem nada escrito, nada se escreve (o guardado fica)', ['role' in plain, 'dayOffWorked' in plain, 'special' in plain, 'accommodation' in plain], [false, false, false, false]);
   // O QUE ESTÁ GUARDADO acompanha o candidato (2026-11-11): a verificação da folha usa os casos especiais e o alojamento que o
-  // tripulante já registou no serviço — um repartido de 11 h 30 com alojamento adequado guardado é "dentro", não "incerto".
+  // tripulante já registou no serviço — um repartido de 9 h 30 com alojamento adequado guardado é "dentro", não "incerto".
+  // (2026-11-11, noite 8: o exemplo tinha 11 h 30 em terra no Porto. Fora da base, 10 h ou mais já não é um "intervalo" —
+  // ORO.FTL.105(6): inferior a um período de repouso, que longe da base é de 10 h, 235(b). Passou a 9 h 30: 08:00 → 17:30.)
   {
     const { storedFacts } = require(path.resolve('data/rosterImport.js'));
-    const lg = [{ dep: 'LIS', arr: 'OPO', off: '07:00', on: '08:00' }, { dep: 'OPO', arr: 'LIS', off: '19:30', on: '20:30' }];
+    const lg = [{ dep: 'LIS', arr: 'OPO', off: '07:00', on: '08:00' }, { dep: 'OPO', arr: 'LIS', off: '17:30', on: '20:30' }];
     const mkC = (extra = {}) => ({ duty: { duty_date: '2026-10-20', kind: 'flight', report_time: '06:00', block_off: '07:00', block_on: '20:30', sectors: 2, flight_minutes: 130, route: 'LIS-OPO-LIS', legs: lg, ...extra }, kind: 'flight', status: 'changed', exists: true, diff: [], prospect: null, selected: false, action: 'save' });
     const stS = { report_time: '06:00', block_off: '07:00', block_on: '20:20', sectors: 2, flight_minutes: 120, route: 'LIS-OPO-LIS', kind: 'flight', source: 'calendar', accommodation: true, role: 'instr', dayOffWorked: 'ddo', special: { discretion: true },
       legs: [lg[0], { ...lg[1], on: '20:20' }] };
@@ -570,6 +573,78 @@ EJU8004 [320] OPO - LIS A21:40 - A22:40`, 'easyjet');
   const read4 = { duty: { ...read3.duty, extra: [read3.duty.extra[0], { ...read3.duty.extra[0], report_time: '18:30', block_off: '19:30', block_on: '21:30' }] }, kind: 'flight' };
   eq('R11: dois por casar de cada lado → não se adivinha', importSaveFields(read4, 'calendar', stored4).extra.map((e) => e.role || null), [null, null]);
 }
+
+// ───────────────────────────────────────────────────────────────────────────────
+// AS PERNAS NÃO BATEM CERTO (achado no iPhone a 2026-11-11, "testar o calendário"; o Nuno: "seguir o que diz a lei")
+// A volta sai antes de a ida chegar (17:30–20:35 e 19:50–21:30). A lei:
+//  · ORO.FTL.105(13) e (24): um setor não começa antes de o anterior acabar — alguma hora está errada;
+//  · ORO.FTL.105(6) + 235: um "intervalo" é inferior a um período de repouso — 23 h 15 "em terra" não é um intervalo;
+//  · ORO.FTL.210: o serviço e o voo atribuídos contam TODOS para os limites. O dia NÃO fica de fora (como o voo sem
+//    apresentação, A-161): entra, conta no serviço, no voo e no repouso, sem repartido, e fica "incerto" até as horas se
+//    corrigirem. A lei não tem tolerâncias de minutos: 1 minuto de sobreposição também é incerto.
+// A pausa que passa a meia-noite (chega 23:50, sai 00:30) é um intervalo e entra sem aviso.
+{
+  const { verifyCandidates, missingOf } = require(path.resolve('data/rosterImport.js'));
+  const legTimes = (c) => !!(c.prospect && c.prospect.issues.some((i) => i.type === 'fdpUncertain' && (i.unknowns || []).includes('legTimes')));
+  const ov = [ev('EZY1 LIS-FNC', '2026-11-20T17:30:00', '2026-11-20T20:35:00', { notes: 'RP 16:30' }), ev('EZY2 FNC-LIS', '2026-11-20T19:50:00', '2026-11-20T21:30:00')];
+  const co = buildImportCandidates({ activities: acts(ov), ...PIL });
+  eq('sobrepostas: um candidato que ENTRA (não fica de fora), incerto, com o que falta', [co.length, candidateKind(co[0]).kind, co[0].status, co[0].prospect.verdict, legTimes(co[0])], [1, 'ready', 'ok', 'unc', true]);
+  eq('sobrepostas: as horas lidas ficam (corrigem-se, não se apagam)', co[0].duty.legs.map((l) => `${l.off}-${l.on}`), ['17:30-20:35', '19:50-21:30']);
+  // O dia conta (ORO.FTL.210): serviço 16:30 → 21:30 + 30 min = 5:30; voo = a soma das pernas, 4:45; PSV máximo 11:15, sem repartido.
+  const fo = day([co[0].duty], '2026-11-20');
+  eq('sobrepostas: o dia conta no serviço e no voo; PSV 5:00, máximo garantido 11:15 (possível 13:30), incerto, sem repartido', [fo.servicoMin, fo.vooMin, fo.psv.result, fo.psv.max, fo.psv.maxHi || null, fo.psv.uncertain, !!fo.split], [330, 285, '05:00', '11:15', '13:30', true, false]);
+  // Um serviço a que FALTA uma hora (bloqueia a importação) passa à frente do que só tem as pernas a não bater certo: é esse
+  // que a correção tem de abrir (2.ª revisão independente). Voo sobreposto + assistência sem hora de fim no mesmo dia.
+  {
+    const { promoteMissing } = require(path.resolve('data/rosterImport.js'));
+    const pm = promoteMissing({ ...co[0].duty, extra: [{ kind: 'standby_airport', report_time: '08:00', block_on: null, sectors: 0, flight_minutes: 0, route: null }] }, 'flight');
+    eq('promoção: primeiro o serviço a que falta uma hora', [pm.kind, pm.duty.report_time, pm.duty.extra[0].report_time], ['standby_airport', '08:00', '16:30']);
+  }
+  // A lei não tem tolerâncias: 1 minuto de sobreposição (chega 08:01, sai 08:00) também entra como incerto.
+  const one = buildImportCandidates({ activities: acts([ev('EZY1 LIS-OPO', '2026-11-25T07:00:00', '2026-11-25T08:01:00', { notes: 'RP 06:00' }), ev('EZY2 OPO-LIS', '2026-11-25T08:00:00', '2026-11-25T09:00:00')]), ...PIL });
+  eq('sobrepostas por 1 minuto: entra, incerto', [candidateKind(one[0]).kind, one[0].prospect.verdict, legTimes(one[0])], ['ready', 'unc', true]);
+  // … e a chegada e a partida seguinte à MESMA hora (08:00 e 08:00) estão certas.
+  const zero = buildImportCandidates({ activities: acts([ev('EZY1 LIS-OPO', '2026-11-26T07:00:00', '2026-11-26T08:00:00', { notes: 'RP 06:00' }), ev('EZY2 OPO-LIS', '2026-11-26T08:00:00', '2026-11-26T09:00:00')]), ...PIL });
+  eq('chegada e partida à mesma hora: certo', [candidateKind(zero[0]).kind, zero[0].prospect.verdict], ['ready', 'ok']);
+  // Corrigido na folha (a volta sai às 21:20 e chega às 23:00): a dúvida sai.
+  const fixedDuty = { ...co[0].duty, block_on: '23:00', edited: true, legs: [co[0].duty.legs[0], { ...co[0].duty.legs[1], off: '21:20', on: '23:00', offZ: null, onZ: null }] };
+  const cf = verifyCandidates([{ ...co[0], duty: fixedDuty }], { duties: {}, dayLog: {}, ...PIL });
+  eq('sobrepostas: corrigidas → certo', [candidateKind(cf[0]).kind, cf[0].prospect.verdict, legTimes(cf[0])], ['ready', 'ok', false]);
+  // Um serviço EXTRA do dia com as pernas sobrepostas: o dia entra e o aviso aparece na mesma.
+  // (o 1.º serviço acaba às 03:30 + 30 min: até às 16:30 são 12 h 30 de repouso na base → dois serviços no mesmo dia)
+  const withExtra = buildImportCandidates({ activities: acts([ev('EZY8 LIS-OPO', '2026-11-20T01:00:00', '2026-11-20T02:00:00', { notes: 'RP 00:10' }), ev('EZY9 OPO-LIS', '2026-11-20T02:30:00', '2026-11-20T03:30:00'), ...ov]), ...PIL });
+  eq('sobrepostas num 2.º serviço do dia: o dia entra, incerto, com esse serviço à frente (é o que a correção abre)', [withExtra.length, candidateKind(withExtra[0]).kind, withExtra[0].duty.extra.length, withExtra[0].prospect.verdict, legTimes(withExtra[0]), withExtra[0].duty.report_time], [1, 'ready', 1, 'unc', true, '16:30']);
+  // … e também quando o serviço com as horas erradas NÃO é o que se está a ver (um extra de um dia já montado).
+  {
+    const d0 = withExtra[0].duty, ex = d0.extra[0];
+    const swapped = { duty_date: d0.duty_date, ...ex, extra: [{ ...d0, extra: undefined, duty_date: undefined }] };
+    const vs = verifyCandidates([{ ...withExtra[0], duty: swapped }], { duties: {}, dayLog: {}, ...PIL });
+    eq('sobrepostas num extra do dia: o aviso aparece na mesma', [vs[0].duty.report_time, vs[0].prospect.verdict, legTimes(vs[0])], ['00:10', 'unc', true]);
+  }
+  // Do PDF (horas locais, sem Zulu): um serviço só (antes: dois, com 23 h de "repouso" inventado), que entra incerto.
+  const rp = parseEasyjetRoster(`20/11/2025 Thu EJU8001 [320] LIS - FNC 16:30 A17:30 - A20:35
+EJU8002 [320] FNC - LIS A19:50 - A21:30`, 'easyjet');
+  const cp = buildImportCandidates({ activities: rp.activities, ...PIL });
+  eq('sobrepostas no PDF: um serviço, com as horas lidas, que entra incerto', [cp.length, candidateKind(cp[0]).kind, (cp[0].duty.extra || []).length, cp[0].duty.legs.map((l) => `${l.off}-${l.on}`), cp[0].prospect.verdict, legTimes(cp[0])], [1, 'ready', 0, ['17:30-20:35', '19:50-21:30'], 'unc', true]);
+  eq('sobrepostas no PDF: o diagnóstico diz porquê', rp.diag[0].warn, 'horas das pernas não batem certo');
+  // No PDF, dois serviços do mesmo dia em que o 2.º voa depois da meia-noite estão certos (05:00–09:00 e 00:30–02:00).
+  const rp2 = parseEasyjetRoster(`22/11/2025 Sat EJU8011 [320] LIS - OPO 04:00 A05:00 - A06:00
+EJU8012 [320] OPO - LIS A08:00 - A09:00
+EJU8013 [320] LIS - FNC A00:30 - A02:00`, 'easyjet');
+  eq('PDF: 2.º serviço depois da meia-noite está certo', [rp2.activities.length, rp2.activities.some((a) => a.needsFix), rp2.diag[0].warn || null], [2, false, null]);
+  // A pausa real pela meia-noite: chega 23:50, sai 00:30 → um serviço, certo, PSV 3:40 (21:50 → 01:30), sem repartido.
+  const mn = [ev('EZY3 LIS-OPO', '2026-11-21T22:50:00', '2026-11-21T23:50:00', { notes: 'RP 21:50' }), ev('EZY4 OPO-LIS', '2026-11-22T00:30:00', '2026-11-22T01:30:00')];
+  const cm = buildImportCandidates({ activities: acts(mn), ...PIL });
+  eq('meia-noite: um serviço certo', [cm.length, candidateKind(cm[0]).kind, cm[0].duty.duty_date, cm[0].duty.sectors, cm[0].prospect.verdict], [1, 'ready', '2026-11-21', 2, 'ok']);
+  const fm = day([cm[0].duty], '2026-11-21');
+  eq('meia-noite: PSV 3:40, máximo 11:00 (Quadro 2), sem repartido, certo', [fm.psv.result, fm.psv.max, !!fm.split, !!fm.psv.uncertain], ['03:40', '11:00', false, false]);
+  // O repartido pela meia-noite (chega 19:00, sai 23:30): as pernas estão certas; fica a dúvida de SEMPRE num repartido — o
+  // alojamento do intervalo (CS FTL.1.220) —, não a das horas.
+  const sp = [ev('EZY5 LIS-OPO', '2026-11-23T18:00:00', '2026-11-23T19:00:00', { notes: 'RP 17:00' }), ev('EZY6 OPO-LIS', '2026-11-23T23:30:00', '2026-11-24T00:30:00')];
+  const cs2 = buildImportCandidates({ activities: acts(sp), ...PIL });
+  eq('repartido pela meia-noite: entra, sem a dúvida das horas', [cs2.length, candidateKind(cs2[0]).kind, missingOf({ ...cs2[0].duty, kind: 'flight' }), legTimes(cs2[0])], [1, 'ready', null, false]);
+}
+
 
 console.log(`\nimportação (bloco 4) — ${ok} passou, ${fail} falhou (${ok + fail} asserções)`);
 if (fail) process.exit(1);

@@ -1301,19 +1301,143 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('Repouso entre: 4h → split duty', restBetweenDuties(B, { report_time: '14:00' }).kind, 'split');
   // 2h de intervalo (< 3h) → demasiado perto: não são 2 serviços.
   eq('Repouso entre: 2h → continuous', restBetweenDuties(B, { report_time: '12:00' }).kind, 'continuous');
-  // 11h: na base é split (< 12h), FORA da base é rest (≥ 10h).
-  eq('Repouso entre: 11h base → split', restBetweenDuties(B, { report_time: '21:00' }, { inBase: true }).kind, 'split');
+  // 11h: FORA da base é rest (≥ 10h, ORO.FTL.235(b)). NA base (mínimo 12 h, 235(a)(1)) a lei admite duas leituras
+  // (2026-11-11, noite 8): "intervalo" é inferior a um período de repouso (ORO.FTL.105(6)) e 10 h já são um repouso possível
+  // (235(b); na base com alojamento adequado, 235(a)(2); CS FTL.1.235(c)(1)) — ou é um intervalo de um PSV só, ou um repouso
+  // entre dois PSV. A app não escolhe: 'either'. (Antes: 'split'.)
+  eq('Repouso entre: 11h base → intervalo ou repouso (either)', restBetweenDuties(B, { report_time: '21:00' }, { inBase: true }).kind, 'either');
   eq('Repouso entre: 11h fora → rest', restBetweenDuties(B, { report_time: '21:00' }, { inBase: false }).kind, 'rest');
-  // Mínimo nunca < serviço anterior (235): serviço de 13h → exige 13h, 12h45 de intervalo não chega.
+  eq('Repouso entre: 9h59 base → split (inferior a qualquer repouso)', restBetweenDuties(B, { report_time: '19:59' }, { inBase: true }).kind, 'split');
+  eq('Repouso entre: 10h00 base → either', restBetweenDuties(B, { report_time: '20:00' }, { inBase: true }).kind, 'either');
+  eq('Repouso entre: 12h00 base → rest', restBetweenDuties(B, { report_time: '22:00' }, { inBase: true }).kind, 'rest');
+  // Mínimo nunca < serviço anterior (235): serviço de 13h → exige 13h; 12h45 não chegam para um repouso CERTO, mas já passam
+  // das 10 h: as duas leituras ('either'; antes 'split').
   const long = { report_time: '06:00', block_on: '19:00' };        // serviço de 13h
-  eq('Repouso entre: mín = serviço anterior (13h) → 12h45 não chega', restBetweenDuties(long, { report_time: '07:40' }).kind, 'split');
+  eq('Repouso entre: mín = serviço anterior (13h) → 12h45: intervalo ou repouso curto (either)', restBetweenDuties(long, { report_time: '07:40' }).kind, 'either');
   // Fim DEPOIS da meia-noite (sign-off 01:15): o intervalo calcula-se com volta à meia-noite.
   const nite = { report_time: '22:30', block_on: '00:45', signOff: '01:15' };
   eq('Repouso entre: fim 01:15 → next 14:00 = 12h45 base → rest', restBetweenDuties(nite, { report_time: '14:00' }).kind, 'rest');
+  // A NOITE DA MUDANÇA DE HORA (2026-11-11, noite 10): o tempo entre dois serviços é tempo DECORRIDO (ORO.FTL.105: o repouso
+  // é um "período de tempo contínuo"), não a diferença dos relógios. A 29/03/2026 a hora adianta (01:00 → 02:00 em Lisboa):
+  // do fim às 00:50 à apresentação das 13:00 são 11:10 reais (no relógio 12:10). A 25/10/2026 atrasa: 00:50 → 12:30 são 12:40
+  // reais (no relógio 11:40). Com o dia do serviço mede-se pelo real — como o repouso já se media (data/today.js); sem o dia,
+  // pelo relógio, como antes. (Só se confere num dispositivo com a hora de Portugal: é o relógio do dispositivo que conta.)
+  {
+    const pt = new Date('2026-03-29T12:00:00').getTimezoneOffset() === -60 && new Date('2026-03-28T12:00:00').getTimezoneOffset() === 0;
+    const E = { report_time: '00:05', block_on: '00:20' };   // acaba às 00:50 com 30 min de pós-voo
+    const k = (rep, date) => restBetweenDuties(E, { report_time: rep }, { inBase: true, postFlightMin: 30, ...(date ? { date } : {}) });
+    eqj('mudança de hora: sem o dia, pelo relógio (12:10 → repouso)', [k('13:00').gapMin, k('13:00').kind], [730, 'rest']);
+    if (pt) {
+      eqj('29/03: a hora adianta → 11:10 reais → intervalo ou repouso (não um repouso certo)', [k('13:00', '2026-03-29').gapMin, k('13:00', '2026-03-29').kind], [670, 'either']);
+      eqj('25/10: a hora atrasa → 12:40 reais → repouso (não as 11:40 do relógio)', [k('12:30', '2026-10-25').gapMin, k('12:30', '2026-10-25').kind], [760, 'rest']);
+      eqj('num dia normal, com o dia: igual ao relógio', [k('13:00', '2026-06-10').gapMin, k('13:00', '2026-06-10').kind], [730, 'rest']);
+      // … e o "serviço precedente" também é tempo real: a 25/10, das 00:00 às 11:30 são 12:30 reais (no relógio 11:30). Um
+      // repouso de 12:15 a seguir é inferior ao serviço precedente → já não é um repouso certo.
+      const kd = restBetweenDuties({ report_time: '00:00', block_on: '11:30' }, { report_time: '23:45' }, { inBase: true, postFlightMin: 0, date: '2026-10-25' });
+      eqj('25/10: serviço de 12:30 reais → 12:15 de repouso não chegam de certeza', [kd.prevDutyMin, kd.requiredMin, kd.gapMin, kd.kind], [750, 750, 735, 'either']);
+      const dst = dayFtlFromDuties([{ kind: 'flight', report_time: '00:05', block_off: '00:10', block_on: '00:20', sectors: 1, flight_minutes: 10, route: 'LIS-OPO-LIS' }, { kind: 'flight', report_time: '13:00', block_off: '14:00', block_on: '15:00', sectors: 1, flight_minutes: 60, route: 'LIS-OPO' }], { postFlightMin: 30, isPilot: true, base: 'LIS', date: '2026-03-29' });
+      eqj('29/03: o dia de dois serviços vê as 11:10 reais', [dst.between[0].gapMin, dst.between[0].kind], [670, 'either']);
+    }
+  }
   // dayFtlFromDuties EXPÕE o `between` e o flag split.
   const day2 = dayFtlFromDuties([{ report_time: '06:00', block_on: '10:00', flight_minutes: 180 }, { report_time: '20:00', block_on: '23:00', flight_minutes: 120 }]);
   eq('Dia 2 serviços: expõe between[1]', day2.between.length, 1);
-  eq('Dia 2 serviços: 10h base entre eles → split', day2.split, true);
+  eqj('Dia 2 serviços: 10h base entre eles → as duas leituras (either): junto para as contas, incerto no veredicto', [day2.between[0].kind, day2.split, day2.either], ['either', true, true]);
+
+  // DOIS SERVIÇOS NO MESMO DIA, NA BASE, COM 10 A 12 HORAS ENTRE ELES (achado a 2026-11-11, noite 8). A leitura do calendário lê
+  // dois serviços; o motor juntava-os num PSV só, como repartido, e dava "excede". 05:00 → 08:40 (+30 min de pós-voo = 09:10) e
+  // 19:10 → 21:55 em Lisboa: 10 h em terra.
+  //  · leitura A (um PSV repartido): 05:00 → 21:55 = 16:55; Quadro 2 às 05:00 com 3 setores = 11:30; com o intervalo, até 16:30;
+  //  · leitura B (dois PSV com um repouso de 10 h): 3:40 e 2:45, os dois dentro; o repouso de 10 h na base só chega com
+  //    alojamento adequado (ORO.FTL.235(a)(2)).
+  // O texto admite as duas (ORO.FTL.105(6)): nem "excede" nem "dentro" — incerto, com o que falta (`breakOrRest`).
+  {
+    const s1 = { kind: 'flight', report_time: '05:00', block_off: '06:00', block_on: '08:40', sectors: 2, flight_minutes: 120, route: 'LIS-OPO-LIS', legs: [{ dep: 'LIS', arr: 'OPO', off: '06:00', on: '07:00' }, { dep: 'OPO', arr: 'LIS', off: '07:40', on: '08:40' }] };
+    const s2 = { kind: 'flight', report_time: '19:10', block_off: '20:10', block_on: '21:55', sectors: 1, flight_minutes: 105, route: 'LIS-FNC', legs: [{ dep: 'LIS', arr: 'FNC', off: '20:10', on: '21:55' }] };
+    const O2 = { postFlightMin: 30, isPilot: true, base: 'LIS', date: '2026-11-20' };
+    const dd = dayFtlFromDuties([s1, s2], O2);
+    eqj('2 serviços, 10 h na base: intervalo ou repouso', [dd.between[0].kind, dd.between[0].gapMin, dd.between[0].requiredMin, dd.split, dd.either], ['either', 600, 720, true, true]);
+    eqj('2 serviços, 10 h na base: PSV incerto, não "excede" (antes: excede)', [!!dd.psv.over, dd.psv.uncertain, (dd.psv.unknowns || []).includes('breakOrRest')], [false, true, true]);
+    // O serviço do dia para os limites do ORO.FTL.210 também depende da leitura: como dois PSV, 4:10 + 3:15 = 7:25; como um
+    // repartido, o intervalo conta todo (ORO.FTL.220(b)): 17:25. Fica o certo (7:25) e o possível (17:25): um limite só
+    // "excede" com o certo; com o possível fica incerto. O voo é o mesmo nas duas.
+    eqj('… serviço do dia: 7:25 certas, 17:25 possíveis; voo 3:45', [dd.servicoMin, dd.servicoMaxMin, dd.vooMin], [445, 1045, 225]);
+    // Com alojamento adequado dito pelo tripulante: como um PSV só, o máximo é 11:30 + metade de (10:30 − 0:30) = 16:30, e 16:55
+    // excede; como dois PSV, o repouso de 10 h na base chega (235(a)(2)) → legal numa leitura, não na outra: incerto.
+    const ddS = dayFtlFromDuties([{ ...s1, accommodation: true }, s2], O2);
+    eqj('… com alojamento adequado: incerto (excede numa leitura, legal na outra)', [!!ddS.psv.over, ddS.psv.uncertain], [false, true]);
+    // Sem alojamento (dito): como um PSV só excede (sem prolongamento do repartido, CS FTL.1.220(e)(1)); como dois, o repouso de
+    // 10 h na base é curto (12 h, 235(a)(1)) → ilegal nas duas leituras: "excede".
+    const ddN = dayFtlFromDuties([{ ...s1, accommodation: 'none' }, s2], O2);
+    eqj('… sem alojamento: ilegal nas duas leituras → excede', [ddN.psv.over, ddN.psv.max, ddN.psv.excess], [true, '11:30', '05:25']);
+    // Com 9 h 30 (apresentação 18:40) é um intervalo em qualquer leitura: um PSV repartido, como sempre.
+    const d930 = dayFtlFromDuties([s1, { ...s2, report_time: '18:40', block_off: '19:40', block_on: '21:25', legs: [{ dep: 'LIS', arr: 'FNC', off: '19:40', on: '21:25' }] }], O2);
+    eqj('2 serviços, 9 h 30 na base: repartido certo', [d930.between[0].kind, d930.split, !!d930.either, (d930.psv.unknowns || []).includes('breakOrRest')], ['split', true, false, false]);
+    // Com 12 h (apresentação 21:10) é um repouso: dois PSV, como sempre.
+    const d12 = dayFtlFromDuties([s1, { ...s2, report_time: '21:10', block_off: '22:10', block_on: '23:55', legs: [{ dep: 'LIS', arr: 'FNC', off: '22:10', on: '23:55' }] }], O2);
+    eqj('2 serviços, 12 h na base: dois PSV, certo', [d12.between[0].kind, !!d12.either, !!d12.psv.over, !!d12.psv.uncertain], ['rest', false, false, false]);
+    // Revisão independente (noite 9). (1) TRÊS serviços: um bloco incerto não se esconde atrás de outro que está dentro.
+    // 00:05 → 00:20 (LIS-OPO); repouso fora; 10:50 → 11:20 (OPO-LIS, 3 setores); 10 h na base; 21:50 → 03:00 (3 setores). O
+    // 1.º bloco está dentro; o 2.º (10:50 → 03:00, ou dois PSV) é incerto → o dia é incerto. (Antes da correção: excede 0:10.)
+    const t3 = dayFtlFromDuties([
+      { kind: 'flight', report_time: '00:05', block_off: '00:10', block_on: '00:20', sectors: 1, flight_minutes: 10, route: 'LIS-OPO' },
+      { kind: 'flight', report_time: '10:50', block_off: '10:55', block_on: '11:20', sectors: 3, flight_minutes: 20, route: 'OPO-LIS' },
+      { kind: 'flight', report_time: '21:50', block_off: '22:50', block_on: '03:00', sectors: 3, flight_minutes: 200, route: 'LIS-OPO-LIS' },
+    ], O2);
+    eqj('3 serviços: o bloco incerto sobe ao dia (não fica "dentro")', [t3.between.map((b) => b.kind), !!t3.psv.over, t3.psv.uncertain, (t3.psv.unknowns || []).includes('breakOrRest')], [['rest', 'either'], false, true, true]);
+    // (2) Na leitura dos dois PSV, o "serviço precedente" do repouso é o PSV inteiro que vem antes — que pode já ser um
+    // repartido (ORO.FTL.235(a)(1)). 00:10 → 05:00, 3 h em terra, 08:30 → 11:00 (alojamento adequado); 10 h; 21:30 → 23:00.
+    // Leitura B: o 1.º PSV dura das 00:10 às 11:30 = 11:20; 10 h de repouso são menos do que isso → ilegal. Leitura A: um PSV de
+    // 22:50 → excede. Ilegal nas duas: "excede".
+    const tB = dayFtlFromDuties([
+      { kind: 'flight', report_time: '00:10', block_off: '01:10', block_on: '05:00', sectors: 1, flight_minutes: 230, route: 'LIS-OPO-LIS' },
+      { kind: 'flight', report_time: '08:30', block_off: '09:30', block_on: '11:00', sectors: 1, flight_minutes: 90, route: 'LIS-OPO-LIS', accommodation: true },
+      { kind: 'flight', report_time: '21:30', block_off: '22:00', block_on: '23:00', sectors: 1, flight_minutes: 60, route: 'LIS-FNC' },
+    ], O2);
+    eqj('3 serviços: repouso de 10 h depois de um PSV repartido de 11:20 → ilegal nas duas leituras', [tB.between.map((b) => b.kind), tB.psv.result, tB.psv.over], [['split', 'either'], '22:50', true]);
+    // ASSISTÊNCIA SEGUIDA DE VOO com 10 h ou mais entre o fim dela e a apresentação (2026-11-11, noite 10). Assistência em
+    // casa 08:00–10:00 e voo com apresentação às 20:30 (10 h 30 depois), calços às 02:00: PSV 5:30.
+    //  · leitura A: a assistência só acaba na apresentação (CS FTL.1.225(b)(5)) — 12 h 30 de assistência; o máximo reduz-se
+    //    no que passa das 6 h (225(b)(7)): Quadro 2 às 20:30 = 11:00, menos 6:30 = 4:30 → excede 1:00;
+    //  · leitura B: "If a minimum rest period as specified in ORO.FTL.235 is provided before reporting for the duty assigned
+    //    during the standby, this time period should not count as standby duty" (GM1 CS FTL.1.225(b)) — com um repouso mínimo
+    //    no meio (na base: 12 h, ou 10 h com alojamento adequado da companhia, 235(a)(2)) a assistência foram 2 h e o máximo
+    //    são as 11:00 → dentro.
+    // A app não sabe se houve esse repouso: incerto, com o que falta (`standbyRest`). (Antes: excede.)
+    {
+      const csT = fs.readFileSync(path.resolve('fontes/ftl/cs-ftl1-2014-002-R.txt'), 'utf8').replace(/\s+/g, ' ');
+      eq('fonte: GM1 CS FTL.1.225(b) repouso mínimo antes da apresentação', csT.includes('If a minimum rest period as specified in ORO.FTL.235 is provided before reporting for the duty assigned during the standby, this time period should not count as standby duty.'), true);
+      eq('fonte: CS FTL.1.225(b)(7) redução acima das 6 h', csT.includes('the maximum FDP is reduced by the amount of standby time exceeding 6 hours'), true);
+      const sb = { kind: 'standby_home', report_time: '08:00', block_on: '10:00', sectors: 0, flight_minutes: 0, route: null };
+      const fl = (rep, on) => ({ kind: 'flight', report_time: rep, block_off: '21:30', block_on: on, sectors: 2, flight_minutes: 200, route: 'LIS-OPO-LIS' });
+      const e = dayFtlFromDuties([sb, fl('20:30', '02:00')], O2);
+      eqj('assistência + voo a 10 h 30: incerto (excede numa leitura, dentro na outra)', [e.psv.result, e.psv.max, !!e.psv.over, e.psv.uncertain, (e.psv.unknowns || []).includes('standbyRest')], ['05:30', '04:30', false, true, true]);
+      // O serviço do dia: a assistência em casa conta 25 % (CS FTL.1.225(b)(3)) — de 2 h (0:30) ou de 12 h 30 (3:08) — mais as
+      // 6:00 do voo com o pós-voo: 6:30 certas, 9:08 possíveis.
+      eqj('… serviço do dia: 6:30 certas, 9:08 possíveis', [e.servicoMin, e.servicoMaxMin], [390, 548]);
+      // Um voo ANTES da assistência no mesmo dia não se junta a ela (a assistência em casa não é PSV): 00:30 → 07:30, depois
+      // assistência 11:00–12:00, depois voo 22:15 → 23:50. Nas duas leituras está tudo dentro → sem dúvida.
+      const e3 = dayFtlFromDuties([{ kind: 'flight', report_time: '00:30', block_off: '01:30', block_on: '07:30', sectors: 2, flight_minutes: 300, route: 'LIS-FNC-LIS' },
+        { kind: 'standby_home', report_time: '11:00', block_on: '12:00', sectors: 0, flight_minutes: 0, route: null },
+        { kind: 'flight', report_time: '22:15', block_off: '22:45', block_on: '23:50', sectors: 1, flight_minutes: 65, route: 'LIS-OPO' }], O2);
+      eqj('voo + assistência + voo: dentro nas duas leituras, sem dúvida', [!!e3.psv.over, !!e3.psv.uncertain], [false, false]);
+      // Com 9 h 30 (apresentação 19:30): não cabe nenhum repouso mínimo → a assistência conta até à apresentação, como sempre.
+      const e9 = dayFtlFromDuties([sb, fl('19:30', '01:00')], O2);
+      eqj('assistência + voo a 9 h 30: como antes (máximo 5:30, certo)', [e9.psv.result, e9.psv.max, !!e9.psv.over, !!e9.psv.uncertain], ['05:30', '05:30', false, false]);
+      // Com 12 h 30 (apresentação 22:30): é um repouso mínimo na base → a assistência não se junta ao voo, como sempre.
+      const e12 = dayFtlFromDuties([sb, fl('22:30', '04:00')], O2);
+      eqj('assistência + voo a 12 h 30: repouso, como antes', [e12.between[0].kind, !!e12.psv.over, !!e12.psv.uncertain], ['rest', false, false]);
+      // Com 10 h 30 e um voo curto, as duas leituras dão "dentro": não há dúvida a levantar.
+      const eOk = dayFtlFromDuties([sb, fl('20:30', '23:30')], O2);
+      eqj('assistência + voo curto a 10 h 30: dentro nas duas leituras', [eOk.psv.result, !!eOk.psv.over, !!eOk.psv.uncertain], ['03:00', false, false]);
+    }
+    // O repouso a seguir ao dia: como um PSV só, o serviço precedente são 17:25; como dois, o último (3:15) → o piso de 10 h
+    // (o dia acaba no Funchal, fora da base). Com 13 h de repouso: incerto.
+    const { restAround } = require(path.resolve('data/today.js'));
+    const nx = { kind: 'flight', report_time: '11:25', block_off: '12:25', block_on: '14:10', sectors: 1, flight_minutes: 105, route: 'FNC-LIS' };
+    const ra2 = restAround({ '2026-11-20': { ...s1, extra: [s2] }, '2026-11-21': nx }, (s, iso) => iso === '2026-11-20' && s.report_time === '05:00', { postFlightMin: 30, isPilot: true, base: 'LIS' }).after;
+    eqj('repouso a seguir aos 2 serviços: 13 h → incerto (10:00 a 17:25)', [ra2.status, ra2.kind, ra2.actualMin, ra2.requiredMin, ra2.requiredHiMin], ['unc', 'breakOrRest', 780, 600, 1045]);
+  }
 }
 
 // ─────────── Split duty (CS FTL.1.220) — repouso insuficiente mas ≥3h = 1 FDP COMBINADO ───────────
@@ -1335,7 +1459,10 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eqj('Split ilegal: falta a leitura da sala', splitBad.psv.unknowns, ['splitAccRule']);
   eq('Split ilegal: excede → over', splitBad.psv.over, true);
   eq('Split ilegal: excesso +01:00', splitBad.psv.excess, '01:00');
-  eq('Split ilegal: serviço (210) conta a pausa → 17h', splitBad.servico, 17);
+  // 2026-11-11 (noite 10): com 10 h entre os dois serviços a lei admite duas leituras (um PSV repartido, ou dois PSV com um
+  // repouso — ORO.FTL.105(6)). O serviço para o ORO.FTL.210: como repartido o intervalo conta todo (220(b)) → 17 h; como dois
+  // PSV → 4 h + 3 h = 7 h. Fica o certo (7 h) e o possível (17 h): um limite só "excede" com o certo. (Antes: 17 h, certas.)
+  eqj('Split ilegal: serviço (210) → 7 h certas, 17 h possíveis', [splitBad.servico, splitBad.servicoMaxMin], [7, 1020]);
   eq('Split sem alojamento (dito): máx 13:00, excede 4:00', dayFtlFromDuties(splitPair('none')).psv.excess, '04:00');
   eq('Split ilegal: voo = 5h (a pausa não é voo)', splitBad.voo, 5);
   eq('Split ilegal: flag split exposto', splitBad.split, true);
@@ -1461,6 +1588,288 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
 }
 
 // ── Resumo ──
+// ─────────── As pernas de um serviço têm de formar UM PSV (achado no iPhone a 2026-11-11, "testar o calendário") ───────────
+// Com a volta a sair ANTES de a ida chegar (17:30–20:35 e 19:50–21:30) o motor somava 24 h à pausa negativa (−45 min → 23 h 15)
+// e dava "repartido", com o PSV máximo entre 11:15 e 22:37. A regra sai toda da lei (2026-11-11, o Nuno: "tem de ser como
+// está na lei"), sem convenções da app:
+//  · ORO.FTL.105(13) e (24): o setor vai do "primeiro movimento de uma aeronave" à "sua imobilização" — o mesmo tripulante não
+//    começa um setor antes de o anterior acabar. Uma partida antes da chegada anterior são horas erradas.
+//  · ORO.FTL.105(6): "Intervalo" é um período "durante um período de serviço de voo INFERIOR A UM PERÍODO DE REPOUSO". O
+//    repouso mais curto que a lei admite é de 10 HORAS: longe da base (ORO.FTL.235(b)), na base com alojamento adequado
+//    (235(a)(2)) e no repouso reduzido fora da base (CS FTL.1.235(c)(1)). Entre duas pernas, 10 h ou mais em terra já podem ser
+//    um repouso: não são, de certeza, um intervalo do PSV — ou é um repouso (são dois serviços), ou as horas estão erradas. É
+//    a regra com que a leitura do calendário já separa serviços (data/calendarParse.js, bloco 4 da auditoria). Entre as 10 h e
+//    o repouso que se aplicaria ao caso (o serviço precedente, ou 12 h na base — 235(a)(1)) o texto admite duas leituras: a
+//    app não escolhe — o PSV fica incerto. Uma "pausa" de 23 h 15 não é um intervalo em leitura nenhuma.
+//  · CS FTL.1.220(a) e (c): só o intervalo em terra de 3 horas seguidas ou mais prolonga o máximo. Sem intervalo conhecido fica
+//    o Quadro 2 (ORO.FTL.205(b)(1): apresentação 16:30–16:59, 1–2 setores → 11:15; 17:00–04:59 → 11:00).
+//  · ORO.FTL.210: o serviço e o voo atribuídos contam TODOS para os limites — o dia não sai da conta por ter horas duvidosas:
+//    entra, sem repartido, e o PSV fica "incerto" com o que falta (as horas certas das pernas).
+// A pausa real pela meia-noite (chega 23:50, sai 00:30 = 40 min) é um intervalo e continua a contar-se.
+{
+  const norm = (s) => s.replace(/\s+/g, ' ');
+  const reg = norm(fs.readFileSync(path.resolve('fontes/ftl/reg-ue-83-2014-pt.txt'), 'utf8'));
+  const cs = norm(fs.readFileSync(path.resolve('fontes/ftl/cs-ftl1-2014-002-R.txt'), 'utf8'));
+  eq('fonte: ORO.FTL.105(13) tempo de voo', reg.includes('o tempo decorrido entre o primeiro movimento de saída de uma aeronave do lugar de estacionamento'), true);
+  eq('fonte: ORO.FTL.105(24) setor', reg.includes('“Setor”: o segmento de um período de serviço de voo compreendido entre o primeiro movimento de uma aeronave para efeitos de descolagem e a sua imobilização'), true);
+  eq('fonte: ORO.FTL.105(6) intervalo inferior a um repouso', reg.includes('“Intervalo”: período de tempo durante um período de serviço de voo inferior a um período de repouso'), true);
+  eq('fonte: ORO.FTL.235(a)(1) 12 horas na base', reg.includes('deve ser pelo menos igual ao período de serviço precedente, ou de 12 horas'), true);
+  eq('fonte: ORO.FTL.235(b) 10 horas longe da base', reg.includes('deve ser pelo menos igual ao período de serviço precedente, ou de 10 horas'), true);
+  eq('fonte: ORO.FTL.235(a)(2) alojamento adequado na base → o mínimo de (b)', reg.includes('o repouso mínimo previsto na alínea b) aplica-se se o operador previr alojamento adequado para o tripulante na sua base de afetação'), true);
+  eq('fonte: CS FTL.1.235(c)(1) repouso reduzido: 12 h na base, 10 h fora', cs.includes('The minimum reduced rest periods under reduced rest arrangements are 12 hours at home base and 10 hours out of base.'), true);
+  eq('fonte: ORO.FTL.105(21) período de repouso', reg.includes('“Período de repouso”: período de tempo contínuo, ininterrupto e definido, antes ou depois de um serviço'), true);
+  eq('fonte: CS FTL.1.220(c) até 50 % do intervalo', cs.includes('may be increased by up to 50 % of the break'), true);
+  eq('fonte: Quadro 2, 05:00–05:14, 1–2 setores = 12:00', reg.includes('0500–0514 12:00'), true);
+  eq('fonte: CS FTL.1.220(a) intervalo em terra de 3 h', cs.includes('The break on the ground within the FDP has a minimum duration of 3 consecutive hours.'), true);
+  eq('fonte: Quadro 2, 16:30–16:59, 1–2 setores = 11:15', reg.includes('1630–1659 11:15'), true);
+  eq('fonte: Quadro 2, 17:00–04:59, 1–2 setores = 11:00', reg.includes('1700–0459 11:00'), true);
+  eq('fonte: ORO.FTL.210(a) as escalas atribuídas', reg.includes('As escalas de serviço que podem ser atribuídas aos tripulantes não podem ultrapassar'), true);
+  eq('fonte: ORO.FTL.210(b) o tempo total de voo nos setores atribuídos', reg.includes('O tempo total de voo nos setores atribuídos aos tripulantes não pode ultrapassar'), true);
+  const { splitFromLegs, legsBroken, ftlForDuty, dutyToFtlDay } = ftl;
+  const L = (dep, arr, off, on, x = {}) => ({ dep, arr, off, on, ...x });
+  const C = (date, report, x = {}) => ({ date, report, base: 'LIS', postFlightMin: 30, ...x });
+  const split = (legs, c) => { const s = splitFromLegs(legs, c); return [s.splitBreakH, s.splitBreakStart, !!s.broken]; };
+  const P = { base: 'LIS', isPilot: true, postFlightMin: 30 };
+
+  // 1 · O caso do iPhone: LIS 17:30 → FNC 20:35, FNC 19:50 → LIS 21:30 (a volta sai 45 min antes de a ida chegar).
+  const ov = [L('LIS', 'FNC', '17:30', '20:35'), L('FNC', 'LIS', '19:50', '21:30')];
+  const dutyOv = { kind: 'flight', report_time: '16:30', block_off: '17:30', block_on: '21:30', sectors: 2, flight_minutes: 285, route: 'LIS-FNC-LIS', legs: ov };
+  eq('sobrepostas: as pernas não formam um PSV', legsBroken(ov, C('2026-11-11', '16:30')), true);
+  eqj('sobrepostas: sem repartido (antes: pausa de 23 h 15 desde as 20:35)', split(ov, C('2026-11-11', '16:30')), [0, null, true]);
+  const dOv = ftlForDuty(dutyOv, { ...P, date: '2026-11-11' });
+  // O máximo GARANTIDO é o do Quadro 2, 11:15. O máximo POSSÍVEL sai da lei e vale em todas as leituras: se as horas certas
+  // tivessem um intervalo, ele cabia no PSV (5:00) e era inferior a 10 h; o máximo sobe até 50 % do intervalo menos os 30 min
+  // de pré e pós-voo (CS FTL.1.220(b) e (c)): 11:15 + (5:00 − 0:30) / 2 = 13:30. (Antes: entre 11:15 e 22:37.)
+  eqj('sobrepostas: PSV máximo garantido 11:15 (Quadro 2), possível 13:30', [dOv.fdp.maxFdpStr, dOv.fdp.maxHiStr], ['11:15', '13:30']);
+  eqj('sobrepostas: o PSV fica incerto — faltam as horas certas das pernas', [dOv.fdp.over, dOv.fdp.uncertain, dOv.fdp.unknowns], [false, true, ['legTimes']]);
+  // O dia CONTA (ORO.FTL.210): serviço das 16:30 às 21:30 + 30 min de pós-voo = 5:30; o voo é a soma das pernas (3:05 + 1:40 =
+  // 4:45 — com a sobreposição conta a mais, nunca a menos: o lado conservador dos limites).
+  const eOv = dutyToFtlDay(dutyOv, { ...P, date: '2026-11-11' });
+  eqj('sobrepostas: o dia conta — serviço 5:30, voo 4:45, PSV incerto', [eOv.servicoMin, eOv.vooMin, eOv.psv.result, eOv.psv.max, eOv.psv.maxHi, eOv.psv.uncertain, eOv.psv.unknowns], [330, 285, '05:00', '11:15', '13:30', true, ['legTimes']]);
+  // O mesmo com as horas Zulu do calendário (como a importação as grava), e só com o relógio (sem o dia nem os aeroportos).
+  const ovZ = ov.map((l) => ({ ...l, offZ: l.off, onZ: l.on }));
+  eqj('sobrepostas (com Zulu): igual', split(ovZ, C('2026-11-11', '16:30')), [0, null, true]);
+  eqj('sobrepostas (só o relógio): igual', split(ov.map(({ off, on }) => ({ off, on })), { report: '16:30' }), [0, null, true]);
+
+  // 2 · A pausa REAL que passa a meia-noite: chega 23:50, sai 00:30 = 40 min. É um intervalo; não chega a repartido (< 3 h).
+  const mn = [L('LIS', 'OPO', '22:50', '23:50'), L('OPO', 'LIS', '00:30', '01:30')];
+  eqj('meia-noite: 40 min de intervalo, sem repartido', split(mn, C('2026-11-11', '21:50')), [0, null, false]);
+  const dMn = ftlForDuty({ kind: 'flight', report_time: '21:50', block_off: '22:50', block_on: '01:30', sectors: 2, flight_minutes: 120, route: 'LIS-OPO-LIS', legs: mn }, { ...P, date: '2026-11-11' });
+  eqj('meia-noite: PSV 3:40 (21:50 → 01:30), máximo 11:00, certo', [dMn.fdp.actualFdpStr, dMn.fdp.maxFdpStr, !!dMn.fdp.uncertain, dMn.fdp.unknowns], ['03:40', '11:00', false, []]);
+  // … e o repartido que passa a meia-noite: chega 19:00, sai 23:30 (4 h 30), volta a chegar às 00:30.
+  eqj('repartido pela meia-noite: intervalo de 4 h 30 desde as 19:00', split([L('LIS', 'OPO', '18:00', '19:00'), L('OPO', 'LIS', '23:30', '00:30')], C('2026-11-11', '17:00')), [4.5, '19:00', false]);
+  // … e o intervalo que ele próprio passa a meia-noite: chega 22:00, sai 02:00 = 4 h.
+  eqj('intervalo pela meia-noite (22:00 → 02:00): repartido de 4 h', split([L('LIS', 'OPO', '21:00', '22:00'), L('OPO', 'LIS', '02:00', '03:00')], C('2026-11-11', '20:00')), [4, '22:00', false]);
+  // … e o repartido de dia, como sempre: 06:40–08:15 e 15:00–16:40 → 6 h 45.
+  eqj('repartido de dia: 6 h 45 desde as 08:15', split([L('LIS', 'FNC', '06:40', '08:15'), L('FNC', 'LIS', '15:00', '16:40')], C('2026-11-11', '05:40')), [6.75, '08:15', false]);
+
+  // 3 · O INTERVALO É INFERIOR A UM REPOUSO (ORO.FTL.105(6) + 235). Apresentação 06:00, 07:00–08:00 e depois 11 h 30 em terra.
+  // 11 h 30 ≥ 10 h, o repouso mais curto que a lei admite: já pode ser um repouso — fora da base (235(b)) e também na base
+  // (235(a)(2), com alojamento adequado). Não é, de certeza, um intervalo: não se tira daqui um repartido e o PSV fica incerto.
+  const away = [L('LIS', 'OPO', '07:00', '08:00'), L('OPO', 'LIS', '19:30', '20:30')];
+  const home = [L('OPO', 'LIS', '07:00', '08:00'), L('LIS', 'OPO', '19:30', '20:30')];
+  eqj('11 h 30 em terra fora da base: não é, de certeza, um intervalo', split(away, C('2026-10-20', '06:00')), [0, null, true]);
+  eqj('11 h 30 em terra na base: também não (235(a)(2))', split(home, C('2026-10-20', '06:00')), [0, null, true]);
+  eqj('… sem a base conhecida: igual', split(away, { date: '2026-10-20', report: '06:00' }), [0, null, true]);
+  // A fronteira: 9 h 59 é um intervalo (inferior a qualquer repouso); 10 h 00 já não ("inferior a").
+  eqj('9 h 59 em terra → intervalo', split([away[0], L('OPO', 'LIS', '17:59', '18:59')], C('2026-10-20', '06:00')), [599 / 60, '08:00', false]);
+  eqj('10 h 00 em terra → não é, de certeza, um intervalo', split([away[0], L('OPO', 'LIS', '18:00', '19:00')], C('2026-10-20', '06:00')), [0, null, true]);
+  // 10 h ou mais em terra podem ser dois serviços com um repouso no meio: o PSV nunca é "excede" (não há um PSV único em
+  // todas as leituras). Apresentação 05:00, 06:00–08:00, 12 h em Faro, 20:00–23:30: 18:30 da apresentação aos últimos calços.
+  const twoSvc = ftlForDuty({ kind: 'flight', report_time: '05:00', block_off: '06:00', block_on: '23:30', sectors: 2, flight_minutes: 330, route: 'LIS-FAO-LIS', legs: [L('LIS', 'FAO', '06:00', '08:00'), L('FAO', 'LIS', '20:00', '23:30')] }, { ...P, date: '2026-10-20' });
+  eqj('12 h em terra: incerto, nunca excede', [twoSvc.fdp.actualFdpStr, twoSvc.fdp.over, twoSvc.fdp.uncertain, twoSvc.fdp.unknowns, twoSvc.legsBroken], ['18:30', false, true, ['legTimes'], 'rest']);
+
+  // 4 · Outras horas que não batem certo. A partida uns minutos ANTES da chegada anterior (o PSV continua 13:00, acima):
+  const tol = [L('LIS', 'FNC', '21:00', '22:45'), L('FNC', 'GRU', '22:40', '05:00')];
+  eqj('5 min sobrepostos: sem pausa inventada (antes: 23 h 55)', split(tol, C('2026-07-10', '20:00')), [0, null, true]);
+  // … a sobreposição grande (10:00–15:00 e 11:00–13:00): "20 h em terra" não é um intervalo.
+  eqj('4 h sobrepostas: sem pausa inventada (antes: 20 h)', split([L('LIS', 'FNC', '10:00', '15:00'), L('FNC', 'LIS', '11:00', '13:00')], C('2026-11-11', '09:00')), [0, null, true]);
+  // … o posicionamento do fim que sai antes de o último setor chegar (ORO.FTL.215: é serviço; as horas têm de bater).
+  eq('posicionamento sobreposto no fim: não formam um PSV', legsBroken([L('LIS', 'FNC', '10:00', '12:00'), L('FNC', 'LIS', '11:30', '13:00', { dh: true })], C('2026-11-11', '09:00')), true);
+  // … e uma pausa certa não se aproveita ao lado de horas erradas: sem repartido.
+  eqj('pausa certa + sobreposição no mesmo serviço: sem repartido', split([L('LIS', 'OPO', '06:00', '07:00'), L('OPO', 'LIS', '11:00', '12:00'), L('LIS', 'FAO', '11:50', '12:40')], C('2026-11-11', '05:00')), [0, null, true]);
+
+  // 5 · O que NÃO mexe. Longo curso para leste só com as horas locais (JFK 20:00 → LIS 07:45, LIS 09:45 → DXB 20:15): 2 h em
+  // terra, um intervalo. Um posicionamento longo no fim (DH de 11 h 45): 30 min em terra antes dele. Uma perna só. Sem horas.
+  eqj('longo curso para leste: 2 h em terra, tudo certo', split([L('JFK', 'LIS', '20:00', '07:45'), L('LIS', 'DXB', '09:45', '20:15')], C('2026-07-10', '19:00')), [0, null, false]);
+  eqj('posicionamento longo no fim: tudo certo', split([L('LIS', 'TFS', '08:00', '12:30'), L('TFS', 'LIS', '13:30', '20:30'), L('LIS', 'GRU', '21:00', '04:45', { offZ: '20:00', onZ: '07:45', dh: true })], C('2026-10-20', '07:00')), [0, null, false]);
+  eq('uma perna só: nunca', legsBroken([L('LIS', 'NRT', '08:00', '09:00')], C('2026-11-10', '06:45')), false);
+  eq('sem pernas: nunca', legsBroken(null), false);
+  eq('pernas sem horas: nunca (não se sabe)', legsBroken([L('LIS', 'OPO', null, null), L('OPO', 'LIS', null, null)], C('2026-11-10', '06:00')), false);
+
+  // 6 · Acima do Quadro 2 (ORO.FTL.205(d)). Apresentação 07:00, 08:00–14:00 e 13:50–20:30 (sobrepostas), 2 setores: PSV 13:30
+  // contra 13:00 do Quadro 2. Com as horas das pernas erradas não se sabe se o serviço cabia no prolongamento planeado (205(d))
+  // ou num repartido (CS FTL.1.220): não viola a lei em TODAS as leituras, logo não é "excede" — é incerto, com o máximo
+  // garantido (13:00) e o que falta. (Regra do Nuno, 2026-11-06: o mais restritivo não é a lei.)
+  const ovExt = [L('LIS', 'TFS', '08:00', '14:00'), L('TFS', 'LIS', '13:50', '20:30')];
+  const dayExt = { kind: 'flight', report_time: '07:00', block_off: '08:00', block_on: '20:30', sectors: 2, flight_minutes: 760, route: 'LIS-TFS-LIS', legs: ovExt,
+    snap: { report_time: '07:00', block_off: '08:00', block_on: '20:30', sectors: 2, route: 'LIS-TFS-LIS', kind: 'flight', v: 2 } };
+  const dExt2 = ftlForDuty(dayExt, { ...P, date: '2026-10-20', duties: { '2026-10-20': dayExt } });
+  // O máximo possível: o do prolongamento planeado (14:00) ou o de um repartido — 13:00 + metade de (9:59 − 0:30) = 17:44.
+  eqj('sobrepostas acima do Quadro 2: nem prolongamento nem "excede" — incerto, entre 13:00 e 17:44', [dExt2.extUsed, dExt2.fdp.maxFdpStr, dExt2.fdp.maxHiStr, dExt2.fdp.over, dExt2.fdp.uncertain, dExt2.fdp.unknowns, dExt2.legal, dExt2.legsBroken], [false, '13:00', '17:44', false, true, ['legTimes'], true, 'before']);
+  // … mas acima do máximo possível é "excede" em qualquer leitura. Apresentação 05:00, 06:00–23:00 e 22:00–01:00 (a partida
+  // antes da chegada: um PSV só, de 20:00). Quadro 2 às 05:00, 2 setores: 12:00; com o maior intervalo possível: 12:00 + 4:44.
+  const dAbs = ftlForDuty({ kind: 'flight', report_time: '05:00', block_off: '06:00', block_on: '01:00', sectors: 2, flight_minutes: 1200, route: 'LIS-FNC-LIS', legs: [L('LIS', 'FNC', '06:00', '23:00'), L('FNC', 'LIS', '22:00', '01:00')] }, { ...P, date: '2026-10-20' });
+  eqj('sobrepostas com PSV de 20:00: excede o máximo possível (16:44) em qualquer leitura', [dAbs.fdp.actualFdpStr, dAbs.fdp.maxFdpStr, dAbs.fdp.maxHiStr, dAbs.fdp.over, dAbs.fdp.excessStr, dAbs.fdp.unknowns], ['20:00', '12:00', '16:44', true, '03:16', ['legTimes']]);
+  const eExt2 = dutyToFtlDay(dayExt, { ...P, date: '2026-10-20', duties: { '2026-10-20': dayExt } });
+  eqj('… e no registo do dia: PSV 13:30 de 13:00, incerto, a contar 14:00 de serviço', [eExt2.psv.result, eExt2.psv.max, !!eExt2.psv.over, eExt2.psv.uncertain, eExt2.servicoMin], ['13:30', '13:00', false, true, 840]);
+  // "Não mais do que duas vezes em cada período de 7 dias consecutivos" (ORO.FTL.205(d)(1)): se um dos dias anteriores tem as
+  // horas das pernas erradas, não se sabe se foi um prolongamento. O 3.º não fica legal por causa disso, nem "excede": incerto,
+  // entre o Quadro 2 (13:00) e o prolongamento (14:00), com o que falta (`extCount`).
+  eq('fonte: 205(d)(1) duas vezes em 7 dias', reg.includes('duas vezes em cada período de 7 dias consecutivos'), true);
+  const okExt = [L('LIS', 'TFS', '08:00', '12:30'), L('TFS', 'LIS', '13:30', '20:30')];
+  const mkExt = (legs) => ({ ...dayExt, legs });
+  const week = { '2026-10-18': mkExt(okExt), '2026-10-19': mkExt(ovExt), '2026-10-20': mkExt(okExt) };
+  const d20 = ftlForDuty(week['2026-10-20'], { ...P, date: '2026-10-20', duties: week });
+  eqj('2 em 7: com o dia 19 por saber, o do dia 20 pode ser o 3.º → incerto (13:00–14:00)', [d20.extRefused, d20.fdp.maxFdpStr, d20.fdp.maxHiStr, d20.fdp.over, d20.fdp.uncertain, d20.fdp.unknowns], [null, '13:00', '14:00', false, true, ['extCount']]);
+  // … com dois prolongamentos CERTOS antes (17 e 18), o do dia 20 é o 3.º de certeza: recusado, com ou sem o dia 19.
+  const d20c = ftlForDuty(week['2026-10-20'], { ...P, date: '2026-10-20', duties: { ...week, '2026-10-17': mkExt(okExt) } });
+  eqj('2 em 7: dois certos antes → o 3.º é recusado', [d20c.extRefused, d20c.fdp.maxFdpStr, d20c.fdp.over], ['2in7', '13:00', true]);
+  const d20b = ftlForDuty(week['2026-10-20'], { ...P, date: '2026-10-20', duties: { '2026-10-18': week['2026-10-18'], '2026-10-20': week['2026-10-20'] } });
+  eqj('2 em 7: sem o dia 19, o do dia 20 é o 2.º → dentro (14:00)', [d20b.extRefused, d20b.fdp.maxFdpStr, d20b.fdp.over], [null, '14:00', false]);
+
+  // 7 · A noite em que a hora atrasa (25/10/2026: em Genebra as 03:00 voltam a ser 02:00). Sem a Zulu, uma hora local dessa hora
+  // repetida tem duas leituras: chegar a GVA às 02:48 e sair às 02:26 pode ser um intervalo de 38 min (chegada na 1.ª vez,
+  // partida na 2.ª). Só se afirma a partida-antes-da-chegada que existe em TODAS as leituras.
+  const rep2x = [L('MAD', 'OPO', '20:38', '21:18', { offZ: '18:38', onZ: '20:18' }), L('OPO', 'GVA', '22:34', '02:48'), L('GVA', 'FNC', '02:26', '05:04'), L('FNC', 'LIS', '05:38', '06:57', { offZ: '05:38', onZ: '06:57' })];
+  eq('hora repetida: chega 02:48, sai 02:26 → não se afirma', legsBroken(rep2x, C('2026-10-24', '19:33')), false);
+  // … mas chegar ao Porto à 01:13 (hora repetida) e sair às 00:37 (antes dela) é antes da chegada nas duas leituras.
+  eq('hora repetida: antes da chegada em todas as leituras → não formam um PSV', legsBroken([L('MAD', 'LIS', '18:42', '22:30'), L('LIS', 'OPO', '00:28', '01:13'), L('OPO', 'FAO', '00:37', '03:41')], C('2026-10-24', '17:40')), true);
+  // … e com a Zulu do calendário não há dúvida: 02:48 (01:48Z) e 02:26 (00:26Z).
+  eq('hora repetida com Zulu: decide a Zulu', legsBroken([L('OPO', 'GVA', '22:34', '02:48', { offZ: '21:34', onZ: '01:48' }), L('GVA', 'FNC', '02:26', '05:04', { offZ: '00:26', onZ: '05:04' })], C('2026-10-24', '21:30')), true);
+  // 7b · Verificação independente dos acertos (3.ª passagem): o máximo POSSÍVEL tem de contar com as outras dúvidas do serviço.
+  // (a) Aclimatação por saber (1.º serviço da escala, fora da base): o máximo possível é o da leitura mais favorável do Quadro 1
+  // também na variante do repartido. Base LIS, JFK-BOS-JFK, apresentação 13:00 local, alojamento adequado, PSV 16:30, sobrepostas.
+  const dAc = { kind: 'flight', report_time: '13:00', block_off: '14:00', block_on: '05:30', sectors: 2, flight_minutes: 940, route: 'JFK-BOS-JFK', accommodation: true, legs: [L('JFK', 'BOS', '14:00', '15:30'), L('BOS', 'JFK', '15:20', '05:30')] };
+  const rAc = ftlForDuty(dAc, { ...P, date: '2026-10-20', duties: { '2026-10-20': dAc } });
+  const rAcSplit = ftlForDuty({ ...dAc, legs: [L('JFK', 'BOS', '14:00', '15:30'), L('BOS', 'JFK', '01:29', '05:30')] }, { ...P, date: '2026-10-20', duties: { '2026-10-20': dAc } });
+  eqj('aclimatação por saber + sobrepostas: o possível é o do repartido de 9 h 59 na leitura mais favorável → incerto', [rAc.fdp.actualFdpStr, rAc.fdp.over, rAc.fdp.uncertain, rAc.fdp.maxHiStr === rAcSplit.fdp.maxHiStr, rAc.fdp.unknowns.includes('legTimes')], ['16:30', false, true, true, true]);
+  // (b) A discrição do comandante declarada (ORO.FTL.205(f)) conta-se sobre o máximo possível, não sobre o garantido: declarar a
+  // discrição não pode transformar um incerto em "excede". Apresentação 06:00, PSV 16:00, sobrepostas (possível 17:44).
+  const dDi = { kind: 'flight', report_time: '06:00', block_off: '07:00', block_on: '22:00', sectors: 2, flight_minutes: 900, route: 'LIS-TFS-LIS', legs: [L('LIS', 'TFS', '07:00', '15:00'), L('TFS', 'LIS', '14:50', '22:00')] };
+  const eDi = (sp) => dutyToFtlDay({ ...dDi, special: sp }, { ...P, date: '2026-10-20' }).psv;
+  eqj('sobrepostas com e sem discrição declarada: incerto nos dois casos', [!!eDi(null).over, eDi(null).uncertain, !!eDi({ discretion: true }).over, eDi({ discretion: true }).uncertain], [false, true, false, true]);
+  // (c) O prolongamento só é uma leitura possível se ainda couber nos "2 em 7 dias": com dois prolongamentos certos antes (17 e
+  // 18) e sem alojamento (CS FTL.1.220(e)(1): o repartido não dá nada), nenhuma leitura torna legal um PSV de 13:30 → excede.
+  const dNo = { ...dayExt, accommodation: 'none' };
+  const rNo = ftlForDuty(dNo, { ...P, date: '2026-10-20', duties: { '2026-10-17': mkExt(okExt), '2026-10-18': mkExt(okExt), '2026-10-20': dNo } });
+  eqj('sobrepostas, sem alojamento, 3.º prolongamento: excede 0:30 em qualquer leitura', [rNo.fdp.maxFdpStr, rNo.fdp.maxHiStr, rNo.fdp.over, rNo.fdp.excessStr], ['13:00', '13:00', true, '00:30']);
+  const rNo2 = ftlForDuty(dNo, { ...P, date: '2026-10-20', duties: { '2026-10-20': dNo } });
+  eqj('… sem prolongamentos antes: podia ser o prolongamento planeado → incerto até 14:00', [rNo2.fdp.maxHiStr, rNo2.fdp.over, rNo2.fdp.uncertain], ['14:00', false, true]);
+
+  // 8 · O REPOUSO A SEGUIR (ORO.FTL.235 + 205(d)(1)) a um serviço cujas pernas não batem certo depende da leitura — e a app não
+  // escolhe: "curto" só abaixo do mínimo de todas as leituras, "certo" só acima de todas, no meio incerto.
+  {
+    const { restAround, legalStatus } = require(path.resolve('data/today.js'));
+    const next = (rep) => ({ kind: 'flight', report_time: rep, block_off: '12:00', block_on: '14:00', sectors: 1, flight_minutes: 120, route: 'LIS-OPO' });
+    const after = (prev, rep) => restAround({ '2026-10-20': prev, '2026-10-21': next(rep) }, (s, iso) => iso === '2026-10-20', { postFlightMin: 30, isPilot: true, base: 'LIS' }).after;
+    // (a) Sobrepostas acima do Quadro 2 que cabiam no prolongamento planeado: serviço 07:00 → 21:00 = 14:00. Sem prolongamento
+    // o mínimo é 14:00; se foi um prolongamento, +4 h (205(d)(1)(ii)) = 18:00. Com 15 h de repouso: incerto.
+    const r15 = after(dayExt, '12:00');
+    eqj('repouso depois de sobrepostas que cabiam no prolongamento: 15 h → incerto (14:00 a 18:00)', [r15.status, r15.kind, r15.actualMin, r15.requiredMin, r15.requiredHiMin], ['unc', 'legTimes', 900, 840, 1080]);
+    // 13 h (menos do que as 14:00 do serviço, mas pelo menos as 12 h do repouso reduzido, CS FTL.1.235(c)(1)): só é legal como
+    // repouso reduzido → incerto (noite 10; antes "curto"). Com 11 h 30 é curto em qualquer leitura.
+    eqj('… 13 h → só como repouso reduzido: incerto', [after(dayExt, '10:00').status, after(dayExt, '10:00').kind], ['unc', 'reducedRest']);
+    eqj('… 11 h 30 → curto em qualquer leitura', after(dayExt, '08:30').status, 'bad');
+    eqj('… 18 h → certo em qualquer leitura', after(dayExt, '15:00').status, 'ok');
+    // (b) 12 h em terra a meio (podem ser dois serviços): como um serviço só são 05:00 → 00:00 = 19:00 de serviço; como dois, o
+    // 2.º (apresentado antes das 20:00) é mais curto e vale o piso de 12 h. Com 13 h 30 de repouso: incerto.
+    const two = { kind: 'flight', report_time: '05:00', block_off: '06:00', block_on: '23:30', sectors: 2, flight_minutes: 330, route: 'LIS-FAO-LIS', legs: [L('LIS', 'FAO', '06:00', '08:00'), L('FAO', 'LIS', '20:00', '23:30')] };
+    const r2 = after(two, '13:30');
+    eqj('repouso depois de 12 h em terra a meio: 13 h 30 → incerto (12:00 a 19:00)', [r2.status, r2.kind, r2.actualMin, r2.requiredMin, r2.requiredHiMin], ['unc', 'legTimes', 810, 720, 1140]);
+    // (b2) O serviço seguinte SEM apresentação: "curto" só se nem o mínimo de todas as leituras cabe. O anterior acaba às 21:30
+    // (06:00 → 21:00 + 30 min = 15:30 de serviço, com 11 h em terra a meio); o seguinte sai às 10:30 (13 h depois). Como um
+    // serviço só o mínimo era 15:30; como dois, 12:00 → não é "curto" de certeza.
+    const prevR = { kind: 'flight', report_time: '06:00', block_off: '07:00', block_on: '21:00', sectors: 2, flight_minutes: 180, route: 'LIS-FAO-LIS', legs: [L('LIS', 'FAO', '07:00', '08:00'), L('FAO', 'LIS', '19:00', '21:00')] };
+    const noRep = { kind: 'flight', report_time: null, block_off: '10:30', block_on: '12:00', sectors: 1, flight_minutes: 90, route: 'LIS-OPO', legs: [L('LIS', 'OPO', '10:30', '12:00')] };
+    const rNr = restAround({ '2026-10-20': prevR, '2026-10-21': noRep }, (s, iso) => iso === '2026-10-20', { postFlightMin: 30, isPilot: true, base: 'LIS' }).after;
+    eqj('seguinte sem apresentação, depois de 11 h em terra a meio: 13 h não é "curto" de certeza', [rNr.status, rNr.actualMin], ['unc', 780]);
+    // (c) As mesmas horas com as pernas certas (sem sobreposição): como sempre.
+    const okDay = { ...dayExt, legs: okExt };
+    eqj('repouso depois do mesmo serviço com as pernas certas (prolongamento): 15 h → curto, 18:00 exigidas', [after(okDay, '12:00').status, after(okDay, '12:00').requiredMin], ['bad', 1080]);
+    // 9 · Um PSV incerto não esconde um limite do ORO.FTL.210 excedido de certeza: 70 h de serviço em 7 dias (máximo 60).
+    const log = {}; for (let k = 14; k <= 20; k++) log['2026-10-' + k] = { servicoMin: 600, servico: 10, vooMin: 300, voo: 5 };
+    const ls = legalStatus({ psv: { result: '05:00', max: '11:15', maxHi: '13:30', uncertain: true, unknowns: ['legTimes'] } }, log, new Date('2026-10-20T12:00:00'));
+    eqj('PSV incerto + 70 h em 7 dias → excede o limite (não "incerto")', [ls.status, ls.kind], ['bad', 'limitOver']);
+    const ls2 = legalStatus({ psv: { result: '05:00', max: '11:15', maxHi: '13:30', uncertain: true, unknowns: ['legTimes'] } }, { '2026-10-20': { servicoMin: 330, servico: 5.5, vooMin: 285, voo: 4.75 } }, new Date('2026-10-20T12:00:00'));
+    eqj('PSV incerto sem limites excedidos → incerto', [ls2.status, ls2.kind], ['warn', 'psvUncertain']);
+  }
+  eq('versão do motor: 12', ftl.ENGINE_VERSION, 12);
+}
+
+
+// ─────────── O REPOUSO REDUZIDO (ORO.FTL.235(c) · CS FTL.1.235(c)) — 2026-11-11, noite 10 ───────────
+// Um repouso abaixo do mínimo do ORO.FTL.235(a)/(b) (o serviço precedente, ou 12 h na base / 10 h fora) dava sempre "curto". A
+// lei tem uma derrogação: "os planos que especificam os tempos de voo podem prever reduções dos períodos de repouso mínimos"
+// (235(c)), com as condições da CS FTL.1.235(c): (1) mínimo de 12 h na base e 10 h fora; (2) "Reduced rest is used under
+// fatigue risk management"; (3) o repouso seguinte aumenta pela diferença; (4) o PSV seguinte reduz-se pela diferença; (5) no
+// máximo 2 entre recuperações. A app não sabe se a companhia tem repouso reduzido: entre o mínimo reduzido e o mínimo normal
+// o repouso não é "curto" em todas as leituras — é incerto, com o que falta. Abaixo do mínimo reduzido, ou quando o PSV
+// seguinte nem reduzido cabe, é "curto" em qualquer leitura.
+{
+  const norm = (s) => s.replace(/\s+/g, ' ');
+  const reg = norm(fs.readFileSync(path.resolve('fontes/ftl/reg-ue-83-2014-pt.txt'), 'utf8'));
+  const cs = norm(fs.readFileSync(path.resolve('fontes/ftl/cs-ftl1-2014-002-R.txt'), 'utf8'));
+  eq('fonte: ORO.FTL.235(c) repouso reduzido', reg.includes('os planos que especificam os tempos de voo podem prever reduções dos períodos de repouso mínimos'), true);
+  eq('fonte: CS FTL.1.235(c)(1) 12 h na base e 10 h fora', cs.includes('The minimum reduced rest periods under reduced rest arrangements are 12 hours at home base and 10 hours out of base.'), true);
+  eq('fonte: CS FTL.1.235(c)(2) com gestão do risco de fadiga', cs.includes('Reduced rest is used under fatigue risk management.'), true);
+  eq('fonte: CS FTL.1.235(c)(3) o repouso seguinte aumenta pela diferença', cs.includes('The rest period following the reduced rest is extended by the difference between the minimum rest period specified in ORO.FTL.235(a) or (b) and the reduced rest.'), true);
+  eq('fonte: CS FTL.1.235(c)(4) o PSV seguinte reduz-se pela diferença', cs.includes('The FDP following the reduced rest is reduced by the difference between the minimum rest period specified in ORO.FTL.235(a) or (b) as applicable and the reduced rest.'), true);
+  const { restAround } = require(path.resolve('data/today.js'));
+  const C = { postFlightMin: 30, isPilot: true, base: 'LIS' };
+  const F = (rep, off, on, route, x = {}) => ({ kind: 'flight', report_time: rep, block_off: off, block_on: on, sectors: 1, flight_minutes: 60, route, ...x });
+  const after = (duties) => restAround(duties, (s, iso) => iso === '2026-10-20', C).after;
+  // NA BASE. Serviço de 13:00 (06:00 → 18:30 + 30 min): o mínimo normal são 13:00; o reduzido, 12:00.
+  const long = F('06:00', '07:00', '18:30', 'LIS-OPO-LIS');
+  const r1 = after({ '2026-10-20': long, '2026-10-21': F('07:30', '08:30', '10:00', 'LIS-OPO') });
+  eqj('na base, 12 h 30 depois de 13:00 de serviço: só como repouso reduzido → incerto (diferença 0:30)', [r1.status, r1.kind, r1.actualMin, r1.requiredMin, r1.reducedFloorMin, r1.diffMin], ['unc', 'reducedRest', 750, 780, 720, 30]);
+  const r2 = after({ '2026-10-20': long, '2026-10-21': F('06:45', '07:45', '09:00', 'LIS-OPO') });
+  eqj('na base, 11 h 45: abaixo do mínimo reduzido (12 h) → curto', [r2.status, r2.actualMin, r2.requiredMin], ['bad', 705, 780]);
+  // O PSV seguinte tem de caber reduzido pela diferença (CS 235(c)(4)): apresentação 07:30 → Quadro 2 = 13:00; menos 0:30 =
+  // 12:30. Nenhum texto proíbe o prolongamento planeado depois de um repouso reduzido (só o repartido, ORO.FTL.220(c)): com ele
+  // o máximo é 14:00 − 0:30 = 13:30 (2.ª revisão independente). Um PSV de 12:45 cabe nessa leitura → incerto; um de 13:45 não
+  // cabe em nenhuma → curto.
+  const r3 = after({ '2026-10-20': long, '2026-10-21': F('07:30', '08:30', '20:15', 'LIS-OPO') });
+  eqj('… com o PSV seguinte de 12:45: cabe se foi um prolongamento planeado (13:30) → incerto', [r3.status, r3.kind], ['unc', 'reducedRest']);
+  const r3b = after({ '2026-10-20': long, '2026-10-21': F('07:30', '08:30', '21:15', 'LIS-OPO') });
+  eqj('… com o PSV seguinte de 13:45: nem reduzido nem com prolongamento → curto em qualquer leitura', [r3b.status, r3b.actualMin, r3b.requiredMin], ['bad', 750, 780]);
+  const r4 = after({ '2026-10-20': long, '2026-10-21': F('07:30', '08:30', '20:00', 'LIS-OPO') });
+  eqj('… com o PSV seguinte de 12:30: cabe → incerto', [r4.status, r4.kind], ['unc', 'reducedRest']);
+  // "Após um repouso reduzido não pode ser prestado serviço de voo repartido" (ORO.FTL.220(c)): se o dia seguinte é um
+  // repartido certo (4 h em terra entre dois serviços), nem como repouso reduzido é legal → curto.
+  eq('fonte: ORO.FTL.220(c) sem repartido depois do repouso reduzido', reg.includes('Após um repouso reduzido não pode ser prestado serviço de voo repartido.'), true);
+  const r4s = after({ '2026-10-20': long, '2026-10-21': { ...F('07:30', '08:30', '10:00', 'LIS-OPO-LIS'), extra: [F('14:30', '15:00', '16:00', 'LIS-OPO')] } });
+  eqj('… com um repartido no dia seguinte: curto em qualquer leitura', [r4s.status, r4s.actualMin], ['bad', 750]);
+  // Dois repousos reduzidos seguidos: o repouso a seguir a um reduzido AUMENTA pela diferença (CS 235(c)(3)) — não pode ser
+  // outra vez reduzido. Dia 20: 13:00 de serviço depois de 12:30 de repouso (talvez reduzido); dia 21 às 09:00 = 12:30 outra
+  // vez, abaixo das 13:00 normais e das 13:30 da leitura reduzida → curto nas duas.
+  const dd2 = { '2026-10-19': long, '2026-10-20': F('07:30', '08:30', '20:00', 'LIS-OPO-LIS'), '2026-10-21': F('09:00', '10:00', '11:30', 'LIS-OPO') };
+  const r8 = restAround(dd2, (s, iso) => iso === '2026-10-20', C);
+  eqj('dois repousos abaixo do mínimo seguidos: o 2.º é curto em qualquer leitura', [r8.before.status, r8.before.kind, r8.after.status, r8.after.actualMin], ['unc', 'reducedRest', 'bad', 750]);
+  // O serviço anterior SEM apresentação (só se sabe a saída e o fim: 07:00 → 19:00 + 30 min): com menos informação a app não
+  // pode ser mais severa. 12:15 de repouso (≥ 10 h, o mínimo reduzido mais baixo) → incerto; 8 h 30 → curto.
+  const noRepPrev = { kind: 'flight', report_time: null, block_off: '07:00', block_on: '19:00', sectors: 2, flight_minutes: 300, route: 'LIS-FNC-LIS' };
+  const bef = (rep) => restAround({ '2026-10-20': noRepPrev, '2026-10-21': F(rep, '09:00', '10:30', 'LIS-OPO') }, (s, iso) => iso === '2026-10-21', C).before;
+  eqj('anterior sem apresentação, 12:15 de repouso: incerto', [bef('07:45').status, bef('07:45').actualMin], ['unc', 735]);
+  eqj('anterior sem apresentação, 8:30 de repouso: curto', [bef('04:00').status, bef('04:00').actualMin], ['bad', 510]);
+  // FORA DA BASE. Serviço de 11:00 que acaba no Porto (06:00 → 16:30 + 30 min): mínimo normal 11:00, reduzido 10:00.
+  const awayD = F('06:00', '07:00', '16:30', 'LIS-OPO');
+  const r5 = after({ '2026-10-20': awayD, '2026-10-21': F('03:30', '04:30', '06:00', 'OPO-LIS') });
+  eqj('fora, 10 h 30 depois de 11:00 de serviço: só como repouso reduzido → incerto', [r5.status, r5.kind, r5.actualMin, r5.requiredMin, r5.reducedFloorMin, r5.diffMin], ['unc', 'reducedRest', 630, 660, 600, 30]);
+  const r6 = after({ '2026-10-20': awayD, '2026-10-21': F('02:45', '03:45', '05:00', 'OPO-LIS') });
+  eqj('fora, 9 h 45: abaixo do mínimo reduzido (10 h) → curto', [r6.status, r6.actualMin], ['bad', 585]);
+  // O REPOUSO SEGUINTE aumenta pela diferença (CS 235(c)(3)): depois do serviço que se seguiu a um repouso possivelmente
+  // reduzido em 0:30, o mínimo normal (12:00) pode ser 12:30. Com 12 h 15: incerto.
+  // (o serviço do dia 20 acaba às 10:30; o seguinte apresenta-se às 22:45 do mesmo dia)
+  const d3 = { '2026-10-19': long, '2026-10-20': { ...F('07:30', '08:30', '10:00', 'LIS-OPO-LIS'), extra: [F('22:45', '23:45', '01:00', 'LIS-OPO')] } };
+  const r7 = restAround(d3, (s, iso) => iso === '2026-10-20' && s.report_time === '07:30', C);
+  eqj('o repouso antes foi (talvez) reduzido em 0:30 …', [r7.before.status, r7.before.kind, r7.before.diffMin], ['unc', 'reducedRest', 30]);
+  eqj('… logo o seguinte: 12 h 15 → incerto, entre 12:00 e 12:30', [r7.after.status, r7.after.kind, r7.after.actualMin, r7.after.requiredMin, r7.after.requiredHiMin], ['unc', 'reducedRestAfter', 735, 720, 750]);
+  // O que NÃO muda: um repouso normal (≥ o serviço precedente e ≥ 12 h) é "ok"; depois de um prolongamento (205(d)(1): +4 h)
+  // um repouso abaixo do exigido continua "curto" (o repouso reduzido só reduz o mínimo do 235(a)/(b)).
+  eqj('13 h depois de 13:00 de serviço: certo', after({ '2026-10-20': long, '2026-10-21': F('08:00', '09:00', '10:30', 'LIS-OPO') }).status, 'ok');
+}
+
 console.log(`\nFTL golden — ${pass} passou, ${fail} falhou (${pass + fail} asserções)`);
 if (fail) { console.log('\n' + fails.join('\n')); process.exit(1); }
 console.log('✓ Todas as tabelas e limiares batem com os PDFs (Reg. 83/2014 · CS-FTL.1).');

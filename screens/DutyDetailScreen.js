@@ -182,7 +182,7 @@ export default function DutyDetailScreen({ route, navigation }) {
   // COMPLETAR (data/dutyComplete.js): só as linhas que contam para este tripulante e este serviço; as que faltam para a lei
   // decidir (`need`, o motor disse "incerto" por esse facto) vêm primeiro e sobem a secção para logo a seguir ao FTL.
   const rows = completeRows(duty, { isPilot: isPilotD, ae, category: catD, instructorRated: !!ctxAll.instructorRated,
-    unknowns: (d && d.fdp && d.fdp.unknowns) || [], extRefused: d ? d.extRefused : null });
+    unknowns: (d && d.fdp && d.fdp.unknowns) || [], extRefused: d ? d.extRefused : null, date });
   const needRows = rows.filter((r) => r.need);
   const money = (ae && catD) ? serviceMoney(ae, catD, duty, { date, fleet: crewAt(date).fleet, daySvcs: [duty, ...(Array.isArray(duty.extra) ? duty.extra : [])], baseAt: ctxAll.homeBaseAt, duties }) : null;
   const perDiem = money ? money.perDiem : null;

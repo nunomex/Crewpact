@@ -7,6 +7,7 @@
 // correção na importação.
 
 import { serviceRealMin } from './zulu';
+import { legsBroken } from '../ftl';
 
 const L = (pt, en) => ({ pt, en });
 const clk = (s) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(s || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; };
@@ -21,8 +22,10 @@ export const withSpecial = (sp, patch) => {
   return SPECIAL_KEYS.some((k) => out[k] != null) ? out : null;
 };
 
-// Pausa de 3 h ou mais entre setores (o repartido, CS FTL.1.220(a)) — pelas horas das pernas.
+// Pausa de 3 h ou mais entre setores (o repartido, CS FTL.1.220(a)) — pelas horas das pernas. Se as pernas não formam um PSV
+// (ftl/index.js legsBroken) não há intervalo que se conheça: não se pergunta pelo alojamento de uma pausa inventada.
 const hasSplitBreak = (svc) => {
+  if (legsBroken(svc.legs, { date: svc.duty_date || null, report: svc.report_time || null })) return false;
   const legs = (Array.isArray(svc.legs) ? svc.legs : []).filter((l) => l && !l.dh);
   for (let i = 0; i < legs.length - 1; i++) {
     const on = clk(legs[i].on), off = clk(legs[i + 1].off);
@@ -35,7 +38,38 @@ const hasSplitBreak = (svc) => {
 
 const yesNo = (yes, no = L('Não', 'No')) => (on) => (on ? yes : no);
 
-// As linhas do "Completar" de um serviço. ctx: { isPilot, ae, category, instructorRated, unknowns (fdp.unknowns), extRefused }.
+// ── As horas das PERNAS, corrigidas no Detalhe (2026-11-11, noite 10) ──
+// Quando as pernas de um serviço guardado não formam um PSV (ftl legsBrokenKind: uma parte antes de a anterior chegar, ou 10 h
+// ou mais em terra entre duas), o motor dá o PSV como incerto e diz o que falta (`legTimes`). Antes só se corrigia pela
+// importação. `times` = { off0, on0, off1, on1, … } (HH:MM); o que não vier, ou não for uma hora, fica como está. A hora
+// mexida perde a Zulu do calendário (recalcula-se pelo fuso); os calços do serviço e o tempo de voo acompanham (ORO.FTL.105(13):
+// o tempo decorrido de cada setor operado); o fim de um posicionamento no fim do serviço, lido da escala, acompanha a chegada.
+const padClock = (s) => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(s || '').trim()); return m ? `${m[1].padStart(2, '0')}:${m[2]}` : s; };
+export const legTimesPatch = (svc = {}, times = {}, { date = null } = {}) => {
+  const src = Array.isArray(svc.legs) ? svc.legs : [];
+  if (!src.length) return {};
+  const legs = src.map((l, i) => {
+    if (!l) return l;
+    const out = { ...l };
+    const off = times[`off${i}`], on = times[`on${i}`];
+    if (isClock(off) && padClock(off) !== l.off) { out.off = padClock(off); delete out.offZ; }
+    if (isClock(on) && padClock(on) !== l.on) { out.on = padClock(on); delete out.onZ; }
+    return out;
+  });
+  const live = legs.filter(Boolean);
+  const first = live[0], last = live[live.length - 1];
+  let lastOp = null; live.forEach((l) => { if (!l.dh) lastOp = l; });
+  const patch = { legs, block_off: first.off || svc.block_off || null, block_on: (lastOp || last).on || svc.block_on || null };
+  const real = serviceRealMin(date || svc.duty_date || null, legs, svc.report_time || null).legMin;
+  const blk = legs.reduce((s, l, i) => ((l && !l.dh && real[i] != null) ? s + real[i] : s), 0);
+  if (blk > 0) patch.flight_minutes = blk;
+  const srcLast = src.filter(Boolean).pop();
+  if (lastOp && last !== lastOp && last.dh && svc.signOff && srcLast && svc.signOff === srcLast.on && last.on) patch.signOff = last.on;
+  return patch;
+};
+
+// As linhas do "Completar" de um serviço. ctx: { isPilot, ae, category, instructorRated, unknowns (fdp.unknowns), extRefused,
+// date (o dia do serviço, para os fusos) }.
 export const completeRows = (svc = {}, ctx = {}) => {
   const { isPilot = false, ae = null, category = null, instructorRated = false, unknowns = [], extRefused = null } = ctx;
   const kind = svc.kind || 'flight';
@@ -44,6 +78,35 @@ export const completeRows = (svc = {}, ctx = {}) => {
   const unk = new Set(unknowns || []);
   const rows = [];
   const add = (r) => rows.push(r);
+
+  // As horas das pernas não batem certo (o motor disse-o: `legTimes`) — voo ou posicionamento com pernas.
+  if (unk.has('legTimes') && Array.isArray(svc.legs) && svc.legs.filter(Boolean).length > 1) {
+    const dateL = ctx.date || svc.duty_date || null;
+    const fields = [];
+    svc.legs.forEach((lg, i) => {
+      if (!lg) return;
+      const where = `${lg.dh ? 'DH ' : ''}${lg.dep || '?'}→${lg.arr || '?'}`;
+      fields.push({ key: `off${i}`, type: 'time', label: L(`Perna ${i + 1} · ${where} · partida`, `Leg ${i + 1} · ${where} · departure`), value: lg.off || '' });
+      fields.push({ key: `on${i}`, type: 'time', label: L(`Perna ${i + 1} · ${where} · chegada`, `Leg ${i + 1} · ${where} · arrival`), value: lg.on || '' });
+    });
+    add({
+      id: 'legTimes', title: L('Horas das pernas', 'Leg times'), cite: 'ORO.FTL.105(13)',
+      value: L('Não batem certo', 'Do not add up'), need: true,
+      sheet: { intro: L('As horas das pernas deste serviço não batem certo: uma parte antes de a anterior chegar, ou há 10 h ou mais em terra entre duas. Põe as horas certas. Até lá o serviço conta nos limites, mas o PSV e o repouso a seguir ficam incertos.', 'The leg times of this duty do not add up: one departs before the previous one arrives, or there are 10 h or more on the ground between two. Enter the correct times. Until then the duty counts towards the limits, but the FDP and the rest that follows stay uncertain.'),
+        fields },
+      apply: (v) => legTimesPatch(svc, v, { date: dateL }),
+      // Só se grava o que resolve: todas as horas válidas e as pernas, com elas, a formarem um PSV.
+      // … e a 1.ª partida não antes da apresentação (o PSV conta da apresentação): no relógio, uma partida até 3 h "antes" dela
+      // (a folga da cadeia do serviço) é antes, não 21 h depois.
+      valid: (v) => {
+        if (!fields.every((f) => isClock(v[f.key]))) return false;
+        const p = legTimesPatch(svc, v, { date: dateL });
+        const rep = clk(svc.report_time), off0 = clk((p.legs.find(Boolean) || {}).off);
+        if (rep != null && off0 != null && ((off0 - rep + 1440) % 1440) > 1260) return false;
+        return !legsBroken(p.legs, { date: dateL, report: svc.report_time || null });
+      },
+    });
+  }
 
   if (isFlight) {
     // ── FTL ──

@@ -269,6 +269,8 @@ export const simulateDuty = (sim, ctx = {}) => {
   if (psvSim && psvSim.over) add('bad', { type: 'fdp', excess: psvSim.excess || null, rule: R.fdp });
   else if (psvSim && psvSim.uncertain) add('unc', { type: 'fdpUncertain', unknowns: psvSim.unknowns || [], rule: R.fdp });
   if (day.psv && day.psv !== psvSim && day.psv.over) add('bad', { type: 'fdpOther', date, rule: R.fdp });   // outro serviço do dia
+  // Outro serviço do dia cujas pernas não batem certo (2026-11-11): o dia entra na escala, mas diz-se (o PSV dele é incerto).
+  if (!(psvSim && psvSim.uncertain && (psvSim.unknowns || []).includes('legTimes')) && (day.blocks || []).some((b) => b.psv && b.psv !== psvSim && (b.psv.unknowns || []).includes('legTimes'))) add('unc', { type: 'fdpUncertain', unknowns: ['legTimes'], rule: R.fdp });
   if (psvSim && psvSim.sbOver) add('bad', { type: 'standby', kind: 'maxStandby', rule: R.standby });     // standby fora do aeroporto > 16 h
   const d = ftlForDuty(me, opts);
   if (d && d.isFdp && d.fdp && d.fdp.stdbyOver) add('bad', { type: 'standby', kind: d.fdp.stdbyOverKind, rule: R.standby });   // CS FTL.1.225
@@ -337,7 +339,7 @@ export const simulateDuty = (sim, ctx = {}) => {
   for (const w of windows) {
     if (w.over) add('bad', { type: 'limit', key: w.key, id: w.id, days: w.days || null, doneMin: w.doneMin, limitMin: w.limitMin, overMin: w.overMin, from: w.from, to: w.to, rule: R.limit });
     // Com serviços sem apresentação no período, o serviço é um mínimo: excede se o mínimo passa; se só o máximo passa, incerto.
-    else if (w.uncertain) add('unc', { type: 'limitUnc', key: w.key, id: w.id, doneMin: w.doneMin, doneMaxMin: w.doneMaxMin, limitMin: w.limitMin, estDays: w.estDays, from: w.maxFrom, to: w.maxTo, rule: R.limit });
+    else if (w.uncertain) add('unc', { type: 'limitUnc', key: w.key, id: w.id, doneMin: w.doneMin, doneMaxMin: w.doneMaxMin, limitMin: w.limitMin, estDays: w.estDays, readDays: w.readDays || 0, from: w.maxFrom, to: w.maxTo, rule: R.limit });
   }
   const tightest = {};
   for (const w of windows) if (!tightest[w.key] || w.ratio > tightest[w.key].ratio) tightest[w.key] = w;
@@ -424,6 +426,14 @@ export const issueText = (it, lang = 'pt', simDate = null) => {
     case 'restAfter': {
       const who = it.type === 'restBefore' ? l('repouso antes', 'rest before') : l(`repouso antes de ${ddmm(it.nextIso)}`, `rest before ${ddmm(it.nextIso)}`);
       if (it.status === 'unc' && it.kind === 'noReport') return l(`falta a hora de apresentação do serviço de ${ddmm(it.estIso)}`, `missing the report time of the duty on ${ddmm(it.estIso)}`);
+      // As pernas do serviço anterior não batem certo (ftl legsBrokenKind): o mínimo depende das horas certas (2026-11-11).
+      // Abaixo do mínimo normal mas com as 12 h (base) / 10 h (fora) do repouso reduzido: só é legal se a companhia o tiver.
+      if (it.status === 'unc' && it.kind === 'reducedRest') return l(`${who} ${hm(it.actualMin)} de ${hm(it.requiredMin)} — só é legal como repouso reduzido (CS FTL.1.235(c): se a companhia o tiver; o PSV seguinte reduz ${hm(it.diffMin)} e o repouso seguinte aumenta ${hm(it.diffMin)})`, `${who} ${hm(it.actualMin)} of ${hm(it.requiredMin)} — only legal as reduced rest (CS FTL.1.235(c): if the operator has it; the next FDP is reduced by ${hm(it.diffMin)} and the next rest extended by ${hm(it.diffMin)})`);
+      // O repouso anterior foi, talvez, um repouso reduzido: este aumenta pela diferença.
+      if (it.status === 'unc' && it.kind === 'reducedRestAfter') return l(`${who} ${hm(it.actualMin)} — o mínimo fica entre ${hm(it.requiredMin)} e ${hm(it.requiredHiMin)}: se o repouso anterior foi um repouso reduzido, este aumenta pela diferença (CS FTL.1.235(c)(3))`, `${who} ${hm(it.actualMin)} — the minimum is between ${hm(it.requiredMin)} and ${hm(it.requiredHiMin)}: if the previous rest was a reduced rest, this one is extended by the difference (CS FTL.1.235(c)(3))`);
+      // Dois serviços do dia anterior com 10 h ou mais entre eles: um PSV repartido ou dois PSV — o mínimo depende da leitura.
+      if (it.status === 'unc' && it.kind === 'breakOrRest') return l(`${who} ${hm(it.actualMin)} — o mínimo fica entre ${hm(it.requiredMin)} e ${hm(it.requiredHiMin)}: os serviços de ${ddmm(it.prevIso)} podem ser um PSV repartido ou dois`, `${who} ${hm(it.actualMin)} — the minimum is between ${hm(it.requiredMin)} and ${hm(it.requiredHiMin)}: the duties on ${ddmm(it.prevIso)} may be one split FDP or two`);
+      if (it.status === 'unc' && it.kind === 'legTimes') return l(`${who} ${hm(it.actualMin)} — o mínimo fica entre ${hm(it.requiredMin)} e ${hm(it.requiredHiMin)}: as horas das pernas do serviço de ${ddmm(it.prevIso)} não batem certo`, `${who} ${hm(it.actualMin)} — the minimum is between ${hm(it.requiredMin)} and ${hm(it.requiredHiMin)}: the leg times of the duty on ${ddmm(it.prevIso)} do not add up`);
       if (it.status === 'unc') return l(`falta o fim do serviço de ${ddmm(it.prevIso)}`, `missing the end of the duty on ${ddmm(it.prevIso)}`);
       if (it.actualMin < it.requiredMin) return `${who} ${hm(it.actualMin)} ${l('de', 'of')} ${hm(it.requiredMin)}`;
       return l(`${who}: ${it.nightsActual} de ${it.nightsRequired} noites locais`, `${who}: ${it.nightsActual} of ${it.nightsRequired} local nights`);
@@ -462,6 +472,8 @@ export const issueText = (it, lang = 'pt', simDate = null) => {
       const t = (LIMIT_TXT[it.key] || {})[it.id];
       const what = it.key === 'voo' ? l('voo', 'flight') : l('serviço', 'duty');
       const n = it.estDays || 0;
+      // O incerto vem (só) de dias com duas leituras — um PSV repartido ou dois, a assistência até à apresentação ou não.
+      if (t && it.readDays && it.readDays >= n) return l(`${what} ${hm(it.doneMin)} a ${hm(it.doneMaxMin)} ${t[0]} (máx. ${t[2]} h): depende de como se lê o tempo em terra de ${n === 1 ? '1 dia' : `${n} dias`} (intervalo ou repouso)`, `${what} ${hm(it.doneMin)} to ${hm(it.doneMaxMin)} ${t[1]} (max ${t[2]} h): it depends on how the ground time of ${n === 1 ? '1 day' : `${n} days`} is read (break or rest)`);
       return t ? l(`${what} ${hm(it.doneMin)} a ${hm(it.doneMaxMin)} ${t[0]} (máx. ${t[2]} h): falta a hora de apresentação de ${n === 1 ? '1 serviço' : `${n} serviços`}`,
         `${what} ${hm(it.doneMin)} to ${hm(it.doneMaxMin)} ${t[1]} (max ${t[2]} h): missing the report time of ${n === 1 ? '1 duty' : `${n} duties`}`) : what;
     }

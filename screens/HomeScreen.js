@@ -585,6 +585,9 @@ export default function HomeScreen({ navigation }) {
     const r = rI && rI.raw; if (!r || r.status === 'neutral') return { restOk: null };
     const hm = (m) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
     // "Verificado" só com a pergunta inteira a verde — também a recuperação (ORO.FTL.235(d)).
+    // Incerto (as pernas do serviço anterior não batem certo, 'legTimes'; ou dois serviços que podem ser um PSV repartido ou dois,
+    // 'breakOrRest'): nem "verificado" nem "curto" — sem saber.
+    if (r.kind === 'legTimes' || r.kind === 'breakOrRest' || r.kind === 'reducedRest' || r.kind === 'reducedRestAfter') return { restOk: null };
     return { restOk: rI.status === 'ok', restHave: r.actualMin != null ? hm(r.actualMin) : null, restNeed: r.requiredMin != null ? hm(r.requiredMin) : null };
   })();
   // ── PÓS-VOO: o balanço do dia fechado (motor computeDuty, o MESMO dos golden) ──
@@ -837,7 +840,7 @@ export default function HomeScreen({ navigation }) {
       station: /^[A-Z]{3}$/.test(String(flight.depAirport || '')) ? String(flight.depAirport) : (base ? String(base).toUpperCase() : null),
       psv: { max: ndPsvMax, hi: ndPsvHi, plan: ndPsvActual, running: psvRunning, latest,
         latestNextDay: !!(psvLatest && (/\(\+1\)/.test(psvLatest) || (flight.report && hmToMin(latest) < hmToMin(flight.report)))) },
-      legal, split: !!(svc && ((svc.splitBreakH || 0) >= 3 || splitFromLegs(svc.legs).splitBreakH > 0)),
+      legal, split: !!(svc && ((svc.splitBreakH || 0) >= 3 || splitFromLegs(svc.legs, { date: flight.dateISO || null, report: svc.report_time || null }).splitBreakH > 0)),
       perDiem: dayPerDiem, pay,
       nightStop: flight.nightStop && nsHotelStation ? { station: nsHotelStation, hotel: nsHotel ? nsHotel.name : null, pay: nsPayOn(flight.dateISO) } : null,
       // A hora do report em UTC, pelo fuso do aeroporto de partida (data/zulu.js; sem aeroporto conhecido, o fuso do telemóvel) — como no v6.

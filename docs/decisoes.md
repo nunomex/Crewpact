@@ -19,6 +19,19 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   baixo, "Sem escala neste mês" + "Ir para a Escala"); Início "Quanto recebo?" e cartão do mês com o Natal; Números de
   novembro (linha Subsídios, cêntimos) e do ano (férias + Natal, % das 900 h); o mês da entrada (Perfil → novembro de 2026 com
   o dia em "—" → base "incerto"; com o dia 5 → um valor; repor a data).
+- **Repouso reduzido, assistência + voo, mudança de hora e horas das pernas no Detalhe (2026-11-11, noite, 10 — nada visto no
+  iPhone):** passos 10 a 12 de `docs/verificacao-calendario.md` — Detalhe de um serviço com as pernas a não bater certo:
+  secção Completar com "Horas das pernas · Não batem certo" em primeiro, a folha com a partida e a chegada de cada perna,
+  gravar só quando batem; "Tenho descanso?" com 12 h 30 depois de um serviço de 13 h ("Incerto · 12:30 (mín 13:00)" e o texto
+  do repouso reduzido); assistência em casa + voo 10 h 30 depois ("incerto", com o repouso antes da apresentação).
+- **Dois serviços no mesmo dia com 10 a 12 h entre eles (2026-11-11, noite, 9 — nada visto no iPhone):** passo 9 de
+  `docs/verificacao-calendario.md` — na Escala, a linha entre os dois diz "Incerto · 10:00 entre serviços (mín 12:00 base) →
+  serviço repartido ou repouso curto"; no Detalhe e no Início o PSV fica "incerto" (não "excede"), com o que falta.
+- **Pernas que não batem certo e perna do meio (2026-11-11, noite, 8 — nada visto no iPhone):** passos 7 e 8 de
+  `docs/verificacao-calendario.md` — a volta a sair antes de a ida chegar → o dia ENTRA com "Incerto — falta saber as horas
+  certas das pernas… · toca para corrigir", corrigir → o aviso sai; sem corrigir, o dia conta e o Detalhe e o Início dizem
+  "incerto" com o máximo do Quadro 2; a pausa pela meia-noite entra sem aviso; mudar só a chegada do 1.º voo de um dia já
+  importado → "Perna 1 …→…".
 - **Importação e formulário (2026-11-11, nada visto no iPhone):** folha de importação com "Incerto — parte de LIS, mas o
   serviço de 10/3 acabou em LGW" (calendário sintético: pernoita fora e o serviço seguinte a partir da base); corrigir um
   candidato "a corrigir" e ver os avisos dos OUTROS dias mudar; Simulação com Detetar de duas pernas pela meia-noite (a rota
@@ -65,17 +78,27 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   de situação · `docs/05-verificacao.md`).
 
 ### 2. Acertos de código por fazer
-- **Cálculos — pernas sobrepostas (achado no iPhone, 2026-11-11, "testar o calendário"; sessão Fable 5.2, golden primeiro):**
-  com a volta a sair antes de a ida chegar (eventos sintéticos 17:30–20:35 e 19:50–21:30), o `splitFromLegs` (`ftl/index.js`)
-  soma 24 h à pausa negativa (−45 min → 23 h 15) e dá "repartido" com PSV máximo 11:15–22:37. Pernas sobrepostas são
-  impossíveis: o motor não deve inventar a pausa, e a importação deve marcar o serviço "a corrigir" (as horas das pernas não
-  batem certo). Cuidado: a pausa que vira a meia-noite (chega 23:50, sai 00:30) é real e tem de continuar a dar 40 min.
-- **Importação — a mudança de uma perna do meio não se deteta (achado no iPhone, 2026-11-11; sessão Fable 5.2, golden
-  `test:diff` primeiro):** o `diffDuty` (`data/rosterDiff.js`) só compara tipo, rota, report, 1.ª partida, última chegada e
-  setores (`DIFF_FIELDS`). Mudar a chegada da 1.ª perna de um serviço de 2 setores dá "igual" e a escala guardada fica
-  velha sem aviso — e as pernas mudam o tempo de voo (ORO.FTL.210, 100 h/28 dias) e o repartido (CS FTL.1.220). Comparar
-  também as horas de cada perna (`legs` off/on) e o tempo de voo, sem partir o `refresh` (mesmos acontecimentos agrupados
-  de outra maneira = não é mudança).
+- **Pernas e sincronização — o que ficou depois de 2026-11-11 (noites 8 a 10):** o formulário (Simulação e correção) não
+  avisa das pernas que não batem certo enquanto se escreve, só o resultado; o repouso reduzido (noite 10): a app não conta o
+  máximo de 2 entre recuperações (CS FTL.1.235(c)(5)) nem mostra o máximo do PSV seguinte já reduzido — só decide se cabe;
+  depois de um PSV prolongado o repouso abaixo do exigido continua "curto" (leitura para a ANAC); a assistência em casa conta
+  como "serviço precedente" do repouso a seguir (GM1 CS FTL.1.225(c): só conta para o 210); as Estatísticas contam os
+  repousos da banda reduzida como "curtos"; no Detalhe não há como partir em dois um serviço lido como um (10 h ou mais em
+  terra entre pernas que estão certas); pernas guardadas FORA DE ORDEM (a 2.ª toda antes da 1.ª) com menos de um repouso para a frente leem-se como um
+  intervalo (só à mão: o calendário ordena-as); dois SERVIÇOS do mesmo dia com horas sobrepostas (`restBetweenDuties`) têm a
+  mesma conta "+24 h" entre serviços — por ver com um caso real (uma assistência com um voo chamado a meio é legítima); a
+  cadeia (`legsChainMs`, `data/zulu.js`) passa para o dia seguinte uma perna com mais de 3 h de sobreposição (voo "depois da
+  meia-noite" inventado nesse caso); um dia corrigido na folha reaparece em cada sincronização enquanto o calendário estiver
+  errado; um serviço à mão sem pernas passa a "alterado" quando o tempo de voo do calendário difere; a alteração só de pernas
+  entra no arquivo sem dizer o que mudou; PDF com pernas fora de ordem; na hora repetida (a noite em que a hora atrasa), sem
+  Zulu, uma partida até 2 h antes da chegada pode não se ver; o aviso de OUTROS serviços incertos do mesmo dia (alojamento por
+  indicar num extra) não aparece na folha — só o das pernas; o serviço e o voo de um dia de PERNAS erradas contam pelo
+  máximo, dados como certos (o PSV e o repouso a seguir é que ficam incertos; nos dias de duas leituras já há o certo e o
+  possível, noite 10); quando o dia é ilegal nas duas leituras mostra-se só o "excede" do PSV único (na outra o que
+  falha é o repouso entre os dois); as horas entre serviços medem-se pelo relógio do DISPOSITIVO (certo em Portugal; noutro
+  fuso com outra mudança de hora pode falhar 1 h nessas duas noites); a pergunta do alojamento no Completar não diz que
+  também decide "intervalo ou repouso";
+  no Detalhe, "Calços até às" de um PSV incerto sem "(garantido)".
 - **Cálculos (à espera do advogado):** na prestação complementar, quanto se desconta ao passar os 50 dias de baixa (n.º 3) e
   se as férias dão a prestação por inteiro — pergunta D27 (até lá: só como máximo); mudar de cabine para piloto na MESMA
   companhia é saída ou continuidade — pergunta D28 (até lá: continuidade).
@@ -111,7 +134,9 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
 
 ### 4. À espera dos sindicatos, da empresa ou de documentos
 - **SPAC e SNPVAC** (anexo D-A do pack): os dois números do Manual de Operações (desconto da pausa no repartido; diferença de
-  apresentação pilotos/cabine), easyJet e TAP; deliberações sobre "consecutivos" e as gralhas do BTE da TAP; autorização escrita
+  apresentação pilotos/cabine), easyJet e TAP; **e uma pergunta nova (2026-11-11): a companhia tem repouso reduzido
+  (ORO.FTL.235(c), com gestão do risco de fadiga)?** — com a resposta, o "incerto" do repouso abaixo do mínimo passa a
+  "curto" ou a "repouso reduzido" (por juntar ao pack); deliberações sobre "consecutivos" e as gralhas do BTE da TAP; autorização escrita
   da marca; prova de pertença (2026-11-08 · 2026-11-02/03).
 - **Escala real da TAP** com os códigos (desbloqueia a TAP na importação); **recibos** com dias de baixa e o mês do variável;
   códigos SBY/STBY/MTG/GND da easyJet; lista de distâncias do per diem; documentos reais para as Validades (paradas) (BLOCO 4 · 8).
@@ -136,6 +161,228 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   (AlarmKit), hotel pelo Apple Maps, passkeys; Android; iPhone pequeno e grande; beta com 2–3 tripulantes no TestFlight;
   declaração de dados nas lojas; Supabase/Resend pagos e limites (e-mails por hora, DMARC).
 ---
+
+## 2026-11-11 (noite, 10) — Repouso reduzido, assistência + voo, mudança de hora, pernas no Detalhe (Fable 5.2)
+
+O Nuno: "vamos corrigir isto" — os quatro pontos que tinham ficado por tratar. Testes primeiro em cada um. Nada visto no iPhone.
+
+**1 · O repouso reduzido.** Um repouso abaixo do mínimo do ORO.FTL.235(a)/(b) dava sempre "curto".
+- **A lei:** ORO.FTL.235(c) — "os planos que especificam os tempos de voo podem prever reduções dos períodos de repouso
+  mínimos"; CS FTL.1.235(c): (1) mínimo de 12 h na base e 10 h fora; (2) "used under fatigue risk management"; (3) o repouso
+  seguinte aumenta pela diferença; (4) o PSV seguinte reduz-se pela diferença; (5) no máximo 2 entre recuperações.
+- **Agora** (`data/today.js` `reducedBand`, `restVerdict`): entre o mínimo reduzido e o mínimo normal o repouso é
+  **incerto** — "só é legal como repouso reduzido, se a companhia o tiver", com a diferença. É "curto" abaixo do mínimo
+  reduzido, e também quando o PSV seguinte não cabe no máximo menos a diferença. O repouso a seguir ao serviço seguinte fica
+  com o mínimo entre o normal e o normal mais a diferença. Não se aplica depois de um PSV prolongado (205(d)(1)) nem com os
+  pisos de 14 h (fuso, repouso a bordo).
+- **MUDANÇA DE NÚMERO, grande, a saber:** nove expectativas auditadas passaram de "curto" a "incerto" — A-160 (a) (13:45
+  depois de 14:00 de serviço), os repartidos do bloco 2 (12:30 depois de 13:30), A-242(3) (12:00 depois de 14:00) e a E1 da
+  importação (10:45 fora da base depois de 12:00). Na prática: depois de um serviço longo, um repouso de 12 h ou mais na
+  base (10 h fora) já não diz "curto"; diz "incerto" até se saber se a companhia tem repouso reduzido (pergunta nova para os
+  sindicatos, grupo 4).
+- **Fica dito:** a app não conta o máximo de 2 entre recuperações (di-lo no texto) nem mostra o máximo do PSV seguinte reduzido.
+
+**2 · Assistência seguida de voo com 10 h ou mais entre o fim dela e a apresentação.**
+- **A lei:** a assistência só acaba na apresentação (CS FTL.1.225(b)(5)) e o máximo reduz-se no que passa das 6 h ((b)(7));
+  mas "If a minimum rest period as specified in ORO.FTL.235 is provided before reporting for the duty assigned during the
+  standby, this time period should not count as standby duty" (GM1 CS FTL.1.225 (b)).
+- **Agora** (`ftl/index.js` `dayFtlFromDuties` → `dayFtlCore`): com 10 h ou mais e menos do que o repouso do caso, o PSV só
+  "excede" se excede nas duas leituras e só está "dentro" se está nas duas; senão incerto (`standbyRest`). Exemplo:
+  assistência 08:00–10:00 e voo às 20:30 com PSV 5:30 → antes "excede 1:00" (máximo 4:30); agora incerto. As contas do dia
+  (serviço, voo) são as de antes.
+
+**3 · A noite da mudança de hora.** O tempo entre dois serviços do mesmo dia media-se pelo relógio (00:50 → 13:00 = 12:10) e
+o repouso pelos instantes (11:10 reais a 29/03): podiam discordar. `restBetweenDuties` mede agora pelo tempo real quando
+tem o dia (o relógio do dispositivo, como o repouso). Só muda nessas duas noites.
+
+**4 · As horas das pernas no Detalhe.** Um serviço já guardado com as pernas a não bater certo só se corrigia pela
+importação. O Completar ganha a linha "Horas das pernas" (`data/dutyComplete.js` `legTimesPatch`), que aparece quando o
+motor diz que faltam as horas certas: a partida e a chegada de cada perna, na folha que já existe (sem ecrã novo — por isso
+sem Mobbin; se a quiseres desenhada de outra maneira, é uma sessão de design). Só grava quando as horas passam a bater; os
+calços, o tempo de voo e o fim de um posicionamento acompanham.
+
+**O serviço do dia nos limites (ORO.FTL.210), nas duas leituras.** Num dia com dois serviços a 10 h ou mais (noite 9) ou com
+assistência + voo, o serviço conta de duas maneiras (como um PSV repartido o intervalo conta todo, ORO.FTL.220(b); como dois
+PSV não; a assistência até à apresentação ou só o que durou). Fica o CERTO (o menor) e o POSSÍVEL (o maior): um limite só
+"excede" com o certo; com o possível fica incerto, e o texto diz "depende de como se lê o tempo em terra de N dia(s)". O
+exemplo auditado do repartido ilegal passou de 17 h certas a 7 h certas e 17 h possíveis.
+
+**Provas:** `npm test` verde (33 suites; FTL 658, completar 41). Serviços de um só serviço: 58 359 comparados com o motor
+antigo, 0 diferenças. Dias de dois serviços fora das zonas novas: 36 720 iguais, 0 diferentes; nas zonas, o voo é sempre o de
+antes, o serviço possível é o de antes e o certo nunca fica acima.
+
+**Revisão independente (Opus, sessão própria):** confirmou a leitura da lei nas quatro ("incerto" é a saída certa para o
+repouso reduzido: o 235(c) diz "podem prever" e a CS exige gestão do risco de fadiga; a GM1 da assistência lê-se como o
+código lê) e as nove expectativas alteradas. Achou sete erros, corrigidos com teste: (1) dois repousos abaixo do mínimo
+seguidos davam "incerto" — o que se segue a um reduzido aumenta, não pode ser outra vez reduzido → "curto"; (2) um repartido
+no dia a seguir não era testado — "Após um repouso reduzido não pode ser prestado serviço de voo repartido" (ORO.FTL.220(c))
+→ "curto"; (3) com o serviço anterior sem apresentação a app ficava mais severa → incerto; (4) os limites do 210 só usavam
+uma leitura → o certo e o possível (acima); (5) na 2.ª leitura da assistência, o voo de antes juntava-se a ela num PSV
+inventado; (6) na noite da mudança de hora o serviço anterior ainda se contava pelo relógio; (7) a correção das pernas
+aceitava uma partida antes da apresentação. E uma leitura: o prolongamento planeado não é proibido depois de um repouso
+reduzido → o PSV seguinte testa-se contra o máximo com prolongamento menos a diferença. Estes acertos já não tiveram uma
+passagem independente a seguir.
+
+**Ficou por tratar (grupo 2):** depois de um PSV prolongado, um repouso entre o reduzido mais as horas do prolongamento e o
+exigido continua "curto" (há uma leitura em que seria incerto — para a ANAC); a assistência em casa conta como "serviço
+precedente" para o repouso a seguir (a GM1 CS FTL.1.225(c) diz que só conta para o 210) — defeito de antes; as Estatísticas
+contam os repousos da banda reduzida como "curtos"; pernas com 10 h ou mais em terra que estejam mesmo certas (dois serviços
+lidos como um) não se conseguem gravar no Detalhe — falta partir um serviço em dois; a app não conta os 2 repousos reduzidos
+entre recuperações.
+
+## 2026-11-11 (noite, 9) — Dois serviços no mesmo dia: intervalo ou repouso (Fable 5.2, golden primeiro)
+
+O Nuno perguntou se era para corrigir ("fazes depois disto"). Achado ao fechar a noite 8: a leitura do calendário lê dois
+serviços quando há 10 h ou mais entre eles, mas o motor juntava-os num PSV só, como repartido, sempre que o intervalo era menor
+do que o repouso do caso (12 h na base) — e dava "excede". Exemplo: 05:00 → 08:40 e 19:10 → 21:55 em Lisboa (10 h depois do
+pós-voo) → "excede", PSV 16:55 de 11:30–16:30. Nada visto no iPhone.
+
+- **A lei:** "intervalo" é inferior a um período de repouso (ORO.FTL.105(6)) e 10 h já são um repouso possível (ORO.FTL.235(b);
+  na base com alojamento adequado, 235(a)(2); CS FTL.1.235(c)(1)). Com 10 h ou mais e menos do que o repouso do caso, o texto
+  admite duas leituras: A = um PSV repartido (CS FTL.1.220); B = dois PSV com um repouso no meio. A app não escolhe.
+- **Motor** (`ftl/index.js`): `restBetweenDuties` ganha o tipo `either` (antes `split`). `dayFtlFromDuties` mantém os dois
+  juntos para o serviço e o voo do dia (o máximo, como antes) e decide o veredicto pelas duas leituras: "excede" só se o dia
+  é ilegal nas duas (em A o PSV excede; em B um PSV excede ou o repouso é curto de certeza — fora da base, ou menor que o
+  serviço anterior, ou sem alojamento adequado dito pelo tripulante); "dentro" só se é legal nas duas (em B: na base, com
+  alojamento adequado dito, e repouso não inferior ao serviço anterior); senão **incerto**, com o facto em falta `breakOrRest`.
+- **Repouso a seguir** (`data/today.js`): depois de um dia assim o mínimo depende da leitura (um PSV de 17 h, ou só o último
+  serviço): "curto" só abaixo do piso, "certo" só acima do exigido pelo PSV único, no meio incerto.
+- **Ecrãs:** na Escala, a linha entre os dois serviços diz "Incerto · X entre serviços (mín Y) → serviço repartido ou repouso
+  curto"; Início, Detalhe, Simulação e importação dizem "incerto" com o que falta (texto novo em `data/ftlUnknowns.js`).
+- **Golden alterados, de propósito:** "11 h na base", "12 h 45 depois de 13 h de serviço" e "10 h na base" passaram de
+  `split` a `either`. O exemplo auditado do repartido ilegal (10 h com sala, ou sem alojamento) continua "excede": é ilegal
+  nas duas leituras.
+- **Provas:** `npm test` verde (FTL 623). Motor antigo contra o novo em 38 837 dias de dois serviços: fora da zona das duas
+  leituras, 36 720 iguais e 0 diferentes; o serviço e o voo nunca mudam; na zona (2 117), 1 116 passam de "excede" a "incerto",
+  820 continuam "excede", 120 já eram incertos e 61 continuam "dentro".
+- **Revisão independente (Opus, sessão própria):** confirmou as duas leituras e as citações (o `accommodation` do serviço
+  serve para a leitura B: "alojamento adequado" tem a mesma definição no repartido e no repouso), as três expectativas
+  alteradas, e 0 diferenças fora da zona em 32 572 dias de 2 e 3 serviços (com não-voos, assistência, sem apresentação).
+  Achou dois erros, corrigidos com teste: (1) num dia de 3 serviços, um bloco incerto perdia para outro que estava dentro e o
+  dia ficava "dentro" — o pior bloco passa a ser excede > incerto > dentro; (2) na leitura dos dois PSV, o "serviço
+  precedente" do repouso era só o último serviço e não o PSV inteiro antes dele (que pode já ser um repartido) — dava
+  "incerto" quando era ilegal nas duas leituras. Estes dois já não tiveram uma passagem independente a seguir.
+- **MUDANÇA a saber, fora do caso das 10 h:** a regra "excede > incerto > dentro" vale para qualquer dia com vários PSV. Um
+  dia com um PSV dentro e outro incerto (por exemplo um repartido sem o alojamento indicado) dizia "dentro"; agora diz
+  "incerto". Já era um defeito antes desta sessão.
+- **Ficou dito e por tratar (grupo 2):** o repouso reduzido (ORO.FTL.235(c), com FRM) não se modela — como no resto da app,
+  um repouso abaixo do mínimo do 235(a)/(b) é curto; nas duas noites da mudança de hora, a classificação do dia (pelo
+  relógio) e a do repouso (pelos instantes) podem discordar numa hora; uma assistência seguida de um voo com 10 h ou mais
+  entre os dois continua dobrada no voo (só a leitura do PSV único); a pergunta do alojamento no Completar só fala do
+  repartido, mas a resposta também decide a outra leitura.
+
+## 2026-11-11 (noite, 8) — As pernas que não batem certo e a perna do meio (Fable 5.2, golden primeiro)
+
+Os dois defeitos achados no iPhone na ronda anterior. Os testes novos falharam antes da correção e passam depois. Nada visto no
+iPhone (passos 7 e 8 de `docs/verificacao-calendario.md`). **O Nuno, a meio: "tem que ser como está na lei" e "seguir o que diz
+a lei"** — a 1.ª versão tinha uma convenção minha (um serviço dura menos de 24 h) e deixava o dia de fora; ficou como abaixo.
+
+**1 · Pernas que não formam um PSV** (a volta sai antes de a ida chegar: 17:30–20:35 e 19:50–21:30; o motor somava 24 h à
+pausa negativa e dava "repartido" com máximo 11:15–22:37).
+- **A lei, e só a lei:**
+  - ORO.FTL.105(13) e (24): o setor vai do primeiro movimento da aeronave à sua imobilização. O mesmo tripulante não está em
+    dois setores ao mesmo tempo (impossibilidade de facto): uma partida antes da chegada anterior são horas erradas.
+  - ORO.FTL.105(6): "Intervalo" é um período "durante um período de serviço de voo **inferior a um período de repouso**". O
+    repouso mais curto que a lei admite é de 10 h: longe da base (ORO.FTL.235(b)), na base com alojamento adequado
+    (235(a)(2)) e no repouso reduzido fora da base (CS FTL.1.235(c)(1)). 10 h ou mais em terra entre duas pernas já podem ser
+    um repouso: não são, de certeza, um intervalo do PSV. É o limiar com que a leitura do calendário já separa os serviços
+    (bloco 4). Entre as 10 h e o repouso que se aplicaria ao caso (o serviço precedente, ou 12 h na base) o texto admite
+    duas leituras — a app não escolhe, o PSV fica incerto. Uma "pausa" de 23 h 15 não é um intervalo em leitura nenhuma.
+  - CS FTL.1.220(a), (b) e (c): só o intervalo de 3 h seguidas ou mais prolonga o máximo, até 50 % dele, tirados os 30 min de
+    pré e pós-voo. Sem intervalo conhecido fica o Quadro 2 (ORO.FTL.205(b)(1): 16:30–16:59, 1–2 setores → 11:15).
+  - ORO.FTL.210: as escalas e os setores atribuídos contam todos para os limites. O dia não sai da conta.
+- **Motor** (`ftl/index.js`): `legsBrokenKind` (nova) diz porque é que as pernas não formam um PSV — `before` (uma partida
+  antes da chegada anterior, pelos instantes da cadeia do serviço, a que dá o PSV real) ou `rest` (10 h ou mais em terra).
+  `splitFromLegs` não tira repartido dessas pernas. `ftlForDuty`: o serviço CONTA (serviço, voo, repouso) e o PSV fica
+  **incerto**, com o facto em falta `legTimes` ("as horas certas das pernas"), entre o máximo GARANTIDO (Quadro 2) e o
+  POSSÍVEL em todas as leituras: um repartido que as horas erradas não deixam ver (o intervalo cabe no PSV e é inferior a
+  10 h) ou o prolongamento planeado, se cabia. No teu caso: 11:15 a 13:30 (antes: 11:15 a 22:37). Nunca "dentro" (uma hora
+  está errada, e pode ser a do fim). "Excede" só acima do máximo possível e só quando é de certeza um PSV único (`before`);
+  com 10 h ou mais em terra podem ser dois serviços: incerto. `ENGINE_VERSION` 12 (os dias guardados recalculam-se sozinhos).
+- **O repouso a seguir** (`data/today.js`): depois de um serviço destes o mínimo depende da leitura (se eram dois serviços, o
+  precedente é mais curto; se cabia no prolongamento, leva as horas do ORO.FTL.205(d)(1)). "Curto" só abaixo do mínimo de
+  todas as leituras, "certo" só acima de todas; no meio, incerto ("o mínimo fica entre X e Y").
+- **Os "2 em 7 dias" do prolongamento (ORO.FTL.205(d)(1)):** um dia anterior com as pernas erradas não se sabe se foi um
+  prolongamento. Se disso depender o 3.º, o serviço fica incerto entre o Quadro 2 e o prolongamento (facto em falta
+  `extCount`); com dois prolongamentos certos antes, é recusado como sempre.
+- **"Dentro dos limites?"** (`legalStatus`): um limite do ORO.FTL.210 excedido de certeza vem antes do "PSV incerto" (um
+  incerto escondia-o; já era assim antes desta sessão, mas agora há mais incertos).
+- **Importação** (`data/rosterImport.js`, `components/RosterImportSheet.js`): o dia **entra** (antes ficava "a corrigir" e de
+  fora) e a linha diz "Incerto — falta saber as horas certas das pernas: as da escala não batem certo (ORO.FTL.105) · toca
+  para corrigir"; tocar abre o formulário com as horas lidas. A lei não tem tolerâncias: 1 minuto de sobreposição também fica
+  incerto; a chegada e a partida à mesma hora estão certas. **PDF** (`data/pdfRoster.js`): a perna que saía antes de a
+  anterior chegar passava para o dia seguinte e o dia partia-se em dois serviços com 23 h de "repouso"; agora é um serviço
+  só, que entra incerto. **Completar** (`data/dutyComplete.js`): não pergunta pelo alojamento de uma pausa que não existe.
+- **Continua certo (golden):** chega 23:50, sai 00:30 → 40 min de intervalo, sem repartido; chega 19:00, sai 23:30 →
+  repartido de 4 h 30; chega 22:00, sai 02:00 → repartido de 4 h; dois serviços no mesmo dia do PDF com o 2.º depois da
+  meia-noite.
+- **MUDANÇA DE NÚMERO a saber (serviços postos à mão; a leitura do calendário nunca junta pernas com 10 h ou mais entre
+  elas):** 10 h ou mais em terra entre duas pernas do mesmo serviço davam um repartido (por exemplo 11 h 30); agora o serviço
+  fica incerto, sem repartido. O exemplo do golden da importação com 11 h 30 no Porto passou a 9 h 30. Entre dois SERVIÇOS do
+  mesmo dia o motor usava outra regra (12 h na base) — alinhado na entrada seguinte (noite, 9).
+- **O que fica de leitura ou de convenção, dito:** o voo de um serviço com as pernas erradas conta pela soma das pernas (a
+  mais, nunca a menos) e o serviço conta da apresentação aos últimos calços, mesmo quando podiam ser dois serviços (a mais,
+  nunca a menos); a cadeia deixa no mesmo dia uma partida até 3 h antes da chegada anterior (regra de 2026-11-07); no PDF, uma
+  perna do bloco de um dia que só cabe 24 h depois da 1.ª saída é do mesmo serviço com as horas erradas (é uma regra de
+  leitura do documento, não de FTL).
+
+**2 · A mudança de uma perna do meio não se detetava.**
+- **A lei:** as horas de cada perna decidem o tempo de voo (ORO.FTL.105(13), somado nos limites do ORO.FTL.210) e o intervalo
+  do repartido (CS FTL.1.220(a)); o posicionamento não é setor (ORO.FTL.215) e a app não o conta como tempo de voo (leitura da
+  casa, bloco 4).
+- **`data/rosterDiff.js` `diffDuty`:** além das pontas (`DIFF_FIELDS`), compara perna a perna e pela ordem a partida, a chegada
+  e se é posicionamento → "Perna 1 06:40-08:15→06:40-11:15"; se o número de pernas mudou, uma linha só ("Pernas 2→1"). A Zulu,
+  o número de voo e a aeronave não contam. Sem as horas das pernas de um dos lados compara-se o tempo de voo, se os dois o têm.
+- **O snap** (`data/rosterImport.js` `snapOfCandidate`) passa a levar as pernas e o tempo de voo publicados. A versão da leitura
+  não muda (o agrupamento é o mesmo). **Snaps antigos** (sem pernas): valem as pernas do serviço guardado se o tripulante não
+  lhes mexeu (calços iguais aos do snap e a Zulu do calendário intacta em cada hora); se mexeu — horas reais, ou uma perna do
+  meio corrigida à mão — ou se vieram do PDF (sem Zulu), não se comparam, como antes: nunca um "alterado" ou um conflito
+  inventado sobre o que o tripulante escreveu.
+- **O "refresh" fica:** um snap da leitura antiga com os mesmos voos agrupados de outra maneira continua "relido" (golden).
+- **De caminho:** a chegada de um posicionamento no fim do serviço (que não estava em `DIFF_FIELDS`) também passa a detetar-se.
+- **SNC/RDP:** não mudam — uma perna do meio alterada não mexe na apresentação, no fim nem nos setores (o arquivo guarda-a,
+  sem candidato).
+
+**Provas:** `npm test` verde (33 suites; FTL 545 → 605, diff 33 → 61, importação 135 → 150). Motor antigo contra o novo em
+58 359 serviços certos ao acaso (13 543 com repartido; um terço à volta das mudanças de hora; intervalos em terra até 9 h 20):
+0 diferenças, 0 serviços certos dados como errados. 39 394 sobreposições metidas à força: contam o mesmo serviço e o mesmo voo
+de antes, todas as de voo ficam incertas ou "excede", e o máximo garantido novo nunca fica acima do antigo; ficaram por ver
+33, todas na hora repetida da noite em que a hora atrasa e em pernas sem Zulu (nenhuma do calendário).
+
+**1.ª revisão independente (Opus, sessão própria, só com o código e a lei):** confirmou o núcleo e as citações. Achados
+tratados: (1) snap antigo + perna do meio corrigida à mão dava "alterado" e aplicá-lo desfazia a correção → só valem as pernas
+guardadas com a Zulu intacta; (2) um posicionamento longo no fim de um serviço posto à mão dava um falso erro; (3) a noite da
+mudança de hora (apanhada ao repetir a comparação). Os testes destes foram escritos logo a seguir à correção (a falha de antes
+ficou demonstrada pelas sondas da revisão).
+
+**2.ª revisão independente (depois de a regra passar a sair só da lei e de o dia passar a entrar):** confirmou as citações nas
+duas línguas, "entra e fica incerto" contra "fica de fora" e "tolerar minutos" (sem base na lei), e 0 diferenças em 30 000
+serviços sem problema (com intervalos de 9 a 13 h, sem base, sem apresentação, posicionamentos, assistência antes, cabine).
+Achados tratados, com teste: (1) um "PSV incerto" escondia um limite do 210 excedido de certeza → a ordem mudou; (2) o repouso
+a seguir dizia "ok" quando a leitura do prolongamento o dava curto → incerto entre as leituras; (3) o limiar dependia da base
+e do serviço precedente, e os "2 em 7" não os recebiam → 10 h fixas, a leitura conservadora e a que a casa já tinha; (4) a
+promoção punha à frente o serviço errado → primeiro o que tem uma hora em falta; (5) "nunca excede" não se aguentava (um PSV
+de 20 h ficava "incerto") → o máximo possível que sai da lei; acima dele, "excede".
+
+**Verificação dos acertos da 2.ª revisão (3.ª passagem independente, âmbito fechado):** o limiar das 10 h, a ordem no
+"Dentro dos limites?", a promoção e os "2 em 7" estão certos; 29 690 serviços sem pernas erradas comparados com o código de
+antes: 0 diferenças. Achou cinco defeitos pontuais, corrigidos com teste: o máximo possível não contava com a aclimatação
+por saber (dava "excede" fora da base sem o ser em todas as leituras); a discrição declarada transformava o incerto em
+"excede"; o prolongamento entrava como leitura possível mesmo com dois prolongamentos certos antes (devia ser "excede"); o
+repouso antes de um serviço sem apresentação usava o mínimo de uma leitura só; e a voz e o cartão da véspera do Início
+diziam "repouso curto" no caso incerto. Estes cinco já não tiveram uma passagem independente a seguir (`npm test` verde e a
+comparação motor antigo/novo repetida: 0 diferenças).
+
+**Ficou por tratar (na lista do que falta, grupo 2):** um serviço já guardado com as pernas erradas só se corrige pela
+importação (no Detalhe só se registam a 1.ª saída e a última chegada reais); entre dois SERVIÇOS do mesmo dia o limiar
+intervalo/repouso é o do caso (12 h na base), não as 10 h das pernas e da leitura do calendário; o serviço e o voo de um dia
+assim contam pelo máximo (certos, não "incertos"); a cadeia (`legsChainMs`) passa para o dia seguinte uma perna com mais de 3 h
+de sobreposição (voo "depois da meia-noite" inventado nesse caso); corrigir na folha um dia assim volta a aparecer em cada
+sincronização enquanto o calendário estiver errado; um serviço posto à mão SEM pernas passa a "alterado" se o tempo de voo do
+calendário for diferente; uma alteração só de pernas entra no arquivo de alterações sem mostrar o que mudou; no PDF, pernas
+fora de ordem (10:00–15:00 e 09:00–11:00) ficam dois serviços; dois SERVIÇOS do mesmo dia com horas sobrepostas; no Detalhe,
+"Calços até às" de um PSV incerto sem dizer "(garantido)".
+
 
 ## 2026-11-11 (noite, 7) — "Testar o calendário": os estados do Início com serviço hoje (Opus 5.5) — eventos SINTÉTICOS
 
