@@ -7,7 +7,7 @@
 // correção na importação.
 
 import { serviceRealMin } from './zulu';
-import { legsBroken } from '../ftl';
+import { legsBroken, legsRestCut } from '../ftl';
 
 const L = (pt, en) => ({ pt, en });
 const clk = (s) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(s || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; };
@@ -68,8 +68,35 @@ export const legTimesPatch = (svc = {}, times = {}, { date = null } = {}) => {
   return patch;
 };
 
+// ── Um serviço lido como um que são DOIS (2026-11-12) ──
+// 10 h ou mais em terra entre duas pernas (ftl legsBrokenKind 'rest') com as horas certas: não é um intervalo do PSV
+// (ORO.FTL.105(6): inferior a um período de repouso) — são dois serviços com um repouso no meio. Parte-se depois da perna
+// `cut`: o 1.º fica com a apresentação e as pernas até aí; o 2.º (um serviço extra do dia) com as restantes e a sua
+// apresentação (`rep2`; sem ela fica por indicar — nunca inventada). Cada um com os seus setores, calços, rota e tempo de voo.
+export const splitServicePatch = (svc = {}, cut = -1, rep2 = null, { date = null } = {}) => {
+  const legs = (Array.isArray(svc.legs) ? svc.legs : []).filter(Boolean);
+  if (cut < 0 || cut >= legs.length - 1) return {};
+  const part = (ls, report) => {
+    const op = ls.filter((l) => !l.dh), first = ls[0], last = ls[ls.length - 1], lastOp = op.length ? op[op.length - 1] : null;
+    const real = serviceRealMin(date || svc.duty_date || null, ls, report || null).legMin;
+    const fm = ls.reduce((s, l, i) => ((!l.dh && real[i] != null) ? s + real[i] : s), 0);
+    const chained = ls.every((l, i) => i === 0 || (l.dep && l.dep === ls[i - 1].arr));
+    return {
+      kind: op.length ? 'flight' : 'positioning', report_time: report || null, block_off: first.off || null, block_on: (lastOp || last).on || null,
+      sectors: op.length, flight_minutes: fm, route: (chained && first.dep && ls.every((l) => l.arr)) ? [first.dep, ...ls.map((l) => l.arr)].join('-') : null, legs: ls,
+      signOff: (lastOp && last !== lastOp && last.dh && last.on) ? last.on : null,
+    };
+  };
+  const a = part(legs.slice(0, cut + 1), svc.report_time || null);
+  const b0 = part(legs.slice(cut + 1), isClock(rep2) ? padClock(rep2) : null);
+  // O fim de serviço que estava registado (sign-off) é do fim do dia: fica no 2.º; a pernoita também.
+  const b = { ...b0, signOff: b0.signOff || svc.signOff || null, nightStop: !!svc.nightStop, ...(svc.source ? { source: svc.source } : {}) };
+  return { ...a, nightStop: false, extra: [...(Array.isArray(svc.extra) ? svc.extra : []), b] };
+};
+
 // As linhas do "Completar" de um serviço. ctx: { isPilot, ae, category, instructorRated, unknowns (fdp.unknowns), extRefused,
-// date (o dia do serviço, para os fusos) }.
+// date (o dia do serviço, para os fusos), legsBroken ('before' | 'rest', do motor), canSplit (é o serviço principal do dia),
+// postFlightMin (o pós-voo do perfil: o fim do 1.º serviço quando se parte em dois) }.
 export const completeRows = (svc = {}, ctx = {}) => {
   const { isPilot = false, ae = null, category = null, instructorRated = false, unknowns = [], extRefused = null } = ctx;
   const kind = svc.kind || 'flight';
@@ -89,16 +116,48 @@ export const completeRows = (svc = {}, ctx = {}) => {
       fields.push({ key: `off${i}`, type: 'time', label: L(`Perna ${i + 1} · ${where} · partida`, `Leg ${i + 1} · ${where} · departure`), value: lg.off || '' });
       fields.push({ key: `on${i}`, type: 'time', label: L(`Perna ${i + 1} · ${where} · chegada`, `Leg ${i + 1} · ${where} · arrival`), value: lg.on || '' });
     });
+    // 10 h ou mais em terra com as horas CERTAS: são dois serviços (splitServicePatch). Só no serviço principal do dia.
+    const cut = (ctx.legsBroken === 'rest' && ctx.canSplit) ? legsRestCut(svc.legs, { date: dateL, report: svc.report_time || null }) : -1;
+    // … e só quando o 2.º serviço parte no MESMO dia: um serviço extra guarda-se no dia do 1.º, e com a partida depois da
+    // meia-noite ficava gravado antes dele (3.ª revisão independente). Nesse caso corrige-se pela importação.
+    const nextDay = (() => {
+      if (cut < 0) return false;
+      const ls = svc.legs.filter(Boolean); let last = clk(svc.report_time), wraps = 0;
+      for (let i = 0; i <= cut + 1 && i < ls.length; i++) for (const k of (i === cut + 1 ? ['off'] : ['off', 'on'])) { const c = clk(ls[i][k]); if (c == null) continue; if (last != null && c < last) wraps++; last = c; }
+      return wraps > 0;
+    })();
+    const canTwo = cut >= 0 && !nextDay;
+    const legFields = canTwo ? fields.map((f) => ({ ...f, showIf: (v) => v.mode !== 'two' })) : fields;
+    const allFields = canTwo ? [
+      { key: 'mode', type: 'choice', value: 'fix', options: [
+        { id: 'fix', label: L('As horas estão erradas', 'The times are wrong'), sub: L('Corrigir a partida e a chegada de cada perna', 'Fix each leg\'s departure and arrival') },
+        { id: 'two', label: L('As horas estão certas: são dois serviços', 'The times are right: these are two duties'), sub: L('10 h ou mais em terra é um repouso, não um intervalo', '10 h or more on the ground is a rest, not a break') },
+      ] },
+      ...legFields,
+      { key: 'rep2', type: 'time', label: L('Apresentação do 2.º serviço', 'Report time of the 2nd duty'), value: '', optional: true, showIf: (v) => v.mode === 'two' },
+    ] : fields;
     add({
       id: 'legTimes', title: L('Horas das pernas', 'Leg times'), cite: 'ORO.FTL.105(13)',
       value: L('Não batem certo', 'Do not add up'), need: true,
       sheet: { intro: L('As horas das pernas deste serviço não batem certo: uma parte antes de a anterior chegar, ou há 10 h ou mais em terra entre duas. Põe as horas certas. Até lá o serviço conta nos limites, mas o PSV e o repouso a seguir ficam incertos.', 'The leg times of this duty do not add up: one departs before the previous one arrives, or there are 10 h or more on the ground between two. Enter the correct times. Until then the duty counts towards the limits, but the FDP and the rest that follows stay uncertain.'),
-        fields },
-      apply: (v) => legTimesPatch(svc, v, { date: dateL }),
+        fields: allFields },
+      apply: (v) => ((canTwo && v.mode === 'two') ? splitServicePatch(svc, cut, v.rep2, { date: dateL }) : legTimesPatch(svc, v, { date: dateL })),
       // Só se grava o que resolve: todas as horas válidas e as pernas, com elas, a formarem um PSV.
       // … e a 1.ª partida não antes da apresentação (o PSV conta da apresentação): no relógio, uma partida até 3 h "antes" dela
       // (a folga da cadeia do serviço) é antes, não 21 h depois.
       valid: (v) => {
+        if (canTwo && v.mode === 'two') {
+          if (!v.rep2) return true;
+          if (!isClock(v.rep2)) return false;
+          // A apresentação do 2.º fica entre o fim do 1.º SERVIÇO (os calços da última perna dele mais o pós-voo do perfil, se
+          // essa perna foi operada) e a 1.ª partida do 2.º: antes disso ainda é o 1.º serviço; depois, o PSV começava depois
+          // de o avião sair (ORO.FTL.105: o PSV conta da apresentação).
+          const ls = svc.legs.filter(Boolean), on1 = clk(ls[cut].on), off2 = clk(ls[cut + 1].off), r2 = clk(padClock(v.rep2));
+          if (on1 == null || off2 == null || r2 == null) return true;
+          const post = ls[cut].dh ? 0 : Math.max(0, +ctx.postFlightMin || 0);
+          const gap = (off2 - on1 + 1440) % 1440, at2 = (r2 - on1 + 1440) % 1440;
+          return at2 >= Math.min(post, gap) && at2 <= gap;
+        }
         if (!fields.every((f) => isClock(v[f.key]))) return false;
         const p = legTimesPatch(svc, v, { date: dateL });
         const rep = clk(svc.report_time), off0 = clk((p.legs.find(Boolean) || {}).off);

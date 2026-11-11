@@ -587,7 +587,7 @@ export default function HomeScreen({ navigation }) {
     // "Verificado" só com a pergunta inteira a verde — também a recuperação (ORO.FTL.235(d)).
     // Incerto (as pernas do serviço anterior não batem certo, 'legTimes'; ou dois serviços que podem ser um PSV repartido ou dois,
     // 'breakOrRest'): nem "verificado" nem "curto" — sem saber.
-    if (r.kind === 'legTimes' || r.kind === 'breakOrRest' || r.kind === 'reducedRest' || r.kind === 'reducedRestAfter') return { restOk: null };
+    if (r.kind === 'legTimes' || r.kind === 'breakOrRest' || r.kind === 'reducedRest' || r.kind === 'reducedRestAfter' || r.kind === 'noReport' || r.kind === 'standbyHome') return { restOk: null };
     return { restOk: rI.status === 'ok', restHave: r.actualMin != null ? hm(r.actualMin) : null, restNeed: r.requiredMin != null ? hm(r.requiredMin) : null };
   })();
   // ── PÓS-VOO: o balanço do dia fechado (motor computeDuty, o MESMO dos golden) ──
@@ -650,10 +650,10 @@ export default function HomeScreen({ navigation }) {
   const monthSt = useMemo(() => {
     if (!ae || !crewCategory) return null;
     try {
-      const st0 = monthStats(duties, { ym: todayISO.slice(0, 7), ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, serviceStart, startExact: serviceStartExact, largada, lifestyle, baseAt: homeBaseAt });
+      const st0 = monthStats(duties, { ym: todayISO.slice(0, 7), ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, serviceStart, startExact: serviceStartExact, largada, lifestyle, baseAt: homeBaseAt, isPilot });
       return st0 || null;
     } catch { return null; }
-  }, [duties, ae, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, todayISO, serviceStart, serviceStartExact, largada, lifestyle, homeBaseAt]);
+  }, [duties, ae, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, todayISO, serviceStart, serviceStartExact, largada, lifestyle, homeBaseAt, isPilot]);
   const monthAe = monthSt && monthSt.aeMonth ? monthSt.aeMonth : null;
   const monthNightStops = monthSt && typeof monthSt.nightStops === 'number' ? monthSt.nightStops : null;
   const monthMoney = monthAe ? monthAe.total : null;

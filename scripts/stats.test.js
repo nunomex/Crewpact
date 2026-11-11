@@ -92,6 +92,20 @@ eq('minRestH = 9', rr.minRestH, 9);
 eq('reducedRests = 1', rr.reducedRests, 1);
 eq('longestStreak = 3', rr.longestStreak, 3);
 
+// 2026-11-12: "curtos" são os repousos curtos DE CERTEZA; os que só são legais como repouso reduzido (abaixo do mínimo normal
+// mas com 12 h na base / 10 h fora — CS FTL.1.235(c)(1)) contam à parte (`uncertainRests`), como no Início ("incerto").
+{
+  const D = {
+    '2026-05-01': { duty_date: '2026-05-01', report_time: '06:00', block_on: '18:30', kind: 'flight', sectors: 2 },   // 13:00 de serviço (com 30 min)
+    '2026-05-02': { duty_date: '2026-05-02', report_time: '07:30', block_on: '09:00', kind: 'flight', sectors: 1 },   // 12:30 de repouso: só reduzido
+    '2026-05-03': { duty_date: '2026-05-03', report_time: '06:00', block_on: '18:30', kind: 'flight', sectors: 2 },   // 20:30 de repouso
+    '2026-05-04': { duty_date: '2026-05-04', report_time: '06:00', block_on: '09:00', kind: 'flight', sectors: 1 },   // 11:00 de repouso: curto
+  };
+  const y = yearStats(D, { year: 2026, postFlightMin: 30, now: new Date('2026-12-31T12:00:00') });
+  eq('repousos: 1 curto de certeza', y.reducedRests, 1);
+  eq('repousos: 1 que só é legal como repouso reduzido', y.uncertainRests, 1);
+}
+
 // Limite do HERO da vista Ano = ANO CIVIL → 900 h (ORO.FTL.210 b), não 1000 (12 meses).
 eq('limite ano civil = 900 h (ORO.FTL.210 b)', ANNUAL_FLIGHT_LIMIT_H, 900);
 

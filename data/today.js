@@ -78,10 +78,19 @@ const restServices = (duties = {}, ctx = {}) => {
   const at = (iso, hm, addDays = 0) => { const [h, m] = String(hm).split(':').map(Number); const x = new Date(iso + 'T00:00:00'); x.setDate(x.getDate() + addDays); x.setHours(h || 0, m || 0, 0, 0); return x; };
   const hm = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
   const svcs = [];
+  // A RESERVA não é serviço para o 235, mas também não é repouso ("libertado de todas as tarefas, incluindo os serviços de
+  // assistência e reserva", ORO.FTL.105(21)): guarda-se à parte, para um intervalo com reserva não passar por recuperação.
+  const reserves = [];
   for (const iso in duties) {
     const d = duties[iso]; if (!d || d.deleted) continue;
     if ((from && iso < from) || (to && iso > to)) continue;   // janela opcional (a Simulação só precisa dos dias à volta)
     for (const s of [d, ...(Array.isArray(d.extra) ? d.extra : [])]) {
+      if (s && s.kind === 'reserve') {
+        const rs = s.report_time ? at(iso, s.report_time) : null, endHm = s.signOff || s.block_on || null;
+        let re = (rs && endHm) ? at(iso, endHm) : null;
+        if (re && +re <= +rs) re = at(iso, endHm, 1);
+        reserves.push({ iso, start: rs, end: re });
+      }
       if (!s || !s.report_time || s.kind === 'reserve') continue;
       const start = at(iso, s.report_time);
       const ra = restAfterDuty(s, { postFlightMin, isPilot, base: baseOf(iso), date: iso, inBase: ctx && ctx.inBase === false ? false : true });
@@ -93,6 +102,8 @@ const restServices = (duties = {}, ctx = {}) => {
   // Por ordem cronológica: o rotationNights anda para trás e para a frente pelo índice (antes ficava pela ordem das chaves
   // do mapa, que é a ordem em que os dias foram guardados).
   svcs.sort((a, b) => +a.start - +b.start);
+  svcs.reserves = reserves;
+  svcs.est = estServices(duties, ctx);   // os serviços sem apresentação: fora da linha, mas não são repouso
   // BLOCOS (revisão do bloco 2, 2026-11-06): dois serviços do MESMO dia com menos do que o mínimo de repouso entre eles não
   // têm um período de repouso no meio — são um só PSV repartido (CS FTL.1.220: "the break on the ground within the FDP"; o
   // mesmo critério do dayFtlFromDuties). O "período de serviço precedente" do ORO.FTL.235(a)(1) é então o bloco inteiro.
@@ -113,23 +124,67 @@ const restServices = (duties = {}, ctx = {}) => {
 // O bloco tem um PSV? ORO.FTL.235(a)/(b): o repouso mínimo é "antes de um PSV" — antes de um escritório, de uma formação ou
 // de um standby em casa a lei não fixa um mínimo.
 const blockHasFdp = (svcs, v) => svcs.some((x) => x.blk === v.blk && x.fdp);
+const isHomeSb = (x) => (x.s && x.s.kind) === 'standby_home';
+const stdFloor = (inBase) => (inBase ? 720 : 600);   // ORO.FTL.235(a)(1) / (b)
+// O 1.º serviço do bloco de `v` (`blk` é o índice na lista inteira; numa lista filtrada procura-se pelo bloco).
+const headOf = (svcs, v) => svcs.find((x) => x.blk === v.blk) || v;
+
 const before = (svcs, t) => svcs.filter((v) => +v.start < +t).sort((a, b) => +b.start - +a.start);
 
 // O mínimo DEPOIS de `prev` (ORO.FTL.235 + 205(d)): o serviço ou o piso; se `prev` foi prolongado, +2 h quando o repouso
 // ANTES dele também teve as +2 h (opção i), senão +4 h (ii); +4 h também quando o seguinte é prolongado (205(d)(2)).
-const requirementAfter = (svcs, prev, next = null) => {
+// De onde vem (2026-11-11, conferido nos textos): só a assistência NO AEROPORTO conta como período de serviço para o 235
+// (ORO.FTL.225(c)); a seguir a uma assistência vem "a rest period in accordance with ORO.FTL.235" (CS FTL.1.225(b)(4)); e a
+// de casa "does not count as duty for the purpose of rest" (EASA, FAQ 47630 — fontes/easa/; o mesmo na GM citada abaixo).
+// O Regulamento e a CS são vinculativos; a GM e as FAQ não.
+// O que os textos NÃO dizem é por que serviço se mede o repouso depois de uma assistência em casa sem chamada: pelo último
+// serviço verdadeiro (leitura A) ou por nenhum — o piso (leitura B). Quem o fixa é o esquema da companhia
+// (ORO.FTL.225(f)(3)). Ver `requirementAfter` (kind 'standbyHome'): a app dá as duas (4.ª revisão independente, noite 11).
+// O "período de serviço precedente" do ORO.FTL.235(a)(1)/(b) do bloco de `prev`. A ASSISTÊNCIA EM CASA (ou no hotel) não entra
+// (2026-11-12): "Standby other than airport standby counts (partly) as duty for the purpose of ORO.FTL.210 only. If a crew
+// member receives an assignment during standby other than airport standby, the actual reporting time at the designated
+// reporting point should be used for the purpose of ORO.FTL.235" (GM1 CS FTL.1.225 (c)). Conta do 1.º ao último serviço do
+// bloco que não é assistência em casa; se o bloco é só assistência em casa, 0 (fica o piso de 12 h / 10 h). A do aeroporto
+// conta toda (ORO.FTL.225(c)).
+const dutyFor235 = (svcs, prev) => {
+  const isSb = (x) => (x.s && x.s.kind) === 'standby_home';
+  const blk = svcs.filter((x) => x.blk === prev.blk && !isSb(x) && x.end);
+  if (!blk.length) return 0;
+  return Math.max(0, Math.round((+blk[blk.length - 1].end - +blk[0].start) / 60000));
+};
+// O serviço do bloco que dá o piso, o prolongamento e o sítio do repouso: o ÚLTIMO que não é assistência em casa (revisão
+// independente, noite 11: com uma assistência em casa no fim do dia, o `ra` dela escondia o prolongamento do voo).
+// Num bloco SÓ de assistência em casa (ou no hotel) não há tal serviço: o SÍTIO do repouso é onde o último serviço
+// verdadeiro deixou o tripulante (a assistência não tem rota), e o piso é o desse sítio — 12 h na base, 10 h fora
+// (ORO.FTL.235(a)(1)/(b)); sem prolongamento (4.ª revisão independente, noite 11).
+const refOf = (svcs, prev) => {
+  const blk = svcs.filter((x) => x.blk === prev.blk && !isHomeSb(x) && x.ra);
+  if (blk.length) return blk[blk.length - 1];
+  const d = before(svcs, headOf(svcs, prev).start).find((x) => !isHomeSb(x) && x.ra);
+  if (!d || !prev.ra) return prev;
+  return { ...prev, ra: { ...prev.ra, inBase: d.ra.inBase, floorMin: stdFloor(d.ra.inBase), extended: false } };
+};
+// O mínimo do ORO.FTL.235(a)/(b) depois do bloco de `prev`, mais as horas do prolongamento (ORO.FTL.205(d)(1)) — sem as dúvidas.
+const needOf = (svcs, prev, next = null) => {
   const bs = (v) => v.bStart || v.start;   // o período de serviço conta desde o início do BLOCO (repartido)
-  const prevDutyMin = Math.round((+prev.end - +bs(prev)) / 60000);
-  const { floorMin } = prev.ra;
+  const ref = refOf(svcs, prev);
+  const prevDutyMin = dutyFor235(svcs, prev);
+  const { floorMin } = ref.ra;
   let requiredMin = Math.max(prevDutyMin, floorMin), extOption = null;
-  if (prev.ra.extended) {
+  if (ref.ra.extended) {
     const pp = before(svcs, bs(prev))[0] || null;
-    const ppNeed = pp && pp.end ? Math.max(Math.round((+pp.end - +bs(pp)) / 60000), pp.ra.floorMin) : null;
+    const ppNeed = pp && pp.end ? Math.max(dutyFor235(svcs, pp), refOf(svcs, pp).ra.floorMin) : null;
     const preRest = pp && pp.end ? Math.round((+bs(prev) - +pp.end) / 60000) : null;
     extOption = (ppNeed != null && preRest != null && preRest >= ppNeed + 120) ? 'i' : 'ii';
-    if (next && next.ra && next.ra.extended) extOption = 'consecutive';
+    // ORO.FTL.205(d)(2): "entre dois PSV com prolongamento" — o PSV do bloco seguinte, mesmo com uma assistência antes dele.
+    if (next && svcs.some((x) => x.blk === next.blk && x.ra && x.ra.extended)) extOption = 'consecutive';
     requiredMin += extOption === 'i' ? 120 : 240;
   }
+  return { prevDutyMin, floorMin, requiredMin, extOption, ref };
+};
+const requirementAfter = (svcs, prev, next = null, deep = true) => {
+  const bs = (v) => v.bStart || v.start;
+  const { prevDutyMin, floorMin, requiredMin, extOption, ref } = needOf(svcs, prev, next);
   // As pernas de um serviço do bloco não formam um PSV (ftl legsBrokenKind → `ra.legsDoubt`): o mínimo depende da leitura, e a
   // app não escolhe. `loMin` = o exigido em TODAS as leituras; `hiMin` = o que chega em todas.
   //   · 10 h ou mais em terra a meio ('rest') podem ser dois serviços: o "serviço precedente" seria só o último, mais curto —
@@ -137,15 +192,71 @@ const requirementAfter = (svcs, prev, next = null) => {
   //   · se o serviço cabia no prolongamento planeado, o repouso a seguir podia levar as horas do ORO.FTL.205(d)(1).
   let loMin = requiredMin, hiMin = requiredMin;
   // O REPOUSO ANTES deste bloco foi, talvez, um repouso reduzido (ver reducedBand): então este aumenta pela diferença
-  // (CS FTL.1.235(c)(3)) — o que chega em todas as leituras sobe.
-  let reducedBefore = 0;
-  {
+  // (CS FTL.1.235(c)(3)) — o que chega em todas as leituras sobe. Também depois de um PSV prolongado (o mínimo dele com as
+  // horas do prolongamento, um nível só: needOf não volta a olhar para trás).
+  // (2.ª revisão independente, noite 11.) `reducedBefore` = a diferença POSSÍVEL (sobe o que chega em todas as leituras);
+  // `reducedBeforeSure` = o repouso anterior ficou abaixo do mínimo de TODAS as leituras e só podia ser um repouso reduzido
+  // (o PSV a seguir cabia já reduzido) — só então um 2.º repouso abaixo do mínimo é curto de certeza. E só conta o repouso
+  // antes de um PSV: antes de um escritório ou de uma assistência em casa a lei não fixa mínimo (ORO.FTL.235(a)/(b)), logo
+  // não há repouso reduzido nenhum.
+  let reducedBefore = 0, reducedBeforeSure = false;
+  if (deep) {
     const pp = before(svcs, bs(prev))[0] || null;
     if (pp && pp.end && pp.ra && pp.blk !== prev.blk) {
-      const ppNeed = Math.max(Math.round((+pp.end - +bs(pp)) / 60000), pp.ra.floorMin);
+      const head = headOf(svcs, prev);
+      const rq = requirementAfter(svcs, pp, head, false);
       const preRest = Math.round((+bs(prev) - +pp.end) / 60000);
-      const band = reducedBand(preRest, ppNeed, pp);
-      if (band) { reducedBefore = band.diffMin; hiMin += band.diffMin; }
+      if (blockHasFdp(svcs, prev)) {
+        const band = reducedBand(preRest, rq.requiredMin, rq.ref, incOf(rq));
+        if (band) {
+          reducedBefore = band.diffMin; hiMin += band.diffMin;
+          const sure = preRest < rq.loMin ? reducedBand(preRest, rq.loMin, rq.ref, incOf(rq)) : null;
+          reducedBeforeSure = !!(sure && nextFitsReduced(svcs, head, sure.diffMin));
+        }
+      }
+    }
+  }
+  // A ASSISTÊNCIA EM CASA (sem chamada) ENTRE O ÚLTIMO SERVIÇO VERDADEIRO (D) E O PSV (4.ª revisão independente, noite 11).
+  // O repouso antes do PSV conta do fim da assistência (ORO.FTL.105(21)) e é "in accordance with ORO.FTL.235" (CS
+  // FTL.1.225(b)(4)), mas a assistência em casa não é período de serviço para o 235 (ORO.FTL.225(c) a contrario; EASA FAQ
+  // 47630). Leitura A: o "serviço precedente" é D → o mínimo de D. Leitura B: não há serviço para medir → o piso. Os textos
+  // não escolhem (fixa-o o esquema da companhia, ORO.FTL.225(f)(3)) e a app também não:
+  //   · se depois de D já houve um repouso com o mínimo de D (antes da assistência, ou entre duas), chega o piso;
+  //   · senão o mínimo fica entre o piso e o de D → incerto ('standbyHome');
+  //   · as horas do PROLONGAMENTO (ORO.FTL.205(d)(1), vinculativo) não se apagam com uma assistência pelo meio: sem nenhum
+  //     repouso de piso + essas horas desde D, o piso sobe-as nas duas leituras.
+  // Vale igual com a assistência no mesmo bloco de D (mesmo dia) ou num bloco só dela (dias seguintes).
+  let standbyDoubt = false, incMin = null;
+  if (deep) {
+    const blkAll = svcs.filter((x) => x.blk === prev.blk);
+    const tail = blkAll[blkAll.length - 1];
+    if (tail && isHomeSb(tail)) {
+      const std = stdFloor(ref.ra.inBase);
+      if (blkAll.some((x) => !isHomeSb(x))) {
+        // D e a assistência no mesmo bloco: não houve repouso nenhum entre os dois. `requiredMin` é o da leitura A.
+        if (ref.ra.floorMin === std) {
+          const lo = std + Math.max(0, requiredMin - Math.max(prevDutyMin, floorMin));
+          if (lo < loMin) { loMin = lo; standbyDoubt = true; }
+        }
+      } else {
+        // Bloco só de assistência: anda para trás (pode haver várias seguidas) até D, guardando o maior repouso pelo caminho.
+        let head = headOf(svcs, prev), best = -1, found = null;
+        for (let g = 0; g < 40 && head; g++) {
+          const pp = before(svcs, head.start)[0] || null;
+          if (!pp || !pp.end) break;
+          best = Math.max(best, Math.round((+head.start - +pp.end) / 60000));
+          if (svcs.some((x) => x.blk === pp.blk && !isHomeSb(x))) { found = { pp, head }; break; }
+          head = headOf(svcs, pp);
+        }
+        if (found) {
+          const rq = requirementAfter(svcs, found.pp, found.head, false);
+          if (best < rq.hiMin) {
+            hiMin = Math.max(hiMin, rq.hiMin); standbyDoubt = true;
+            const inc = incOf(rq);
+            if (inc && best < std + inc) { loMin = Math.max(loMin, std + inc); incMin = inc; }
+          }
+        }
+      }
     }
   }
   const sameBlk = svcs.filter((x) => x.blk === prev.blk);
@@ -155,22 +266,24 @@ const requirementAfter = (svcs, prev, next = null) => {
   if (eitherIn) doubts.push({ kind: 'rest', either: true });
   if (doubts.length) {
     if (doubts.some((x) => x.kind === 'rest')) loMin = Math.min(loMin, floorMin);
-    if (!prev.ra.extended && doubts.some((x) => x.extMaybe)) hiMin = Math.max(hiMin, requirementAfter(svcs, { ...prev, ra: { ...prev.ra, extended: true } }, next).requiredMin);
+    if (!ref.ra.extended && doubts.some((x) => x.extMaybe)) hiMin = Math.max(hiMin, requiredMin + 240);   // 205(d)(1)(ii), a mais exigente
   }
-  return { prevDutyMin, floorMin, requiredMin, extOption, loMin, hiMin, doubtKind: doubts.length ? (doubts.every((x) => x.either) ? 'breakOrRest' : 'legTimes') : (reducedBefore ? 'reducedRestAfter' : null), reducedBefore };
+  return { prevDutyMin, floorMin, requiredMin, extOption, loMin, hiMin, ref, doubtKind: doubts.length ? (doubts.every((x) => x.either) ? 'breakOrRest' : 'legTimes') : (standbyDoubt ? 'standbyHome' : (reducedBefore ? 'reducedRestAfter' : null)), reducedBefore, reducedBeforeSure, incMin };
 };
+
 // O REPOUSO REDUZIDO (ORO.FTL.235(c) · CS FTL.1.235(c) — 2026-11-11, noite 10). Um repouso abaixo do mínimo do 235(a)/(b) mas
 // com pelo menos 12 h na base / 10 h fora ((c)(1)) é legal se a companhia tiver repouso reduzido, com gestão do risco de fadiga
 // ((c)(2)); a app não o sabe → não é "curto" em todas as leituras. Devolve { floorMin, diffMin } (a diferença para o mínimo
 // normal: o repouso seguinte aumenta-a, (c)(3), e o PSV seguinte reduz-se nela, (c)(4)) ou null se não se aplica:
-//   · só reduz o mínimo do 235(a)/(b): depois de um PSV prolongado (205(d)(1)) ou com os pisos de 14 h (fuso, repouso a bordo)
-//     o mínimo é outro e fica como estava;
-//   · no máximo 2 entre recuperações ((c)(5)) — a app não os conta: di-lo no texto.
-const reducedBand = (actualMin, normalMin, prev) => {
-  if (!prev || !prev.ra || prev.ra.extended) return null;
+//   · só reduz o mínimo do 235(a)/(b): com os pisos de 14 h (fuso, repouso a bordo) o mínimo é outro e fica como estava;
+//   · no máximo 2 entre recuperações ((c)(5)): ver reducedSinceRecovery.
+// `incMin` = as horas a mais do prolongamento (ORO.FTL.205(d)(1): "os períodos mínimos de repouso … devem ser aumentados"): o
+// que aumenta é o mínimo, e nada proíbe que seja o do repouso reduzido — o mínimo reduzido leva as mesmas horas (2026-11-12).
+const reducedBand = (actualMin, normalMin, prev, incMin = 0) => {
+  if (!prev || !prev.ra) return null;
   const std = prev.ra.inBase ? 720 : 600;
   if (prev.ra.floorMin !== std) return null;
-  const floor = prev.ra.inBase ? REDUCED_REST_BASE_MIN : REDUCED_REST_AWAY_MIN;
+  const floor = (prev.ra.inBase ? REDUCED_REST_BASE_MIN : REDUCED_REST_AWAY_MIN) + Math.max(0, incMin || 0);
   if (!(actualMin < normalMin) || actualMin < floor) return null;
   return { floorMin: floor, diffMin: normalMin - actualMin };
 };
@@ -193,12 +306,64 @@ const nextFitsReduced = (svcs, next, diffMin) => {
   return psvMin <= maxMin - diffMin;
 };
 // O veredicto do repouso com as duas leituras: curto só abaixo do mínimo de todas, certo só acima de todas, no meio incerto.
+// "There is a maximum of 2 reduced rest periods between 2 recurrent extended recovery rest periods" (CS FTL.1.235(c)(5)): quantos
+// repousos (talvez) reduzidos há ANTES do bloco de `prev`, desde a última recuperação — "36 horas, incluindo 2 noites locais"
+// (ORO.FTL.235(d)). Com 2, um 3.º não é legal em nenhuma leitura.
+const RECOVERY_MIN = 36 * 60;
+const incOf = (req) => (req.incMin != null ? req.incMin : Math.max(0, req.requiredMin - Math.max(req.prevDutyMin, req.floorMin)));
+// HÁ UMA RECUPERAÇÃO entre `from` e `to`? "36 horas, incluindo 2 noites locais" (ORO.FTL.235(d)), num período LIVRE de
+// serviço — a reserva não é repouso (ORO.FTL.105(21)), mas basta um troço contínuo antes, depois ou entre reservas (2.ª revisão
+// independente, noite 11). Uma reserva SEM horas não se sabe quando foi: conta a leitura mais favorável (o troço antes vai
+// até ao fim desse dia, o de depois começa no início dele) — "não há recuperação" só quando não há em nenhuma leitura.
+const recoveryIn = (svcs, from, to) => {
+  const day0 = (iso, add = 0) => { const x = new Date(iso + 'T00:00:00'); x.setDate(x.getDate() + add); return x; };
+  const cuts = [];
+  for (const r of (svcs.reserves || [])) {
+    const a = r.start || day0(r.iso, 1), b = r.start ? (r.end || r.start) : day0(r.iso);   // o troço antes acaba em a; o de depois começa em b
+    // Com horas: conta se COMEÇA dentro do intervalo, mesmo que só acabe depois de `to` (o tripulante foi chamado a meio dela:
+    // o troço livre acaba no início dela — 3.ª revisão independente). Uma que começou antes de `from` (envolve o serviço
+    // anterior) lê-se como acabada com esse serviço. Sem horas: o dia inteiro fora do intervalo não conta.
+    if (r.start ? (+a < +from || +a >= +to) : (+a <= +from || +b >= +to)) continue;
+    cuts.push({ a, b, k: r.start ? +r.start : +day0(r.iso) + 12 * 3600000 });
+  }
+  // Um serviço SEM apresentação também não é repouso: do mais tardar a que pode ter começado (os calços) até ao fim dele.
+  for (const e of (svcs.est || [])) {
+    if (+e.end <= +from || +e.off >= +to) continue;
+    cuts.push({ a: e.off, b: e.end, k: +e.off });
+  }
+  cuts.sort((x, y) => x.k - y.k);
+  const ok = (s, e) => (+e - +s) >= RECOVERY_MIN * 60000 && localNightsIn(s, e) >= 2;
+  let s = from;
+  for (const c of cuts) {
+    if (ok(s, +c.a < +to ? c.a : to)) return true;
+    if (+c.b > +s) s = c.b;
+  }
+  return ok(s, to);
+};
+const reducedSinceRecovery = (svcs, prev) => {
+  let n = 0, head = headOf(svcs, prev);
+  for (let guard = 0; guard < 80 && head; guard++) {
+    const pp = before(svcs, head.start)[0] || null;
+    if (!pp || !pp.end || !pp.ra) break;
+    const rest = Math.round((+head.start - +pp.end) / 60000);
+    if (rest >= RECOVERY_MIN && recoveryIn(svcs, pp.end, head.start)) break;   // uma recuperação: a conta recomeça
+    // Só conta o que podia mesmo ser um repouso reduzido: antes de um PSV (ORO.FTL.235(a)/(b)), na banda, e com o PSV seguinte
+    // a caber (senão foi só uma infração).
+    if (blockHasFdp(svcs, head)) {
+      const rq = requirementAfter(svcs, pp, head);
+      const band = (rest < rq.loMin && !rq.reducedBefore) ? reducedBand(rest, rq.loMin, rq.ref || pp, incOf(rq)) : null;
+      if (band && nextFitsReduced(svcs, head, band.diffMin)) n++;
+    }
+    head = headOf(svcs, pp);
+  }
+  return n;
+};
 const restVerdict = (actualMin, req, nightsShort, svcs = null, prev = null, next = null) => {
   // (O repouso a seguir a um repouso reduzido AUMENTA pela diferença, CS 235(c)(3): não pode ser outra vez reduzido — com
-  // `reducedBefore` um repouso abaixo do mínimo é curto nas duas leituras.)
-  if (!nightsShort && actualMin < req.loMin && prev && !req.reducedBefore) {
-    const band = reducedBand(actualMin, req.loMin, prev);
-    if (band && nextFitsReduced(svcs || [], next, band.diffMin)) return { status: 'unc', kind: 'reducedRest', requiredMin: req.loMin, reducedFloorMin: band.floorMin, diffMin: band.diffMin };
+  // `reducedBeforeSure` (o anterior só podia ser um repouso reduzido) um repouso abaixo do mínimo é curto em todas as leituras.)
+  if (!nightsShort && actualMin < req.loMin && prev && !req.reducedBeforeSure) {
+    const band = reducedBand(actualMin, req.loMin, req.ref || prev, incOf(req));
+    if (band && nextFitsReduced(svcs || [], next, band.diffMin) && reducedSinceRecovery(svcs || [], prev) < 2) return { status: 'unc', kind: 'reducedRest', requiredMin: req.loMin, reducedFloorMin: band.floorMin, diffMin: band.diffMin };
   }
   if (nightsShort || actualMin < req.loMin) return { status: 'bad', requiredMin: req.loMin };
   if (actualMin < req.hiMin) return { status: 'unc', kind: req.doubtKind || 'legTimes', requiredMin: req.loMin, requiredHiMin: req.hiMin };
@@ -231,6 +396,32 @@ const rotationNights = (svcs, prev, next = null) => {
   return req;
 };
 
+// UM SERVIÇO SEM APRESENTAÇÃO entre `prev` e `first` (o calendário nem sempre a traz; ou a 2.ª metade de um serviço partido em
+// dois sem a hora dela): está fora da linha do repouso, mas existe — o repouso antes de `first` conta do fim DELE. O repouso
+// real sabe-se; o mínimo não (não se sabe quanto durou nem onde acabou): curto só abaixo do mínimo mais baixo possível, senão
+// incerto ('noReport'). null se não há nenhum. (2.ª revisão independente, noite 11: o Início e as Estatísticas saltavam-no.)
+const estBefore = (est, svcs, prev, first) => {
+  const eb = (est || []).filter((e) => +e.end <= +first.start && (!prev || +e.end > +(prev.end || prev.start))).sort((a, b) => +b.end - +a.end)[0];
+  if (!eb) return null;
+  const base = { prevIso: eb.iso, nextIso: first.iso, estIso: eb.iso };
+  const actualMin = Math.round((+first.start - +eb.end) / 60000);
+  if (!blockHasFdp(svcs, first)) return { ...base, status: 'na', kind: 'notFdp', actualMin, requiredMin: null };
+  // "Curto" só abaixo do mínimo de TODAS as leituras: sem a apresentação não se sabe onde nem quanto durou o serviço, e
+  // com 10 h ou mais (o mínimo do repouso reduzido fora da base, CS FTL.1.235(c)(1)) o repouso pode ser legal → incerto.
+  const lowMin = Math.max(eb.floorLowMin, eb.dutyLowMin);
+  // No MESMO dia e a menos de um repouso (10 h) pode ser o mesmo PSV — um intervalo (ORO.FTL.105(6)) ou um posicionamento
+  // antes do voo (ORO.FTL.215(a)), como o motor lê dois serviços do mesmo dia: ali não há um repouso para ser curto, e o
+  // repouso antes do PSV (antes do serviço sem apresentação) não se sabe quando acabou → incerto (3.ª revisão independente).
+  if (eb.iso === first.iso && actualMin < SHORTEST_REST_MIN) {
+    // … mas esse repouso tem um TETO: do fim do serviço anterior (de outro dia) aos calços dele. Abaixo das 10 h é curto em
+    // qualquer leitura — um serviço à parte (então curto é o que se segue) ou a 1.ª metade deste PSV (4.ª revisão).
+    const capMin = (prev && prev.end && prev.iso !== eb.iso) ? Math.round((+eb.off - +prev.end) / 60000) : null;
+    if (capMin != null && capMin >= 0 && capMin < REDUCED_REST_AWAY_MIN) return { ...base, prevIso: prev.iso, status: 'bad', actualMin: capMin, requiredMin: REDUCED_REST_AWAY_MIN };
+    return { ...base, status: 'unc', kind: 'noReport', actualMin };
+  }
+  return actualMin < Math.min(lowMin, REDUCED_REST_AWAY_MIN) ? { ...base, status: 'bad', actualMin, requiredMin: lowMin } : { ...base, status: 'unc', kind: 'noReport', actualMin };
+};
+
 export function restStatus(duties = {}, todayISO, ref = new Date(), ctx = {}) {
   const svcs = restServices(duties, ctx);
   // O PRÓXIMO é o 1.º serviço cujo REPORT ainda não passou (2026-11-04, golden test:reststatus) e que COMEÇA um bloco: a 2.ª
@@ -246,6 +437,8 @@ export function restStatus(duties = {}, todayISO, ref = new Date(), ctx = {}) {
   const actualMin = Math.round((+next.start - +prev.end) / 60000);
   // Antes de um serviço que não é PSV a lei não fixa mínimo (ORO.FTL.235(a)/(b): "antes de um PSV").
   if (!blockHasFdp(svcs, next)) return { id: 'rest', status: 'ok', kind: 'notFdp', actualMin, requiredMin: null, prevIso: prev.iso, nextIso: next.iso };
+  const eb = estBefore(svcs.est, svcs, prev, next);
+  if (eb) return { id: 'rest', ...eb, status: eb.status === 'unc' ? 'warn' : eb.status };
   const req = requirementAfter(svcs, prev, next);
   const { prevDutyMin, floorMin, extOption } = req;
   const nightsRequired = rotationNights(svcs, prev, next);
@@ -254,7 +447,7 @@ export function restStatus(duties = {}, todayISO, ref = new Date(), ctx = {}) {
   return {
     // 'warn' + kind 'legTimes' = incerto: o serviço anterior tem as horas das pernas que não batem certo.
     id: 'rest', ...v, status: v.status === 'unc' ? 'warn' : v.status, actualMin, floorMin, prevDutyMin,
-    prevIso: prev.iso, nextIso: next.iso, place: prev.ra.inBase ? 'base' : 'away', reason: prev.ra.reason, extOption,
+    prevIso: prev.iso, nextIso: next.iso, place: (req.ref || prev).ra.inBase ? 'base' : 'away', reason: (req.ref || prev).ra.reason, extOption,
     nightsRequired: nightsRequired || null, nightsActual,
   };
 }
@@ -296,6 +489,24 @@ const estServices = (duties = {}, ctx = {}) => {
 // em `ctx.svcs`/`ctx.est` ao restAround).
 export const restTimeline = (duties = {}, ctx = {}) => ({ svcs: restServices(duties, ctx), est: estServices(duties, ctx) });
 
+// O veredicto de TODOS os repousos de uma escala (entre blocos, antes de um PSV) — a mesma regra do "Tenho descanso?", para
+// as Estatísticas contarem o mesmo (revisão independente, noite 11): [{ prevIso, nextIso, actualMin, status, kind, … }].
+export const restVerdicts = (duties = {}, ctx = {}) => {
+  const svcs = restServices(duties, ctx), est = svcs.est;
+  const out = [];
+  for (let i = 1; i < svcs.length; i++) {
+    const b = svcs[i], a = before(svcs, b.start)[0] || svcs[i - 1];   // o mesmo "anterior" do restStatus e do restAround
+    if (b.blk !== i || !a.end || !blockHasFdp(svcs, b)) continue;   // só à entrada de um bloco com PSV
+    const eb = estBefore(est, svcs, a, b);
+    if (eb) { out.push(eb); continue; }
+    const actualMin = Math.round((+b.start - +a.end) / 60000);
+    const req = requirementAfter(svcs, a, b);
+    const nR = rotationNights(svcs, a, b), nA = nR ? localNightsIn(a.end, b.start) : null;
+    out.push({ prevIso: a.iso, nextIso: b.iso, actualMin, ...restVerdict(actualMin, req, nR > 0 && nA < nR, svcs, a, b) });
+  }
+  return out;
+};
+
 export function restAround(duties = {}, pick, ctx = {}) {
   const svcs = (ctx && ctx.svcs) || restServices(duties, ctx);
   const me = svcs.find((v) => pick(v.s, v.iso));
@@ -314,7 +525,8 @@ export function restAround(duties = {}, pick, ctx = {}) {
     const nightsRequired = rotationNights(svcs, a, b);
     const nightsActual = nightsRequired ? localNightsIn(a.end, b.start) : null;
     // 'unc' + kind 'legTimes': as pernas do serviço anterior não batem certo e o mínimo depende das horas certas.
-    return { ...base, ...restVerdict(actualMin, req, nightsRequired > 0 && nightsActual < nightsRequired, svcs, a, b), actualMin, floorMin, prevDutyMin, reason: a.ra.reason, extOption, nightsRequired: nightsRequired || null, nightsActual };
+    const rf = req.ref || a;   // o último serviço do bloco que não é assistência em casa: o sítio e o motivo são os dele
+    return { ...base, place: rf.ra.inBase ? 'base' : 'away', ...restVerdict(actualMin, req, nightsRequired > 0 && nightsActual < nightsRequired, svcs, a, b), actualMin, floorMin, prevDutyMin, reason: rf.ra.reason, extOption, nightsRequired: nightsRequired || null, nightsActual };
   };
   let need = null;
   if (last.end) {
@@ -326,18 +538,8 @@ export function restAround(duties = {}, pick, ctx = {}) {
   // baixo possível cabe. Antes: o repouso real é conhecido (do fim dele à apresentação), o mínimo é o serviço dele (≥ o que se
   // vê) ou o piso. Depois: a apresentação dele vem antes dos calços, logo o repouso é no máximo até aos calços.
   const est = (ctx && ctx.est) || estServices(duties, ctx);
-  const eb = est.filter((e) => +e.end <= +first.start && (!prev || +e.end > +(prev.end || prev.start))).sort((a, b) => +b.end - +a.end)[0];
-  if (eb) {
-    const base = { prevIso: eb.iso, nextIso: first.iso, estIso: eb.iso };
-    const actualMin = Math.round((+first.start - +eb.end) / 60000);
-    if (!blockHasFdp(svcs, first)) beforeR = { ...base, status: 'na', kind: 'notFdp', actualMin, requiredMin: null };
-    else {
-      // "Curto" só abaixo do mínimo de TODAS as leituras: sem a apresentação não se sabe onde nem quanto durou o serviço, e
-      // com 10 h ou mais (o mínimo do repouso reduzido fora da base, CS FTL.1.235(c)(1)) o repouso pode ser legal → incerto.
-      const lowMin = Math.max(eb.floorLowMin, eb.dutyLowMin);
-      beforeR = actualMin < Math.min(lowMin, REDUCED_REST_AWAY_MIN) ? { ...base, status: 'bad', actualMin, requiredMin: lowMin } : { ...base, status: 'unc', kind: 'noReport', actualMin };
-    }
-  }
+  const ebR = estBefore(est, svcs, prev, first);
+  if (ebR) beforeR = ebR;
   const lastEnd = last.end || last.start;
   const ea = est.filter((e) => +e.off >= +lastEnd && (!next || +e.off < +next.start)).sort((a, b) => +a.off - +b.off)[0];
   if (ea && last.end) {
@@ -348,8 +550,9 @@ export function restAround(duties = {}, pick, ctx = {}) {
       // "Curto" só abaixo do mínimo de todas as leituras (`loMin`: as pernas do anterior podem não bater certo).
       const reqA = requirementAfter(svcs, last, null);
       const { loMin } = reqA;
-      const bandA = !reqA.reducedBefore && maxMin < loMin ? reducedBand(maxMin, loMin, last) : null;   // só como repouso reduzido → não é curto de certeza
-      afterR = (maxMin < loMin && !bandA) ? { ...base, status: 'bad', actualMin: maxMin, requiredMin: loMin } : { ...base, status: 'unc', kind: 'noReport', actualMin: maxMin };
+      const bandA = !reqA.reducedBeforeSure && maxMin < loMin ? reducedBand(maxMin, loMin, reqA.ref || last, incOf(reqA)) : null;   // só como repouso reduzido → não é curto de certeza
+      const sameFdp = ea.iso === last.iso && maxMin < SHORTEST_REST_MIN;   // no mesmo dia, a menos de 10 h: pode ser o mesmo PSV
+      afterR = (maxMin < loMin && !bandA && !sameFdp) ? { ...base, status: 'bad', actualMin: maxMin, requiredMin: loMin } : { ...base, status: 'unc', kind: 'noReport', actualMin: maxMin };
     }
   }
   return { before: beforeR, after: afterR, need };
@@ -359,7 +562,8 @@ export function restAround(duties = {}, pick, ctx = {}) {
 // frase nunca podem discordar). Sem o serviço seguinte conhecido, um prolongamento conta como opção (i) ou (ii) pelo
 // repouso anterior. null sem dados.
 export function restUntilAfter(duties = {}, iso, ctx = {}) {
-  const svcs = restServices(duties, ctx).filter((v) => v.end);
+  const all = restServices(duties, ctx);
+  const svcs = all.filter((v) => v.end); svcs.reserves = all.reserves; svcs.est = all.est;
   const mine = svcs.filter((v) => v.iso === iso).sort((a, b) => +b.end - +a.end)[0];
   if (!mine) return null;
   const { requiredMin } = requirementAfter(svcs, mine, null);

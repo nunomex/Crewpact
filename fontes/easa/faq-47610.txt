@@ -1,0 +1,19 @@
+EASA — FAQ n.º 47610 (Flight Time Limitations, ORO.FTL.235 (a))
+Fonte: https://www.easa.europa.eu/en/faq/47610 — última atualização indicada pela EASA: 12/07/2018.
+Consultada a 2026-11-11. Citação literal da pergunta e da resposta.
+
+Pergunta: Rest prior to a duty other than FDP ORO.FTL.235 (a): What is the duration of the rest period prior to a duty
+without FDP?
+
+Resposta:
+The term ‘minimum rest period’ under the Regulation (EU) No 965/2012 is only used for the recovery period before an FDP.
+Otherwise, it is an off-duty period. The Regulation does not contain requirements for off-duty periods prior to a duty without FDP.
+Example: FDP1 – off duty – DP1 – off duty – DP2 – rest – FDP2.
+Nevertheless, the operator needs to be able to demonstrate they have considered the fatiguing nature and cumulative effects of these duty periods under their operator responsibilities as they can generate fatigue that could affect crew member’s ability to rest prior to his/her next FDP.
+Also, the national law of the Member State regarding working time (as required by Council Directive 2000/79/EC) would be applicable and should be reviewed as it may contain minimum rest periods for crew members based in that Member State.
+
+O que responde (paráfrase): "repouso mínimo" só existe antes de um PSV. O tempo livre antes de um serviço que não é PSV
+é só tempo sem serviço, sem mínimo no Regulamento. No exemplo, o repouso antes do PSV 2 mede-se pelo serviço que vem logo
+antes dele (DP2); o PSV 1, lá atrás, não deixa nenhum repouso "em dívida".
+
+Valor jurídico: as FAQ da EASA não são vinculativas (pergunta E0 do pack do advogado).

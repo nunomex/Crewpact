@@ -124,5 +124,45 @@ if (fail) { console.log(fails.join('\n')); }
   eq('… com posicionamento no fim: calços do último setor operado e sign-off na chegada do DH', [pDh.block_on, pDh.signOff], ['20:35', '23:00']);
 }
 
+// (3.ª revisão independente.) Quando o 2.º serviço só parte no DIA SEGUINTE (pernas 15:00–20:00 e 07:00–09:00), não cabe
+// como serviço extra do mesmo dia (ficava gravado ANTES do 1.º): a linha não oferece "são dois serviços".
+{
+  const nx = { kind: 'flight', duty_date: '2026-11-20', report_time: '14:00', block_off: '15:00', block_on: '09:00', sectors: 2, flight_minutes: 420, route: 'LIS-FNC-LIS', source: 'calendar',
+    legs: [{ flightNo: 'EZY1', dep: 'LIS', arr: 'FNC', off: '15:00', on: '20:00' }, { flightNo: 'EZY2', dep: 'FNC', arr: 'LIS', off: '07:00', on: '09:00' }] };
+  const rn = ftl.ftlForDuty(nx, { isPilot: true, base: 'LIS', date: '2026-11-20', postFlightMin: 30 });
+  const rowN = C.completeRows(nx, { isPilot: true, ae: ejPil, category: 'FO', unknowns: rn.fdp.unknowns, legsBroken: rn.legsBroken, canSplit: true, postFlightMin: 30 })[0];
+  eq('11 h em terra com o 2.º a partir no dia seguinte: só "corrigir as horas"', [rn.legsBroken, rowN.id, rowN.sheet.fields.some((f) => f.key === 'mode')], ['rest', 'legTimes', false]);
+}
+
+// ── Um serviço lido como um que são dois (2026-11-12) ──
+// 10 h ou mais em terra entre duas pernas (ftl legsBrokenKind 'rest'): com as horas certas não é um intervalo (ORO.FTL.105(6))
+// — são dois serviços com um repouso no meio. A linha "Horas das pernas" deixa escolher "são dois serviços" e parte-o.
+{
+  const one = { kind: 'flight', duty_date: '2026-11-20', report_time: '05:00', block_off: '06:00', block_on: '23:30', sectors: 3, flight_minutes: 390, route: 'LIS-FAO-LIS-OPO', source: 'calendar',
+    legs: [{ flightNo: 'EZY1', dep: 'LIS', arr: 'FAO', off: '06:00', on: '07:00' }, { flightNo: 'EZY2', dep: 'FAO', arr: 'LIS', off: '07:40', on: '08:40' }, { flightNo: 'EZY3', dep: 'LIS', arr: 'OPO', off: '22:30', on: '23:30' }] };
+  const r = ftl.ftlForDuty(one, { isPilot: true, base: 'LIS', date: '2026-11-20', postFlightMin: 30 });
+  eq('13 h 50 em terra entre pernas: o motor diz porquê', [r.legsBroken, r.fdp.unknowns], ['rest', ['legTimes']]);
+  const row = C.completeRows(one, { isPilot: true, ae: ejPil, category: 'FO', unknowns: r.fdp.unknowns, legsBroken: r.legsBroken, canSplit: true })[0];
+  eq('a linha oferece as duas saídas', [row.id, row.sheet.fields[0].key, row.sheet.fields[0].options.map((o) => o.id)], ['legTimes', 'mode', ['fix', 'two']]);
+  eq('"são dois serviços" grava-se sem mexer nas horas; a apresentação do 2.º é opcional', [row.valid({ mode: 'two' }), row.valid({ mode: 'two', rep2: '21:30' }), row.valid({ mode: 'two', rep2: '9' })], [true, true, false]);
+  // A apresentação do 2.º tem de ficar entre o fim do 1.º (calços das 08:40) e a partida dele (22:30).
+  eq('a apresentação do 2.º depois da partida, ou ainda dentro do 1.º, não passa', [row.valid({ mode: 'two', rep2: '23:00' }), row.valid({ mode: 'two', rep2: '07:00' }), row.valid({ mode: 'two', rep2: '22:30' })], [false, false, true]);
+  // … e o fim do 1.º é o fim do SERVIÇO (calços + o pós-voo do perfil, 30 min → 09:10), não os calços.
+  const row30 = C.completeRows(one, { isPilot: true, ae: ejPil, category: 'FO', unknowns: r.fdp.unknowns, legsBroken: r.legsBroken, canSplit: true, postFlightMin: 30 })[0];
+  eq('com 30 min de pós-voo, 08:50 ainda é o 1.º serviço; 09:10 já passa', [row30.valid({ mode: 'two', rep2: '08:50' }), row30.valid({ mode: 'two', rep2: '09:10' })], [false, true]);
+  const p = row.apply({ mode: 'two', rep2: '21:30' });
+  // O 1.º fica com as duas primeiras pernas; o 2.º (extra do dia) com a última e a sua apresentação. O voo é o de cada um.
+  eq('o 1.º serviço: 05:00, calços 06:00–08:40, 2 setores, LIS-FAO-LIS, 2:00 de voo', [p.report_time, p.block_off, p.block_on, p.sectors, p.route, p.flight_minutes, p.legs.length], ['05:00', '06:00', '08:40', 2, 'LIS-FAO-LIS', 120, 2]);
+  const x = p.extra[p.extra.length - 1];
+  eq('o 2.º serviço: 21:30, calços 22:30–23:30, 1 setor, LIS-OPO, 1:00 de voo', [x.report_time, x.block_off, x.block_on, x.sectors, x.route, x.flight_minutes, x.kind, x.legs.length], ['21:30', '22:30', '23:30', 1, 'LIS-OPO', 60, 'flight', 1]);
+  const two = ftl.dayFtlFromDuties([{ ...one, ...p, extra: undefined }, x], { isPilot: true, base: 'LIS', date: '2026-11-20', postFlightMin: 30 });
+  eq('… e o dia passa a dois PSV com um repouso no meio, sem dúvida', [two.between[0].kind, !!two.psv.over, !!two.psv.uncertain], ['rest', false, false]);
+  eq('sem a apresentação do 2.º, fica por indicar (não se inventa)', row.apply({ mode: 'two' }).extra[0].report_time, null);
+  // Num serviço extra do dia não se pode partir daqui (canSplit falso): só a correção das horas.
+  eq('num extra: só corrigir as horas', C.completeRows(one, { isPilot: true, ae: ejPil, category: 'FO', unknowns: r.fdp.unknowns, legsBroken: r.legsBroken, canSplit: false })[0].sheet.fields[0].key, 'off0');
+  // Com uma partida antes da chegada anterior ('before') não há "dois serviços": as horas estão erradas.
+  eq('partida antes da chegada: só corrigir as horas', C.completeRows(one, { isPilot: true, ae: ejPil, category: 'FO', unknowns: r.fdp.unknowns, legsBroken: 'before', canSplit: true })[0].sheet.fields[0].key, 'off0');
+}
+
 console.log(`completar o serviço — ${pass} passou, ${fail} falhou (${pass + fail} asserções)`);
 process.exit(fail ? 1 : 0);

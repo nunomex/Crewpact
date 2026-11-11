@@ -1,0 +1,16 @@
+EASA — FAQ n.º 47645 (Flight Time Limitations, CS FTL.1.230(b))
+Fonte: https://www.easa.europa.eu/en/faq/47645 — última atualização indicada pela EASA: 12/07/2018.
+Consultada a 2026-11-11. Citação literal da pergunta e da resposta.
+
+Pergunta: Reserve CS FTL 1.230(b): Is there any rest requirement after a reserve period, if there is no assignment of duty
+period during the reserve?
+
+Resposta:
+Reserve times do not count as duty period for the purpose of ORO.FTL.210 and ORO.FTL.235.
+That means that there is no requirement for a minimum rest period after reserve, if no duty has been assigned.
+
+O que responde (paráfrase): depois de uma RESERVA sem atribuição não há repouso mínimo, porque a reserva não conta como
+período de serviço para o 235. É sobre a reserva, não sobre a assistência em casa — para essa a CS FTL.1.225(b)(4) pede
+"a rest period in accordance with ORO.FTL.235", e nenhuma FAQ diz quanto.
+
+Valor jurídico: as FAQ da EASA não são vinculativas (pergunta E0 do pack do advogado).

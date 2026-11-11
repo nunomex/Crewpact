@@ -1,0 +1,18 @@
+EASA — FAQ n.º 47630 (Flight Time Limitations, CS FTL.1.225 (a)(1) e (b)(4))
+Fonte: https://www.easa.europa.eu/en/faq/47630 — última atualização indicada pela EASA: 12/07/2018.
+Consultada a 2026-11-11. Citação literal da pergunta e da resposta.
+
+Pergunta: Rest after airport standby or other-standby CS FTL.1.225 (a)(1)& CS FTL.1.225 (b)(4): What is the basis for
+rest calculation after a standby followed by an FDP? Is it the reporting time for standby or the “actual reporting time”
+for the assigned FDP?
+
+Resposta:
+The minimum rest period depends on the length of previous duty.
+Airport standby counts as duty for the purpose of ORO.FTL.235. Therefore the rest calculation after airport standby followed by an FDP is based on the reporting time for that standby. This also applies to airport duty.
+Other standby does not count as duty for the purpose of rest (it counts partly as duty for the purpose of ORO.FTL.210 only). Therefore the rest calculation after other-standby followed by an FDP is based on the reporting time for the assigned FDP
+
+O que responde (paráfrase): a assistência no aeroporto conta como serviço para o repouso (ORO.FTL.235); a assistência em
+casa ou no hotel ("other standby") NÃO conta como serviço para o repouso — só conta, em parte, para os limites acumulados
+(ORO.FTL.210). Depois de uma assistência em casa seguida de voo, o serviço que mede o repouso conta da apresentação do voo.
+
+Valor jurídico: as FAQ da EASA não são vinculativas (pergunta E0 do pack do advogado).

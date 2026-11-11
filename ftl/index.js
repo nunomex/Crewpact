@@ -375,6 +375,14 @@ export const legsBrokenKind = (legs0, opts = {}) => {
   return kind;
 };
 export const legsBroken = (legs0, opts = {}) => !!legsBrokenKind(legs0, opts);
+// Depois de que perna (índice) há as 10 h ou mais em terra que podem ser um repouso — onde um serviço lido como um se parte em
+// dois (data/dutyComplete.js). −1 se não há, ou se há uma partida antes da chegada anterior (aí as horas estão erradas).
+export const legsRestCut = (legs0, opts = {}) => {
+  const legs = Array.isArray(legs0) ? legs0.filter(Boolean) : [];
+  const gaps = legs.length < 2 ? [] : legGaps(legs, opts || {});
+  if (gaps.some((g) => g && g.before)) return -1;
+  return gaps.findIndex((g) => !!g && g.groundMin >= SHORTEST_REST_MIN);
+};
 // Split duty a partir das LEGS (CS FTL.1.220): o MAIOR intervalo em terra ≥3h entre setores (on-block da perna anterior →
 // off-block da seguinte, com volta à meia-noite). "A single break" → só o maior conta. DERIVADO das legs (não persistido à
 // parte) → sempre coerente com as horas reais e sobrevive a gravar/reler (as legs vão no roster_meta). {0,null} se não houver.
@@ -1057,9 +1065,14 @@ export const restAfterDuty = (prev, { inBase = true, base = null, postFlightMin 
   const endMin = soPrev != null ? soPrev : (onPrev != null ? (onPrev + pfPrev) % 1440 : null);
   if (endMin == null) return null;
   let dutyMin = repPrev != null ? endMin - repPrev : 0; while (dutyMin < 0) dutyMin += 1440;
+  // A ASSISTÊNCIA EM CASA (ou no hotel) não é "serviço precedente" do repouso (2026-11-12): "Standby other than airport standby
+  // counts (partly) as duty for the purpose of ORO.FTL.210 only" (GM1 CS FTL.1.225 (c)) — a seguir a ela o mínimo é o piso do
+  // ORO.FTL.235 (12 h na base, 10 h fora; CS FTL.1.225(b)(4)). A do aeroporto conta toda (ORO.FTL.225(c)).
+  const homeSb = (prev.kind || 'flight') === 'standby_home';
+  if (homeSb) dutyMin = 0;
   // Com o dia, o período de serviço é tempo DECORRIDO (os instantes do relógio do dispositivo, como em data/today.js): só muda
   // nas duas noites da mudança de hora (a 25/10, 00:00 → 11:30 são 12:30 reais).
-  if (repPrev != null && date && /^\d{4}-\d{2}-\d{2}$/.test(String(date))) {
+  if (!homeSb && repPrev != null && date && /^\d{4}-\d{2}-\d{2}$/.test(String(date))) {
     const at = (min, add = 0) => { const x = new Date(`${date}T00:00:00`); x.setDate(x.getDate() + add); x.setHours(Math.floor(min / 60), min % 60, 0, 0); return +x; };
     const s0 = at(repPrev); let e0 = at(endMin); if (e0 <= s0) e0 = at(endMin, 1);
     const real = Math.round((e0 - s0) / 60000);

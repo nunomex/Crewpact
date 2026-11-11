@@ -124,9 +124,9 @@ export default function StatsScreen({ navigation }) {
   })();
   const st = useMemo(
     () => isYear
-      ? yearStats(duties, { year, ae, aeAt, category: crewCategory, contract: crewContract || '12/12', crewHistory, companyHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt, serviceStart, startExact: serviceStartExact, largada, lifestyle })
-      : monthStats(duties, { ym, ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, companyHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt, serviceStart, startExact: serviceStartExact, largada, lifestyle }),
-    [isYear, duties, year, ym, ae, aeNow, companyHistory, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, serviceStart, serviceStartExact, homeBaseAt, largada, lifestyle], // eslint-disable-line react-hooks/exhaustive-deps
+      ? yearStats(duties, { year, ae, aeAt, category: crewCategory, contract: crewContract || '12/12', crewHistory, companyHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt, serviceStart, startExact: serviceStartExact, largada, lifestyle, isPilot })
+      : monthStats(duties, { ym, ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, companyHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt, serviceStart, startExact: serviceStartExact, largada, lifestyle, isPilot }),
+    [isYear, duties, year, ym, ae, aeNow, companyHistory, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, serviceStart, serviceStartExact, homeBaseAt, largada, lifestyle, isPilot], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   // Saldo de férias do ANO (direito anual, Art. 238.º CT) — HONESTO: só dias efetivamente gozados
@@ -544,7 +544,7 @@ export default function StatsScreen({ navigation }) {
                 <View style={s.btTop}><View style={s.btIc}><Icon name="bed" size={19} color={PELE.ink} /></View><Text style={s.btIdx}>{idx.corpo}</Text></View>
                 <Text style={s.btName}>{l('Corpo', 'Body')}</Text>
                 <Text style={s.btKey}>{st.minRestH != null ? fmtH(st.minRestH) : '—'}</Text>
-                <Text style={s.btCap}>{l('repouso mín', 'min rest')} · {st.reducedRests || 0} {l('curtos', 'short')}</Text>
+                <Text style={s.btCap}>{l('repouso mín', 'min rest')} · {st.reducedRests || 0} {l('curtos', 'short')}{st.uncertainRests ? ` · ${st.uncertainRests} ${l('incertos', 'uncertain')}` : ''}</Text>
               </TouchableOpacity>
             </Animated.View>
 
@@ -722,7 +722,7 @@ export default function StatsScreen({ navigation }) {
             ) : null}
           </View>
         ) : null}
-        <Text style={s.bnote}><Text style={s.bnoteB}>{st.offDays}</Text> {l('dias de folga e', 'days off and')} <Text style={s.bnoteB}>{st.nightStops}</Text> {l('paragens noturnas', 'night stops')} {isYear ? l('no ano', 'this year') : l('no mês', 'this month')}.{st.reducedRests ? l(' Abaixo do mínimo = menos do que o serviço anterior ou 12 h na base / 10 h fora (ORO.FTL.235). A app estima: confirma com a companhia.', ' Below the minimum = less than the preceding duty or 12 h at base / 10 h away (ORO.FTL.235). The app estimates: confirm with the company.') : ''}</Text>
+        <Text style={s.bnote}><Text style={s.bnoteB}>{st.offDays}</Text> {l('dias de folga e', 'days off and')} <Text style={s.bnoteB}>{st.nightStops}</Text> {l('paragens noturnas', 'night stops')} {isYear ? l('no ano', 'this year') : l('no mês', 'this month')}.{st.reducedRests ? l(' Abaixo do mínimo = menos do que o serviço anterior ou 12 h na base / 10 h fora (ORO.FTL.235). A app estima: confirma com a companhia.', ' Below the minimum = less than the preceding duty or 12 h at base / 10 h away (ORO.FTL.235). The app estimates: confirm with the company.') : ''}{st.uncertainRests ? l(` ${st.uncertainRests} ${st.uncertainRests === 1 ? 'repouso incerto' : 'repousos incertos'}: a app não consegue dizer se cumprem (só legais como repouso reduzido, ou falta uma hora no serviço anterior).`, ` ${st.uncertainRests} uncertain ${st.uncertainRests === 1 ? 'rest' : 'rests'}: the app cannot tell whether they comply (only legal as reduced rest, or a time is missing in the previous duty).`) : ''}</Text>
       </PeleSheet>
 
       <YearShareCard visible={shareOpen} onClose={() => setShareOpen(false)} st={isYear ? st : null} year={year} companyName={company?.name} />

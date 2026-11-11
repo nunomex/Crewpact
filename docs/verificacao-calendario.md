@@ -75,6 +75,23 @@ que o eCrew escreveria — cada um testa um ramo do parser:
 12. **Assistência + voo** (2026-11-11): assistência em casa 08:00–10:00 e um voo com
     apresentação às 20:30 e chegada às 02:00 → o PSV fica "incerto" com "falta saber se
     entre a assistência e a apresentação houve um repouso mínimo…" (antes: "excede 1:00").
+13. **Partir um serviço em dois** (2026-11-12): um dia com dois voos de manhã e um à noite, com
+    13 h ou mais em terra pelo meio, guardado como UM serviço (só à mão ou por PDF: o
+    calendário já os separa) → Detalhe → "Horas das pernas" → a folha tem as duas saídas;
+    "As horas estão certas: são dois serviços" + a apresentação do 2.º → grava; a Escala
+    passa a mostrar dois serviços nesse dia e o PSV deixa de estar incerto.
+    Sem a apresentação do 2.º: grava na mesma, e no dia seguinte "Tenho descanso?" diz
+    "Incerto" e pede a hora de apresentação desse serviço (não diz "Sim").
+    Uma apresentação do 2.º antes do fim do 1.º (calços + pós-voo) não se deixa gravar.
+    Se o 2.º só parte depois da meia-noite, a folha não oferece "são dois serviços" (só corrigir
+    as horas).
+14. **Assistência em casa** (2026-11-12): assistência em casa 06:00–20:00 e, no dia seguinte,
+    apresentação às 09:00 (13 h depois) → "Tenho descanso?" diz "Sim" (antes "Não", pedia 14 h).
+    Sem nenhum voo comprido nos dias antes. Com um voo de 13 h na véspera da assistência e só
+    12 h livres entre os dois, 12 h 30 depois da assistência dão "Incerto · mín. entre 12:00 e
+    13:00" (a lei não diz por que serviço se mede; fixa-o a companhia).
+15. **Estatísticas** (2026-11-12): Números → mosaico Corpo → "N curtos · M incertos" quando há
+    repousos que só são legais como repouso reduzido.
 
 ## C · Colheita (o produto da sessão)
 

@@ -103,6 +103,13 @@ cada frase no texto e calcula com ela.
 Extrato curto (citação) da FAQ 47617, "consecutive" nas noites (CS FTL.1.205(a)(1)), com o endereço e a data. O teste
 `scripts/simulation.test.js` confere que a frase citada na Simulação está na cópia. As FAQ não são vinculativas (pack E0).
 
+**11 de novembro de 2026 — assistência, reserva e repouso** (`easa/faq-47630.txt`, `faq-47610.txt`, `faq-47642.txt`,
+`faq-47645.txt`): a assistência em casa não conta como serviço para o repouso (47630, sobre a assistência seguida de PSV);
+o Regulamento não fixa mínimo para o tempo livre antes de um serviço sem PSV (47610); sem chamada, a assistência é seguida
+de um repouso do ORO.FTL.235 (47642); depois de uma reserva sem atribuição não há repouso mínimo (47645). Nenhuma diz por
+que serviço se mede o repouso depois de uma assistência em casa sem chamada — a app dá as duas leituras. O teste
+`scripts/ftl-golden.test.js` confere as frases citadas. (`faq-47599.txt`: discrição do comandante depois do prolongamento.)
+
 ## Radiação cósmica (`eu/euratom-2013-59-pt.txt`, `pt/dl-108-2018-republicado.txt`) — auditoria, bloco 7 (6 de novembro de 2026)
 
 O teste `scripts/citacoes-tap-ftl.test.js` (corre no `npm run test:citacoes`) confere cada frase que a Prova e a Biblioteca

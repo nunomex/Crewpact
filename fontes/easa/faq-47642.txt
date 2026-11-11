@@ -1,0 +1,15 @@
+EASA — FAQ n.º 47642 (Flight Time Limitations, CS FTL.1.225 (b); ver também ORO.FTL.105 (25))
+Fonte: https://www.easa.europa.eu/en/faq/47642 — última atualização indicada pela EASA: 09/04/2019.
+Consultada a 2026-11-11. Extrato literal (a pergunta e a frase final da resposta; o resto da resposta trata da chamada
+perto do fim da assistência e não se copia aqui).
+
+Pergunta: Other-standby CS FTL.1.225 (b), (see also ORO.FTL.105 (25)): Is it possible during other-standby to assign an
+FDP with a reporting time after the rostered end of that standby period has elapsed?
+
+Resposta (frase final):
+If no duty has been assigned during the rostered standby availability period, other-standby is followed by a rest period in accordance with ORO.FTL.235.
+
+O que responde (paráfrase): uma assistência em casa em que não houve chamada é seguida de um repouso do ORO.FTL.235 —
+o mesmo que diz a CS FTL.1.225(b)(4).
+
+Valor jurídico: as FAQ da EASA não são vinculativas (pergunta E0 do pack do advogado).

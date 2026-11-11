@@ -6,7 +6,7 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 ---
 
-## O QUE FALTA (ler isto primeiro · lista única · atualizada 2026-11-11)
+## O QUE FALTA (ler isto primeiro · lista única · atualizada 2026-11-12)
 
 Uma linha por pendência; o pormenor está na entrada indicada entre parênteses (as entradas ficam abaixo, como histórico).
 Quando uma coisa se fizer, sai daqui. **Regra do Nuno: "a lei é que manda"** — sem um facto, "incerto" com o que falta; nunca
@@ -19,6 +19,11 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   baixo, "Sem escala neste mês" + "Ir para a Escala"); Início "Quanto recebo?" e cartão do mês com o Natal; Números de
   novembro (linha Subsídios, cêntimos) e do ano (férias + Natal, % das 900 h); o mês da entrada (Perfil → novembro de 2026 com
   o dia em "—" → base "incerto"; com o dia 5 → um valor; repor a data).
+- **Repouso depois do prolongamento, assistência em casa, Estatísticas, partir um serviço em dois, 2 repousos reduzidos
+  (2026-11-12, noite, 11 — nada visto no iPhone):** passos 13 a 15 de `docs/verificacao-calendario.md` — Detalhe de um serviço
+  com 10 h ou mais em terra entre pernas: "Horas das pernas" com as duas saídas ("As horas estão erradas" / "As horas estão
+  certas: são dois serviços") e a apresentação do 2.º; "Tenho descanso?" depois de 14 h de assistência em casa com 13 h de
+  repouso ("Sim"; antes "Não"); Números → Corpo com "N curtos · M incertos".
 - **Repouso reduzido, assistência + voo, mudança de hora e horas das pernas no Detalhe (2026-11-11, noite, 10 — nada visto no
   iPhone):** passos 10 a 12 de `docs/verificacao-calendario.md` — Detalhe de um serviço com as pernas a não bater certo:
   secção Completar com "Horas das pernas · Não batem certo" em primeiro, a folha com a partida e a chegada de cada perna,
@@ -78,13 +83,41 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   de situação · `docs/05-verificacao.md`).
 
 ### 2. Acertos de código por fazer
+- **5.ª revisão independente do repouso, numa SESSÃO NOVA (decidido com o Nuno, 2026-11-11):** as correções da 4.ª passagem
+  (ramo `calculos-repouso-2`) não tiveram revisão. Fable 5.2, esforço Alto, sessão própria: rever `data/today.js` (a regra
+  da assistência em casa — `requirementAfter`, kind 'standbyHome', `refOf`; `recoveryIn`; `estBefore`), com os cenários
+  corridos, antes de passar o ramo para o `main`. As quatro passagens anteriores estão na entrada "2026-11-12 (noite, 11)".
+- **Repouso depois de uma assistência em casa sem chamada — falta o que diz cada companhia (2026-11-11):** a lei não diz
+  por que serviço se mede (ORO.FTL.225(f)(3): fixa-o o esquema da companhia) e a app dá "incerto" entre o piso e o mínimo do
+  último serviço. Pedir a frase do OM-A da easyJet e da TAP (SPAC/SNPVAC, ou um tripulante) → regra por companhia.
+- **Repouso — o que a 4.ª revisão deixou (2026-11-11):** dois serviços com a MESMA hora de apresentação, ou um dentro do
+  outro (dados sobrepostos): o "anterior" é o que começa por último, não o que acaba por último — Início, Simulação e
+  Estatísticas concordam mas podem medir o repouso do serviço errado (junta-se ao caso dos serviços sobrepostos, abaixo);
+  um serviço só com a hora de partida, ou sem horas, não interrompe a recuperação; um serviço sem apresentação que acaba
+  depois da meia-noite a menos de 10 h do voo seguinte dá "curto" (no mesmo dia dá "incerto") — decidir com o caso da
+  assistência que passa a meia-noite; a nota das Estatísticas ("menos do que o serviço anterior ou 12 h…") não cobre a
+  assistência em casa; a lei portuguesa do tempo de trabalho da aviação (a EASA remete para ela na FAQ 47610) não foi vista.
+- **Repouso — o que a 3.ª revisão deixou (2026-11-11/12):** partir um serviço em dois quando o 2.º parte no dia seguinte
+  (o Detalhe grava um dia de cada vez: hoje só pela importação); a resposta "Não" do "Tenho descanso?" não diz PORQUÊ quando
+  o motivo é o repouso reduzido (o 3.º entre recuperações, o 2.º seguido, o PSV seguinte que não cabe) e o conselho "deve
+  estender e o PSV seguinte reduz" não serve esses casos — pede textos novos (`ux-copy`); sem NENHUM serviço anterior nos
+  dados, o repouso depois de um PSV prolongado assume as +4 h (opção ii) — a opção (i), +2 h, é possível: devia ficar
+  incerto entre as duas; um serviço sem apresentação antes do 1.º serviço com apresentação dá vistas diferentes (Início
+  "sem dados", Simulação incerto); as Estatísticas de um ano sem recuperações nenhumas demoram segundos (caso extremo; um
+  ano normal, 77 ms), e o Processo de carreira paga essa conta sem a usar.
+- **Repouso — o que as revisões da noite 11 deixaram (2026-11-12):** as Estatísticas só contam os repousos ENTRE serviços do
+  mesmo mês ou ano (o de dia 31 para dia 1 não aparece em nenhum mês; já era assim) — decidir se passa a contar no mês do
+  serviço que se segue; a conta dos 2 repousos reduzidos entre recuperações (CS FTL.1.235(c)(5)) olha para trás até 80
+  serviços no Início, 2 meses nas Estatísticas e 15 dias na Simulação de um serviço hipotético — podem discordar numa
+  escala sem recuperações à vista; depois de um serviço SEM hora de apresentação o repouso fica sempre "incerto", por maior
+  que seja (falta um teto certo para o que esse serviço pode ter durado); uma assistência em casa que passa a meia-noite
+  antes de um voo de madrugada não se junta ao voo (são de dias diferentes) e dá "curto" — pela GM1 CS FTL.1.225 (b) a
+  chamada durante a assistência não pede repouso (já era assim).
 - **Pernas e sincronização — o que ficou depois de 2026-11-11 (noites 8 a 10):** o formulário (Simulação e correção) não
-  avisa das pernas que não batem certo enquanto se escreve, só o resultado; o repouso reduzido (noite 10): a app não conta o
-  máximo de 2 entre recuperações (CS FTL.1.235(c)(5)) nem mostra o máximo do PSV seguinte já reduzido — só decide se cabe;
-  depois de um PSV prolongado o repouso abaixo do exigido continua "curto" (leitura para a ANAC); a assistência em casa conta
-  como "serviço precedente" do repouso a seguir (GM1 CS FTL.1.225(c): só conta para o 210); as Estatísticas contam os
-  repousos da banda reduzida como "curtos"; no Detalhe não há como partir em dois um serviço lido como um (10 h ou mais em
-  terra entre pernas que estão certas); pernas guardadas FORA DE ORDEM (a 2.ª toda antes da 1.ª) com menos de um repouso para a frente leem-se como um
+  avisa das pernas que não batem certo enquanto se escreve, só o resultado; o repouso reduzido (noite 10): a app não mostra o
+  máximo do PSV seguinte já reduzido — só decide se cabe; partir um serviço em dois (noite 11) só no serviço principal do dia,
+  não num extra, só no 1.º intervalo de 10 h ou mais, e o 2.º serviço não herda o alojamento nem os casos especiais do 1.º
+  (uma sincronização com um registo antigo pode voltar a juntá-los); pernas guardadas FORA DE ORDEM (a 2.ª toda antes da 1.ª) com menos de um repouso para a frente leem-se como um
   intervalo (só à mão: o calendário ordena-as); dois SERVIÇOS do mesmo dia com horas sobrepostas (`restBetweenDuties`) têm a
   mesma conta "+24 h" entre serviços — por ver com um caso real (uma assistência com um voo chamado a meio é legítima); a
   cadeia (`legsChainMs`, `data/zulu.js`) passa para o dia seguinte uma perna com mais de 3 h de sobreposição (voo "depois da
@@ -162,6 +195,117 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   declaração de dados nas lojas; Supabase/Resend pagos e limites (e-mails por hora, DMARC).
 ---
 
+## 2026-11-12 (noite, 11) — Os cinco que tinham ficado: prolongamento, assistência em casa, Estatísticas, dois serviços, (c)(5)
+
+O Nuno: "temos que corrigir isto". Testes primeiro em cada um. Nada visto no iPhone. (O que vinha de antes está gravado: `1fdae68`.)
+
+1. **Repouso depois de um PSV prolongado.** "os períodos mínimos de repouso pré-voo e pós-voo devem ser aumentados de duas
+   horas, ou o período de repouso pós-voo deve ser aumentado de quatro horas" (ORO.FTL.205(d)(1)): o que aumenta é o mínimo, e
+   nada proíbe que seja o do repouso reduzido. Entre o reduzido mais as horas do prolongamento (12 h + 4 h = 16:00 na base) e
+   o exigido (17:30 no exemplo) o repouso passa de "curto" a **incerto**; abaixo, curto. Um golden mudou de propósito
+   (reststatus "205(d) … com 16:00").
+2. **A assistência em casa não é "serviço precedente" do repouso.** "Standby other than airport standby counts (partly) as
+   duty for the purpose of ORO.FTL.210 only" (GM1 CS FTL.1.225 (c)); a seguir a ela o repouso é o do ORO.FTL.235 (CS
+   FTL.1.225(b)(4)) — o piso: 12 h na base, 10 h fora. Depois de 14 h de assistência em casa, 13 h de repouso eram "curto"
+   (exigia 14 h); agora "certo". Num dia com assistência em casa e voo, o serviço precedente conta da apresentação do voo. A
+   do aeroporto conta toda (ORO.FTL.225(c)). **Mudança de número, para o lado menos restritivo** — a regra de antes pedia
+   mais do que a lei.
+3. **Estatísticas.** "Curtos" passam a ser os repousos curtos de certeza; os que só são legais como repouso reduzido contam
+   à parte: "N curtos · M incertos" no mosaico Corpo; na folha, "Repousos abaixo do mínimo" conta só os curtos e os incertos
+   dizem-se na nota (acerto da 3.ª revisão).
+4. **Partir um serviço em dois no Detalhe.** Com 10 h ou mais em terra entre pernas e as horas certas, a linha "Horas das
+   pernas" oferece "As horas estão certas: são dois serviços" (ORO.FTL.105(6): não é um intervalo). O 1.º fica com a
+   apresentação e as pernas até aí; o 2.º entra como serviço extra do dia, com a apresentação que escreveres (sem ela fica
+   por indicar). Só no serviço principal do dia. Na folha que já existe, com os campos que ela já tem (sem Mobbin).
+5. **No máximo 2 repousos reduzidos entre recuperações.** "There is a maximum of 2 reduced rest periods between 2 recurrent
+   extended recovery rest periods" (CS FTL.1.235(c)(5)); a recuperação são "36 horas, incluindo 2 noites locais"
+   (ORO.FTL.235(d)). A app conta para trás até à última recuperação: o 3.º repouso da banda reduzida é "curto".
+
+**Provas (no fim, depois das quatro revisões):** `npm test` verde (33 suites; FTL 713, completar 53, estatísticas 185). Motor
+antigo contra o novo: dias de um só serviço, 58 359 com 0 diferenças; dias de dois serviços fora das zonas novas, 36 720
+iguais e 0 diferentes.
+
+**Revisão independente — 1.ª passagem** (Opus, sem ver as minhas conclusões). Confirmou a leitura da lei nos cinco pontos e
+0 diferenças fora dos casos novos. Achou cinco erros, corrigidos com teste primeiro:
+- uma assistência em casa no fim do dia escondia o prolongamento do voo (o repouso a seguir perdia as 4 h) — o piso, o
+  prolongamento e o sítio vêm agora do último serviço do bloco que não é assistência em casa;
+- um repouso (talvez) reduzido depois de um PSV prolongado não aumentava o repouso seguinte (CS FTL.1.235(c)(3));
+- as Estatísticas davam "incerto" a repousos que o Início dava "curto" — passam a usar o MESMO veredicto do Início;
+- a apresentação do 2.º serviço (ao partir em dois) não era validada;
+- um dia de reserva dentro das 36 h contava como recuperação.
+
+**2.ª passagem** (Opus, sobre essas correções). Achou sete erros, corrigidos com teste primeiro:
+- a correção da reserva estava larga de mais: qualquer reserva no intervalo anulava a recuperação. A lei pede UM período de
+  "36 horas, incluindo 2 noites locais" (ORO.FTL.235(d)) livre de serviço e de reserva (ORO.FTL.105(21)): basta um troço
+  contínuo antes, depois ou entre reservas. Uma reserva sem horas conta na leitura mais favorável;
+- o repouso antes de um serviço que NÃO é PSV (escritório, formação) contava como repouso reduzido — a lei só fixa mínimo
+  "antes de um PSV" (ORO.FTL.235(a)/(b));
+- quando o repouso anterior só era reduzido numa das leituras (pernas que não batem certo), o seguinte saía "curto" em vez
+  de "incerto";
+- as Estatísticas não sabiam se o tripulante é piloto (o máximo do PSV seguinte depende disso) e discordavam do Início;
+- ao partir em dois, a apresentação do 2.º aceitava-se ainda dentro do 1.º serviço (contavam os calços, não o fim do
+  serviço com o pós-voo);
+- partir em dois SEM a apresentação do 2.º fazia o Início e as Estatísticas saltarem esse serviço (davam "Sim" a um repouso
+  de 8 h). Um serviço sem apresentação entre os dois dá agora "curto" abaixo de 10 h e "incerto" acima, nos três sítios;
+- com uma assistência antes do 2.º PSV prolongado, os repousos adicionais não saíam "consecutivos" (ORO.FTL.205(d)(2)).
+
+**Onde é leitura e não lei (para a ANAC, com o resto do pack):**
+- *Assistência em casa (sem chamada) entre um serviço e o PSV — os textos NÃO decidem; fica "incerto" (4.ª revisão).*
+  História, para não se repetir: a 2.ª revisão pôs o caso "incerto"; o Nuno perguntou "como corrigimos isto?"; eu concluí
+  que os textos e as FAQ da EASA decidiam ("o piso, sempre") e tirei o incerto; a 4.ª revisão, pedida de propósito para
+  atacar essa decisão, mostrou que não se aguenta, e repus o incerto com a regra completa. O que é certo nos textos:
+  o repouso antes do PSV só começa quando a assistência acaba (ORO.FTL.105(21)) e é "a rest period in accordance with
+  ORO.FTL.235" (CS FTL.1.225(b)(4)); a assistência em casa não é período de serviço para o 235 (só a do aeroporto,
+  ORO.FTL.225(c); EASA FAQ 47630). O que NÃO dizem: por que serviço se mede esse repouso — pelo último serviço verdadeiro
+  (leitura A: o mínimo dele) ou por nenhum (leitura B: o piso, 12 h na base / 10 h fora). As FAQ que citei tratam de outros
+  casos (47630: assistência seguida de PSV; 47610: serviços sem PSV; 47645: reserva) e nenhuma responde a este.
+  **Quem decide é o esquema de cada companhia:** "O período mínimo de repouso após um serviço de assistência que não conduz
+  à atribuição de um PSV" é um dos elementos que o esquema tem de especificar (ORO.FTL.225(f)(3)).
+  **Regra da app:** se depois do último serviço verdadeiro já houve um repouso com o mínimo dele (antes da assistência ou
+  entre duas), chega o piso; senão, entre o piso e esse mínimo → incerto; abaixo do piso → curto. Depois de um PSV
+  prolongado as horas do 205(d)(1) não se apagam com uma assistência pelo meio (o piso sobe-as nas duas leituras). Vale
+  igual com a assistência no mesmo dia do serviço ou nos seguintes, e com várias seguidas. O sítio do repouso (base ou
+  fora) é onde o último serviço deixou o tripulante.
+  **Como se resolve de vez (pendente, grupo 2):** a frase do OM-A de cada companhia (easyJet, TAP) sobre o repouso depois
+  de uma assistência sem chamada → uma regra por companhia, e o incerto passa a veredicto certo.
+  As FAQ 47630, 47610, 47642 e 47645 ficaram em `fontes/easa/`, com o teste a conferir as frases citadas.
+- *Repouso reduzido depois de um PSV prolongado.* Nenhum texto o proíbe (o ORO.FTL.220(c) só proíbe o repartido); a app dá
+  "incerto" entre o reduzido mais as horas do prolongamento e o exigido.
+
+**3.ª passagem** (Opus, sobre as correções da 2.ª). Uma expectativa do `HEAD` mudou (a do 205(d), já justificada); as três
+vistas (Início, Simulação, Estatísticas) deram o mesmo em cerca de 10 600 comparações. Achou cinco erros; quatro corrigidos
+com teste primeiro e o quinto desapareceu com a decisão de cima:
+- partir em dois com o 2.º serviço a partir DEPOIS DA MEIA-NOITE gravava-o no dia do 1.º, antes dele (o Início dava "Sim" a
+  um repouso de 10 h 30 na base) — a linha deixa de oferecer "são dois serviços" nesse caso (fica só corrigir as horas);
+- um serviço sem apresentação no MESMO dia e a menos de 10 h do seguinte dava "curto" (0:30 de "repouso") — pode ser o mesmo
+  PSV (intervalo, ORO.FTL.105(6); posicionamento antes do voo, ORO.FTL.215(a)): passa a "incerto";
+- uma reserva que começa dentro do intervalo e só acaba depois de o serviço seguinte começar era ignorada na conta da
+  recuperação — o troço livre acaba no início dela;
+- um serviço sem apresentação no meio do intervalo não interrompia a recuperação;
+- (o "incerto" da assistência em casa só olhava um bloco para trás — saiu com a decisão de cima).
+Mais dois acertos: as Estatísticas usam o mesmo "serviço anterior" do Início; e "Repousos abaixo do mínimo" (folha das
+Estatísticas) passa a contar só os curtos — os incertos dizem-se à parte, na nota.
+
+**4.ª passagem** (Opus, pedida pelo Nuno, sobre a ronda da 3.ª). Conferiu no site da EASA que as citações de `fontes/easa/`
+são literais. Deitou abaixo a decisão da assistência em casa (ver acima) e achou mais:
+- depois de um PSV prolongado, 12 h a seguir a uma assistência em casa davam "certo" — as 4 h do ORO.FTL.205(d)(1)
+  desapareciam; agora "curto" abaixo de 16:00 e "incerto" até às 18:00;
+- a resposta mudava com a meia-noite (assistência no mesmo dia do voo: mínimo do voo; no dia seguinte: o piso) — a mesma
+  regra nos dois casos;
+- num bloco só de assistência o repouso contava sempre como "na base" (12 h), mesmo num hotel fora — passa a ser onde o
+  último serviço deixou o tripulante (10 h fora, ORO.FTL.235(b));
+- um serviço sem apresentação no mesmo dia tinha ficado "incerto" mesmo quando o repouso antes dele não pode chegar às 10 h
+  (do fim do serviço da véspera aos calços dele) — volta a "curto" nesse caso;
+- uma reserva a começar no minuto exato em que o serviço acaba era ignorada na conta da recuperação.
+Um golden desta sessão mudou de valor: "prolongamento + assistência em casa no mesmo dia, 15 h" continua "curto", mas o
+mínimo mostrado passa de 18:00 para 16:00 (o de todas as leituras; as 18:00 são o da leitura mais exigente).
+Sem erro: a regra de não oferecer "são dois serviços" quando o 2.º parte no dia seguinte (7 casos corridos); o custo das
+contas novas (um ano de serviços: Início 10 ms, Estatísticas 52 ms); cerca de 11 900 repousos aleatórios sem exceções.
+**As correções desta 4.ª passagem não tiveram nova revisão independente.**
+
+**Visto e mantido:** assistência em casa e voo no mesmo bloco (chamada), com menos do que o mínimo antes da assistência →
+"curto": o repouso é livre de assistência (ORO.FTL.105(21), vinculativo), por isso acaba quando ela começa.
+
 ## 2026-11-11 (noite, 10) — Repouso reduzido, assistência + voo, mudança de hora, pernas no Detalhe (Fable 5.2)
 
 O Nuno: "vamos corrigir isto" — os quatro pontos que tinham ficado por tratar. Testes primeiro em cada um. Nada visto no iPhone.
@@ -223,12 +367,7 @@ aceitava uma partida antes da apresentação. E uma leitura: o prolongamento pla
 reduzido → o PSV seguinte testa-se contra o máximo com prolongamento menos a diferença. Estes acertos já não tiveram uma
 passagem independente a seguir.
 
-**Ficou por tratar (grupo 2):** depois de um PSV prolongado, um repouso entre o reduzido mais as horas do prolongamento e o
-exigido continua "curto" (há uma leitura em que seria incerto — para a ANAC); a assistência em casa conta como "serviço
-precedente" para o repouso a seguir (a GM1 CS FTL.1.225(c) diz que só conta para o 210) — defeito de antes; as Estatísticas
-contam os repousos da banda reduzida como "curtos"; pernas com 10 h ou mais em terra que estejam mesmo certas (dois serviços
-lidos como um) não se conseguem gravar no Detalhe — falta partir um serviço em dois; a app não conta os 2 repousos reduzidos
-entre recuperações.
+**Ficou por tratar:** os cinco pontos que aqui estavam foram corrigidos na entrada de cima (noite 11).
 
 ## 2026-11-11 (noite, 9) — Dois serviços no mesmo dia: intervalo ou repouso (Fable 5.2, golden primeiro)
 

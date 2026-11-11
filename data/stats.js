@@ -6,7 +6,22 @@
 import { monthlyPerDiem, monthlyAe, awayNights } from './perdiem';
 import { eventCounts } from './aeEvents';
 import { resolveCrew, tenureAt } from './crewHistory';
-import { restAfterDuty } from '../ftl';
+import { restVerdicts } from './today';
+
+// Os repousos abaixo do mínimo ENTRE serviços do período `prefix` ('YYYY' ou 'YYYY-MM'; como o "menor repouso"), com o MESMO
+// veredicto do "Tenho descanso?" (data/today.js restVerdict — ORO.FTL.235, o repouso reduzido da CS FTL.1.235(c) com o (c)(3),
+// (c)(4) e (c)(5), a assistência em casa): `short` = curtos de certeza; `uncertain` = só legais numa leitura.
+const restCounts = (duties, prefix, { postFlightMin = 0, baseAt = null, isPilot = false } = {}) => {
+  const y = +String(prefix).slice(0, 4), m = String(prefix).length > 4 ? +String(prefix).slice(5, 7) : null;
+  const p2 = (n) => String(n).padStart(2, '0');
+  const iso = (t) => `${t.getFullYear()}-${p2(t.getMonth() + 1)}-${p2(t.getDate())}`;
+  // dois meses para trás (a conta dos repousos reduzidos vai até à última recuperação) e um mês para a frente (a rotação
+  // seguinte, para as noites locais da CS FTL.1.235(b)(4))
+  const from = iso(new Date(y, (m ? m - 1 : 0) - 2, 1)), to = iso(new Date(m ? y : y + 1, m ? m + 1 : 1, 0));
+  const fn = typeof baseAt === 'function';
+  const list = restVerdicts(duties, { postFlightMin, isPilot, base: fn ? null : baseAt, baseAt: fn ? baseAt : null, from, to }).filter((v) => String(v.nextIso).startsWith(prefix) && String(v.prevIso).startsWith(prefix));
+  return { short: list.filter((v) => v.status === 'bad').length, uncertain: list.filter((v) => v.status === 'unc').length };
+};
 
 export const STAT_KINDS = ['flight', 'standby_airport', 'standby_home', 'positioning', 'office', 'training'];
 // ORO.FTL.210(b): 900 h de voo por ANO CIVIL — é este o limite da vista Ano (ano civil).
@@ -40,7 +55,7 @@ export const availableYears = (duties = {}) => {
 };
 
 // Agrega o ano `year`. now = referência (meses decorridos p/ a base AE; testável).
-export const yearStats = (duties = {}, { year, ae = null, aeAt = null, category = null, contract = '12/12', crewHistory = null, companyHistory = null, fleet = null, postFlightMin = 0, events = [], now = new Date(), baseAt = null, serviceStart = null, startExact = false, largada = null, lifestyle = false } = {}) => {
+export const yearStats = (duties = {}, { year, ae = null, aeAt = null, category = null, contract = '12/12', crewHistory = null, companyHistory = null, fleet = null, postFlightMin = 0, events = [], now = new Date(), baseAt = null, serviceStart = null, startExact = false, largada = null, lifestyle = false, isPilot = false } = {}) => {
   const y = String(year || now.getFullYear());
   const months = Array.from({ length: 12 }, () => ({ flightMin: 0, dutyMin: 0, sectors: 0, count: 0 }));
   const byKind = {}; STAT_KINDS.forEach((k) => { byKind[k] = 0; });
@@ -71,9 +86,7 @@ export const yearStats = (duties = {}, { year, ae = null, aeAt = null, category 
         const so = toMin(s.signOff);
         const clk = so != null ? so : bo;
         const end = dn * 1440 + clk + (clk < rm ? 1440 : 0) + (so == null && (s.kind || 'flight') === 'flight' ? (postFlightMin || 0) : 0);
-        // O mínimo DEPOIS deste serviço (regra do motor, ORO.FTL.235): o piso pela localização real e o prolongamento.
-        const ra = restAfterDuty(s, { postFlightMin, base: typeof baseAt === 'function' ? baseAt(date) : baseAt, date });
-        restEntries.push({ start: dn * 1440 + rm, end, floor: ra ? ra.floorMin : 720, ext: !!(ra && ra.extended) });
+        restEntries.push({ start: dn * 1440 + rm, end });
       }
       const dm = dutyMinutes(s, postFlightMin);
       if (dm != null) { dutyMin += dm; months[mi].dutyMin += dm; }
@@ -176,23 +189,21 @@ export const yearStats = (duties = {}, { year, ae = null, aeAt = null, category 
   for (const n of dutyDayNums) { run = (prev != null && n === prev + 1) ? run + 1 : 1; longestStreak = Math.max(longestStreak, run); prev = n; }
   // Menor repouso entre serviços consecutivos (h) + nº de repousos abaixo do mínimo (ORO.FTL.235).
   restEntries.sort((a, b) => a.start - b.start);
-  let minRestMin = null, reducedRests = 0;
+  let minRestMin = null;
   for (let i = 1; i < restEntries.length; i++) {
     const rest = restEntries[i].start - restEntries[i - 1].end;
     if (rest <= 0) continue;
     if (minRestMin == null || rest < minRestMin) minRestMin = rest;
-    // Abaixo do mínimo do ORO.FTL.235 (auditoria A-265; antes: um limiar de 11 h que a lei não tem).
-    const prevE = restEntries[i - 1];
-    if (rest < Math.max(prevE.end - prevE.start, prevE.floor) + (prevE.ext ? 120 : 0)) reducedRests++;
   }
   const minRestH = minRestMin != null ? +(minRestMin / 60).toFixed(1) : null;
+  const { short: reducedRests, uncertain: uncertainRests } = restCounts(duties, y, { postFlightMin, baseAt, isPilot });
 
   return {
     scope: 'year', year: y,
     flightMin, flightHours: +(flightMin / 60).toFixed(1),
     dutyMin, dutyHours: +(dutyMin / 60).toFixed(1),
     sectors, count, flights, withRoute, nightStops,
-    offDays, longestStreak, minRestH, reducedRests,
+    offDays, longestStreak, minRestH, reducedRests, uncertainRests,
     byKind, months, topDest, aeYtd,
   };
 };
@@ -203,7 +214,7 @@ const daysInMonth = (y, m0) => new Date(y, m0 + 1, 0).getDate();
 // vista de Mês das Estatísticas. `days` = horas de voo por dia (gráfico diário); `aeMonth`
 // = ganhos estimados do mês (base + per-diem + pernoita, via monthlyAe, à categoria/contrato
 // EFFECTIVE-DATED desse mês). Módulo PURO (testável por golden).
-export const monthStats = (duties = {}, { ym, ae = null, category = null, contract = '12/12', crewHistory = null, companyHistory = null, fleet = null, postFlightMin = 0, events = [], now = new Date(), baseAt = null, serviceStart = null, startExact = false, largada = null, lifestyle = false } = {}) => {
+export const monthStats = (duties = {}, { ym, ae = null, category = null, contract = '12/12', crewHistory = null, companyHistory = null, fleet = null, postFlightMin = 0, events = [], now = new Date(), baseAt = null, serviceStart = null, startExact = false, largada = null, lifestyle = false, isPilot = false } = {}) => {
   const [Y, M] = String(ym || '').split('-').map(Number);
   const y = Y || now.getFullYear();
   const m0 = M ? M - 1 : now.getMonth();
@@ -236,9 +247,7 @@ export const monthStats = (duties = {}, { ym, ae = null, category = null, contra
         const so = toMin(s.signOff);
         const clk = so != null ? so : bo;
         const end = dn * 1440 + clk + (clk < rm ? 1440 : 0) + (so == null && (s.kind || 'flight') === 'flight' ? (postFlightMin || 0) : 0);
-        // O mínimo DEPOIS deste serviço (regra do motor, ORO.FTL.235): o piso pela localização real e o prolongamento.
-        const ra = restAfterDuty(s, { postFlightMin, base: typeof baseAt === 'function' ? baseAt(date) : baseAt, date });
-        restEntries.push({ start: dn * 1440 + rm, end, floor: ra ? ra.floorMin : 720, ext: !!(ra && ra.extended) });
+        restEntries.push({ start: dn * 1440 + rm, end });
       }
       const dm = dutyMinutes(s, postFlightMin);
       if (dm != null) dutyMin += dm;
@@ -265,16 +274,14 @@ export const monthStats = (duties = {}, { ym, ae = null, category = null, contra
   let longestStreak = 0, run = 0, prev = null;
   for (const n of dutyDayNums) { run = (prev != null && n === prev + 1) ? run + 1 : 1; longestStreak = Math.max(longestStreak, run); prev = n; }
   restEntries.sort((a, b) => a.start - b.start);
-  let minRestMin = null, reducedRests = 0;
+  let minRestMin = null;
   for (let i = 1; i < restEntries.length; i++) {
     const rest = restEntries[i].start - restEntries[i - 1].end;
     if (rest <= 0) continue;
     if (minRestMin == null || rest < minRestMin) minRestMin = rest;
-    // Abaixo do mínimo do ORO.FTL.235 (auditoria A-265; antes: um limiar de 11 h que a lei não tem).
-    const prevE = restEntries[i - 1];
-    if (rest < Math.max(prevE.end - prevE.start, prevE.floor) + (prevE.ext ? 120 : 0)) reducedRests++;
   }
   const minRestH = minRestMin != null ? +(minRestMin / 60).toFixed(1) : null;
+  const { short: reducedRests, uncertain: uncertainRests } = restCounts(duties, ymStr, { postFlightMin, baseAt, isPilot });
 
   // AE do mês — categoria/contrato EFFECTIVE-DATED desse mês (uma promoção não reescreve o
   // passado). `events` = extras do mês (eventos datados) valorizados pelo ae.monthExtras →
@@ -307,7 +314,7 @@ export const monthStats = (duties = {}, { ym, ae = null, category = null, contra
     flightMin, flightHours: +(flightMin / 60).toFixed(1),
     dutyMin, dutyHours: +(dutyMin / 60).toFixed(1),
     sectors, count, flights, withRoute, nightStops,
-    offDays, longestStreak, minRestH, reducedRests,
+    offDays, longestStreak, minRestH, reducedRests, uncertainRests,
     byKind, days, topDest, aeMonth,
   };
 };

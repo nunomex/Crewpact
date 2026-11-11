@@ -171,6 +171,15 @@ export function buildTodayItems(ctx, lang) {
     } else if (rest.kind === 'reducedRestAfter') {
       answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} (${l('mín. entre', 'min between')} ${hhmm(rest.requiredMin)} ${l('e', 'and')} ${hhmm(rest.requiredHiMin)})`;
       suggestion = l('O repouso anterior ficou abaixo do mínimo: se foi um repouso reduzido, este aumenta pela diferença (CS FTL.1.235(c)(3)). Confirma com a companhia.', 'The previous rest was below the minimum: if it was a reduced rest, this one is extended by the difference (CS FTL.1.235(c)(3)). Confirm with the company.');
+    } else if (rest.kind === 'noReport') {
+      // Um serviço SEM hora de apresentação antes deste: o repouso conta do fim dele, mas o mínimo depende de quanto durou.
+      const dd = rest.estIso ? `${rest.estIso.slice(8, 10)}/${rest.estIso.slice(5, 7)}` : '';
+      answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} ${l('antes do report', 'before report')}`;
+      suggestion = l(`Falta a hora de apresentação do serviço de ${dd}: sem ela não se sabe quanto durou, nem o repouso mínimo a seguir (ORO.FTL.235). Põe-a no detalhe desse serviço.`, `The duty on ${dd} has no report time: without it its length is unknown, and so is the minimum rest after it (ORO.FTL.235). Add it in that duty's detail.`);
+    } else if (rest.kind === 'standbyHome') {
+      // Só assistência em casa entre o último serviço e este PSV, sem um repouso com o mínimo desse serviço pelo meio.
+      answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} (${l('mín. entre', 'min between')} ${hhmm(rest.requiredMin)} ${l('e', 'and')} ${hhmm(rest.requiredHiMin)})`;
+      suggestion = l('Entre o teu último serviço e este só houve assistência em casa, e desde esse serviço não tiveste um repouso com o mínimo dele. A lei manda dar um repouso depois da assistência (CS FTL.1.225(b)(4)), mas não diz se se mede por esse serviço ou só pelo mínimo geral: quem o fixa é o esquema da tua companhia (ORO.FTL.225(f)(3)). Confirma com a companhia.', 'Between your last duty and this one there was only home standby, and since that duty you have not had a rest of its minimum length. The law requires a rest after standby (CS FTL.1.225(b)(4)) but does not say whether it is measured by that duty or only by the general minimum: your operator\'s scheme sets it (ORO.FTL.225(f)(3)). Confirm with the company.');
     } else if (rest.kind === 'breakOrRest') {
       // Os dois serviços anteriores têm 10 h ou mais entre eles: um PSV repartido ou dois PSV (ORO.FTL.105(6)) — o mínimo depende.
       answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} (${l('mín. entre', 'min between')} ${hhmm(rest.requiredMin)} ${l('e', 'and')} ${hhmm(rest.requiredHiMin)})`;

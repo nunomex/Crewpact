@@ -133,10 +133,17 @@ eq('205(d): repouso antes longo → +2 h = 15:30 → ✓ com 16:00', pick(restSt
   '2026-11-10': { report_time: '07:00', block_on: '20:30', sectors: 1 },
   '2026-11-11': { report_time: '12:30', block_on: '15:00' },
 }, T2, at(T2, '21:00'))), { status: 'ok', prevIso: '2026-11-10', nextIso: '2026-11-11', actualMin: 960, requiredMin: 930 });
-eq('205(d): sem saber o repouso antes → +4 h = 17:30 → curto com 16:00', pick(restStatus({
+// 2026-11-12: o que o 205(d)(1) aumenta é o MÍNIMO ("os períodos mínimos de repouso … devem ser aumentados"), e nada proíbe que
+// seja o do repouso reduzido (CS FTL.1.235(c)(1): 12 h na base): 12:00 + 4:00 = 16:00. Com 16:00 certas, abaixo das 17:30 mas
+// não das 16:00 → só é legal como repouso reduzido: incerto ('warn', kind 'reducedRest'; antes "curto"). Com 15:30 → curto.
+eq('205(d): sem saber o repouso antes → +4 h = 17:30 → com 16:00 só como repouso reduzido: incerto', pick(restStatus({
   '2026-11-10': { report_time: '07:00', block_on: '20:30', sectors: 1 },
   '2026-11-11': { report_time: '12:30', block_on: '15:00' },
-}, T2, at(T2, '21:00'))), { status: 'bad', prevIso: '2026-11-10', nextIso: '2026-11-11', actualMin: 960, requiredMin: 1050 });
+}, T2, at(T2, '21:00'))), { status: 'warn', prevIso: '2026-11-10', nextIso: '2026-11-11', actualMin: 960, requiredMin: 1050 });
+eq('205(d): … com 15:30 (abaixo das 12:00 + 4:00) → curto', pick(restStatus({
+  '2026-11-10': { report_time: '07:00', block_on: '20:30', sectors: 1 },
+  '2026-11-11': { report_time: '12:00', block_on: '15:00' },
+}, T2, at(T2, '21:00'))), { status: 'bad', prevIso: '2026-11-10', nextIso: '2026-11-11', actualMin: 930, requiredMin: 1050 });
 
 // ORO.FTL.205(d)(2): entre dois PSV prolongados seguidos, os repousos adicionais pré e pós-voo são consecutivos →
 // +2 h (depois do 1.º) + 2 h (antes do 2.º) = +4 h. 07:00 → 20:30 (13:30 de serviço) duas vezes: 13:30 + 4:00 = 17:30.
