@@ -226,7 +226,9 @@ export const legsChainMs = (dateISO, legs = [], reportHhmm = null) => {
 // O relógio de cada aeroporto mistura fusos: LIS 10:00 → TLV 17:50 são 5 h 50 de voo, não 7 h 50; LIS 10:00 → PDL 11:20 são
 // 2 h 20, não 1 h 20. ORO.FTL.105(12)/(13): o PSV e o tempo de voo são tempo DECORRIDO. Pela cadeia dos instantes:
 //   · `legMin[i]`: os minutos de cada perna (calços a calços);
-//   · `fdpMin`: da apresentação (no relógio da 1.ª partida) aos calços da última perna OPERADA (105(12)).
+//   · `fdpMin`: da apresentação (no relógio da 1.ª partida) aos calços da última perna OPERADA (105(12));
+//   · `tailMin`: a CAUDA — dos calços do último setor operado à chegada do posicionamento que vem depois (ORO.FTL.215(b): o
+//     posicionamento conta todo como serviço); null sem posicionamento no fim ou sem os instantes.
 // O que a cadeia não resolve (aeroporto sem fuso, hora em falta) cai no relógio, como antes; sem horas → null.
 export const serviceRealMin = (dateISO, legs = [], reportHhmm = null) => {
   const clock = (a, b) => { const x = hmOf(a), y = hmOf(b); return x == null || y == null ? null : (((y - x) % 1440) + 1440) % 1440; };
@@ -258,7 +260,13 @@ export const serviceRealMin = (dateISO, legs = [], reportHhmm = null) => {
       fdpMin = (real != null && byClock != null && Math.abs(real - byClock) <= 720) ? real : byClock;
     }
   }
-  return { legMin, fdpMin };
+  let tailMin = null;
+  const iL = list.length - 1;
+  if (iL > iN && list[iL] && list[iL].dh && list[iN] && !list[iN].dh) {
+    const cN = ch[iN], cL = ch[iL];
+    if (cN && cN.onMs != null && cL && cL.onMs != null) { const m = Math.round((cL.onMs - cN.onMs) / 60000); if (m > 0 && m <= 1440) tailMin = m; }
+  }
+  return { legMin, fdpMin, tailMin };
 };
 // Uma perna DETETADA (do histórico ou da API) traz a Zulu de OUTRO dia: com a hora de verão diferente fica 1 h ao lado (um voo
 // de julho num serviço de dezembro). Com o fuso do aeroporto conhecido, a Zulu sai e calcula-se pelo fuso no dia do serviço; sem

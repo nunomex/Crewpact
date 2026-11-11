@@ -473,6 +473,15 @@ EJU8004 [320] OPO - LIS A21:40 - A22:40`, 'easyjet');
   const again = verifyCandidates([fix10, ...c8.map((c) => ({ ...c }))], { duties: {}, dayLog: {}, ...PIL });
   const a11 = again.find((c) => c.duty.duty_date === '2026-10-11'), a10 = again.find((c) => c.duty.duty_date === '2026-10-10');
   eq('R8: depois da correção, o repouso curto do dia 11 aparece', [a11.status, a11.prospect.issues.some((i) => i.type === 'restBefore'), !!a10.prospect], ['warn', true, true]);
+  // Depois da correção a lista volta à ordem da 1.ª leitura (os avisos antes dos "ok"): um aviso novo não fica escondido a meio.
+  {
+    const { sortCandidates } = require(path.resolve('data/rosterImport.js'));
+    const mk = (date, status) => ({ duty: { duty_date: date }, status });
+    eq('depois da correção: os avisos sobem', sortCandidates([mk('2026-10-09', 'ok'), mk('2026-10-12', 'ok'), mk('2026-10-11', 'warn'), mk('2026-10-10', 'warn'), mk('2026-10-13', 'removed')]).map((c) => [c.duty.duty_date.slice(8), c.status]),
+      [['13', 'removed'], ['10', 'warn'], ['11', 'warn'], ['09', 'ok'], ['12', 'ok']]);
+    // (na correção de cima, o dia 10 corrigido e o dia 11 ficam os dois com aviso: o repouso curto é dos dois lados)
+    eq('… os dois dias do repouso curto ficam com aviso', again.map((c) => c.status).sort(), ['warn', 'warn']);
+  }
   // … e o aviso sai quando a correção o resolve (o estado volta a "ok").
   const fixed = verifyCandidates([{ ...fix10, duty: { ...fix10.duty, block_on: '17:45', sectors: 1, route: 'LIS-FNC', legs: [fix10.duty.legs[0]] } }, ...again.filter((c) => c.duty.duty_date === '2026-10-11').map((c) => ({ ...c }))], { duties: {}, dayLog: {}, ...PIL });
   eq('R8: um aviso que deixou de valer sai', fixed.find((c) => c.duty.duty_date === '2026-10-11').prospect.issues.some((i) => i.type === 'restBefore'), false);
@@ -516,6 +525,14 @@ EJU8004 [320] OPO - LIS A21:40 - A22:40`, 'easyjet');
     extra: [{ kind: 'office', report_time: '14:00', block_on: '16:00', sectors: 0, flight_minutes: 0, route: null, source: 'calendar', dayOffWorked: 'ddo' }] };
   const fC = importSaveFields({ duty: { duty_date: '2026-10-22', kind: 'flight', report_time: '06:00', block_off: '07:00', block_on: '09:00', sectors: 1, flight_minutes: 120, route: 'LIS-OPO' }, kind: 'flight' }, 'calendar', stC);
   eq('E2-C: o extra com a folga trabalhada saiu da escala → a folga fica no dia', [fC.dayOffWorked, fC.extra], ['ddo', null]);
+  // O que se escreve na CORREÇÃO da importação (papel, folga trabalhada, casos especiais, alojamento) grava-se no principal.
+  const corr = { duty: { duty_date: '2026-10-23', kind: 'flight', report_time: '06:00', block_off: '07:00', block_on: '09:00', sectors: 1, flight_minutes: 120, route: 'LIS-OPO', role: 'instr', dayOffWorked: 'wfly', special: { discretion: true }, accommodation: 'basic' }, kind: 'flight' };
+  const fK = importSaveFields(corr, 'calendar', null);
+  eq('correção na importação: o que se escreveu grava-se', [fK.role, fK.dayOffWorked, fK.special, fK.accommodation], ['instr', 'wfly', { discretion: true }, 'basic']);
+  const fK2 = importSaveFields(corr, 'calendar', { report_time: '06:00', block_off: '07:00', block_on: '09:00', sectors: 1, flight_minutes: 120, route: 'LIS-OPO', kind: 'flight', source: 'calendar', role: 'uprank' });
+  eq('… e ganha ao que estava guardado', fK2.role, 'instr');
+  const plain = importSaveFields({ duty: { duty_date: '2026-10-23', kind: 'flight', report_time: '06:00', block_off: '07:00', block_on: '09:00', sectors: 1, flight_minutes: 120, route: 'LIS-OPO', special: null }, kind: 'flight' }, 'calendar', null);
+  eq('… sem nada escrito, nada se escreve (o guardado fica)', ['role' in plain, 'dayOffWorked' in plain, 'special' in plain, 'accommodation' in plain], [false, false, false, false]);
   // R11: a pernoita ligada à mão numa formação fora (o calendário não a traz) fica quando a hora muda.
   const trnS = { report_time: '09:00', block_on: '17:00', sectors: 0, flight_minutes: 0, route: null, kind: 'training', source: 'calendar', nightStop: true };
   const trnR = { duty: { duty_date: '2026-10-21', kind: 'training', report_time: '09:30', block_off: null, block_on: '17:30', sectors: 0, flight_minutes: 0, route: null }, kind: 'training' };

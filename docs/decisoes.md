@@ -74,8 +74,9 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
 - **Importação e formulário (o que ficou depois de 2026-11-11):** A-241 (MTG/GND) e R3 (DH marcado só nas notas) precisam de
   uma escala real; R5 (serviço sem apresentação no mesmo PSV repartido); R6, 2.ª parte (o Início e os Números ignoram o máximo
   dos serviços sem apresentação); R7 (um ADTY sem fim paga o garantido sem dizer "incerto" — só em dados antigos: desde o
-  bloco 4 fica "a corrigir" e não entra); manual com a saída ligeiramente diferente fica duplicado (R11, parte); os 4 riscos
-  da revisão de 2026-11-11 (noite) (BLOCO 4 · 2026-11-11 noite).
+  bloco 4 fica "a corrigir" e não entra); manual com a saída ligeiramente diferente fica duplicado (R11, parte); na correção
+  da importação não se consegue APAGAR um papel ou um caso especial já guardado (só escrever); a verificação da folha não usa
+  os casos especiais nem o alojamento GUARDADOS do serviço principal (BLOCO 4 · 2026-11-11 noite).
 - **Simulação:** "Juntar ao dia" (Mobbin primeiro); TAP ~45 ms por cálculo (BLOCO 2).
 - **Desenho:** modo escuro da app toda (prioridade, projeto próprio) (2026-11-04 tarde); esboço `design/inicio-v6.html` por
   atualizar; Escala "na linguagem do Início" e a etiqueta de um dia com 2 serviços; Validades e formulário de evento na escala
@@ -151,12 +152,18 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   guardado e é lido igual → o aviso fica no dia novo. E5 um aeroporto do meio sem fuso: o PSV do formulário caía no relógio
   (o motor usa as pontas) → igual ao motor. E6 `legForDate` tirava a Zulu só de uma ponta → as duas ou nenhuma. O formulário
   bate com o motor (`ftlForDuty`) em 25 casos conferidos pelo revisor.
-- **Riscos que ficam (da revisão):** depois de corrigir um candidato a lista não volta a ordenar-se (um aviso novo pode ficar a
-  meio dos "ok"); longo curso para leste com mais de 21 h entre a apresentação e a última partida (ordem das pernas no
-  Detetar); a cauda de um posicionamento noutro fuso mede-se pelo relógio (motor e formulário; já era assim); o papel e os
-  casos especiais escritos na correção da importação não se gravam no principal (já era assim).
-- **Testes:** flightDetect 48, zulu 44, completar 28, importação 122, Simulação 113; 34 suites verdes; export iOS ✓. **Nada
-  visto no iPhone.**
+- **Os 4 riscos da revisão, corrigidos a seguir (o Nuno: "vamos corrigir isto"):** (1) depois de corrigir um candidato a
+  lista volta à ordem da 1.ª leitura (`sortCandidates`: um aviso novo sobe para junto dos avisos). (2) Com a apresentação e a
+  data, a ordem das pernas é pelos INSTANTES (o fuso de cada aeroporto): experimenta-se cada perna como 1.ª e fica a que sai
+  em 1.º com a partida mais perto depois da apresentação — LIS→SIN e de lá às 07:30 já não troca; 356 ordens baralhadas de 12
+  serviços (Açores, leste, oeste, noite, repartido, mudança de hora) deram todas certas; sem fuso em alguma perna, o relógio.
+  (3) A cauda de um posicionamento (o sign-off é a chegada do DH) conta pelo tempo decorrido, no MOTOR e no formulário
+  (ORO.FTL.215(b)): LIS-OPO e depois DH para PDL dava 4 h de serviço, são 5 h. `ENGINE_VERSION` 11 (o dayLog recalcula-se). O
+  posicionamento sozinho e o DH antes de operar já estavam certos (conferido). (4) O papel, a folga trabalhada, os casos
+  especiais e o alojamento escritos na correção da importação gravam-se no serviço principal (só o que foi escrito: vazio não
+  apaga o guardado), e a verificação da folha usa o alojamento escrito.
+- **Testes:** flightDetect 55, zulu 47, FTL golden 545, completar 28, importação 127, Simulação 113; 34 suites verdes; export
+  iOS ✓. **Nada visto no iPhone.**
 
 ## 2026-11-11 — Os grupos TAP e easyJet dos acertos de código (Opus 5.5 → Fable 5.2 a meio) — o Nuno: "vamos aos dois"
 

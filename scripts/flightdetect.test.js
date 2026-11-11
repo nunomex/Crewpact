@@ -138,6 +138,19 @@ eq('perna à mão em 1.º fica em 1.º', aggregateLegs(mix, { report: '05:15' })
 eq('… e sem apresentação', aggregateLegs(mix).route, 'LIS-FNC-LIS');
 eq('perna à mão no fim fica no fim', aggregateLegs([mix[1], { dep: 'LIS', arr: 'OPO', source: 'manual' }], { report: '07:30' }).route, 'FNC-LIS-OPO');
 
+// ── Com a DATA, a ordem é pelos INSTANTES (o fuso de cada aeroporto): longo curso para leste ──
+// Apresentação 08:00 em LIS; LIS→SIN 09:00–06:00 (+8 h); SIN→DPS às 07:30 de lá, 22 h 30 depois da 1.ª partida. No relógio,
+// 07:30 vem "antes" da apresentação e a 2.ª perna passava para 1.ª (rota SIN-DPS-SIN…). Pelos instantes fica certa.
+const east = [{ flightNo: 'L1', dep: 'LIS', arr: 'SIN', off: '09:00', on: '06:00' }, { flightNo: 'L2', dep: 'SIN', arr: 'DPS', off: '07:30', on: '10:10' }];
+eq('longo curso para leste, com a data: a ordem pelos instantes', aggregateLegs(east, { report: '08:00', date: '2026-01-15' }).route, 'LIS-SIN-DPS');
+eq('… introduzidas ao contrário', aggregateLegs([east[1], east[0]], { report: '08:00', date: '2026-01-15' }).route, 'LIS-SIN-DPS');
+// Com a data, os casos de cima dão o mesmo.
+eq('com a data: passa a meia-noite', aggregateLegs([nite[1], nite[0]], { report: '21:30', date: '2026-01-15' }).route, 'LIS-FNC-LIS');
+eq('com a data: quatro pernas', aggregateLegs(four, { report: '05:15', date: '2026-01-15' }).legs.map((x) => x.flightNo).join(','), 'A1,A2,A3,A4');
+eq('com a data: partida uns minutos antes da apresentação', aggregateLegs([{ dep: 'FNC', arr: 'LIS', off: '08:00', on: '09:40' }, { dep: 'LIS', arr: 'FNC', off: '05:10', on: '06:55' }], { report: '05:15', date: '2026-01-15' }).route, 'LIS-FNC-LIS');
+eq('com a data: repartido', aggregateLegs(split, { report: '05:00', date: '2026-01-15' }).route, 'LIS-OPO-LIS');
+eq('com a data: aeroporto sem fuso → o relógio, como sem data', aggregateLegs([{ dep: 'ZZZ', arr: 'LIS', off: '09:10', on: '11:25' }, { dep: 'LIS', arr: 'ZZZ', off: '06:20', on: '08:35' }], { report: '05:20', date: '2026-01-15' }).route, 'LIS-ZZZ-LIS');
+
 // ── A Zulu de uma perna detetada é de OUTRO dia (histórico de julho num serviço de dezembro: a hora de verão já não é a mesma) ──
 {
   const { legForDate, legsZulu } = require(path.resolve('data/zulu.js'));

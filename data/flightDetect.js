@@ -5,6 +5,7 @@
 //
 // "Leg" normalizado: { flightNo, dep, arr, off, on, flightMin, aircraft, source }.
 import { supabase } from './supabase';
+import { airportZulu } from './zulu';
 
 export const normFlightNo = (s) => String(s || '').toUpperCase().replace(/\s+/g, '');
 // Nº de voo COMPLETO = designador (sigla) + número. Ex. EJU7625, U27625, TP1923, FR1234.
@@ -78,10 +79,14 @@ export async function detectLeg(flightNo, duties = {}) {
 //     aí o serviço passa a meia-noite e começa depois do MAIOR intervalo sem voo. (Revisão independente, E1: só pelo maior
 //     intervalo, um repartido com 10 h 30 de pausa ao meio do dia começava à tarde.)
 //   · Uma perna sem horas (introduzida à mão) fica ONDE foi introduzida; as que têm horas ordenam-se entre si.
+//   · Com a apresentação E a data (`date`): pelos INSTANTES — cada partida no fuso do seu aeroporto. O relógio sozinho troca
+//     um longo curso para leste (LIS 09:00 → SIN, e de lá às 07:30: no relógio as 07:30 vêm "antes" da apresentação das 08:00).
+//     A apresentação está no relógio da 1.ª partida, que ainda não se sabe qual é: experimenta-se cada perna como 1.ª e fica a
+//     que sai mesmo em 1.º com a partida mais perto DEPOIS da apresentação. Sem fuso em alguma perna, o relógio (acima).
 // Quem chama guarda `legs` (a mesma ordem da rota): as horas de cada perna não podem ficar pelo índice de outra.
 const ORDER_SLACK_MIN = 180;
 const NIGHT_GAP_MIN = 480;
-export function aggregateLegs(legs = [], { report = null } = {}) {
+export function aggregateLegs(legs = [], { report = null, date = null } = {}) {
   const valid = (legs || []).filter((l) => l && (l.dep || l.arr));
   if (!valid.length) return null;
   const timed = valid.filter((l) => toMin(l.off) != null);
@@ -98,7 +103,24 @@ export function aggregateLegs(legs = [], { report = null } = {}) {
     if (gaps[0] < NIGHT_GAP_MIN) { let best = -1; gaps.forEach((g, i) => { if (g > best) { best = g; start = toMin(byClock[i].off); } }); }
   }
   const key = (l) => (start == null ? 0 : (((toMin(l.off) - start) % 1440) + 1440) % 1440);
-  const order = timed.map((l, i) => [l, i]).sort((a, b) => (key(a[0]) - key(b[0])) || (a[1] - b[1])).map((x) => x[0]);
+  let order = timed.map((l, i) => [l, i]).sort((a, b) => (key(a[0]) - key(b[0])) || (a[1] - b[1])).map((x) => x[0]);
+  if (date && toMin(report) != null && timed.length > 1) {
+    const z = timed.map((l) => toMin(l.offZ) ?? toMin(airportZulu(date, l.off, l.dep)));
+    if (z.every((v) => v != null)) {
+      let pick = null;
+      timed.forEach((f, fi) => {
+        const repZ = toMin(airportZulu(date, report, f.dep));
+        if (repZ == null) return;
+        const st = repZ - ORDER_SLACK_MIN;
+        const kz = (i) => (((z[i] - st) % 1440) + 1440) % 1440;
+        const idx = timed.map((_, i) => i).sort((a, b) => (kz(a) - kz(b)) || (a - b));
+        if (idx[0] !== fi) return;
+        const lead = kz(fi) - ORDER_SLACK_MIN;   // da apresentação à 1.ª partida (negativo: marcada uns minutos antes)
+        if (!pick || (lead >= 0 ? (pick.lead < 0 || lead < pick.lead) : (pick.lead < 0 && lead > pick.lead))) pick = { lead, idx };
+      });
+      if (pick) order = pick.idx.map((i) => timed[i]);
+    }
+  }
   let k = 0;
   const sorted = valid.map((l) => (toMin(l.off) != null ? order[k++] : l));
   const route = [sorted[0].dep, ...sorted.map((l) => l.arr)].filter(Boolean).join('-');

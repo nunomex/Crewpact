@@ -35,7 +35,7 @@ import { DUTY_WINDOWS, FLIGHT_WINDOWS } from './rules/flightTimeRules';
 import { QUADRO1_DIFF, QUADRO1_ELAPSED, TZ_REST_DIFF, TZ_REST_ELAPSED } from './constants/tables';
 import { parseHhmm, minToHhmm, durationMin } from './utils/time';
 import { acclimLetter } from './rules/acclimatisationRules';
-import { airportOffsetMin, airportUtcMs, legZulu, legsChainMs, chainReportMs } from '../data/zulu';
+import { airportOffsetMin, airportUtcMs, legZulu, legsChainMs, chainReportMs, serviceRealMin } from '../data/zulu';
 
 // Versão do MOTOR de cálculo FTL. Carimba cada registo diário derivado (dutyToFtlDay/
 // dayFtlFromDuties → dayLog), para que uma futura ERRATA (docs/ERRATA.md §E6) saiba com que
@@ -54,7 +54,7 @@ import { airportOffsetMin, airportUtcMs, legZulu, legsChainMs, chainReportMs } f
 // se for em terra); sem forma de o situar e se a letra do Quadro 1 mudasse com ele → por saber (antes saltava-se e dava D);
 // fusos dos aeroportos conferidos contra a IANA (data/tzOverride.js); a hora repetida da noite em que a hora atrasa pela
 // duração de voo possível (data/zulu.js).
-export const ENGINE_VERSION = 10;
+export const ENGINE_VERSION = 11;   // 11 (2026-11-11): a cauda de um posicionamento noutro fuso conta pelo tempo decorrido
 
 // Uma atividade (manual ou da escala) → PSV + repouso + legalidade num só objeto.
 // input: { state, report, end?, sectors, splitBreakH?, inBase?, postFlightMin? }
@@ -610,7 +610,12 @@ export const ftlForDuty = (duty = {}, ctx = {}) => {
   const kind = duty.kind || 'flight';
   const isFl = kind === 'flight';
   const onMin = parseHhmm(duty.block_on), soMin = parseHhmm(duty.signOff);
-  const pf = !isFl ? 0 : ((soMin != null && onMin != null) ? durationMin(onMin, soMin) : (postFlightMin || 0));
+  // A CAUDA de um posicionamento (o sign-off é a chegada do DH depois do último setor operado, ORO.FTL.215(b)): pelo tempo
+  // decorrido — o DH pode acabar noutro fuso (LIS-OPO e depois DH para PDL: o relógio dava 1 h a menos de serviço).
+  const lgsAll = Array.isArray(duty.legs) ? duty.legs : [];
+  const lastLg = lgsAll.length ? lgsAll[lgsAll.length - 1] : null;
+  const tailReal = (isFl && date && soMin != null && lastLg && lastLg.dh && parseHhmm(lastLg.on) === soMin) ? serviceRealMin(date, lgsAll, duty.report_time).tailMin : null;
+  const pf = !isFl ? 0 : tailReal != null ? tailReal : ((soMin != null && onMin != null) ? durationMin(onMin, soMin) : (postFlightMin || 0));
   // Casos especiais — repouso a bordo (205e), adiamento (205g), redução por standby (225): mexem no TETO do PSV
   // deste serviço. Vêm em `duty.special` (persistido em roster_meta).
   const sp = duty.special || {};

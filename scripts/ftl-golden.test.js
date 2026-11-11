@@ -1444,6 +1444,22 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('Live crew: mesma classe c1, teto piloto ≠ cabine (205 c distingue)', dP.fdp.maxFdpStr !== dC.fdp.maxFdpStr, true);
 }
 
+// ── A cauda do posicionamento noutro fuso (revisão de 2026-11-11): o período de serviço é tempo decorrido ──
+// ORO.FTL.215(b): "O tempo gasto no posicionamento conta todo como período de serviço." LIS-OPO 07:00–08:00 (apresentação
+// 06:00) e depois posicionamento OPO→PDL 08:30–10:00 de Ponta Delgada (11:00 de Lisboa): PSV 2 h + 3 h até à chegada = 5 h.
+// Pelo relógio (08:00 → 10:00) davam 4 h.
+{
+  const tailD = { report_time: '06:00', block_off: '07:00', block_on: '08:00', signOff: '10:00', sectors: 1, flight_minutes: 60, route: 'LIS-OPO-PDL', kind: 'flight',
+    legs: [{ dep: 'LIS', arr: 'OPO', off: '07:00', on: '08:00' }, { dep: 'OPO', arr: 'PDL', off: '08:30', on: '10:00', dh: true }] };
+  const rT = ftl.ftlForDuty(tailD, { date: '2026-01-15', base: 'LIS', postFlightMin: 30 });
+  eq('Cauda do DH noutro fuso: PSV 2:00 (só o setor operado)', rT.fdp.actualFdpMin, 120);
+  eq('Cauda do DH noutro fuso: serviço 5:00 (tempo decorrido)', rT.dutyPeriodMin, 300);
+  // No mesmo fuso não muda nada; e um sign-off escrito à mão (que não é a chegada do DH) fica pelo relógio.
+  const same = ftl.ftlForDuty({ ...tailD, route: 'LIS-OPO-FAO', legs: [tailD.legs[0], { dep: 'OPO', arr: 'FAO', off: '08:30', on: '10:00', dh: true }] }, { date: '2026-01-15', base: 'LIS', postFlightMin: 30 });
+  eq('Cauda do DH no mesmo fuso: 4:00', same.dutyPeriodMin, 240);
+  eq('Sign-off à mão (não é a chegada do DH): o relógio', ftl.ftlForDuty({ ...tailD, signOff: '10:30' }, { date: '2026-01-15', base: 'LIS', postFlightMin: 30 }).dutyPeriodMin, 270);
+}
+
 // ── Resumo ──
 console.log(`\nFTL golden — ${pass} passou, ${fail} falhou (${pass + fail} asserções)`);
 if (fail) { console.log('\n' + fails.join('\n')); process.exit(1); }

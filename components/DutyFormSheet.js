@@ -263,7 +263,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   // A rota e as pernas ficam pela MESMA ordem (auditoria A-249/A-250): a ordem é a dos minutos depois da apresentação, e as
   // pernas guardadas são as ordenadas — antes a rota era reordenada e as horas ficavam pelo índice (o PSV saía mais curto).
   const applyLegs = (legs0) => {
-    const agg = aggregateLegs(legs0, { report: isClock(form.report) ? form.report : null });
+    const agg = aggregateLegs(legs0, { report: isClock(form.report) ? form.report : null, date: form.date || null });
     const legs = (agg && agg.legs.length === legs0.length) ? agg.legs : legs0;
     setForm((f) => ({ ...f, legs,
       route: (agg && agg.route) ? agg.route : (legs.length ? f.route : ''),
@@ -377,7 +377,9 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     if (!isFlight) return diffMin(form.report, form.on);
     if (clkMin(form.report) == null || clkMin(lastOn) == null || realMin.fdpMin == null) return null;
     const end = clkMin(form.signOff) != null ? form.signOff : (clkMin(dhTailOn) != null ? dhTailOn : null);
-    return realMin.fdpMin + (end ? (diffMin(lastOn, end) || 0) : (postFlightMin || 0));
+    // A cauda de um posicionamento (o fim é a chegada do DH) pelo tempo decorrido — pode acabar noutro fuso.
+    const tail = (end && clkMin(dhTailOn) != null && clkMin(end) === clkMin(dhTailOn)) ? realMin.tailMin : null;
+    return realMin.fdpMin + (tail != null ? tail : end ? (diffMin(lastOn, end) || 0) : (postFlightMin || 0));
   })();
 
   // Edita off/on de um setor → materializa os legs e escreve no índice. Nº de setores (stepper).
@@ -678,7 +680,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
         // As pernas detetadas ANTES de haver apresentação ordenam-se agora por ela (revisão independente, E1). Numa correção da
         // importação não: essas pernas já vêm pela ordem da escala.
         if (!candidate && isFlight && isClock(v) && (f.legs || []).length > 1 && f.legs.length >= (Number(f.sectors) || 0)) {
-          const agg = aggregateLegs(f.legs, { report: v });
+          const agg = aggregateLegs(f.legs, { report: v, date: f.date || null });
           if (agg && agg.legs.length === f.legs.length) { next.legs = agg.legs; next.route = agg.route || f.route; next.off = agg.off || f.off; next.on = agg.on || f.on; }
         }
         return next;

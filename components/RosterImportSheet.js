@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { PELE, PELE_FONT, BRAND } from '../data/constants';
 import { diagnoseEvents } from '../data/calendar';
 import { importWindow, readCalendarRoster, absenceSuggestions, baseOfFor } from '../data/rosterRead';
-import { buildImportCandidates, importSaveFields, candidateKind, promoteMissing, verifyCandidates } from '../data/rosterImport';
+import { buildImportCandidates, importSaveFields, candidateKind, promoteMissing, verifyCandidates, sortCandidates } from '../data/rosterImport';
 import { issueText } from '../data/simulation';
 import { parseEasyjetRoster, rosterLooksForeign } from '../data/pdfRoster';
 import * as DocumentPicker from 'expo-document-picker';
@@ -201,12 +201,12 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
   // Depois de corrigir, a verificação corre OUTRA VEZ para todos (risco R8 do bloco 4): o corrigido passa a entrar na escala
   // desta leitura — é verificado com os outros, e os outros veem o repouso e os limites que ele muda.
   const applyCorrection = (corrected) => {
-    setCands((cs) => verifyCandidates(cs.map((c) => {
+    setCands((cs) => sortCandidates(verifyCandidates(cs.map((c) => {
       if (!(correcting && c.duty.duty_date === correcting.duty.duty_date && c.kind === correcting.kind)) return { ...c };
       // Se outro serviço do dia ainda tem horas em falta, passa ele para a frente (é esse que se corrige a seguir).
       const p = promoteMissing({ ...c.duty, ...corrected }, corrected.kind || c.kind);
       return { ...c, duty: { ...p.duty, kind: p.kind }, kind: p.kind };
-    }), { duties, dayLog, base, baseAt: homeBaseAt, isPilot, cabinGapMin, splitAdminMin, postFlightMin }));
+    }), { duties, dayLog, base, baseAt: homeBaseAt, isPilot, cabinGapMin, splitAdminMin, postFlightMin })));
     setCorrecting(null);
   };
   const fmtDay = (iso) => { const d = new Date(`${iso}T00:00:00`); if (isNaN(d)) return iso; const x = d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' }); return x.charAt(0).toUpperCase() + x.slice(1); };

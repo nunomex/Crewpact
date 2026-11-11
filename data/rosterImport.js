@@ -197,7 +197,7 @@ const snapOfCandidate = (c) => {
 const dayOfCandidate = (c) => {
   const d = c.duty || {};
   const out = { kind: c.kind || d.kind || 'flight' };
-  for (const k of ['report_time', 'block_off', 'block_on', 'sectors', 'flight_minutes', 'route', 'nightStop', 'signOff', 'legs', 'special', 'eLearning', 'officeType']) if (d[k] !== undefined) out[k] = d[k];
+  for (const k of ['report_time', 'block_off', 'block_on', 'sectors', 'flight_minutes', 'route', 'nightStop', 'signOff', 'legs', 'special', 'accommodation', 'eLearning', 'officeType']) if (d[k] !== undefined) out[k] = d[k];
   out.snap = snapOfCandidate(c);
   out.extra = Array.isArray(d.extra) && d.extra.length ? d.extra : null;
   return out;
@@ -260,10 +260,13 @@ export const buildImportCandidates = ({ activities = [], nonflights = [], duties
       out.push({ duty: { ...d, duty_date: date, kind }, kind, status: 'removed', exists: true, diff: [], selected: false, action: 'delete' });
     }
   }
-  const PRIO = { removed: 0, conflict: 1, changed: 2, warn: 3, ok: 4, refresh: 5, same: 6 };
-  out.sort((a, b) => ((PRIO[a.status] ?? 9) - (PRIO[b.status] ?? 9)) || (a.duty.duty_date < b.duty.duty_date ? -1 : a.duty.duty_date > b.duty.duty_date ? 1 : 0));
-  return out;
+  return sortCandidates(out);
 };
+
+// A ORDEM da folha: cancelado → conflito → alterado → com aviso → novo → relido → igual; dentro de cada, por data. Corre na
+// leitura e depois de cada correção (um aviso novo que a correção cria sobe para junto dos outros avisos).
+const CAND_PRIO = { removed: 0, conflict: 1, changed: 2, warn: 3, ok: 4, refresh: 5, same: 6 };
+export const sortCandidates = (list = []) => list.sort((a, b) => ((CAND_PRIO[a.status] ?? 9) - (CAND_PRIO[b.status] ?? 9)) || (a.duty.duty_date < b.duty.duty_date ? -1 : a.duty.duty_date > b.duty.duty_date ? 1 : 0));
 
 // A VERIFICAÇÃO cumulativa dos candidatos: a escala com tudo o que esta leitura aplica (o que não está igual, nem a corrigir,
 // nem é um cancelado). Escreve em cada candidato o `prospect` e, nos novos, o estado 'warn'/'ok'. Corre na leitura e OUTRA VEZ
@@ -403,6 +406,12 @@ export const importSaveFields = (c, source = 'calendar', existing = null) => {
   // leitura, sem `source`) → o classify multi-serviço distingue "calendário mudou" de "tu editaste"
   // também nos extras. Single-serviço → sem snap.extra (idêntico ao legado).
   const snap = snapOfCandidate(c);
+  // O que o tripulante escreveu na CORREÇÃO da importação (o formulário devolve-o no candidato) grava-se — antes ficava pelo
+  // caminho, porque o principal só levava os campos da escala. Só o que foi escrito: vazio não apaga o que está guardado.
+  const own = {
+    ...(d.role ? { role: d.role } : {}), ...(d.dayOffWorked ? { dayOffWorked: d.dayOffWorked } : {}),
+    ...(d.special ? { special: d.special } : {}), ...(d.accommodation ? { accommodation: d.accommodation } : {}),
+  };
   const dayOff = ([stored, ...existingExtra].find((x) => x && x.dayOffWorked) || {}).dayOffWorked || null;
   const primDayOff = moved ? movedFields.dayOffWorked : ((stored && stored.dayOffWorked) || null);
   const dayOffFix = (dayOff && !primDayOff && !extra.some((e) => e && e.dayOffWorked)) ? { dayOffWorked: dayOff } : {};
@@ -425,6 +434,7 @@ export const importSaveFields = (c, source = 'calendar', existing = null) => {
     ...signOff,
     ...movedFields,
     ...dayOffFix,
+    ...own,
     // Sinais de €€ do AE (auditoria 2026-07-11 e A-230): sempre, para nunca ficar o do serviço antigo.
     eLearning: !!d.eLearning,
     officeType: d.officeType || null,

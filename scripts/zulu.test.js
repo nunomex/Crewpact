@@ -169,7 +169,14 @@ if (INTL_TZ_OK) {
   // Revisão independente (E5): um aeroporto do MEIO sem fuso parte a cadeia; o PSV sai na mesma pelas duas pontas (LIS e TLV
   // têm fuso), como no motor — 05:00 em LIS às 14:00 em TLV (12:00Z) são 7 h, não 9 h.
   eq('E5 aeroporto do meio sem fuso: o PSV pelas pontas', serviceRealMin('2026-01-15', [{ dep: 'LIS', arr: 'ZZZ', off: '06:00', on: '08:00' }, { dep: 'ZZZ', arr: 'TLV', off: '09:00', on: '14:00' }], '05:00').fdpMin, 420);
-  eqj('perna sem horas: null', serviceRealMin('2026-01-15', [{ dep: 'LIS', arr: 'FNC', off: '', on: '' }], '09:00'), { legMin: [null], fdpMin: null });
+  // A CAUDA: o posicionamento depois do último setor operado, até à sua chegada (ORO.FTL.215(b): conta como serviço) — pelo
+  // tempo decorrido. LIS-OPO 07:00–08:00, depois DH OPO→PDL 08:30–10:00 (PDL −1 h): dos calços às 08:00 à chegada são 3 h
+  // (11:00 de Lisboa), não as 2 h do relógio.
+  const tail = serviceRealMin('2026-01-15', [{ dep: 'LIS', arr: 'OPO', off: '07:00', on: '08:00' }, { dep: 'OPO', arr: 'PDL', off: '08:30', on: '10:00', dh: true }], '06:00');
+  eqj('cauda do posicionamento noutro fuso: 3 h', [tail.fdpMin, tail.tailMin], [120, 180]);
+  eq('sem posicionamento no fim: sem cauda', serviceRealMin('2026-01-15', [{ dep: 'LIS', arr: 'OPO', off: '07:00', on: '08:00' }], '06:00').tailMin, null);
+  eq('só posicionamento: sem cauda', serviceRealMin('2026-01-15', [{ dep: 'LIS', arr: 'PDL', off: '07:00', on: '08:20', dh: true }], '06:00').tailMin, null);
+  eqj('perna sem horas: null', serviceRealMin('2026-01-15', [{ dep: 'LIS', arr: 'FNC', off: '', on: '' }], '09:00'), { legMin: [null], fdpMin: null, tailMin: null });
 }
 
 // Degradação: aeroporto/hora inválidos → null (o chamador faz fallback ao fuso do dispositivo).
