@@ -15,7 +15,8 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
 ### 1. Ver no iPhone (conta de teste: easyJet, piloto)
 - **Sessão de 2026-11-11 — visto ✅:** Perfil "Na … desde" com a coluna do dia (os 6 pontos); Escala sem toque longo; Detalhe
   do serviço só de leitura com "do calendário", secção Completar, "Tocou numa folga?" com WFLY + DDO, "O calendário está
-  errado?" → horas reais. **Retomar no bloco 3** (dinheiro): Início "Quanto recebo?" e cartão do mês com o Natal; Números de
+  errado?" → horas reais. **Retomar no bloco 3** (dinheiro): Números de um mês SEM serviços (o bloco do dinheiro com a base e, por
+  baixo, "Sem escala neste mês" + "Ir para a Escala"); Início "Quanto recebo?" e cartão do mês com o Natal; Números de
   novembro (linha Subsídios, cêntimos) e do ano (férias + Natal, % das 900 h); o mês da entrada (Perfil → novembro de 2026 com
   o dia em "—" → base "incerto"; com o dia 5 → um valor; repor a data).
 - **Detalhe do serviço (v2), o que falta:** a hora REAL ao lado da prevista; repartido sem alojamento (Incerto → Completar →
@@ -97,8 +98,7 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
 ### 6. Decisões tuas
 - **Negócio:** data de lançamento; CI; marca CrewPact (INPI/EUIPO, App Store Connect, `.pt`/`.eu`); ícone (em pausa até aos
   sindicatos); edições por sindicato (login neutro com "Em parceria com…" recomendado); líquido estimado e comparação com o recibo.
-- **Produto:** os Números de um mês SEM serviços mostram o ecrã vazio ("ir para a Escala") e escondem o dinheiro, mas o
-  vencimento base paga-se na mesma — mostrar o bloco do dinheiro nesses meses? (visto no iPhone a 2026-11-11); mês do variável ("Ganhos da escala de novembro" ou modo recibo, A-200); aviso "hora da sincronização" no SNC
+- **Produto:** mês do variável ("Ganhos da escala de novembro" ou modo recibo, A-200); aviso "hora da sincronização" no SNC
   (A-085); radiação e estatísticas (A-268/269/275/276); linha do dia de serviço no pré-report; limites de escala de outros acordos
   além da TAP; passkeys e palavras-passe vazadas; prateleira (relógio solar, reconciliação v1.1, sino fase 3, Radar).
 
@@ -162,6 +162,9 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   posição; a coluna do dia passou a ouvir só o dedo); (2) "O calendário está errado?" → "Registar as horas reais" prendia o
   ecrã (a 2.ª folha abria com a 1.ª ainda a fechar, temporizador de 280 ms) → `PeleSheet.onClosed`. Na Escala há 4
   encadeamentos iguais com 320–350 ms que nunca prenderam — passar para o `onClosed` se algum falhar.
+- **Números de um mês sem serviços (o Nuno: "convém mostrar"):** o ecrã vazio escondia o dinheiro, mas o vencimento base paga-se
+  na mesma → com acordo e total > 0 fica o bloco do dinheiro e, por baixo, a nota "Sem escala neste mês" com "Ir para a Escala"
+  (refs Mobbin: Cash App, Chime, Fiverr — o número no topo, uma frase e um botão). Sem acordo, o ecrã vazio de sempre.
 
 ---
 

@@ -189,6 +189,9 @@ export default function StatsScreen({ navigation }) {
   const A = aeBlock || {};
   const total = A.total || 0;
   const extrasSum = (A.extras || 0) + (A.events || 0) + (A.cash || 0);
+  // Mês (ou ano) SEM serviços mas com acordo: o vencimento base paga-se na mesma → o bloco do dinheiro fica e só as horas dão lugar
+  // à nota "sem escala" (decisão do Nuno, 2026-11-11; refs Cash App e Chime: o número no topo, uma frase e um botão por baixo).
+  const moneyOnly = empty && mode === 'money' && total > 0;
   // 9/3 e sazonais sem as datas de atividade: a base do mês é incerta (Cl. 48.ª/80.ª; bloco 5) — diz-se o intervalo.
   // O motivo vem dos próprios meses (stats.js, `uncertainReasons`), não da companhia atual (um ano pode ter duas).
   const reasons = isYear ? (A.uncertainReasons || []) : (A.baseRange ? (A.baseRange.reasons || [A.baseRange.reason || 'activity']) : []);
@@ -409,7 +412,7 @@ export default function StatsScreen({ navigation }) {
           </View>
         ) : null}
 
-        {empty ? (
+        {empty && !moneyOnly ? (
           <Animated.View style={[s.emptyWrap, seg(1)]}>
             <Text style={s.emptyTxt}>{isYear ? l('Sem escala registada em ' + year + '.', 'No roster recorded in ' + year + '.') : l('Sem escala neste mês.', 'No roster this month.')}</Text>
             <Text style={s.emptySub}>{l('Importa ou regista serviços para veres as tuas estatísticas.', 'Import or add duties to see your stats.')}</Text>
@@ -503,6 +506,16 @@ export default function StatsScreen({ navigation }) {
             {/* Batismo das cores no modo FTL: a nota nasce SOB O DIAL (o elemento que pintou). */}
             {mode !== 'money' && baptismNote ? <View style={s.aeNotes}>{baptismNote}</View> : null}
 
+            {moneyOnly ? (
+              <View style={[s.emptyWrap, s.emptyTight]}>
+                <Text style={s.emptyTxt}>{isYear ? l('Sem escala registada em ' + year + '.', 'No roster recorded in ' + year + '.') : l('Sem escala neste mês.', 'No roster this month.')}</Text>
+                <Text style={s.emptySub}>{l('O vencimento base paga-se na mesma. Importa ou regista serviços para veres as horas, os limites e o resto dos ganhos.', 'Base pay is paid anyway. Import or add duties to see hours, limits and the rest of your earnings.')}</Text>
+                <TouchableOpacity onPress={() => { select(); navigation.navigate('Escala'); }} activeOpacity={0.85} style={s.emptyBtn}>
+                  <Text style={s.emptyBtnTxt}>{l('Ir para a Escala', 'Go to roster')}</Text>
+                  <Icon name="chevron" size={14} color={PELE.paper} />
+                </TouchableOpacity>
+              </View>
+            ) : (<>
             {/* ── Bento (cards → folhas) ── */}
             <View style={s.div} />
             <Text style={s.mais}>{l('Mais', 'More')}</Text>
@@ -564,6 +577,7 @@ export default function StatsScreen({ navigation }) {
             ) : null}
 
             <Text style={s.foot}>{l('Estimativa a partir da tua escala. Fim de serviço = sign-off; sem ele, on-block + débrief do perfil (só voos). Toca num tema para o detalhe.', 'Estimated from your roster. Duty end = sign-off; without it, on-block + your profile debrief (flights only). Tap a theme for detail.')}</Text>
+            </>)}
           </>
         )}
       </ScrollView>
@@ -746,6 +760,7 @@ const s = StyleSheet.create({
 
   // Empty
   emptyWrap: { alignItems: 'center', gap: 8, paddingVertical: 64 },
+  emptyTight: { paddingVertical: SPACE.xxl },   // por baixo do bloco do dinheiro (mês sem serviços)
   emptyTxt: { fontSize: 15, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, textAlign: 'center' },
   emptySub: { fontSize: 12.5, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, textAlign: 'center', paddingHorizontal: 24, lineHeight: 18 },
   emptyBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: PELE.ink, borderRadius: RADIUS.pill, paddingHorizontal: 18, paddingVertical: 11, marginTop: 8 },
