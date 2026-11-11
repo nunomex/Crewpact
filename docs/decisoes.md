@@ -151,8 +151,9 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   "Campos por fazer (com Mobbin)".
 - **Plataforma, não feita sem telemóvel:** a navegação v7 muda o comportamento do `navigate` e tem de ser vista no iPhone
   (regra 7: versões nativas só as do `expo install`); o "Secure email change" e o modelo de e-mail fazem-se no painel do
-  Supabase; apagar as tabelas órfãs é irreversível (fica o SQL para o Nuno aprovar); a pasta `android/` é local (está no
-  `.gitignore`).
+  Supabase; apagar as tabelas órfãs é irreversível — nenhum código as usa (conferido), e o SQL, para o Nuno correr no
+  editor SQL do Supabase se quiser, é `drop table if exists public.rest_periods;` e
+  `drop table if exists public.user_additional_roles;`; a pasta `android/` é local (está no `.gitignore`).
 
 ## 2026-11-11 (noite) — Importação e formulário (Fable 5.2) — o Nuno: "sim"
 
