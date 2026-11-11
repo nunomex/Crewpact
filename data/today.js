@@ -285,8 +285,10 @@ export function restUntilAfter(duties = {}, iso, ctx = {}) {
 
 // Repouso de recuperação (ORO.FTL.235(d), CS FTL.1.235(a)) — os avisos de [hoje − 1, hoje + 14]. O tipo de horário irregular
 // (matinal ou tardio, ORO.FTL.105(8)) é a AUTORIDADE de cada Estado que o fixa para os seus operadores (ARO.OPS.230).
-// Pesquisa de 2026-11-06: nenhuma fonte oficial encontrada para a ANAC (TAP, Hi Fly), a Austro Control (easyJet Europe)
-// nem a IAA (Ryanair) — só uma tabela secundária. Por isso `disruptiveType` só vem preenchido com uma fonte oficial;
+// Pesquisa de 2026-11-06 e de 2026-11-11: nenhuma fonte oficial encontrada para a ANAC (TAP, Hi Fly) nem para a Austro Control
+// (easyJet Europe). A IAA (Irlanda) fixou o tipo MATINAL para os operadores com certificado irlandês (OAM 06, 2017 —
+// fontes/autoridades/iaa-oam-06-2017.txt), mas falta saber sob que certificado voam os tripulantes da Ryanair em Portugal
+// (Ryanair DAC ou Malta Air). Por isso `disruptiveType` só vem preenchido com uma fonte oficial que se aplique de certeza;
 // sem ela avaliam-se os dois tipos e um aviso que só um dá fica INCERTO ("a lei é que manda").
 // Todos os avisos de recuperação da escala, com `uncertain` quando só um dos dois tipos de horário os dá (o recoveryStatus e a
 // Simulação usam este). `ctx` = { postFlightMin, base, baseAt, disruptiveType }.

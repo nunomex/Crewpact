@@ -67,9 +67,10 @@ Rascunho completo em https://crewpact.app/termos, publicado com a marca "RASCUNH
    Concorda?
 3. **Compromisso de aviso de erros (§3):** "Quando identificamos um erro relevante num cálculo, procuramos corrigi-lo e
    (…) avisar os utilizadores potencialmente afetados." Esta frase cria uma obrigação que convenha moderar?
-4. **Resolução de litígios (§12):** o texto remete para a plataforma europeia de resolução de litígios em linha. Tenho
-   indicação de que essa plataforma foi encerrada em 2025. Confirma? Que informação sobre entidades de resolução
-   alternativa de litígios (Lei 144/2015) tenho de dar?
+4. **Resolução de litígios (§12):** o rascunho remetia para a plataforma europeia de resolução de litígios em linha. A
+   plataforma foi descontinuada: o Regulamento (UE) 2024/3228, de 19 de dezembro de 2024, revogou o Regulamento (UE)
+   n.º 524/2013 «com efeitos a partir de 20 de julho de 2025» (art. 1.º). Tirei essa frase. Que informação sobre entidades
+   de resolução alternativa de litígios (Lei n.º 144/2015, art. 18.º) tenho de dar no lugar dela?
 5. **Idade mínima de 16 anos (§4):** adequada?
 6. **Alterações aos termos (§11):** "o uso continuado após a entrada em vigor constitui aceitação". É suficiente, ou
    tenho de pedir nova aceitação expressa na aplicação?

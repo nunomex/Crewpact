@@ -1,0 +1,22 @@
+Irish Aviation Authority (IAA) — Operations Advisory Memorandum OAM 06, Revision 00, 11.08.17
+Título: EASA Subpart FTL – Fatigue/Disruptive Schedule determination
+Fonte: https://www.iaa.ie/docs/default-source/publications/advisory-memoranda/operations-advisory-memoranda-(oam)/easa-subpart-ftl---fatiguedisruptive-schedule-determination.pdf?sfvrsn=12a70df3_8
+Descarregado a 2026-11-11 (PDF de 2 páginas; SHA-256 7fc04d2ddf902e6dc488fe8144898a7fffc0efaeca0dfe6853e9b2a9de40f9d4). Extrato literal (pdftotext -layout), não o documento inteiro.
+
+=====[PDF p.1]=====
+1. INTRODUCTION
+[...]
+This document also indicates the Authority's decision on Disruptive Schedules in accordance with
+Regulation 965/2012 ARO.OPS.230
+
+=====[PDF p.2]=====
+5. DISRUPTIVE SCHEDULE - EARLY/LATE DECISION
+
+To meet the compliance requirements of ARO.OPS.230 (Determination of disruptive schedules) the
+Authority has decided that all Commercial Air Transport operators issued with an Irish AOC will be
+required to comply with the "early type" definition.
+
+Notas (não são citação):
+- É a decisão da autoridade IRLANDESA: vale para os operadores com certificado (AOC) irlandês, como a Ryanair DAC.
+- O documento é de 2017 e continua na lista de OAM do site da IAA a 2026-11-11; não se confirmou com a IAA que está em vigor.
+- Falta saber sob que AOC voam os tripulantes da Ryanair baseados em Portugal (Ryanair DAC, irlandês, ou Malta Air, maltês).

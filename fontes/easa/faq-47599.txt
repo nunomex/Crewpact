@@ -1,0 +1,19 @@
+EASA — FAQ n.º 47599 (Flight Time Limitations, ORO.FTL.205(f) e (d))
+Fonte: https://www.easa.europa.eu/en/faq/47599 — última atualização indicada pela EASA: 12/07/2018.
+Consultada a 2026-11-11. Citação literal da pergunta e da resposta.
+
+Pergunta: Commander's discretion ORO.FTL.205(f), (see also ORO.FTL.205 (d)):
+1. What is the maximum FDP extension allowed under commander's discretion?
+2. How would commander's discretion apply when the FDP of a non-augmented crew has already been extended in accordance
+with ORO.FTL.205 (d))?
+
+Resposta:
+1. Up to 2 hours for two pilot crew and up to 3 hours for augmented crew.
+2. For a two pilot extended FDP operation, the use of commander's discretion is always based on the maximum daily FDP
+table ORO.FTL.205 (b) (1). For example, when 1 hour has already been added to the maximum daily FDP in accordance with
+ORO.FTL.205 (d), then only 1 hour is left for commander's discretion.
+
+O que responde (paráfrase): a discrição do comandante conta sempre a partir do quadro do 205(b)(1) — o máximo SEM o
+prolongamento planeado. Com o prolongamento de 1 hora já usado, sobra 1 hora de discrição. É a leitura que a app segue.
+
+Valor jurídico: as FAQ da EASA não são vinculativas (pergunta E0 do pack do advogado).

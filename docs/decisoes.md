@@ -102,7 +102,11 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   códigos SBY/STBY/MTG/GND da easyJet; lista de distâncias do per diem; documentos reais para as Validades (paradas) (BLOCO 4 · 8).
 
 ### 5. Pesquisa — `docs/pesquisa-pendente.md`
-- Tipo matinal/tardio em Portugal (ARO.OPS.230); tabela geotime do ROV da TAP; salário mínimo de 2027 (`fontes/pt/rmmg.txt`);
+- **Feita a 2026-11-11** (ver a entrada "Pesquisa" abaixo). Fica: o tipo matinal/tardio da ANAC e da Austro Control (pedir
+  por escrito, ou abrir os sites no navegador) e o certificado da Ryanair em Portugal; **o salário mínimo de 2027 — voltar
+  a ver no fim de dezembro**; as duas interpretações que a EASA não esclarece (repartido sem alojamento adequado; "7 dias
+  consecutivos").
+- (lista antiga) Tipo matinal/tardio em Portugal (ARO.OPS.230); tabela geotime do ROV da TAP; salário mínimo de 2027 (`fontes/pt/rmmg.txt`);
   plataforma europeia de litígios (encerrada em 2025?); interpretações da EASA ainda não conferidas.
 
 ### 6. Decisões tuas
@@ -117,6 +121,20 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   (AlarmKit), hotel pelo Apple Maps, passkeys; Android; iPhone pequeno e grande; beta com 2–3 tripulantes no TestFlight;
   declaração de dados nas lojas; Supabase/Resend pagos e limites (e-mails por hora, DMARC).
 ---
+
+## 2026-11-11 (noite, 3) — Pesquisa do grupo 5 (3 agentes de pesquisa Haiku; fontes conferidas pelo Fable 5.2)
+
+- **Tipo de horário irregular:** Irlanda = matinal, com documento oficial (IAA, OAM 06 de 11.08.17, lido e guardado em
+  `fontes/autoridades/`). ANAC e Austro Control: não encontrado. Malta: não confirmado (o site recusa a leitura). Nada mudou
+  no código: falta saber sob que certificado voam os tripulantes da Ryanair em Portugal; a app continua a avaliar os dois tipos.
+- **EASA:** a discrição do comandante conta do quadro do 205(b)(1), sem o prolongamento (FAQ 47599, guardada em
+  `fontes/easa/`) — é o que a app já faz; sai da lista do advogado. As outras duas dúvidas não têm FAQ.
+- **Salário mínimo de 2027:** ainda não publicado (pista de imprensa: 970 €). Voltar a ver no fim de dezembro.
+- **Plataforma europeia de litígios:** encerrada a 20 de julho de 2025 (Regulamento (UE) 2024/3228, guardado em
+  `fontes/eu/`). A frase que remetia para ela saiu do rascunho dos termos (§12) e a pergunta A2.4 do pacote foi reescrita
+  (Word gerado de novo). **Os termos publicados no site só mudam quando o Nuno os republicar** ("vamos às leis").
+- **Tabela geotime do ROV da TAP:** não é pública.
+- Pormenor em `docs/pesquisa-pendente.md` (secções 4, 5 e a nova 6).
 
 ## 2026-11-11 (noite, 2) — "Sem telemóvel": os cálculos raros do grupo 2 (Fable 5.2)
 

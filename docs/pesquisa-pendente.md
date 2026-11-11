@@ -86,12 +86,22 @@ PT, p. 3). O tipo muda o que conta como "entrada matinal" e "largada tardia" (OR
 
 Isto pesa no repouso de recuperação: 4 ou mais serviços irregulares obrigam a 60 h (CS FTL.1.235(a)(2)).
 
-**O que já se sabe.** Nenhuma fonte oficial encontrada para:
-- a **ANAC**, Portugal (TAP, Hi Fly);
-- a **Austro Control**, Áustria (easyJet Europe);
-- a **IAA**, Irlanda (Ryanair DAC).
+**O que já se sabe (pesquisa de 11 de novembro de 2026).**
+- **Irlanda (IAA): matinal ("early type"), com documento oficial.** OAM 06, Revision 00, de 11.08.17, secção 5, p. 2: "the
+  Authority has decided that all Commercial Air Transport operators issued with an Irish AOC will be required to comply
+  with the "early type" definition." Guardado em `fontes/autoridades/iaa-oam-06-2017.txt`. O documento é de 2017 e continua
+  na lista do site da IAA; não se confirmou com a IAA que está em vigor. **Falta um facto para o usar na app:** sob que
+  certificado voam os tripulantes da Ryanair baseados em Portugal (Ryanair DAC, irlandês, ou Malta Air, maltês).
+- **Portugal (ANAC): não encontrado.** A página de regulamentação do site da ANAC não abriu à leitura automática. O
+  Decreto-Lei n.º 25/2022 (limites de tempo de voo do pessoal navegante) remete, nos aviões, para a subparte FTL europeia;
+  só se leu o preâmbulo, que não fala do tipo de horário irregular.
+- **Áustria (Austro Control): não encontrado.** As páginas de avisos e de "Information Letter" não têm nada sobre FTL. Falta
+  ver "Rechtsinformationen" no site.
+- **Malta: não confirmado.** A OAN 03/15 da Transport Malta dirá "early type", mas o site recusa a leitura automática
+  (erro 403): abrir no navegador.
+- **EASA:** a FAQ 139489 diz só que vale o tipo que o Estado do operador determinou; a EASA não publica a lista dos Estados.
 
-Pistas:
+Pistas anteriores:
 - Uma tabela secundária, sem data, dá a Áustria, a Irlanda e Malta como "matinal" e Portugal como "sem escolha publicada"
   (https://understandingeasa2016ftl.wordpress.com/easa-ftl/oro-ftl/aro-ops-230-determination-of-disruptive-schedules/).
 - **Malta:** a Transport Malta OAN 03/15 diz "early type", segundo o índice da pesquisa. O site bloqueia a leitura
@@ -100,8 +110,8 @@ Pistas:
   abrir. Está na lista de OAM em https://www.iaa.ie/publications
 - Itália (ENAC) e Suécia publicam a escolha (matinal), o que mostra que estas decisões existem por escrito.
 
-**O que falta.** O documento de cada autoridade com a escolha: ANAC, Austro Control, IAA (e Malta, se interessar a
-Ryanair/Hi Fly Malta).
+**O que falta.** O documento da ANAC e o da Austro Control; confirmar o de Malta; e o certificado sob o qual voam os
+tripulantes da Ryanair em Portugal.
 
 **Onde procurar.** Os sites das autoridades (circulares, avisos, "information notices" sobre FTL). Ou pedir por escrito:
 "Qual o tipo de horário irregular (ORO.FTL.105(8)) determinado ao abrigo do ARO.OPS.230 para os operadores de CAT sob a
@@ -117,12 +127,34 @@ vossa supervisão?". Os sindicatos também devem saber.
 Não são factos de companhia: são leituras do texto que a EASA pode ter esclarecido (FAQ ou AMC/GM). Procurar no site da
 EASA (secção FAQ de "Flight Time Limitations") antes de levar ao advogado.
 
-- **CS FTL.1.220(d) e (e):** sem alojamento adequado, uma pausa de 6 horas ou mais (ou que toca o WOCL) ainda permite a
-  extensão, só até 6 horas e fora do WOCL? Ou não permite extensão nenhuma? A app segue a primeira leitura.
-- **ORO.FTL.210:** "7 dias consecutivos" são dias civis ou 168 horas? Hoje um serviço que passa a meia-noite conta todo no
-  dia da apresentação.
-- **ORO.FTL.205(f) com 205(d):** a discrição do comandante aplica-se sobre o máximo sem o prolongamento? A app segue a
-  leitura literal (sem o prolongamento).
+Pesquisa de 11 de novembro de 2026, na lista de FAQ da EASA (https://www.easa.europa.eu/en/the-agency/faqs/oroftl):
+
+- **ORO.FTL.205(f) com 205(d): ESCLARECIDO.** FAQ 47599 (atualizada a 12/07/2018): "the use of commander's discretion is
+  always based on the maximum daily FDP table ORO.FTL.205 (b) (1). For example, when 1 hour has already been added to the
+  maximum daily FDP in accordance with ORO.FTL.205 (d), then only 1 hour is left for commander's discretion." É a leitura
+  que a app já segue (a discrição conta do máximo sem o prolongamento). Guardada em `fontes/easa/faq-47599.txt`. Já não
+  precisa de ir ao advogado; as FAQ não são vinculativas (pergunta E0).
+- **CS FTL.1.220(d) e (e): não esclarecido.** Sem alojamento adequado, uma pausa de 6 horas ou mais (ou que toca o WOCL)
+  ainda permite a extensão, só até 6 horas e fora do WOCL? Ou não permite extensão nenhuma? A FAQ 47628 repete a alínea
+  (d) e não fala da (e); não há FAQ sobre a (e). A app segue a primeira leitura.
+- **ORO.FTL.210: não esclarecido.** "7 dias consecutivos" são dias civis ou 168 horas? Nenhuma FAQ o diz (a 47580 define
+  "local day" a propósito das folgas, a 47592 usa "7 consecutive days" sem o definir). Hoje um serviço que passa a
+  meia-noite conta todo no dia da apresentação.
+
+---
+
+## 6. Outros factos (pesquisa de 11 de novembro de 2026)
+
+- **Salário mínimo de 2027: ainda não publicado.** A página da DGERT lista até ao Decreto-Lei n.º 139/2025 (920 €, 2026).
+  Pista, só pela imprensa: o relatório da proposta de Orçamento do Estado para 2027 fala em 970 €. Só o decreto-lei
+  publicado em Diário da República serve (costuma sair na segunda metade de dezembro): **voltar a ver no fim de dezembro**
+  e juntá-lo a `fontes/pt/rmmg.txt`, com o teste primeiro. Até lá, a base do 1.º ano da cabine easyJet em 2027 não se sabe.
+- **Plataforma europeia de resolução de litígios em linha: encerrada.** Regulamento (UE) 2024/3228, art. 1.º: "O
+  Regulamento (UE) n.o 524/2013 é revogado com efeitos a partir de 20 de julho de 2025"; art. 2.º, n.º 1: a plataforma "é
+  descontinuada". Guardado em `fontes/eu/reg-2024-3228-pt.txt`. A frase dos termos (§12) que remetia para a plataforma
+  saiu do rascunho; o que pôr no lugar (entidades de resolução alternativa de litígios, Lei n.º 144/2015, art. 18.º) é a
+  pergunta A2.4 do pacote do advogado.
+- **Tabela geotime do ROV da TAP: não é pública.** Não aparece em nenhuma fonte aberta. Fica no pedido aos sindicatos.
 
 ---
 
