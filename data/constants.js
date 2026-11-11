@@ -75,7 +75,8 @@ const PALETTE_DARK = {
 void PALETTE_LIGHT; void PALETTE_DARK;
 
 // ─── Design tokens ─────────────────────────────────────────────────────────────
-export const RADIUS = { xs: 8, sm: 10, md: 14, lg: 16, xl: 22, xxl: 24, pill: 99 };
+// `sheet` (32) = a folha da direção 3.0 "cartões de cor" (design-system §14, 2026-11-11).
+export const RADIUS = { xs: 8, sm: 10, md: 14, lg: 16, xl: 22, xxl: 24, sheet: 32, pill: 99 };
 // Espaço (Design System 2.0, 2026-11-02): grelha de 4 com dois meios-passos (2 e 6) para o miúdo.
 // As chaves antigas (xs/sm/md/lg/xl) mantêm o valor — nada do que já existe muda.
 // Fora da escala: 1 (hairline) e valores negativos de sobreposição deliberada.
@@ -234,6 +235,64 @@ export const TXT = {
   titleLg:    { fontFamily: PELE_FONT.display, fontSize: 30, letterSpacing: -0.4 },  // título de folha/página
   num:        { fontFamily: PELE_FONT.display, fontSize: 24, letterSpacing: -0.2 },  // número em linha
   numLg:      { fontFamily: PELE_FONT.display, fontSize: 34, letterSpacing: -0.5 },  // número herói
+};
+
+// ─── Direção 3.0 · CARTÕES DE COR (decidida 2026-11-11, design-system §14; esboço design/inicio-cartoes.html) ─────────
+// Aplica-se ecrã a ecrã: só os ecrãs migrados (o Início, a barra de abas) leem CARD/TXT3; o resto segue PELE/TXT (2.0).
+// A COR É O TIPO, sempre a mesma: areia = voo · salva = repouso e pernoita · lilás = serviço em terra · neutro = dinheiro e o
+// resto · laranja = pede atenção. O texto sobre os cartões de cor é sempre a tinta #141414 (também à noite: as cores descem um tom).
+// Contraste medido (WCAG 2.1, 2026-11-11): linha pequena (82 %) ≥ 5,09 em todas as cores, de dia e de noite · rótulo do cartão
+// a 80 % ≥ 4,8 (a 72 % do esboço o laranja dava 4,35 — corrigido) · abas inativas #5E5E57 = 5,68 sobre o neutro (o #77776F do
+// esboço dava 3,93 — corrigido) · ganho #0B6E43 na pílula branca 6,31 · à noite o ganho fora das pílulas é #7BE3B0 (11,6).
+export const CARD = {
+  day: {
+    desk: '#E3E1DB', ink: '#141414', soft: '#3A3A36', sheet: '#FFFFFF', neutral: '#F1EFEA',
+    sand: '#E8BE6E', sage: '#B4C2A2', lilac: '#C6BADF', warn: '#F0854A',
+    grey: 'rgba(20,20,20,0.5)',          // a 2.ª linha do número quando QUALIFICA ("estimado", "livre") — 3,24 (texto muito grande pede 3)
+    gainOut: '#0B6E43',                   // ganho FORA de uma pílula branca (o facto "+96,90 €" do pós-voo) — 5,64
+    tabSub: '#5E5E57', tabOn: '#FFFFFF', round: 'rgba(127,127,127,0.22)', caption: '#77776F',
+    neutralSub: 'rgba(20,20,20,0.82)', neutralKind: 'rgba(20,20,20,0.8)', neutralGo: 'rgba(127,127,127,0.2)',
+    darkSub: 'rgba(255,255,255,0.82)', darkGo: 'rgba(255,255,255,0.2)',   // a linha fina ESCURA (a ação principal: ligar, ler a escala)
+  },
+  night: {
+    desk: '#14161B', ink: '#F4F2ED', soft: 'rgba(244,242,237,0.7)', sheet: '#1F222A', neutral: '#2A2E38',
+    sand: '#DDB25F', sage: '#A3B490', lilac: '#B7AAD4', warn: '#EE7C40',
+    grey: 'rgba(244,242,237,0.5)', gainOut: '#7BE3B0',
+    tabSub: 'rgba(244,242,237,0.62)', tabOn: 'rgba(244,242,237,0.16)', round: 'rgba(127,127,127,0.22)', caption: 'rgba(244,242,237,0.62)',
+    neutralSub: 'rgba(244,242,237,0.82)', neutralKind: 'rgba(244,242,237,0.8)', neutralGo: 'rgba(127,127,127,0.2)',
+    darkSub: 'rgba(31,34,42,0.82)', darkGo: 'rgba(31,34,42,0.15)',       // à noite a linha "escura" inverte: tinta clara, letra da folha
+  },
+  // Sobre os cartões de COR (areia · salva · lilás · laranja), de dia e de noite:
+  onCard: '#141414', onCardSub: 'rgba(20,20,20,0.82)', onCardKind: 'rgba(20,20,20,0.8)', onCardTrack: 'rgba(20,20,20,0.18)',
+  chip: '#FFFFFF', gain: '#0B6E43',                     // o que um serviço RENDE: verde numa pílula branca, em qualquer cartão
+  go: 'rgba(255,255,255,0.55)', act: 'rgba(255,255,255,0.62)', dur: 'rgba(255,255,255,0.85)',
+  rule: 'rgba(127,127,127,0.3)',                        // o fio por cima do pé das parcelas
+  badgeFg: '#141414',
+};
+// Texto da direção 3.0 — Hanken Grotesk em tudo (decisão do Nuno, 2026-11-11). Tamanhos da escala (§9); o número gigante (86)
+// fica fora dela, no TUNE do Início. Os TXT da 2.0 não mudam (a Hanken é mais larga e partia os ecrãs antigos).
+export const TXT3 = {
+  what:      { fontFamily: PELE_FONT.bodyMed,   fontSize: 15, lineHeight: 20 },                      // a legenda por cima do número
+  pill:      { fontFamily: PELE_FONT.bodyBold,  fontSize: 13 },                                      // pílulas do topo
+  fact:      { fontFamily: PELE_FONT.bodyBold,  fontSize: 20, lineHeight: 22 },                      // os dois factos ao lado do número
+  factLbl:   { fontFamily: PELE_FONT.bodyMed,   fontSize: 11, lineHeight: 15 },
+  unit:      { fontFamily: PELE_FONT.bodyBold,  fontSize: 34, letterSpacing: -1 },                   // "dias" · ",50 €" ao lado do gigante
+  kind:      { fontFamily: PELE_FONT.bodyHeavy, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase' },   // tipo do cartão
+  cardTitle: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 22, lineHeight: 26, letterSpacing: -0.4 },
+  cardSub:   { fontFamily: PELE_FONT.bodyMed,   fontSize: 12, lineHeight: 16 },
+  cardNum:   { fontFamily: PELE_FONT.bodyBold,  fontSize: 22, lineHeight: 24 },                      // as duas horas do cartão
+  cardNumLbl:{ fontFamily: PELE_FONT.bodyMed,   fontSize: 11, lineHeight: 15 },
+  chip:      { fontFamily: PELE_FONT.bodyHeavy, fontSize: 14 },                                      // "+45,40 €"
+  dur:       { fontFamily: PELE_FONT.bodyBold,  fontSize: 12 },                                      // o selo entre as duas horas
+  act:       { fontFamily: PELE_FONT.bodyBold,  fontSize: 14 },                                      // a barra de ação do cartão
+  slimTitle: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 16, lineHeight: 20 },
+  slimSub:   { fontFamily: PELE_FONT.bodyMed,   fontSize: 12, lineHeight: 16 },
+  slimVal:   { fontFamily: PELE_FONT.bodyHeavy, fontSize: 20 },
+  line:      { fontFamily: PELE_FONT.bodyMed,   fontSize: 15, lineHeight: 20 },                      // parcelas e passos
+  lineVal:   { fontFamily: PELE_FONT.bodyBold,  fontSize: 15, lineHeight: 20 },
+  text:      { fontFamily: PELE_FONT.bodyMed,   fontSize: 14, lineHeight: 20 },                      // cartão de texto (baixa, folga vazia)
+  tab:       { fontFamily: PELE_FONT.bodyBold,  fontSize: 11 },
+  badge:     { fontFamily: PELE_FONT.bodyHeavy, fontSize: 11 },
 };
 
 // Botão de ícone (fechar · voltar · ações de cabeçalho) — UM tamanho na app toda.

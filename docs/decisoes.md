@@ -78,12 +78,11 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   bloco 4 fica "a corrigir" e não entra); manual com a saída ligeiramente diferente fica duplicado (R11, parte)
   (BLOCO 4 · 2026-11-11 noite).
 - **Simulação:** "Juntar ao dia" (Mobbin primeiro) (BLOCO 2).
-- **Desenho — Início "cartões de cor" (2026-11-11, esboço aprovado, nada no código):** `design/inicio-cartoes.html`, 16 estados
-  medidos, **esboço aprovado**. As regras estão em `docs/design-system.md` §14. Falta: passá-lo para o código, numa sessão
-  nova (plano na entrada "noite, 4") (golden do Início e `test:design` primeiro); vê-lo no
-  iPhone; levar a mesma linguagem aos outros ecrãs, janelas e menus (um de cada vez, com Mobbin).
-- **Desenho:** modo escuro da app toda (prioridade, projeto próprio) (2026-11-04 tarde); esboço `design/inicio-v6.html` por
-  atualizar; Escala "na linguagem do Início" e a etiqueta de um dia com 2 serviços; Validades e formulário de evento na escala
+- **Desenho — Início "cartões de cor" (2026-11-11): CONSTRUÍDO, falta o iPhone.** "testar os estados" com o guião novo
+  (`docs/verificacao-device.md`), letra grande, VoiceOver e iPhone pequeno; afinar a altura das linhas do número
+  (`GIANT_LINE`); o movimento (skill `animacoes`); depois levar a linguagem aos outros ecrãs, janelas e menus (um de cada
+  vez, com Mobbin) (2026-11-11 noite, 5).
+- **Desenho:** modo escuro da app toda (prioridade, projeto próprio) (2026-11-04 tarde); Escala "na linguagem do Início" e a etiqueta de um dia com 2 serviços; Validades e formulário de evento na escala
   DS 2.0; mosaico "NOV · ESTIMADO" sem "bruto"; modelos de e-mail do Supabase com o cabeçalho antigo; cor das notificações
   `#F5402C` no `app.json` (2026-11-02/03/04 · BLOCO 7).
 - **Plataforma:** @react-navigation v7 (e apagar a camada `shims/`); "Secure email change" e o modelo de mudar e-mail no
@@ -125,6 +124,62 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   (AlarmKit), hotel pelo Apple Maps, passkeys; Android; iPhone pequeno e grande; beta com 2–3 tripulantes no TestFlight;
   declaração de dados nas lojas; Supabase/Resend pagos e limites (e-mails por hora, DMARC).
 ---
+
+## 2026-11-11 (noite, 5) — Início 3.0 "cartões de cor" CONSTRUÍDO (Opus 5.5) — falta o iPhone
+
+Construído a partir do esboço aprovado `design/inicio-cartoes.html` (plano da entrada "noite, 4"). Nada foi visto no
+iPhone: só testes, o pacote iOS (`expo export`, compila) e um desenho feito a partir do código.
+
+- **O que ficou no código:**
+  - `data/homeCards.js` (novo, PURO): de um estado e dos factos já calculados dá o topo (pílula, número em duas linhas,
+    dois factos) e os cartões. Nenhum número novo: os factos vêm dos motores de sempre (crewState, FTL, dutyLine,
+    restUntilAfter, monthStats/monthSplit, serviceMoney, liveFdpVerdict).
+  - `scripts/homecards.test.js` (novo golden, `npm run test:homecards`, na suite antes do guardião — são agora 33): os 16
+    estados do esboço com os dados de teste do esboço + as regras (nada se repete entre o topo e os cartões · nunca mais de
+    dois cartões grandes · com um aviso o 2.º passa a linha fina · o selo entre duas horas é o intervalo · € com cêntimos ·
+    "estimado · bruto" · Incerto com o que falta e "Completar" · o número e os factos cabem a 390 e a 375) + inglês + um caso por achado da revisão. 206 ✓.
+  - `data/fontMetrics.js` (novo): as larguras da Hanken lidas do `.ttf`. O número gigante começa em 86 e desce de 2 em 2 até
+    60 até os dois factos caberem ao lado (o esboço fazia o mesmo no navegador). Medido: a 390 só o pós-voo (70), a
+    configuração (70) e o documento (80) encolhem.
+  - `components/HomeCards.js` (novo): topo, cartão grande, linha fina, linhas (parcelas, passos), texto. O cartão inteiro
+    abre o detalhe; partilhar e a barra de ação são botões à parte (o VoiceOver chega aos três).
+  - `screens/HomeScreen.js`: os cálculos de cima ficaram; a apresentação foi reescrita (1909 → ~1130 linhas). Saíram do
+    Início: a placa do painel, os dígitos Solari, a frase da voz (o esboço não a tem; `stateVoice` e o seu golden ficam no
+    código, sem uso no ecrã), os secundários em mosaico, as 3 teclas e o tempo no topo. O tempo só se pede na pernoita (o
+    facto "7° · amanhã · chuva").
+  - `components/TabBar.js`: a barra A (cápsula neutra, a aba ativa numa pílula clara, o ＋ redondo de tinta).
+  - `components/NotificationsBell.js`: variante redonda de 44 com a contagem a laranja. `data/constants.js`: `CARD`, `TXT3`,
+    `RADIUS.sheet` (32). `ftl/index.js`: só se exportou o `splitFromLegs` (para o "repartido" do cartão; nenhuma conta mudou).
+  - `scripts/citacoes-tap-ftl.test.js`: a verificação "o € do mês diz bruto" passou a ler `data/homeCards.js` (o texto mudou de ficheiro).
+- **Diferenças ao esboço, de propósito:** (1) a folga a menos de 48 h continua a contar em HORAS (regra da auditoria do
+  tripulante de 2026-11-04; o esboço mostrava "2 dias" com 40 h pela frente); (2) "Certificado médico caduca em", sem
+  artigo (o artigo muda com o documento: o/a); (3) o standby diz "PSV estimado a 1 setor (225) · confirma na Simulação" em
+  vez de "não chamado até agora" (a estimativa tem de dizer que o é); (4) dois pares de contraste corrigidos: o rótulo do
+  cartão a 80 % (a 72 % o laranja dava 4,35) e as abas inativas #5E5E57 (o #77776F dava 3,93); (5) o per-diem do dia aparece
+  como pílula verde no cartão do dia de serviço quando o acordo o dá (o esboço não o mostrava; o v6 mostrava-o num secundário).
+- **Revisão independente (subagente Opus, sem as minhas conclusões) — 9 achados, todos corrigidos e com caso no golden:**
+  (1) o posicionamento de hoje ficava preso em "Report às" (o ecrã trata-o como serviço sem fases, o homeCards tratava-o
+  como voo) → agora "Termina às", com a cor de voo; (2) na disrupção o PSV com o atraso aparecia como facto → "projeção:"
+  e "PSV projetado" enquanto o último setor não aterra (como no v6); (3) pernoita num dia com 2 serviços perdia o hotel e
+  o € da noite → já não dependem da hora do fim do repouso; (4) o "Incerto" desaparecia depois do report → continua (com
+  "Completar"); (5) um serviço que só está no calendário perdia a hora do fim → vem do calendário; (6) depois de aterrar o
+  PSV continuava a contar → fecha nos calços do último setor; (7) o "Completar" dentro de um cartão tocável ficava fora do
+  alcance do VoiceOver → a ligação é um botão próprio e o cartão deixa de ser um botão inteiro; (8) sem hora de report,
+  depois da partida, voltou "sem hora de report — PSV não calculado"; (9) um repouso que acaba daqui a 2 dias ou mais
+  (noites da rotação) diz o dia ("cumprido · dom 15").
+- **A hora Zulu do report — decidido pelo Nuno (opção A, depois do Mobbin e das medidas):** um 3.º facto na coluna ao lado
+  do número, "04:15Z · report em UTC", SÓ quando é diferente da hora local (verão em Portugal, pernoitas fora, longo curso)
+  e só quando o número grande é o report (antes do report, véspera, pernoita). O fuso é o do aeroporto de partida
+  (`airportZulu`, como no v6). Medido: não encolhe o número nem acrescenta altura (3 factos = 135 pt ao lado de um número
+  de 155; no desenho feito a partir do código a folha fica onde estava). Recusadas: ao lado do sítio na 2.ª linha (na
+  pernoita em LGW o número encolhia de 86 para 80, 74 no iPhone pequeno) e uma linha por baixo do número (+24 pt; o Incerto
+  tem 23 livres). Refs: Tide Guide no Mobbin (hora + "• UTC−7"; a hora local pequena por baixo da principal) — as apps de
+  passageiros não mostram UTC e o Mobbin não tem apps de tripulantes. Golden: 214 ✓.
+- **Medido no desenho feito a partir do código** (saída real do `homeCards` no CSS do esboço, 390 × 844): os 18 casos cabem
+  sem deslizar; o mais apertado é o Incerto (23 pt livres), depois o fecho (32) e o pós-voo (37).
+- **Por fazer:** "testar os estados" no iPhone (guião reescrito em `docs/verificacao-device.md`), com letra grande, VoiceOver
+  e o iPhone pequeno; a altura das linhas do número (`GIANT_LINE` em `components/HomeCards.js`) afina-se no iPhone; o
+  movimento (skill `animacoes`, depois de a página estar certa); levar a linguagem aos outros ecrãs, um a um, com Mobbin.
 
 ## 2026-11-11 (noite, 4) — Início novo: a direção "cartões de cor" (Fable 5.2) — só esboços, nada no código
 

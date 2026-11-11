@@ -265,9 +265,16 @@ Polarsteps, Beside, pliability) e Guardar largo no fundo (AllTrails, Mindtrip, H
 
 ## §14 · Direção 3.0 · cartões de cor (decidida 2026-11-11 · por aplicar, ecrã a ecrã)
 
-Esboço que manda: `design/inicio-cartoes.html` (16 estados do Início, medidos). **Ainda não está no código nem foi visto no
-iPhone.** Enquanto um ecrã não for refeito nesta linguagem, segue as secções de cima (2.0). Ordem: o Início primeiro;
-depois os outros ecrãs, janelas e menus, um de cada vez, com Mobbin.
+Esboço que manda: `design/inicio-cartoes.html` (16 estados do Início, medidos). **O Início e a barra de abas estão no código
+desde 2026-11-11 (por ver no iPhone).** Enquanto um ecrã não for refeito nesta linguagem, segue as secções de cima (2.0).
+Ordem: o Início primeiro; depois os outros ecrãs, janelas e menus, um de cada vez, com Mobbin.
+
+**No código (2026-11-11):** tokens `CARD` (cores de dia e de noite, tons sobre os cartões) e `TXT3` (os estilos de texto em
+Hanken) em `data/constants.js`, ao lado dos da 2.0 · `RADIUS.sheet` = 32 · o que vai para onde: `data/homeCards.js` (puro,
+golden `npm run test:homecards`, que tranca as regras de conteúdo de baixo) · o desenho: `components/HomeCards.js` · o tamanho
+do número gigante calcula-se com as larguras da Hanken lidas do `.ttf` (`data/fontMetrics.js`; 86 → 60 até os factos caberem)
+· a barra: `components/TabBar.js`. Dois pares do esboço corrigidos por contraste: o rótulo do cartão passa de 72 % para 80 %
+de opacidade (no laranja dava 4,35) e as abas inativas de #77776F para #5E5E57 (3,93 → 5,68).
 
 O que muda em relação à §2 ("branco · preto · amarelo, plana, hairline"):
 
@@ -288,10 +295,13 @@ O que muda em relação à §2 ("branco · preto · amarelo, plana, hairline"):
   o intervalo entre elas · PSV e limites em h:mm, o que falta em "1 h 40" · o que um serviço rende vai a verde numa pílula
   branca, o total do mês a tinta com "estimado · bruto" · "Incerto" no lugar do número quando falta um facto, com o que
   falta e a barra "Completar".
+- **A hora Zulu do report** (Nuno, 2026-11-11, opção A): um 3.º facto na coluna ao lado do número ("04:15Z · report em UTC"),
+  só quando é diferente da hora local e só quando o número grande é o report. Não encolhe o número nem acrescenta altura.
 - **Toque:** a pílula preta do estado não se toca; a de contorno abre esse dia na Escala (38 à vista, 44 de toque); o
   cartão inteiro abre o detalhe; partilhar é o ícone do canto (36 à vista, 44 de toque).
 - **iPhone pequeno (375 × 667):** a folha desliza; o topo e a barra ficam. O primeiro cartão vê-se sempre inteiro (medido).
 - **Contraste medido (WCAG 2.1):** os 12 pares do esboço passam; o mais baixo é a segunda linha a cinzento do número
-  (3,24 para 3 pedidos em texto muito grande).
+  (3,24 para 3 pedidos em texto muito grande). Medidos na construção: o rótulo do cartão a 80 % ≥ 4,8 em todas as cores, de
+  dia e de noite; as abas inativas 5,68 (à noite 5,70); o ganho à noite fora da pílula (#7BE3B0) 11,6.
 
 O guardião (`test:design`) continua a valer: a migração de cada ecrã baixa o roquete, nunca o sobe.

@@ -2,7 +2,7 @@ import React, { useContext, useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, Platform, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { RADIUS, SPACE, TYPE, PELE, PELE_FONT, BRAND } from '../data/constants';
+import { RADIUS, SPACE, TYPE, PELE, PELE_FONT, BRAND, CARD, TXT3 } from '../data/constants';
 import { buildNotifications } from '../data/notifications';
 import { aeMonthTotal } from '../data/perdiem';
 import { eventCounts } from '../data/aeEvents';
@@ -18,7 +18,8 @@ import SheetHeader from './SheetHeader';
 // aparece no topo e é tocável → abre a revisão.
 // `variant`: 'bell' (ícone fixo — o ARQUIVO, header do Perfil) · 'pill' (Início: a pílula
 // "N novidades" que SÓ EXISTE quando há por ler — o botão desaparece quando não tem nada
-// para dizer, à Apple/Living Interface). `night` = tema noturno do Início.
+// para dizer, à Apple/Living Interface) · 'round' (Início 3.0, 2026-11-11: botão redondo de 44 ao lado das pílulas,
+// sempre presente, com a contagem por ler num selo laranja). `night` = tema noturno do Início.
 export default function NotificationsBell({ variant = 'bell', night = false }) {
   const { profile, lang, readNotifIds, setReadNotifIds, rosterChanges, validities, isPilot, dayLog, duties, ae, aeAt, crewAt, crewFleet, aeEvents, serviceStart, serviceStartExact, largada, crewHistory, companyHistory, lifestyle, homeBaseAt } = useContext(AppContext);
   const insets = useSafeAreaInsets();
@@ -85,7 +86,17 @@ export default function NotificationsBell({ variant = 'bell', night = false }) {
   return (
     <>
       {/* O leitor de ecrã DIZ quantas há por ler (o ponto visual era mudo p/ VoiceOver/TalkBack). */}
-      {variant === 'pill' ? (
+      {variant === 'round' ? (
+        <TouchableOpacity style={[s.round, { backgroundColor: (night ? CARD.night : CARD.day).round }]} onPress={() => setOpen(true)} activeOpacity={0.8}
+          accessibilityRole="button" accessibilityLabel={`${t('home.notifsAria', lang)}${unread > 0 ? ` · ${unread} ${l('por ler', 'unread')}` : ''}`}>
+          <Icon name="bell" size={20} color={(night ? CARD.night : CARD.day).ink} />
+          {unread > 0 ? (
+            <View style={[s.roundBadge, { backgroundColor: (night ? CARD.night : CARD.day).warn }]}>
+              <Text style={[TXT3.badge, { color: CARD.badgeFg }]} allowFontScaling={false}>{unread > 9 ? '9+' : unread}</Text>
+            </View>
+          ) : null}
+        </TouchableOpacity>
+      ) : variant === 'pill' ? (
         <TouchableOpacity style={[s.pill, night && s.pillNight]} onPress={() => setOpen(true)} activeOpacity={0.8} hitSlop={8}
           accessibilityRole="button" accessibilityLabel={`${t('home.notifsAria', lang)} · ${unread} ${l('por ler', 'unread')}`}>
           <View style={s.pillDot} />
@@ -166,6 +177,9 @@ const s = StyleSheet.create({
   pillDot: { width: 6, height: 6, borderRadius: 99, backgroundColor: BRAND.signal },
   pillTxt: { fontSize: 10.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.ink },
   pillTxtNight: { color: '#F4F2ED' },
+  // Início 3.0 — o botão redondo (44, cinzento translúcido sobre o fundo) e o selo da contagem (18, laranja, tinta).
+  round: { width: 44, height: 44, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
+  roundBadge: { position: 'absolute', top: -SPACE.xxs, right: -SPACE.xxs, minWidth: 18, height: 18, borderRadius: RADIUS.pill, paddingHorizontal: SPACE.xs, alignItems: 'center', justifyContent: 'center' },
 
   // Central de notificações — página inteira (igual às de duty/import)
   page: { flex: 1, backgroundColor: PELE.paper },

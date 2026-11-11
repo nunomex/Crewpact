@@ -301,7 +301,7 @@ export const fdpLegsOf = (legs) => {
   legs.forEach((l, i) => { if (l && !l.dh) last = i; });
   return last < 0 ? legs : legs.slice(0, last + 1);
 };
-const splitFromLegs = (legs0) => {
+export const splitFromLegs = (legs0) => {
   const legs = fdpLegsOf(legs0);
   if (!Array.isArray(legs) || legs.length < 2) return { splitBreakH: 0, splitBreakStart: null };
   let bestMin = 0, start = null;

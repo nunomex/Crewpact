@@ -395,7 +395,7 @@ check('Prova limites (en): "12 consecutive calendar months"', /12 consecutive ca
   has('Anexo I dos pilotos easyJet: brutos', EZY.pilot, 'Todas as quantidades indicadas sao brutas');
   has('Anexo I da cabine easyJet: brutos', EZY.cabin, 'Todas as quantias indicadas são valores brutos');
   check('Números: o título dos ganhos diz "bruto"', /ganhos · estimados · brutos/.test(src('screens/StatsScreen.js')));
-  check('Início: o € do mês diz "bruto"', /estimado · bruto/.test(src('screens/HomeScreen.js')));
+  check('Início: o € do mês diz "bruto"', /estimado · bruto/.test(src('data/homeCards.js')));   // o texto do Início 3.0 vive no homeCards (2026-11-11)
 }
 
 console.log(`\nCitações TAP · FTL · radiação: ${ok} ✓  ${fail} ✗`);

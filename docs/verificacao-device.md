@@ -302,117 +302,107 @@ _Isto liga a cifra a sério. Testa com calma; se falhar, recua sem perda._
 
 ---
 
-# Guião · TESTAR OS ESTADOS do Início v6 (reescrito 2026-11-03)
+# Guião · TESTAR OS ESTADOS do Início 3.0 "cartões de cor" (reescrito 2026-11-11)
 
-_Quando disseres **"testar os estados"**, percorremos isto juntos, um estado de cada vez._
-_Alavanca: `FORCE_HOME_STATE` no topo do `screens/HomeScreen.js` ('setup' | 'folga' | 'hoje' | 'disrupcao' |
-'vespera' | 'posvoo' | 'pernoita' | 'ferias' | 'doenca' | 'fecho' | null = real). O Fast Refresh aplica ao guardar.
-**No fim, voltar a `null`.** O conteúdo só é realista com dados: a alavanca força o estado, não inventa o serviço.
-Afinações no bloco `TUNE` do mesmo ficheiro (tamanhos 104/150, `trim` 0,08, Solari 460/70 ms, lembrete −75 min)._
+_Quando disseres **"testar os estados"**, percorremos isto juntos, um estado de cada vez, ao lado do esboço
+`design/inicio-cartoes.html` (16 estados) — o que vale é o iPhone._
+_Alavanca: `FORCE_HOME_STATE` no topo do `screens/HomeScreen.js` ('setup' | 'folga' | 'hoje' | 'disrupcao' | 'vespera' |
+'posvoo' | 'pernoita' | 'ferias' | 'doenca' | 'fecho' | null = real). O Fast Refresh aplica ao guardar. **No fim, voltar a
+`null`.** A alavanca força o estado, não inventa o serviço: o conteúdo só é realista com dados de teste._
+_O que vai para onde decide-o `data/homeCards.js` (golden `npm run test:homecards`); o desenho está em
+`components/HomeCards.js` (`GIANT_LINE`: altura da linha do número) e o tamanho do número em `GIANT` (86 → 60)._
 
-> **O que mudou (esboço aprovado `design/inicio-v6.html`):** saíram o fantasma pálido, o halo/véu/candeeiro, o
-> bilhete manuscrito, a saudação, o chip preto e a barra de ações. Agora há: a **placa** (escura = ao vivo; papel =
-> calmo) com o número enorme, as **linhas do painel** (hora · destino · dia), a **frase** em letra normal, **2 secundários**
-> e **3 teclas** grandes ao fundo, sempre no mesmo sítio.
+> **O que mudou em relação ao v6:** saíram a placa escura do painel, os dígitos Solari, a frase da voz, os secundários em
+> mosaico e as 3 teclas. Agora: em cima, no fundo cinzento, a pílula do estado, o número em **duas linhas** e dois factos
+> ao lado de um fio; por baixo, a **folha branca** com o cartão do momento e o do que vem a seguir (mais um aviso laranja,
+> se houver). A cor diz o tipo: areia = voo · salva = repouso/pernoita · lilás = em terra · neutro = dinheiro · laranja = atenção.
+> **Ainda sem movimento** (decide-se depois, com a skill `animacoes`).
 
 ## Transversais (ver em todos)
-- [ ] **Cabe sem deslizar** num iPhone de 6,1 polegadas (as contas dão ≤ 703 pt nos 714 úteis): as 3 teclas inteiras acima da barra de abas.
-- [ ] **Dígitos Solari:** viram em cascata ao entrar no Início (e ao voltar de outra aba). Com **Reduzir movimento** ligado
-      (Definições → Acessibilidade → Movimento): aparecem secos, sem virar. O ponto "ao vivo" deixa de pulsar.
-- [ ] **Os dígitos não são cortados** em cima nem em baixo (104 ao vivo · até 150 no calmo) e não tocam no rótulo nem no destino.
-      Se tocarem: baixar `TUNE.trim` (0,08 → 0,05). Se sobrar ar: subir.
-- [ ] A unidade ("dias", "€") e a hora riscada assentam na **mesma linha de base** dos dígitos.
-- [ ] **Placa escura:** a barra de estado do iPhone (hora, bateria) fica **clara**; ao puxar para baixo (atualizar) o topo
-      mostra a placa, não branco; ao ressaltar no fundo mostra papel. Ao mudar de aba, a barra de estado volta a escura.
-- [ ] Tocar no herói (o número) abre o detalhe do serviço, quando há serviço registado.
-- [ ] Linhas do painel: tocar abre o dia · o destino de uma ida-volta é a estação de fora (LIS-CDG-LIS → CDG) · standby = SBY.
-- [ ] Secundários: nunca mais de 2 · o urgente sobe (lei a vermelho, documento expirado, escala mudou, voo atrasado) ·
-      sem nada urgente aparece o dinheiro do mês (cêntimos sempre). Os que têm toque mostram › ou um valor.
-- [ ] Teclas: a 1.ª a tinta, as outras no suave · ≥ 88 pt de altura · toque longo no Hotel = editar.
-- [ ] Com novidades por ler: a pílula "N novidades" aparece no topo da placa, à esquerda do tempo.
-- [ ] Pull-to-refresh relê o calendário · trocar de aba e voltar não parte nada.
+- [ ] **Cabe sem deslizar** num iPhone de 6,1" (medido no desenho feito a partir do código: o mais apertado, o Incerto, sobra 23 pt).
+- [ ] **O número gigante** (Hanken 86, encolhe até 60 quando os factos não cabem ao lado): não é cortado em cima nem em baixo;
+      as duas linhas ficam juntas como no esboço. Se cortar ou se afastar: `GIANT_LINE` em `components/HomeCards.js`
+      (`lh` 1,1 · `lead` 0,9 · `trim` 0,1). As letras com perna ("pagos", "hoje", "Liga a") também se veem inteiras.
+- [ ] A 2.ª linha do número a **tinta** quando é o sítio (LGW) e a **cinzento** quando qualifica (livre, estimado, de 22).
+- [ ] **Pílulas do topo:** a preta não se toca (com o ponto amarelo nos estados ao vivo); a de contorno abre ESSE dia na
+      Escala (salta para o mês e acende o dia). O sino redondo (44) abre as notificações; com por ler, o número a laranja.
+- [ ] **Cartões:** tocar no cartão abre o detalhe; o ícone de partilhar (canto) é um botão à parte; a barra ao fundo
+      ("Lembrete", "Registar sign-off", "Completar", "Registar a data nova") é um botão à parte. Nunca mais de dois cartões
+      grandes; com um aviso laranja o segundo passa a linha fina.
+- [ ] **€ sempre com cêntimos;** o que um serviço rende a verde numa pílula branca; o total do mês "estimado · bruto".
+- [ ] **Nada se repete:** a hora grande de cima não volta a aparecer nos cartões.
+- [ ] **Hora Zulu do report:** com o report numa hora diferente da UTC (verão, ou uma pernoita fora), um 3.º facto "04:15Z ·
+      report em UTC" ao lado do número (antes do report, véspera, pernoita); no inverno em Lisboa não aparece. O número não encolhe.
+- [ ] **Barra de abas A:** cápsula clara com as 4 abas (a ativa numa pílula branca) + o ＋ redondo de tinta; nas outras abas
+      também; à noite tudo escuro. O ponto laranja na Escala com alterações por rever. O ＋ abre Simulação · Evento.
+- [ ] **iPhone pequeno (375 × 667):** a folha desliza; o topo e a barra ficam; o 1.º cartão vê-se inteiro.
+- [ ] **Letra grande** (Definições → Acessibilidade → Tamanho do texto): o topo não cresce; os cartões crescem (até 130 %) e a folha desliza.
+- [ ] **VoiceOver:** o topo lê-se de uma vez ("Report às. 05:15. LIS. 1 h 40 falta…"); em cada cartão, três paragens quando
+      existem: o cartão, partilhar, a barra de ação.
+- [ ] Puxar a folha para baixo relê o calendário · re-tocar na aba Início volta ao topo da folha · trocar de aba não parte nada.
 
-## 0 · Configuração (primeira vez)
-_Conta sem calendário ligado. Ou `FORCE='setup'`._
-- [ ] Calmo: "COMEÇAR" · **"Liga a tua escala"** grande · a frase do só-leitura · "Privacidade · saber mais" (sublinhado amarelo) abre a folha.
-- [ ] Teclas: **Ligar o calendário** (tinta) → fluxo de ligar na Escala · Importar o PDF · Ver um exemplo.
-- [ ] "Ver um exemplo" → a placa mostra "Exemplo · sair" no topo e o voo LIS → FNC de amanhã (antes das 18h como folga,
-      "1 dia"; depois das 18h como véspera); tocar em "Exemplo · sair" sai.
-- [ ] VoiceOver: o bloco grande lê-se de uma vez (sem dizer "esbatido") e o link da privacidade é alcançável.
+## 0 · Configuração
+- [ ] "Começar" · **Liga a / escala** · "Só leitura · nada é alterado" + "Com o teu sim · é que se grava".
+- [ ] Cartão "Três passos" (tocar abre a Privacidade) · linha escura **Ligar o calendário** → o fluxo na Escala · Importar o PDF · Ver um exemplo.
+- [ ] "Ver um exemplo" → a pílula **Exemplo · sair** no lugar do sino; tocar sai.
 
-## 1 · Folga (calmo)
-_Hoje sem serviço; primeiro SEM nada marcado, depois COM serviço futuro._
-- [ ] Topo: "QUINTA · 5 NOVEMBRO" + ícone do tempo e graus da base.
-- [ ] Com serviço: "PRÓXIMO SERVIÇO DAQUI A" · **2 dias** (150 pt) · "Sábado 7 · Standby Aeroporto" + pílula **EM DIA**
-      (só quando não há nada por ver) · 2 linhas do painel (a 1.ª é o próprio serviço, com a hora do report).
-- [ ] Sem nada marcado: sem número; "Sem serviços marcados".
-- [ ] Frase do dia em letra normal (negrito + resto a cinzento); se a escala mudou, a frase fala disso e toca → rever.
-- [ ] Secundários: o mês estimado (€ com cêntimos, "Dia 5 de 30", barra) + o que houver (documento a expirar…).
-- [ ] **De outubro a dezembro**, com dias de férias por gozar: secundário "Férias 2026 · Ficam 9 de 22 dias · gozam-se no
-      ano (CT 240.º)" → abre os Números. Antes de outubro, ou sem dias a sobrar, não aparece.
-- [ ] Teclas: **Ver a escala** · Limites (abre o porquê, ou os Números) · Simular.
+## 1 · Folga
+- [ ] Com serviço a mais de 48 h: "Próximo serviço daqui a" · **2 dias / livre** · "sexta 13 · até lá" + "31 h · de 60 em 7 dias".
+- [ ] A menos de 48 h conta em **horas** ("18 h 30 / livre", "amanhã · até lá") — regra da auditoria do tripulante.
+- [ ] Cartão **Próximo serviço** (areia; lilás se for em terra) · linha "Novembro · estimado · bruto · 2 431,50 €".
+- [ ] De novembro em diante, com férias por gozar: aviso laranja "Férias 2026 · ficam 12 de 22 dias · o ano acaba daqui a 50 dias".
+- [ ] Sem nada marcado: **Livre / hoje** · "Em dia · a tua escala" · "12:40 · última leitura" · cartão "Quando aparecem" ·
+      linha escura **Ler a escala agora** · Importar o PDF.
+- [ ] **Documento a 7 dias ou menos** (por exemplo, o médico a caducar): toma o topo — pílula "Atenção", "Certificado médico
+      caduca em **6 dias / 17 nov**", "terça · último dia válido", cartão laranja com **Registar a data nova** → Validades.
 
-## 2 · Véspera 🌙 (ao vivo, noturno)
-_Serviço amanhã com report a ≤ 14 h e serem ≥ 18h. Ou `FORCE='vespera'` com o serviço criado._
-- [ ] Ecrã azul-noite, placa um tom acima (#18212D) · "● REPORT AMANHÃ" (ponto a pulsar) + tempo · base.
-- [ ] "DAQUI A 8 H 40 · TERÇA, 3" · **06:20** amarelo (104) · "LIS → LGW" + pílula **REPOUSO ✓** (ou REPOUSO CURTO a vermelho).
-- [ ] Linha de baixo: voo · "parte 07:05" · setores · "pernoita em LGW".
-- [ ] Voo do calendário SEM hora de report: o topo diz "PARTIDA AMANHÃ", o rótulo "· sem hora de report" e não aparece a tecla do lembrete.
-- [ ] "Partilhar o voo" (de amanhã): o cartão NÃO diz "Hoje às".
-- [ ] Frase: "Está tudo verificado — dorme. Report às 06:20."
-- [ ] Secundários: tempo amanhã no destino · ganhos de amanhã (per-diem + pernoita).
-- [ ] Teclas: **Lembrete 05:05** · Limites · Partilhar o voo. **Na Expo Go o lembrete diz que só funciona na app
-      instalada** (aviso âmbar) — é esperado; no dev build marca a notificação e o aviso diz "Não substitui o
-      despertador" (o alarme a sério, com o AlarmKit, está na lista em `docs/dev-build.md`).
+## 2 · Véspera 🌙
+- [ ] Fundo azul-noite, folha escura · "Amanhã" (ponto) + "quinta 12" · "Report às" **05:15 / LIS** · "7 h 35 falta" · "17:00 PSV até".
+- [ ] Cartão areia: "PSV 8:35 de 11:45 · repouso cumprido" (ou "repouso curto") · parte 06:15 — 7 h 35 — 13:50 · barra
+      **Lembrete 04:00** (na Expo Go avisa que só funciona na app instalada; no dev build diz "Não substitui o despertador").
+- [ ] Pernoita em linha fina com "+45,40 €" · com per-diem modelado, "+X €" também no cartão do dia.
 
-## 3 · Hoje — pré-report (ao vivo)
-- [ ] "● PARTIDAS · HOJE" · "REPORT DAQUI A 1 H 40" (+ Zulu só se for diferente da hora local) · **hora do report** amarela.
-- [ ] Destino "LIS → LGW" + pílula **A HORAS** (com o voo ao vivo) ou **NOS LIMITES** (sem voo ao vivo) · linha: voo · parte ·
-      avião · "PSV até 15:20" (com o serviço registado) · pernoita.
-- [ ] Depois do report, antes da partida: "PARTIDA DAQUI A …" e o número passa a ser a hora de partida.
-- [ ] **Frase** (só o que os dados sustentam): com o voo ao vivo sem atraso e os limites cumpridos → "**Tudo pronto.**
-      Avião a horas e dentro dos limites." (ou "Leva o casaco: 7° agora em LGW." a ≤ 10° · "Chove em LGW — 9° agora.").
-      Sem voo ao vivo: só "Leva o casaco." / "Chove em LGW." quando é verdade; tempo ameno = sem frase. Tocar abre o dia.
-- [ ] Secundários: o teu avião (matrícula) · tempo no destino (some quando a frase já falou do tempo) · ganhos de hoje.
-- [ ] Teclas: **Família** (cartão de partilha) · Limites · Hotel (se pernoita) ou Simular.
+## 3 · Hoje — antes do report
+- [ ] "Hoje" (ponto) + o número do voo · "Report às" **05:15 / LIS** · "1 h 40 falta" · "17:00 PSV até".
+- [ ] Cartão do dia: começa na **partida** (o report não se repete) · "PSV 8:35 de 11:45 · nos limites" · partilhar no canto.
+- [ ] "A seguir": a pernoita (fim de serviço 14:20 — **23 h 45** — report · qui 12; "mínimo 10 h" na linha pequena) ou o próximo serviço.
+- [ ] Sem hora de report: "Partida às" e "Sem report · PSV não calculado".
+- [ ] **Incerto** (repartido sem alojamento): "Incerto · PSV até" em cima; o cartão diz o que falta e tem a barra **Completar** (abre o dia).
 
-## 3b · Em voo (ao vivo)
-- [ ] "● EM VOO · EZY8351" + tempo no destino · "ATERRAS DAQUI A 1 H 05" · **hora de chegada** amarela.
-- [ ] Barra amarela do setor com "07:05 LIS · PSV 2:25 de 13:00 · 09:50 LGW"; anda com o relógio.
-- [ ] Frase "**Está a correr como previsto.**" só com o voo ao vivo a confirmar; sem feed, sem frase.
-- [ ] **Dia de vários setores** (ex.: LIS-CDG-LIS, dois números de voo): o topo "EM VOO · …" mostra o número do setor
-      em curso; depois de o 1.º aterrar passa ao 2.º; um atraso do 1.º NÃO deixa o dia em disrupção quando o 2.º sai a
-      horas; com o 1.º atrasado ainda no ar, continua "EM VOO" nele (não salta para o 2.º à hora planeada).
-- [ ] Secundário "Depois": pernoita (+ hotel) ou o próximo serviço. Tecla **Partilhar a chegada**.
+## 3b · Em voo / em terra entre setores / aterrado
+- [ ] Em voo: "Em voo" + o número do setor · "Aterras às" **13:50 / LGW** · "1 h 05 falta para aterrar" · "3:10 de margem no PSV".
+- [ ] Cartão do dia inteiro: "setor 3 de 3" · "a horas" (com voo ao vivo) · report 05:15 — **PSV 7:30 de 11:45** — limite 17:00 ·
+      a barra com o ponto onde vais (anda com o relógio, de 30 em 30 s).
+- [ ] Entre setores: "Partida às" + a margem · aterrado antes do sign-off: "Aterraste às" + "PSV até agora".
+- [ ] Dia de vários setores: o topo segue o setor em curso (um atraso do 1.º não põe o dia em disrupção quando o 2.º sai a horas).
 
-## 3c · Disrupção (ao vivo)
-_Precisa de atraso a sério; `FORCE='disrupcao'` só mostra o esqueleto._
-- [ ] "PARTIDA PREVISTA · REPORT 06:20" · **nova hora** amarela + a antiga **riscada** ao lado · pílula **ATRASO +25** laranja.
-- [ ] Linha: "O avião ainda vem a caminho (…) · chega ~06:55Z". Sem frase. Nunca aparece "a horas".
-- [ ] Secundário: "Limites com o atraso — PSV projetado 12:40 de 13:00" com barra. Teclas: **Avisar a família** · Limites com o atraso · Simular.
-- [ ] Cancelado/desviado: pílula vermelha e o rótulo diz para confirmar com o crewing.
+## 3c · Disrupção (precisa de um atraso a sério)
+- [ ] "Nova partida às" **07:25 / LIS** · "06:15 hora da escala" riscada · "+70 min de atraso".
+- [ ] Aviso laranja **primeiro**: "Limites com o atraso · ainda dentro · margem 2:00 até às 17:00" (toca → o porquê).
+- [ ] Cartão do dia: "o avião ainda vem a caminho (…)" · PSV 9:45 de 11:45 · última chegada 15:00 · a pernoita em linha fina.
+- [ ] Cancelado / desviado: a pílula diz-o e manda confirmar com o crewing. Cabine easyJet: aviso "Possível RDP · Cl. 67.ª".
 
-## 4 · Standby / formação hoje (ao vivo)
-- [ ] Standby a decorrer: "A JANELA FECHA DAQUI A …" · **hora do fim** · "Se te chamarem agora: PSV até 19:40" (ORO.FTL.225).
-- [ ] Antes de começar: "COMEÇA DAQUI A …" · hora do início · tipo + "até às …". Teclas: Simular · Limites · Ver a escala.
+## 4 · Standby / formação
+- [ ] Standby a decorrer: "Standby · aeroporto" · "A janela fecha às" **12:00** · "~18:45 · PSV até, se chamarem já" · cartão lilás
+      com "PSV estimado a 1 setor (225) · confirma na Simulação" · "50 min de 4 h" · "+38,76 € se não chamarem" (com o acordo).
+- [ ] Formação antes de começar: "Começa às" **09:00** · "17:00 acaba" · linha lilás "Formação · 8 h de serviço em terra" · A seguir.
 
-## 5 · Pós-voo (calmo)
-- [ ] "DIA FECHADO · DE SERVIÇO" · **7:45** (150) · "LIS → CDG → LIS · 2 setores" + pílula **NOS LIMITES** (ou ACIMA DO LIMITE, vermelha cheia).
-- [ ] Linha: "5:10 de voo · repouso até amanhã 02:05 · PSV máx 13:00" (confere com o motor 235).
-- [ ] Frase "Dia fechado. …" · secundários: Serviço · 7 dias (barra) + o mês.
-- [ ] Teclas: **Registar o sign-off** (abre logo o FORMULÁRIO do dia; com o sign-off já registado a tecla diz "Ver o dia") ·
-      **+62,40 € hoje** (abre os Números) · Amanhã.
-- [ ] Dois serviços no dia: só fecha quando os dois acabam; mostra "2 serviços" e manda ver o detalhe.
+## 5 · Pós-voo
+- [ ] "Dia fechado" + "sexta 13" · "PSV de hoje" **8:35 h / fechado** · "+96,90 € ganhos de hoje" (verde) · "31 h de 60 em 7 dias".
+- [ ] Cartão salva "Repouso · na base · Descansa": fim de serviço — **mínimo 12 h** — cumprido · barra **Registar sign-off**
+      (abre o formulário do dia); com o sign-off registado a barra desaparece.
+- [ ] Dois serviços no dia: "2 serviços" e o cartão manda ver o detalhe do dia.
 
-## 6 · Pernoita 🌙 (ao vivo, noturno, sem ponto)
-- [ ] "PERNOITA · LGW" + tempo de lá · "REPORT AMANHÃ · DAQUI A …" · **hora do report** · rota de amanhã + REPOUSO ✓.
-      Pernoita de 2 noites: diz o dia ("REPORT QUINTA 5 · …") e a tecla diz "Próximo serviço".
-- [ ] Linha: nome do hotel (ou "sem hotel guardado") · "repouso até … (235)".
-- [ ] Secundários: esta noite +€ (pernoita) · o tempo amanhã. Teclas: **Hotel · mapas** (longo = editar; sem hotel = Guardar o hotel) ·
-      Serviço de amanhã · Partilhar (o voo que aterrou — a família vê "Aterrou ✓").
+## 6 · Pernoita 🌙
+- [ ] "Pernoita" + "LGW" · "Report amanhã às" **14:05 / LGW** · "16 h 25 falta" · "7° · amanhã · chuva".
+- [ ] Cartão salva: o hotel (ou "Sem hotel guardado") · "+45,40 €" · fim de serviço — **mínimo 10 h** — cumprido, com o ponto no
+      que já passou · tocar abre a folha do hotel · partilhar no canto (o voo que aterrou).
+- [ ] O voo de amanhã numa linha: "quinta 12 · parte 15:05 · chega 17:45" (sem repetir o report). TAP: sem "+ €" (bloco 5).
 
-## 7 · Férias · Doença · Fecho (calmos)
-- [ ] Férias: "FÉRIAS · FICAM NO ANO" · **9** de 22 dias · "Regressas sexta, 27 de novembro" (+ report desse dia) · frase · **sem teclas**.
-- [ ] Doença: "BAIXA · DIA DO EPISÓDIO" · **2.º** dia · regra de pagamento (Art. 48 pilotos / Art. 61 cabine) · próximo serviço · **sem teclas**.
-- [ ] Fecho: "NOVEMBRO FECHA EM 3 DIAS · ESTIMADO" · **1 284,50 €** (o tamanho encolhe para caber) · as parcelas no lugar
-      das linhas (somam o total; tocar → Números) · secundário da Auditoria se houver itens · Teclas: **Registar um extra** · Ver nos Números · Simular.
+## 7 · Férias · Baixa · Fecho
+- [ ] Férias: **12 dias / de 22** · "segunda 16 · regressas" · "9 a 15 nov · estas férias" · No regresso · o mês.
+- [ ] Baixa: **2 de 3 / pagos** (pilotos easyJet, Art. 48.º) · "O que o acordo garante" · a linha do próximo serviço. Sem acordo
+      modelado: nenhuma frase sobre pagamento.
+- [ ] Fecho: "Novembro" + "fecha em 3 dias" · **2 431 ,50 € / estimado** · as parcelas (somam o número de cima) · "Já feito até
+      hoje" + "Ainda na escala" · "Como é calculado?" → Números · "Extras" toca → o detalhe · Auditoria (laranja) · "Falta algum extra?".
+      Mês incerto: **Incerto** no lugar do número e "No mínimo / No máximo" no pé das parcelas.

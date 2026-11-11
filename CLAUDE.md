@@ -22,7 +22,7 @@ fadiga (FTL — Reg. UE 83/2014 · CS-FTL.1) e a remuneração prevista pelos ac
 - **Guiões de verificação no device:** `docs/verificacao-device.md` · `docs/verificacao-calendario.md`.
 
 ## Regras do projeto (resumo; detalhe na Constituição)
-1. **Golden-first.** Nenhum número FTL/AE muda sem o teste golden mudar antes. `npm test` corre 32 suites (a 2.ª, `test:ftl-fontes`, confere cada número FTL no texto oficial de `fontes/ftl/`; a última é o guardião do design);
+1. **Golden-first.** Nenhum número FTL/AE muda sem o teste golden mudar antes. `npm test` corre 33 suites (a 2.ª, `test:ftl-fontes`, confere cada número FTL no texto oficial de `fontes/ftl/`; a última é o guardião do design);
    o `pre-push` bloqueia se falhar.
 2. **Citar a lei.** Onde é lei, o artigo; onde é convenção, dizê-lo e escolher o conservador.
 3. **Dinheiro sem arredondar.** Todo o € mostra cêntimos.
@@ -33,8 +33,10 @@ fadiga (FTL — Reg. UE 83/2014 · CS-FTL.1) e a remuneração prevista pelos ac
    (placa de tinta + folha; nunca com barra de abas) — regras em
    `docs/design-system.md` §9–§12. O `npm run test:design` tranca-as (a dívida só pode descer). Papel permanente: designer sénior
    da Apple — "a Apple lançava isto?".
-   **Direção 3.0 "cartões de cor" (aprovada 2026-11-11, por construir):** o Início novo é `design/inicio-cartoes.html`;
-   regras em `docs/design-system.md` §14. Aplica-se ecrã a ecrã; o que ainda não migrou segue o 2.0.
+   **Direção 3.0 "cartões de cor" (aprovada 2026-11-11):** esboço `design/inicio-cartoes.html`, regras em `docs/design-system.md`
+   §14. **O Início e a barra de abas já estão no código** (2026-11-11, por ver no iPhone): o que vai para onde decide-o
+   `data/homeCards.js` (golden `test:homecards`), o desenho é `components/HomeCards.js`, tokens `CARD`/`TXT3`. Aplica-se
+   ecrã a ecrã; o que ainda não migrou segue o 2.0.
 6. **Dados de teste só.** Nunca dados reais de tripulantes durante a construção. RGPD: sem ficheiros,
    fotos nem saúde; dose de radiação nunca guardada.
 7. **Versões nativas = as que o `npx expo install` escolhe** (SDK 58: worklets 0.13.0, reanimated 4.7.1); nunca

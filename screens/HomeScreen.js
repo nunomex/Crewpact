@@ -1,22 +1,22 @@
 import { nightSectorIssues } from '../data/simulation';
 import React, { useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated, Easing, AppState, RefreshControl, Linking, Platform, useWindowDimensions, LayoutAnimation } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, AppState, RefreshControl, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { PELE, PELE_NIGHT, PLATE, PELE_FONT, TXT, TYPE, SPACE, RADIUS, BRAND, GUTTER } from '../data/constants';
-import Icon from '../components/Icon';
+import { CARD, TXT, TXT3, SPACE, RADIUS, BRAND } from '../data/constants';
 import NotificationsBell from '../components/NotificationsBell';
 import FlightShareCard from '../components/FlightShareCard';
+import { HomeTop, HomeCards } from '../components/HomeCards';
+import { homeCards, fitGiant } from '../data/homeCards';
 import { getUpcomingFlight } from '../data/calendar';
 import { catLabel } from '../data/extras';
 import { serviceMoney, aeIndex, annualLabel } from '../data/perdiem';
 import { isLongHaulCompany } from '../data/capabilities';
-import { computeDutyTime, computeFlightTime, computeDuty, ftlForDuty, liveFdpVerdict } from '../ftl';
+import { computeDutyTime, computeFlightTime, computeDuty, ftlForDuty, liveFdpVerdict, splitFromLegs } from '../ftl';
 import { restUntilAfter } from '../data/today';
+import { unknownsText } from '../data/ftlUnknowns';
+import { validityLabel } from '../data/validities';
 import Skeleton from '../components/Skeleton';
-import useTabBarSpace from '../hooks/useTabBarSpace';
-import useEnter from '../hooks/useEnter';
-import useReduceMotion from '../hooks/useReduceMotion';
 import { useFocusEffect, useScrollToTop, useIsFocused } from '@react-navigation/native';
 import { t } from '../data/i18n';
 import { select } from '../data/haptics';
@@ -26,35 +26,31 @@ import QuestionDetailSheet from '../components/QuestionDetailSheet';
 import { buildTodayItems } from './hojeItems';
 import { fdpForDuty, dayNum } from '../ae/tapLimits';
 import { fmtClock } from '../data/tapLimitsText';
-import { monthStats, yearStats, monthSplit } from '../data/stats';
+import { monthStats, monthSplit } from '../data/stats';
 import { fetchStationWx, wxDigest, wxIcon, wxSymbol } from '../data/weather';
-import { stateVoice } from '../data/stateVoice';
-import { dutyLine, fmtMargin } from '../data/dutyLine';
+import { dutyLine } from '../data/dutyLine';
 import { crewState } from '../data/crewState';
 import { monthAudit } from '../data/audit';
 import AuditSheet from '../components/AuditSheet';
 import { yearCount, eventCounts } from '../data/aeEvents';
 import { liveRdp } from '../data/disruption';
 import { fetchFlightStatus, fetchAircraftStatus, fetchAirportStats, hasDeviation, worstDelay, arrDelayMin, recordBehindLive, settledArrZ, schedArrZ, inboundGap, airportDisruption, activeLegIndex, legNo } from '../data/flightStatus';
-import { nightStopStation, hotelMapsUrl } from '../data/hotels';
+import { nightStopStation } from '../data/hotels';
 import { scheduleWakeUp } from '../data/reminders';
 import HotelSheet from '../components/HotelSheet';
 import AsyncStorage from '../data/secureStorage';
 import WelcomeSheet from '../components/WelcomeSheet';
 import Tip from '../components/Tip';
 
-// ══ INÍCIO v6 (2026-11-03 — esboço APROVADO pelo Nuno: design/inicio-v6.html, versão 3) ══════════════
-// Um só sistema com duas intensidades:
-//   AO VIVO (véspera · hoje · disrupção · pernoita) = a PLACA escura do painel de partidas: a HORA do
-//     próximo marco a amarelo (BRAND.panel, fixo em todas as edições), a contagem no rótulo, o estado
-//     numa pílula. Os dígitos viram como o painel Solari.
-//   CALMO (folga · pós-voo · férias · doença · fecho · configuração) = papel e o NÚMERO enorme a tinta.
-// Sempre: as linhas do painel com o que vem a seguir (hora · destino · dia), os 2 SECUNDÁRIOS da fila de
-// prioridades (nunca vazio → o dinheiro do mês) e 3 TECLAS no mesmo sítio, ao polegar (tabela da v4).
-// Saíram: o halo (sistema de luz), o bilhete manuscrito, o fantasma pálido, o chip das horas e a barra
-// de ações. FICAM intactos: o motor (data/crewState.js), as frases (data/stateVoice.js) e os cálculos.
-// Para quem usa: o tripulante às 4h, de pé, numa mão, com sono — um número enorme, poucas palavras,
-// teclas grandes (≥ 88 pt de altura) na metade de baixo.
+// ══ INÍCIO 3.0 "CARTÕES DE COR" (2026-11-11 — esboço APROVADO pelo Nuno: design/inicio-cartoes.html, design-system §14) ══
+// Em cima, no fundo: a pílula do estado, o número do próximo marco em DUAS linhas e dois factos ao lado de um fio. Por baixo,
+// a FOLHA branca: um cartão para o momento e um para o que vem a seguir — e, só se houver, um aviso. A COR é o TIPO (areia =
+// voo · salva = repouso/pernoita · lilás = serviço em terra · neutro = dinheiro · laranja = atenção). Sem teclas e sem lista
+// de serviços: partilhar é o ícone do cartão, a ação do momento é a barra ao fundo do cartão, a lista vive na Escala.
+// FICAM intactos: o motor (data/crewState.js), todos os cálculos e as folhas que o Início abre. O que vai para onde decide-o
+// data/homeCards.js (PURO, golden test:homecards); o desenho vive em components/HomeCards.js. Saíram do Início: a placa do
+// painel de partidas, os dígitos Solari, a frase da voz (o esboço não a tem), os secundários em mosaico e as 3 teclas (v6).
+// O movimento fica por decidir com a skill `animacoes` depois de a página estar parada e certa (decisoes, 2026-11-11).
 
 // ── DEMO: voo de exemplo (o "ver um exemplo" da configuração). SHOW_DEMO_FLIGHT força-o sempre.
 const SHOW_DEMO_FLIGHT = false;
@@ -62,48 +58,14 @@ const SHOW_DEMO_FLIGHT = false;
 // ≥ 18h). Valores: 'setup' | 'folga' | 'hoje' | 'disrupcao' | 'vespera' | 'posvoo' | 'pernoita' |
 // 'ferias' | 'doenca' | 'fecho' — ou null = estado REAL. Voltar a null depois de ver!
 const FORCE_HOME_STATE = null;
-// ── AFINAÇÕES visuais (sessão "testar os estados") — números do olho, mexer AQUI.
 const TUNE = {
-  live: { size: 104 },                                  // a HORA ao vivo (esboço: 104 pt)
-  calm: { max: 150, min: 56, charW: 0.5 },              // o número calmo: 150 pt, encolhe pelo comprimento (Barlow ≈ 0,47 em/dígito)
-  // Altura da linha = o tamanho (a medida PROVADA no iPhone: abaixo disso o iOS cortou fantasmas). A Barlow tem
-  // 1,2 em de altura natural e dígitos de 0,7 em (lido da fonte, 2026-11-03) → sobram ~0,1–0,2 em por cima e por
-  // baixo. `trim` aperta a caixa com margens negativas (não cortam a letra): 0,08 em ≈ a linha de 0,84 do esboço.
-  trim: 0.08,
-  // Por baixo o vazio é maior (descendentes) — MEDIDO no iPhone a 2026-11-03, alvo ~20 pt visíveis (Tempo da Apple):
-  //   por baixo a ROTA (Barlow 44, com vazio em cima): com 0,08 dava 35 pt (em voo, 104) → 0,22.
-  //   por baixo uma FRASE (letra normal, sem vazio em cima): com 0,22 dava 6 pt no pós-voo (150) e ~11 no standby (104) → 0,13.
-  //   (Era "ao vivo/calmo"; o standby — ao vivo com frase — mostrou que conta o que vem a SEGUIR. 2026-11-04.)
-  trimBottom: { dest: 0.22, text: 0.13 },
-  flip: { dur: 460, stagger: 70 },                       // Solari: cada dígito vira em 460 ms, cascata de 70 ms
-  dot: { leg: 650 },                                     // ponto "ao vivo": 650 ms por perna (motion §3, loops)
-  wakeBefore: 75,                                        // lembrete para acordar: report − 75 min (vestir + caminho)
-  // Ritmo da placa — MEDIDO contra o Tempo da Apple (referencias/inicio/placa-ritmo-tempo-apple.jpg): ~20 pt
-  // VISÍVEIS de cada lado do número. Os dígitos (Barlow, caixa aparada pelo `trim`) trazem ~7 pt vazios em cima e
-  // em baixo dentro da própria caixa → rótulo→número = 12 + 7 ≈ 19 · número→rota = 7 + 6 + 7 ≈ 20.
-  // (1.ª tentativa, 2 e 12, deu 9 e 33 visíveis no iPhone — "não está bom", Nuno 2026-11-03.)
-  // `keys` = o salto EXTRA antes das teclas (somado ao gap 12 do corpo → 16 entre grupos; 8 entre secundários).
-  // Contas (390 × 844): o estado mais cheio passa de 703 para 713 pt nos 714 úteis.
-  rhythm: { inGroup: SPACE.md, between: SPACE.sm, keys: SPACE.xs },
-  // A rota (Barlow 44, caixa de 46) traz ~7 pt vazios por baixo: com o que vem a seguir (linha/barra) a rota→linha
-  // dava 16 pt visíveis = o salto número→rota (pernoita, iPhone 2026-11-03). Apara-se → ~9; número→rota sobe p/ ~20.
-  destTrim: 0.15,
-  // ARRUMAÇÃO "DOCUMENTO" (Nuno, 2026-11-03, refs Neo Financial · X Money · N26): tudo encostado ao topo, as
-  // teclas LOGO a seguir aos secundários, o espaço livre no FIM (lê-se como o fim da página, não um buraco).
-  // Recusado: número centrado numa placa que cresce ("palco" dentro de uma caixa com aresta — flutuava) e as
-  // teclas presas ao fundo (deixavam o vazio entre os secundários e as teclas).
+  wakeBefore: 75,   // lembrete para acordar: report − 75 min (vestir + caminho)
 };
 const DEMO_FLIGHT = (() => {
   const dep = new Date(); dep.setDate(dep.getDate() + 1); dep.setHours(6, 40, 0, 0); // partida amanhã 06:40 (report 05:40)
   const iso = `${dep.getFullYear()}-${String(dep.getMonth() + 1).padStart(2, '0')}-${String(dep.getDate()).padStart(2, '0')}`;
   return { demo: true, kind: 'flight', dateISO: iso, report: '05:40', depAirport: 'LIS', arrAirport: 'FNC', depTime: '06:40', arrTime: '08:20', sectors: 2, stations: ['LIS', 'FNC'], startDate: dep };
 })();
-// Código curto de um serviço que não é voo, para a coluna "Destino" do painel.
-const KIND_CODE = {
-  pt: { standby_airport: 'SBY', standby_home: 'SBY', reserve: 'RSV', training: 'FORM', office: 'ESC', positioning: 'POS' },
-  en: { standby_airport: 'SBY', standby_home: 'SBY', reserve: 'RSV', training: 'TRG', office: 'OFF', positioning: 'POS' },
-};
-
 // Constrói um objeto "voo" (forma do calendário) a partir de um duty do store, para o Início o poder
 // mostrar como o próximo serviço. startDate = report + 1 h (o calendário traz a partida).
 // SEM report (evento do calendário sem RP/C-I): continua a ser o REGISTO — rota, pernoita, hotel e ganhos
@@ -182,13 +144,6 @@ function mergeNextFlight(calFlight, duties, now) {
   return best;
 }
 
-// A estação "fora" de uma rota (ida-volta LIS-CDG-LIS → CDG; LGW-LIS → LIS).
-function awayStation(route) {
-  const ap = String(route || '').split(/[^A-Za-z]+/).map((x) => x.trim().toUpperCase()).filter(Boolean);
-  if (!ap.length) return null;
-  const dep = ap[0], last = ap[ap.length - 1];
-  return ap.length > 1 ? (last !== dep ? last : ap[1]) : dep;
-}
 const hmToMin = (x) => { const m = /^(\d{1,3}):(\d{2})$/.exec(String(x || '')); return m ? +m[1] * 60 + +m[2] : null; };
 const minToHm = (m) => `${String(Math.floor(((m % 1440) + 1440) % 1440 / 60)).padStart(2, '0')}:${String(((m % 60) + 60) % 60).padStart(2, '0')}`;
 const hmAdd = (hm, add) => { const t0 = hmToMin(hm); return t0 == null || add == null ? null : minToHm(t0 + add); };
@@ -218,68 +173,7 @@ function useStationWx(station) {
   return wx;
 }
 
-// ── SOLARI: cada dígito vira uma vez, em cascata, como o painel de partidas. Entra quando o ecrã
-// ganha foco e quando o carácter muda (a chave do pai muda). Movimentos reduzidos = troca seca.
-// Nada fica escondido: se a animação for interrompida, o dígito fica no estado final.
-function FlipChar({ ch, delay, reduce, style }) {
-  const v = useRef(new Animated.Value(reduce ? 1 : 0)).current;
-  // Interpolações criadas UMA vez (re-renders a meio da viragem — o relógio de 30 s, o tempo a chegar — não as trocam).
-  const anim = useRef(null);
-  if (!anim.current) anim.current = {
-    rotateX: v.interpolate({ inputRange: [0, 0.6, 1], outputRange: ['-90deg', '12deg', '0deg'] }),
-    opacity: v.interpolate({ inputRange: [0, 0.4, 1], outputRange: [0, 1, 1] }),
-  };
-  useEffect(() => {
-    if (reduce) { v.setValue(1); return undefined; }
-    const a = Animated.timing(v, { toValue: 1, duration: TUNE.flip.dur, delay, easing: Easing.out(Easing.cubic), useNativeDriver: true });
-    a.start(({ finished }) => { if (!finished) v.setValue(1); });
-    return () => a.stop();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  if (reduce) return <Text style={style} allowFontScaling={false}>{ch}</Text>;
-  return <Animated.Text style={[style, { opacity: anim.current.opacity, transform: [{ perspective: 400 }, { rotateX: anim.current.rotateX }] }]} allowFontScaling={false}>{ch}</Animated.Text>;
-}
-
-// Ponto "ao vivo" (cor da edição: BRAND.onDark). Pulsa só com o ecrã à vista; reduzido = parado.
-function LiveDot({ color, reduce, active }) {
-  const v = useRef(new Animated.Value(1)).current;
-  useEffect(() => {
-    if (reduce || !active) { v.setValue(1); return undefined; }
-    const loop = Animated.loop(Animated.sequence([
-      Animated.timing(v, { toValue: 0.35, duration: TUNE.dot.leg, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-      Animated.timing(v, { toValue: 1, duration: TUNE.dot.leg, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-    ]));
-    loop.start();
-    return () => loop.stop();
-  }, [reduce, active, v]);
-  return <Animated.View style={[st.dot, { backgroundColor: color, opacity: v }]} />;
-}
-
-// Esqueleto do 1.º carregamento — a mesma forma da placa (rótulo · número · destino · 2 linhas).
-function BoardSkeleton() {
-  return (
-    <View style={{ paddingTop: SPACE.lg, gap: SPACE.md }}>
-      <Skeleton w={150} h={12} r={4} />
-      <Skeleton w={190} h={96} r={8} />
-      <Skeleton w={240} h={20} r={6} />
-      <Skeleton w={'100%'} h={40} r={6} />
-    </View>
-  );
-}
-
 export default function HomeScreen({ navigation }) {
-  const tabSpace = useTabBarSpace();
-  const reduce = useReduceMotion();
-  // "A seguir" (Nuno, 2026-11-03): ABERTO até 3 serviços; com mais, "Mais N ⌄" abre o resto (refs WHOOP/Meetup).
-  // Até 3 SE COUBER sem deslizar: o ecrã mede-se (conteúdo vs. janela) e, se passar, desce para 2 — no "em voo"
-  // com frase e 2 cartões de texto, 3 linhas passavam ~30 pt. Volta a 3 a cada estado/fase novo.
-  const [nextOpen, setNextOpen] = useState(false);
-  const [rowsCap, setRowsCap] = useState(3);
-  const viewH = useRef(0);
-  const toggleNext = () => {
-    select();
-    if (!reduce) LayoutAnimation.configureNext(LayoutAnimation.create(280, LayoutAnimation.Types.easeInEaseOut, LayoutAnimation.Properties.opacity));
-    setNextOpen((v) => !v);
-  };
   const isFocused = useIsFocused();
   const { width: winW } = useWindowDimensions();
   const { user, lang, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync, base, homeBaseAt, cabinGapMin, splitAdminMin, hotels, postFlightMin, vacationDaysYear, openSimulation, openExtra, setHomeNight, serviceStart, serviceStartExact, largada, rosterLog, notify, lifestyle } = useContext(AppContext);
@@ -350,6 +244,7 @@ export default function HomeScreen({ navigation }) {
   const [calErr, setCalErr] = useState(false); // a LEITURA rebentou (≠ "sem voos") — erro visível, não vazio falso
   const [syncing, setSyncing] = useState(true);
   const [syncDone, setSyncDone] = useState(false);
+  const [lastReadMs, setLastReadMs] = useState(null);   // a hora da última leitura bem-sucedida (folga sem serviços)
   const syncingRef = useRef(false);
   const syncFlight = async () => {
     if (syncingRef.current) return;
@@ -359,6 +254,7 @@ export default function HomeScreen({ navigation }) {
       // Só lê o calendário se houver um LIGADO (sem prompt; sem leitura "às cegas").
       const res = calendarId ? await getUpcomingFlight(company, calendarId) : { ok: false, flight: null };
       setCalOk(res.ok); setCalErr(false);
+      if (res.ok) setLastReadMs(Date.now());
       setCalFlight(res.flight || (SHOW_DEMO_FLIGHT ? DEMO_FLIGHT : null));
     } catch { setCalErr(true); setCalFlight(SHOW_DEMO_FLIGHT ? DEMO_FLIGHT : null); }   // falha ≠ vazio: mostra o erro
     setSyncDone(true); setSyncing(false);
@@ -380,10 +276,7 @@ export default function HomeScreen({ navigation }) {
 
   // Relógio VIVO: re-renderiza a cada 30 s enquanto o ecrã está focado (a contagem não congela).
   const [, setNowTick] = useState(0);
-  // Solari: muda a cada foco → os dígitos viram outra vez (é a entrada do ecrã).
-  const [flipKey, setFlipKey] = useState(0);
   useFocusEffect(useCallback(() => {
-    setFlipKey((k) => k + 1);
     const id = setInterval(() => setNowTick((n) => n + 1), 30000);
     return () => clearInterval(id);
   }, []));
@@ -571,7 +464,6 @@ export default function HomeScreen({ navigation }) {
   useEffect(() => {
     if (syncBehind && flight) markLiveSync(flight.dateISO, { flightNo, realArrZ: settledArrZ(flightStatus), schedArrZ: schedArrZ(flightStatus) });
   }, [syncBehind, flightStatus, flight && flight.dateISO, flightNo]); // eslint-disable-line react-hooks/exhaustive-deps
-  const ndReportZ = (flight && flight.report) ? (airportZulu(flight.dateISO, flight.report, flight.depAirport) || toZulu(flight.dateISO, flight.report)) : null;
 
   // € sempre com cêntimos (regra da casa) — "1 284,50" (o símbolo vem à parte).
   const eurBare = (n) => { const [i, d] = Number(n).toFixed(2).split('.'); return `${i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ')}${lang === 'en' ? '.' : ','}${d}`; };
@@ -602,7 +494,6 @@ export default function HomeScreen({ navigation }) {
   })() : null;
   const nsHotel = nsHotelStation ? (hotels || {})[nsHotelStation] : null;
 
-  const enter = useEnter();
   const hourNow = new Date().getHours();
 
   // ── O MOTOR da Living Interface (data/crewState.js — PURO, golden test:crewstate) ──
@@ -622,11 +513,7 @@ export default function HomeScreen({ navigation }) {
   const closeNsStation = cs.nsStation;
   // Tema NOTURNO (véspera/pernoita) — publica-se ao contexto para a TabBar herdar.
   const night = homeState === 'vespera' || homeState === 'pernoita';
-  // AO VIVO = a placa escura do painel de partidas.
-  const live = homeState === 'vespera' || homeState === 'hoje' || homeState === 'disrupcao' || homeState === 'pernoita';
-  const P = night ? PELE_NIGHT : PELE;
-  const PL = night ? PLATE.night : PLATE.day;
-  const s = night ? sNight : sDay;
+  const C = night ? CARD.night : CARD.day;   // os cartões de cor (design-system §14)
   useEffect(() => { setHomeNight && setHomeNight(night); }, [night, setHomeNight]);
   const inDuty = isToday && cdMin != null && cdMin <= 0;
   const kindLabel = flight && flight.kind ? t('duties.kind.' + flight.kind, lang) : '';
@@ -659,13 +546,11 @@ export default function HomeScreen({ navigation }) {
     if (ts) return ts * 1000;
     const d = legInstant(flight.dateISO, arrPlan, flight.report || flight.depTime); return d ? d.getTime() : null;
   })();
-  // (o rowsCap do "A seguir" volta a 3 a cada estado/fase — ver o useEffect por baixo do `phase`)
   const phase = !(isToday && flight && !isNonFlight) ? null
     : (cdMin != null && cdMin > 0) ? 'pre'
     : (depMs != null && now < depMs) ? 'duty'
     : (arrMs != null && now < arrMs) ? 'air'
     : 'landed';
-  useEffect(() => { setRowsCap(3); setNextOpen(false); }, [homeState, phase]);
   const minsTo = (ms) => (ms == null ? null : Math.max(0, Math.round((ms - now) / 60000)));
   const durTxt = (min) => {
     if (min == null) return '';
@@ -675,20 +560,11 @@ export default function HomeScreen({ navigation }) {
   };
   const legDep = String((activeSector && activeSector.leg.dep) || (flight && flight.depAirport) || '').toUpperCase();
   const legArr = String((activeSector && activeSector.leg.arr) || (flight && flight.arrAirport) || '').toUpperCase();
-  const dayArr = flight ? String((sectorLegs.length ? sectorLegs[sectorLegs.length - 1].arr : flight.arrAirport) || '').toUpperCase() : '';
 
-  // ── O TEMPO — onde ESTÁS (o topo da placa) e para onde VAIS (um secundário) ──
-  const wxHereStation = (() => {
-    const b = base ? String(base).toUpperCase() : null;
-    if (homeState === 'pernoita') return closeNsStation ? String(closeNsStation).toUpperCase() : null;
-    if (homeState === 'hoje' && !isNonFlight && flight) return phase === 'air' ? (legArr || null) : (legDep || b);
-    if (homeState === 'disrupcao' && flight) return legDep || b;
-    return b;
-  })();
-  const wxDestStation = ((homeState === 'hoje' && phase !== 'air') || homeState === 'vespera' || homeState === 'disrupcao') && flight && !isNonFlight
-    && dayArr && /^[A-Z]{3}$/.test(dayArr) && dayArr !== wxHereStation ? dayArr : null;
+  // ── O TEMPO — só onde decide alguma coisa no 3.0: o de AMANHÃ na estação da pernoita (o facto "7° · amanhã · chuva").
+  // Nos outros estados não se pede (o esboço não mostra o tempo; poupa pedidos à rede).
+  const wxHereStation = homeState === 'pernoita' && closeNsStation ? String(closeNsStation).toUpperCase() : null;
   const wxHere = useStationWx(wxHereStation);
-  const wxDest = useStationWx(wxDestStation);
 
   // ── REPOUSO ATÉ (pós-voo/pernoita): a MESMA regra do restBetweenDuties (ORO.FTL.235 a/b). ──
   // A regra é a do motor (restAfterDuty): também as 14 h depois de repouso a bordo ou de fuso ≥ 4 h e as +2 h/+4 h
@@ -699,18 +575,10 @@ export default function HomeScreen({ navigation }) {
     if (!ru) return null;
     const u = new Date(ru.untilMs);
     const uIso = `${u.getFullYear()}-${String(u.getMonth() + 1).padStart(2, '0')}-${String(u.getDate()).padStart(2, '0')}`;
-    return { hm: `${String(u.getHours()).padStart(2, '0')}:${String(u.getMinutes()).padStart(2, '0')}`, nextDay: uIso > todayISO };
+    return { hm: `${String(u.getHours()).padStart(2, '0')}:${String(u.getMinutes()).padStart(2, '0')}`, nextDay: uIso > todayISO, untilIso: uIso, untilMs: ru.untilMs, endMs: ru.endMs };
   })() : null;
-  const restUntilHm = restUntil ? restUntil.hm : null;
 
-  // ── A VOZ do estado (data/stateVoice.js, golden): agora em LETRA NORMAL, por baixo da placa. A
-  // disrupção não tem voz (quando aperta, só o operacional); a configuração e o "hoje" também não.
-  // HOJE (2026-11-03): a frase do dia de serviço só diz o que os dados sustentam — "Tudo pronto." exige o voo
-  // ao vivo sem atraso E os limites cumpridos; o tempo é o de AGORA no destino (golden test:voice).
-  const voiceLiveOk = !!(flightStatus && !fsDev && !inboundLate);
-  const voiceLegalOk = !!(legalIt && legalIt.status === 'ok');
-  const voiceDest = (phase === 'pre' || phase === 'duty') && wxDest ? wxDest : null;
-  // O repouso para a frase da véspera/pernoita (auditoria do tripulante, 2026-11-04): a MESMA conta da pílula
+  // O repouso para o "repouso cumprido" da véspera (auditoria do tripulante, 2026-11-04): a MESMA conta da pílula
   // REPOUSO ✓/CURTO (restStatus, golden test:reststatus) → "verificado/tratado" só com ela a verde.
   const restVoice = (() => {
     const rI = (todayItems || []).find((it) => it.id === 'rest');
@@ -719,33 +587,6 @@ export default function HomeScreen({ navigation }) {
     // "Verificado" só com a pergunta inteira a verde — também a recuperação (ORO.FTL.235(d)).
     return { restOk: rI.status === 'ok', restHave: r.actualMin != null ? hm(r.actualMin) : null, restNeed: r.requiredMin != null ? hm(r.requiredMin) : null };
   })();
-  // Último dia de férias (amanhã já não está marcado como férias) → a frase muda para o regresso (golden test:statevoice).
-  const vacLast = homeState === 'ferias' && !(aeEvents || []).some((e) => e && e.type === 'vacDays' && e.date === isoAdd(todayISO, 1));
-  const voice = useMemo(() => {
-    if (!['folga', 'ferias', 'doenca', 'vespera', 'posvoo', 'pernoita', 'hoje'].includes(homeState)) return null;
-    // `tmwReport` = report de AMANHÃ (se houver) → destrava as frases de DECISÃO da meteo (casaco/trânsito).
-    const tmwISO = isoAdd(todayISO, 1);
-    const tmwDuty = duties && duties[tmwISO] && !duties[tmwISO].deleted ? duties[tmwISO] : null;
-    // MARCOS (marcos-voz, 2026-07-11): as horas do ano SÓ se calculam na folga (o único estado onde falam).
-    const yearH = homeState === 'folga'
-      ? (() => { try { return +(yearStats(duties || {}, { year: Number(todayISO.slice(0, 4)) }).flightMin / 60); } catch { return null; } })()
-      : null;
-    return stateVoice({ state: homeState, lang, dateISO: todayISO, wx: wxHere, hour: hourNow, ctx: { ...restVoice, lastVacDay: vacLast, report: (flight && flight.report) || null, station: closeNsStation, restUntil: restUntilHm, tmwReport: (tmwDuty && tmwDuty.report_time) || null,
-      yearHours: yearH, serviceStart: serviceStart || null, companhia: (company && company.name) || null,
-      aviso: (rosterChanges && rosterChanges.counts && rosterChanges.counts.total) ? true : null,
-      phase: homeState === 'hoje' ? phase : null, liveOk: voiceLiveOk, legalOk: voiceLegalOk,
-      dest: voiceDest ? voiceDest.station : null, destC: voiceDest ? voiceDest.c : null,
-      destRain: voiceDest ? (voiceDest.icon === 'rain' || voiceDest.icon === 'thunder') : null } });
-  }, [homeState, lang, todayISO, wxHere, hourNow, flight && flight.report, closeNsStation, restUntilHm, duties, rosterChanges, serviceStart, company, phase, voiceLiveOk, voiceLegalOk, voiceDest, restVoice.restOk, restVoice.restHave, restVoice.restNeed, vacLast]); // eslint-disable-line react-hooks/exhaustive-deps
-  // Toque na voz: com destino navega ('escala' → rever alterações · 'numeros' · 'hoje'/'amanha' → o dia).
-  const goVoice = (to) => {
-    select();
-    if (to === 'escala') { navigation.navigate('Escala', { screen: 'EscalaMain', params: { review: Date.now() } }); return; }
-    if (to === 'numeros') { navigation.navigate('Estatísticas'); return; }
-    const iso = to === 'hoje' ? todayISO : isoAdd(todayISO, 1);
-    if (hasReg(iso)) openDayDetail(iso); else navigation.navigate('Escala');
-  };
-
   // ── PÓS-VOO: o balanço do dia fechado (motor computeDuty, o MESMO dos golden) ──
   const closeD = (todayEnded && !closeMulti) ? (() => {
     try {
@@ -753,8 +594,6 @@ export default function HomeScreen({ navigation }) {
       return r && r.isFdp ? r : null;   // escritório/formação/standby em casa não são PSV (ORO.FTL.105(12))
     } catch { return null; }
   })() : null;
-  const closeBlock = (todayEnded && !closeMulti && todayEnded.flight_minutes)
-    ? `${Math.floor(todayEnded.flight_minutes / 60)}:${String(todayEnded.flight_minutes % 60).padStart(2, '0')}` : null;
   let pdToday = null;
   if (todayEnded && !closeMulti && ae && crewCategory && todayEnded.route) {
     pdToday = serviceMoney(ae, crewCategory, todayEnded, { date: todayISO, fleet: crewFleet, baseAt: homeBaseAt, duties }).perDiem;   // índice do mês (L10)
@@ -762,7 +601,6 @@ export default function HomeScreen({ navigation }) {
   // Acordar sugerido (véspera): report − 75 min (estimativa: vestir + caminho).
   const wakeMs = (homeState === 'vespera' && reportMs != null) ? reportMs - TUNE.wakeBefore * 60000 : null;
   const wakeAt = wakeMs != null ? (() => { const d = new Date(wakeMs); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; })() : null;
-  const restItem = questionItems.find((it) => it.id === 'rest') || null;
   // ── PERNOITA: hotel da estação (catálogo local) + abono da noite (ae.nightStop, Art. 39) ──
   const closeHotel = closeNsStation ? (hotels || {})[closeNsStation] : null;
   // TAP: a noite depois de um dia de voo não paga estadia nesse dia (Cl. 7.ª/9.ª; bloco 5) → sem "+ €" aqui.
@@ -781,7 +619,7 @@ export default function HomeScreen({ navigation }) {
     const MES = lang === 'en' ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] : ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
     const dm = (iso) => `${Number(iso.slice(8, 10))} ${MES[Number(iso.slice(5, 7)) - 1]}`;
     const period = start ? l(`férias de ${dm(start)} a ${dm(back)}`, `leave from ${dm(start)} to ${dm(back)}`) : null;
-    return { quota, taken, left: Math.max(0, quota - taken), retISO: ret, period, lastDay: ret === isoAdd(todayISO, 1),
+    return { quota, taken, left: Math.max(0, quota - taken), retISO: ret, period, lastDay: ret === isoAdd(todayISO, 1), fromIso: start, toIso: start ? back : null,
       retLabel: new Date(ret + 'T00:00:00').toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' }).replace(/-feira/i, '') };
   })() : null;
   // ── DOENÇA: dia N do episódio + a regra de pagamento do ACORDO DO PERFIL (ae.SICK_STATE: easyJet pilotos Art. 48.º, cabine
@@ -794,11 +632,10 @@ export default function HomeScreen({ navigation }) {
     const [y, m, d] = todayISO.split('-').map(Number);
     return new Date(y, m, 0).getDate() - d;
   })() : null;
-  // ── EM VOO: progresso do setor ativo (instantes reais com feed de 1 setor; senão os planeados) ──
-  const sectorPct = (inDuty && depMs != null && arrMs != null && arrMs > depMs)
-    ? Math.max(0, Math.min(100, Math.round(((now - depMs) / (arrMs - depMs)) * 100))) : null;
+  // ── EM VOO: o PSV a correr desde o report (o "PSV 7:30 de 11:45" do cartão do dia de serviço) ──
   const psvRunning = (inDuty && reportMs != null) ? (() => {
-    const min = Math.max(0, Math.round((now - reportMs) / 60000));
+    const until = phase === 'landed' && trackingLast && arrMs != null ? Math.min(now, arrMs) : now;   // aterrado no último setor: o PSV fechou nos calços
+    const min = Math.max(0, Math.round((until - reportMs) / 60000));
     return `${Math.floor(min / 60)}:${String(min % 60).padStart(2, '0')}`;
   })() : null;
   // ── STANDBY hoje: "se chamado agora → PSV até HH:MM" (o motor 225 dá o máx; report + máx = relógio) ──
@@ -807,17 +644,18 @@ export default function HomeScreen({ navigation }) {
 
   // € do MÊS estimado — o MESMO monthStats dos Números (nunca um nº novo). Guarda o aeMonth COMPLETO:
   // o fecho do mês mostra as parcelas (que SOMAM — auditável).
-  const monthAe = useMemo(() => {
+  const monthSt = useMemo(() => {
     if (!ae || !crewCategory) return null;
     try {
       const st0 = monthStats(duties, { ym: todayISO.slice(0, 7), ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, serviceStart, startExact: serviceStartExact, largada, lifestyle, baseAt: homeBaseAt });
-      return (st0 && st0.aeMonth) || null;
+      return st0 || null;
     } catch { return null; }
   }, [duties, ae, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, todayISO, serviceStart, serviceStartExact, largada, lifestyle, homeBaseAt]);
+  const monthAe = monthSt && monthSt.aeMonth ? monthSt.aeMonth : null;
+  const monthNightStops = monthSt && typeof monthSt.nightStops === 'number' ? monthSt.nightStops : null;
   const monthMoney = monthAe ? monthAe.total : null;
   // 9/3 e sazonais sem as datas de atividade (Cl. 48.ª/80.ª): o mês é INCERTO — diz-se, com o intervalo da base (bloco 5).
   const monthUnc = monthAe && monthAe.baseRange ? monthAe.baseRange : null;
-  const estLbl = monthUnc ? l('incerto · bruto', 'uncertain · gross') : l('estimado · bruto', 'estimated · gross');   // os acordos dão valores brutos (A-198)
   // Fecho: a parte variável dividida em "até hoje" e "resto do mês" (a MESMA conta do total — data/stats.js).
   const monthSplitNow = useMemo(() => {
     if (!ae || !crewCategory) return null;   // fecho (título) + o cartão do mês em todos os estados
@@ -825,9 +663,6 @@ export default function HomeScreen({ navigation }) {
       return monthSplit(duties, { ym: todayISO.slice(0, 7), ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, todayISO, serviceStart, startExact: serviceStartExact, largada, lifestyle, baseAt: homeBaseAt });
     } catch { return null; }
   }, [homeState, duties, ae, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, todayISO, serviceStart, serviceStartExact, largada, lifestyle, homeBaseAt]);
-  const dayOfMonth = new Date().getDate();
-  const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
-  const monthPct = Math.round((dayOfMonth / daysInMonth) * 100);
   const monthName = new Date().toLocaleDateString(locale, { month: 'long' });
   const monthCap = monthName.charAt(0).toUpperCase() + monthName.slice(1);
   // O que está DENTRO dos "Extras" do fecho (Nuno, 2026-11-04): a MESMA função do total (ae.monthExtras sobre os
@@ -851,26 +686,11 @@ export default function HomeScreen({ navigation }) {
       suggestion: l('Cada linha vem de um registo teu (Evento) ou da escala. Algum a mais? Corrige-o nos Números.', 'Each line comes from an event you logged or from the roster. One too many? Fix it in Numbers.'),
       navTo: { root: 'Estatísticas', label: l('Abrir os Números', 'Open Numbers') } };
   })() : null;
-  const psvPct = (() => {
-    const mx = hmToMin(ndPsvMax); if (!mx) return null;
-    const real = hmToMin(liveVerdict ? liveVerdict.realStr : ndPsvActual);
-    return real != null ? Math.min(100, Math.round((real / mx) * 100)) : null;
-  })();
-  const f28 = flightLimits.find((w) => w.days === 28) || null;
   const d7 = dutyLimits.find((w) => w.days === 7) || null;
 
-  // MODO EXEMPLO: o voo é FALSO e di-lo sempre (pílula no topo da placa), e sai-se num toque.
+  // MODO EXEMPLO: o voo é FALSO e di-lo sempre (pílula "Exemplo · sair" no lugar do sino), e sai-se num toque.
   const demoOn = !!(flight && flight.demo);
   const exitDemo = () => { select(); setCalFlight(null); };
-
-  // Data do dia, legível ("Quinta · 5 novembro"): o 'long' do pt-PT traz "-feira" (fora).
-  const dateLabel = (() => {
-    const d = new Date();
-    const wd = d.toLocaleDateString(locale, { weekday: 'long' }).replace(/-feira$/i, '');
-    return `${wd} · ${d.getDate()} ${d.toLocaleDateString(locale, { month: 'long' })}`;
-  })();
-  const wdShort = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString(locale, { weekday: 'short' }).replace('.', '').slice(0, 3).toUpperCase();
-  const wdLong = (iso) => { const w = new Date(`${iso}T00:00:00`).toLocaleDateString(locale, { weekday: 'long' }).replace(/-feira$/i, ''); return w.charAt(0).toUpperCase() + w.slice(1); };
 
   // Documento crítico e alertas FTL (vermelhos) — sobem à cabeça da fila dos secundários.
   const docAlert = qAlerts.find((it) => it.id === 'validades') || null;
@@ -921,14 +741,6 @@ export default function HomeScreen({ navigation }) {
     ? monthAudit(duties || {}, { ym: todayISO.slice(0, 7), ae, cat: crewCategory, fleet: crewFleet, base, rosterLog: rosterLog || [], events: aeEvents || [], isPilot })
     : null), [homeState, duties, ae, crewCategory, crewFleet, base, rosterLog, aeEvents, isPilot, todayISO]);
 
-  // Configuração: os 3 passos — as MESMAS palavras do 7.º passo (OnboardingScreen, "Liga a tua escala").
-  const setupSteps = homeState === 'setup' ? [
-    [l('Autorizas o calendário', 'You allow calendar access'), l('o iPhone pergunta uma vez', 'your phone asks once')],
-    [l('Escolhes o calendário da escala', 'You pick the roster calendar'),
-      /easyjet|ezy/i.test([company && company.slug, company && company.name].filter(Boolean).join(' '))
-        ? l('o que o eCrew preenche', 'the one eCrew fills') : l('o que o portal da companhia preenche', 'the one your crew portal fills')],
-    [l('Confirmas os serviços', 'You confirm your duties'), l('nada se grava sem o teu sim', 'nothing is saved without your yes')],
-  ] : [];
   // Configuração: o "porquê" completo (privacidade + a dica do portal) vive ATRÁS de "Saber mais".
   const setupWhyItem = homeState === 'setup' ? {
     id: 'setupWhy', q: l('Privacidade', 'Privacy'),
@@ -941,34 +753,10 @@ export default function HomeScreen({ navigation }) {
   } : null;
 
   // ════════════════════════════════════════════════════════════════════════════════════════════
-  // A PLACA — o que se mostra em cima, por estado. Tudo aqui é apresentação: os números vêm de cima.
+  // O INÍCIO 3.0 — os FACTOS. Daqui para cima tudo vem dos motores; aqui juntam-se em objetos simples e o
+  // data/homeCards.js (puro, golden test:homecards) decide o topo e os cartões. Nenhum número nasce aqui.
   // ════════════════════════════════════════════════════════════════════════════════════════════
-  // As LINHAS do painel: os próximos serviços (hora do report · destino · dia). Ao vivo, sem o do herói.
-  // Até 8 para o painel poder abrir ("mais N"); mostra-se até 3 (ver rowsCap).
-  const upcomingRows = (skipISO, max = 8) => {
-    const out = [];
-    for (const iso of Object.keys(duties).filter((k) => k >= todayISO).sort()) {
-      if (iso === skipISO) continue;
-      // O 1.º serviço do dia que ainda não acabou (primário ou um 2.º serviço).
-      const mf = dayFlights(iso, duties[iso]).find((f) => f.endDate.getTime() >= now); if (!mf) continue;
-      const d = mf.svc;
-      const isF = !d.kind || d.kind === 'flight';
-      // A ROTA inteira, como no eCrew ("LIS–FNC–LIS") — só o destino escondia os setores do meio (LIS-FNC-LIS-OPO-LIS
-      // mostrava só FNC). Nuno, 2026-11-04; refs Fly Delta/Air NZ. Sem rota → a estação de fora ou "Voo".
-      const chain = String(d.route || '').split(/[^A-Za-z]+/).filter(Boolean).map((x) => x.toUpperCase()).join(' → ');   // a mesma seta do resto do Início (crítica 2026-11-04)
-      const ds = isF || (d.kind === 'positioning' && d.route) ? (chain || awayStation(d.route) || l('Voo', 'Flight')) : ((KIND_CODE[lang] || KIND_CODE.pt)[d.kind] || '—');
-      // Sem report → "—" na coluna do report (nunca a partida disfarçada de report).
-      out.push({ key: iso, tm: d.report_time || '—', ds, dy: `${wdShort(iso)} ${Number(iso.slice(8, 10))}`,
-        a11y: `${t('duties.kind.' + (d.kind || 'flight'), lang)} ${d.route || ''}, ${wdLong(iso)} ${Number(iso.slice(8, 10))}, ${d.report_time ? `report ${d.report_time}` : l('sem hora de report', 'no report time')}`,
-        onPress: () => openDayDetail(iso) });
-      if (out.length >= max) break;
-    }
-    return out;
-  };
-  const routeTxt = flight ? (legDep && legArr && legDep !== legArr ? `${legDep} → ${legArr}` : (legDep || legArr || '')) : '';
-  // O repouso tem dois veredictos no motor (data/today.js): cumprido ou abaixo do mínimo (ORO.FTL.235).
-  const restPill = restItem ? (restItem.status === 'bad' ? { tone: 'red', text: l('Repouso curto', 'Short rest') } : { tone: 'ok', text: l('Repouso ✓', 'Rest ✓') }) : null;
-  const fsPill = flightStatus ? (((fsDep && fsDep.delayMin) || 0) >= 15 ? { tone: 'warn', text: `${l('Atraso', 'Delay')} +${fsDep.delayMin}` } : { tone: 'ok', text: l('A horas', 'On time') }) : null;
+  // A hora-limite de calços (o "PSV até"): o veredicto de hoje quando o há; senão report + PSV máximo. Igual ao v6.
   const psvLatest = (() => {
     const r = legalIt && legalIt.raw && legalIt.raw.psv;
     // Sem report deste serviço, o "latest" do dia seria de OUTRO serviço — não se mostra.
@@ -976,7 +764,7 @@ export default function HomeScreen({ navigation }) {
     return (ndDuty && flight && flight.report && ndPsvMax) ? hmAdd(flight.report, hmToMin(ndPsvMax)) : null;
   })();
   // ── A LINHA DO DIA DE SERVIÇO (em voo): report → limite do PSV (o MESMO "PSV até" de cima), setores como
-  // troços, o "agora". data/dutyLine.js (golden test:dutyline). Sem report ou sem limite → a barra antiga.
+  // troços, o "agora". data/dutyLine.js (golden test:dutyline). Dá a posição do "agora" e a margem à aterragem.
   const dl = (() => {
     if (!(isToday && flight && flight.report && reportMs != null && psvLatest)) return null;
     const m = /^(\d{1,2}):(\d{2})/.exec(psvLatest); if (!m) return null;
@@ -988,242 +776,148 @@ export default function HomeScreen({ navigation }) {
         ? { startMs: depMs, endMs: arrMs }   // o setor ativo: com o voo ao vivo (atrasos), como o número grande
         : { startMs: legInstant(flight.dateISO, lg.off, anchorHm)?.getTime() ?? null, endMs: legInstant(flight.dateISO, lg.on, anchorHm)?.getTime() ?? null })
       : (depMs != null && arrMs != null ? [{ startMs: depMs, endMs: arrMs }] : []);
-    const r = dutyLine({ reportMs, limitMs: lim.getTime(), sectors: legsMs, now });
-    return r ? { ...r, reportHm: flight.report, limitHm: psvLatest.replace(/\s*\(\+1\)/, '') } : null;
+    return dutyLine({ reportMs, limitMs: lim.getTime(), sectors: legsMs, now });
   })();
-  const zuluTxt = (local, z) => (z && local && z !== local ? ` · ${z}Z` : '');
-  // O tempo no topo só onde ajuda a decidir (Nuno, 2026-11-04): na folga e nos estados ao vivo (a estação onde estás
-  // ou para onde vais). Fora do fecho, pós-voo, férias, doença e configuração — à meia-noite, "🌙 14°" não decidia nada.
-  const wxHead = (live || homeState === 'folga') && wxHere && wxHere.icon ? { icon: wxHere.icon, text: live ? `${wxHere.c}° · ${wxHere.station}` : `${wxHere.c}°` } : null;
 
-  const board = (() => {
-    const b = { head: { left: dateLabel, dot: false }, lbl: null, digits: null, unit: null, was: null, dest: null, headline: null, title: null, pill: null, sub: null, prog: null, rows: [], kv: null, heroISO: null, link: null };
-    if (homeState === 'setup') {
-      return { ...b, lbl: l('Começar', 'Get started'), title: l('Liga a tua escala', 'Connect your roster'),
-        sub: l('Lemos o calendário do telemóvel onde chega a escala. Só leitura: nada é alterado, e tu confirmas antes de gravar.', 'We read the phone calendar your roster arrives in. Read-only: nothing is changed, and you confirm before saving.'),
-        link: { text: l('Privacidade · saber mais', 'Privacy · learn more'), onPress: () => openItem(setupWhyItem) } };
+  const hasDay = (iso) => !!(iso && duties[iso] && !duties[iso].deleted);
+  const stationsOf =(route) => String(route || '').split(/[^A-Za-z]+/).filter(Boolean).map((x) => x.toUpperCase());
+  const legsOf = (svc) => (Array.isArray(svc && svc.legs) ? svc.legs.filter((lg) => lg && (lg.off || lg.on || lg.dep || lg.arr)) : []);
+  // Um serviço em factos simples. O fim de serviço = o sign-off registado ou os calços + o pós-voo (ORO.FTL.105: o serviço
+  // acaba no sign-off); num serviço em terra, o fim do bloco.
+  const brief = (iso, svc) => {
+    if (!svc || svc.deleted) return null;
+    const kind = svc.kind || 'flight';
+    const fl = kind === 'flight' || kind === 'positioning';
+    const lg = legsOf(svc);
+    const st = stationsOf(svc.route);
+    const signOff = /^\d{1,2}:\d{2}$/.test(String(svc.signOff || '')) ? svc.signOff : null;
+    return { iso, kind, kindLabel: t('duties.kind.' + kind, lang), stations: st,
+      sectors: svc.sectors || lg.length || (st.length > 1 ? st.length - 1 : null),
+      report: svc.report_time || null, dep: (lg[0] && lg[0].off) || svc.block_off || null,
+      lastArr: (lg.length && lg[lg.length - 1].on) || svc.block_on || null,
+      end: signOff || (fl ? (svc.block_on ? hmAdd(svc.block_on, postFlightMin || 0) : null) : (svc.block_on || null)),
+      depStation: st[0] || null, hasReg: hasDay(iso) };
+  };
+  // O primeiro serviço que ainda não acabou a partir do dia `fromISO` (o seu instante de início vem junto, para a folga).
+  const nextBrief = (fromISO) => {
+    for (const iso of Object.keys(duties).filter((k) => k >= fromISO).sort()) {
+      const mf = dayFlights(iso, duties[iso]).find((f) => f.endDate.getTime() >= now);
+      if (mf) { const b = brief(iso, mf.svc); if (b) return { ...b, startMs: mf.reportDate ? +mf.reportDate : +mf.startDate }; }
     }
-    if (homeState === 'disrupcao' && flight) {
-      const rep = flight.report ? ` · report ${flight.report}` : '';
-      let x;
-      if (fsCancelled) x = { lbl: l('Voo cancelado · confirma com o crewing', 'Flight cancelled · check with crewing'), digits: hm(fsDep && fsDep.scheduled) || depPlan || '—', pill: { tone: 'red', text: l('Cancelado', 'Cancelled') } };
-      else if (fsDiverted) x = { lbl: l('Voo desviado · confirma o destino', 'Flight diverted · check the destination'), digits: hm(fsArr && (fsArr.estimated || fsArr.actual)) || '—', pill: { tone: 'red', text: l('Desviado', 'Diverted') } };
-      else if (fsDev) {
-        const arrSide = !!(wDelay && wDelay.which === 'arr'); const leg = arrSide ? fsArr : fsDep;
-        const newHm = hm(leg && (leg.estimated || leg.actual)) || hm(leg && leg.scheduled) || '—';
-        const oldHm = hm(leg && leg.scheduled);
-        // O feed pode marcar "atrasado" sem dar a hora nova: então nada de "+0" nem hora riscada igual à grande.
-        x = { lbl: `${arrSide ? l('Chegada prevista', 'Expected arrival') : l('Partida prevista', 'Expected departure')}${rep}`,
-          digits: newHm, was: oldHm && oldHm !== newHm ? oldHm : null,
-          pill: { tone: 'warn', text: delayMin > 0 ? `${l('Atraso', 'Delay')} +${delayMin}` : l('Atrasado', 'Delayed') } };
-      } else {
-        // Disrupção por ROTAÇÃO (o NOSSO voo ainda "limpo" no feed): mostra a PROJEÇÃO, nunca "a horas".
-        const sched = hm(fsDep && fsDep.scheduled) || depPlan;
-        x = { lbl: `${l('Partida prevista · projeção', 'Expected departure · projected')}${rep}`, digits: hmAdd(sched, delayMin) || sched || '—', was: sched,
-          pill: { tone: 'warn', text: `${l('Atraso', 'Delay')} ~+${delayMin}` } };
-      }
-      const why = inboundLate && inboundInfo
-        ? l(`O avião ainda vem a caminho${inbound && inbound.flightIata ? ` (${inbound.flightIata})` : ''} · chega ~${inboundInfo.etaZ}Z`, `Your aircraft is still inbound${inbound && inbound.flightIata ? ` (${inbound.flightIata})` : ''} · arrives ~${inboundInfo.etaZ}Z`)
-        : [flightStatus && flightStatus.flightIata, flightStatus && flightStatus.aircraft && flightStatus.aircraft.reg].filter(Boolean).join(' · ') || null;
-      return { ...b, head: { left: isToday ? l('Partidas · hoje', 'Departures · today') : l('Partidas · amanhã', 'Departures · tomorrow'), dot: true },
-        // A linha do dia de serviço também aqui: a MARGEM COM O ATRASO (a aterragem estimada vs. o limite do PSV) — auditoria do tripulante.
-        ...x, dest: routeTxt, sub: why, duty: isToday ? dl : null, dutyTxt: isToday && dl ? l('com o atraso', 'with the delay') : null, rows: upcomingRows(flight.dateISO, 1), heroISO: flight.dateISO };
-    }
-    if (homeState === 'hoje' && flight) {
-      const rows = upcomingRows(flight.dateISO);
-      if (isNonFlight) {
-        const end = flight.arrTime && flight.arrTime !== flight.report ? flight.arrTime : null;
-        if (isStandbyToday && cdMin != null && cdMin <= 0) {
-          return { ...b, head: { left: kindLabel, dot: true }, lbl: end ? `${l('A janela fecha daqui a', 'Window closes in')} ${durTxt(minsTo(legInstant(flight.dateISO, end, flight.report || flight.depTime)?.getTime() ?? null))}` : l('Em standby', 'On standby'),
-            digits: end || flight.report, headline: psvUntil ? `${l('Se te chamarem agora: PSV até', 'If called now: FDP until')} ~${psvUntil}` : l('À espera de chamada', 'Waiting for a call'),
-            // HONESTO: o motor aqui NÃO aplica a 225 (sem `special.preStandby`) — é o PSV máximo a 1 setor contado
-            // desde o início do standby. Di-lo e manda confirmar; nunca afirmar que o standby foi descontado.
-            sub: psvUntil ? l('Estimativa a 1 setor (225) — confirma na Simulação.', 'Estimate at 1 sector (225) — check it in the Simulation.') : null, rows, heroISO: flight.dateISO };
-        }
-        if (cdMin != null && cdMin > 0) {
-          return { ...b, head: { left: kindLabel, dot: true }, lbl: `${l('Começa daqui a', 'Starts in')} ${durTxt(cdMin)}`, digits: flight.report,
-            headline: [kindLabel, end ? `${l('até às', 'until')} ${end}` : null].filter(Boolean).join(' · '), rows, heroISO: flight.dateISO };
-        }
-        return { ...b, head: { left: kindLabel, dot: true }, lbl: end ? l('Termina às', 'Ends at') : l('A decorrer', 'Ongoing'), digits: end || flight.report,
-          headline: kindLabel, rows, heroISO: flight.dateISO };
-      }
-      const fno = flightNo || null;   // já é o do setor ativo
-      const secTxt = activeSector && activeSector.total > 1 ? `${l('setor', 'sector')} ${activeSector.idx + 1}/${activeSector.total}` : null;
-      if (phase === 'air') {
-        return { ...b, head: { left: `${l('Em voo', 'In flight')}${fno ? ` · ${String(fno).toUpperCase()}` : ''}`, dot: true },
-          lbl: `${l('Aterras daqui a', 'Landing in')} ${durTxt(minsTo(arrMs))}`, digits: arrHm || '—', dest: routeTxt, pill: fsPill,
-          duty: dl,
-          prog: dl ? null : { pct: sectorPct || 0, left: `${depHm || '—'} ${legDep}`, mid: psvRunning && ndPsvMax ? `PSV ${psvRunning} ${l('de', 'of')} ${ndPsvMax}${ndPsvHi ? `–${ndPsvHi}` : ''}` : (secTxt || ''), right: `${arrHm || '—'} ${legArr}` },
-          dutyTxt: dl ? [psvRunning && ndPsvMax ? `PSV ${psvRunning} ${l('de', 'of')} ${ndPsvMax}` : null, secTxt].filter(Boolean).join(' · ') : null,
-          rows, heroISO: flight.dateISO };
-      }
-      if (phase === 'landed') {
-        return { ...b, head: { left: l('Partidas · hoje', 'Departures · today'), dot: true }, lbl: l('Aterraste · falta o sign-off', 'Landed · sign-off to go'),
-          digits: arrHm || '—', dest: routeTxt, pill: fsPill, sub: [fno, secTxt].filter(Boolean).join(' · ') || null, rows, heroISO: flight.dateISO };
-      }
-      const pre = phase === 'pre';
-      const hasRep = !!flight.report;
-      return { ...b, head: { left: l('Partidas · hoje', 'Departures · today'), dot: true },
-        lbl: pre ? `${hasRep ? l('Report daqui a', 'Report in') : l('Partida daqui a', 'Departure in')} ${durTxt(cdMin)}${hasRep ? zuluTxt(flight.report, ndReportZ) : ''}`
-          : `${l('Partida daqui a', 'Departure in')} ${durTxt(minsTo(depMs))}${psvRunning ? ` · PSV ${psvRunning}` : ''}`,
-        digits: (pre && hasRep ? flight.report : depHm) || '—', dest: routeTxt,
-        pill: fsPill || (legalIt && legalIt.status === 'ok' ? { tone: 'ok', text: l('Nos limites', 'Within limits') } : null),
-        sub: [fno ? String(fno).toUpperCase() : null, pre && hasRep && depHm ? `${l('parte', 'departs')} ${depHm}` : null, secTxt,
-          flightStatus && flightStatus.aircraft && flightStatus.aircraft.reg ? `${l('avião', 'aircraft')} ${flightStatus.aircraft.reg}` : null,
-          psvLatest ? `${l('PSV até', 'FDP until')} ${psvLatest}` : null,
-          !hasRep ? l('sem hora de report — PSV não calculado', 'no report time — FDP not calculated') : null,
-          // (sem "pernoita em …": a tecla Hotel já o diz, e a linha partia em 2 no iPhone — Nuno, 2026-11-04)
-        ].filter(Boolean).join(' · ') || null,
-        rows, heroISO: flight.dateISO };
-    }
-    if (homeState === 'vespera' && flight) {
-      const dn = Number(flight.dateISO.slice(8, 10));
-      // Sem hora de report (evento do calendário sem RP/C-I): a hora é a da PARTIDA e di-lo — nunca se
-      // mostra a partida com o rótulo de report (o parser nunca inventa partida − 1 h).
-      const hasRep = !!flight.report;
-      return { ...b, head: { left: hasRep ? l('Report amanhã', 'Report tomorrow') : l('Partida amanhã', 'Departure tomorrow'), dot: true },
-        lbl: `${l('Daqui a', 'In')} ${durTxt(cdMin)} · ${wdLong(flight.dateISO).toLowerCase()}, ${dn}${hasRep ? zuluTxt(flight.report, ndReportZ) : ` · ${l('sem hora de report', 'no report time')}`}`,
-        digits: flight.report || flight.depTime || '—', dest: isNonFlight ? null : routeTxt, headline: isNonFlight ? kindLabel : null, pill: restPill,
-        sub: isNonFlight ? (flight.arrTime && flight.arrTime !== flight.report ? `${l('até às', 'until')} ${flight.arrTime}` : null)
-          : [flightNo ? String(flightNo).toUpperCase() : null, flight.report && flight.depTime && flight.depTime !== flight.report ? `${l('parte', 'departs')} ${flight.depTime}` : null,
-            ndSectors > 1 ? `${ndSectors} ${l('setores', 'sectors')}` : null,
-            flight.nightStop && nsHotelStation ? `${l('pernoita em', 'night stop in')} ${nsHotelStation}` : null].filter(Boolean).join(' · ') || null,
-        rows: upcomingRows(flight.dateISO), heroISO: flight.dateISO };
-    }
-    if (homeState === 'pernoita') {
-      const stn = closeNsStation ? String(closeNsStation).toUpperCase() : '';
-      const restTxt = restUntil ? `${l('repouso até', 'rest until')} ${restUntil.hm}${restUntil.nextDay ? ` ${l('de amanhã', 'tomorrow')}` : ''} (235)` : l('repouso fora da base: mín. 10 h (235)', 'away-base rest: min 10 h (235)');
-      const hotelTxt = closeHotel ? closeHotel.name : l('sem hotel guardado', 'no hotel saved');
-      if (flight && flight.report) {
-        // O próximo serviço pode não ser amanhã (pernoita de 2 noites): diz o dia.
-        const whenTxt = flight.dateISO === isoAdd(todayISO, 1) ? l('amanhã', 'tomorrow') : `${wdLong(flight.dateISO).toLowerCase()} ${Number(flight.dateISO.slice(8, 10))}`;
-        return { ...b, head: { left: `${l('Pernoita', 'Night stop')}${stn ? ` · ${stn}` : ''}`, dot: false },
-          lbl: `${l('Report', 'Report')} ${whenTxt} · ${l('daqui a', 'in')} ${durTxt(cdMin)}`, digits: flight.report, dest: isNonFlight ? null : routeTxt, headline: isNonFlight ? kindLabel : null,
-          pill: restPill, sub: `${hotelTxt} · ${restTxt}`, rows: upcomingRows(flight.dateISO), heroISO: flight.dateISO };
-      }
-      return { ...b, head: { left: `${l('Pernoita', 'Night stop')}${stn ? ` · ${stn}` : ''}`, dot: false },
-        lbl: l('Repouso até', 'Rest until'), digits: restUntil ? restUntil.hm : '—', dest: stn || null, sub: hotelTxt, rows: upcomingRows(null) };
-    }
-    // ── CALMOS ──
-    if (homeState === 'posvoo') {
-      const stns = String((todayEnded && todayEnded.route) || '').split(/[^A-Za-z]+/).filter(Boolean).map((x) => x.toUpperCase());
-      const sectorsN = (todayEnded && todayEnded.sectors) || Math.max(0, stns.length - 1);
-      if (closeMulti) {
-        return { ...b, head: { left: dateLabel }, lbl: l('Dia fechado', 'Day closed'), digits: String(1 + todayEnded.extra.length), unit: l('serviços', 'duties'),
-          headline: l('Vários serviços no mesmo dia', 'Several duties in one day'), sub: l('O PSV combinado está no detalhe do dia.', 'The combined FDP is in the day detail.'), rows: upcomingRows(todayISO), heroISO: todayISO };
-      }
-      const over = !!(closeD && closeD.fdp && closeD.fdp.over);
-      // O número é uma DURAÇÃO (o PSV de hoje): "5:00 h", sem zero à esquerda e com a unidade — "05:00" lia-se
-      // como uma HORA (cinco da manhã), porque nos estados ao vivo o número grande É uma hora (iPhone, 2026-11-03).
-      const fdpStr = closeD && closeD.fdp && closeD.fdp.actualFdpStr ? String(closeD.fdp.actualFdpStr).replace(/^0(\d:)/, '$1') : null;
-      const routeLine = [stns.length ? stns.join(' → ') : null, sectorsN ? `${sectorsN} ${sectorsN === 1 ? l('setor', 'sector') : l('setores', 'sectors')}` : null,
-        closeBlock ? `${closeBlock} ${l('de voo', 'flight time')}` : null].filter(Boolean).join(' · ') || null;
-      // Em destaque, o que o tripulante quer saber a seguir: até quando descansa (ORO.FTL.235).
-      const restLine = restUntil ? `${l('Repouso até', 'Rest until')} ${restUntil.nextDay ? `${l('amanhã', 'tomorrow')} ` : ''}${l('às', 'at')} ${restUntil.hm}` : null;
-      return { ...b, head: { left: dateLabel }, lbl: fdpStr ? l('PSV de hoje · dia fechado', 'Today’s FDP · day closed') : l('Dia fechado · de serviço', 'Day closed · on duty'),
-        digits: fdpStr || '✓', unit: fdpStr ? 'h' : null,
-        headline: restLine || routeLine || l('Serviço de hoje', 'Today’s duty'),
-        pill: closeD && closeD.fdp ? (over ? { tone: 'red', text: l('Acima do limite', 'Over the limit') } : { tone: 'calm', text: l('Nos limites', 'Within limits') }) : null,
-        sub: restLine ? routeLine : null,
-        rows: upcomingRows(todayISO), heroISO: todayISO };
-    }
-    if (homeState === 'ferias') {
-      const retDuty = vacInfo && duties[vacInfo.retISO] && !duties[vacInfo.retISO].deleted ? duties[vacInfo.retISO] : null;
-      return { ...b, lbl: l('Férias · ficam no ano', 'Vacation · left this year'), digits: vacInfo ? String(vacInfo.left) : '—', unit: vacInfo ? `${l('de', 'of')} ${vacInfo.quota} ${l('dias', 'days')}` : null,
-        headline: vacInfo ? `${l('Regressas', 'Back on')} ${vacInfo.retLabel}` : null,
-        // O período ("férias de 28 out a 4 nov") no lugar de "pelos dias que registaste": contexto + deixa verificar o saldo.
-        // No último dia o regresso já está nos Próximos serviços (não se repete); a rota com a mesma seta do resto.
-        sub: [...(vacInfo && vacInfo.lastDay ? [] : [retDuty && retDuty.report_time ? `report ${retDuty.report_time}` : null,
-          retDuty ? (retDuty.route ? String(retDuty.route).split(/[^A-Za-z]+/).filter(Boolean).map((x) => x.toUpperCase()).join(' → ') : (retDuty.kind ? t('duties.kind.' + retDuty.kind, lang) : null)) : null]),
-          vacInfo && vacInfo.period].filter(Boolean).join(' · ') || null,
-        // No ÚLTIMO dia, os Próximos serviços aparecem (o resto das férias continua sossegado).
-        rows: vacInfo && vacInfo.lastDay ? upcomingRows(todayISO) : [] };
-    }
-    if (homeState === 'doenca') {
-      const payTxt = sickState ? (sickDay <= 3 ? sickState.first : sickState.rest)[lang === 'en' ? 'en' : 'pt'] : null;
-      return { ...b, lbl: l('Baixa · dia do episódio', 'Sick leave · day of the episode'), // O número sem o "º" (a 150 pt desenhava-se enorme e sublinhado); a unidade diz quanto o acordo paga (2026-11-04):
-        // pilotos easyJet (Art. 48.º, dias 1-3 de cada episódio) "de 3 pagos" até ao 3.º · depois, e nos outros acordos, "º dia".
-        digits: String(sickDay), unit: sickFirst3 && sickDay <= 3 ? l('de 3 pagos', 'of 3 paid') : l('º dia', 'day'),
-        headline: payTxt,
-        sub: flight ? `${l('Próximo serviço', 'Next duty')}: ${wdLong(flight.dateISO).toLowerCase()} ${Number(flight.dateISO.slice(8, 10))}${flight.report ? `, report ${flight.report}` : ''} — ${l('se continuares de baixa, avisa a escala', 'if you’re still sick, tell crewing')}` : null };
-    }
-    if (homeState === 'fecho') {
-      const daysTxt = fechoDaysLeft === 0 ? l('fecha hoje', 'closes today') : `${l('fecha em', 'closes in')} ${fechoDaysLeft} ${fechoDaysLeft === 1 ? l('dia', 'day') : l('dias', 'days')}`;
-      if (monthAe) {
-        return { ...b, lbl: `${monthCap} ${daysTxt} · ${estLbl}`, digits: eurBare(monthMoney), unit: '€',
-          // Até hoje · resto do mês (Nuno, 2026-11-04): o que já está na escala até hoje e o que falta — no lugar de "As
-          // parcelas somam o total" (era uma verificação, não informação). data/stats.js monthSplit, golden test:stats.
-          headline: monthSplitNow ? l(`Até hoje ${eur(monthSplitNow.toDate)} · resto do mês ${eur(monthSplitNow.rest)}`, `So far ${eur(monthSplitNow.toDate)} · rest of the month ${eur(monthSplitNow.rest)}`) : null,
-          sub: l('Variável pela escala; a base é fixa. A app estima; o recibo da companhia manda.', 'Variable from the roster; base pay is fixed. The app estimates; the company payslip rules.'),
-          kv: [
-            { k: l('Base', 'Base'), v: eur(monthAe.base || 0) },
-            monthAe.perDiem ? { k: 'Per-diem', v: eur(monthAe.perDiem) } : null,
-            monthAe.nightStops ? { k: l('Pernoitas', 'Night stops'), v: eur(monthAe.nightStops) } : null,
-            monthAe.positioning ? { k: monthAe.positioningMax > monthAe.positioning ? l(`Posicionamento (até ${eur(monthAe.positioningMax)})`, `Positioning (up to ${eur(monthAe.positioningMax)})`) : l('Posicionamento', 'Positioning'), v: eur(monthAe.positioning) } : null,
-            // Subsídios e prestações que caem neste mês (bloco 6): cada um na sua linha.
-            ...(monthAe.annualItems || []).map((it) => ({ k: annualLabel(it, lang), v: it.max > it.eur ? `${eur(it.eur)} ${l('a', 'to')} ${eur(it.max)}` : eur(it.eur) })),
-            // Extras = extras + eventos + abono para falhas (o MESMO agrupamento dos Números) — as parcelas
-            // têm de SOMAR o total: base + per-diem + pernoitas + extras.
-            ((monthAe.extras || 0) + (monthAe.events || 0) + (monthAe.cash || 0)) ? { k: 'Extras', v: eur((monthAe.extras || 0) + (monthAe.events || 0) + (monthAe.cash || 0)), onPress: extrasItem ? () => openItem(extrasItem) : undefined } : null,
-          ].filter(Boolean) };
-      }
-      return { ...b, lbl: `${monthCap} ${daysTxt}`, digits: String(fechoDaysLeft != null ? fechoDaysLeft : '—'), unit: fechoDaysLeft === 1 ? l('dia', 'day') : l('dias', 'days'),
-        headline: l('Falta algum extra? Regista antes do fecho.', 'Missing an extra? Log it before the close.') };
-    }
-    // FOLGA — o número é quantos dias faltam para o próximo serviço (dias de calendário).
-    // Modo EXEMPLO: o voo de amostra não está na escala gravada — a folga lê-o daqui (senão o exemplo mostrava
-    // "Sem serviços marcados" ao lado da pílula "Exemplo").
-    const demoNext = demoOn && flight ? { iso: flight.dateISO, d: { kind: 'flight', route: (flight.stations || []).join('-'), report_time: flight.report },
-      days: Math.round((new Date(`${flight.dateISO}T12:00:00`) - new Date(`${todayISO}T12:00:00`)) / 86400000),
-      startMs: flight.reportDate ? +new Date(flight.reportDate) : (flight.startDate ? +new Date(flight.startDate) : null) } : null;
-    const next = demoNext || (() => {
-      for (const iso of Object.keys(duties).filter((k) => k >= todayISO).sort()) {
-        const mf = dayFlights(iso, duties[iso]).find((f) => f.endDate.getTime() >= now); if (!mf) continue;
-        const d = mf.svc;
-        return { iso, d, days: Math.round((new Date(`${iso}T12:00:00`) - new Date(`${todayISO}T12:00:00`)) / 86400000),
-          startMs: mf.reportDate ? +mf.reportDate : +mf.startDate };   // o report (sem report: a partida)
-      }
-      return null;
+    return null;
+  };
+  const nsPayOn = (iso) => (ae && ae.nightStop && crewCategory && !ae.PER_DIEM_BY_DAY ? ae.nightStop(crewCategory, aeIndex(ae, iso), iso) : null);   // TAP: a noite depois de um dia de voo não paga estadia (bloco 5)
+  // O serviço de que o topo fala (o "flight" do Início): do registo quando existe; senão do calendário.
+  const heroF = (() => {
+    if (!flight) return null;
+    const svc = flight.svc || null;
+    const b = svc ? brief(flight.dateISO, svc) : {
+      iso: flight.dateISO, kind: flight.kind || 'flight', kindLabel, stations: Array.isArray(flight.stations) ? flight.stations.map((x) => String(x).toUpperCase()) : [],
+      sectors: flight.sectors || null, report: flight.report || null, dep: flight.depTime || null,
+      lastArr: flight.arrTime && flight.arrTime !== flight.report ? flight.arrTime : null,
+      end: flight.arrTime && flight.arrTime !== flight.report ? ((flight.kind || 'flight') === 'flight' ? hmAdd(flight.arrTime, postFlightMin || 0) : flight.arrTime) : null,
+      depStation: flight.depAirport || null, hasReg: false };
+    if (!b) return null;
+    const latest = psvLatest ? psvLatest.replace(/\s*\(\+1\)/, '') : null;
+    const legal = (() => {
+      if (!isToday || !legalIt || !legalIt.raw) return null;
+      const k = legalIt.raw.kind;
+      if (k === 'psvUncertain' || k === 'nightUncertain') return { status: 'uncertain', missing: k === 'psvUncertain' && (legalIt.raw.unknowns || []).length ? unknownsText(legalIt.raw.unknowns, lang) : null };
+      return legalIt.status === 'bad' ? { status: 'bad' } : legalIt.status === 'ok' ? { status: 'ok' } : null;
     })();
-    const allOk = !qAlerts.length && !qChips.some((it) => it.status === 'warn');
-    if (!next) return { ...b, headline: l('Sem serviços marcados', 'No duties scheduled'), pill: allOk ? { tone: 'calm', text: l('Escala em dia', 'Roster up to date') } : null };
-    const what = (!next.d.kind || next.d.kind === 'flight') ? (String(next.d.route || '').split(/[^A-Za-z]+/).filter(Boolean).map((x) => x.toUpperCase()).join(' → ') || l('Voo', 'Flight')) : t('duties.kind.' + next.d.kind, lang);
-    // FOLGA (auditoria do tripulante, 2026-11-04): o que um tripulante quer saber num dia livre é ATÉ QUANDO está livre.
-    // Com menos de 48 h, o número é em HORAS ("amanhã às 06:00" era "1 dia" e eram 18 h).
-    const untilMin = next.startMs != null ? Math.max(0, Math.floor((next.startMs - now) / 60000)) : null;
-    const untilH = untilMin != null ? Math.floor(untilMin / 60) : null;
-    const untilMm = untilMin != null ? untilMin % 60 : 0;   // para quem gere repouso, os minutos contam
-    const inHours = untilH != null && untilH < 48;
-    const repTm = next.d.report_time || null;
-    return { ...b, lbl: next.days <= 0 && !inHours ? l('Próximo serviço', 'Next duty') : l('Próximo serviço daqui a', 'Next duty in'),
-      digits: inHours ? String(untilH) : next.days <= 0 ? l('Hoje', 'Today') : String(next.days), unit: inHours ? (untilMm ? `h ${String(untilMm).padStart(2, '0')}` : 'h') : next.days <= 0 ? null : next.days === 1 ? l('dia', 'day') : l('dias', 'days'),
-      // Curto para caber ao lado da pílula (iPhone 2026-11-04: partia em 2 e deixava a hora sozinha): < 48 h → "Livre até
-      // hoje/amanhã às 06:00"; mais longe → "Livre até sábado 7" e o report desce para a linha cinzenta.
-      headline: inHours && repTm
-        ? `${l('Livre até', 'Free until')} ${next.days <= 0 ? l('hoje', 'today') : next.days === 1 ? l('amanhã', 'tomorrow') : wdLong(next.iso).toLowerCase()} ${l('às', 'at')} ${repTm}`
-        : `${l('Livre até', 'Free until')} ${wdLong(next.iso).toLowerCase()} ${Number(next.iso.slice(8, 10))}`,
-      sub: [inHours ? null : (repTm ? `report ${repTm}` : null), what].filter(Boolean).join(' · '), pill: allOk ? { tone: 'calm', text: l('Escala em dia', 'Roster up to date') } : null,
-      rows: demoNext ? [{ key: 'demo', tm: flight.report, ds: String(flight.arrAirport || ''), dy: `${wdShort(flight.dateISO)} ${Number(flight.dateISO.slice(8, 10))}`,
-        a11y: `${l('Exemplo', 'Example')}: ${flight.depAirport} → ${flight.arrAirport}, report ${flight.report}` }] : upcomingRows(next.iso),   // sem o do herói (repetia)
-      heroISO: demoNext ? null : next.iso };
+    const pay = (svc && ae && crewCategory && b.kind !== 'flight') ? (() => {
+      try { const o = serviceMoney(ae, crewCategory, svc, { date: flight.dateISO, fleet: crewFleet, baseAt: homeBaseAt, duties }).other; return o && o.eur > 0 ? { eur: o.eur, lbl: o.lbl ? (o.lbl[lang] || o.lbl.pt) : null } : null; } catch { return null; }
+    })() : null;
+    const restAfterMin = (svc && flight.nightStop) ? (() => {
+      try { const r = restUntilAfter(duties || {}, flight.dateISO, { inBase: false, baseAt: homeBaseAt, postFlightMin: postFlightMin || 0, isPilot }); return r ? r.requiredMin : null; } catch { return null; }
+    })() : null;
+    return { ...b,
+      flightNo: flightNo ? String(flightNo).toUpperCase() : (flight.flightNo ? String(flight.flightNo).toUpperCase() : null),
+      depStation: b.depStation || (legDep || null),
+      station: /^[A-Z]{3}$/.test(String(flight.depAirport || '')) ? String(flight.depAirport) : (base ? String(base).toUpperCase() : null),
+      psv: { max: ndPsvMax, hi: ndPsvHi, plan: ndPsvActual, running: psvRunning, latest,
+        latestNextDay: !!(psvLatest && (/\(\+1\)/.test(psvLatest) || (flight.report && hmToMin(latest) < hmToMin(flight.report)))) },
+      legal, split: !!(svc && ((svc.splitBreakH || 0) >= 3 || splitFromLegs(svc.legs).splitBreakH > 0)),
+      perDiem: dayPerDiem, pay,
+      nightStop: flight.nightStop && nsHotelStation ? { station: nsHotelStation, hotel: nsHotel ? nsHotel.name : null, pay: nsPayOn(flight.dateISO) } : null,
+      // A hora do report em UTC, pelo fuso do aeroporto de partida (data/zulu.js; sem aeroporto conhecido, o fuso do telemóvel) — como no v6.
+      reportZ: flight.report ? (airportZulu(flight.dateISO, flight.report, flight.depAirport) || toZulu(flight.dateISO, flight.report) || null) : null,
+      restAfterMin, shareable, hasReg: !flight.demo && hasDay(flight.dateISO) };
   })();
+  // O dia de voo de hoje (setor ativo, a linha do dia de serviço, o standby).
+  const endDtHero = heroF && heroF.end && flight ? legInstant(flight.dateISO, heroF.end, flight.report || flight.depTime) : null;
+  const endMsHero = endDtHero ? endDtHero.getTime() : null;
+  const liveF = {
+    legIdx: activeSector ? activeSector.idx : 0, legTotal: activeSector ? activeSector.total : (sectorLegs.length || 1),
+    legDep, legArr, depHm, arrHm, minsToDep: minsTo(depMs), minsToArr: minsTo(arrMs), cdMin,
+    remainingMin: minsTo(endMsHero), elapsedMin: reportMs != null ? Math.max(0, Math.round((now - reportMs) / 60000)) : null,
+    nowPct: dl ? dl.nowPct : null, marginMin: dl ? dl.marginMin : null,
+    status: flightStatus ? (((fsDep && fsDep.delayMin) || 0) >= 15 ? 'late' : 'on') : null, delayMin: (fsDep && fsDep.delayMin) || 0,
+    psvUntil,
+  };
+  // A disrupção: a hora nova, a antiga, o atraso, os limites com o atraso (liveFdpVerdict, ORO.FTL.205).
+  const disF = (homeState === 'disrupcao' && flight) ? (() => {
+    let x;
+    if (fsCancelled) x = { mode: 'cancelled', oldHm: hm(fsDep && fsDep.scheduled) || depPlan };
+    else if (fsDiverted) x = { mode: 'diverted', newHm: hm(fsArr && (fsArr.estimated || fsArr.actual)) };
+    else if (fsDev) { const arrSide = !!(wDelay && wDelay.which === 'arr'); const leg = arrSide ? fsArr : fsDep; x = { mode: 'delay', side: arrSide ? 'arr' : 'dep', newHm: hm(leg && (leg.estimated || leg.actual)) || hm(leg && leg.scheduled), oldHm: hm(leg && leg.scheduled), delayMin }; }
+    else { const sched = hm(fsDep && fsDep.scheduled) || depPlan; x = { mode: 'projection', newHm: hmAdd(sched, delayMin) || sched, oldHm: sched, delayMin }; }
+    const why = inboundLate && inboundInfo
+      ? l(`o avião ainda vem a caminho${inbound && inbound.flightIata ? ` (${inbound.flightIata})` : ''} · chega ~${inboundInfo.etaZ}Z`, `your aircraft is still inbound${inbound && inbound.flightIata ? ` (${inbound.flightIata})` : ''} · arrives ~${inboundInfo.etaZ}Z`)
+      : [flightStatus && flightStatus.flightIata, flightStatus && flightStatus.aircraft && flightStatus.aircraft.reg].filter(Boolean).join(' · ') || null;
+    const lastArr = (liveVerdict && flight.report) ? hmAdd(flight.report, hmToMin(liveVerdict.realStr)) : (heroF && heroF.lastArr && delayMin ? hmAdd(heroF.lastArr, delayMin) : null);
+    return { ...x, why, commander: isCommander, lastArr, end: lastArr ? hmAdd(lastArr, postFlightMin || 0) : null,
+      verdict: liveVerdict && isToday ? { verdict: liveVerdict.verdict, realStr: liveVerdict.realStr, maxStr: liveVerdict.maxStr, projected: liveVerdict.projected } : null };
+  })() : null;
+  // O repouso depois do dia de hoje (a MESMA regra da pílula do repouso: restUntilAfter, ORO.FTL.235).
+  const restF = (homeState === 'posvoo' || homeState === 'pernoita') ? (() => {
+    const where = { hotel: closeHotel ? closeHotel.name : null, pay: homeState === 'pernoita' ? nsPay : null, station: closeNsStation ? String(closeNsStation).toUpperCase() : null };
+    if (!restUntil) return where;
+    const e = new Date(restUntil.endMs);
+    const span = Math.max(1, restUntil.untilMs - restUntil.endMs);
+    return { ...where, signOff: `${String(e.getHours()).padStart(2, '0')}:${String(e.getMinutes()).padStart(2, '0')}`, until: restUntil.hm, untilIso: restUntil.untilIso,
+      minMin: Math.round(span / 60000), pct: Math.max(0, Math.min(100, ((now - restUntil.endMs) / span) * 100)) };
+  })() : null;
+  // O documento a 7 dias ou menos: toma o topo na folga (esboço, estado "Documento a caducar").
+  const docSoon = (() => {
+    const vi = todayItems.find((it) => it.id === 'validades');
+    const it0 = vi && vi.raw && Array.isArray(vi.raw.items) ? vi.raw.items[0] : null;
+    if (!it0 || !it0.st || it0.st.band !== 'expiring' || it0.st.days == null || it0.st.days > 7) return null;
+    const after = Object.keys(duties).filter((iso) => iso > it0.expiry && hasDay(iso)).length;
+    return { name: validityLabel(it0.type, isPilot, lang, it0.program || null), days: it0.st.days, expiryIso: it0.expiry, after };
+  })();
+  // O mês: o MESMO monthStats dos Números; incerto → as duas pontas e porquê (A-198: os acordos dão valores brutos).
+  const UNC_WHY = {
+    admission: l('Falta o dia em que entraste na companhia.', 'The day you joined is missing.'),
+    tapKpi: l('Os 2 % de 2026 dependem do resultado da TAP em 2025.', 'The extra 2% for 2026 depends on TAP’s 2025 result.'),
+    tapSick: l('Nos dias de baixa a TAP paga o líquido, e a app não calcula líquidos.', 'On sick days TAP pays the net amount, and the app does not compute net pay.'),
+    tapRaise: l('A atualização da base não está publicada no BTE.', 'The base pay update is not published in the BTE.'),
+  };
+  const monthF = monthAe ? (() => {
+    const ext = (monthAe.extras || 0) + (monthAe.events || 0) + (monthAe.cash || 0);
+    const nN = monthNightStops;
+    return { name: monthCap, total: monthMoney, base: monthAe.base || 0, rest: monthSplitNow ? monthSplitNow.rest : null,
+      unc: monthUnc ? { min: monthUnc.min, max: monthUnc.max, why: UNC_WHY[monthUnc.reason] || l('Faltam as datas de atividade do teu contrato.', 'Your contract’s activity dates are missing.'), fix: monthUnc.reason === 'admission' ? 'profile' : null } : null,
+      rows: homeState !== 'fecho' ? [] : [
+        { k: l('Base', 'Base'), eur: monthAe.base || 0 },
+        monthAe.perDiem ? { k: 'Per-diem', eur: monthAe.perDiem } : null,
+        monthAe.nightStops ? { k: nN ? l(`Pernoitas · ${nN} ${nN === 1 ? 'noite' : 'noites'}`, `Night stops · ${nN}`) : l('Pernoitas', 'Night stops'), eur: monthAe.nightStops } : null,
+        monthAe.positioning ? { k: l('Posicionamento', 'Positioning'), eur: monthAe.positioning, max: monthAe.positioningMax || null } : null,
+        ...(monthAe.annualItems || []).map((it) => ({ k: annualLabel(it, lang), eur: it.eur, max: it.max || null })),
+        ext ? { k: 'Extras', eur: ext, open: extrasItem ? { to: 'item', id: 'extras' } : null } : null,
+      ].filter(Boolean) };
+  })() : null;
+  const allOk = !qAlerts.length && !qChips.some((it) => it.status === 'warn');
 
-  // ── OS SECUNDÁRIOS (máx. 2) — a fila de prioridades do motor (living-interface §2): o urgente primeiro
-  // (lei, documento, voo, escala), depois o que este momento pede, e nunca vazio (→ o dinheiro do mês).
-  const quiet = homeState === 'ferias' || homeState === 'doenca' || homeState === 'setup';
-  const secs = [];
-  const pushSec = (x) => { if (x && !secs.some((y) => y.key === x.key)) secs.push(x); };
-  if (calErr) pushSec({ key: 'cal', icon: 'alert', tone: 'warn', label: l('Calendário', 'Calendar'), text: l('Não consegui ler. Puxa para atualizar ou vê a permissão nas Definições.', 'Couldn’t read it. Pull to refresh or check the permission in Settings.') });
-  if (bandAlerts.length) pushSec({ key: 'ftl', icon: 'shield', tone: 'red', label: bandAlerts[0].q, text: bandAlerts[0].answer, onPress: () => openItem(bandAlerts[0]) });
-  else if (stateLevel === 'over') pushSec({ key: 'ftl', icon: 'shield', tone: 'red', label: l('Limites', 'Limits'), text: `${t('home.statusOver', lang)}${stateReason ? ` · ${stateReason}` : ''}`, onPress: () => { select(); navigation.navigate('Estatísticas'); } });
-  if (docAlert) pushSec({ key: 'doc', icon: 'doc', tone: 'red', label: l('Documentos', 'Documents'), text: docAlert.answer, onPress: () => openItem(docAlert) });
-  if (homeState === 'disrupcao' && liveVerdict) pushSec({ key: 'psvLive', icon: 'shield', tone: liveVerdict.verdict === 'over' ? 'red' : 'warn',
-    label: l('Limites com o atraso', 'Limits with the delay'),
-    text: `PSV ${liveVerdict.projected ? l('projetado ', 'projected ') : ''}${liveVerdict.realStr} ${l('de', 'of')} ${liveVerdict.maxStr}${liveVerdict.verdict === 'over' ? ` · ${l('acima do limite', 'over the limit')}` : liveVerdict.verdict === 'uncertain' ? ` · ${l('incerto — falta um dado no serviço', 'uncertain — a fact is missing in the duty')}` : liveVerdict.verdict === 'discretion' ? ` · ${isCommander ? l('discrição tua (205 f): até +2 h', 'your discretion (205 f): up to +2 h') : l('só com a discrição do comandante (205 f)', 'only with the commander’s discretion (205 f)')}` : ''}`,
-    bar: psvPct, onPress: legalIt ? () => openItem(legalIt) : undefined });
-  // POSSÍVEL RDP (só cabine, só com o acordo que o tem — easyJet × SNPVAC Cl. 67.ª, lida no BTE 2026-11-04): o fim do
-  // serviço a ≥ 119 min do programado, medido pela chegada do ÚLTIMO setor no voo ao vivo; desvio/cancelamento = setores
-  // perdidos/ganhos. Candidato, nunca "vais receber": reclama-se no RDF e a base aprova (n.º 7). data/disruption.js liveRdp.
+  // ── OS AVISOS (laranja) — a fila de prioridades (living-interface §2); `first` = sobre ESTE serviço (vai antes do cartão
+  // do momento), senão vai no fim. O homeCards mostra no máximo 2 e, com um aviso, o 2.º cartão passa a linha fina.
+  const W = [];
+  const pushW = (w) => { if (w && w.title && !W.some((x) => x.id === w.id)) W.push(w); };
+  if (calErr) pushW({ id: 'cal', title: l('Calendário', 'Calendar'), sub: l('Não consegui ler. Puxa para atualizar ou vê a permissão nas Definições.', 'Couldn’t read it. Pull to refresh or check the permission in Settings.') });
+  if (bandAlerts.length) pushW({ id: 'ftl', first: true, title: bandAlerts[0].q, sub: bandAlerts[0].answer, open: { to: 'item', id: bandAlerts[0].id } });
+  else if (stateLevel === 'over') pushW({ id: 'ftl', first: true, title: l('Limites', 'Limits'), sub: `${t('home.statusOver', lang)}${stateReason ? ` · ${stateReason}` : ''}`, open: { to: 'stats' } });
+  if (docAlert) pushW({ id: 'doc', title: l('Documentos', 'Documents'), sub: docAlert.answer, open: { to: 'item', id: 'validades' } });
+  // POSSÍVEL RDP (só cabine, só com o acordo que o tem — easyJet × SNPVAC Cl. 67.ª): candidato, nunca "vais receber".
   if (homeState === 'disrupcao' && ae && typeof ae.rdp === 'function' && crewCategory) {
     const rdpC = liveRdp({ isPilot, kind: flight && flight.kind, fromStandby: !!(flight && flight.svc && flight.svc.special && flight.svc.special.preStandby),
       arrDelayMin: trackingLast && fsArr && (fsArr.estimated || fsArr.actual) ? ndArrDelay : null, sectorsChanged: fsDiverted || fsCancelled });
@@ -1231,129 +925,62 @@ export default function HomeScreen({ navigation }) {
       const v = ae.rdp(crewCategory, todayISO.slice(0, 7));
       const why = rdpC.reason === 'sectors' ? l('Setores perdidos ou ganhos no dia', 'Sectors lost or gained on the day')
         : l(`Fim do serviço ${durTxt(Math.abs(rdpC.dEndMin))} ${rdpC.dEndMin > 0 ? 'depois' : 'antes'} do programado`, `Duty ends ${durTxt(Math.abs(rdpC.dEndMin))} ${rdpC.dEndMin > 0 ? 'later' : 'earlier'} than planned`);
-      pushSec({ key: 'rdp', icon: 'doc', label: l('Possível RDP · Cl. 67.ª', 'Possible RDP · Cl. 67'),
-        text: `${why} — ${l('reclama no RDF; a base aprova', 'claim it on the RDF; the base approves')}`, value: v ? `${l('até', 'up to')} ${eur(v)}` : null });
+      pushW({ id: 'rdp', first: true, title: l('Possível RDP · Cl. 67.ª', 'Possible RDP · Cl. 67'), sub: `${why} — ${l('reclama no RDF; a base aprova', 'claim it on the RDF; the base approves')}`, value: v ? `${l('até', 'up to')} ${eur(v)}` : null });
     }
   }
-  if (homeState !== 'disrupcao' && fsDev) {
-    const arrSide = !!(wDelay && wDelay.which === 'arr'); const leg = arrSide ? fsArr : fsDep;
-    pushSec({ key: 'fs', icon: 'plane', tone: 'warn', label: String((flightStatus && flightStatus.flightIata) || flightNo || l('Voo', 'Flight')),
-      text: fsCancelled ? l('Voo cancelado — confirma com o crewing', 'Flight cancelled — check with crewing') : fsDiverted ? l('Voo desviado — confirma o destino', 'Flight diverted — check the destination')
-        : `${arrSide ? l('Chega', 'Arrives') : l('Sai', 'Departs')} ${hm(leg && (leg.estimated || leg.actual)) || '—'} · ${l('estava', 'was')} ${hm(leg && leg.scheduled) || '—'}` });
-  }
-  if (syncBehind) pushSec({ key: 'sync', icon: 'sync', tone: 'warn', label: l('O registo', 'Your record'), text: l('Ainda tem o planeado. Sincroniza a escala eCrew pelo calendário.', 'Still shows the plan. Sync your eCrew roster via the calendar.') });
-  if (rosterChanges && rosterChanges.counts && rosterChanges.counts.total && !(voice && voice.to === 'escala')) {
+  if (syncBehind) pushW({ id: 'sync', first: true, title: l('O registo', 'Your record'), sub: l('Ainda tem o planeado. Sincroniza a escala eCrew pelo calendário.', 'Still shows the plan. Sync your eCrew roster via the calendar.') });
+  if (airportDis) pushW({ id: 'apt', first: true, title: `${l('Aeroporto', 'Airport')} ${(fsDep && fsDep.iata) || ''}`.trim(),
+    sub: `${airportDis.delayedPct}% ${airportDis.side === 'dep' ? l('das partidas atrasadas', 'of departures delayed') : l('das chegadas atrasadas', 'of arrivals delayed')}${airportDis.avgDelayMin ? ` · ${l('média', 'avg')} ${airportDis.avgDelayMin} min` : ''}` });
+  if (rosterChanges && rosterChanges.counts && rosterChanges.counts.total) {
     const n = rosterChanges.counts.total;
-    pushSec({ key: 'roster', icon: 'cal', tone: 'warn', label: l('A escala mudou', 'Roster changed'), text: l(`${n} ${n === 1 ? 'alteração' : 'alterações'} por rever · nada entra sem ti`, `${n} change${n === 1 ? '' : 's'} to review · nothing lands without you`), onPress: openReview });
+    pushW({ id: 'roster', title: l('A escala mudou', 'Roster changed'), sub: l(`${n} ${n === 1 ? 'alteração' : 'alterações'} por rever · nada entra sem ti`, `${n} change${n === 1 ? '' : 's'} to review · nothing lands without you`), open: { to: 'review' } });
   }
-  if (airportDis) pushSec({ key: 'apt', icon: 'tower', tone: 'warn', label: `${l('Aeroporto', 'Airport')} ${(fsDep && fsDep.iata) || ''}`.trim(),
-    text: `${airportDis.delayedPct}% ${airportDis.side === 'dep' ? l('das partidas atrasadas', 'of departures delayed') : l('das chegadas atrasadas', 'of arrivals delayed')}${airportDis.avgDelayMin ? ` · ${l('média', 'avg')} ${airportDis.avgDelayMin} min` : ''}` });
   const valWarn = qChips.find((it) => it.id === 'validades' && it.status === 'warn');
-  if (valWarn && !quiet) pushSec({ key: 'docw', icon: 'doc', tone: 'warn', label: l('Documentos', 'Documents'), text: valWarn.answer, onPress: () => openItem(valWarn) });
-  if (!quiet) {
-    const wxLine = (w) => (w && w.sym ? wxSymbol(w.sym, lang).label : null);
-    const tmwLine = (w) => (w && w.tmwSym ? wxSymbol(w.tmwSym, lang).label : null);
-    // Mínima = máxima (ao fim do dia sobra 1 hora de previsão) → "19° a 19°" não diz nada: cala-se.
-    const range = (a, z) => (a != null && z != null && Math.round(a) !== Math.round(z) ? `${a}° ${l('a', 'to')} ${z}°` : null);
-    if (homeState === 'hoje' && !isNonFlight && phase !== 'air' && phase !== 'landed') {
-      // "Rotação sem atraso" só quando o inbound foi lido de facto (sem dados, só a matrícula).
-      if (flightStatus && flightStatus.aircraft && flightStatus.aircraft.reg) {
-        pushSec({ key: 'plane', icon: 'plane', label: l('O teu avião', 'Your aircraft'), text: `${flightStatus.aircraft.reg}${inboundInfo && !inboundLate ? ` · ${l('rotação sem atraso', 'turnaround on time')}` : ''}` });
-      }
-      // Se a frase já falou do tempo no destino ("Leva o casaco: 7° agora em LGW"), o secundário não o repete.
-      if (wxDest && !(voice && /°/.test(`${voice.bold} ${voice.tail}`))) pushSec({ key: 'wxd', icon: wxDest.icon || 'cloud', label: `${l('Em', 'In')} ${wxDest.station} ${l('hoje', 'today')}`, text: [wxLine(wxDest), range(wxDest.min, wxDest.max)].filter(Boolean).join(' · ') || `${wxDest.c}°`, value: `${wxDest.c}°` });
-    }
-    if (homeState === 'hoje' && phase === 'air') {
-      // Só a pernoita (o próximo serviço já está na 1.ª linha do painel — não se repete).
-      if (flight && flight.nightStop && nsHotelStation) pushSec({ key: 'after', icon: 'moon', label: l('Depois', 'Then'), text: `${l('Pernoita em', 'Night stop in')} ${nsHotelStation}${nsHotel ? ` · ${nsHotel.name}` : ''}` });
-    }
-    if (homeState === 'vespera' && wxDest) pushSec({ key: 'wxd', icon: wxIcon(wxDest.tmwSym) || 'cloud', label: `${l('Em', 'In')} ${wxDest.station} ${l('amanhã', 'tomorrow')}`, text: [tmwLine(wxDest), range(wxDest.tmwMin, wxDest.tmwMax)].filter(Boolean).join(' · ') || '—' });
-    if ((homeState === 'hoje' || homeState === 'vespera') && flight && !isNonFlight && dayPerDiem != null) {
-      const ns = flight.nightStop && nsPay != null ? nsPay : null;
-      pushSec({ key: 'money', icon: 'wallet', label: homeState === 'vespera' ? l('Ganhos de amanhã', 'Tomorrow’s earnings') : l('Ganhos de hoje', 'Today’s earnings'),
-        text: [`per-diem ${eur(dayPerDiem)}`, ns != null ? `${l('pernoita', 'night stop')} ${eur(ns)}` : null].filter(Boolean).join(' · '), value: eur(dayPerDiem + (ns || 0), '+'), gain: true,
-        onPress: () => { select(); navigation.navigate('Estatísticas'); } });
-    }
-    if (homeState === 'pernoita') {
-      if (nsPay != null) pushSec({ key: 'ns', icon: 'wallet', label: l('Esta noite', 'Tonight'), text: l('pernoita (acordo)', 'night stop (agreement)'), value: eur(nsPay, '+'), gain: true });
-      if (wxHere && wxHere.tmwSym) pushSec({ key: 'wxt', icon: wxIcon(wxHere.tmwSym) || 'cloud', label: `${l('Em', 'In')} ${wxHere.station} ${l('amanhã', 'tomorrow')}`, text: [tmwLine(wxHere), range(wxHere.tmwMin, wxHere.tmwMax)].filter(Boolean).join(' · ') });
-    }
-    // FÉRIAS POR GOZAR (2026-11-03, Nuno "sim"): o saldo do ano vive nos Números; no Início só volta quando
-    // importa — na folga, a partir de 1 de outubro, se ainda sobram dias (gozam-se no ano civil, CT art. 240.º).
-    // Só com acordo que regista férias (senão "22 de 22" mentiria: os dias gozados vivem nos eventos).
-    if (homeState === 'folga' && Number(todayISO.slice(5, 7)) >= 10 && ae && Array.isArray(ae.EXTRA_KINDS) && ae.EXTRA_KINDS.some((k) => k.id === 'vacDays')) {
-      const quota = Math.max(1, Math.floor(+vacationDaysYear) || 22);
-      const left = Math.max(0, quota - yearCount(aeEvents || [], todayISO.slice(0, 4), 'vacDays', duties));
-      // De NOVEMBRO em diante, laranja (atenção) e quantos dias faltam para o fim do ano (crítica 2026-11-04). Os dias do
-      // ano vêm do AE (easyJet cabine Cl. 72.ª: 25), não dos 22 do Código; gozam-se no ano civil (CT 240.º).
-      const toYearEnd = Math.round((new Date(`${todayISO.slice(0, 4)}-12-31T12:00:00`) - new Date(`${todayISO}T12:00:00`)) / 86400000);
-      const late = Number(todayISO.slice(5, 7)) >= 11;
-      if (left > 0) pushSec({ key: 'vac', icon: 'sun', tone: late ? 'warn' : null, label: `${l('Férias', 'Leave')} ${todayISO.slice(0, 4)}`,
-        text: late
-          ? l(`${left === 1 ? 'Fica 1' : `Ficam ${left}`} de ${quota} dias · o ano acaba daqui a ${toYearEnd} dias (CT 240.º)`, `${left} of ${quota} days left · the year ends in ${toYearEnd} days (Labour Code 240)`)
-          : l(`${left === 1 ? 'Fica 1' : `Ficam ${left}`} de ${quota} dias · gozam-se no ano (CT 240.º)`, `${left} of ${quota} days left · taken within the year (Labour Code 240)`),
-        onPress: () => { select(); navigation.navigate('Estatísticas'); } });
-    }
-    if (homeState === 'posvoo' && d7 && d7.limit) {
-      const p = Math.min(100, Math.round((d7.done / d7.limit) * 100));
-      // "6 h" uma vez só; a lei (ORO.FTL.210) fica a UM toque, nos Números — não no cartão (2026-11-03).
-      pushSec({ key: 'week', icon: 'shield', tone: p >= 85 ? 'warn' : null, label: l('Serviço · últimos 7 dias', 'Duty · last 7 days'), tileLabel: l('Serviço · 7 dias', 'Duty · 7 days'), text: `${Math.round(d7.done)} h ${l('de', 'of')} ${d7.limit} h`, bar: p,
-        // Em mosaico: "6 h de 60" + as 7 barrinhas (uma por dia, do MESMO dayLog que soma o total — ref Jomo).
-        tileValue: `${Math.round(d7.done)} h`, tileUnit: `${l('de', 'of')} ${d7.limit}`, tileText: null, tileNoBar: true,
-        chart: (() => {
-          // 3 letras ("Q S S D S T Q" repetia o Q e o S — crítica externa 2026-11-04).
-          const ini = lang === 'en' ? ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] : ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
-          const days = [];
-          for (let i = 6; i >= 0; i--) {
-            const d = new Date(); d.setDate(d.getDate() - i);
-            const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-            const e = (dayLog || {})[iso];
-            days.push({ iso, h: e && typeof e.servico === 'number' ? e.servico : 0, lbl: ini[d.getDay()], today: i === 0 });
-          }
-          const max = Math.max(13, ...days.map((x) => x.h));   // escala fixa ~um PSV longo: um dia de 6 h não enche
-          return days.map((x) => ({ ...x, pct: x.h ? Math.max(8, Math.round((x.h / max) * 100)) : 0 }));
-        })(),
-        onPress: () => { select(); navigation.navigate('Estatísticas'); } });
-    }
-    if (homeState === 'fecho') {
-      if (audit && audit.count > 0) pushSec({ key: 'audit', icon: 'doc', label: l('Auditoria do mês', 'Month audit'),
-        text: `${audit.count} ${audit.count === 1 ? l('item por confirmar', 'item to confirm') : l('itens por confirmar', 'items to confirm')}${audit.totalEur > 0 ? ` · ≈ ${eur(audit.totalEur)} ${l('em causa', 'at stake')}` : ''}`,
-        onPress: () => { select(); setAuditOpen(true); } });
-      if (monthAe && monthAe.missing) pushSec({ key: 'miss', icon: 'alert', tone: 'warn', label: 'Per-diem', text: `${monthAe.missing} ${l('voo(s) sem rota — per-diem incompleto', 'flight(s) without a route — per-diem incomplete')}` });
-      // 2.º cartão do fecho (2026-11-04): o próximo serviço — enche o vazio com o que se usa (não com uma data de
-      // pagamento inventada: a app não sabe quando cada companhia paga).
-      const nx = upcomingRows(null, 1)[0];
-      if (nx) pushSec({ key: 'next', icon: 'cal', label: l('Próximo serviço', 'Next duty'), text: [nx.dy, nx.tm && nx.tm !== '—' ? `report ${nx.tm}` : null, nx.ds].filter(Boolean).join(' · '), onPress: nx.onPress });
-    }
-    // Nunca vazio: o dinheiro do mês (sem acordo modelado → as horas de voo dos últimos 28 dias).
-    if (homeState !== 'fecho' && monthMoney != null) {
-      // Pós-voo: o € de HOJE vive aqui (deixou de ser uma tecla — era informação com cara de botão).
-      const todayTxt = homeState === 'posvoo' && pdToday != null ? `${l('hoje', 'today')} ${eur(pdToday, '+')} · ` : '';
-      // "Variável até hoje" no lugar de "dia 4 de 30" (crítica 2026-11-04: o total igual dia após dia parecia fixo no código —
-      // é a PREVISÃO do mês inteiro; isto mostra o que já está feito). A mesma conta do fecho (monthSplit).
-      // "inclui X até hoje": diz que está DENTRO do total ("variável até hoje" não o dizia — crítica 2026-11-04).
-      const soFar = monthSplitNow ? `${l('inclui', 'includes')} ${eur(monthSplitNow.toDate)} ${l('até hoje', 'so far')}` : l(`dia ${dayOfMonth} de ${daysInMonth}`, `day ${dayOfMonth} of ${daysInMonth}`);
-      const uncTxt = monthUnc ? ` · ${l('base de', 'base')} ${eur(monthUnc.min)} ${l('a', 'to')} ${eur(monthUnc.max)}` : '';
-      const mTxt = `${todayTxt}${soFar}${uncTxt}`;
-      pushSec({ key: 'month', icon: 'wallet', label: `${monthCap} · ${estLbl}`, text: mTxt.charAt(0).toUpperCase() + mTxt.slice(1), value: eur(monthMoney),   // sem a barra: contava DIAS ao lado de euros e enganava (2026-11-04)
-        // Em mosaico: só tipografia — o rótulo curto ("NOV · ESTIMADO": por extenso cortava em meia largura), o valor
-        // grande, "+€ hoje" a verde, "inclui X € até hoje". Sem barra (contava DIAS ao lado de euros e enganava).
-        tileLabel: `${monthCap.slice(0, 3)} · ${l('estimado', 'estimated')}`,
-        tileDelta: todayTxt ? `${eur(pdToday, '+')} ${l('hoje', 'today')}` : null,
-        tileText: soFar, tileNoBar: true,
-        onPress: () => { select(); navigation.navigate('Estatísticas'); } });
-    } else if (hasLimitData && f28 && f28.limit) {
-      const p = Math.min(100, Math.round((f28.done / f28.limit) * 100));
-      pushSec({ key: 'f28', icon: 'plane', tone: p >= 85 ? 'warn' : null, label: l('Tempo de voo · últimos 28 dias', 'Flight time · last 28 days'), tileLabel: l('Voo · 28 dias', 'Flight · 28 days'), text: `${Math.round(f28.done)} h ${l('de', 'of')} ${f28.limit} h`, bar: p, tileValue: `${Math.round(f28.done)} h`, tileUnit: `${l('de', 'of')} ${f28.limit}`, tileText: null,
-        onPress: () => { select(); navigation.navigate('Estatísticas'); } });
-    }
+  const docTakesTop = homeState === 'folga' && !!docSoon;
+  if (valWarn && !docTakesTop && !['ferias', 'doenca', 'setup'].includes(homeState)) pushW({ id: 'docw', title: l('Documentos', 'Documents'), sub: valWarn.answer, open: { to: 'item', id: 'validades' } });
+  // FÉRIAS POR GOZAR (2026-11-03): só na folga, de novembro em diante, se ainda sobram dias (gozam-se no ano civil, CT art. 240.º).
+  if (homeState === 'folga' && Number(todayISO.slice(5, 7)) >= 11 && ae && Array.isArray(ae.EXTRA_KINDS) && ae.EXTRA_KINDS.some((k) => k.id === 'vacDays')) {
+    const quota = Math.max(1, Math.floor(+vacationDaysYear) || 22);
+    const left = Math.max(0, quota - yearCount(aeEvents || [], todayISO.slice(0, 4), 'vacDays', duties));
+    const toYearEnd = Math.round((new Date(`${todayISO.slice(0, 4)}-12-31T12:00:00`) - new Date(`${todayISO}T12:00:00`)) / 86400000);
+    if (left > 0) pushW({ id: 'vac', title: `${l('Férias', 'Leave')} ${todayISO.slice(0, 4)}`, open: { to: 'stats' },
+      sub: l(`${left === 1 ? 'fica 1' : `ficam ${left}`} de ${quota} dias · o ano acaba daqui a ${toYearEnd} dias`, `${left} of ${quota} days left · the year ends in ${toYearEnd} days`) });
   }
-  const secShow = secs.slice(0, 2);
+  if (homeState === 'fecho') {
+    if (audit && audit.count > 0) pushW({ id: 'audit', title: l('Auditoria do mês', 'Month audit'), open: { to: 'audit' },
+      sub: `${audit.count} ${audit.count === 1 ? l('item por confirmar', 'item to confirm') : l('itens por confirmar', 'items to confirm')}${audit.totalEur > 0 ? ` · ≈ ${eur(audit.totalEur)} ${l('em causa', 'at stake')}` : ''}` });
+    if (monthAe && monthAe.missing) pushW({ id: 'miss', title: 'Per-diem', sub: `${monthAe.missing} ${l('voo(s) sem rota — per-diem incompleto', 'flight(s) without a route — per-diem incomplete')}` });
+  }
 
-  // ── AS 3 TECLAS — sempre no mesmo sítio, ao polegar; a 1.ª é a ação do momento (tabela da v4).
-  // O que já está num secundário não se repete numa tecla. Férias e doença: nenhuma (a app baixa a voz).
+  // ── A ENTRADA do homeCards ──
+  const nextF = ['hoje', 'disrupcao'].includes(homeState) ? (heroF ? nextBrief(isoAdd(heroF.iso, 1)) : null)
+    : ['posvoo', 'pernoita'].includes(homeState) ? nextBrief(isoAdd(todayISO, 1))
+    : ['folga', 'ferias', 'doenca'].includes(homeState) ? (demoOn && flight ? { iso: flight.dateISO, kind: 'flight', stations: (flight.stations || []).map((x) => String(x).toUpperCase()), sectors: flight.sectors || null, report: flight.report, end: flight.arrTime || null, hasReg: false, startMs: flight.reportDate ? +flight.reportDate : +flight.startDate } : nextBrief(todayISO))
+    : null;
+  const H = {
+    lang, state: homeState, todayISO, phase,
+    hero: ['hoje', 'disrupcao', 'vespera'].includes(homeState) || (homeState === 'pernoita' && flight && flight.report) ? heroF : null,
+    live: liveF, next: nextF,
+    untilMin: nextF && nextF.startMs != null ? Math.max(0, Math.floor((nextF.startMs - now) / 60000)) : null,
+    rest: restF,
+    closed: homeState === 'posvoo' && todayEnded ? { fdp: closeD && closeD.fdp ? closeD.fdp.actualFdpStr : null, over: !!(closeD && closeD.fdp && closeD.fdp.over),
+      multi: closeMulti ? 1 + todayEnded.extra.length : null, signOffDone: !!todayEnded.signOff, gainToday: pdToday, kindLabel: todayEnded.kind ? t('duties.kind.' + todayEnded.kind, lang) : null } : null,
+    week: hasLimitData && d7 && d7.limit ? { done: d7.done, limit: d7.limit } : null,
+    wxTmw: homeState === 'pernoita' && wxHere && wxHere.tmwSym ? { v: wxHere.tmwMax != null ? `${Math.round(wxHere.tmwMax)}°` : null, label: (wxSymbol(wxHere.tmwSym, lang).label || '').toLowerCase() } : null,
+    month: monthF, monthName: monthCap, fechoDays: fechoDaysLeft,
+    dis: disF,
+    vac: vacInfo ? { left: vacInfo.left, quota: vacInfo.quota, retIso: vacInfo.retISO, fromIso: vacInfo.fromIso, toIso: vacInfo.toIso } : null,
+    sick: homeState === 'doenca' ? { day: sickDay, first3: sickFirst3, payText: sickState ? (sickDay <= 3 ? sickState.first : sickState.rest)[lang === 'en' ? 'en' : 'pt'] : null } : null,
+    doc: docSoon, empty: { rosterOk: allOk && !calErr, lastRead: lastReadMs ? (() => { const d = new Date(lastReadMs); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; })() : null },
+    wake: wakeAt && wakeMs > now ? { hm: wakeAt } : null, restOk: restVoice.restOk,
+    canExtra: !!(openExtra && ae && Array.isArray(ae.EXTRA_KINDS)), longHaul, shareClose: shareableClose,
+    warns: W,
+  };
+  const out = homeCards(H);
+  const giant = fitGiant(out.top, winW - SPACE.lgPlus * 2);
+
+  // ── O QUE CADA TOQUE FAZ ──
   const goStats = () => { select(); navigation.navigate('Estatísticas'); };
-  const hotelRun = (h, stn) => () => { select(); if (h) Linking.openURL(hotelMapsUrl(h.name, stn, Platform.OS)).catch(() => {}); else setHotelOpen(true); };
   const wakeRun = async () => {
     select();
     const res = await scheduleWakeUp(wakeMs != null ? new Date(wakeMs) : null, { iso: flight && flight.dateISO, report: flight && flight.report, lang });
@@ -1366,393 +993,70 @@ export default function HomeScreen({ navigation }) {
     else if (res === 'past') notify(l('Essa hora já passou', 'That time has passed'), null, 'alert');
     else notify(l('Não consegui marcar o lembrete', 'Couldn’t set the reminder'), l('Põe o despertador do iPhone.', 'Set the iPhone alarm.'), 'alert');
   };
-  const K = {
-    escala: { id: 'escala', ic: 'cal', lbl: l('Ver a escala', 'See the roster'), run: () => { select(); navigation.navigate('Escala'); } },
-    servico: (board.heroISO && hasReg(board.heroISO)) ? { id: 'servico', ic: 'cal', lbl: l('Ver o serviço', 'See the duty'), run: () => openDayDetail(board.heroISO) } : null,
-    limites: { id: 'limites', ic: 'shield', lbl: homeState === 'disrupcao' ? l('Limites com o atraso', 'Limits with the delay') : l('Limites', 'Limits'), run: openLimits },
-    simular: openSimulation ? { id: 'simular', ic: 'gauge', lbl: l('Simular', 'Simulate'), run: () => { select(); openSimulation(); } } : null,
-    partilhar: shareable ? { id: 'partilhar', ic: 'share', lbl: homeState === 'disrupcao' ? l('Avisar a família', 'Tell the family') : phase === 'air' ? l('Partilhar a chegada', 'Share the arrival') : l('Partilhar o voo', 'Share the flight'), run: shareNext } : null,
-    hotel: (flight && flight.nightStop && nsHotelStation) ? { id: 'hotel', ic: 'bed', lbl: 'Hotel', run: hotelRun(nsHotel, nsHotelStation), longRun: () => { select(); setHotelOpen(true); } } : null,
-    lembrete: wakeAt && wakeMs > now ? { id: 'lembrete', ic: 'bell', lbl: `${l('Lembrete', 'Reminder')} ${wakeAt}`, a11y: l(`Marcar um lembrete para acordar às ${wakeAt}`, `Set a wake-up reminder at ${wakeAt}`), run: wakeRun } : null,
-    hotelNs: homeState === 'pernoita' ? { id: 'hotelNs', ic: 'bed', lbl: closeHotel ? l('Hotel · mapas', 'Hotel · maps') : l('Guardar o hotel', 'Save the hotel'), run: hotelRun(closeHotel, closeNsStation), longRun: () => { select(); setHotelOpen(true); } } : null,
-    reportAmanha: (homeState === 'pernoita' && flight && hasReg(flight.dateISO)) ? { id: 'reportAmanha', ic: 'cal', lbl: flight.dateISO === isoAdd(todayISO, 1) ? l('Serviço de amanhã', 'Tomorrow’s duty') : l('Próximo serviço', 'Next duty'), run: () => openDayDetail(flight.dateISO) } : null,
-    partilharClose: shareableClose ? { id: 'partilharClose', ic: 'share', lbl: l('Partilhar', 'Share'), run: shareClose } : null,
-    // Sem sign-off registado: abre logo o formulário do dia. Já registado: só ver o dia.
-    signoff: (todayEnded && todayEnded.signOff)
-      ? { id: 'signoff', ic: 'cal', lbl: l('Ver o dia', 'See the day'), run: () => openDayDetail(todayISO) }
-      : { id: 'signoff', ic: 'edit', lbl: l('Registar o sign-off', 'Log the sign-off'), run: () => openDayDetail(todayISO, true) },
-    ganhosHoje: pdToday != null ? { id: 'ganhosHoje', ic: 'wallet', val: eur(pdToday, '+'), lbl: l('hoje', 'today'), a11y: l(`Ganhos de hoje: ${eur(pdToday)}`, `Today’s earnings: ${eur(pdToday)}`), run: goStats } : null,
-    amanha: (() => { const nx = upcomingRows(todayISO, 1)[0]; return nx ? { id: 'amanha', ic: 'cal', lbl: nx.key === isoAdd(todayISO, 1) ? l('Amanhã', 'Tomorrow') : l('Próximo serviço', 'Next duty'), run: () => openDayDetail(nx.key) } : null; })(),
-    extra: openExtra ? { id: 'extra', ic: 'plus', lbl: l('Registar um extra', 'Log an extra'), run: () => { select(); openExtra(); } } : null,
-    parcelas: { id: 'parcelas', ic: 'stats', lbl: l('Ver nos Números', 'See in Numbers'), run: goStats },
-    relatorio: { id: 'relatorio', ic: 'doc', lbl: l('Relatório do mês', 'Month report'), run: () => { select(); navigation.navigate('Perfil', { screen: 'Relatorios', initial: false }); } },
-    auditoria: (audit && audit.count > 0 && !secShow.some((x) => x.key === 'audit')) ? { id: 'auditoria', ic: 'doc', lbl: l('Auditoria', 'Audit'), run: () => { select(); setAuditOpen(true); } } : null,
-    ligar: { id: 'ligar', ic: 'cal', lbl: l('Ligar o calendário', 'Connect the calendar'), run: requestAccess },
-    pdf: { id: 'pdf', ic: 'doc', lbl: l('Importar o PDF', 'Import the PDF'), run: () => { select(); navigation.navigate('Escala', { screen: 'EscalaMain', params: { pdf: Date.now() } }); } },
-    exemplo: { id: 'exemplo', ic: 'play', lbl: l('Ver um exemplo', 'See an example'), run: () => { select(); setCalFlight(DEMO_FLIGHT); } },
+  // A pílula de contorno abre ESSE dia na Escala (salta para o mês, escolhe o dia e acende-o).
+  const openPill2 = (iso) => { select(); navigation.navigate('Escala', { screen: 'EscalaMain', params: { flashDuty: iso, flashTs: Date.now() } }); };
+  const onOpen = (o) => {
+    if (!o) return;
+    switch (o.to) {
+      case 'day': openDayDetail(o.iso); break;
+      case 'signoff': openDayDetail(o.iso || todayISO, !(todayEnded && todayEnded.signOff)); break;
+      case 'stats': goStats(); break;
+      case 'review': openReview(); break;
+      case 'audit': select(); setAuditOpen(true); break;
+      case 'extra': select(); if (openExtra) openExtra(); break;
+      case 'item': { const it = o.id === 'extras' ? extrasItem : todayItems.find((x) => x.id === o.id); if (it) openItem(it); else goStats(); break; }
+      case 'hotel': select(); setHotelOpen(true); break;
+      case 'validades': select(); navigation.navigate('Perfil', { screen: 'Validades', initial: false }); break;
+      case 'sync': select(); syncFlight(); break;
+      case 'pdf': select(); navigation.navigate('Escala', { screen: 'EscalaMain', params: { pdf: Date.now() } }); break;
+      case 'connect': requestAccess(); break;
+      case 'demo': select(); setCalFlight(DEMO_FLIGHT); break;
+      case 'share': shareNext(); break;
+      case 'shareClose': shareClose(); break;
+      case 'wake': wakeRun(); break;
+      case 'privacy': if (setupWhyItem) openItem(setupWhyItem); break;
+      case 'profile': select(); navigation.navigate('Perfil'); break;
+      default: break;
+    }
   };
-  const keyOrder = homeState === 'setup' ? ['ligar', 'pdf', 'exemplo']
-    : homeState === 'folga' ? ['servico', 'limites', 'simular']   // 'Ver o serviço' (era 'Ver a escala' = a aba)
-    : homeState === 'vespera' ? ['lembrete', 'limites', 'partilhar', 'servico', 'simular']
-    : homeState === 'disrupcao' ? ['partilhar', 'limites', 'simular', 'servico']
-    : homeState === 'hoje' ? (isNonFlight ? (isStandbyToday ? ['simular', 'limites', 'servico'] : ['servico', 'limites', 'simular']) : ['partilhar', 'limites', 'hotel', 'simular', 'servico'])
-    : homeState === 'pernoita' ? ['hotelNs', 'reportAmanha', 'partilharClose', 'simular']
-    // Pós-voo: sem "Amanhã" (repetia a 1.ª linha do painel) nem o € como tecla (foi para o cartão do mês).
-    // Com o sign-off já registado, a 1.ª tecla já é "Ver o dia" → a 3.ª passa a "Ver a escala".
-    : homeState === 'posvoo' ? ['signoff', 'limites', (todayEnded && todayEnded.signOff) ? 'escala' : 'servico']
-    // Fecho (2026-11-04): sai "Ver nos Números" (repetia a aba); entra o Relatório do mês (PDF/CSV, no Perfil).
-    : homeState === 'fecho' ? ['extra', 'relatorio', 'auditoria', 'escala']
-    : [];   // férias · doença
-  const keys = keyOrder.map((k) => K[k]).filter(Boolean).slice(0, 3);
 
   // Palco do Início ocupado? (folha/cartão) — a dica do ＋ não entra por cima (TipKit).
   useEffect(() => { homeBusyRef.current = !!(detailItem || sendCard); }, [detailItem, sendCard]);
 
-  // ── Medidas do número (determinísticas pelo comprimento — nada de auto-encolher, bug iOS) ──
-  const digitsStyle = (() => {
-    if (!board.digits) return null;
-    if (live) return { fontSize: TUNE.live.size, lineHeight: TUNE.live.size, color: BRAND.panel };
-    const avail = Math.max(240, winW - GUTTER * 2);
-    const unitW = board.unit ? String(board.unit).length * 0.47 * TYPE.numXl + SPACE.sm : 0;
-    const size = Math.max(TUNE.calm.min, Math.min(TUNE.calm.max, Math.floor((avail - unitW) / (Math.max(1, String(board.digits).length) * TUNE.calm.charW))));
-    return { fontSize: size, lineHeight: size, color: P.ink };
-  })();
-  // Aparo ASSIMÉTRICO: por baixo dos dígitos a caixa traz mais vazio (o lugar dos descendentes) do que por cima.
-  const digitsTrim = digitsStyle ? { marginTop: -Math.round(digitsStyle.fontSize * TUNE.trim), marginBottom: -Math.round(digitsStyle.fontSize * (board.dest ? TUNE.trimBottom.dest : TUNE.trimBottom.text)) } : null;
-  const pillStyle = (tone) => {
-    if (tone === 'calm') return [s.pill, { backgroundColor: P.soft }, { color: P.okText }];
-    if (live) return [s.pill, { backgroundColor: tone === 'red' ? PLATE.redBg : tone === 'warn' ? PLATE.warnBg : PLATE.okBg }, { color: tone === 'red' ? PLATE.red : tone === 'warn' ? PLATE.warn : PLATE.ok }];
-    // No papel, o vermelho é CHEIO com letra branca (5,30): vermelho sobre o redSoft dava 4,47.
-    if (tone === 'red') return [s.pill, { backgroundColor: P.red }, { color: P.paper }];
-    return [s.pill, { backgroundColor: tone === 'warn' ? P.warnSoft : P.soft }, { color: tone === 'warn' ? P.ink : P.okText }];
-  };
-  const onPlate = live ? { color: PL.fg } : null;
-  const subColor = live ? PL.sub : P.grey;
-  const ruleColor = live ? PL.rule : P.line;
-  const heroTap = board.heroISO && hasReg(board.heroISO) ? () => openDayDetail(board.heroISO) : null;
-  // O herói só é BOTÃO quando abre alguma coisa; senão é um bloco que o VoiceOver lê de uma vez (nunca um botão
-  // "esbatido"). Com um link lá dentro (configuração), não se agrupa — o link tem de ser alcançável.
-  const HeroBox = heroTap ? TouchableOpacity : View;
-  const heroA11y = [board.lbl, board.digits ? `${board.digits}${board.unit ? ` ${board.unit}` : ''}` : null, board.was ? `${l('estava', 'was')} ${board.was}` : null, board.dest, board.headline, board.pill && board.pill.text, board.sub].filter(Boolean).join('. ');
-  const heroProps = heroTap
-    ? { activeOpacity: 0.85, onPress: heroTap, accessibilityRole: 'button', accessibilityLabel: heroA11y, accessibilityHint: l('Abre o detalhe do serviço', 'Opens the duty detail') }
-    : { accessible: !board.link, accessibilityLabel: board.link ? undefined : heroA11y };
-  const priBg = night ? P.ink : BRAND.action;
-  const priFg = P.paper;
-
   return (
-    <SafeAreaView style={[s.safe, { backgroundColor: live ? PL.bg : P.paper }]} edges={['top']} onTouchStart={plusTip ? dismissPlusTip : undefined}>
-      {/* A barra de estado do iPhone fica clara sobre a placa escura (e à noite). Só com o ecrã à vista. */}
-      {isFocused && (live || night) ? <StatusBar style="light" /> : null}
-      {/* Papel por baixo da metade de baixo: o "ressalto" do fundo da lista mostra papel, o do topo mostra a placa. */}
-      {live ? <View pointerEvents="none" style={[s.underlay, { backgroundColor: P.paper }]} /> : null}
-      <ScrollView ref={homeScrollRef} style={s.scrollView} contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} alwaysBounceVertical
-        onLayout={(e) => { viewH.current = e.nativeEvent.layout.height; }}
-        onContentSizeChange={(_w, h) => { if (!nextOpen && rowsCap > 2 && board.rows.length > 2 && viewH.current && h > viewH.current + 1) setRowsCap(2); }}
-        refreshControl={<RefreshControl refreshing={refreshing} tintColor={subColor} colors={[subColor]}
-          onRefresh={async () => {
-            setRefreshing(true); const t0 = Date.now();
-            try { await syncFlight(); } catch { /* ignora */ }
-            setFsTick((n) => n + 1);   // re-busca o estado do voo ao vivo
-            const dt = Date.now() - t0; if (dt < 600) await new Promise((r) => setTimeout(r, 600 - dt));
-            setRefreshing(false);
-          }} />}>
-
-        {/* ═══ A PLACA ═══ */}
-        <View style={[s.board, live ? { backgroundColor: PL.bg } : null]}>
-          <View style={[s.bHead, { borderBottomColor: ruleColor }]}>
-            <View style={s.bHeadL}>
-              {board.head.dot ? <LiveDot color={BRAND.onDark} reduce={reduce} active={isFocused} /> : null}
-              <Text style={[s.eyebrow, { color: live ? PL.sub : P.ink }]} numberOfLines={1}>{board.head.left}</Text>
-            </View>
-            <View style={s.bHeadR}>
-              {demoOn ? (
-                <TouchableOpacity style={[s.demoPill, live ? { backgroundColor: PL.track } : null]} onPress={exitDemo} hitSlop={8}
-                  accessibilityRole="button" accessibilityLabel={l('Isto é um exemplo. Sair do exemplo', 'This is an example. Exit the example')}>
-                  <View style={s.demoDot} />
-                  <Text style={[s.demoTxt, onPlate]}>{l('Exemplo · sair', 'Example · exit')}</Text>
-                </TouchableOpacity>
-              ) : <NotificationsBell variant="pill" night={live || night} />}
-              {wxHead ? (
-                <View style={s.wx} accessibilityLabel={`${l('Tempo', 'Weather')}: ${wxHead.text.replace('°', ' graus')}`}>
-                  <Icon name={wxHead.icon} size={14} color={live ? PL.sub : P.ink} />
-                  <Text style={[s.eyebrow, { color: live ? PL.sub : P.ink }]} numberOfLines={1}>{wxHead.text}</Text>
-                </View>
-              ) : null}
-            </View>
-          </View>
-
-          {loadingFlight ? <BoardSkeleton /> : (
-            <HeroBox style={[s.hero, (board.rows.length || board.kv) ? { borderBottomWidth: 1, borderBottomColor: ruleColor } : null]} {...heroProps}>
-              {/* Ritmo por GRUPOS (Nuno, 2026-11-03, refs Tempo da Apple · Lapse): o rótulo COLADO ao número (um só
-                  grupo) e um salto maior até à rota e à linha — antes tudo a 6 pt lia-se como uma pilha. */}
-              <View style={s.heroTop}>
-              {board.lbl ? <Text style={[s.tag, { color: subColor }]} numberOfLines={1}>{board.lbl}</Text> : null}
-              {board.digits ? (
-                <View style={[s.digitsRow, digitsTrim]} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
-                  {String(board.digits).split('').map((c, i) => (
-                    <FlipChar key={`${flipKey}-${i}-${c}`} ch={c === ' ' ? ' ' : c} delay={i * TUNE.flip.stagger} reduce={reduce} style={[s.digit, digitsStyle]} />
-                  ))}
-                  {board.unit ? <Text style={[s.unit, live ? { color: PL.fg } : null]} allowFontScaling={false}>{board.unit}</Text> : null}
-                  {board.was ? <Text style={[s.was, live ? { color: PL.fg } : null]} allowFontScaling={false}>{board.was}</Text> : null}
-                </View>
-              ) : null}
-              {board.title ? <Text style={[s.title, onPlate]}>{board.title}</Text> : null}
-              </View>
-              {(board.dest || board.headline || board.pill || board.prog || board.duty || board.sub || board.link) ? (
-              <View style={s.heroInfo}>
-              {(board.dest || board.headline || board.pill) ? (
-                <View style={[s.destRow, board.dest && ((board.dest && board.headline) || board.duty || board.prog || board.sub || board.link)
-                  ? { marginBottom: -Math.round(TYPE.numXl * TUNE.destTrim) } : null]}>
-                  {board.dest ? <Text style={[s.dest, onPlate]} numberOfLines={1} allowFontScaling={false}>{board.dest}</Text>
-                    : board.headline ? <Text style={[s.headline, onPlate]} numberOfLines={2}>{board.headline}</Text> : <View />}
-                  {board.pill ? (() => { const [box, bg, fg] = pillStyle(board.pill.tone); return (
-                    <View style={[box, bg]}><Text style={[s.pillTxt, fg]} numberOfLines={1}>{board.pill.text}</Text></View>); })() : null}
-                </View>
-              ) : null}
-              {board.dest && board.headline ? <Text style={[s.headline, onPlate]} numberOfLines={2}>{board.headline}</Text> : null}
-              {board.duty ? (() => {
-                // A LINHA DO DIA DE SERVIÇO: report ● ── troço(s) do voo (voado a amarelo) ── │ limite. ✈ = agora.
-                const d = board.duty;
-                const mTxt = d.marginMin == null ? null : d.over
-                  ? l(`aterras ${fmtMargin(d.marginMin)} depois do limite`, `landing ${fmtMargin(d.marginMin)} past the limit`)
-                  : l(`aterras com ${fmtMargin(d.marginMin)} de margem`, `landing with ${fmtMargin(d.marginMin)} to spare`);
-                const a11y = [`${l('Dia de serviço', 'Duty day')}: report ${d.reportHm}, ${l('limite do PSV', 'FDP limit')} ${d.limitHm}`, board.dutyTxt, mTxt].filter(Boolean).join('. ');
-                return (
-                  <View style={s.dl} accessible accessibilityLabel={a11y}>
-                    <View style={s.dlBar}>
-                      <View style={[s.dlTrack, { backgroundColor: PL.track }]} />
-                      <View style={[s.dlTrack, { width: `${d.nowPct * 100}%`, backgroundColor: BRAND.panel }]} />
-                      {d.sectors.map((sec, i) => (
-                        <View key={i} style={[s.dlSec, { left: `${sec.a * 100}%`, width: `${Math.max(0.01, sec.b - sec.a) * 100}%`, backgroundColor: PL.sub }]}>
-                          <View style={[s.dlSecDone, { width: `${sec.done * 100}%`, backgroundColor: BRAND.panel }]} />
-                        </View>
-                      ))}
-                      <View style={[s.dlTick, { left: `${d.limitPct * 100}%`, backgroundColor: d.over ? PLATE.red : PL.fg }]} />
-                      <View style={[s.dlNow, { left: `${d.nowPct * 100}%`, backgroundColor: PL.bg }]}>
-                        <Icon name="plane" rot={90} size={14} color={PL.fg} />
-                      </View>
-                    </View>
-                    <View style={s.progEnds}>
-                      <Text style={[s.caption, { color: PL.sub }]} numberOfLines={1}>{`${d.reportHm} · report`}</Text>
-                      <Text style={[s.caption, { color: d.over ? PLATE.red : PL.sub }]} numberOfLines={1}>{`${l('limite', 'limit')} · ${d.limitHm}`}</Text>
-                    </View>
-                    <Text style={[s.label, { color: PL.sub }]} numberOfLines={2}>
-                      {board.dutyTxt ? `${board.dutyTxt} · ` : ''}
-                      {mTxt ? <Text style={{ color: d.over ? PLATE.red : PL.fg }}>{mTxt}</Text> : null}
-                    </Text>
-                  </View>
-                );
-              })() : null}
-              {board.prog ? (
-                <View style={s.prog}>
-                  <View style={[s.track, { backgroundColor: PL.track }]}><View style={[s.trackFill, { width: `${board.prog.pct}%` }]} /></View>
-                  <View style={s.progEnds}>
-                    <Text style={[s.caption, { color: PL.sub }]} numberOfLines={1}>{board.prog.left}</Text>
-                    <Text style={[s.caption, { color: PL.sub }]} numberOfLines={1}>{board.prog.mid}</Text>
-                    <Text style={[s.caption, { color: PL.sub }]} numberOfLines={1}>{board.prog.right}</Text>
-                  </View>
-                </View>
-              ) : null}
-              {board.sub ? <Text style={[s.label, { color: subColor }]} numberOfLines={3}>{board.sub}</Text> : null}
-              {board.link ? (
-                <Text style={[s.link, { color: P.ink, textDecorationColor: BRAND.signal }]} onPress={board.link.onPress} suppressHighlighting
-                  accessibilityRole="link">{board.link.text}</Text>
-              ) : null}
-              </View>
-              ) : null}
-            </HeroBox>
-          )}
-
-          {/* "A SEGUIR": o painel ABERTO até rowsCap (3, ou 2 se não couber sem deslizar); com mais, "Mais N ⌄" abre o
-              resto e "Mostrar menos ⌃" fecha. Cada linha abre o seu dia. */}
-          {!loadingFlight && board.rows.length ? (() => {
-            const more = board.rows.length - rowsCap;
-            const shown = nextOpen ? board.rows : board.rows.slice(0, rowsCap);
-            return (
-              <View>
-                {/* Título da lista (Nuno, 2026-11-04): "serviços", não "voos" — também há standby, formação, escritório. */}
-                <Text style={[s.tag, s.nextTitle, { color: live ? PL.fg : P.ink }]} accessibilityRole="header">{l('Próximos serviços', 'Next duties')}</Text>
-                <View style={s.cols}>
-                  <Text style={[s.tag, s.cTm, { color: subColor }]}>{l('Report', 'Report')}</Text>
-                  <Text style={[s.tag, s.cDs, { color: subColor }]}>{l('Rota', 'Route')}</Text>
-                  <Text style={[s.tag, s.cDy, { color: subColor }]}>{l('Dia', 'Day')}</Text>
-                </View>
-                {shown.map((r, i) => (
-                  <TouchableOpacity key={r.key} style={[s.row, (i < shown.length - 1 || more > 0) ? { borderBottomWidth: 1, borderBottomColor: live ? PL.ruleFaint : P.line } : null]}
-                    activeOpacity={0.75} onPress={r.onPress} disabled={!r.onPress} accessibilityRole={r.onPress ? 'button' : undefined} accessibilityLabel={r.a11y}>
-                    <Text style={[s.rowBig, s.cTm, { color: live ? BRAND.panel : P.ink }]} numberOfLines={1} allowFontScaling={false}>{r.tm}</Text>
-                    <Text style={[s.rowBig, s.cDs, onPlate]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} allowFontScaling={false}>{r.ds}</Text>
-                    <Text style={[s.label, s.cDy, { color: subColor }]} numberOfLines={1}>{r.dy}</Text>
-                  </TouchableOpacity>
-                ))}
-                {more > 0 ? (
-                  <TouchableOpacity style={s.moreRow} activeOpacity={0.75} onPress={toggleNext} accessibilityRole="button"
-                    accessibilityLabel={nextOpen ? l('Mostrar menos serviços', 'Show fewer duties') : l(`Mostrar mais ${more} serviços`, `Show ${more} more duties`)}>
-                    <Text style={[s.label, { color: subColor }]}>{nextOpen ? l('Mostrar menos', 'Show less') : l(`Mais ${more}`, `${more} more`)}</Text>
-                    <Icon name="chevron" rot={nextOpen ? -90 : 90} size={12} color={subColor} />
-                  </TouchableOpacity>
-                ) : null}
-              </View>
-            );
-          })() : null}
-          {/* Fecho do mês: as PARCELAS no lugar das linhas (somam o total — auditável) */}
-          {!loadingFlight && board.kv ? (
-            <View>
-              {board.kv.map((r, i) => (
-                <TouchableOpacity key={r.k} style={[s.row, i < board.kv.length - 1 ? { borderBottomWidth: 1, borderBottomColor: P.line } : null]}
-                  activeOpacity={0.75} onPress={r.onPress || goStats} accessibilityRole="button" accessibilityLabel={`${r.k}: ${r.v}`}>
-                  <Text style={[s.bodyStrong, { flex: 1, color: P.ink }]} numberOfLines={1}>{r.k}</Text>
-                  <Text style={[s.rowBig, { color: P.ink }]} numberOfLines={1} allowFontScaling={false}>{r.v}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          ) : null}
-        </View>
-
-        {/* ═══ O CORPO — a frase · os 2 secundários · as 3 teclas ═══ */}
-        <View style={[s.body, { backgroundColor: P.paper }]}>
-          {/* No pós-voo a frase cala-se: repetia "Dia fechado" do rótulo e ficava solta entre o painel e os cartões. */}
-          {voice && homeState !== 'posvoo' ? (
-            <Animated.View style={enter(1)}>
-              <Text style={[s.say, { color: P.grey }]} onPress={voice.to ? () => goVoice(voice.to) : undefined} suppressHighlighting
-                accessibilityRole={voice.to ? 'button' : undefined} maxFontSizeMultiplier={1.4}>
-                <Text style={[s.sayB, { color: P.ink }, voice.to ? { textDecorationLine: 'underline', textDecorationColor: BRAND.signal } : null]}>{voice.bold}</Text>{voice.tail ? ` ${voice.tail}` : null}
-              </Text>
-            </Animated.View>
-          ) : null}
-
-          {/* Configuração: os 3 passos do 7.º passo da configuração (mesmas palavras) enchem o meio — antes ficava vazio. */}
-          {homeState === 'setup' ? (
-            <Animated.View style={[s.steps, enter(2)]}>
-              {setupSteps.map(([a, b], i) => (
-                <View key={a} style={s.step} accessible accessibilityLabel={`${l('Passo', 'Step')} ${i + 1} ${l('de', 'of')} 3: ${a}. ${b}`}>
-                  <View style={[s.stepNum, { backgroundColor: P.soft }]}><Text style={[s.stepNumTxt, { color: P.ink }]} allowFontScaling={false}>{i + 1}</Text></View>
-                  <View style={s.stepTx}>
-                    <Text style={[s.stepT, { color: P.ink }]}>{a}</Text>
-                    <Text style={[s.stepS, { color: P.grey }]}>{b}</Text>
-                  </View>
-                </View>
-              ))}
-            </Animated.View>
-          ) : null}
-
-          {secShow.length ? (() => {
-            // MOSAICOS lado a lado (Nuno, 2026-11-03, ref WHOOP no Mobbin): quando os 2 secundários são NÚMEROS
-            // (7 dias, mês, tempo, ganhos), meia largura cada — nada se esconde, ganha ~80 pt. Um aviso de texto
-            // (lei a vermelho, documento, voo atrasado…) fica com a largura toda, como antes.
-            const isStat = (x) => x.tone !== 'red' && (x.tileValue != null || x.value != null);
-            if (secShow.length === 2 && secShow.every(isStat)) {
-              return (
-                <Animated.View style={[s.tiles, enter(2)]}>
-                  {secShow.map((x) => {
-                    const val = x.tileValue != null ? x.tileValue : x.value;
-                    const txt = ('tileText' in x) ? x.tileText : x.text;   // tileText: null = sem linha (não cai na frase empilhada)
-                    const lbl = x.tileLabel || x.label;
-                    const TileBox = x.onPress ? TouchableOpacity : View;
-                    const a11y = [lbl, `${val}${x.tileUnit ? ` ${x.tileUnit}` : ''}`, x.tileDelta, txt,
-                      x.chart ? x.chart.map((d) => `${d.lbl} ${Math.round(d.h * 10) / 10} h`).join(', ') : null].filter(Boolean).join('. ');
-                    const tileProps = x.onPress ? { activeOpacity: 0.8, onPress: x.onPress, accessibilityRole: 'button', accessibilityLabel: a11y } : { accessible: true, accessibilityLabel: a11y };
-                    // Cores (regra 2026-11-04): verde = bom (dinheiro que ENTRA: os +€ do dia — o total do mês fica a tinta,
-                    // é estimativa) · laranja = atenção · tinta = o resto. okText sobre o soft = 5,64:1.
-                    const tone = x.tone === 'warn' ? P.warn : x.gain ? P.okText : P.ink;
-                    return (
-                      <TileBox key={x.key} style={[s.tile, { backgroundColor: P.soft }]} {...tileProps}>
-                        {/* Como os widgets da Apple: o de CIMA alinha com o de cima (rótulo · número · delta) e o de BAIXO
-                            fica preso ao fundo (gráfico / "dia 3 de 30") — os dois mosaicos leem-se como um par. */}
-                        <View style={s.tileTop}>
-                        <Text style={[s.tag, { color: P.greyOnSoft }]} numberOfLines={1}>{lbl}</Text>
-                        <View style={s.tileValRow}>
-                          <Text style={[s.tileVal, { color: tone }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} allowFontScaling={false}>{val}</Text>
-                          {x.tileUnit ? <Text style={[s.tileTxt, { color: P.greyOnSoft }]} numberOfLines={1}>{x.tileUnit}</Text> : null}
-                        </View>
-                        {x.tileDelta ? <Text style={[s.tileDelta, { color: P.okText }]} numberOfLines={1}>{x.tileDelta}</Text> : null}
-                        </View>
-                        <View style={s.tileBottom}>
-                        {txt ? <Text style={[s.tileTxt, { color: P.greyOnSoft }]} numberOfLines={2}>{txt}</Text> : null}
-                        {x.chart ? (
-                          <View style={s.wk} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
-                            {x.chart.map((d) => (
-                              <View key={d.iso} style={s.wkCol}>
-                                <View style={s.wkTrack}>
-                                  {d.pct ? <View style={[s.wkBar, { height: Math.max(3, Math.round((28 * d.pct) / 100)), backgroundColor: d.today ? P.ink : P.greyOnSoft }]} />
-                                    : <View style={[s.wkZero, { backgroundColor: P.ghost }]} />}{/* dia sem serviço: traço visível (o line quase desaparecia) */}
-                                </View>
-                                <Text style={[s.wkLbl, { color: d.today ? P.ink : P.greyOnSoft }, d.today ? s.wkLblToday : null]} numberOfLines={1} allowFontScaling={false}>{d.lbl}</Text>
-                              </View>
-                            ))}
-                          </View>
-                        ) : null}
-                        {x.bar != null && !x.tileNoBar ? (
-                          <View style={[s.secBar, { backgroundColor: P.line }]}>
-                            <View style={[s.secBarFill, { width: `${Math.max(0, Math.min(100, x.bar))}%`, backgroundColor: tone }]} />
-                          </View>
-                        ) : null}
-                        </View>
-                      </TileBox>
-                    );
-                  })}
-                </Animated.View>
-              );
-            }
-            return (
-            <Animated.View style={[s.secs, enter(2)]}>
-              {secShow.map((x) => {
-                const tone = x.tone === 'red' ? P.red : x.tone === 'warn' ? P.warn : P.ink;
-                // Botão só quando abre alguma coisa; senão um bloco lido de uma vez (nunca um botão "esbatido").
-                const SecBox = x.onPress ? TouchableOpacity : View;
-                const a11y = [x.label, x.text, x.value].filter(Boolean).join('. ');
-                const secProps = x.onPress ? { activeOpacity: 0.8, onPress: x.onPress, accessibilityRole: 'button', accessibilityLabel: a11y } : { accessible: true, accessibilityLabel: a11y };
-                return (
-                  <SecBox key={x.key} style={[s.sec, { backgroundColor: P.soft }]} {...secProps}>
-                    <View style={[s.secIc, { backgroundColor: P.paper }]}><Icon name={x.icon} size={16} color={tone} /></View>
-                    <View style={s.secTx}>
-                      <Text style={[s.tag, { color: P.greyOnSoft }]} numberOfLines={1}>{x.label}</Text>
-                      <Text style={[s.bodyStrong, { color: x.tone === 'red' ? P.red : P.ink }]} numberOfLines={2}>{x.text}</Text>
-                      {x.bar != null ? (
-                        <View style={[s.secBar, { backgroundColor: P.line }]}>
-                          <View style={[s.secBarFill, { width: `${Math.max(0, Math.min(100, x.bar))}%`, backgroundColor: x.tone === 'red' ? P.red : x.tone === 'warn' ? P.warn : P.ink }]} />
-                        </View>
-                      ) : null}
-                    </View>
-                    {x.value ? <Text style={[s.secVal, { color: x.gain ? P.okText : P.ink }]} numberOfLines={1} allowFontScaling={false}>{x.value}</Text>
-                      : x.onPress ? <Icon name="chevron" size={12} color={P.greyOnSoft} /> : null}
-                  </SecBox>
-                );
-              })}
-            </Animated.View>
-            );
-          })() : null}
-
-          {live && longHaul ? <Text style={[s.caption, { color: P.grey }]} numberOfLines={2}>{l('O FTL automático assume aclimatizado e na base. Em longo curso, confirma na Simulação.', 'Auto FTL assumes acclimatised and in-base. On long haul, check it in the Simulation.')}</Text> : null}
-
-          {keys.length ? (
-            <Animated.View style={[s.keys, enter(3)]}>
-              {keys.map((k, i) => {
-                const pri = i === 0;
-                const fg = pri ? priFg : P.ink;
-                return (
-                  <TouchableOpacity key={k.id} style={[s.key, { backgroundColor: pri ? priBg : P.soft }]} activeOpacity={0.8} onPress={k.run} onLongPress={k.longRun}
-                    accessibilityRole="button" accessibilityLabel={k.a11y || k.lbl}>
-                    <Icon name={k.ic} size={20} color={fg} />
-                    {k.val ? (
-                      <View>
-                        <Text style={[s.keyVal, { color: fg }]} numberOfLines={1} allowFontScaling={false}>{k.val}</Text>
-                        <Text style={[s.label, { color: fg }]} numberOfLines={1}>{k.lbl}</Text>
-                      </View>
-                    ) : <Text style={[s.bodyStrong, { color: fg }]} numberOfLines={2}>{k.lbl}</Text>}
-                  </TouchableOpacity>
-                );
-              })}
-            </Animated.View>
-          ) : null}
-        </View>
-      </ScrollView>
+    <SafeAreaView style={[s.safe, { backgroundColor: C.desk }]} edges={['top']} onTouchStart={plusTip ? dismissPlusTip : undefined}>
+      {/* A barra de estado do iPhone: escura sobre o fundo claro; clara à noite. Só com o ecrã à vista. */}
+      {isFocused ? <StatusBar style={night ? 'light' : 'dark'} /> : null}
+      {loadingFlight ? <HomeSkeleton /> : (
+        <HomeTop top={out.top} C={C} size={giant.size} onPill2={openPill2} l={l}
+          right={demoOn ? (
+            <TouchableOpacity style={[s.demo, { borderColor: C.ink }]} onPress={exitDemo} hitSlop={{ top: 3, bottom: 3 }}
+              accessibilityRole="button" accessibilityLabel={l('Isto é um exemplo. Sair do exemplo', 'This is an example. Exit the example')}>
+              <View style={[s.demoDot, { backgroundColor: BRAND.signal }]} />
+              <Text style={[TXT3.pill, { color: C.ink }]} allowFontScaling={false}>{l('Exemplo · sair', 'Example · exit')}</Text>
+            </TouchableOpacity>
+          ) : <NotificationsBell variant="round" night={night} />} />
+      )}
+      {/* A FOLHA: o cartão do momento e o do que vem a seguir. Num iPhone pequeno desliza; o topo e a barra ficam. */}
+      <View style={[s.sheet, { backgroundColor: C.sheet }]}>
+        <ScrollView ref={homeScrollRef} style={s.sheetScroll} contentContainerStyle={s.sheetIn} showsVerticalScrollIndicator={false} alwaysBounceVertical
+          refreshControl={<RefreshControl refreshing={refreshing} tintColor={C.caption} colors={[C.caption]}
+            onRefresh={async () => {
+              setRefreshing(true); const t0 = Date.now();
+              try { await syncFlight(); } catch { /* ignora */ }
+              setFsTick((n) => n + 1);   // re-busca o estado do voo ao vivo
+              const dt = Date.now() - t0; if (dt < 600) await new Promise((r) => setTimeout(r, 600 - dt));
+              setRefreshing(false);
+            }} />}>
+          {loadingFlight ? <SheetSkeleton /> : <HomeCards cards={out.cards} C={C} onOpen={onOpen} l={l} />}
+          {!loadingFlight && out.caption ? <Text style={[TXT.caption, s.caption, { color: C.caption }]}>{out.caption}</Text> : null}
+        </ScrollView>
+      </View>
 
       {/* Hotel da pernoita — registar/editar (estação derivada da escala). */}
       <HotelSheet visible={hotelOpen} onClose={() => setHotelOpen(false)} station={closeNsStation || nsHotelStation} />
 
-      {/* Folha "porquê" — abre dos secundários e da tecla Limites. */}
+      {/* Folha "porquê" — abre dos avisos e dos cartões. */}
       <QuestionDetailSheet item={detailItem} lang={lang}
         onClose={() => setDetailItem(null)}
         onNav={(dest) => {
@@ -1770,7 +1074,7 @@ export default function HomeScreen({ navigation }) {
         status={sendCard ? sendCard.status : undefined} />
 
       {/* Dica do ＋ (1.ª visita pós-folha) — flutua acima da tab bar, seta ao ＋. */}
-      <Tip visible={plusTip} arrow="down" lang={lang} style={{ bottom: 12 }}
+      <Tip visible={plusTip} arrow="down" lang={lang} style={{ bottom: SPACE.md }}
         bold={l('Cria aqui.', 'Create here.')}
         tail={l('Serviços, simulações e eventos — tudo nasce no ＋.', 'Duties, simulations and events — all born in the ＋.')}
         onDismiss={dismissPlusTip} />
@@ -1781,129 +1085,41 @@ export default function HomeScreen({ navigation }) {
       {/* Auditoria do mês — a folha do radar (estado fecho). */}
       <AuditSheet visible={auditOpen} onClose={() => setAuditOpen(false)} audit={audit} monthName={monthName}
         lang={lang} provaCtx={{ companySlug: company && company.slug, companyName: company && company.name, isPilot, lang }}
-        onOpenDay={(iso) => openDayDetail(iso)} onRegister={() => { openExtra && openExtra(); }} />
+        onOpenDay={(iso) => openDayDetail(iso)} onRegister={() => { if (openExtra) openExtra(); }} />
     </SafeAreaView>
   );
 }
 
-// Estilos fixos (não dependem do tema).
-const st = StyleSheet.create({
-  dot: { width: 8, height: 8, borderRadius: 4 },
-});
+// Esqueleto do 1.º carregamento — a mesma forma do topo (pílulas · legenda · número em duas linhas).
+function HomeSkeleton() {
+  return (
+    <View style={s.skTop}>
+      <View style={s.skRow}><Skeleton w={96} h={38} r={RADIUS.pill} /><Skeleton w={88} h={38} r={RADIUS.pill} /></View>
+      <Skeleton w={150} h={16} r={RADIUS.xs} />
+      <Skeleton w={210} h={140} r={RADIUS.lg} />
+    </View>
+  );
+}
+function SheetSkeleton() {
+  return (
+    <View style={s.skSheet}>
+      <Skeleton w={'100%'} h={170} r={RADIUS.xxl} />
+      <Skeleton w={'100%'} h={64} r={RADIUS.xxl} />
+    </View>
+  );
+}
 
-// ── Estilos — FÁBRICA dia/noite (medidas do esboço design/inicio-v6.html; letra em TXT, espaço em SPACE) ──
-const makeSkin = (P) => StyleSheet.create({
+// Medidas do esboço design/inicio-cartoes.html (390 × 844): a folha sobe 16 por cima do topo, raio 32, 12 de margem e 8
+// entre cartões; o resto das medidas vive em components/HomeCards.js.
+const s = StyleSheet.create({
   safe: { flex: 1 },
-  underlay: { position: 'absolute', left: 0, right: 0, bottom: 0, top: '50%' },
-  scrollView: { flex: 1 },
-  scroll: { flexGrow: 1, paddingHorizontal: GUTTER },
-
-  // A placa: sangra até às margens (ao vivo é escura; no calmo é o papel)
-  board: { marginHorizontal: -GUTTER, paddingHorizontal: GUTTER, paddingBottom: SPACE.sm },
-  bHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.md, paddingTop: SPACE.md, paddingBottom: SPACE.sm, borderBottomWidth: 1, minHeight: 40 },
-  bHeadL: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, flexShrink: 1 },
-  bHeadR: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm },
-  eyebrow: { ...TXT.eyebrow },
-  wx: { flexDirection: 'row', alignItems: 'center', gap: SPACE.xs },
-  demoPill: { flexDirection: 'row', alignItems: 'center', gap: SPACE.s, backgroundColor: P.soft, borderRadius: RADIUS.pill, paddingVertical: SPACE.xs, paddingHorizontal: SPACE.md },
-  demoDot: { width: 6, height: 6, borderRadius: RADIUS.pill, backgroundColor: BRAND.signal },
-  demoTxt: { ...TXT.label, color: P.ink },
-
-  // O herói em dois grupos: [rótulo + número] e [rota · linha · barra] — o mesmo ar VISÍVEL (~20 pt) dos dois
-  // lados do número (ver TUNE.rhythm). Encostado ao topo (arrumação "documento").
-  hero: { gap: TUNE.rhythm.between, paddingTop: SPACE.sm, paddingBottom: SPACE.md },
-  heroTop: { gap: TUNE.rhythm.inGroup },
-  // Rota + linha + barra = UM grupo: apertado. MEDIDO no iPhone (em voo): com 6 + 4 a rota→barra dava 19 pt
-  // visíveis (= o salto entre grupos, 18) — confundia. A caixa da rota já traz ~9 pt vazios → 2 dá ~11.
-  heroInfo: { gap: SPACE.xxs },
-  tag: { ...TXT.tag },
-  // o NÚMERO: Barlow, dígitos de largura fixa; o tamanho vem do digitsStyle (ao vivo 104 · calmo até 150)
-  // linha de base comum: a unidade ("dias") e a hora riscada assentam na mesma linha dos dígitos
-  digitsRow: { flexDirection: 'row', alignItems: 'baseline', flexWrap: 'nowrap' },
-  digit: { fontFamily: PELE_FONT.display, letterSpacing: -3, fontVariant: ['tabular-nums'] },
-  unit: { fontFamily: PELE_FONT.display, fontSize: TYPE.numXl, lineHeight: TYPE.numXl, letterSpacing: -1, color: P.ink, marginLeft: SPACE.sm },
-  was: { fontFamily: PELE_FONT.display, fontSize: TYPE.numLg, lineHeight: TYPE.numLg, color: P.ink, opacity: 0.55, textDecorationLine: 'line-through', marginLeft: SPACE.md },
-  title: { fontFamily: PELE_FONT.display, fontSize: TYPE.numXl, lineHeight: TYPE.numXl + 2, letterSpacing: -0.5, color: P.ink },
-  destRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.sm },
-  dest: { fontFamily: PELE_FONT.display, fontSize: TYPE.numXl, lineHeight: TYPE.numXl + 2, letterSpacing: -0.5, color: P.ink, flexShrink: 1 },
-  headline: { ...TXT.headline, color: P.ink, flexShrink: 1 },
-  pill: { borderRadius: RADIUS.xs, paddingVertical: SPACE.xs, paddingHorizontal: SPACE.sm },
-  pillTxt: { ...TXT.tag, fontSize: TYPE.micro, letterSpacing: 0.8 },
-  label: { ...TXT.label },
-  caption: { ...TXT.caption },
-  bodyStrong: { ...TXT.bodyStrong },
-  link: { ...TXT.label, textDecorationLine: 'underline', paddingVertical: SPACE.xs },
-  prog: { gap: SPACE.s },
-  // A linha do dia de serviço (em voo): faixa de 20 com o fio (2) ao meio, os troços (6), o traço do limite (14)
-  // e o ✈ do "agora" num recorte da cor da placa (corta o fio por trás, como nos seguidores de voo).
-  dl: { gap: SPACE.s },
-  dlBar: { height: 20, justifyContent: 'center' },
-  dlTrack: { position: 'absolute', left: 0, right: 0, top: 9, height: 2, borderRadius: RADIUS.pill },
-  dlSec: { position: 'absolute', top: 7, height: 6, borderRadius: RADIUS.pill, overflow: 'hidden' },
-  dlSecDone: { height: 6 },
-  dlTick: { position: 'absolute', top: 3, width: 2, height: 14, marginLeft: -1, borderRadius: RADIUS.pill },
-  dlNow: { position: 'absolute', top: 2, width: 16, height: 16, marginLeft: -SPACE.sm, alignItems: 'center', justifyContent: 'center', borderRadius: RADIUS.pill },
-  track: { height: 6, borderRadius: 6, overflow: 'hidden' },
-  trackFill: { height: 6, borderRadius: 6, backgroundColor: BRAND.panel },
-  progEnds: { flexDirection: 'row', justifyContent: 'space-between', gap: SPACE.sm },
-
-  // As linhas do painel: 76 · resto · 72 (como o esboço)
-  nextTitle: { paddingTop: SPACE.md },
-  cols: { flexDirection: 'row', gap: SPACE.sm, paddingTop: SPACE.xs, paddingBottom: SPACE.xxs },
-  row: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, minHeight: 44 },
-  cTm: { width: 76 },
-  cDs: { flex: 1 },
-  cDy: { width: 72, textAlign: 'right' },
-  // "A seguir" dobrado: o "+N ⌄" à direita · o "Dia ⌃" do cabeçalho aberto (fecha a lista)
-  moreRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: SPACE.xs, minHeight: 44 },
-  rowBig: { fontFamily: PELE_FONT.display, fontSize: TYPE.display, lineHeight: TYPE.display + 2, color: P.ink },
-
-  // O corpo
-  // Medido (2026-11-03, métricas das fontes, 390 × 844): o estado mais alto (pós-voo com frase, 2 secundários com
-  // barra e 2 linhas) dá 703 pt nos 714 úteis — com 16 entre blocos dava 715. Por isso 12.
-  // flexGrow: o corpo enche até ao fundo (o papel por baixo) e as teclas, com marginTop 'auto', ficam lá presas.
-  body: { flexGrow: 1, marginHorizontal: -GUTTER, paddingHorizontal: GUTTER, paddingTop: SPACE.lg, gap: SPACE.md },
-  say: { ...TXT.body },
-  sayB: { fontFamily: PELE_FONT.bodyBold },
-  secs: { gap: SPACE.sm },
-  sec: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, borderRadius: RADIUS.lg, paddingVertical: SPACE.md, paddingHorizontal: SPACE.lg, minHeight: 60 },
-  secIc: { width: 32, height: 32, borderRadius: RADIUS.lg, alignItems: 'center', justifyContent: 'center' },
-  secTx: { flex: 1, minWidth: 0, gap: SPACE.xxs },
-  secVal: { ...TXT.num },
-  secBar: { height: 4, borderRadius: 2, overflow: 'hidden', marginTop: SPACE.xs },
-  secBarFill: { height: 4, borderRadius: 2 },
-  // Mosaicos lado a lado (2 secundários de números): rótulo · número · linha pequena · barra
-  tiles: { flexDirection: 'row', gap: SPACE.sm },
-  tile: { flex: 1, minWidth: 0, borderRadius: RADIUS.lg, paddingVertical: SPACE.md, paddingHorizontal: SPACE.md, gap: SPACE.md, justifyContent: 'space-between' },
-  tileTop: { gap: SPACE.xxs },
-  tileBottom: { gap: SPACE.xs },
-  tileTxt: { ...TXT.footnote },
-  tileValRow: { flexDirection: 'row', alignItems: 'baseline', gap: SPACE.xs },
-  tileVal: { fontFamily: PELE_FONT.display, fontSize: TYPE.numLg, lineHeight: TYPE.numLg, letterSpacing: -0.5, flexShrink: 1 },
-  tileDelta: { ...TXT.label },
-  // As 7 barrinhas da semana (mosaico do serviço · 7 dias): 28 de altura, a de hoje a tinta
-  wk: { flexDirection: 'row', justifyContent: 'space-between' },   // 7 colunas de LARGURA FIXA: com flex+gap a 7.ª saía para fora, por baixo do mosaico do mês (iPhone)
-  wkCol: { width: 20, alignItems: 'center', gap: SPACE.xxs },   // 7 × 20 cabe nos ~150 pt do mosaico (3 letras)
-  wkTrack: { height: 28, width: 8, justifyContent: 'flex-end' },   // alturas em PONTOS
-  wkBar: { width: 8, borderRadius: RADIUS.pill },
-  wkZero: { width: 8, height: 2, borderRadius: RADIUS.pill },
-  wkLbl: { ...TXT.caption, width: 26, textAlign: 'center' },   // mais largo que a coluna (20): "dom"/"qua" partiam em 2 linhas
-  wkLblToday: { fontFamily: PELE_FONT.bodyBold },
-  // Os 3 passos da configuração (como no 7.º passo: círculo de 28 com o número, título e linha cinzenta)
-  steps: { gap: SPACE.md },
-  step: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.md },
-  stepNum: { width: 28, height: 28, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
-  stepNumTxt: { fontFamily: PELE_FONT.display, fontSize: TYPE.value },
-  stepTx: { flex: 1, minWidth: 0, gap: SPACE.xxs },
-  stepT: { ...TXT.callout },
-  stepS: { ...TXT.footnote },
-  // As 3 teclas: PRESAS AO FUNDO, sempre no mesmo sítio para o polegar (Nuno, 2026-11-03, depois dos mosaicos e do
-  // "A seguir" dobrado: o conteúdo de cima ficou compacto e o espaço livre lê-se como respiro, não buraco; refs
-  // Trainline/Tesla Robotaxi). Ecrã cheio: seguem os secundários a ≥ 16 pt (o gap 12 + rhythm.keys). ≥ 88 pt de altura.
-  keys: { flexDirection: 'row', gap: SPACE.sm, marginTop: 'auto', paddingTop: TUNE.rhythm.keys },   // a folga por baixo é o useTabBarSpace (20)
-  key: { flex: 1, minHeight: 88, borderRadius: RADIUS.lg, padding: SPACE.md, justifyContent: 'space-between', gap: SPACE.sm },
-  keyVal: { ...TXT.num },
+  sheet: { flex: 1, marginTop: -SPACE.lg, borderTopLeftRadius: RADIUS.sheet, borderTopRightRadius: RADIUS.sheet, overflow: 'hidden' },
+  sheetScroll: { flex: 1 },
+  sheetIn: { padding: SPACE.md, gap: SPACE.sm },
+  caption: { paddingHorizontal: SPACE.xs, paddingTop: SPACE.xs },
+  demo: { height: 38, paddingHorizontal: SPACE.md, borderRadius: RADIUS.pill, borderWidth: 1.5, flexDirection: 'row', alignItems: 'center', gap: SPACE.s },
+  demoDot: { width: 7, height: 7, borderRadius: RADIUS.pill },
+  skTop: { paddingHorizontal: SPACE.lgPlus, paddingTop: SPACE.sm, paddingBottom: SPACE.xxl, gap: SPACE.lg },
+  skRow: { flexDirection: 'row', gap: SPACE.sm },
+  skSheet: { gap: SPACE.sm },
 });
-
-const sDay = makeSkin(PELE);
-const sNight = makeSkin(PELE_NIGHT);
