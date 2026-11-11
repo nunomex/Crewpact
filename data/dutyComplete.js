@@ -201,9 +201,12 @@ export const completeRows = (svc = {}, ctx = {}) => {
       const cur = svc.dayOffWorked || null;
       add({
         id: 'dayOffWorked', title: L('Tocou numa folga?', 'Did it touch a day off?'), cite: null,
-        value: cur ? L(cur.toUpperCase(), cur.toUpperCase()) : L('Não', 'No'), need: false,
+        value: cur ? L(cur.toUpperCase().replace('+', ' + '), cur.toUpperCase().replace('+', ' + ')) : L('Não', 'No'), need: false,
         sheet: { intro: L('Este serviço entrou num dia de folga publicado, ou aceitaste trabalhar numa folga?', 'Did this duty run into a published day off, or did you accept work on a day off?'),
-          fields: [{ key: 'dow', type: 'choice', value: cur, options: [{ id: null, label: L('Não', 'No') }, { id: 'ddo', label: L('DDO', 'DDO') }, { id: 'wfly', label: L('WFLY', 'WFLY') }, ...(hasIdo ? [{ id: 'ido', label: L('IDO', 'IDO') }] : [])] }] },
+          fields: [{ key: 'dow', type: 'choice', value: cur, options: [{ id: null, label: L('Não', 'No') }, { id: 'ddo', label: L('DDO', 'DDO') }, { id: 'wfly', label: L('WFLY', 'WFLY') }, ...(hasIdo ? [{ id: 'ido', label: L('IDO', 'IDO') }] : []),
+            // Um WFLY que entra na folga seguinte paga os dois (cabine Cl. 67.ª/5; pilotos Art. 62.º + Art. 54.º).
+            { id: 'wfly+ddo', label: L('WFLY + DDO', 'WFLY + DDO'), sub: L('Aceitaste voar numa folga e o serviço entrou na folga seguinte', 'You accepted a day-off duty and it ran into the next day off') },
+            ...(hasIdo ? [{ id: 'wfly+ido', label: L('WFLY + IDO', 'WFLY + IDO'), sub: L('Aceitaste voar numa folga e a folga seguinte ficou infringida', 'You accepted a day-off duty and the next day off was infringed') }] : [])] }] },
         apply: (v) => ({ dayOffWorked: v.dow || null }),
       });
     }

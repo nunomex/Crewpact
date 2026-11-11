@@ -113,6 +113,20 @@ export const resolveCompany = (history, ym) => {
   const p = pickAt(normCompany(history), ym);
   return p ? { company: p.company, crewType: p.crewType, ...withEmp(p.employment) } : { company: null, crewType: null };
 };
+// O período contínuo na MESMA companhia em vigor em `ym` (períodos seguidos da mesma companhia — uma mudança de vínculo — juntam-se):
+// { company, from, until } — `until` = o 1.º mês já noutra companhia (null se é a atual). null sem linha. Serve para a data de
+// entrada e o ano da saída de CADA companhia (antes usava-se sempre a data de entrada da atual).
+export const companySpanAt = (history, ym) => {
+  const h = normCompany(history);
+  if (!h.length) return null;
+  const m = ymOf(ym);
+  let i = 0;
+  for (let k = 0; k < h.length; k++) { if (h[k].from <= m) i = k; else break; }
+  let a = i, b = i;
+  while (a > 0 && h[a - 1].company === h[i].company) a--;
+  while (b + 1 < h.length && h[b + 1].company === h[i].company) b++;
+  return { company: h[i].company, from: h[a].from, until: b + 1 < h.length ? h[b + 1].from : null };
+};
 // Cobertura do PAGAMENTO pelo AE (art. 496.º CT): por conta de outrem → abrangido, salvo o "não" do
 // perfil; agência/independente → nunca. (A mesma regra que o App usava, agora num só sítio.)
 export const coveredBy = (employment, aeCovered) => ((employment || 'employee') === 'employee' ? aeCovered !== false : false);

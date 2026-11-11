@@ -326,6 +326,30 @@ eq('routeDistances rota vazia', routeDistancesNM(null).length, 0);
   eq('TAP mês: assistência no aeroporto = per diem A (+ a prestação complementar de 4 dias)', JSON.stringify([sbM.total, sbM.prestCompl]), JSON.stringify([9475, { days: 4, eur: 1080, max: 1080 }]));
 }
 
+// ── WFLY que entra na folga seguinte (cabine Cl. 67.ª/5: "Se um tripulante de cabine trabalhar num dia WFLY e este entrar no dia de
+// descanso subsequente, terá direito a um pagamento de DDO/IDO") → os dois no mesmo serviço: 'wfly+ddo' / 'wfly+ido'.
+{
+  const one = (dow) => monthlyAe({ '2026-06-10': { kind: 'flight', route: 'LIS-OPO-LIS', dayOffWorked: dow } }, 'FA', '12/12', cabin, { ym: '2026-06' });
+  eq('WFLY + DDO no mesmo serviço: conta os dois', JSON.stringify([one('wfly+ddo').wflyDaysAuto, one('wfly+ddo').ddoDaysAuto, one('wfly+ddo').idoDaysAuto]), '[1,1,0]');
+  eq('WFLY + IDO no mesmo serviço: conta os dois', JSON.stringify([one('wfly+ido').wflyDaysAuto, one('wfly+ido').idoDaysAuto]), '[1,1]');
+  eq('WFLY + DDO: o € é a soma dos dois', one('wfly+ddo').extras, +(one('wfly').extras + one('ddo').extras).toFixed(2));
+}
+// ── Noites fora com dias de terra pelo meio (cabine Cl. 56.ª: "por cada noite fora da base, em voo, formação e outras funções") ──
+{
+  const { awayNights } = require(path.resolve('data/perdiem.js'));
+  const tr = {
+    '2026-06-01': { kind: 'positioning', route: 'LIS-LGW', nightStop: true },
+    '2026-06-02': { kind: 'training', report_time: '09:00', block_on: '17:00' },
+    '2026-06-03': { kind: 'training', report_time: '09:00', block_on: '17:00' },
+    '2026-06-04': { kind: 'positioning', route: 'LGW-LIS' },
+  };
+  eq('Formação fora da base (cabine): as 3 noites (posicionamento, formação, formação)', JSON.stringify(awayNights(tr, '2026-06', { throughGround: true })), JSON.stringify(['2026-06-01', '2026-06-02', '2026-06-03']));
+  // O regresso parte de outro sítio → não se presume a estadia (como antes).
+  eq('Formação e regresso de outro aeroporto: só a noite marcada', JSON.stringify(awayNights({ ...tr, '2026-06-04': { kind: 'positioning', route: 'STN-LIS' } }, '2026-06', { throughGround: true })), JSON.stringify(['2026-06-01']));
+  // No mês: a cabine paga as 3 noites (Cl. 56.ª); os pilotos ficam como estavam (Art. 39.º "entre serviços de voo", dúvida D15).
+  eq('Formação fora da base: cabine 3 noites, pilotos 1', JSON.stringify([monthlyAe(tr, 'FA', '12/12', cabin, { ym: '2026-06' }).nightStopDays, monthlyAe(tr, 'FO', '12/12', ae, { ym: '2026-06' }).nightStopDays]), '[3,1]');
+}
+
 // ── PAPÉIS por serviço (Funções, pagos como a lei define) + DDO/WFLY/IDO por condição ──
 {
   // Art. 42.º: o instrutor é pago "por cada dia (...) em terra, incluindo em simulador" — num voo de linha, 0 € (A-045, bloco 5).

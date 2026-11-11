@@ -845,7 +845,9 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       {form.kind !== 'reserve' && ae && Array.isArray(ae.EXTRA_KINDS) && ae.EXTRA_KINDS.some((k) => k.id === 'ddo') ? (
         <View style={{ marginTop: 16 }}>
           <Text style={s.lbl}>{l('Tocou numa folga?', 'Did it touch a day off?')}</Text>
-          <SegRow s={s} value={form.dayOffWorked || 'no'} onChange={(v) => { select(); setForm((f) => ({ ...f, dayOffWorked: v === 'no' ? null : v })); }}
+          {/* 'wfly+ddo' / 'wfly+ido' (WFLY que entrou na folga seguinte) escolhem-se no Detalhe → Completar; aqui mostra-se o WFLY e
+              tocar nele não desfaz a combinação. */}
+          <SegRow s={s} value={String(form.dayOffWorked || 'no').split('+')[0]} onChange={(v) => { select(); setForm((f) => ({ ...f, dayOffWorked: v === 'no' ? null : (String(f.dayOffWorked || '').split('+')[0] === v ? f.dayOffWorked : v) })); }}
             options={[
               { id: 'no', label: l('Não', 'No') },
               { id: 'ddo', label: 'DDO' },
@@ -860,15 +862,17 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
             const pilotRule = typeof ae.dayOffKind === 'function';
             const into = pilotRule && isClock(form.report) ? ae.minutesIntoNextDay({ report_time: form.report, block_on: lastOn || form.on || null, signOff: form.signOff || dhTailOn || null }, postFlightMin) : null;
             const sug = into ? ae.dayOffKind(into) : null;
+            const dowKey = String(form.dayOffWorked || '').split('+')[0];
             const txt = !form.dayOffWorked ? null : pilotRule
               ? ({ ddo: l('Entrou na folga menos de 90 min (DDO, Anexo I.13) — soma ao mês.', 'Under 90 min into the day off (DDO, App. I.13) — adds to the month.'),
                 ido: l('Entrou na folga 90 min ou mais (IDO, Anexo I.13) — soma ao mês.', '90 min or more into the day off (IDO, App. I.13) — adds to the month.'),
-                wfly: l('Aceitaste um serviço num dia de folga (WFLY, Art. 62.º, n.º 2) — soma ao mês.', 'You accepted a duty on a day off (WFLY, Art. 62(2)) — adds to the month.') })[form.dayOffWorked]
+                wfly: l('Aceitaste um serviço num dia de folga (WFLY, Art. 62.º, n.º 2) — soma ao mês.', 'You accepted a duty on a day off (WFLY, Art. 62(2)) — adds to the month.') })[dowKey]
               : ({ ddo: l('O serviço passou a meia-noite e entrou num dia de descanso (DDO, Cl. 68.ª, n.º 1) — soma ao mês.', 'The duty ran past midnight into a rest day (DDO, Cl. 68(1)) — adds to the month.'),
                 ido: l('Pernoita não programada num dia de folga (IDO, Cl. 68.ª, n.º 3) — soma ao mês.', 'Unplanned night stop on a day off (IDO, Cl. 68(3)) — adds to the month.'),
-                wfly: l('Aceitaste trabalhar num dia de descanso escalado (WFLY, Cl. 69.ª) — soma ao mês.', 'You accepted work on a rostered rest day (WFLY, Cl. 69) — adds to the month.') })[form.dayOffWorked];
+                wfly: l('Aceitaste trabalhar num dia de descanso escalado (WFLY, Cl. 69.ª) — soma ao mês.', 'You accepted work on a rostered rest day (WFLY, Cl. 69) — adds to the month.') })[dowKey];
             const sugTxt = sug ? l(`O serviço acaba ${into} min depois da meia-noite: se o dia seguinte era folga, é ${sug.toUpperCase()}.`, `The duty ends ${into} min after midnight: if the next day was off, it is ${sug.toUpperCase()}.`) : null;
-            return (txt || sugTxt) ? <Text style={s.routeHint}>{[txt, sugTxt].filter(Boolean).join(' ')}</Text> : null;
+            const combo = String(form.dayOffWorked || '').includes('+') ? l(`E entrou na folga seguinte: ${String(form.dayOffWorked).split('+')[1].toUpperCase()} também.`, `And it ran into the next day off: ${String(form.dayOffWorked).split('+')[1].toUpperCase()} as well.`) : null;
+            return (txt || sugTxt) ? <Text style={s.routeHint}>{[txt, combo, sugTxt].filter(Boolean).join(' ')}</Text> : null;
           })()}
         </View>
       ) : null}

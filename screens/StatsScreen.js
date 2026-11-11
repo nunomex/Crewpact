@@ -124,8 +124,8 @@ export default function StatsScreen({ navigation }) {
   })();
   const st = useMemo(
     () => isYear
-      ? yearStats(duties, { year, ae, aeAt, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt, serviceStart, startExact: serviceStartExact, largada, lifestyle })
-      : monthStats(duties, { ym, ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt, serviceStart, startExact: serviceStartExact, largada, lifestyle }),
+      ? yearStats(duties, { year, ae, aeAt, category: crewCategory, contract: crewContract || '12/12', crewHistory, companyHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt, serviceStart, startExact: serviceStartExact, largada, lifestyle })
+      : monthStats(duties, { ym, ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, companyHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt, serviceStart, startExact: serviceStartExact, largada, lifestyle }),
     [isYear, duties, year, ym, ae, aeNow, companyHistory, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, serviceStart, largada, lifestyle], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
@@ -233,7 +233,8 @@ export default function StatsScreen({ navigation }) {
         // O que pode subir: a leitura do acordo (suspensão…), a atualização do VB da TAP e o dia em que entraste (ano da admissão).
         const raise = its.some((it) => it.tapRaise), adm = its.some((it) => it.admission), other = its.some((it) => it.suspension || (!it.tapRaise && !it.admission));
         const why = [other ? l('a leitura do acordo', 'how the agreement is read') : null, raise ? l('a atualização do vencimento base, por confirmar', 'the base pay update, not yet confirmed') : null,
-          adm ? l('o dia em que entraste', 'the day you joined') : null].filter(Boolean).join(l(' e ', ' and '));
+          adm ? l('o dia em que entraste', 'the day you joined') : null].filter(Boolean).join(l(' e ', ' and '))
+          + (its.some((it) => it.leaving) ? l(' (ano da saída: o acordo diz "proporcionalmente"; o Código do Trabalho, art. 245.º, dá também as férias vencidas)', ' (year of leaving: the agreement says "pro rata"; the Labour Code, art. 245, also gives the accrued leave)') : '');
         return l(` · até mais ${fmtEur0(up)} conforme ${why}`, ` · up to ${fmtEur0(up)} more depending on ${why}`); })() },
     ((extrasSum !== 0) || (!isYear && A.prestCompl)) && { k: 'extras', nm: l('Extras', 'Extras'), ic: 'plus', val: extrasSum, sub: l('escala (papéis · OFC) + eventos (DDO · doença; nos dias de baixa a base sai, CT art. 255.º)', 'roster (roles · OFC) + events (DDO · sick; on sick days the base is not paid, Labour Code art. 255)')
       // Pilotos TAP: a prestação complementar (Cl. 10.ª) — certa, ou "até" quando a disponibilidade está em dúvida.

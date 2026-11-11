@@ -5,7 +5,15 @@
 // do motor FTL), para contar TUDO o que está na escala, importado ou manual.
 import { monthlyPerDiem, monthlyAe, awayNights } from './perdiem';
 import { eventCounts } from './aeEvents';
-import { resolveCrew } from './crewHistory';
+import { resolveCrew, companySpanAt } from './crewHistory';
+// A data de entrada e a saída da companhia DO MÊS `ym` (linha do tempo da companhia): nos meses de uma companhia anterior, a
+// entrada é a dela (ao mês) e `serviceEnd` o 1.º mês já fora — os subsídios desses anos e os proporcionais do ano da saída. Na
+// atual (ou sem a linha), a data de entrada do perfil. (Antes usava-se sempre a da atual: os anos da antiga ficavam sem subsídios.)
+const tenureAt = (companyHistory, ym, serviceStart, startExact) => {
+  const sp = companyHistory ? companySpanAt(companyHistory, ym) : null;
+  if (!sp || !sp.until) return { serviceStart, startExact, serviceEnd: null };
+  return { serviceStart: sp.from > '2000-01' ? `${sp.from}-01` : null, startExact: false, serviceEnd: sp.until };
+};
 import { restAfterDuty } from '../ftl';
 
 export const STAT_KINDS = ['flight', 'standby_airport', 'standby_home', 'positioning', 'office', 'training'];
@@ -40,7 +48,7 @@ export const availableYears = (duties = {}) => {
 };
 
 // Agrega o ano `year`. now = referência (meses decorridos p/ a base AE; testável).
-export const yearStats = (duties = {}, { year, ae = null, aeAt = null, category = null, contract = '12/12', crewHistory = null, fleet = null, postFlightMin = 0, events = [], now = new Date(), baseAt = null, serviceStart = null, startExact = false, largada = null, lifestyle = false } = {}) => {
+export const yearStats = (duties = {}, { year, ae = null, aeAt = null, category = null, contract = '12/12', crewHistory = null, companyHistory = null, fleet = null, postFlightMin = 0, events = [], now = new Date(), baseAt = null, serviceStart = null, startExact = false, largada = null, lifestyle = false } = {}) => {
   const y = String(year || now.getFullYear());
   const months = Array.from({ length: 12 }, () => ({ flightMin: 0, dutyMin: 0, sectors: 0, count: 0 }));
   const byKind = {}; STAT_KINDS.forEach((k) => { byKind[k] = 0; });
@@ -89,7 +97,7 @@ export const yearStats = (duties = {}, { year, ae = null, aeAt = null, category 
   }
   const topDest = Object.entries(dest).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([code, n]) => ({ code, n }));
   // Noites fora da base: a noite de cada dia que acaba fora + a estadia até ao serviço seguinte que parte dali (bloco 6, L13).
-  nightStops = awayNights(duties, null).filter((d) => d.startsWith(y + '-')).length;
+  nightStops = awayNights(duties, null, { throughGround: true }).filter((d) => d.startsWith(y + '-')).length;   // o facto: noites fora, com a formação
 
   // AE YTD (estimativa) — só companhias AE com categoria. A categoria escala o AE inteiro
   // e é EFFECTIVE-DATED: somamos MÊS A MÊS com a categoria/contrato que valia em cada mês
@@ -128,7 +136,7 @@ export const yearStats = (duties = {}, { year, ae = null, aeAt = null, category 
       const { category: catM, contract: ctrM, fleet: fleetM } = resolveCrew(history, ym);   // posto DESSE mês (categoria, contrato, frota)
       if (!catM) continue;
       if (ae.hasTableFor && !ae.hasTableFor(catM, ym)) { noTable = true; continue; }   // sem tabela nesse mês: não soma (bloco 5)
-      const m = monthlyAe(duties, catM, ctrM || '12/12', ae, { ym, index, fleet: fleetM || fleet, serviceStart, startExact, largada, history, events, lifestyle, baseAt });   // à categoria e à frota desse mês (frota → coluna A no TAP)
+      const m = monthlyAe(duties, catM, ctrM || '12/12', ae, { ym, index, fleet: fleetM || fleet, ...tenureAt(companyHistory, ym, serviceStart, startExact), largada, history, events, lifestyle, baseAt });   // à categoria e à frota desse mês (frota → coluna A no TAP)
       if (m) {
         if (m.baseRange) { uncertain = true; uncReasons.add(m.baseRange.reason || 'activity'); }
         if (m.seniority && m.seniority.unknown) seniorityUnknown = true;
@@ -203,7 +211,7 @@ const daysInMonth = (y, m0) => new Date(y, m0 + 1, 0).getDate();
 // vista de Mês das Estatísticas. `days` = horas de voo por dia (gráfico diário); `aeMonth`
 // = ganhos estimados do mês (base + per-diem + pernoita, via monthlyAe, à categoria/contrato
 // EFFECTIVE-DATED desse mês). Módulo PURO (testável por golden).
-export const monthStats = (duties = {}, { ym, ae = null, category = null, contract = '12/12', crewHistory = null, fleet = null, postFlightMin = 0, events = [], now = new Date(), baseAt = null, serviceStart = null, startExact = false, largada = null, lifestyle = false } = {}) => {
+export const monthStats = (duties = {}, { ym, ae = null, category = null, contract = '12/12', crewHistory = null, companyHistory = null, fleet = null, postFlightMin = 0, events = [], now = new Date(), baseAt = null, serviceStart = null, startExact = false, largada = null, lifestyle = false } = {}) => {
   const [Y, M] = String(ym || '').split('-').map(Number);
   const y = Y || now.getFullYear();
   const m0 = M ? M - 1 : now.getMonth();
@@ -254,7 +262,7 @@ export const monthStats = (duties = {}, { ym, ae = null, category = null, contra
     }
   }
   const topDest = Object.entries(dest).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([code, n]) => ({ code, n }));
-  nightStops = awayNights(duties, ymStr).length;   // noites fora (bloco 6, L13)
+  nightStops = awayNights(duties, ymStr, { throughGround: true }).length;   // noites fora (bloco 6, L13), com a formação
 
   // Folgas no mês = dias DECORRIDOS do mês − dias com serviço (mês corrente: até hoje).
   const cy = now.getFullYear(), cm = now.getMonth();
@@ -287,7 +295,7 @@ export const monthStats = (duties = {}, { ym, ae = null, category = null, contra
   const resolved = history.length ? resolveCrew(history, ymStr) : { category: null, contract: '12/12' };
   if (ae && resolved.category && typeof ae.monthlyBase === 'function') {
     const index = ae.indexFactor ? ae.indexFactor(ymStr) : 1;   // por MÊS (A-041)
-    const m = monthlyAe(duties, resolved.category, resolved.contract || '12/12', ae, { ym: ymStr, index, fleet: resolved.fleet || fleet, serviceStart, startExact, largada, history, events, lifestyle, baseAt });   // frota DESSE mês; null sem tabela
+    const m = monthlyAe(duties, resolved.category, resolved.contract || '12/12', ae, { ym: ymStr, index, fleet: resolved.fleet || fleet, ...tenureAt(companyHistory, ymStr, serviceStart, startExact), largada, history, events, lifestyle, baseAt });   // frota DESSE mês; null sem tabela
     const xt = ae.monthExtras ? ae.monthExtras(resolved.category, eventCounts(events, ymStr, duties, ae.SICK_FIRST3 !== false), { index, ym: ymStr, contract: resolved.contract || '12/12' }) : null;
     const eventsEur = xt ? +(+xt.total).toFixed(2) : 0;
     if (m) aeMonth = {

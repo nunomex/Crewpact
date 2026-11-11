@@ -6,7 +6,8 @@
 // Módulo PURO (sem React Native) — testável por golden. Estimativa de apoio;
 // NÃO substitui o processamento salarial oficial. Categorias: FA1, FA, CMP, CM.
 
-import { pickTable, ymParts, admissionRange, beforeStart, suspensionShare } from './tables';
+import { pickTable, ymParts, admissionRange, beforeStart, suspensionShare, leavingAt, LEAVE_NOTE } from './tables';
+export const NIGHTS_ANY_DUTY = true;   // Cl. 56.ª: "por cada noite fora da base, em voo, formação e outras funções" (perdiem.awayNights)
 
 export const AE_ID = 'easyjet-snpvac';
 export const AE_LABEL = 'Easyjet · SNPVAC (cabine)';
@@ -393,19 +394,23 @@ const applySuspension = (out, events, year) => {
   it.eur = r2(full * sh.min); it.max = r2(fullMax * sh.max); it.suspension = true; it.suspNote = SUSP_NOTE; it.suspShort = SUSP_SHORT;
 };
 const SUB_NOTE = {
-  ferias: { pt: 'Sem a média do pagamento variável (o acordo não diz que rubricas entram) nem o 1/14 do subsídio de idioma.', en: 'Without the average variable pay (the agreement does not list what counts) or 1/14 of the language allowance.' },
+  ferias: { pt: 'Sem a média do pagamento variável dos últimos 12 meses (Cl. 51.ª, n.º 2: o acordo não diz que rubricas entram) nem o 1/14 do subsídio de idioma.', en: 'Without the average variable pay (the agreement does not list what counts) or 1/14 of the language allowance.' },
   natal: { pt: 'Sem o 1/14 do subsídio de idioma, se o tiveres.', en: 'Without 1/14 of the language allowance, if you get it.' },
 };
-export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceStart = null, startExact = false, events = [] } = {}) => {
+export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceStart = null, startExact = false, serviceEnd = null, events = [] } = {}) => {
   const p = ymParts(ym);
   if (!p || beforeStart(serviceStart, ym)) return [];
   const sub = (refYm) => { const a = annualBase(cat, tableAt(refYm), refYm); return a == null ? null : (a * contractFactor(contract) * index) / SALARY_INSTALMENTS; };
   const out = [];
   // `rng` = a fração { min, max } (admissionRange): no ano da admissão sem o dia → o certo e o máximo, com a marca `admission`.
-  const push = (id, v, rng) => { if (v != null && rng.max > 0) out.push({ id, eur: r2(v * rng.min), ...(rng.max > rng.min ? { max: r2(v * rng.max), admission: true } : {}), incomplete: true, note: SUB_NOTE[id], cite: 'Cl. 51.ª' }); };
+  const push = (id, v, rng, extra = null) => { if (v != null && rng.max > 0) out.push({ id, eur: r2(v * rng.min), ...(rng.max > rng.min ? { max: r2(v * rng.max), ...(extra ? {} : { admission: true }) } : {}), incomplete: true, note: SUB_NOTE[id], cite: 'Cl. 51.ª', ...(extra || {}) }); };
   const s = ymParts(serviceStart);
-  if (p.m === 11) {
-    push('natal', sub(ym), admissionRange(serviceStart, p.y, 12, startExact));
+  // O ano da saída (Cl. 51.ª/1: "nos anos de contratação e cessação"): o Natal no seu mês ou no da saída; as férias na saída.
+  const lv = leavingAt(serviceStart, serviceEnd, startExact, ym, 11);
+  const LV = { leaving: true, cite: 'Cl. 51.ª, n.º 1', note: LEAVE_NOTE };
+  if (lv && lv.feriasExit) push('ferias', sub(ym), lv.feriasExit, LV);
+  if (lv ? lv.natalHere : p.m === 11) {
+    push('natal', sub(ym), lv ? lv.frac : admissionRange(serviceStart, p.y, 12, startExact), lv ? LV : null);
     applySuspension(out, events, p.y);   // baixa de mais de 30 dias (Cl. 86.ª, n.º 2; CT art. 263.º, n.º 2, c))
   }
   // Junho: no ano da contratação, os meses até junho (Cl. 51.ª/4).

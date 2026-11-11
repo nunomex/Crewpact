@@ -16,7 +16,7 @@
 // (default = (1.03)^(ano-2023), EDITÁVEL, sempre marcado "estimado"). Per-diem (A-3.2) e
 // comando em cruzeiro NÃO são indexados (tabelas inalteradas) → golden e exatos.
 
-import { pickTable, ymParts, vacationPayYm, admissionRange, beforeStart, suspensionShare } from './tables';
+import { pickTable, ymParts, vacationPayYm, admissionRange, beforeStart, suspensionShare, leavingAt, LEAVE_NOTE } from './tables';
 
 export const AE_ID = 'tap-spac';
 export const AE_LABEL = 'TAP · SPAC (pilotos)';
@@ -228,7 +228,7 @@ export const vs = (cat, index = 1, ym, years = 1) => { const T = tableAt(ym); re
 // do tempo de trabalho prestado" (n.º 2). Férias (Cl. 7.ª, n.º 2-3): a RB, "pago de uma só vez, antes do início do 1.º período de
 // férias, com o vencimento do mês anterior ao do respetivo gozo" → o mês antes do 1.º dia de férias registado; sem férias
 // registadas o mês não se sabe (fica fora dos meses; o ano diz-o — `pendingAnnual`).
-export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceStart = null, startExact = false, largada = null, history = null, events = [] } = {}) => {
+export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceStart = null, startExact = false, serviceEnd = null, largada = null, history = null, events = [] } = {}) => {
   const p = ymParts(ym);
   if (!p || beforeStart(serviceStart, ym) || !hasTableFor(cat, ym)) return [];
   const out = [];
@@ -237,14 +237,15 @@ export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceSta
   // O VB do ano é um intervalo (indexRange, bloco 8b): o subsídio vai da RB com o mínimo à RB com o máximo (revisão do 8b, E4).
   const rbMax = rbAtMax(cat, { contract, index, ym, serviceStart, largada, history });
   const up = rbMax > rb ? { tapRaise: true } : {};
-  if (p.m === 12) {
+  const lv = leavingAt(serviceStart, serviceEnd, startExact, ym, 12);   // o ano da saída: o Natal no mês da saída
+  if (lv ? lv.natalHere : p.m === 12) {
     // "No ano da admissão, no da cessação do contrato de trabalho, bem como no da suspensão do mesmo (...) na proporção do tempo de
     // trabalho prestado" (Cl. 8.ª, n.º 2; CT art. 296.º: a doença de mais de um mês suspende) — certo e máximo.
     const sh = suspensionShare(events, p.y);
-    const adm = admissionRange(serviceStart, p.y, 12, startExact);   // sem o dia da entrada: certo e máximo
+    const adm = lv ? lv.frac : admissionRange(serviceStart, p.y, 12, startExact);   // sem o dia da entrada: certo e máximo
     const v = rb * adm.min, vMax = rbMax * adm.max;
     const eur = r2(sh ? v * sh.min : v), max = r2(sh ? vMax * sh.max : vMax);
-    out.push({ id: 'natal', eur, cite: 'RRRGS Cl. 8.ª', ...(max > eur ? { max } : {}), ...(sh ? { suspension: true } : {}), ...up, ...(adm.max > adm.min ? { admission: true } : {}) });
+    out.push({ id: 'natal', eur, cite: 'RRRGS Cl. 8.ª', ...(max > eur ? { max } : {}), ...(sh ? { suspension: true } : {}), ...up, ...(!lv && adm.max > adm.min ? { admission: true } : {}), ...(lv ? { leaving: true, note: LEAVE_NOTE } : {}) });
   }
   if ([p.y, p.y + 1].some((y) => vacationPayYm(events, y) === ym)) out.push({ id: 'ferias', eur: rb, cite: 'RRRGS Cl. 7.ª', ...(rbMax > rb ? { max: rbMax } : {}), ...up });
   return out;

@@ -6,7 +6,7 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 ---
 
-## O QUE FALTA (ler isto primeiro · lista única · atualizada 2026-11-08)
+## O QUE FALTA (ler isto primeiro · lista única · atualizada 2026-11-11)
 
 Uma linha por pendência; o pormenor está na entrada indicada entre parênteses (as entradas ficam abaixo, como histórico).
 Quando uma coisa se fizer, sai daqui. **Regra do Nuno: "a lei é que manda"** — sem um facto, "incerto" com o que falta; nunca
@@ -32,6 +32,11 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
 - **Importação:** o calendário sintético do guião (repartido de 7 h, DH antes e depois, HSBY + voo, dia inteiro com horas,
   formação de 3 dias, aviso ⚠, repouso curto); reimportar com sign-off ("relidos", sem SNC); apagar e reimportar a doença de
   teste; formulário de correção (comandante instrutor, voo depois da meia-noite → DDO/IDO); validades (BLOCO 4 · 5 · 6 · 3).
+- **TAP (2026-11-11):** uma rotação de longo curso com as horas das pernas — os dias de A/AC1 e de B/AC2 pela hora de Lisboa
+  (Escala, Detalhe, Números); assistência lá fora depois do voo sem apagar a estadia; registar um cancelamento tardio (cabine) e
+  uma baixa (o "Quanto recebo?" com a base incerta e o motivo); piloto com menos de 5 dias de per diem (linha Extras com a
+  prestação complementar). **easyJet:** Completar → "Tocou numa folga?" com WFLY + DDO e WFLY + IDO; uma formação fora da base
+  entre dois posicionamentos (3 noites na cabine); Números de um ano com mudança de companhia (subsídios da antiga e a saída).
 - **Números, Estatísticas, "Quanto recebo?":** Natal proporcional da cabine easyJet com "baixa de mais de 30 dias (Cl. 86.ª,
   n.º 2)"; % das 900 h e "faltam h:mm"; meses de 2024/25 e antes de fev-2024; "Extras do
   mês"; subsídios (junho, novembro, abril, 14/14); conta TAP piloto e cabine com o motivo do incerto (BLOCO 1 · 5 · 6 · 8b).
@@ -49,10 +54,11 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   de situação · `docs/05-verificacao.md`).
 
 ### 2. Acertos de código por fazer
-- **TAP:** dias de estadia perdidos com outro serviço depois do voo no mesmo dia; horas da escala na hora do destino; doença
-  (Cl. 20.ª) sem eventos; AC2 por cancelamento tardio; prestação complementar dos pilotos (Cl. 10.ª) (BLOCO 5 · BLOCO 6).
-- **easyJet:** média das variáveis nos subsídios; subsídios no ano da saída; WFLY + DDO no mesmo serviço; formação fora da base
-  da cabine na importação (BLOCO 6).
+- **Cálculos (2026-11-11 TAP e easyJet):** o RDP da cabine easyJet não é devido com DDO/IDO no mesmo dia (Cl. 67.ª, n.º 4 —
+  salvo pernoita não planeada) e a app ainda o sugere; o dia da saída de uma companhia não se sabe (a linha guarda o mês: contam-se
+  meses inteiros); nos meses de uma companhia ANTERIOR da TAP, a largada e as anuidades usam as datas da atual; subsídio de
+  férias da TAP no ano da saída (não se sabe o mês); um serviço em terra fora da base lê-se na hora de lá para o dia de calendário
+  da TAP (só os voos têm os instantes).
 - **Campos por fazer (com Mobbin):** formação inicial (A-218); subsídio de idioma; exercício efetivo do VE (TAP); datas de
   atividade dos 9/3 e sazonais; reserva na configuração para o pós-voo da Ryanair/Hi Fly e para os números do Manual de Operações
   se os sindicatos não os derem (BLOCO 5 · 6 · 2026-11-08 Manual de Operações).
@@ -67,6 +73,9 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   Supabase; tabelas órfãs `rest_periods` e `user_additional_roles`; pasta `android/` desatualizada (2026-11-02).
 
 ### 3. À espera do advogado — `docs/pack-advogado.md` (Word: `docs/pack-advogado.docx`)
+- **Acrescentadas a 2026-11-11 (D24–D27):** o mês da entrada (÷ 30) e o ano da admissão; o ano da saída (acordo contra CT
+  art. 245.º); a "média do pagamento variável" nos subsídios easyJet (que rubricas — sem isso a app só mostra a parte certa); a
+  "disponibilidade" na prestação complementar dos pilotos TAP.
 - Falta o teu apelido na linha de autor e enviar. Temas: A (entidade, termos, privacidade, art. 9.º, saúde, PDFs, sincronia de
   folgas) · B (licença e marca dos sindicatos) · C (citações) · D1–D23 (dúvidas dos acordos) · E0–E8 (limites TAP/FTL) + anexo
   E-A (perguntas para a ANAC). Depois da resposta: tirar a marca RASCUNHO da política e dos termos, preencher os 【…】, publicar.
@@ -93,6 +102,40 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
 - Face ID real, PDF por ficheiro, voo ao vivo nativo, compras (RevenueCat), login Apple e Google, widgets, Live Activities, alarme
   (AlarmKit), hotel pelo Apple Maps, passkeys; Android; iPhone pequeno e grande; beta com 2–3 tripulantes no TestFlight;
   declaração de dados nas lojas; Supabase/Resend pagos e limites (e-mails por hora, DMARC).
+---
+
+## 2026-11-11 — Os grupos TAP e easyJet dos acertos de código (Opus 5.5 → Fable 5.2 a meio) — o Nuno: "vamos aos dois"
+
+**TAP (5):**
+- **Estadia depois de outro serviço:** a estadia conta do último VOO (ou posicionamento) do dia — uma assistência lá fora depois
+  do voo apagava-a (`tapCalendarDays`).
+- **Dias de calendário na hora da BASE** (cabine Cl. 7.ª "das 0h00 às 23h59, horas locais da base"; pilotos RUPT Cl. 6.ª, n.º 9):
+  pelos instantes das pernas (`baseDaysOf`); sem pernas com horas ou sem a base, as horas da escala (como antes). `baseAt` passa
+  a `monthlyAe`, `aeMonthTotal`, `serviceMoney`, `payStatus`, estatísticas e ecrãs. Golden: GRU 21:00 de 4/4 = 01:00 de Lisboa de
+  5/4 → 3 A + 2 B (dava 4 A + 1 B).
+- **Doença:** `sickDays` regista-se nos dois acordos (estado do Início, suspensão); sem prestação em € — a base dos dias de baixa
+  fica incerta, de base − dias × base ÷ 30 ao máximo, motivo `tapSick` (a TAP paga o líquido ou completa a Segurança Social).
+- **AC2 por cancelamento tardio** (cabine Cl. 7.ª, n.º 2, a)): extra `lateCancelDays` à AC2; num dia com voo não conta (n.º 3).
+- **Prestação retributiva complementar** dos pilotos (regulamento de retribuições, Cl. 10.ª): menos de 5 dias de per diem A/B
+  (ou simulador como verificador) → o per diem A por dia em falta; com férias, baixa ou entrada no mês → só como máximo
+  (`prestCompl`; linha Extras dos Números).
+
+**easyJet (4):**
+- **Ano da saída** ("proporcionalmente nos anos de contratação e cessação", Cl. 51.ª/1 e Art. 36.º/1; TAP Cl. 17.ª e Cl. 8.ª/2):
+  `leavingAt` + `serviceEnd` nos quatro acordos — o Natal no mês da saída pelos meses do ano; as férias (easyJet) entre a leitura
+  do acordo e a do CT art. 245.º (vencidas + proporcionais), certo e máximo. **Erro maior apanhado:** os meses de uma companhia
+  ANTERIOR usavam a data de entrada da atual → os anos passados na antiga ficavam SEM subsídios; agora a linha da companhia dá
+  a entrada e a saída de cada mês (`companySpanAt`, `tenureAt` nas estatísticas; os Números passam `companyHistory`).
+- **WFLY + DDO/IDO no mesmo serviço** (cabine Cl. 67.ª/5): `dayOffWorked` aceita `wfly+ddo` e `wfly+ido`; Completar ganha as duas
+  opções; o formulário mostra o WFLY sem desfazer a combinação.
+- **Formação fora da base** (cabine Cl. 56.ª "em voo, formação e outras funções"): `awayNights` com `throughGround` — os dias de
+  terra entre dois serviços com rota não quebram a estadia; pilotos como estavam (Art. 39.º "entre serviços de voo", D15).
+- **Média das variáveis:** não se resolve por código — a Cl. 51.ª/2 dá o período (12 meses) mas nenhum acordo diz as rubricas →
+  pergunta D26 do pacote; a nota do subsídio diz o que falta.
+- **Pacote:** D24–D27 novas, Word gerado.
+- **Testes:** dinheiro 147, dinheiro a menos 266, stats 182, ae-golden com os casos novos; 34 suites verdes; export iOS ✓.
+  **Sem revisão independente** (9 pontos de dinheiro — fazer antes de dar por fechado). **Nada visto no iPhone.**
+
 ---
 
 ## 2026-11-08 — C34 da cabine TAP: o "agora" pela leitura maior e o trimestre com as duas dúvidas (Opus 5.5) — o Nuno: "vamos a esses dois"

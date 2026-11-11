@@ -286,7 +286,10 @@ export const positioningOf = (ae, category, svc, { date, index = 1, fleet } = {}
 // Devolve as datas (a noite de cada data) no mês `ym` (ou todas).
 const dayList = (d) => [d, ...(Array.isArray(d.extra) ? d.extra : [])].filter(Boolean)
   .sort((a, b) => (clockMin(a.report_time) ?? 0) - (clockMin(b.report_time) ?? 0));
-export const awayNights = (duties = {}, ym = null) => {
+// `throughGround`: os dias de terra pelo meio (formação, escritório, assistência — sem rota) não quebram a estadia — cabine
+// easyJet, Cl. 56.ª: "por cada noite fora da base, em voo, formação e outras funções". Nos pilotos (Art. 39.º: "entre serviços de
+// voo"; dúvida D15 do pacote) fica como estava: a estadia só até ao dia seguinte com serviço.
+export const awayNights = (duties = {}, ym = null, { throughGround = false } = {}) => {
   const dates = Object.keys(duties || {}).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d) && duties[d] && !duties[d].deleted).sort();
   const out = [];
   dates.forEach((date, i) => {
@@ -296,13 +299,16 @@ export const awayNights = (duties = {}, ym = null) => {
     const withRoute = list.filter((s) => codesOf(s.route).length >= 2);
     const lastS = withRoute[withRoute.length - 1];
     const to = lastS ? codesOf(lastS.route).slice(-1)[0] : null;
-    const nextDate = dates[i + 1];
+    let j = i + 1;
+    if (throughGround) while (j < dates.length && !dayList(duties[dates[j]]).some((s) => codesOf(s.route).length >= 2)) j++;
+    const nextDate = dates[j];
     if (!to || !nextDate) return;
     const firstNext = dayList(duties[nextDate]).find((s) => codesOf(s.route).length >= 2);
     if (!firstNext || codesOf(firstNext.route)[0] !== to) return;
     for (let day = isoAdd(date, 1); day < nextDate; day = isoAdd(day, 1)) out.push(day);
   });
-  return ym ? out.filter((d) => d.startsWith(ym)) : out;
+  const uniq = [...new Set(out)].sort();
+  return ym ? uniq.filter((d) => d.startsWith(ym)) : uniq;
 };
 
 // Estimativa mensal AE (€) a partir das duties (kind + rota). É a PONTE entre o
@@ -323,7 +329,8 @@ export const awayNights = (duties = {}, ym = null) => {
 // `startExact`: o tripulante deu o DIA da entrada (a data guarda-se ao mês) — sem ele, o mês da entrada e os subsídios desse ano
 // ficam incertos (ae/tables.js: entryFrac, admissionRange, entryMonthBase).
 // `baseAt`: a base (código ou função do dia) — na TAP os dias de calendário contam-se na hora da base (tapCalendarDays).
-export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1, fleet, fullShare, serviceStart = null, startExact = false, largada = null, history = null, events = [], lifestyle = false, baseAt = null } = {}) => {
+// `serviceEnd`: o 1.º mês já fora da companhia (o ano da saída: subsídios proporcionais — ae/tables.js, leavingAt).
+export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1, fleet, fullShare, serviceStart = null, startExact = false, serviceEnd = null, largada = null, history = null, events = [], lifestyle = false, baseAt = null } = {}) => {
   if (!ae || !category || !ae.computeAeMonth) return null;
   if (ym && ae.hasTableFor && !ae.hasTableFor(category, ym)) return null;   // sem tabela nesse mês → o mês não dá € (bloco 5)
   const byDay = !!ae.PER_DIEM_BY_DAY;   // TAP: ajudas de custo por dia de calendário (tapCalendarDays)
@@ -356,8 +363,10 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
     // (voluntário) ou IDO (infringida, sem o aviso devido) — conta UMA vez por DIA (a
     // folga é do dia, não do período de serviço). Cl.68 junta DDO+IDO ("trabalhar/
     // infringir dia de descanso"; IDO paga o dobro do DDO); WFLY = Cl.69.
-    const dow = svcs.find((s) => s && (s.dayOffWorked === 'ddo' || s.dayOffWorked === 'wfly' || s.dayOffWorked === 'ido'));
-    if (dow) { if (dow.dayOffWorked === 'ddo') ddoDaysAuto++; else if (dow.dayOffWorked === 'wfly') wflyDaysAuto++; else idoDaysAuto++; }
+    // Um WFLY que entra na folga seguinte paga também o DDO ou o IDO (cabine Cl. 67.ª/5) → 'wfly+ddo' / 'wfly+ido'.
+    const dows = new Set(svcs.flatMap((s) => (s && s.dayOffWorked ? String(s.dayOffWorked).split('+') : [])));
+    if (dows.has('wfly')) wflyDaysAuto++;
+    if (dows.has('ddo')) ddoDaysAuto++; else if (dows.has('ido')) idoDaysAuto++;
     for (const s of svcs) {
       if (!s) continue;
       const kind = s.kind || 'flight';
@@ -524,7 +533,7 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
       if (ac1 != null && ac2 != null) chefia = r2((tp.flightDays.length * ac1 + tp.stayDays.length * ac2) * ae.CHEFIA_PCT);
     }
   } else {
-    nightStops = awayNights(duties, ym).length;
+    nightStops = awayNights(duties, ym, { throughGround: !!ae.NIGHTS_ANY_DUTY }).length;
   }
   const month = ae.computeAeMonth({ category, contract, duties: flights, nightStops, extraSectors, index, fleet, ym, fullShare, serviceStart, largada, history });
   if (!month) return null;
@@ -568,7 +577,7 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
   if (posMin) { month.total = r2(month.total + posMin); month.variable = r2((month.variable || 0) + posMin); }
   // Subsídios e prestações que caem neste mês (annualItems de cada acordo). Fora do `variable`: são fixos do ano.
   const annualItems = (ym && typeof ae.annualItems === 'function')
-    ? ae.annualItems(category, { ym, contract, index, fullShare, serviceStart, startExact, largada, history, events: events || [], lifestyle })
+    ? ae.annualItems(category, { ym, contract, index, fullShare, serviceStart, startExact, serviceEnd, largada, history, events: events || [], lifestyle })
     : [];
   month.annualItems = annualItems;
   month.annual = r2(annualItems.reduce((a, x) => a + (x.eur || 0), 0));
@@ -591,10 +600,10 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
 // mostrarem o MESMO número. `monthlyAe.total` já inclui base + abono (cabine, UMA vez)
 // + per-diem + pernoita + escritório/ADTY; somamos só os EXTRAS manuais do mês.
 // extras = mapa de contadores { <id>: n }. Devolve número (€), ou null sem ae/categoria.
-export const aeMonthTotal = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1, extras = {}, fleet, fullShare, serviceStart = null, startExact = false, largada = null, history = null, events = [], lifestyle = false, baseAt = null } = {}) => {
+export const aeMonthTotal = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1, extras = {}, fleet, fullShare, serviceStart = null, startExact = false, serviceEnd = null, largada = null, history = null, events = [], lifestyle = false, baseAt = null } = {}) => {
   if (!ae || !category) return null;
   if (ym && ae.hasTableFor && !ae.hasTableFor(category, ym)) return null;   // sem tabela nesse mês → sem €
-  const m = monthlyAe(duties, category, contract, ae, { ym, index, fleet, fullShare, serviceStart, startExact, largada, history, events, lifestyle, baseAt });
+  const m = monthlyAe(duties, category, contract, ae, { ym, index, fleet, fullShare, serviceStart, startExact, serviceEnd, largada, history, events, lifestyle, baseAt });
   const baseTotal = m ? m.total : (ae.monthlyBase ? (ae.monthlyBase(category, { contract, index, ym, fullShare, serviceStart, largada, history }) || 0) : 0);
   const xt = ae.monthExtras ? ae.monthExtras(category, extras, { index, ym, contract, fullShare }) : null;
   return +(baseTotal + (xt ? xt.total : 0)).toFixed(2);

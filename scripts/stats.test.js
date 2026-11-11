@@ -182,6 +182,14 @@ eq('ano 2026 com mudança: base = 4×1346,57 + 8×1627,02', ySplit.aeYtd.base, 1
 eq('ano 2026 com mudança: abono só nos meses easyJet (4×78,55)', ySplit.aeYtd.cash, 314.2);
 eq('ano 2026 com mudança: subsídio de Natal da TAP, proporcional', ySplit.aeYtd.annual, 1084.68);
 eq('ano 2026 com mudança: total', ySplit.aeYtd.total, 19801.32);
+// Com a LINHA DA COMPANHIA (companyHistory), cada mês usa a data de entrada da companhia DESSE mês (easyJet: maio de 2018) e o
+// ano da saída paga os proporcionais (Cl. 51.ª/1): em abril de 2026, Natal 4/12 (448,86) + férias 4/12 (448,86) da easyJet;
+// mais o Natal da TAP (1 084,68) → 1 982,40. E 2025, o ano inteiro na easyJet, tem os dois subsídios (antes: nenhum, porque a
+// data de entrada era sempre a da companhia atual).
+const yCo = yearStats({}, { year: 2026, aeAt: aeAtL1, crewHistory: L1.crewHistory, companyHistory: L1.companyHistory, now: NOW_DEC, serviceStart: '2026-05-01', startExact: true });
+eq('ano 2026 com a linha da companhia: subsídios = saída da easyJet + Natal da TAP', yCo.aeYtd.annual, 1982.4);
+const y25 = yearStats({}, { year: 2025, aeAt: aeAtL1, crewHistory: L1.crewHistory, companyHistory: L1.companyHistory, now: NOW_DEC, serviceStart: '2026-05-01', startExact: true });
+eq('ano 2025 na companhia antiga: férias + Natal (os dois subsídios)', y25.aeYtd.annual > 2000, true);
 // Sem o dia (a data guarda-se ao mês): maio vai de 1 dia (1 627,02 ÷ 30 = 54,23) ao mês todo, e o Natal de 7 meses e 1/31 a 8/12
 // → o certo: base 4×1346,57 + 7×1627,02 + 54,23 = 16 829,65 €; Natal 1 627,02 × (7 + 1/31) ÷ 12 = 953,47 €; o ano fica incerto.
 const yU = yearStats({}, { year: 2026, aeAt: aeAtL1, crewHistory: L1.crewHistory, now: NOW_DEC, serviceStart: '2026-05-01' });

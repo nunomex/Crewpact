@@ -111,6 +111,25 @@ has('Cl. 48.ª/9 (9/3: média dos 12 meses)', CAB, 'Os subsídios de férias e d
   eq('cabine entrada a 2-fev: 27 dias ÷ 30', monthlyAe({}, 'FA', '12/12', cab, { ym: '2026-02', serviceStart: '2026-02-02', startExact: true }).base, rr(cab.monthlyBase('FA', { ym: '2026-02' }) * 27 / 30));
   eq('cabine depois do mês da entrada: o mês todo', monthlyAe({}, 'FA', '12/12', cab, { ym: '2026-04', serviceStart: ss }).base, cab.monthlyBase('FA', { ym: '2026-04' }));
   eq('cabine antes da admissão: nada', cab.annualItems('FA', { ym: '2026-06', serviceStart: '2026-07-01' }).length, 0);
+  // O ANO DA SAÍDA — "pagos proporcionalmente nos anos de contratação e cessação" (Cl. 51.ª/1). `serviceEnd` = o 1.º mês já fora
+  // (a linha do tempo guarda a mudança ao mês: contam-se os meses inteiros até à saída). O Natal paga-se no mês da saída, pelos
+  // meses do ano; as férias têm duas leituras: a do acordo (só o proporcional) e a do Código do Trabalho, art. 245.º, n.º 1 (as
+  // vencidas a 1 de janeiro, por inteiro, mais as proporcionais do ano da cessação) → certo e máximo.
+  const old = '2020-01-01';
+  const ex4 = cab.annualItems('FA', { ym: '2026-04', serviceStart: old, serviceEnd: '2026-05' });
+  eqj('cabine sai no fim de abril: Natal 4/12 no mês da saída', [eur(ex4, 'natal'), !!item(ex4, 'natal').leaving], [448.86, true]);
+  eqj('cabine sai no fim de abril: férias de 4/12 (acordo) a 16/12 (CT art. 245.º)', [eur(ex4, 'ferias'), item(ex4, 'ferias').max], [448.86, 1795.43]);
+  eq('cabine sai no fim de abril: março sem nada', cab.annualItems('FA', { ym: '2026-03', serviceStart: old, serviceEnd: '2026-05' }).length, 0);
+  // Sai no fim de agosto: junho pagou as férias por inteiro; na saída, o Natal 8/12 e as proporcionais do ano (CT) em dúvida.
+  eq('cabine sai no fim de agosto: junho por inteiro', eur(cab.annualItems('FA', { ym: '2026-06', serviceStart: old, serviceEnd: '2026-09' }), 'ferias'), 1346.57);
+  const ex8 = cab.annualItems('FA', { ym: '2026-08', serviceStart: old, serviceEnd: '2026-09' });
+  eqj('cabine sai no fim de agosto: Natal 8/12; férias de 0 a 8/12', [eur(ex8, 'natal'), eur(ex8, 'ferias'), item(ex8, 'ferias').max], [897.71, 0, 897.71]);
+  // Sai no fim de novembro: o Natal de novembro é o da saída (11/12), uma vez só.
+  const ex11 = cab.annualItems('FA', { ym: '2026-11', serviceStart: old, serviceEnd: '2026-12' });
+  eqj('cabine sai no fim de novembro: um só Natal, 11/12', [ex11.filter((x) => x.id === 'natal').length, eur(ex11, 'natal')], [1, 1234.36]);
+  // Pilotos (Art. 36.º/1, a mesma frase).
+  const pex = pil.annualItems('FO', { ym: '2024-04', serviceStart: '2020-01-01', serviceEnd: '2024-05' });
+  eqj('piloto sai no fim de abril de 2024: Natal 4/12 e férias de 4/12 a 16/12', [eur(pex, 'natal'), eur(pex, 'ferias'), item(pex, 'ferias').max], [1136.9, 1136.9, 4547.62]);
   eq('cabine admitido antes: janeiro sem resto', cab.annualItems('FA', { ym: '2027-01', serviceStart: '2020-01-01' }).length, 0);
 }
 // Pilotos easyJet — Art. 36.º/1 e 2
@@ -182,6 +201,9 @@ has('RTTP Cl. 7.ª (83,3 %)', TAPC, 'a) 10 meses por ano - 83,3 %');
   eq('TAP CAB3 admissão 1-mar-2026 (dia dado): Natal 10/12', eur(tapC.annualItems('CAB3', { ym: '2026-12', serviceStart: '2026-03-01', startExact: true, history: H }), 'natal'), 1683.94);
   const tn = item(tapC.annualItems('CAB3', { ym: '2026-12', serviceStart: '2026-03-01', history: H }), 'natal');
   eqj('TAP CAB3 admissão mar-2026, dia por saber: o certo de 9 meses e 1/31, com a marca', [tn.eur, !!tn.admission, tn.max >= 1683.94], [Math.round(2020.73 * (9 + 1 / 31) / 12 * 100) / 100, true, true]);
+  // TAP, ano da saída: o Natal "no da cessação ... na proporção" (cabine RRRGS Cl. 17.ª; pilotos Cl. 8.ª, n.º 2).
+  eq('TAP CAB3 sai no fim de abril: Natal 4/12 no mês da saída', eur(tapC.annualItems('CAB3', { ym: '2026-04', serviceStart: '2016-03-01', serviceEnd: '2026-05', history: H }), 'natal'),
+    Math.round(tapC.monthlyBase('CAB3', { ym: '2026-04', serviceStart: '2016-03-01', history: H }) * 4 / 12 * 100) / 100);
   const tm = monthlyAe({}, 'CAB3', '12/12', tapC, { ym: '2026-03', serviceStart: '2026-03-01', history: H });
   eq('TAP CAB3 mês da entrada, dia por saber: base incerta pelo dia', tm.baseRange && tm.baseRange.reason, 'admission');
   // Tempo parcial (RTTP Cl. 7.ª): 10 meses = 83,3 % → 2 020,73 × 0,833 = 1 683,27 €.

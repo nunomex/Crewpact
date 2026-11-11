@@ -241,7 +241,7 @@ export default function EscalaScreen({ navigation, route }) {
   // fora pela mesma conta (a estadia inteira, L13).
   const pdM = (ae && catYm) ? monthlyAe(duties, catYm, crewAt(ym).contract || '12/12', ae, { ym, index: aeIndex(ae, ym), fleet: crewAt(ym).fleet, baseAt: homeBaseAt }) : null;
   const perDiemTotal = pdM ? pdM.perDiem : null;
-  const nightCount = awayNights(duties, ym).length;
+  const nightCount = awayNights(duties, ym, { throughGround: !!(ae && ae.NIGHTS_ANY_DUTY) }).length;
 
   const kindLabel = (kind) => (kind === 'flight' ? l('Voo', 'Flight') : t('duties.kind.' + kind, lang));
 

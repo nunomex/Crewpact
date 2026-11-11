@@ -556,6 +556,66 @@ janeiro de cada ano.
   1. Qual das leituras é a certa?
   2. O KPI aplica-se ao CAB 0?
 
+### Entrada, saída e subsídios (todos os acordos)
+
+#### D24. Mês da entrada: como se paga um mês incompleto
+
+- **Texto:** os acordos não dizem como se paga o mês em que o tripulante entra a meio. Dizem só que os subsídios são «pagos
+  proporcionalmente nos anos de contratação e cessação» (easyJet cabine Cl. 51.ª, n.º 1; pilotos Art. 36.º, n.º 1) ou «na
+  proporção do tempo de trabalho prestado» (TAP: RRRGS Cl. 17.ª e Cl. 8.ª, n.º 2). A «remuneração base diária» aparece como
+  a base do mês a dividir por 30 (complemento de doença da cabine easyJet, Cl. 61.ª; férias não gozadas dos pilotos).
+- **A aplicação hoje:**
+  - Vencimento do mês da entrada: base ÷ 30 × os dias desde a entrada, nunca mais do que o mês.
+  - Subsídios desse ano: os meses desde a entrada, o da entrada pela parte trabalhada (dias trabalhados ÷ dias do mês).
+- **Exemplo:** tripulante de cabine easyJet (FA, 2026, base de 1 346,57 €) que entra a 16 de março: março 718,17 € (16 dias);
+  Natal 1 067,85 € (9 meses e 16/31).
+- **Pergunta:** a divisão por 30 serve para o mês da entrada, ou devem contar-se os dias do próprio mês? Nos subsídios, o
+  mês da entrada conta inteiro ou pela parte trabalhada?
+
+#### D25. Ano da saída: subsídio de férias e de Natal
+
+- **Texto:**
+  - Os mesmos acordos: «pagos proporcionalmente nos anos de contratação e cessação».
+  - Código do Trabalho, art. 245.º, n.º 1: na cessação, o trabalhador recebe a retribuição de férias e o subsídio
+    «correspondentes a férias vencidas e não gozadas» e os «proporcionais ao tempo de serviço prestado no ano da cessação».
+    Art. 263.º, n.º 2, b): Natal proporcional no ano da cessação.
+- **As duas leituras (férias):**
+  - Leitura do acordo: só o proporcional do ano (meses até à saída ÷ 12).
+  - Leitura do Código do Trabalho: as férias vencidas a 1 de janeiro por inteiro, mais o proporcional do ano.
+- **Exemplo:** FA easyJet que sai no fim de abril de 2026. Natal: 448,86 € (4/12). Férias: 448,86 € (acordo) contra
+  1 795,43 € (Código do Trabalho: 1 346,57 € + 448,86 €).
+- **A aplicação hoje:** no mês da saída mostra o Natal proporcional e as férias com o valor do acordo como certo e o do
+  Código do Trabalho como máximo. Na TAP mostra só o Natal: o subsídio de férias paga-se no mês antes das férias e a
+  aplicação não sabe quando seriam.
+- **Pergunta:** qual das leituras vale? O acordo pode dar menos do que o art. 245.º?
+- **Conservadora:** a do acordo (o valor mais baixo como certo).
+
+#### D26. easyJet: a "média do pagamento variável" nos subsídios
+
+- **Texto:**
+  - Cabine, Cl. 51.ª, n.º 2 (BTE 8/2024): o subsídio de férias é «um mês de salário base (1/14 da remuneração base anual)
+    acrescido de uma média do pagamento variável do tripulante («CPV/crew variable pay») e 1/14 do subsídio de idioma,
+    quando aplicável, com base na média dos últimos 12 (doze) meses».
+  - Pilotos, Art. 36.º, n.º 2 (BTE 40/2023): os dois subsídios são 1/14 da base anual «acrescido da média das prestações
+    variáveis e das prestações permanentes pagas mensalmente».
+- **O que falta:** o acordo não diz que rubricas são «pagamento variável» (setores, per diem, pernoitas, DDO, comissões de
+  vendas?). Nos pilotos não diz o período da média, e a média entra também no Natal; na cabine só nas férias.
+- **A aplicação hoje:** mostra só a parte certa (1/14 da base) e avisa que falta a média.
+- **Pergunta:** que rubricas entram na média, em cada acordo? Nos pilotos, que período?
+
+#### D27. TAP pilotos: prestação retributiva complementar e "disponibilidade"
+
+- **Texto:** regulamento de retribuições, Cl. 10.ª (BTE 29/2023, p. 316–317): o piloto «com disponibilidade para o efeito»
+  que não seja nomeado para serviços com per diem A ou B «que ocupem, no mínimo, 5 dias de calendário em cada mês» recebe o
+  per diem A «por cada dia em que não seja escalado até ao limite de 5 dias». O n.º 2 equipara a disponível quem está de
+  baixa «desde o 11.º dia», em assistência em casa, em formação sem per diem, e outros casos; o n.º 5 afasta a cláusula
+  quando a operação for 50 % inferior ao mês homólogo.
+- **A aplicação hoje:** com menos de 5 dias de per diem no mês, soma o per diem A pelos dias em falta. Com férias ou baixa
+  no mês, ou no mês da entrada, mostra o valor só como máximo (a disponibilidade fica em dúvida).
+- **Exemplo:** oficial piloto NB com 2 dias de voo em maio de 2026: 3 × 202,50 € = 607,50 €.
+- **Pergunta:** um mês com férias (ou com baixa até ao 10.º dia) dá direito à prestação pelos dias em falta, por inteiro ou
+  em proporção?
+
 ### Anexo D-A — Factos que vou pedir aos sindicatos e à empresa (para contexto)
 
 Estas questões não pedem uma leitura jurídica. Pedem um documento ou uma prática.

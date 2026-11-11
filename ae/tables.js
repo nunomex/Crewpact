@@ -60,6 +60,32 @@ export const admissionRange = (serviceStart, year, toMonth = 12, startExact = fa
   const f = entryFrac(serviceStart, startExact);
   return { min: (toMonth - s.m + f.min) / 12, max: (toMonth - s.m + f.max) / 12 };
 };
+// O ANO DA SAÍDA da companhia — os acordos: "pagos proporcionalmente nos anos de contratação e cessação" (easyJet cabine Cl. 51.ª/1,
+// pilotos Art. 36.º/1); TAP, Natal "no da cessação ... na proporção do tempo de trabalho prestado" (RRRGS Cl. 17.ª / Cl. 8.ª, n.º 2).
+// `serviceEnd` = o 1.º mês já fora (a linha do tempo da companhia guarda a mudança ao mês → contam-se os meses inteiros até à
+// saída; o dia não se sabe). Para o mês `ym` do ano da saída devolve:
+//   frac        — a fração do ano trabalhada { min, max } (com a entrada no mesmo ano, pela admissionRange);
+//   natalHere   — o Natal paga-se neste mês (o seu mês habitual `natalMonth`, ou o da saída se for antes);
+//   feriasExit  — só no mês da saída: os múltiplos do subsídio de férias { min, max } — a leitura do acordo (o proporcional do
+//                 ano) e a do Código do Trabalho, art. 245.º, n.º 1 (as férias vencidas a 1 de janeiro por inteiro + as
+//                 proporcionais do ano da cessação); depois de junho as vencidas já foram pagas → de 0 às proporcionais.
+// null fora do ano da saída (ou sem `serviceEnd`).
+export const leavingAt = (serviceStart, serviceEnd, startExact, ym, natalMonth = 11) => {
+  const e = ymParts(serviceEnd), p = ymParts(ym);
+  if (!e || !p) return null;
+  const last = e.m === 1 ? { y: e.y - 1, m: 12 } : { y: e.y, m: e.m - 1 };
+  if (p.y !== last.y || p.m > last.m) return null;
+  const s = ymParts(serviceStart);
+  const sameYear = !!(s && s.y === last.y);
+  const frac = sameYear ? admissionRange(serviceStart, last.y, last.m, startExact) : { min: last.m / 12, max: last.m / 12 };
+  const exitMonth = p.m === last.m;
+  return {
+    frac, lastM: last.m, exitMonth,
+    natalHere: p.m === Math.min(natalMonth, last.m),
+    feriasExit: !exitMonth ? null : (sameYear || last.m >= 6) ? { min: 0, max: frac.max } : { min: frac.min, max: 1 + frac.max },
+  };
+};
+export const LEAVE_NOTE = { pt: 'Ano da saída: proporcional aos meses até saíres. Nas férias, o acordo diz "proporcionalmente"; o Código do Trabalho (art. 245.º) dá as férias vencidas por inteiro mais as proporcionais do ano.', en: 'Year of leaving: pro rata to the months until you left. For holiday pay the agreement says "pro rata"; the Labour Code (art. 245) gives the accrued leave in full plus the pro rata of the year.' };
 // O vencimento do mês da ENTRADA: a "remuneração base diária" (base ÷ 30 — a convenção dos acordos: a mesma do complemento de
 // doença e das férias não gozadas; no pacote do advogado) × os dias desde a entrada, nunca mais do que o mês; o mês todo se
 // entrou no dia 1. Sem o dia → de 1 dia ao mês todo. { min, max } em € (por arredondar), ou null fora do mês da entrada.
