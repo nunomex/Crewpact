@@ -262,6 +262,12 @@ yes('Zulu · o número não encolhe com o 3.º facto (390 e 375)', fitGiant(zAnt
 const zPern = homeCards({ ...S.pernoita, hero: { ...S.pernoita.hero, reportZ: '13:05' } });
 yes('Zulu · pernoita em LGW: cabe a 86 em 390 e em 375', fitGiant(zPern.top, 350).size === 86 && fitGiant(zPern.top, 335).size === 86);
 
+// ═══ Estado que precisa de um serviço e não o tem (o iPhone com a véspera forçada e a escala vazia) → a folga honesta ═══
+for (const st of ['hoje', 'vespera', 'disrupcao', 'doenca', 'posvoo', 'pernoita']) {
+  const r = homeCards({ state: st, todayISO: D11, next: null, sick: { day: 0 }, rest: { hotel: null }, empty: { rosterOk: true, lastRead: '12:40' } });
+  eq(`${st} sem serviço · mostra a folga, nunca "—"`, [r.state, r.top.giant.l1, r.top.what], ['folga', 'Livre', 'Sem serviços na escala']);
+}
+
 // ═══ AS REGRAS, em todos os estados ═══
 const F = fmt('pt');
 const all = Object.entries(R);

@@ -78,8 +78,9 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   bloco 4 fica "a corrigir" e não entra); manual com a saída ligeiramente diferente fica duplicado (R11, parte)
   (BLOCO 4 · 2026-11-11 noite).
 - **Simulação:** "Juntar ao dia" (Mobbin primeiro) (BLOCO 2).
-- **Desenho — Início "cartões de cor" (2026-11-11): CONSTRUÍDO, falta o iPhone.** "testar os estados" com o guião novo
-  (`docs/verificacao-device.md`), letra grande, VoiceOver e iPhone pequeno; afinar a altura das linhas do número
+- **Desenho — Início "cartões de cor" (2026-11-11): CONSTRUÍDO e meio visto no iPhone** (noite, 6: configuração, folga,
+  véspera, hoje, fecho, férias, baixa, documento ✅). Falta: em voo, standby, formação, disrupção, pós-voo e pernoita (precisam
+  de um serviço hoje → "testar o calendário"), letra grande, VoiceOver e iPhone pequeno; afinar a altura das linhas do número
   (`GIANT_LINE`); o movimento (skill `animacoes`); depois levar a linguagem aos outros ecrãs, janelas e menus (um de cada
   vez, com Mobbin) (2026-11-11 noite, 5).
 - **Desenho:** modo escuro da app toda (prioridade, projeto próprio) (2026-11-04 tarde); Escala "na linguagem do Início" e a etiqueta de um dia com 2 serviços; Validades e formulário de evento na escala
@@ -124,6 +125,35 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   (AlarmKit), hotel pelo Apple Maps, passkeys; Android; iPhone pequeno e grande; beta com 2–3 tripulantes no TestFlight;
   declaração de dados nas lojas; Supabase/Resend pagos e limites (e-mails por hora, DMARC).
 ---
+
+## 2026-11-11 (noite, 6) — "Testar os estados" do Início 3.0 no iPhone (Opus 5.5) — 1.ª ronda
+
+**Visto no iPhone ✅ (o Nuno: "tudo ok"):** o estado real de hoje · configuração · folga · véspera e hoje antes do report (com
+o voo de exemplo, porque a conta de teste não tem serviços nos próximos dias) · fecho do mês (as parcelas somam o total:
+7 726,08 + 483,37 + 322,24 + 1 386,73 + 60,00 = 9 978,42 €) · férias · baixa (evento de teste) · documento a caducar
+(validade de teste a 6 dias) · a barra de abas A de dia e de noite.
+
+**Corrigido no iPhone:**
+- **"Ver um exemplo" fazia a página subir 6 pt:** o sino (44) dava lugar à pílula "Exemplo · sair" (38). A fila das pílulas
+  tem agora sempre a altura do sino.
+- **As pílulas saíam cortadas** ("Novem…", "fecha em 19…") quando não cabiam as três. Nunca se cortam: se não cabem, sai a de
+  contorno (a secundária). Medido com as larguras da Hanken: com o sino cabem em todos os estados, também a 375; só o modo
+  exemplo pode tirar a de contorno.
+- **O último algarismo do número gigante saía cortado** (o "8" de "9 978"): o aperto entre letras (−0,046 em) também conta
+  depois da última e o iOS cortava-a. Devolve-se esse aperto à direita da caixa (e a conta da largura inclui-o; quatro
+  estados descem um degrau do tamanho quando os factos estão apertados, todos cabem).
+- **Estado forçado sem serviço caía num ecrã de recurso** ("A ler a escala" e um "—" a 86 pt que parecia uma barra). Hoje,
+  véspera e disrupção sem serviço, baixa sem dia de episódio, pós-voo sem o dia fechado e pernoita sem a estação mostram
+  agora a FOLGA honesta. Golden: 220 ✓.
+- **O voo de exemplo dizia "2 setores" com uma só perna** (LIS → FNC; vinha do v6): passa a 1 setor.
+- **Os 60,00 € de diferença** entre o fecho (9 978,42) e as férias (9 918,42), 5 minutos depois: eram os dados da conta a
+  mudar entre as leituras (o Nuno confirmou que o fecho e os Números batiam certo); não há diferença entre estados.
+
+**Falta ver no iPhone (precisa de um serviço hoje no calendário → sessão "testar o calendário", eventos sintéticos):** em
+voo · entre setores · aterrado · standby · formação · disrupção · pós-voo · pernoita · a hora Zulu (só no verão ou fora de
+Lisboa). E, em todos: letra grande, VoiceOver e iPhone pequeno.
+- Para depois: a atualização da Expo 58.0.23 → 58.0.24 (e 18 pacotes) pelo `npx expo install --check`, depois deste teste;
+  nunca `npm audit fix --force` (sobe pacotes por cima das versões da Expo).
 
 ## 2026-11-11 (noite, 5) — Início 3.0 "cartões de cor" CONSTRUÍDO (Opus 5.5) — falta o iPhone
 

@@ -6,7 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { CARD, TXT, TXT3, SPACE, RADIUS, BRAND } from '../data/constants';
 import NotificationsBell from '../components/NotificationsBell';
 import FlightShareCard from '../components/FlightShareCard';
-import { HomeTop, HomeCards } from '../components/HomeCards';
+import { HomeTop, HomeCards, pillWidth } from '../components/HomeCards';
 import { homeCards, fitGiant } from '../data/homeCards';
 import { getUpcomingFlight } from '../data/calendar';
 import { catLabel } from '../data/extras';
@@ -64,7 +64,7 @@ const TUNE = {
 const DEMO_FLIGHT = (() => {
   const dep = new Date(); dep.setDate(dep.getDate() + 1); dep.setHours(6, 40, 0, 0); // partida amanhã 06:40 (report 05:40)
   const iso = `${dep.getFullYear()}-${String(dep.getMonth() + 1).padStart(2, '0')}-${String(dep.getDate()).padStart(2, '0')}`;
-  return { demo: true, kind: 'flight', dateISO: iso, report: '05:40', depAirport: 'LIS', arrAirport: 'FNC', depTime: '06:40', arrTime: '08:20', sectors: 2, stations: ['LIS', 'FNC'], startDate: dep };
+  return { demo: true, kind: 'flight', dateISO: iso, report: '05:40', depAirport: 'LIS', arrAirport: 'FNC', depTime: '06:40', arrTime: '08:20', sectors: 1, stations: ['LIS', 'FNC'], startDate: dep };
 })();
 // Constrói um objeto "voo" (forma do calendário) a partir de um duty do store, para o Início o poder
 // mostrar como o próximo serviço. startDate = report + 1 h (o calendário traz a partida).
@@ -1028,7 +1028,7 @@ export default function HomeScreen({ navigation }) {
       {/* A barra de estado do iPhone: escura sobre o fundo claro; clara à noite. Só com o ecrã à vista. */}
       {isFocused ? <StatusBar style={night ? 'light' : 'dark'} /> : null}
       {loadingFlight ? <HomeSkeleton /> : (
-        <HomeTop top={out.top} C={C} size={giant.size} onPill2={openPill2} l={l}
+        <HomeTop top={out.top} C={C} size={giant.size} onPill2={openPill2} l={l} rightW={demoOn ? pillWidth(l('Exemplo · sair', 'Example · exit'), true) - SPACE.sm : 44}
           right={demoOn ? (
             <TouchableOpacity style={[s.demo, { borderColor: C.ink }]} onPress={exitDemo} hitSlop={{ top: 3, bottom: 3 }}
               accessibilityRole="button" accessibilityLabel={l('Isto é um exemplo. Sair do exemplo', 'This is an example. Exit the example')}>

@@ -7,10 +7,14 @@
 // botões À PARTE (irmãos, não filhos — o VoiceOver chega aos três). O número gigante não cresce com a letra grande (a largura
 // é calculada pelas métricas da fonte); os cartões crescem e a folha desliza.
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
 import Icon from './Icon';
 import { CARD, TXT3, SPACE, RADIUS, BRAND, PELE_FONT } from '../data/constants';
 import { GIANT } from '../data/homeCards';
+import { textWidth } from '../data/fontMetrics';
+
+// Largura de uma pílula do topo (Hanken 700 · 13, 16 de cada lado, fio de 1,5; o ponto amarelo leva 7 + 8).
+export const pillWidth = (text, dot = false) => Math.ceil(2 * SPACE.lg + 3 + textWidth(text, 13, 'b') + (dot ? 7 + SPACE.sm : 0));
 
 // A altura da linha do número: 1,1 do tamanho (a Hanken tem 1,303 em de altura natural; abaixo do tamanho o iOS cortou
 // letras no v6) e as duas linhas aproximadas por margem negativa até 0,9 em de base a base, como no esboço.
@@ -31,11 +35,21 @@ function GainChip({ text }) {
 }
 
 // ── O TOPO ──
-export function HomeTop({ top, C, size, onPill2, right, l }) {
+// `rightW` = a largura do que está à direita (o sino, 44; ou a pílula "Exemplo · sair").
+export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l }) {
+  const { width: winW } = useWindowDimensions();
   if (!top) return null;
+  // As pílulas NUNCA se cortam ("Novem…" no iPhone, 2026-11-11): se as três não cabem numa linha, sai a de contorno
+  // (a secundária). Medido com as larguras da Hanken, como o número gigante.
+  const pillsW = pillWidth(top.pill.text, top.pill.live) + (top.pill2 ? SPACE.sm + pillWidth(top.pill2.text) : 0) + SPACE.sm + rightW;
+  const showP2 = !!top.pill2 && pillsW <= winW - 2 * SPACE.lgPlus;
   const g = top.giant || {};
   const lh = Math.round(size * GIANT_LINE.lh);
-  const giantStyle = { fontFamily: PELE_FONT.bodyBold, fontSize: size, lineHeight: lh, letterSpacing: size * GIANT.ls, color: C.ink };
+  // O aperto entre letras (−0,046 em) também se aplica DEPOIS da última: o iOS mede a caixa ~4 pt mais estreita do que o
+  // desenho do último algarismo e, numa linha só, corta-o ("o 8 parece cortado", iPhone 2026-11-11). Devolve-se esse aperto
+  // à direita (e tira-se ao espaço antes da unidade, para a distância à vista não mudar).
+  const tail = Math.ceil(-size * GIANT.ls);
+  const giantStyle = { fontFamily: PELE_FONT.bodyBold, fontSize: size, lineHeight: lh, letterSpacing: size * GIANT.ls, color: C.ink, paddingRight: tail };
   const heroA11y = [top.what, `${g.l1 || ''}${g.unit ? ` ${g.unit}` : ''}`, g.l2, ...(top.facts || []).map((f) => `${f.tone === 'was' ? l('estava', 'was') + ' ' : ''}${f.v} ${f.l}`)].filter(Boolean).join('. ');
   const P2 = top.pill2 && top.pill2.iso ? TouchableOpacity : View;
   return (
@@ -45,7 +59,7 @@ export function HomeTop({ top, C, size, onPill2, right, l }) {
           {top.pill.live ? <View style={[s.pillDot, { backgroundColor: BRAND.signal }]} /> : null}
           <Text style={[TXT3.pill, { color: C.desk }]} numberOfLines={1} allowFontScaling={false}>{top.pill.text}</Text>
         </View>
-        {top.pill2 ? (
+        {showP2 ? (
           <P2 style={[s.pill, s.pillOut, { borderColor: C.ink }]} {...(top.pill2.iso ? { onPress: () => onPill2(top.pill2.iso), activeOpacity: 0.7, hitSlop: { top: 3, bottom: 3, left: 2, right: 2 },
             accessibilityRole: 'button', accessibilityLabel: top.pill2.text, accessibilityHint: l('Abre este dia na Escala', 'Opens this day in the Roster') } : { accessible: true, accessibilityLabel: top.pill2.text })}>
             <Text style={[TXT3.pill, { color: C.ink }]} numberOfLines={1} allowFontScaling={false}>{top.pill2.text}</Text>
@@ -59,7 +73,7 @@ export function HomeTop({ top, C, size, onPill2, right, l }) {
         <View style={{ marginTop: -Math.round(size * GIANT_LINE.trim), marginBottom: -Math.round(size * GIANT_LINE.trim) }}>
           <View style={s.l1Row}>
             <Text style={giantStyle} numberOfLines={1} allowFontScaling={false}>{g.l1}</Text>
-            {g.unit ? <Text style={[TXT3.unit, s.unit, { color: C.ink }]} numberOfLines={1} allowFontScaling={false}>{g.unit}</Text> : null}
+            {g.unit ? <Text style={[TXT3.unit, { marginLeft: GIANT.unitGap - tail, color: C.ink }]} numberOfLines={1} allowFontScaling={false}>{g.unit}</Text> : null}
           </View>
           {g.l2 ? (
             <Text style={[giantStyle, { color: g.l2Grey ? C.grey : C.ink, marginTop: -Math.round(size * (GIANT_LINE.lh - GIANT_LINE.lead)) }]} numberOfLines={1} allowFontScaling={false}>{g.l2}</Text>
@@ -229,14 +243,14 @@ export function HomeCards({ cards, C, onOpen, l }) {
 // Medidas do esboço (390 × 844): topo 0 20 32 · pílulas 38 · folha com raio 32 e 12 de margem · cartão raio 24, 16 de margem.
 const s = StyleSheet.create({
   top: { paddingHorizontal: SPACE.lgPlus, paddingBottom: SPACE.xxl },
-  pills: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, paddingTop: SPACE.sm, paddingBottom: SPACE.lg },
-  pill: { height: 38, paddingHorizontal: SPACE.lg, borderRadius: RADIUS.pill, flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, borderWidth: 1.5, flexShrink: 1 },
+  // A fila tem SEMPRE a altura do sino (44): trocar o sino pela pílula "Exemplo · sair" (38) fazia a página saltar 6 pt (iPhone, 2026-11-11).
+  pills: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, paddingTop: SPACE.sm, paddingBottom: SPACE.lg, minHeight: 44 + SPACE.sm + SPACE.lg },
+  pill: { height: 38, paddingHorizontal: SPACE.lg, borderRadius: RADIUS.pill, flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, borderWidth: 1.5, flexShrink: 0 },
   pillOut: { backgroundColor: 'transparent' },
   pillDot: { width: 7, height: 7, borderRadius: RADIUS.pill },
   grow: { flex: 1 },
   hero: { flexDirection: 'row', alignItems: 'stretch', gap: SPACE.lg, marginTop: SPACE.xs },
   l1Row: { flexDirection: 'row', alignItems: 'baseline' },
-  unit: { marginLeft: SPACE.s },
   side: { borderLeftWidth: 1.5, paddingLeft: SPACE.lg, justifyContent: 'center', gap: SPACE.md, flexShrink: 1, minWidth: 0 },
   was: { textDecorationLine: 'line-through', opacity: 0.5 },
 

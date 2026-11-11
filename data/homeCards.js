@@ -97,7 +97,13 @@ export function homeCards(H = {}) {
   const live = H.live || {};
   const next = H.next || null;
   const docOn = H.state === 'folga' && H.doc && H.doc.days != null && H.doc.days >= 0 && H.doc.days <= 7;
-  const state = docOn ? 'documento' : (H.state || 'folga');
+  // Um estado que precisa de um serviço (hoje · véspera · disrupção) e não o tem (dados a meio, ou o estado forçado no
+  // iPhone sem serviço na escala) mostra a FOLGA honesta — nunca um ecrã de recurso com "—" (iPhone, 2026-11-11).
+  const noHero = (['hoje', 'vespera', 'disrupcao'].includes(H.state) && !hero)
+    || (H.state === 'doenca' && !(H.sick && H.sick.day > 0))                      // baixa sem dia de episódio
+    || (H.state === 'posvoo' && !H.closed)                                          // pós-voo sem o dia de hoje fechado
+    || (H.state === 'pernoita' && !(H.rest && H.rest.station));                     // pernoita sem a estação onde se dorme
+  const state = docOn ? 'documento' : noHero ? 'folga' : (H.state || 'folga');
 
   // ── peças ──
   const fact = (v, lbl, tone = null) => (v != null && v !== '' ? { v: String(v), l: lbl, tone } : null);
@@ -464,8 +470,8 @@ export function homeCards(H = {}) {
       cards = assemble(card, nightCard(hero, next) || nextCard(next, l('A seguir', 'Next'), { withDay: true }));
     }
   } else {
-    // Estado sem o serviço de que precisa (dados a meio): a folga honesta, sem números inventados.
-    T = top({ text: l('Hoje', 'Today'), live: false }, todayPill(), l('A ler a escala', 'Reading the roster'), giantOf('—'), null);
+    // Estado desconhecido (não devia acontecer): a data de hoje e os avisos, sem números inventados.
+    T = top({ text: l('Hoje', 'Today'), live: false }, todayPill(), F.cap(F.wdOnly(today)), giantOf(Number(today.slice(8, 10)) || ''), null);
     cards = [...wFirst, ...wLast];
   }
 
@@ -489,8 +495,9 @@ export function factsWidth(fx) {
 export function giantWidth(g, z) {
   if (!g) return 0;
   const ls = z * GIANT.ls;
-  const w1 = textWidth(g.l1, z, 'b', ls) + (g.unit ? GIANT.unitGap + textWidth(g.unit, GIANT.unitSize, 'b', GIANT.unitLs) : 0);
-  const w2 = g.l2 ? textWidth(g.l2, z, 'b', ls) : 0;
+  // + o aperto devolvido depois da última letra (o iOS cortava o último algarismo — components/HomeCards.js, `tail`).
+  const w1 = textWidth(g.l1, z, 'b', ls) + (g.unit ? GIANT.unitGap + textWidth(g.unit, GIANT.unitSize, 'b', GIANT.unitLs) : -ls);
+  const w2 = g.l2 ? textWidth(g.l2, z, 'b', ls) - ls : 0;
   return Math.ceil(Math.max(w1, w2));
 }
 // availW = largura do ecrã − as margens do topo (20 + 20). Devolve { size, fits }.
