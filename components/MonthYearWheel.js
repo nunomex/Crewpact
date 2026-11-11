@@ -39,6 +39,9 @@ export default function MonthYearWheel({ value, onChange, lang = 'pt', yearsBack
   const dRef = useRef(null);
   const mRef = useRef(null);
   const yRef = useRef(null);
+  // A coluna do dia só ouve o DEDO: quando o mês muda e a lista encolhe (31 → 30 linhas), o iOS reajusta a posição sozinho e esse
+  // movimento chegava como se fosse uma escolha (no iPhone, 31 passava a 29 em vez de 30 — visto a 2026-11-11).
+  const dayByUser = useRef(false);
 
   // Posição inicial (sem animar) — depois do 1.º desenho, quando as listas já existem.
   useEffect(() => {
@@ -63,10 +66,10 @@ export default function MonthYearWheel({ value, onChange, lang = 'pt', yearsBack
     setSel({ y, m, d });
     if (scroll || m !== next.m) mRef.current?.scrollTo({ y: (m - 1) * ITEM, animated: true });
     if (scroll) yRef.current?.scrollTo({ y: years.indexOf(y) * ITEM, animated: true });
-    if (withDay && (scroll || d !== next.d)) dRef.current?.scrollTo({ y: (d || 0) * ITEM, animated: true });
+    if (withDay && (scroll || d !== next.d || m !== prev.m || y !== prev.y)) { dayByUser.current = false; dRef.current?.scrollTo({ y: (d || 0) * ITEM, animated: true }); }
     onChange && onChange(`${y}-${String(m).padStart(2, '0')}${withDay && d ? `-${String(d).padStart(2, '0')}` : ''}`);
   };
-  const endDay = (e) => { const i = Math.round(e.nativeEvent.contentOffset.y / ITEM); commit({ ...selRef.current, d: i <= 0 ? null : i }); };
+  const endDay = (e) => { if (!dayByUser.current) return; const i = Math.round(e.nativeEvent.contentOffset.y / ITEM); commit({ ...selRef.current, d: i <= 0 ? null : i }); };
   const endMonth = (e) => commit({ ...selRef.current, m: Math.round(e.nativeEvent.contentOffset.y / ITEM) + 1 });
   const endYear = (e) => commit({ ...selRef.current, y: years[Math.min(years.length - 1, Math.max(0, Math.round(e.nativeEvent.contentOffset.y / ITEM)))] });
 
@@ -98,7 +101,7 @@ export default function MonthYearWheel({ value, onChange, lang = 'pt', yearsBack
       <View style={s.band} pointerEvents="none" />
       {withDay ? (
         <View style={s.colD} {...a11y('d')}>
-          <ScrollView ref={dRef} {...list} onMomentumScrollEnd={endDay} onScrollEndDrag={endDay}>
+          <ScrollView ref={dRef} {...list} onScrollBeginDrag={() => { dayByUser.current = true; }} onMomentumScrollEnd={endDay} onScrollEndDrag={endDay}>
             {days.map((n, i) => row(n, i, sel.d || 0, () => commit({ ...sel, d: i === 0 ? null : i }, true)))}
           </ScrollView>
         </View>

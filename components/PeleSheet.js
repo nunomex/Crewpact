@@ -10,7 +10,11 @@ import useReduceMotion from '../hooks/useReduceMotion';
 
 const OUT = Dimensions.get('window').height;
 
-export default function PeleSheet({ visible, onClose, children }) {
+// `onClosed`: chamado DEPOIS de a folha sair e o Modal desmontar. Para abrir outra folha a seguir a esta: no iOS, apresentar um
+// Modal com o anterior ainda a fechar bloqueia o ecrã (visto no iPhone a 2026-11-11, com um temporizador de 280 ms).
+export default function PeleSheet({ visible, onClose, onClosed, children }) {
+  const closedRef = useRef(onClosed);
+  closedRef.current = onClosed;
   const reduce = useReduceMotion();                       // RM: fade sem deslocação (o arrasto mantém-se — é gesto)
   const ty = useRef(new Animated.Value(OUT)).current;   // translateY: OUT = fora do ecrã (baixo)
   const op = useRef(new Animated.Value(0)).current;      // opacidade do scrim (e da folha em reduce-motion)
@@ -30,7 +34,11 @@ export default function PeleSheet({ visible, onClose, children }) {
       Animated.parallel([
         Animated.timing(op, { toValue: 0, duration: 200, useNativeDriver: false }),
         ...(reduce ? [] : [Animated.timing(ty, { toValue: OUT, duration: 240, useNativeDriver: false })]),
-      ]).start(() => setShown(false));
+      ]).start(() => {
+        setShown(false);
+        // uma folga depois de desmontar: o iOS precisa de acabar de retirar o Modal antes de apresentar outro
+        setTimeout(() => { if (closedRef.current) closedRef.current(); }, Platform.OS === 'ios' ? 140 : 40);
+      });
     }
   }, [visible]);   // eslint-disable-line react-hooks/exhaustive-deps
 

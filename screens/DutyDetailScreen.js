@@ -43,6 +43,7 @@ export default function DutyDetailScreen({ route, navigation }) {
   if (fact) lastFact.current = fact;
   const sf = fact || lastFact.current;
   const [fixOpen, setFixOpen] = useState(false);    // "O calendário está errado?" — as duas portas
+  const afterFix = useRef(null);                    // a folha a abrir DEPOIS de esta fechar (PeleSheet.onClosed — nunca dois Modais a cruzar-se)
   const [realOpen, setRealOpen] = useState(false);  // porta 1: as horas reais
   const [missOpen, setMissOpen] = useState(false);  // porta 2: o dado que faltou no calendário
   const [edited, setEdited] = useState(false);
@@ -588,10 +589,10 @@ export default function DutyDetailScreen({ route, navigation }) {
         fields={sf ? sf.sheet.fields : []} valid={sf ? sf.valid : null}
         onSave={(v) => { const r = fact; setFact(null); saveSvc(r.apply(v), l(`${tx(r.title)} · guardado`, `${tx(r.title)} · saved`)); }} />
       {/* "O calendário está errado?" — duas portas, cada uma com o seu formulário curto. */}
-      <PeleSheet visible={fixOpen} onClose={() => setFixOpen(false)}>
+      <PeleSheet visible={fixOpen} onClose={() => setFixOpen(false)} onClosed={() => { const f = afterFix.current; afterFix.current = null; if (f) f(); }}>
         <Text style={s.fixT} accessibilityRole="header">{fixTitle}</Text>
         <Text style={s.fixD}>{isManual ? l('Há duas coisas que podes acrescentar aqui:', 'There are two things you can add here:') : l('A escala vem da fonte e a app não a muda. Há duas coisas que podes acrescentar aqui:', 'The roster comes from the source and the app does not change it. There are two things you can add here:')}</Text>
-        <TouchableOpacity style={s.fixOpt} activeOpacity={0.8} onPress={() => { select(); setFixOpen(false); setTimeout(() => setRealOpen(true), 280); }} accessibilityRole="button">
+        <TouchableOpacity style={s.fixOpt} activeOpacity={0.8} onPress={() => { select(); afterFix.current = () => setRealOpen(true); setFixOpen(false); }} accessibilityRole="button">
           <View style={s.fixIc}><Icon name="clock" size={17} color={PELE.ink} /></View>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={s.crowT}>{l('Registar as horas reais', 'Record the actual times')}</Text>
@@ -600,7 +601,7 @@ export default function DutyDetailScreen({ route, navigation }) {
           <Icon name="chevron" size={14} color={PELE.affordance} />
         </TouchableOpacity>
         {missing.length ? (
-          <TouchableOpacity style={s.fixOpt} activeOpacity={0.8} onPress={() => { select(); setFixOpen(false); setTimeout(() => setMissOpen(true), 280); }} accessibilityRole="button">
+          <TouchableOpacity style={s.fixOpt} activeOpacity={0.8} onPress={() => { select(); afterFix.current = () => setMissOpen(true); setFixOpen(false); }} accessibilityRole="button">
             <View style={s.fixIc}><Icon name="cal" size={17} color={PELE.ink} /></View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={s.crowT}>{l('Faltou um dado', 'Something was missing')}</Text>
