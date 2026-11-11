@@ -12,11 +12,16 @@ Uma linha por pendência; o pormenor está na entrada indicada entre parênteses
 Quando uma coisa se fizer, sai daqui. **Regra do Nuno: "a lei é que manda"** — sem um facto, "incerto" com o que falta; nunca
 um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está feita: `docs/auditoria-calculos.md`.
 
-### 1. Ver no iPhone (nada disto foi visto no telemóvel)
-- **Detalhe do serviço (v2):** horário "do calendário" e hora REAL ao lado da prevista; repartido sem alojamento (Incerto →
-  Completar → folha das 3 opções); cabine com a apresentação dos pilotos; "O calendário está errado?" (horas reais, faltou um
-  dado); dia com 2 serviços (o 2.º abre o seu Detalhe); DH ("DH ·" e sign-off derivado); estadia de 2 noites; "não se aplica —
-  sem setores" (2026-11-08 Editar saiu · BLOCO 4 · BLOCO 6 · BLOCO 1).
+### 1. Ver no iPhone (conta de teste: easyJet, piloto)
+- **Sessão de 2026-11-11 — visto ✅:** Perfil "Na … desde" com a coluna do dia (os 6 pontos); Escala sem toque longo; Detalhe
+  do serviço só de leitura com "do calendário", secção Completar, "Tocou numa folga?" com WFLY + DDO, "O calendário está
+  errado?" → horas reais. **Retomar no bloco 3** (dinheiro): Início "Quanto recebo?" e cartão do mês com o Natal; Números de
+  novembro (linha Subsídios, cêntimos) e do ano (férias + Natal, % das 900 h); o mês da entrada (Perfil → novembro de 2026 com
+  o dia em "—" → base "incerto"; com o dia 5 → um valor; repor a data).
+- **Detalhe do serviço (v2), o que falta:** a hora REAL ao lado da prevista; repartido sem alojamento (Incerto → Completar →
+  folha das 3 opções); cabine com a apresentação dos pilotos; "Faltou um dado" (só aparece num serviço sem apresentação); dia
+  com 2 serviços (o 2.º abre o seu Detalhe); DH ("DH ·" e sign-off derivado); estadia de 2 noites; "não se aplica — sem
+  setores" (2026-11-08 Editar saiu · BLOCO 4 · BLOCO 6 · BLOCO 1).
 - **Início:** "Dentro dos limites?" com 5 setores na 2.ª noite seguida ("Não — 5 setores em noites seguidas") e com uma reserva
   pelo meio ("Incerto"); "Registar o sign-off" → horas reais; serviço noturno pela meia-noite; "incerto" e "dentro, com prolongamento";
   "Tenho descanso?"/"Repouso até"; baixa (conta TAP e conta de cabine, "dia N do episódio"); 9/3 com "incerto"; fecho de novembro
@@ -44,8 +49,7 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   Biblioteca (bónus, ADTY, FTL, valor horário TAP) (8b · BLOCO 1 · BLOCO 7 · 2026-11-08).
 - **Disrupção:** 2 alterações ao mesmo serviço (1 candidato); o visto longo cabe; cabine com repouso a bordo e diferença de
   apresentação; repartido com sala (BLOCO 5 · BLOCO 7 · 8b).
-- **Perfil e contas:** "Na … desde" com a coluna do dia (— por defeito; o dia 31 num mês de 30 corta para 30; no mês atual não
-  passa de hoje; gravar e reabrir mostra o dia) e no onboarding; "Abrangido pelo AE" grava e repõe; TAP piloto (anuidades, formação) e TAP cabine (VS, chefia, tempo
+- **Perfil e contas:** a coluna do dia no ONBOARDING (no Perfil já foi vista); "Abrangido pelo AE" grava e repõe; TAP piloto (anuidades, formação) e TAP cabine (VS, chefia, tempo
   parcial); configuração (§0c, §0f), Perfil e Família (§0e), linha do tempo (§0g), limites TAP (§0h, kit de longo curso §0i);
   entrada (reenviar código, código errado, palavra-passe, mudar e-mail); reset de palavra-passe e reativar conta apagada; janelas
   com o cabeçalho novo (8b · BLOCO 6 · 2026-11-02/03 · `docs/verificacao-device.md`).
@@ -93,7 +97,8 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
 ### 6. Decisões tuas
 - **Negócio:** data de lançamento; CI; marca CrewPact (INPI/EUIPO, App Store Connect, `.pt`/`.eu`); ícone (em pausa até aos
   sindicatos); edições por sindicato (login neutro com "Em parceria com…" recomendado); líquido estimado e comparação com o recibo.
-- **Produto:** mês do variável ("Ganhos da escala de novembro" ou modo recibo, A-200); aviso "hora da sincronização" no SNC
+- **Produto:** os Números de um mês SEM serviços mostram o ecrã vazio ("ir para a Escala") e escondem o dinheiro, mas o
+  vencimento base paga-se na mesma — mostrar o bloco do dinheiro nesses meses? (visto no iPhone a 2026-11-11); mês do variável ("Ganhos da escala de novembro" ou modo recibo, A-200); aviso "hora da sincronização" no SNC
   (A-085); radiação e estatísticas (A-268/269/275/276); linha do dia de serviço no pré-report; limites de escala de outros acordos
   além da TAP; passkeys e palavras-passe vazadas; prateleira (relógio solar, reconciliação v1.1, sino fase 3, Radar).
 
@@ -151,8 +156,12 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   `serviceMoney` com `duties` no Detalhe, na Escala e no Início); (c) prestação complementar: a baixa do 11.º ao 50.º dia do
   ano conta como disponível (Cl. 10.ª, n.º 2, b)) → só os 10 primeiros dias, os que passam dos 50 e o mês a seguir deixam a
   prestação em dúvida.
-- **Testes:** dinheiro 161, dinheiro a menos 279, stats 183, ae-golden, disruption; 34 suites verdes; export iOS ✓. **Nada visto
-  no iPhone.**
+- **Testes:** dinheiro 161, dinheiro a menos 279, stats 183, ae-golden, disruption; 34 suites verdes; export iOS ✓.
+- **iPhone (sessão guiada, blocos 1 e 2 ✅; o Nuno adiou o resto):** dois erros só visíveis no telemóvel, corrigidos e
+  confirmados lá — (1) a roda do dia saltava de 31 para 29 ao mudar para um mês de 30 (a lista encolhe e o iOS reajusta a
+  posição; a coluna do dia passou a ouvir só o dedo); (2) "O calendário está errado?" → "Registar as horas reais" prendia o
+  ecrã (a 2.ª folha abria com a 1.ª ainda a fechar, temporizador de 280 ms) → `PeleSheet.onClosed`. Na Escala há 4
+  encadeamentos iguais com 320–350 ms que nunca prenderam — passar para o `onClosed` se algum falhar.
 
 ---
 
