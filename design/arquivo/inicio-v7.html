@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · Início v7 (pilha de faixas)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* Início v7 (2026-11-11) — ESBOÇO para decisão do Nuno. Ainda não está no código.
+   A ideia: o Início é sempre a MESMA peça em todos os estados —
+     1. o TOPO: o que o número é (rótulo) · o NÚMERO enorme · um fio · dois factos pequenos ao lado · a rota e a pílula;
+     2. a PILHA: 1 a 5 FAIXAS de largura total, sobrepostas, cada uma com um facto (rótulo em cima, contexto em baixo, número à
+        direita). No máximo UMA faixa tem cor, e a cor quer dizer alguma coisa (laranja = atenção, vermelho = acima do limite);
+     3. as 3 TECLAS, presas ao fundo (como na v6).
+   As faixas são ELÁSTICAS: repartem a altura que sobra entre o topo e as teclas (60 a 124 pt cada; até 156 com uma ou duas). Por isso o estado mais
+   cheio cabe sempre nos 714 pt úteis de um iPhone de 390 × 844, e o mais vazio não fica com meio ecrã em branco.
+   Referências do Nuno (referencias/newref): as faixas empilhadas com número enorme, o calendário "13.12 DEC" (número + fio +
+   dois factos), "FOCUS" (factos | número), a folha de cantos redondos sobre a placa escura. Mantém-se da v6: a placa escura
+   com a hora a amarelo nos estados ao vivo, a linha do dia de serviço, as letras, as cores e a barra de abas.
+   Letras: as da app (ficheiros em node_modules/@expo-google-fonts). Dados de teste: easyJet, piloto, base Lisboa. */
+@font-face{font-family:'BarlowC';font-weight:700;src:url('../../node_modules/@expo-google-fonts/barlow-condensed/700Bold/BarlowCondensed_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:500;src:url('../../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{
+  --bg:#E8E7E2; --fg:#141414; --muted:#55554F; --card:#FFFFFF; --rule:#D6D4CD; --frame:#04060A;
+  --display:'BarlowC','Arial Narrow',sans-serif; --body:'Hanken','Helvetica Neue',Arial,sans-serif;
+  --signal:#FFB800;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+.lead{max-width:860px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-family:var(--display);font-size:36px;letter-spacing:-.5px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)}
+.lead b{color:var(--fg)}
+.replay{align-self:flex-start;height:40px;padding:0 16px;border-radius:99px;border:1px solid var(--rule);background:var(--card);color:var(--fg);font:700 13px var(--body);cursor:pointer}
+.replay:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,406px));gap:28px 24px;justify-content:center}
+@media (max-width:1320px){ .grid3{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),406px))} }
+.shot{display:flex;flex-direction:column;gap:8px;min-width:0}
+.shot h2{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.shot p{font-size:13px;line-height:1.5;color:var(--muted)}
+.shot .m{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.fit{width:100%;position:relative;height:860px}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:20px}
+.note{background:var(--card);border:1px solid var(--rule);border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.note h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.note ul{padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.note li,.note p{font-size:13px;line-height:1.5;color:var(--muted)}
+.note b{color:var(--fg)} .note a{color:var(--fg)}
+table.ct{border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+table.ct td,table.ct th{padding:4px 10px 4px 0;text-align:left;color:var(--muted)}
+table.ct .sw{display:inline-block;width:28px;height:16px;border-radius:4px;vertical-align:middle;border:1px solid rgba(0,0,0,.12)}
+
+/* ═══ O telemóvel ═══ */
+.ph{width:406px;height:860px;border:8px solid var(--frame);border-radius:52px;overflow:hidden;display:flex;flex-direction:column;transform-origin:top left;
+  --paper:#FFFFFF; --ink:#141414; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --ctx:#55554F; --okText:#0B6E43; --warn:#E86A10; --red:#C6362B;
+  --t1:#F4F2ED; --t2:#E9E6DE; --t3:#DDD9CF; --t4:#D1CCC0; --t5:#C5BFB1;
+  --top:var(--paper); --tfg:var(--ink); --tsub:var(--grey); --trule:var(--line); --num:var(--ink); --ttrack:var(--line);
+  background:var(--paper);color:var(--ink)}
+.ph.live{--top:#141414; --tfg:#FFFFFF; --tsub:#A3A39B; --trule:rgba(255,255,255,.14); --num:var(--signal); --ttrack:rgba(255,255,255,.16)}
+.ph.night{--paper:#0D131C; --ink:#F4F2ED; --grey:rgba(244,242,237,.62); --line:rgba(244,242,237,.14); --soft:rgba(244,242,237,.08); --ctx:rgba(244,242,237,.68); --okText:#46C98A; --warn:#F08A3C; --red:#E57368;
+  --t1:#18212D; --t2:#1F2A38; --t3:#273444; --t4:#2F3D50; --t5:#37475C;
+  --top:#18212D; --tfg:#F4F2ED; --tsub:rgba(244,242,237,.62); --trule:rgba(255,255,255,.14); --num:var(--signal)}
+.tag{font-weight:800;font-size:11px;line-height:14px;letter-spacing:.6px;text-transform:uppercase}
+.eyebrow{font-weight:800;font-size:11px;line-height:14px;letter-spacing:1.4px;text-transform:uppercase}
+.caption{font-weight:500;font-size:11px;line-height:15px}
+.label{font-weight:700;font-size:12px;line-height:16px}
+.bodyT{font-weight:500;font-size:13px;line-height:19px}
+.bodyStrong{font-weight:700;font-size:13px;line-height:17px}
+.headline{font-weight:800;font-size:17px;line-height:22px}
+.ic{display:inline-block;flex:none;fill:currentColor}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px;background:var(--top);color:var(--tfg)}
+.scr{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;background:var(--paper)}
+.tabbar{height:83px;flex:none;border-top:1px solid var(--line);display:flex;padding-bottom:34px;background:var(--paper)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--grey)}
+.tab .tl{font-size:11px;font-weight:700}
+.tab.on{color:var(--ink)}
+.tab .dot{width:4px;height:4px;border-radius:2px;background:transparent}
+.tab.on .dot{background:var(--signal)}
+.tab.plus{flex:none;width:64px}
+.tab.plus .pl{width:44px;height:44px;border-radius:22px;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center}
+
+/* ── 1 · O TOPO ── */
+.top{flex:1;min-height:0;background:var(--top);color:var(--tfg);padding:0 16px}
+.topIn{display:flex;flex-direction:column;padding-bottom:30px}   /* 12 de respiro + 18 que a 1.ª faixa tapa */
+.bHead{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0 8px;border-bottom:1px solid var(--trule);min-height:40px}
+.bHeadL,.bHeadR{display:flex;align-items:center;gap:8px;min-width:0}
+.bHead .eyebrow{color:var(--tsub);white-space:nowrap}
+.ph:not(.live):not(.night) .bHeadL .eyebrow{color:var(--ink)}
+.liveDot{width:8px;height:8px;border-radius:4px;background:var(--signal);flex:none}
+.bell{display:flex;align-items:center;gap:6px;background:var(--soft);border-radius:99px;padding:5px 11px;font-weight:800;font-size:10.5px;line-height:13px;white-space:nowrap}
+.live .bell,.night .bell{background:rgba(244,242,237,.10);color:#F4F2ED}
+.bell i{width:6px;height:6px;border-radius:3px;background:var(--signal)}
+.wx{display:flex;align-items:center;gap:4px;color:var(--tsub)}
+.hero{display:flex;flex-direction:column;gap:8px;padding-top:10px}
+.heroTop{display:flex;flex-direction:column;gap:12px}
+.what{color:var(--tsub)}
+/* o número · o fio · os dois factos */
+.split{display:flex;align-items:center}
+.digits{display:flex;align-items:baseline;font-family:var(--display);font-weight:700;font-size:104px;line-height:1em;letter-spacing:-3px;color:var(--num);font-variant-numeric:tabular-nums;white-space:nowrap;
+  margin-top:-.08em;position:relative;top:-.054em;margin-bottom:-.13em}   /* acerto às medidas tiradas no iPhone (v6, TUNE) */
+.digits.xl{font-size:132px}
+.digits .u{font-size:44px;line-height:44px;letter-spacing:-1px;margin-left:8px}
+.digits.word{letter-spacing:-2px;margin-bottom:.04em}
+.facts{display:flex;flex-direction:column;gap:10px;margin-left:14px;padding-left:14px;border-left:1px solid var(--trule);min-width:0}
+.fact{display:flex;flex-direction:column}
+.fact b{font-family:var(--display);font-weight:700;font-size:26px;line-height:28px;letter-spacing:-.2px;white-space:nowrap}
+.fact b.was{text-decoration:line-through;opacity:.55}
+.fact span{color:var(--tsub);white-space:nowrap}
+.split.wide{flex-direction:column;align-items:flex-start;gap:6px}
+.split.wide .facts{flex-direction:row;gap:24px;margin-left:0;padding-left:0;border-left:0}
+.heroInfo{display:flex;flex-direction:column;gap:2px}
+.destRow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.destRow.trim{margin-bottom:-7px}
+.dest{font-family:var(--display);font-weight:700;font-size:44px;line-height:46px;letter-spacing:-.5px;white-space:nowrap;min-width:0;overflow:hidden}
+.dest.md{font-size:30px;line-height:34px}
+.titleBig{font-family:var(--display);font-weight:700;font-size:44px;line-height:46px;letter-spacing:-.5px}
+.pill{border-radius:8px;padding:4px 8px;font-weight:800;font-size:12px;line-height:15px;letter-spacing:.8px;text-transform:uppercase;white-space:nowrap;flex:none}
+.pill.ok{background:rgba(70,201,138,.18);color:#46C98A}
+.pill.warn{background:rgba(240,138,60,.20);color:#F08A3C}
+.pill.calm{background:var(--soft);color:var(--okText)}
+.sub{color:var(--tsub)}
+.say{color:var(--tsub)} .say b{font-weight:700;color:var(--tfg)}
+.lnk{font-weight:700;font-size:12px;line-height:16px;text-decoration:underline;text-decoration-color:var(--signal);padding:4px 0}
+.dl{display:flex;flex-direction:column;gap:6px}
+.dlBar{height:20px;position:relative}
+.dlBar>*{position:absolute}
+.dlTrack{left:0;right:0;top:9px;height:2px;border-radius:99px;background:var(--ttrack)}
+.dlTrack.done{right:auto;background:var(--signal)}
+.dlSec{top:7px;height:6px;border-radius:99px;overflow:hidden;background:var(--tsub)}
+.dlSec>i{display:block;height:6px;background:var(--signal)}
+.dlTick{top:3px;width:2px;height:14px;margin-left:-1px;border-radius:99px;background:var(--tfg)}
+.dlNow{top:2px;width:16px;height:16px;margin-left:-8px;border-radius:99px;background:var(--top);color:var(--tfg);display:flex;align-items:center;justify-content:center}
+.ends{display:flex;justify-content:space-between;gap:8px}
+
+/* ── 2 · A PILHA DE FAIXAS (elástica: --h vem da conta em baixo) ── */
+.bands{flex:none;display:flex;flex-direction:column}
+.band{--h:96px;height:calc(var(--h) + 18px);margin-top:-18px;border-radius:22px 22px 0 0;padding:12px 16px 30px;display:flex;align-items:stretch;justify-content:space-between;gap:12px;background:var(--t1);color:var(--ink)}
+.band:nth-child(2){background:var(--t2)} .band:nth-child(3){background:var(--t3)} .band:nth-child(4){background:var(--t4)} .band:nth-child(5){background:var(--t5)}
+.band.warn{background:#E86A10;color:#141414;--ctx:#141414}
+.band.red{background:#C6362B;color:#FFFFFF;--ctx:#FFFFFF}
+.bL{display:flex;flex-direction:column;justify-content:space-between;min-width:0;flex:1}
+.bLab{font-weight:800;font-size:13px;line-height:16px}
+.bLab small{font-weight:700;font-size:11px;opacity:.7;margin-left:6px}
+.bCtx{font-weight:500;font-size:11px;line-height:15px;color:var(--ctx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bR{display:flex;align-items:flex-end;gap:6px;flex:none}
+.bU{font-weight:700;font-size:12px;line-height:16px;color:var(--ctx);padding-bottom:3px;white-space:nowrap}
+.bV{font-family:var(--display);font-weight:700;font-size:var(--v,56px);line-height:.86;letter-spacing:-1px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.bV.gain{color:var(--okText)}
+.wk{display:flex;gap:5px;align-items:flex-end;height:22px;margin-right:4px}
+.wk i{width:6px;border-radius:99px;background:var(--ctx);display:block}
+.wk i.t{background:var(--ink)}
+
+/* ── 3 · AS TECLAS ── */
+.keysP{flex:none;margin-top:-18px;border-radius:22px 22px 0 0;background:var(--paper);padding:14px 16px 20px;display:flex;gap:8px}
+.key{flex:1;min-height:88px;border-radius:16px;padding:12px;display:flex;flex-direction:column;justify-content:space-between;gap:8px;background:var(--soft);color:var(--ink);min-width:0}
+.key.pri{background:var(--ink);color:var(--paper)}
+.noKeys{flex:none;margin-top:-18px;height:38px;border-radius:22px 22px 0 0;background:var(--paper)}
+
+/* ── Movimento: as faixas sobem em cascata quando o estado muda. Sem animação (ou com movimentos reduzidos) fica tudo no sítio. ── */
+@media (prefers-reduced-motion: no-preference){
+  .go .band,.go .keysP{animation:rise .52s cubic-bezier(.2,.8,.2,1) backwards}
+  .go .band:nth-child(1){animation-delay:.05s} .go .band:nth-child(2){animation-delay:.11s} .go .band:nth-child(3){animation-delay:.17s}
+  .go .band:nth-child(4){animation-delay:.23s} .go .band:nth-child(5){animation-delay:.29s} .go .keysP{animation-delay:.34s}
+  .go .digits{animation:num .46s cubic-bezier(.2,.8,.2,1) backwards}
+  @keyframes rise{from{transform:translateY(46px)}}
+  @keyframes num{from{transform:translateY(14px);opacity:.01}}
+}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>Início v7 · a pilha de faixas</h1>
+    <p><b>Esboço para decidires.</b> O Início passa a ser a mesma peça em todos os estados: em cima o <b>número enorme</b> com dois factos ao lado, separados por um fio; por baixo, uma <b>pilha de faixas</b>, cada uma com um facto e o seu número; ao fundo, as <b>três teclas</b>. As faixas repartem a altura que sobra, por isso o estado mais cheio cabe sempre e o mais vazio não fica com meio ecrã em branco. Por baixo de cada telemóvel está a medida: quanto ocupa o conteúdo e a altura que cada faixa ficou.</p>
+    <p>Dados de teste (easyJet, piloto, base Lisboa). Os textos são os da app de hoje sempre que existem. É um desenho no navegador, com as letras e as cores da app; o que vale no fim é o iPhone.</p>
+    <button class="replay" id="replay" type="button">Ver o movimento outra vez</button>
+  </div>
+  <section class="grid3" id="grid"></section>
+  <section class="notes">
+    <div class="note"><h3>As regras</h3><ul>
+      <li><b>O topo:</b> o rótulo diz o que o número é; o número é a hora do próximo marco (a amarelo, ao vivo) ou uma contagem (a tinta, no calmo); ao lado, <b>dois factos</b> e nunca mais do que dois.</li>
+      <li><b>As faixas:</b> 1 a 5. Rótulo em cima, contexto em baixo, número à direita. Tocar numa faixa abre o que ela resume. Entre 60 e 124 pt de altura cada, conforme o espaço (até 156 quando são só uma ou duas).</li>
+      <li><b>Uma só faixa com cor</b>, e só quando há razão: laranja = atenção (escala mudou, limite com atraso, férias por gozar), vermelho = acima do limite. O amarelo fica para o número do topo e para os sinais.</li>
+      <li><b>As teclas</b> não mudam de sítio. Férias e baixa continuam sem teclas, como hoje.</li>
+      <li><b>A ordem das faixas</b> é a fila de prioridades que a app já tem (lei, documento, voo, escala; depois o momento; por fim o dinheiro do mês).</li>
+    </ul></div>
+    <div class="note"><h3>O que muda face à v6</h3><ul>
+      <li>Saem os cartões secundários, os mosaicos e a tabela "Próximos serviços": passam todos a faixas. O próximo serviço é uma faixa ("A seguir · mais 4"); a lista completa fica a um toque.</li>
+      <li>Sai a frase solta entre a placa e os cartões nos estados ao vivo (fica só nos calmos, dentro do topo).</li>
+      <li>O fecho do mês ganha: as parcelas são as próprias faixas e somam o número do topo.</li>
+      <li>A configuração ganha: os três passos são três faixas numeradas.</li>
+      <li>Fica igual: a placa escura com a hora a amarelo, a linha do dia de serviço, as pílulas, as letras, as cores, a barra de abas.</li>
+    </ul></div>
+    <div class="note"><h3>Conferido em apps publicadas (Mobbin)</h3><ul>
+      <li><a href="https://mobbin.com/screens/34c8ab43-8b6e-4151-a01a-8b0276546663">American Airlines</a>: rótulo, hora grande, pílula de estado e rota, a mesma ordem do nosso topo.</li>
+      <li><a href="https://mobbin.com/screens/79660f63-6f82-4231-85cc-80565371b186">Singapore Airlines</a>: o fio vertical a separar o código das horas.</li>
+      <li><a href="https://mobbin.com/screens/bdeb7800-03ad-432d-9535-48900d7212ca">Qantas</a>: o início como uma pilha de blocos, cada um com um facto.</li>
+      <li><a href="https://mobbin.com/screens/91ee559c-d53f-4bff-b5cd-f853f38cf4c3">Speak</a>: "a seguir" como bloco e o número grande com unidade.</li>
+      <li><b>Aviso:</b> nenhuma app publicada que encontrei faz a pilha de faixas de largura total com número gigante. Essa parte vem das tuas referências de conceito; é a aposta deste esboço e é o que tem de ser provado no iPhone.</li>
+    </ul></div>
+    <div class="note"><h3>Contraste medido</h3><p>Calculado nesta página (WCAG 2.1; texto normal pede 4,5).</p><table class="ct" id="ct"></table></div>
+    <div class="note"><h3>O que este esboço não cobre</h3><ul>
+      <li>A baixa (segue o desenho das férias; o texto do que o acordo paga é da app e não o inventei aqui).</li>
+      <li>O ecrã a carregar, a lista aberta de "mais 4" e as folhas que cada faixa abre.</li>
+      <li>Letra grande do sistema e VoiceOver: têm de ser vistos no iPhone.</li>
+      <li>A edição por sindicato (a cor da tecla principal).</li>
+    </ul></div>
+  </section>
+</div>
+<script>
+(function(){
+  var P = {
+    sun:'<path d="M12 7.2a4.8 4.8 0 1 1 0 9.6 4.8 4.8 0 0 1 0-9.6zM11 2h2v3.2h-2V2zm0 16.8h2V22h-2v-3.2zM2 11h3.2v2H2v-2zm16.8 0H22v2h-3.2v-2zM4.6 6 6 4.6 8.3 6.9 6.9 8.3 4.6 6zm11.1 11.1 1.4-1.4 2.3 2.3-1.4 1.4-2.3-2.3zm2.3-12.5L19.4 6l-2.3 2.3-1.4-1.4 2.3-2.3zM4.6 18l2.3-2.3 1.4 1.4L6 19.4 4.6 18z"/>',
+    cloud:'<circle cx="7.6" cy="13.6" r="3.9"/><circle cx="12.6" cy="10.8" r="4.8"/><circle cx="16.9" cy="13.8" r="3.5"/><path d="M7.6 12.2h9.3v5.3H7.6z"/>',
+    moon:'<path d="M14.2 3a9.2 9.2 0 1 0 6.6 15.6A10.6 10.6 0 0 1 14.2 3z"/>',
+    cal:'<path d="M7 2h2.6v3H7V2zm7.4 0H17v3h-2.6V2zM4 5h16v3.6H4V5zm0 5h16v10a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 20V10zm3.4 3v2.8h2.8V13H7.4zm5 0v2.8h2.8V13h-2.8z"/>',
+    gauge:'<path d="M12 5a10 10 0 0 0-10 10.4h3.4A6.6 6.6 0 0 1 14 9.3l2.5-2.6A9.9 9.9 0 0 0 12 5zm7.4 3.3-6.1 5a2 2 0 1 0 2 2.1l5.4-5.7a10 10 0 0 0-1.3-1.4zM18.6 15.4h3.3c0-.5 0-1-.1-1.5l-3.3.7c.1.3.1.5.1.8z"/>',
+    share:'<path d="M17 3a2.8 2.8 0 1 1-2.6 3.8L8.6 10a2.8 2.8 0 0 1 0 4l5.8 3.2A2.8 2.8 0 1 1 13.6 19l-5.8-3.3a2.8 2.8 0 1 1 0-7.4l5.8-3.2A2.8 2.8 0 0 1 17 3z"/>',
+    shield:'<path d="M12 2l8 3v6c0 5-3.4 9.2-8 11-4.6-1.8-8-6-8-11V5l8-3z"/>',
+    bed:'<path d="M3 6h3.2v7H3V6zm0 8h18v5h-2.6v-2.2H5.6V19H3v-5zm5-4.6h8.6A4.4 4.4 0 0 1 21 13.8H8V9.4z"/>',
+    bell:'<path d="M12 2.2a2.1 2.1 0 0 0-2.1 2.1v.5A6 6 0 0 0 6 10.4V15l-1.8 1.8v1.3h15.6v-1.3L18 15v-4.6a6 6 0 0 0-3.9-5.6v-.5A2.1 2.1 0 0 0 12 2.2zM9.8 19.5a2.2 2.2 0 0 0 4.4 0z"/>',
+    doc:'<path d="M6 2h8l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7.4 1.8V8h4.2l-4.2-4.2zM7.4 12h9.2v1.9H7.4V12zm0 4h7v1.9h-7V16z"/>',
+    edit:'<path d="M16.9 3.3a2 2 0 0 1 2.8 0l1 1a2 2 0 0 1 0 2.8L9.2 18.6 4 20l1.4-5.2L16.9 3.3z"/>',
+    play:'<path d="M7 4.5v15l12.5-7.5L7 4.5z"/>',
+    home:'<path d="M12 3l9.2 8.2h-2.5V21h-4.9v-6.4h-3.6V21H5.3v-9.8H2.8L12 3z"/>',
+    stats:'<path d="M4 12.5h3.8V20H4v-7.5zM10.1 5.5h3.8V20h-3.8V5.5zM16.2 9.5H20V20h-3.8V9.5z"/>',
+    user:'<path d="M12 3.4a3.7 3.7 0 1 1 0 7.4 3.7 3.7 0 0 1 0-7.4zM4.8 20.2c0-4 3.2-6.6 7.2-6.6s7.2 2.6 7.2 6.6a.8.8 0 0 1-.8.8H5.6a.8.8 0 0 1-.8-.8z"/>',
+    plus:'<path d="M10.4 4h3.2v6.4H20v3.2h-6.4V20h-3.2v-6.4H4v-3.2h6.4V4z"/>',
+    plane:'<path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>'
+  };
+  function ic(n, s, rot){ return '<svg class="ic" width="'+s+'" height="'+s+'" viewBox="0 0 24 24" aria-hidden="true"'+(rot?' style="transform:rotate('+rot+'deg)"':'')+'>'+P[n]+'</svg>'; }
+  function tabbar(){ return '<nav class="tabbar">'+
+    '<div class="tab on">'+ic('home',24)+'<span class="tl">Início</span><i class="dot"></i></div>'+
+    '<div class="tab">'+ic('cal',24)+'<span class="tl">Escala</span><i class="dot"></i></div>'+
+    '<div class="tab plus"><span class="pl">'+ic('plus',22)+'</span></div>'+
+    '<div class="tab">'+ic('stats',24)+'<span class="tl">Números</span><i class="dot"></i></div>'+
+    '<div class="tab">'+ic('user',24)+'<span class="tl">Perfil</span><i class="dot"></i></div></nav>'; }
+  var NEXT = { lab:'A seguir <small>mais 4</small>', ctx:'qui 12 · LGW → LIS', v:'14:05' };
+  var MES = { lab:'Novembro <small>estimado</small>', ctx:'inclui 812,40 € até hoje', v:'2 431,50 €' };
+  var GANHO = { lab:'Ganhos de hoje', ctx:'per diem 96,90 € · pernoita 45,40 €', v:'+142,30 €', gain:1 };
+  var DL = function(now, secs, txt){ return { now:now, secs:secs, txt:txt }; };
+
+  // ── OS ESTADOS (a ordem é a de um dia de trabalho, depois os calmos) ──
+  var S = [
+    { id:'folga', h:'Folga', p:'O número é quanto falta para o próximo serviço. A faixa das férias fica a laranja de novembro em diante.', t:'12:45',
+      left:'quarta · 11 novembro', wx:['sun','19°'], what:'Próximo serviço daqui a', num:'2', xl:1, unit:'dias', facts:[['sáb 14','livre até'],['05:30','report']],
+      dest:'LIS → FNC → LIS', md:1, pill:['calm','Escala em dia'], say:['Folga a sério.','Nada pendente, nada a vigiar.'],
+      bands:[{ lab:'A seguir <small>mais 3</small>', ctx:'dom 15 · LIS → MAD → LIS', v:'06:10' }, MES, { lab:'Férias 2026', ctx:'o ano acaba daqui a 50 dias', v:'12', u:'de 22', tone:'warn' }],
+      keys:[['cal','Ver o serviço'],['shield','Limites'],['gauge','Simular']] },
+    { id:'vespera', h:'Véspera · à noite', p:'21h40: a hora do report de amanhã, quanto falta e a que horas acordar.', t:'21:40', live:1, night:1,
+      dot:1, left:'Report amanhã', wx:['moon','14° · LIS'], what:'Quinta, 12 de novembro', num:'05:15', facts:[['7 h 35','falta'],['04:00','acordar']],
+      dest:'LIS → FNC', pill:['ok','Repouso ✓'], sub:'EJU7601 · parte 06:15 · 3 setores · pernoita em LGW',
+      bands:[{ lab:'Em FNC amanhã', ctx:'céu limpo · 15° a 21°', v:'19°' }, { lab:'Ganhos de amanhã', ctx:'per diem 96,90 € · pernoita 45,40 €', v:'+142,30 €', gain:1 }, MES],
+      keys:[['bell','Lembrete 04:00'],['shield','Limites'],['share','Partilhar o voo']] },
+    { id:'pre', h:'Antes do report', p:'A hora do report a amarelo; ao lado, quanto falta e a que horas parte.', t:'03:35', live:1,
+      dot:1, left:'Partidas · hoje', wx:['cloud','12° · LIS'], what:'Report às', num:'05:15', facts:[['1 h 40','falta'],['06:15','parte']],
+      dest:'LIS → FNC', pill:['ok','Nos limites'], sub:'EJU7601 · setor 1/3 · PSV até 17:00',
+      bands:[{ lab:'Em FNC hoje', ctx:'céu limpo · 15° a 21°', v:'19°' }, GANHO, NEXT],
+      keys:[['share','Partilhar o voo'],['shield','Limites'],['bed','Hotel']] },
+    { id:'voo', h:'Em voo · o mais cheio', p:'O estado que na v6 não cabia (771 pt em 714). Aqui são 4 faixas e cabe.', t:'12:45', live:1,
+      dot:1, left:'Em voo · EJU7625', bell:'2 novidades', wx:['cloud','9° · LGW'], what:'Aterras às', num:'13:50', facts:[['1 h 05','falta'],['3:10','de margem']],
+      dest:'LIS → LGW', pill:['ok','A horas'], dl:DL(63.83, [[8.51,23.40,100],[29.08,43.26,100],[50.35,73.05,59.4]], 'PSV 7:30 de 11:45 · setor 3/3'), dlEnds:['05:15 · report','limite · 17:00'],
+      bands:[{ lab:'A escala mudou', ctx:'alterações por rever · nada entra sem ti', v:'2', tone:'warn' }, { lab:'Depois', ctx:'pernoita · Hotel do aeroporto', v:'LGW' }, GANHO, NEXT],
+      keys:[['share','Partilhar a chegada'],['shield','Limites'],['bed','Hotel']] },
+    { id:'disr', h:'Disrupção', p:'A hora nova a amarelo, a antiga riscada ao lado. A faixa dos limites com o atraso fica a laranja.', t:'04:50', live:1,
+      dot:1, left:'Partidas · hoje', wx:['cloud','12° · LIS'], what:'Partida prevista · report 05:15', num:'07:25', facts:[['06:15','estava',1],['2:00','de margem']],
+      dest:'LIS → FNC', pill:['warn','Atraso +70'], dl:DL(0, [[8.5+9.9,23.4+9.9,0],[29.1+9.9,43.3+9.9,0],[50.4+9.9,73.0+9.9,0]], 'com o atraso · O avião ainda vem a caminho (EJU7450)'), dlEnds:['05:15 · report','limite · 17:00'],
+      bands:[{ lab:'Limites com o atraso', ctx:'PSV projetado, de 11:45', v:'9:45', tone:'warn' }, GANHO, NEXT],
+      keys:[['share','Avisar a família'],['shield','Limites com o atraso'],['gauge','Simular']] },
+    { id:'sby', h:'Standby no aeroporto', p:'Um serviço que não é voo: a hora a que a janela fecha e até quando iria o PSV se chamassem agora.', t:'08:50', live:1,
+      dot:1, left:'Standby Aeroporto', wx:['cloud','12° · LIS'], what:'A janela fecha às', num:'12:00', facts:[['3 h 10','falta'],['08:00','começou']],
+      headline:'Se te chamarem agora: PSV até ~18:45', sub:'Estimativa a 1 setor (225) — confirma na Simulação.',
+      bands:[{ lab:'Assistência de hoje', ctx:'não chamado · menos de 4 h', v:'+38,76 €', gain:1 }, NEXT, MES],
+      keys:[['gauge','Simular'],['shield','Limites'],['cal','Ver o serviço']] },
+    { id:'pern', h:'Pernoita · à noite', p:'Fora da base: o próximo report, quanto falta e até quando é o repouso.', t:'21:40', live:1, night:1,
+      left:'Pernoita · LGW', wx:['cloud','7° · LGW'], what:'Report amanhã às', num:'14:05', facts:[['16 h 25','falta'],['00:20','repouso até']],
+      dest:'LGW → LIS', pill:['ok','Repouso ✓'], sub:'Hotel do aeroporto · repouso fora da base: mín. 10 h (235)',
+      bands:[{ lab:'Esta noite', ctx:'pernoita (acordo)', v:'+45,40 €', gain:1 }, { lab:'Em LGW amanhã', ctx:'chuva · 5° a 9°', v:'7°' }, { lab:'A seguir <small>mais 3</small>', ctx:'sáb 14 · LIS → FNC → LIS', v:'05:30' }],
+      keys:[['bed','Hotel · mapas'],['cal','Serviço de amanhã'],['share','Partilhar']] },
+    { id:'pos', h:'Pós-voo', p:'O dia fechou. O número é o PSV de hoje; ao lado, até quando descansas.', t:'14:40',
+      left:'sexta · 13 novembro', what:'PSV de hoje · dia fechado', num:'8:35', unit:'h', facts:[['02:20','repouso até'],['5:10','de voo']],
+      dest:'LIS → OPO → LIS → FAO → LIS', md:1, pill:['calm','Nos limites'],
+      bands:[{ lab:'Serviço · 7 dias', ctx:'de 60 h', v:'31 h', wk:[40,0,65,70,0,35,66] }, { lab:'Novembro <small>estimado</small>', ctx:'+96,90 € hoje · inclui 909,30 € até hoje', v:'2 431,50 €' }, { lab:'A seguir <small>mais 3</small>', ctx:'sáb 14 · LIS → FNC → LIS', v:'05:30' }],
+      keys:[['edit','Registar o sign-off'],['shield','Limites'],['cal','Ver o serviço']] },
+    { id:'fecho', h:'Fecho do mês', p:'As parcelas são as faixas e somam o número de cima. Cinco faixas: é o estado com mais.', t:'10:15',
+      left:'sexta · 27 novembro', what:'Novembro fecha em 3 dias · estimado', num:'2 431', unit:',50 €', wide:1, facts:[['2 187,20 €','até hoje'],['244,30 €','resto do mês']],
+      sub:'Variável pela escala; a base é fixa. A app estima; o recibo da companhia manda.',
+      bands:[{ lab:'Base', ctx:'fixo', v:'1 650,00 €' }, { lab:'Per-diem', ctx:'5 dias de voo', v:'484,50 €' }, { lab:'Pernoitas', ctx:'3 noites fora', v:'136,20 €' }, { lab:'Extras', ctx:'DDO · escritório', v:'160,80 €' }, { lab:'Auditoria do mês', ctx:'itens por confirmar · ≈ 45,40 € em causa', v:'2', tone:'warn' }],
+      keys:[['plus','Registar um extra'],['doc','Relatório do mês'],['cal','Ver a escala']] },
+    { id:'ferias', h:'Férias', p:'Sem teclas, como hoje. O número são os dias que ficam no ano.', t:'12:45',
+      left:'quarta · 11 novembro', what:'Férias · ficam no ano', num:'12', xl:1, unit:'de 22 dias', facts:[['seg 16','regressas'],['05:30','report']],
+      say:['Regressas segunda, 16.','Férias de 9 a 15 de novembro.'],
+      bands:[{ lab:'No regresso', ctx:'seg 16 · LIS → FNC → LIS', v:'05:30' }, MES],
+      keys:null },
+    { id:'vazio', h:'Folga sem serviços · o mais vazio', p:'Sem serviços, sem acordo modelado, sem tempo. Não há factos para faixas: fica o cartaz e as teclas.', t:'12:45',
+      left:'quarta · 11 novembro', word:'Folga', pill:['calm','Escala em dia'], headline:'Sem serviços marcados', say:['Folga a sério.','Nada pendente, nada a vigiar.'],
+      bands:[{ lab:'Escala', ctx:'ligada ao calendário', v:'em dia' }],
+      keys:[['cal','Ver a escala'],['shield','Limites'],['gauge','Simular']] },
+    { id:'setup', h:'Configuração', p:'O primeiro dia. Os três passos são três faixas numeradas.', t:'12:45',
+      left:'quarta · 11 novembro', what:'Começar', title:'Liga a tua escala', sub:'Lemos o calendário do telemóvel onde chega a escala. Só leitura: nada é alterado, e tu confirmas antes de gravar.', link:'Privacidade · saber mais',
+      bands:[{ lab:'Autorizas o calendário', ctx:'o iPhone pergunta uma vez', v:'1' }, { lab:'Escolhes o calendário da escala', ctx:'o que o eCrew preenche', v:'2' }, { lab:'Confirmas os serviços', ctx:'nada se grava sem o teu sim', v:'3' }],
+      keys:[['cal','Ligar o calendário'],['doc','Importar o PDF'],['play','Ver um exemplo']] }
+  ];
+
+  function top(s){
+    var h = '<div class="bHead"><div class="bHeadL">'+(s.dot?'<i class="liveDot"></i>':'')+'<span class="eyebrow">'+s.left+'</span></div><div class="bHeadR">'+
+      (s.bell?'<span class="bell"><i></i>'+s.bell+'</span>':'')+(s.wx?'<span class="wx">'+ic(s.wx[0],14)+'<span class="eyebrow">'+s.wx[1]+'</span></span>':'')+'</div></div>';
+    var facts = s.facts ? '<div class="facts">'+s.facts.map(function(f){ return '<div class="fact"><b'+(f[2]?' class="was"':'')+'>'+f[0]+'</b><span class="caption">'+f[1]+'</span></div>'; }).join('')+'</div>' : '';
+    var num = s.num ? '<div class="split'+(s.wide?' wide':'')+'"><div class="digits'+(s.xl?' xl':'')+'">'+s.num+(s.unit?'<span class="u">'+s.unit+'</span>':'')+'</div>'+facts+'</div>'
+      : s.word ? '<div class="split"><div class="digits xl word">'+s.word+'</div></div>' : '';
+    var heroTop = '<div class="heroTop">'+(s.what?'<span class="tag what">'+s.what+'</span>':'')+num+(s.title?'<div class="titleBig">'+s.title+'</div>':'')+'</div>';
+    var info = '';
+    if (s.dest || s.headline || s.pill) info += '<div class="destRow'+(s.dest && !s.md && s.dl ? ' trim' : '')+'">'+(s.dest?'<span class="dest'+(s.md?' md':'')+'">'+s.dest+'</span>':'<span class="headline">'+(s.headline||'')+'</span>')+(s.pill?'<span class="pill '+s.pill[0]+'">'+s.pill[1]+'</span>':'')+'</div>';
+    if (s.dl) info += '<div class="dl"><div class="dlBar"><i class="dlTrack"></i><i class="dlTrack done" style="width:'+s.dl.now+'%"></i>'+
+      s.dl.secs.map(function(x){ return '<span class="dlSec" style="left:'+x[0]+'%;width:'+(x[1]-x[0])+'%"><i style="width:'+x[2]+'%"></i></span>'; }).join('')+
+      '<i class="dlTick" style="left:100%"></i><span class="dlNow" style="left:'+s.dl.now+'%">'+ic('plane',14,90)+'</span></div>'+
+      '<div class="ends"><span class="caption sub">'+s.dlEnds[0]+'</span><span class="caption sub">'+s.dlEnds[1]+'</span></div><span class="label sub">'+s.dl.txt+'</span></div>';
+    if (s.sub) info += '<span class="label sub">'+s.sub+'</span>';
+    if (s.say) info += '<p class="bodyT say"><b>'+s.say[0]+'</b> '+s.say[1]+'</p>';
+    if (s.link) info += '<span class="lnk">'+s.link+'</span>';
+    return h+'<div class="hero">'+heroTop+(info?'<div class="heroInfo">'+info+'</div>':'')+'</div>';
+  }
+  function band(b){
+    return '<div class="band'+(b.tone?' '+b.tone:'')+'"><div class="bL"><span class="bLab">'+b.lab+'</span><span class="bCtx">'+b.ctx+'</span></div><div class="bR">'+
+      (b.wk?'<span class="wk">'+b.wk.map(function(p,i){ return '<i'+(i===6?' class="t"':'')+' style="height:'+Math.max(2,Math.round(22*p/100))+'px"></i>'; }).join('')+'</span>':'')+
+      (b.u?'<span class="bU">'+b.u+'</span>':'')+'<span class="bV'+(b.gain?' gain':'')+'">'+b.v+'</span></div></div>';
+  }
+  function phone(s){
+    return '<div class="status"><span>'+s.t+'</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="scr">'+
+      '<div class="top"><div class="topIn">'+top(s)+'</div></div>'+
+      '<div class="bands">'+s.bands.map(band).join('')+'</div>'+
+      (s.keys ? '<div class="keysP">'+s.keys.map(function(k,i){ return '<span class="key'+(i===0?' pri':'')+'">'+ic(k[0],20)+'<span class="bodyStrong">'+k[1]+'</span></span>'; }).join('')+'</div>' : '<div class="noKeys"></div>')+
+    '</div>'+tabbar();
+  }
+
+  var grid = document.getElementById('grid');
+  S.forEach(function(s){
+    var d = document.createElement('div'); d.className = 'shot';
+    d.innerHTML = '<h2>'+s.h+'</h2><p>'+s.p+'</p><div class="fit"><div class="ph'+(s.live?' live':'')+(s.night?' night':'')+' go" data-s="'+s.id+'">'+phone(s)+'</div></div><p class="m"></p>';
+    grid.appendChild(d);
+  });
+
+  // ── A ELASTICIDADE: cada faixa fica com (o que sobra) ÷ (n.º de faixas), entre 60 e 124 pt. O número da faixa acompanha a altura
+  //    e encolhe se for comprido de mais para a largura. É esta a conta que o código faria no telemóvel.
+  var MIN = 60, MAX = 124, MAX_FEW = 156;   // com 1 ou 2 faixas, cada uma pode ir até 156
+  function layout(){
+    document.querySelectorAll('.ph').forEach(function(ph){
+      var sp = ph.querySelector('.split'); if (sp && !sp.classList.contains('wide') && sp.scrollWidth > sp.clientWidth + 1) sp.classList.add('wide');   // os factos passam para baixo do número
+      ph.querySelectorAll('.dest').forEach(function(el){ var z = parseFloat(getComputedStyle(el).fontSize); while (el.scrollWidth > el.clientWidth + 0.5 && z > 20) { z -= 1; el.style.fontSize = z+'px'; el.style.lineHeight = (z+4)+'px'; } });
+      var scr = ph.querySelector('.scr'), topIn = ph.querySelector('.topIn'), bands = ph.querySelectorAll('.band'), kp = ph.querySelector('.keysP,.noKeys');
+      var n = bands.length, avail = scr.clientHeight - topIn.offsetHeight - (kp.offsetHeight - 18);   // o topo já conta os 18 pt que a 1.ª faixa tapa; as teclas tapam 18 da última
+      var h = Math.max(MIN, Math.min(n <= 2 ? MAX_FEW : MAX, Math.floor(avail / n)));
+      bands.forEach(function(b){
+        b.style.setProperty('--h', h+'px');
+        var v = b.querySelector('.bV'), size = Math.min(64, Math.round((h - 24) * 0.9)); v.style.setProperty('--v', size+'px');
+        var maxW = b.clientWidth * 0.56; while (v.scrollWidth > maxW && size > 26) { size -= 2; v.style.setProperty('--v', size+'px'); }
+      });
+      var used = topIn.offsetHeight + n * h + (kp.offsetHeight - 18), free = scr.clientHeight - used;
+      var m = ph.closest('.shot').querySelector('.m');
+      m.textContent = n+' faixa'+(n>1?'s':'')+' de '+h+' pt · conteúdo '+used+' de '+scr.clientHeight+' pt'+(free > 0 ? ' · '+free+' pt livres por baixo do topo' : free < 0 ? ' · NÃO CABE: faltam '+(-free)+' pt' : ' · à justa');
+      m.style.color = free < 0 ? '#C6362B' : '';
+    });
+  }
+  // contraste (WCAG 2.1)
+  function lum(hex){ var c = hex.replace('#',''); var r = [0,2,4].map(function(i){ var v = parseInt(c.substr(i,2),16)/255; return v <= .03928 ? v/12.92 : Math.pow((v+.055)/1.055, 2.4); }); return .2126*r[0]+.7152*r[1]+.0722*r[2]; }
+  function cr(a,b){ var x = lum(a), y = lum(b); return ((Math.max(x,y)+.05)/(Math.min(x,y)+.05)); }
+  var pairs = [['Tinta na faixa 1','#141414','#F4F2ED'],['Tinta na faixa 5 (a mais escura)','#141414','#C5BFB1'],['Contexto na faixa 1','#55554F','#F4F2ED'],['Contexto na faixa 5','#55554F','#C5BFB1'],['Verde (ganhos) na faixa 1','#0B6E43','#F4F2ED'],['Verde (ganhos) na faixa 3','#0B6E43','#DDD9CF'],
+    ['Tinta na faixa laranja','#141414','#E86A10'],['Branco na faixa vermelha','#FFFFFF','#C6362B'],['Amarelo na placa','#FFB800','#141414'],['Rótulo na placa','#A3A39B','#141414'],['Claro na faixa noturna 4','#F4F2ED','#2F3D50'],['Verde na faixa noturna 2','#46C98A','#1F2A38']];
+  document.getElementById('ct').innerHTML = '<tr><th></th><th>Par</th><th>Contraste</th><th></th></tr>'+pairs.map(function(p){ var c = cr(p[1],p[2]); return '<tr><td><span class="sw" style="background:'+p[2]+'"></span></td><td>'+p[0]+'</td><td>'+c.toFixed(2).replace('.',',')+'</td><td>'+(c >= 4.5 ? 'passa' : c >= 3 ? 'só letra grande' : 'FALHA')+'</td></tr>'; }).join('');
+
+  function scale(){ document.querySelectorAll('.fit').forEach(function(f){ var k = Math.min(1, f.clientWidth / 406); f.firstElementChild.style.transform = 'scale('+k+')'; f.style.height = (860*k)+'px'; }); }
+  function run(){ scale(); layout(); }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(run); else run();
+  addEventListener('resize', run);
+  document.getElementById('replay').addEventListener('click', function(){ document.querySelectorAll('.ph').forEach(function(p){ p.classList.remove('go'); void p.offsetWidth; p.classList.add('go'); }); });
+})();
+</script>
+</body>
+</html>

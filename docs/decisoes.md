@@ -78,6 +78,10 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   bloco 4 fica "a corrigir" e não entra); manual com a saída ligeiramente diferente fica duplicado (R11, parte)
   (BLOCO 4 · 2026-11-11 noite).
 - **Simulação:** "Juntar ao dia" (Mobbin primeiro) (BLOCO 2).
+- **Desenho — Início "cartões de cor" (2026-11-11, esboço aprovado, nada no código):** `design/inicio-cartoes.html`, 16 estados
+  medidos, **esboço aprovado**. As regras estão em `docs/design-system.md` §14. Falta: passá-lo para o código, numa sessão
+  nova (plano na entrada "noite, 4") (golden do Início e `test:design` primeiro); vê-lo no
+  iPhone; levar a mesma linguagem aos outros ecrãs, janelas e menus (um de cada vez, com Mobbin).
 - **Desenho:** modo escuro da app toda (prioridade, projeto próprio) (2026-11-04 tarde); esboço `design/inicio-v6.html` por
   atualizar; Escala "na linguagem do Início" e a etiqueta de um dia com 2 serviços; Validades e formulário de evento na escala
   DS 2.0; mosaico "NOV · ESTIMADO" sem "bruto"; modelos de e-mail do Supabase com o cabeçalho antigo; cor das notificações
@@ -121,6 +125,89 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   (AlarmKit), hotel pelo Apple Maps, passkeys; Android; iPhone pequeno e grande; beta com 2–3 tripulantes no TestFlight;
   declaração de dados nas lojas; Supabase/Resend pagos e limites (e-mails por hora, DMARC).
 ---
+
+## 2026-11-11 (noite, 4) — Início novo: a direção "cartões de cor" (Fable 5.2) — só esboços, nada no código
+
+**ESBOÇO APROVADO pelo Nuno ("sim", 2026-11-11).** Acaba a fase de design do Início; a seguir é a construção.
+
+**PRÓXIMA SESSÃO — construir o Início 3.0** (sessão nova; pelo método: Opus 5.5, esforço Extra — é a base de uma linguagem
+nova). Ler primeiro `design/inicio-cartoes.html` e `docs/design-system.md` §14. O que fica e o que muda:
+- **Fica:** o motor dos estados (`cs.state` em `screens/HomeScreen.js`, `data/today.js`), as frases, todos os cálculos e as
+  folhas que o Início abre. Nenhum número novo: o que os cartões mostram já existe no ecrã de hoje.
+- **Muda:** a pele e a anatomia do Início (`screens/HomeScreen.js`, 1909 linhas) e a barra (`components/TabBar.js`).
+- **Ordem proposta:** (1) tokens em `data/constants.js`: as cinco cores dos cartões de dia e de noite, o raio 32 da folha,
+  os estilos de texto em Hanken para título de cartão e facto; (2) uma função pura que, de um estado, dá o topo e os
+  cartões (o que é o número, os dois factos, os cartões e a ordem), com teste golden ANTES, a trancar as regras do esboço
+  (nada se repete, o selo é o intervalo, "incerto" com o que falta, "estimado · bruto", cêntimos); (3) os componentes
+  (topo, cartão, linha fina, barra de ação, pílula do ganho) e a barra em cápsula; (4) o `HomeScreen` estado a estado,
+  com `FORCE_HOME_STATE`; (5) `npm run test:design` (o roquete só desce) e `npm test`; (6) atualizar o guião
+  `docs/verificacao-device.md` e ver no iPhone ("testar os estados"), incluindo letra grande e VoiceOver.
+- **Estados do esboço que hoje não são estados próprios no código** (confirmar ao construir): Formação e Documento a
+  caducar existem nas fichas da Living Interface; "Incerto" é uma variante de qualquer estado, não um estado.
+- **Movimento:** nada foi desenhado. Decidir com a skill `animacoes` depois de a página estar parada e certa.
+- Os esboços recusados foram para `design/arquivo/`.
+
+- **Porquê:** o estado mais cheio do Início v6 (em voo, com pernoita e aviso) pede 771 pt em 714 (medido no desenho feito a
+  partir do código, não no iPhone). O Nuno trouxe 22 referências (`referencias/newref`) e pediu uma página que aguente todos
+  os estados, "algo uau, e bom para o utilizador", para depois refazer a app a partir daí.
+- **Recusados pelo Nuno:** `design/inicio-v7.html` (faixas) e `design/app-painel-instrumento.html` (painel de abas + linhas:
+  "tem coisa a mais", a arrumação, as linhas por baixo). Ficam como registo: `inicio-alternativas`, `inicio-instrumento`,
+  `inicio-uau`. As 3 teclas do fundo do v6 deixam de ser obrigatórias (Nuno).
+- **Escolhido: `design/inicio-cartoes.html`** ("gostei deste"). Pílula do estado + número gigante em duas linhas + dois
+  factos ao lado; folha branca com o cartão do momento e o do que vem a seguir. A cor é o tipo: areia = voo, salva =
+  repouso/pernoita, lilás = serviço em terra, neutro = dinheiro, laranja = atenção. Regra da quantidade: o essencial e dois
+  ou três factos.
+- **Regras fixadas no esboço:** nunca mais de dois cartões grandes (com um aviso, o segundo passa a linha fina) · a segunda
+  linha do número é a tinta quando é o sítio e a cinzento quando qualifica ("estimado", "fechado", "livre", "de 22") · o
+  repouso mostra o intervalo real, o mínimo da lei vai na linha pequena · a ação com nome é uma barra ao fundo do cartão
+  (Nuno), partilhar é o ícone do canto · **nada se repete:** o topo é o próximo marco, o cartão é o resto do dia (em voo, o
+  topo é o setor e o cartão é o dia de serviço do report ao limite do PSV) · **o dinheiro que entra vai sempre a verde numa
+  pílula branca**, em qualquer cor de cartão · fecho do mês: valor inteiro com cêntimos, "estimado" por baixo, as parcelas
+  somam o número de cima, "Como é calculado?".
+- **Barra de abas: a A** (Nuno: "A.") — cápsula com as 4 abas (a ativa numa pílula clara) + o ＋ num botão redondo. A barra
+  plana com fio vinha do desenho anterior.
+- **Revisão dos estados (Nuno: "vê se é preciso afinar mais algum estado") — corrigido:** a pernoita mostrava "+142,30 €"
+  (era o dia todo; a noite rende 45,40 €) · folga "daqui a 2 dias" com o serviço a 3 dias · o selo entre duas horas passa a
+  ser sempre o intervalo entre elas (o PSV e o limite vão na linha pequena, em h:mm como na app) · "Vais receber cerca de"
+  → "Ganhos brutos do mês" e "estimado · bruto" em todo o lado (a app já o diz, A-198) · disrupção dizia "prevista" duas
+  vezes · folga vazia dizia "hoje" duas vezes · a configuração tem as três ações da app (ligar, PDF, exemplo) · a véspera
+  passa a pernoita a linha fina · letra mínima 11, tamanhos e espaços da escala do design system, sino a 44.
+- **Quatro estados que faltavam, desenhados:** Incerto (falta um dado: "Incerto" no lugar do número, o que falta na linha
+  pequena, barra "Completar"; o mês com mínimo e máximo), Formação, Documento a caducar (≤ 7 dias toma o topo) e Baixa (texto
+  do acordo, Art. 48.º). São 16 estados.
+- **Medido no esboço (390×844, 714 pt úteis):** os 16 estados cabem (os mais apertados: pós-voo e fecho do mês, 32 pt
+  livres). Contraste WCAG calculado na página: 12 pares passam (o mais baixo: a segunda linha a cinzento, 3,24 para 3
+  pedidos em texto muito grande; o verde na pílula branca 6,31). **Não visto no iPhone; não testado com letra grande nem
+  VoiceOver.**
+- **Decidido pelo Nuno ("faz o recomendado" · "sim" · "sim"):** (1) **iPhone pequeno (375×667):** a folha desliza; o topo
+  e a barra ficam; medido com `?se=1`: 11 dos 16 deslizam (5 a 104 pt) e o primeiro cartão vê-se inteiro em todos. (2) **A
+  letra:** Hanken Grotesk em tudo; o design system mudou (`docs/design-system.md` §14, "Direção 3.0"); a Barlow sai de cada
+  ecrã quando esse ecrã migrar — os tokens do código (`TXT`, `PELE_FONT`) NÃO foram tocados. (3) **Pílulas do topo:** a do
+  estado não se toca; a de contorno abre esse dia na Escala.
+- **Barra de abas: a A** (Nuno: "A.") — cápsula com as 4 abas (a ativa numa pílula clara) + o ＋ num botão redondo. A barra
+  plana com fio vinha do desenho anterior.
+- **Revisão dos estados (Nuno: "vê se é preciso afinar mais algum estado") — corrigido:** a pernoita mostrava "+142,30 €"
+  (era o dia todo; a noite rende 45,40 €) · folga "daqui a 2 dias" com o serviço a 3 dias · o selo entre duas horas passa a
+  ser sempre o intervalo entre elas (o PSV e o limite vão na linha pequena, em h:mm como na app) · "Vais receber cerca de"
+  → "Ganhos brutos do mês" e "estimado · bruto" em todo o lado (a app já o diz, A-198) · disrupção dizia "prevista" duas
+  vezes · folga vazia dizia "hoje" duas vezes · a configuração tem as três ações da app (ligar, PDF, exemplo) · a véspera
+  passa a pernoita a linha fina · letra mínima 11, tamanhos e espaços da escala do design system, sino a 44.
+- **Quatro estados que faltavam, desenhados:** Incerto (falta um dado: "Incerto" no lugar do número, o que falta na linha
+  pequena, barra "Completar"; o mês com mínimo e máximo), Formação, Documento a caducar (≤ 7 dias toma o topo) e Baixa (texto
+  do acordo, Art. 48.º). São 16 estados.
+- **Medido no esboço (390×844, 714 pt úteis):** os 16 estados cabem (os mais apertados: pós-voo e fecho do mês, 32 pt
+  livres). Contraste WCAG calculado na página: 12 pares passam (o mais baixo: a segunda linha a cinzento, 3,24 para 3
+  pedidos em texto muito grande; o verde na pílula branca 6,31). **Não visto no iPhone; não testado com letra grande nem
+  VoiceOver.**
+- **Por decidir:** (1) **iPhone pequeno (375×667, medido com `?se=1`):** 11 dos 16 não cabem sem deslizar (faltam 5 a
+  104 pt) — a folha desliza nesse tamanho, ou o segundo cartão passa sempre a linha fina; (2) **a letra dos títulos:** o
+  esboço usa Hanken em tudo; o design system manda Barlow nos títulos e nos números (`TXT.title`, `TXT.num`) — ou muda o
+  design system, ou o esboço; (3) o que fazem as pílulas do topo ao toque (proposta: a do estado não faz nada; a segunda abre
+  o dia na Escala).
+- **Mobbin (ligações no esboço):** Lloyds e DoorDash (total e parcelas), Amie e Structured (blocos de cor com duração),
+  Singapore Airlines e American Airlines (ecrã vazio), Fresha, Truecaller e Shop (barra em cápsula).
+- **Outra coisa desta sessão:** `CLAUDE_CODE_SUBAGENT_MODEL=opus` no `settings.json` global (os subagentes sem modelo
+  explícito deixam de herdar o Fable); pesquisa continua em Haiku.
 
 ## 2026-11-11 (noite, 3) — Pesquisa do grupo 5 (3 agentes de pesquisa Haiku; fontes conferidas pelo Fable 5.2)
 

@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · Início · cartões de cor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* Início · CARTÕES DE COR, desenvolvido (2026-11-11). O Nuno escolheu este caminho como o mais perto do que quer (ref. do
+   calendário "13.12 DEC", referencias/newref) e disse do anterior: coisa a mais, não ao painel de abas, não às linhas, não à
+   arrumação "bloco em cima, lista em baixo".
+   A regra deste desenho: O ESSENCIAL E DOIS OU TRÊS FACTOS.
+     · em cima: o estado numa pílula, a hora (ou a contagem) em DUAS LINHAS enormes, e dois factos ao lado de um fio;
+     · na folha branca: UM cartão para o momento e UM para o que vem a seguir — e, só se houver, um aviso;
+     · sem teclas e sem lista de serviços: partilhar é o botão do cartão; a lista vive na Escala.
+   A cor diz o TIPO do cartão, sempre a mesma: areia = voo · salva = repouso e pernoita · lilás = serviço em terra ·
+   cinzento claro = dinheiro e neutro · laranja = pede atenção.
+   iPhone 390 × 844, 714 pt úteis. Dados de teste (easyJet, piloto, base Lisboa). É um desenho; o que vale no fim é o iPhone. */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--frame:#04060A;--body:'Hanken','Helvetica Neue',Arial,sans-serif;--signal:#FFB800}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+.lead{max-width:860px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)}
+.key{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
+.key span{height:30px;padding:0 12px;border-radius:15px;display:flex;align-items:center;font-weight:700;font-size:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,406px));gap:26px 24px;justify-content:center}
+@media (max-width:1320px){.grid3{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),406px))}}
+.shot{display:flex;flex-direction:column;gap:8px;min-width:0}
+.shot h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.shot p{font-size:13px;line-height:1.45;color:var(--muted);min-height:38px}
+.shot .m{font-size:12px;min-height:0}
+.fit{width:100%;position:relative;height:860px}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:20px}
+.note{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.note h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.note ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .note li,.note p{font-size:13px;line-height:1.5;color:var(--muted)} .note b,.note a{color:var(--pfg)}
+table.ct{border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums} table.ct td,table.ct th{padding:4px 10px 4px 0;text-align:left;color:var(--muted)}
+table.ct .sw{display:inline-block;width:28px;height:16px;border-radius:4px;vertical-align:middle;border:1px solid rgba(0,0,0,.12)}
+
+.ph{width:406px;height:860px;border:8px solid var(--frame);border-radius:52px;overflow:hidden;display:flex;flex-direction:column;transform-origin:top left;
+  --desk:#E3E1DB;--ink:#141414;--soft:#3A3A36;--sheet:#FFFFFF;--neutral:#F1EFEA;--sand:#E8BE6E;--sage:#B4C2A2;--lilac:#C6BADF;--warn:#F0854A;--pillBd:#141414;--gain:#0B6E43;
+  --tbg:#FFFFFF;--tfg:#141414;--tsub:#77776F;--tline:#ECEAE4;background:var(--desk);color:var(--ink)}
+.ph.night{--desk:#14161B;--ink:#F4F2ED;--soft:rgba(244,242,237,.7);--sheet:#1F222A;--neutral:#2A2E38;--sand:#DDB25F;--sage:#A3B490;--lilac:#B7AAD4;--warn:#EE7C40;--pillBd:#F4F2ED;--gain:#0B6E43;
+  --tbg:#14161B;--tfg:#F4F2ED;--tsub:rgba(244,242,237,.62);--tline:rgba(244,242,237,.14)}
+/* iPhone pequeno (375 × 667: barra de estado de 20, sem indicador em baixo) — decidido 2026-11-11: A FOLHA DESLIZA; o topo e a barra ficam. ?se=1 mede os 16 nesse tamanho */
+.ph.se{width:391px;height:683px;border-radius:40px} .ph.se .status{height:20px;padding:0 16px 2px;font-size:12px} .ph.se .tabbar.tA{height:69px;padding-bottom:8px}
+.ic{display:inline-block;flex:none;fill:currentColor}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.scr{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+.tabbar{height:83px;flex:none;border-top:1px solid var(--tline);display:flex;padding-bottom:34px;background:var(--tbg)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--tsub)}
+.tab .tl{font-size:11px;font-weight:700} .tab.on{color:var(--tfg)}
+.tab .dot{width:4px;height:4px;border-radius:2px} .tab.on .dot{background:var(--signal)}
+.tab.plus{flex:none;width:64px} .tab.plus .pl{width:44px;height:44px;border-radius:22px;background:var(--tfg);color:var(--tbg);display:flex;align-items:center;justify-content:center}
+/* A · a cápsula e o botão redondo */
+.tabbar.tA{border-top:0;background:var(--sheet);padding:5px 12px 22px;gap:8px;align-items:center}
+.cap{flex:1;height:56px;border-radius:28px;background:var(--neutral);display:flex;padding:4px;gap:2px}
+.cap .t{flex:1;border-radius:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:var(--tsub);font-weight:700;font-size:11px}
+.cap .t.on{background:var(--capOn,#FFFFFF);color:var(--tfg);box-shadow:0 1px 3px rgba(20,20,20,.14)}
+.night .cap .t.on{--capOn:rgba(244,242,237,.16);box-shadow:none}
+.fab{width:56px;height:56px;border-radius:28px;background:var(--ink);color:var(--sheet);display:flex;align-items:center;justify-content:center;flex:none}
+/* B · plana, sem fio, a ativa numa pílula preta */
+.tabbar.tB{border-top:0;background:var(--sheet);padding:5px 14px 30px;align-items:center;justify-content:space-between}
+.tB .t{height:44px;min-width:44px;border-radius:22px;display:flex;align-items:center;justify-content:center;gap:8px;color:var(--tsub);font-weight:700;font-size:13px}
+.tB .t.on{background:var(--ink);color:var(--sheet);padding:0 16px}
+.tB .pb{width:44px;height:44px;border-radius:22px;border:1.5px solid var(--pillBd);display:flex;align-items:center;justify-content:center}
+
+/* ── em cima ── */
+.top{flex:none;padding:0 20px 32px}
+.pills{display:flex;align-items:center;gap:8px;padding:8px 0 16px}
+.pill{height:38px;padding:0 16px;border-radius:19px;display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;border:1.5px solid var(--pillBd);white-space:nowrap}
+.pill.on{background:var(--ink);color:var(--desk);border-color:var(--ink)}
+.pill.on i{width:7px;height:7px;border-radius:4px;background:var(--signal)}
+.round{margin-left:auto;width:44px;height:44px;border-radius:22px;background:rgba(127,127,127,.22);display:flex;align-items:center;justify-content:center;position:relative}
+.round b{position:absolute;top:-2px;right:-2px;min-width:18px;height:18px;border-radius:9px;background:var(--warn);color:#141414;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px}
+.what{font-weight:500;font-size:15px;line-height:20px;color:var(--soft)}
+.hero{display:flex;align-items:stretch;gap:16px;margin-top:4px}
+.giant{font-weight:700;font-size:86px;line-height:.9;letter-spacing:-4px;white-space:nowrap}
+.giant small{font-size:34px;letter-spacing:-1px;margin-left:6px}
+.giant s{text-decoration:none;opacity:.5}
+.side{border-left:1.5px solid var(--ink);padding-left:16px;display:flex;flex-direction:column;justify-content:center;gap:12px;min-width:0}
+.side b{display:block;font-weight:700;font-size:20px;line-height:22px;white-space:nowrap} .side span{font-weight:500;font-size:11px;color:var(--soft);white-space:nowrap}
+.side b.was{text-decoration:line-through;opacity:.5}
+
+/* ── a folha e os cartões ── */
+.sheet{flex:1;min-height:0;margin-top:-16px;border-radius:32px 32px 0 0;background:var(--sheet);padding:12px;display:flex;flex-direction:column;gap:8px}
+.cd{border-radius:24px;padding:16px;flex:none;display:flex;flex-direction:column;gap:12px;color:#141414;position:relative}
+.cd.sand{background:var(--sand)} .cd.sage{background:var(--sage)} .cd.lilac{background:var(--lilac)} .cd.warn{background:var(--warn)}
+.cd.neutral{background:var(--neutral);color:var(--ink)}
+.cd .kind{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;opacity:.72}
+.cd h4{font-weight:800;font-size:22px;line-height:26px;letter-spacing:-.4px;margin-top:2px}
+.cd .sub{font-weight:500;font-size:12px;line-height:16px;opacity:.82}
+.cdTop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.go{width:36px;height:36px;border-radius:18px;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;flex:none}
+.neutral .go{background:rgba(127,127,127,.2)}
+/* na app: o ✈ de partilhar leva hitSlop 4 (36 à vista, 44 de toque); a seta é decorativa — o cartão inteiro abre o detalhe */
+.subRow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:-8px;min-height:28px}
+.gainChip{height:28px;padding:0 12px;border-radius:14px;background:#FFFFFF;color:#0B6E43;font-weight:800;font-size:14px;display:inline-flex;align-items:center;white-space:nowrap;flex:none}
+.cdRow .r .gainChip{display:flex;width:max-content;margin-bottom:2px}
+.side b.gain{color:#0B6E43} .night .side b.gain{color:#7BE3B0}
+.cdAct{height:44px;border-radius:16px;background:rgba(255,255,255,.62);display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:14px;white-space:nowrap;margin-top:2px}
+.cdRow{display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
+.cdRow div b{display:block;font-weight:700;font-size:22px;line-height:24px;white-space:nowrap} .cdRow div span{font-weight:500;font-size:11px;opacity:.82;white-space:nowrap}
+.cdRow .r{text-align:right}
+.cdRow div span.gainChip{display:flex;width:max-content;margin:0 0 3px auto;font-weight:800;font-size:14px;opacity:1}
+.dur{height:28px;padding:0 12px;border-radius:14px;background:rgba(255,255,255,.85);color:#141414;display:flex;align-items:center;font-weight:700;font-size:12px;white-space:nowrap}
+.prog{height:4px;border-radius:2px;background:rgba(20,20,20,.18);position:relative;margin-top:-2px}
+.prog i{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:#141414}
+.prog u{position:absolute;top:-4px;width:12px;height:12px;border-radius:6px;background:#141414;margin-left:-6px;border:2.5px solid var(--sand)}
+.cd.slim{padding:12px 16px;flex-direction:row;align-items:center;justify-content:space-between;gap:12px}
+.cd.slim .t{min-width:0} .cd.slim .t b{display:block;font-weight:800;font-size:16px;line-height:20px} .cd.slim .t span{font-weight:500;font-size:12px;opacity:.82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.cd.slim .v{font-weight:800;font-size:20px;white-space:nowrap} .cd.slim .v.gain{color:var(--gain)}
+.night .cd.neutral .v.gain{color:#7BE3B0}
+.lines{display:flex;flex-direction:column;gap:8px}
+.lines div{display:flex;justify-content:space-between;font-weight:700;font-size:15px} .lines div span:first-child{font-weight:500}
+.lines.foot{border-top:1px solid rgba(127,127,127,.3);padding-top:8px}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>Início · cartões de cor</h1>
+    <p>O caminho que disseste ficar mais perto, desenvolvido com uma regra: <b>o essencial e dois ou três factos</b>. Em cima, o estado numa pílula, a hora em duas linhas enormes e dois factos ao lado de um fio. Na folha branca, <b>um cartão para o momento e um para o que vem a seguir</b>; um aviso só quando existe. Sem teclas e sem lista de serviços: partilhar é o botão do cartão, e a lista vive na Escala.</p>
+    <p>A cor diz o tipo do cartão e é sempre a mesma:</p>
+    <div class="key"><span style="background:#E8BE6E">Voo</span><span style="background:#B4C2A2">Repouso e pernoita</span><span style="background:#C6BADF">Serviço em terra</span><span style="background:#F1EFEA;border:1px solid #D6D4CD">Dinheiro e neutro</span><span style="background:#F0854A">Pede atenção</span></div>
+    <p>Dados de teste (easyJet, piloto, base Lisboa). É um desenho no navegador; o que vale no fim é o iPhone.</p>
+  </div>
+  <section class="grid3" id="g"></section>
+  <div class="lead"><h1 style="font-size:24px;margin-top:8px">No iPhone pequeno</h1><p>A 375 × 667 (o mais pequeno), 11 dos 16 estados não cabem inteiros. <b>Decidido: a folha branca desliza</b>; o topo e a barra de abas ficam no sítio, e os cartões não encolhem. O que tem de se ver sem deslizar é o primeiro cartão, o do momento.</p></div>
+  <section class="grid3" id="gs"></section>
+  <div class="lead"><h1 style="font-size:24px;margin-top:8px">A barra de abas</h1><p>A barra de hoje (plana, com um fio e ícones pequenos) vem do desenho anterior e não fala a língua das pílulas e dos cantos redondos. Três alternativas no mesmo ecrã. <b>Escolhida: a A</b>, que está aplicada em todos os ecrãs de cima. Conferido no Mobbin: a cápsula com a aba ativa em pílula é o que usam hoje a <a href="https://mobbin.com/screens/4896d295-e23e-4adc-8b6c-75767d1058a1">Fresha</a> (que também tem pílulas pretas no topo), a <a href="https://mobbin.com/screens/5ac800ad-606f-4f54-b0eb-f02d54904cf4">Truecaller</a> e a <a href="https://mobbin.com/screens/d3158271-a0e5-4672-bea0-44ef4aebcb1c">Shop</a>.</p></div>
+  <section class="grid3" id="gt"></section>
+  <section class="notes">
+    <div class="note"><h3>As regras</h3><ul>
+      <li><b>Nada se repete:</b> o que está no topo (a hora do próximo marco) não volta a aparecer nos cartões. Em voo, o topo é o setor e o cartão é o dia de serviço inteiro.</li>
+      <li><b>O que um serviço rende</b> ("+45,40 €") vai sempre a verde numa pílula branca, seja qual for a cor do cartão. O total do mês fica a tinta e diz sempre "estimado · bruto" (ou "incerto · bruto", com o intervalo e o que falta).</li>
+      <li><b>O selo entre duas horas</b> é sempre o intervalo entre elas. O PSV e o limite vão na linha pequena, em h:mm ("PSV 8:35 de 11:45"); o que falta e o que dura, em "1 h 40".</li>
+      <li><b>iPhone pequeno (375 × 667):</b> a folha desliza; o topo e a barra ficam. O primeiro cartão vê-se sempre inteiro (medido nos 16 estados com <code>?se=1</code>).</li>
+      <li><b>As pílulas do topo:</b> a preta diz o estado e não se toca. A de contorno (o voo ou a data) abre esse dia na Escala; tem 38 de altura à vista e 44 de área de toque.</li>
+      <li><b>A letra:</b> Hanken Grotesk em tudo, títulos e números incluídos. O design system passa a dizê-lo (§14); a Barlow Condensed sai de cada ecrã quando esse ecrã for refeito nesta linguagem.</li>
+      <li><b>Incerto:</b> quando falta um facto, o número dá lugar à palavra "Incerto", a linha pequena diz o que falta e a barra do cartão é "Completar".</li>
+      <li><b>Dois cartões:</b> o do momento e o do que vem a seguir. Nunca mais do que dois grandes; quando há um aviso, o segundo passa a uma linha fina.</li>
+      <li><b>A segunda linha do número:</b> a tinta quando é o sítio (LGW, LIS); a cinzento quando qualifica o número (estimado, fechado, livre, de 22).</li>
+      <li><b>O aviso laranja</b> vai em primeiro quando é sobre este serviço (um atraso) e em último quando é sobre outra coisa (a escala mudou, férias por gozar).</li>
+      <li><b>A ação do momento:</b> partilhar é o ícone no canto do cartão; as outras levam o nome escrito, numa barra ao fundo do cartão ("Lembrete 04:00", "Registar sign-off"). O canto de cima abre sempre o detalhe.</li>
+      <li><b>O intervalo do repouso</b> é o real (23 h 45); o mínimo da lei vai na linha pequena.</li>
+      <li><b>Um número que não é certo</b> diz-lo na segunda linha, a cinzento: "estimado", "fechado", "hoje".</li>
+    </ul></div>
+    <div class="note"><h3>O que veio do Mobbin</h3><ul>
+      <li><a href="https://mobbin.com/screens/7ec4aedc-65f6-46ff-a843-687f5999e017">Lloyds</a>: os cêntimos mais pequenos do que o valor, "até agora" junto ao total e a ligação "Como é calculado?" por cima das parcelas. Foi o que apliquei ao fecho do mês.</li>
+      <li><a href="https://mobbin.com/screens/1371715f-7794-424b-8b4d-00bc11a8b620">DoorDash</a>: o total em grande e as parcelas em linhas simples por baixo, com a explicação numa caixa à parte.</li>
+      <li><a href="https://mobbin.com/screens/99497487-ddd7-4ed5-a523-37ff062e1d9a">Amie</a> e <a href="https://mobbin.com/screens/5e644756-2f41-4b88-90c2-2c4aab56667b">Structured</a>: blocos de cor com a duração num selo, e o intervalo entre dois blocos com nome próprio. É o nosso cartão "A seguir".</li>
+      <li><a href="https://mobbin.com/screens/d88d471d-5467-4017-9091-fd8d1f1a4f95">Singapore Airlines</a> e <a href="https://mobbin.com/screens/c17706bb-f37e-4ec5-8b57-81905c5345e8">American Airlines</a>: o ecrã sem viagens diz quando foi a última atualização, explica quando enche e dá uma ação principal e uma secundária. Foi o que apliquei à folga sem serviços.</li>
+    </ul></div>
+    <div class="note"><h3>Contraste medido</h3><p>Calculado nesta página (WCAG 2.1). Texto normal pede 4,5; texto muito grande pede 3.</p><table class="ct" id="ct"></table></div>
+  </section>
+</div>
+<script>
+(function(){
+  var P = {
+    bell:'<path d="M12 2.2a2.1 2.1 0 0 0-2.1 2.1v.5A6 6 0 0 0 6 10.4V15l-1.8 1.8v1.3h15.6v-1.3L18 15v-4.6a6 6 0 0 0-3.9-5.6v-.5A2.1 2.1 0 0 0 12 2.2zM9.8 19.5a2.2 2.2 0 0 0 4.4 0z"/>',
+    cal:'<path d="M7 2h2.6v3H7V2zm7.4 0H17v3h-2.6V2zM4 5h16v3.6H4V5zm0 5h16v10a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 20V10zm3.4 3v2.8h2.8V13H7.4zm5 0v2.8h2.8V13h-2.8z"/>',
+    home:'<path d="M12 3l9.2 8.2h-2.5V21h-4.9v-6.4h-3.6V21H5.3v-9.8H2.8L12 3z"/>',
+    stats:'<path d="M4 12.5h3.8V20H4v-7.5zM10.1 5.5h3.8V20h-3.8V5.5zM16.2 9.5H20V20h-3.8V9.5z"/>',
+    user:'<path d="M12 3.4a3.7 3.7 0 1 1 0 7.4 3.7 3.7 0 0 1 0-7.4zM4.8 20.2c0-4 3.2-6.6 7.2-6.6s7.2 2.6 7.2 6.6a.8.8 0 0 1-.8.8H5.6a.8.8 0 0 1-.8-.8z"/>',
+    plus:'<path d="M10.4 4h3.2v6.4H20v3.2h-6.4V20h-3.2v-6.4H4v-3.2h6.4V4z"/>',
+    chev:'<path d="M8.6 4.2 16.4 12l-7.8 7.8-1.9-1.9 5.9-5.9-5.9-5.9z"/>',
+    share:'<path d="M17 3a2.8 2.8 0 1 1-2.6 3.8L8.6 10a2.8 2.8 0 0 1 0 4l5.8 3.2A2.8 2.8 0 1 1 13.6 19l-5.8-3.3a2.8 2.8 0 1 1 0-7.4l5.8-3.2A2.8 2.8 0 0 1 17 3z"/>',
+    edit:'<path d="M16.9 3.3a2 2 0 0 1 2.8 0l1 1a2 2 0 0 1 0 2.8L9.2 18.6 4 20l1.4-5.2L16.9 3.3z"/>'
+  };
+  function ic(n, s){ return '<svg class="ic" width="'+s+'" height="'+s+'" viewBox="0 0 24 24" aria-hidden="true">'+P[n]+'</svg>'; }
+  // A · cápsula com as 4 abas (a ativa é uma pílula clara, com nome) + o ＋ num botão redondo ao lado — a mesma frase do topo
+  //     (pílulas + botão redondo). B · barra plana sem fio, a aba ativa numa pílula preta com nome. C · a de hoje.
+  function tabbar(v){
+    var T = [['home','Início'],['cal','Escala'],['stats','Números'],['user','Perfil']];
+    if (v === 'A') return '<nav class="tabbar tA"><div class="cap">'+T.map(function(x,i){ return '<div class="t'+(i===0?' on':'')+'">'+ic(x[0],22)+'<span>'+x[1]+'</span></div>'; }).join('')+'</div><span class="fab">'+ic('plus',22)+'</span></nav>';
+    if (v === 'B') return '<nav class="tabbar tB">'+[T[0],T[1],null,T[2],T[3]].map(function(x,i){ return !x ? '<span class="pb">'+ic('plus',20)+'</span>' : '<div class="t'+(i===0?' on':'')+'">'+ic(x[0],22)+(i===0?'<span>'+x[1]+'</span>':'')+'</div>'; }).join('')+'</nav>';
+    var t = [T[0],T[1],null,T[2],T[3]]; return '<nav class="tabbar">'+t.map(function(x,i){ return x ? '<div class="tab'+(i===0?' on':'')+'">'+ic(x[0],24)+'<span class="tl">'+x[1]+'</span><i class="dot"></i></div>' : '<div class="tab plus"><span class="pl">'+ic('plus',22)+'</span></div>'; }).join('')+'</nav>';
+  }
+  function top(a, b, n, what, giant, f1, f2){
+    function fact(f){ return '<div><b'+(f[2]?' class="'+f[2]+'"':'')+'>'+f[0]+'</b><span>'+f[1]+'</span></div>'; }
+    return '<div class="top"><div class="pills"><span class="pill on">'+(a[1]?'<i></i>':'')+a[0]+'</span>'+(b?'<span class="pill">'+b+'</span>':'')+'<span class="round">'+ic('bell',20)+(n?'<b>'+n+'</b>':'')+'</span></div>'+
+      '<div class="what">'+what+'</div><div class="hero"><div class="giant">'+giant+'</div>'+(f1 ? '<div class="side">'+fact(f1)+fact(f2)+'</div>' : '')+'</div></div>';
+  }
+  // O cartão: tipo · título · (linha pequena + ganho numa pílula branca) · "início — selo — fim" · (progresso) · (ação com nome)
+  // O QUE ESTÁ NO TOPO NÃO SE REPETE NO CARTÃO: o topo é o próximo marco; o cartão é o resto do dia.
+  function card(color, kind, title, sub, a, dur, b, pct, icon, gain){
+    return '<div class="cd '+color+'"><div class="cdTop"><div><span class="kind">'+kind+'</span><h4>'+title+'</h4></div><span class="go">'+ic(Array.isArray(icon) ? 'chev' : (icon||'chev'),16)+'</span></div>'+
+      ((sub||gain) ? '<div class="subRow"><span class="sub">'+(sub||'')+'</span>'+(gain?'<span class="gainChip">'+gain+'</span>':'')+'</div>' : '')+
+      '<div class="cdRow"><div><b>'+a[0]+'</b><span>'+a[1]+'</span></div><span class="dur">'+dur+'</span><div class="r">'+(b[2]==='gain' ? '<span class="gainChip" style="margin-left:auto">'+b[0]+'</span>' : '<b>'+b[0]+'</b>')+'<span>'+b[1]+'</span></div></div>'+
+      (pct!=null?'<div class="prog"><i style="width:'+pct+'%"></i><u style="left:'+pct+'%"></u></div>':'')+
+      (Array.isArray(icon) ? '<span class="cdAct">'+ic(icon[0],15)+icon[1]+'</span>' : '')+'</div>';
+  }
+  function slim(color, a, b, val, gain){ return '<div class="cd slim '+color+'"><div class="t"><b>'+a+'</b><span>'+b+'</span></div>'+(val ? (gain ? '<span class="gainChip">'+val+'</span>' : '<span class="v">'+val+'</span>') : '<span class="go">'+ic('chev',16)+'</span>')+'</div>'; }
+
+  var DIA = 'LIS → FNC → LIS → LGW', IV = 'LIS → FNC → LIS';
+  var S = [
+    ['Em voo','O topo é este setor (a que horas aterras, quanto falta, a margem). O cartão é o dia de serviço inteiro, do report ao limite, com o ponto onde vais.','', '12:45',
+      top(['Em voo',1],'EJU7625',2,'Aterras às','13:50<br>LGW',['1 h 05','falta para aterrar'],['3:10','de margem no PSV']),
+      card('sand','Dia de serviço · setor 3 de 3',DIA,'a horas',['05:15','report'],'PSV 7:30 de 11:45',['17:00','limite'],64,'share')+
+      slim('sage','Pernoita em LGW','fim de serviço 14:20 · Hotel do aeroporto','+45,40 €',1)+
+      slim('warn','A escala mudou','2 alterações por rever · nada entra sem ti')],
+    ['Antes do report','O topo é o report. O cartão começa na partida, para não repetir a hora de cima.','', '03:35',
+      top(['Hoje',1],'EJU7601',0,'Report às','05:15<br>LIS',['1 h 40','falta'],['17:00','PSV até']),
+      card('sand','Dia de serviço · 3 setores',DIA,'PSV 8:35 de 11:45 · nos limites',['06:15','parte'],'7 h 35',['13:50','última chegada'],null,'share')+
+      card('sage','A seguir','Pernoita em LGW','Hotel do aeroporto · mínimo 10 h',['14:20','fim de serviço'],'23 h 45',['14:05','report · qui 12'],null,null,'+45,40 €')],
+    ['Disrupção','A hora nova em grande; a antiga riscada ao lado. O aviso laranja é o primeiro cartão.','', '04:50',
+      top(['Hoje',1],'EJU7601',0,'Nova partida às','07:25<br>LIS',['06:15','hora da escala','was'],['+70 min','de atraso']),
+      slim('warn','Limites com o atraso','ainda dentro · margem 2:00 até às 17:00')+
+      card('sand','Dia de serviço · 3 setores',DIA,'o avião ainda vem a caminho (EJU7450)',['05:15','report'],'PSV 9:45 de 11:45',['15:00','última chegada'],null,'share')+
+      slim('sage','Pernoita em LGW','fim de serviço 15:30 · Hotel do aeroporto','+45,40 €',1)],
+    ['Véspera · à noite','A mesma página no escuro. A barra ao fundo do cartão marca o lembrete para acordar.','night', '21:40',
+      top(['Amanhã',1],'quinta 12',0,'Report às','05:15<br>LIS',['7 h 35','falta'],['17:00','PSV até']),
+      card('sand','Dia de serviço · 3 setores',DIA,'PSV 8:35 de 11:45 · repouso cumprido',['06:15','parte'],'7 h 35',['13:50','última chegada'],null,['bell','Lembrete 04:00'])+
+      slim('sage','Pernoita em LGW','fim de serviço 14:20 · Hotel do aeroporto','+45,40 €',1)],
+    ['Pernoita · à noite','Fora da base. O cartão é o repouso mínimo, com o ponto no que já está cumprido. O voo de amanhã fica numa linha, sem repetir o report.','night', '21:40',
+      top(['Pernoita',0],'LGW',0,'Report amanhã às','14:05<br>LGW',['16 h 25','falta'],['7°','amanhã · chuva']),
+      card('sage','Repouso · fora da base','Hotel do aeroporto','pernoita desta noite',['14:20','fim de serviço'],'mínimo 10 h',['00:20','cumprido'],73,null,'+45,40 €')+
+      slim('sand','LGW → LIS','quinta 12 · parte 15:05 · chega 17:45')],
+    ['Standby no aeroporto','Um serviço em terra é lilás. O cartão mostra o que já passou da janela e o que rende se não chamarem.','', '08:50',
+      top(['Standby',1],'aeroporto',0,'A janela fecha às','12:00<br>LIS',['3 h 10','falta'],['~18:45','PSV até, se chamarem já']),
+      card('lilac','Serviço em terra','Standby no aeroporto','não chamado até agora',['08:00','começou'],'50 min de 4 h',['+38,76 €','se não chamarem','gain'],21)+
+      card('sand','A seguir',IV,'sábado 14 · 2 setores',['05:30','report'],'5 h 40',['11:10','fim'])],
+    ['Folga','O número é quanto falta. O cartão é o próximo serviço; o dinheiro do mês numa linha.','', '12:45',
+      top(['Folga',0],'quarta 11',0,'Próximo serviço daqui a','2<small>dias</small><br><s>livre</s>',['sexta 13','até lá'],['31 h','de 60 em 7 dias']),
+      card('sand','Próximo serviço',IV,'2 setores · ida e volta',['05:30','report'],'5 h 40',['11:10','fim'])+
+      slim('neutral','Novembro','estimado · bruto','2 431,50 €')+
+      slim('warn','Férias 2026','ficam 12 de 22 dias · o ano acaba daqui a 50 dias')],
+    ['Pós-voo','O dia fechou. O número é o PSV de hoje. A barra ao fundo do cartão regista o sign-off.','', '14:40',
+      top(['Dia fechado',0],'sexta 13',0,'PSV de hoje','8:35<small>h</small><br><s>fechado</s>',['+96,90 €','ganhos de hoje','gain'],['31 h','de 60 em 7 dias']),
+      card('sage','Repouso · na base','Descansa','o dia fechou nos limites',['14:20','fim de serviço'],'mínimo 12 h',['02:20','cumprido'],3,['edit','Registar sign-off'])+
+      card('sand','A seguir',IV,'sábado 14 · 2 setores',['05:30','report'],'5 h 40',['11:10','fim'])],
+    ['Fecho do mês','O valor inteiro numa linha, com "estimado" por baixo, a cinzento. A legenda diz que é bruto. As parcelas somam o número de cima.','', '10:15',
+      top(['Novembro',0],'fecha em 3 dias',0,'Ganhos brutos do mês','2 431<small>,50 €</small><br><s>estimado</s>',null,null),
+      '<div class="cd neutral"><span class="kind">As parcelas</span><div class="lines"><div><span>Base</span><span>1 650,00 €</span></div><div><span>Per-diem · 5 dias de voo</span><span>484,50 €</span></div><div><span>Pernoitas · 3 noites</span><span>136,20 €</span></div><div><span>Extras · DDO, escritório</span><span>160,80 €</span></div></div>'+
+        '<div class="lines foot"><div><span>Já feito até hoje</span><span>2 187,20 €</span></div><div><span>Ainda na escala</span><span>244,30 €</span></div></div>'+
+        '<span class="sub">O recibo da companhia manda. <u>Como é calculado?</u></span></div>'+
+      slim('warn','Auditoria do mês','2 itens por confirmar · ≈ 45,40 € em causa')+
+      slim('neutral','Falta algum extra?','regista antes do fecho')],
+    ['Férias','Só o regresso e o mês. Sem mais nada.','', '12:45',
+      top(['Férias',0],'quarta 11',0,'Ficam no ano','12<small>dias</small><br><s>de 22</s>',['segunda 16','regressas'],['9 a 15 nov','estas férias']),
+      card('sand','No regresso',IV,'2 setores · ida e volta',['05:30','report'],'5 h 40',['11:10','fim'])+
+      slim('neutral','Novembro','estimado · bruto','2 431,50 €')],
+    ['Folga sem serviços · o mais vazio','Sem serviços e sem acordo modelado. Diz quando é que isto enche, a que horas foi lida a escala e o que podes fazer.','', '12:45',
+      top(['Folga',0],'quarta 11',0,'Sem serviços na escala','Livre<br><s>hoje</s>',['Em dia','a tua escala'],['12:40','última leitura']),
+      '<div class="cd neutral"><span class="kind">Quando aparecem</span><span class="sub" style="font-size:14px;line-height:20px;opacity:1">Quando a companhia publicar a escala no calendário, os serviços aparecem aqui.</span></div>'+
+      '<div class="cd slim" style="background:#141414;color:#fff"><div class="t"><b>Ler a escala agora</b><span>ou puxa o ecrã para baixo</span></div><span class="go" style="background:rgba(255,255,255,.2)">'+ic('chev',16)+'</span></div>'+
+      slim('neutral','Importar o PDF','se a escala chegou por e-mail')],
+    ['Configuração','O primeiro dia: três passos num cartão e o botão que começa.','', '12:45',
+      top(['Começar',0],null,0,'Para a app saber o teu dia','Liga a<br>escala',['Só leitura','nada é alterado'],['Com o teu sim','é que se grava']),
+      '<div class="cd neutral"><span class="kind">Três passos</span><div class="lines"><div><span>1 · Autorizas o calendário</span><span></span></div><div><span>2 · Escolhes o calendário da escala</span><span></span></div><div><span>3 · Confirmas os serviços</span><span></span></div></div></div>'+
+      '<div class="cd slim" style="background:#141414;color:#fff"><div class="t"><b>Ligar o calendário</b><span>o iPhone pergunta uma vez</span></div><span class="go" style="background:rgba(255,255,255,.2)">'+ic('chev',16)+'</span></div>'+
+      slim('neutral','Importar o PDF','se a escala chegou por e-mail')+
+      slim('neutral','Ver um exemplo','um voo de amostra, sem ligar nada')],
+    // ── os quatro que faltavam (existem na app: living-interface §5, fichas 8, 10 e 13, e o "incerto") ──
+    ['Incerto · falta um dado','Quando falta um facto, a app diz "incerto" e o que falta; nunca um valor inventado. A barra do cartão completa o dado.','', '03:35',
+      top(['Hoje',1],'EJU7601',0,'Report às','05:15<br>LIS',['1 h 40','falta'],['Incerto','PSV até']),
+      card('sand','Dia de serviço · repartido',IV,'limites incertos · falta o alojamento da pausa',['06:15','parte'],'12 h 25',['18:40','última chegada'],null,['edit','Completar'])+
+      '<div class="cd neutral"><span class="kind">Novembro · incerto · bruto</span><div class="lines"><div><span>No mínimo</span><span>2 180,00 €</span></div><div><span>No máximo</span><span>2 431,50 €</span></div></div><span class="sub">Falta o dia em que entraste na companhia. <u>Completar</u></span></div>'],
+    ['Formação','Um dia em terra, sem ruído de voo: a hora, quando acaba e o serviço seguinte.','', '08:10',
+      top(['Hoje',1],'formação',0,'Começa às','09:00<br>LIS',['50 min','falta'],['17:00','acaba']),
+      slim('lilac','Formação','8 h de serviço em terra · sem voo hoje')+
+      card('sand','A seguir',IV,'sábado 14 · 2 setores',['05:30','report'],'5 h 40',['11:10','fim'])],
+    ['Documento a caducar','A sete dias ou menos, a validade toma o topo. O cartão laranja regista a data nova.','', '12:45',
+      top(['Atenção',1],'quarta 11',0,'O certificado médico caduca em','6<small>dias</small><br>17 nov',['terça','último dia válido'],['2 serviços','marcados depois']),
+      '<div class="cd warn"><div class="cdTop"><div><span class="kind">Validades</span><h4>Certificado médico</h4></div><span class="go">'+ic('chev',16)+'</span></div><span class="sub">Quando renovares, regista a data nova para o aviso sair.</span><span class="cdAct">'+ic('edit',15)+'Registar a data nova</span></div>'+
+      card('sand','Próximo serviço',IV,'sábado 14 · ainda dentro da validade',['05:30','report'],'5 h 40',['11:10','fim'])],
+    ['Baixa','A app baixa a voz: o dia do episódio, o que o acordo garante (com o artigo) e mais nada.','', '12:45',
+      top(['Baixa',0],'quarta 11',0,'Dia do episódio','2<small>de 3</small><br><s>pagos</s>',null,null),
+      '<div class="cd neutral"><span class="kind">O que o acordo garante</span><span class="sub" style="font-size:14px;line-height:20px;opacity:1">Dias 1 a 3: o acordo paga 60&nbsp;% da base do dia (Art.&nbsp;48.º). Do 4.º dia em diante: só a Segurança Social.</span></div>'+
+      slim('neutral','Sábado 14, report 05:30','se continuares de baixa, avisa a escala')]
+  ];
+  document.getElementById('g').innerHTML = S.map(function(s){
+    return '<div class="shot"><h3>'+s[0]+'</h3><p>'+s[1]+'</p><div class="fit"><div class="ph '+s[2]+'"><div class="status"><span>'+s[3]+'</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="scr">'+s[4]+'<div class="sheet">'+s[5]+'</div></div>'+tabbar('A')+'</div></div><p class="m"></p></div>';
+  }).join('');
+  // a comparação das três barras, no mesmo estado (folga, de dia) e a recomendada à noite (véspera)
+  function mini(s, v, h, p, cls){ return '<div class="shot"><h3>'+h+'</h3><p>'+p+'</p><div class="fit"><div class="ph '+s[2]+(cls?' '+cls:'')+'"><div class="status"><span>'+s[3]+'</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="scr">'+s[4]+'<div class="sheet">'+s[5]+'</div></div>'+tabbar(v)+'</div></div><p class="m"></p></div>'; }
+  document.getElementById('gt').innerHTML =
+    mini(S[6],'A','A · Cápsula e botão redondo','A recomendada. As quatro abas numa cápsula; a ativa é uma pílula clara. O ＋ é um botão redondo ao lado, como o sino no topo. Sem fio: a folha branca desce até ao fundo.')+
+    mini(S[6],'B','B · Barra plana com pílula','Fica presa ao fundo, sem fio. Só a aba ativa mostra o nome, numa pílula preta; o ＋ é um círculo em contorno. É a mais discreta, mas quem não conhece os ícones tem de adivinhar.')+
+    mini(S[6],'C','C · A de hoje','Para comparar: plana, com um fio por cima, ícones pequenos e o ponto amarelo. Vem de outro desenho.')+
+    mini(S[3],'A','A · à noite','A mesma cápsula sobre a folha escura.');
+  // o iPhone pequeno: os três estados mais cheios, com a folha a deslizar
+  document.getElementById('gs').innerHTML =
+    mini(S[8],'A','Fecho do mês','O pior caso. As parcelas veem-se inteiras; a auditoria e os extras ficam a um gesto.','se')+
+    mini(S[7],'A','Pós-voo','O repouso e a barra do sign-off veem-se; o serviço seguinte espreita por baixo.','se')+
+    mini(S[1],'A','Antes do report','O dia de serviço inteiro; a pernoita espreita por baixo.','se');
+  // contraste (WCAG 2.1), com a transparência misturada no fundo
+  function rgb(h){ h = h.replace('#',''); return [0,2,4].map(function(i){ return parseInt(h.substr(i,2),16); }); }
+  function mix(f, b, a){ var x = rgb(f), y = rgb(b); return x.map(function(v,i){ return Math.round(v*a + y[i]*(1-a)); }); }
+  function lum(c){ var r = c.map(function(v){ v /= 255; return v <= .03928 ? v/12.92 : Math.pow((v+.055)/1.055, 2.4); }); return .2126*r[0]+.7152*r[1]+.0722*r[2]; }
+  function cr(f, b, a){ var x = lum(mix(f, b, a == null ? 1 : a)), y = lum(rgb(b)); return (Math.max(x,y)+.05)/(Math.min(x,y)+.05); }
+  var PAIRS = [['Título no cartão de voo (areia)','#141414','#E8BE6E',1,4.5],['Linha pequena no cartão de voo','#141414','#E8BE6E',.82,4.5],['Linha pequena no cartão de repouso (salva)','#141414','#B4C2A2',.82,4.5],['Linha pequena no cartão em terra (lilás)','#141414','#C6BADF',.82,4.5],['Linha pequena no aviso (laranja)','#141414','#F0854A',.82,4.5],
+    ['Ganho a verde na pílula branca','#0B6E43','#FFFFFF',1,4.5],['Ganho a verde ao lado do número (pós-voo)','#0B6E43','#E3E1DB',1,4.5],['Legenda por cima do número','#3A3A36','#E3E1DB',1,4.5],['Segunda linha a cinzento ("estimado")','#141414','#E3E1DB',.5,3],
+    ['À noite: número sobre o fundo','#F4F2ED','#14161B',1,4.5],['À noite: segunda linha a cinzento','#F4F2ED','#14161B',.5,3],['À noite: linha pequena no cartão de voo','#141414','#DDB25F',.82,4.5]];
+  document.getElementById('ct').innerHTML = '<tr><th></th><th>Par</th><th>Contraste</th><th></th></tr>'+PAIRS.map(function(p){ var c = cr(p[1],p[2],p[3]); return '<tr><td><span class="sw" style="background:'+p[2]+'"></span></td><td>'+p[0]+'</td><td>'+c.toFixed(2).replace('.',',')+'</td><td>'+(c >= p[4] ? 'passa' : 'FALHA (pede '+String(p[4]).replace('.',',')+')')+'</td></tr>'; }).join('');
+  if (/[?&]se=1/.test(location.search)) document.querySelectorAll('#g .ph').forEach(function(x){ x.classList.add('se'); });
+  function run(){
+    document.querySelectorAll('.fit').forEach(function(f){ var k = Math.min(1, f.clientWidth / 406); f.firstElementChild.style.transform = 'scale('+k+')'; f.style.height = (f.firstElementChild.offsetHeight*k)+'px'; });
+    document.querySelectorAll('.ph').forEach(function(ph){
+      var scr = ph.querySelector('.scr'), sh = ph.querySelector('.sheet'), kz = ph.getBoundingClientRect().width / ph.offsetWidth, last = sh.lastElementChild, m = ph.closest('.shot').querySelector('.m');
+      var hero = ph.querySelector('.hero'), gi = ph.querySelector('.giant'), z = 86;
+      while (hero.scrollWidth > hero.clientWidth && z > 60) { z -= 2; gi.style.fontSize = z+'px'; gi.style.letterSpacing = (-z*0.046)+'px'; }   // o número encolhe para os factos caberem ao lado
+      var over = Math.round(Math.max(scr.scrollHeight - scr.clientHeight, (last.getBoundingClientRect().bottom - scr.getBoundingClientRect().bottom) / kz + 12, hero.scrollWidth - hero.clientWidth));
+      var free = Math.round((scr.getBoundingClientRect().bottom - last.getBoundingClientRect().bottom) / kz) - 12;
+      if (ph.classList.contains('se')) {   // no pequeno a folha desliza: o que conta é o primeiro cartão ver-se inteiro
+        var whole = sh.firstElementChild.getBoundingClientRect().bottom <= scr.getBoundingClientRect().bottom + .5;
+        m.textContent = over > 0 ? 'Desliza '+over+' pt · o primeiro cartão '+(whole ? 'vê-se inteiro' : 'FICA CORTADO') : 'Cabe nos '+scr.clientHeight+' pt sem deslizar';
+        m.style.color = (over > 0 && !whole) ? '#C6362B' : '#55554F';
+      } else {
+        m.textContent = over > 0 ? 'NÃO CABE: faltam '+over+' pt' : 'Cabe nos '+scr.clientHeight+' pt · '+free+' pt livres na folha';
+        m.style.color = over > 0 ? '#C6362B' : '#55554F';
+      }
+    });
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(run); else run();
+  addEventListener('resize', run);
+})();
+</script>
+</body>
+</html>

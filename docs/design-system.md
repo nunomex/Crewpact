@@ -27,7 +27,7 @@
 **Tokens** (`data/constants.js`):
 - `PELE` — paper `#FFFFFF` · ink `#141414` · ghost `#E2E1DC` · grey `#77776F` · line `#ECEAE4` · soft/soft2 · **yellow `#FFB800`** · ok/warn/red + `*Soft` (superfícies pintadas) · onInk* (placas pretas).
 - `PELE_NIGHT` — a MESMA gramática sobre azul-quase-preto (`#0D131C`); amarelo mantém-se; estados sobem de luminosidade para contraste.
-- `PELE_FONT` — **Barlow Condensed** (display: fantasma, números grandes, palavra condensada) + **Hanken Grotesk** (corpo, rótulos) + **Caveat** (`hand` — manuscrita, USO ÚNICO: a voz do Início, o bilhete pessoal com marcador amarelo). **NUNCA `fontWeight`** — as fontes são estáticas, a FAMÍLIA carrega o peso.
+- `PELE_FONT` — **Barlow Condensed** (display: fantasma, números grandes, palavra condensada) + **Hanken Grotesk** (corpo, rótulos) + **Caveat** (`hand` — manuscrita, USO ÚNICO: a voz do Início, o bilhete pessoal com marcador amarelo). **NUNCA `fontWeight`** — as fontes são estáticas, a FAMÍLIA carrega o peso. **(2026-11-11: a direção 3.0, §14, passa tudo a Hanken, ecrã a ecrã.)**
 - Partilhados com o tema antigo: `RADIUS` (cartão de conteúdo = `lg` 16; folhas/diálogos xl/xxl) · `SPACE` · `SHADOW` (só folhas/diálogos/toasts elevam — **cartões são planos**, borda hairline) · `GUTTER` 16.
 - **Design System 2.0 (2026-11-02):** `TXT` (estilos de texto com nome — §9) · `SPACE` alargado à grelha 2/4 · `TYPE` com os números condensados (24/28/34/44) · `ICON_BTN` (36 · ícone 16 · toque 44) · `SCALE` (as escalas permitidas, lidas pelo guardião §12).
 - **Cor de marca por PAPÉIS — `BRAND` (2026-11-02, base das edições por sindicato):** `signal` (sinais sem texto: pontos,
@@ -262,3 +262,36 @@ O Mobbin serve para ver como as melhores apps resolvem o mesmo problema; a escol
 guarda-se em `referencias/` (imagens só no PC; índice com links em `referencias/README.md`) e na coleção
 privada "CrewPact — Design System" do Mobbin. Primeira escolha (2026-11-02): ✕ à direita (Alan,
 Polarsteps, Beside, pliability) e Guardar largo no fundo (AllTrails, Mindtrip, Hypelist).
+
+## §14 · Direção 3.0 · cartões de cor (decidida 2026-11-11 · por aplicar, ecrã a ecrã)
+
+Esboço que manda: `design/inicio-cartoes.html` (16 estados do Início, medidos). **Ainda não está no código nem foi visto no
+iPhone.** Enquanto um ecrã não for refeito nesta linguagem, segue as secções de cima (2.0). Ordem: o Início primeiro;
+depois os outros ecrãs, janelas e menus, um de cada vez, com Mobbin.
+
+O que muda em relação à §2 ("branco · preto · amarelo, plana, hairline"):
+
+- **Cor por tipo, sempre a mesma:** areia `#E8BE6E` = voo · salva `#B4C2A2` = repouso e pernoita · lilás `#C6BADF` =
+  serviço em terra · neutro `#F1EFEA` = dinheiro e o resto · laranja `#F0854A` = pede atenção. Fundo da página `#E3E1DB`,
+  folha branca por cima. À noite: fundo `#14161B`, folha `#1F222A`, as cores dos cartões um tom abaixo. O amarelo fica só
+  no ponto do estado.
+- **A letra: Hanken Grotesk em tudo**, títulos e números incluídos (decisão do Nuno, 2026-11-11). `TXT.title`, `TXT.titleLg`,
+  `TXT.num` e `TXT.numLg` passam a Hanken 700/800 **quando o ecrã migrar**; a Barlow Condensed sai de cada ecrã nessa
+  altura (não se troca a família nos tokens de uma vez: a Hanken é mais larga e partia os ecrãs antigos). O número gigante
+  do topo (86) continua fora da escala, afinado no `TUNE`.
+- **A anatomia do Início:** pílula do estado + número em duas linhas + dois factos ao lado de um fio; folha com o cartão do
+  momento e o do que vem a seguir (nunca mais de dois grandes; com um aviso, o segundo passa a linha fina). Sem teclas.
+- **Raios:** cartão `RADIUS.xxl` (24); a folha pede um degrau novo, 32 (acrescentar à escala na construção); pílulas e a
+  cápsula da barra = `pill`.
+- **Barra de abas:** cápsula com as 4 abas (a ativa numa pílula clara) + o ＋ num botão redondo de 56.
+- **Regras de conteúdo** (estão escritas no esboço): nada se repete entre o topo e os cartões · o selo entre duas horas é
+  o intervalo entre elas · PSV e limites em h:mm, o que falta em "1 h 40" · o que um serviço rende vai a verde numa pílula
+  branca, o total do mês a tinta com "estimado · bruto" · "Incerto" no lugar do número quando falta um facto, com o que
+  falta e a barra "Completar".
+- **Toque:** a pílula preta do estado não se toca; a de contorno abre esse dia na Escala (38 à vista, 44 de toque); o
+  cartão inteiro abre o detalhe; partilhar é o ícone do canto (36 à vista, 44 de toque).
+- **iPhone pequeno (375 × 667):** a folha desliza; o topo e a barra ficam. O primeiro cartão vê-se sempre inteiro (medido).
+- **Contraste medido (WCAG 2.1):** os 12 pares do esboço passam; o mais baixo é a segunda linha a cinzento do número
+  (3,24 para 3 pedidos em texto muito grande).
+
+O guardião (`test:design`) continua a valer: a migração de cada ecrã baixa o roquete, nunca o sobe.

@@ -19,6 +19,15 @@ combinações de letra e 924 espaçamentos fora da escala (medido a 2026-11-02).
   `perfil-acesso`/`perfil-topo`/`perfil-sino` (a canónica é `perfil-final.html`, e o sino mudou-se para o
   header do Perfil), `icons-test`.
 
+## Direção 3.0 · cartões de cor (aprovada pelo Nuno a 2026-11-11, por construir)
+
+- **`inicio-cartoes.html`** é o mockup que manda no Início novo (16 estados medidos, a fila do iPhone pequeno, a barra de
+  abas em cápsula, as regras e o contraste). As regras estão em `docs/design-system.md` §14.
+- `inicio-v6.html` descreve o Início que ainda está no código; deixa de valer quando o novo for construído.
+- `inicio-extremos.html` é o diagnóstico que abriu este trabalho (o estado mais cheio e o mais vazio do v6).
+- Arquivados a 2026-11-11 (recusados no caminho): `inicio-v7`, `inicio-alternativas`, `inicio-mistura`,
+  `inicio-instrumento`, `inicio-uau`, `app-painel-instrumento`.
+
 ## Referências de outras apps
 
 Vêm do Mobbin (MCP) e guardam-se em `referencias/` na raiz do projeto, com a escolha do Nuno. São

@@ -33,6 +33,8 @@ fadiga (FTL — Reg. UE 83/2014 · CS-FTL.1) e a remuneração prevista pelos ac
    (placa de tinta + folha; nunca com barra de abas) — regras em
    `docs/design-system.md` §9–§12. O `npm run test:design` tranca-as (a dívida só pode descer). Papel permanente: designer sénior
    da Apple — "a Apple lançava isto?".
+   **Direção 3.0 "cartões de cor" (aprovada 2026-11-11, por construir):** o Início novo é `design/inicio-cartoes.html`;
+   regras em `docs/design-system.md` §14. Aplica-se ecrã a ecrã; o que ainda não migrou segue o 2.0.
 6. **Dados de teste só.** Nunca dados reais de tripulantes durante a construção. RGPD: sem ficheiros,
    fotos nem saúde; dose de radiação nunca guardada.
 7. **Versões nativas = as que o `npx expo install` escolhe** (SDK 58: worklets 0.13.0, reanimated 4.7.1); nunca
@@ -47,4 +49,5 @@ fadiga (FTL — Reg. UE 83/2014 · CS-FTL.1) e a remuneração prevista pelos ac
 
 ## Modelo e esforço
 Segue a tabela do método global. Verificação de uma mudança: Opus 5.5 Alto. Verificação completa: UltraCode.
-Fable 5.1 só para arquitetura ou bug que o Opus em Max não resolveu.
+Fable 5.2 (Alto, sessão própria) só para arquitetura, bug que o Opus não resolveu à segunda tentativa, e auditar ou corrigir cálculos
+FTL/AE. Construir ecrãs a partir de um esboço aprovado: Opus 5.5. Rever a segurança: Opus 5.5 (o Fable desvia esses pedidos).

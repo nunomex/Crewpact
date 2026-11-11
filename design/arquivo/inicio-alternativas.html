@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · Início · três caminhos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* Início — TRÊS CAMINHOS para o Nuno escolher (2026-11-11), depois de a v7 (pilha de faixas) não ter agradado.
+   Não são variações da mesma ideia: cada um parte de uma referência diferente de referencias/newref.
+     A · O CARTÃO DE EMBARQUE — o momento é UM bilhete (ref. dos bilhetes com picotado): talão amarelo com a hora, corpo com os
+         factos em grelha; o próximo serviço espreita por baixo, como numa carteira.
+     B · A SEMANA E A FOLHA — a semana em cima (refs. do calendário escuro com folha branca e do "13.12 DEC"); por baixo, numa
+         folha de cantos redondos, o DIA em linha do tempo: o que já passou esbatido, o agora em destaque.
+     C · O MOSTRADOR — o dia de serviço é um anel (refs. do relógio redondo e dos anéis): o arco vai do report ao limite, a
+         hora ao centro; por baixo, três mosaicos (ref. das tarefas).
+   Cada caminho em 3 estados: em voo (o mais cheio), folga (calmo) e pernoita (à noite). iPhone 390 × 844, 714 pt úteis.
+   Letras e cores da app. Dados de teste (easyJet, piloto, base Lisboa). É um desenho; o que vale no fim é o iPhone. */
+@font-face{font-family:'BarlowC';font-weight:700;src:url('../../node_modules/@expo-google-fonts/barlow-condensed/700Bold/BarlowCondensed_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:500;src:url('../../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--bg:#E8E7E2;--fg:#141414;--muted:#55554F;--card:#FFFFFF;--rule:#D6D4CD;--frame:#04060A;--display:'BarlowC','Arial Narrow',sans-serif;--body:'Hanken','Helvetica Neue',Arial,sans-serif;--signal:#FFB800}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:26px}
+.lead{max-width:860px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-family:var(--display);font-size:36px;letter-spacing:-.5px}
+.lead p,.dir p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b,.dir b{color:var(--fg)}
+.dir{display:flex;flex-direction:column;gap:8px;max-width:860px;margin-top:10px}
+.dir h2{font-family:var(--display);font-size:28px;letter-spacing:-.3px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,406px));gap:24px;justify-content:center}
+@media (max-width:1320px){.grid3{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),406px))}}
+.shot{display:flex;flex-direction:column;gap:8px;min-width:0}
+.shot h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.shot .m{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.fit{width:100%;position:relative;height:860px}
+
+.ph{width:406px;height:860px;border:8px solid var(--frame);border-radius:52px;overflow:hidden;display:flex;flex-direction:column;transform-origin:top left;
+  --paper:#FFFFFF;--ink:#141414;--grey:#77776F;--line:#ECEAE4;--soft:#F4F2ED;--ctx:#5E5E57;--okText:#0B6E43;--warn:#E86A10;
+  --desk:#EDEBE5;--dfg:#141414;--dsub:#5E5E57;--drule:rgba(20,20,20,.12);--card:#FFFFFF;background:var(--paper);color:var(--ink)}
+.ph.live{--desk:#141414;--dfg:#FFFFFF;--dsub:#A3A39B;--drule:rgba(255,255,255,.14)}
+.ph.night{--paper:#0D131C;--ink:#F4F2ED;--grey:rgba(244,242,237,.62);--line:rgba(244,242,237,.14);--soft:rgba(244,242,237,.08);--ctx:rgba(244,242,237,.66);--okText:#46C98A;--warn:#F08A3C;
+  --desk:#0D131C;--dfg:#F4F2ED;--dsub:rgba(244,242,237,.62);--drule:rgba(255,255,255,.14);--card:#18212D}
+.tag{font-weight:800;font-size:11px;line-height:14px;letter-spacing:.6px;text-transform:uppercase}
+.eyebrow{font-weight:800;font-size:11px;line-height:14px;letter-spacing:1.4px;text-transform:uppercase}
+.caption{font-weight:500;font-size:11px;line-height:15px}
+.label{font-weight:700;font-size:12px;line-height:16px}
+.bodyStrong{font-weight:700;font-size:13px;line-height:17px}
+.num{font-family:var(--display);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ic{display:inline-block;flex:none;fill:currentColor}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px;background:var(--desk);color:var(--dfg)}
+.scr{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;background:var(--desk);color:var(--dfg)}
+.tabbar{height:83px;flex:none;border-top:1px solid var(--line);display:flex;padding-bottom:34px;background:var(--paper)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--grey)}
+.tab .tl{font-size:11px;font-weight:700} .tab.on{color:var(--ink)}
+.tab .dot{width:4px;height:4px;border-radius:2px} .tab.on .dot{background:var(--signal)}
+.tab.plus{flex:none;width:64px} .tab.plus .pl{width:44px;height:44px;border-radius:22px;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center}
+.head{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:40px;padding:10px 0 6px}
+.head>span{display:flex;align-items:center;gap:8px} .head .eyebrow{color:var(--dsub);white-space:nowrap}
+.liveDot{width:8px;height:8px;border-radius:4px;background:var(--signal)}
+.bell{display:flex;align-items:center;gap:6px;border-radius:99px;padding:5px 11px;font-weight:800;font-size:10.5px;line-height:13px;background:rgba(127,127,127,.18)}
+.bell i{width:6px;height:6px;border-radius:3px;background:var(--signal)}
+.pill{border-radius:8px;padding:4px 8px;font-weight:800;font-size:12px;line-height:15px;letter-spacing:.8px;text-transform:uppercase;white-space:nowrap}
+.keys{display:flex;gap:8px;margin-top:auto}
+.key{flex:1;min-height:88px;border-radius:16px;padding:12px;display:flex;flex-direction:column;justify-content:space-between;gap:8px;min-width:0;background:var(--soft);color:var(--ink)}
+.live:not(.night) .keys.onDesk .key{background:rgba(255,255,255,.10);color:#FFFFFF}
+.key.pri{background:var(--ink);color:var(--paper)}
+.live:not(.night) .keys.onDesk .key.pri{background:#FFFFFF;color:#141414}
+.alert{display:flex;align-items:center;gap:10px;border-radius:14px;min-height:44px;padding:8px 12px;background:#E86A10;color:#141414}
+.alert b{font-weight:800;font-size:13px} .alert span{font-weight:500;font-size:12px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ═══ A · O CARTÃO DE EMBARQUE ═══ */
+.A .scr{padding:0 12px 20px;gap:10px}
+.tk{border-radius:22px;overflow:hidden;flex:none;color:#141414}
+.tkTop{background:var(--signal);padding:14px 16px 14px;display:flex;flex-direction:column;gap:8px}
+.calm .tkTop{background:var(--card);color:var(--ink)}
+.tkTop .tag{opacity:.72}
+.tkRow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.tkTime{font-size:92px;line-height:.86;letter-spacing:-2.5px}
+.tkTime small{font-size:40px;letter-spacing:-1px;margin-left:6px}
+.pill.ink{background:#141414;color:#FFFFFF} .pill.calm{background:var(--soft);color:var(--okText)}
+.leg{display:flex;align-items:center;gap:10px}
+.leg .num{font-size:38px;line-height:40px;letter-spacing:-.5px}
+.leg i{flex:1;height:2px;background:currentColor;opacity:.28;position:relative;border-radius:2px}
+.leg i b{position:absolute;left:0;top:0;height:2px;background:currentColor;opacity:1;border-radius:2px}
+.leg svg{margin:0 -4px}
+.tkCap{display:flex;justify-content:space-between;opacity:.78}
+.perf{height:18px;background:var(--card);position:relative}
+.perf:before,.perf:after{content:"";position:absolute;top:-9px;width:18px;height:18px;border-radius:9px;background:var(--desk)}
+.perf:before{left:-9px} .perf:after{right:-9px}
+.perf i{position:absolute;left:18px;right:18px;top:0;border-top:2px dashed rgba(127,127,127,.35)}
+.tkBody{background:var(--card);color:var(--ink);padding:2px 16px 16px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px 10px}
+.f .tag{color:var(--ctx);display:block;margin-bottom:2px}
+.f .num{font-size:24px;line-height:26px;letter-spacing:-.2px}
+.f .num.gain{color:var(--okText)} .f small{font-family:var(--body);font-weight:500;font-size:11px;color:var(--ctx);margin-left:3px}
+.peek{flex:none;border-radius:18px;background:var(--card);color:var(--ink);padding:10px 16px;display:flex;align-items:center;gap:12px;opacity:.96}
+.live:not(.night) .peek{background:#2A2A2A;color:#FFFFFF;--ctx:#A3A39B}
+.peek .tag{color:var(--ctx)} .peek .num{font-size:26px;line-height:28px;margin-left:auto}
+.peek div{min-width:0} .peek .label{white-space:nowrap}
+
+/* ═══ B · A SEMANA E A FOLHA ═══ */
+.B .scr{padding:0}
+.B .topB{padding:0 16px 30px;flex:none}
+.week{display:flex;justify-content:space-between;padding:4px 0 12px}
+.day{width:44px;height:56px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative}
+.day .caption{color:var(--dsub);text-transform:uppercase;letter-spacing:.6px;font-weight:700}
+.day .num{font-size:22px;line-height:24px}
+.day.today{background:var(--signal);color:#141414} .day.today .caption{color:#141414}
+.day u{position:absolute;bottom:5px;width:4px;height:4px;border-radius:2px;background:currentColor;opacity:.55}
+.day.off .num{opacity:.38}
+.rot{position:absolute;bottom:-5px;left:4px;height:3px;border-radius:2px;background:var(--signal)}
+.heroB{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.heroB .big{font-size:84px;line-height:.86;letter-spacing:-2.5px;color:var(--signal)}
+.calm .heroB .big{color:var(--ink)} .heroB .big small{font-size:38px;letter-spacing:-1px;margin-left:6px}
+.heroB .side{text-align:right;display:flex;flex-direction:column;gap:6px;align-items:flex-end;padding-bottom:4px}
+.heroB .side .num{font-size:30px;line-height:32px}
+.heroB .tag,.heroB .caption{color:var(--dsub)}
+.pill.ok{background:rgba(70,201,138,.18);color:#46C98A}
+.sheet{flex:1;min-height:0;margin-top:-18px;border-radius:26px 26px 0 0;background:var(--paper);color:var(--ink);padding:16px 16px 20px;display:flex;flex-direction:column;gap:10px}
+.sheetH{display:flex;align-items:baseline;justify-content:space-between}
+.sheetH .num{font-size:22px;line-height:24px} .sheetH .caption{color:var(--ctx)}
+.tl{display:flex;flex-direction:column}
+.tr{display:grid;grid-template-columns:52px 16px 1fr;align-items:center;min-height:38px;column-gap:8px}
+.tr .num{font-size:22px;line-height:24px}
+.tr .rail{align-self:stretch;position:relative;display:flex;justify-content:center}
+.tr .rail:before{content:"";position:absolute;top:0;bottom:0;width:2px;background:var(--line)}
+.tr:first-child .rail:before{top:50%} .tr:last-child .rail:before{bottom:50%}
+.tr .rail i{position:relative;align-self:center;width:8px;height:8px;border-radius:4px;background:var(--grey)}
+.tr .tx{min-width:0} .tr .tx .caption{color:var(--ctx);display:block}
+.tr.done{opacity:.42}
+.tr.now{background:var(--soft);border-radius:14px;margin:2px -8px;padding:6px 8px;min-height:52px}
+.tr.now .rail i{width:12px;height:12px;border-radius:6px;background:var(--signal);box-shadow:0 0 0 3px var(--paper)}
+.tr.lim .rail i{width:10px;height:2px;border-radius:1px;background:var(--ink)} .tr.lim .num,.tr.lim .tx{color:var(--ctx)}
+.chips{display:flex;gap:8px}
+.chip{flex:1;border-radius:14px;padding:8px 12px;background:var(--soft);min-width:0}
+.chip.warn{background:#E86A10;color:#141414} .chip .tag{display:block;opacity:.72} .chip .num{font-size:22px;line-height:24px} .chip .num.gain{color:var(--okText)}
+
+/* ═══ D · A MISTURA: o bilhete do A + a folha com a linha do dia do B ═══
+   Para caber: o bilhete fica com UMA linha de factos (três), e na folha o que já passou junta-se numa só linha esbatida. */
+.D .scr{padding:0}
+.deskD{flex:none;padding:0 12px 28px;display:flex;flex-direction:column;gap:10px}   /* 10 de respiro + 18 que a folha tapa */
+.D .tkTime{font-size:84px}
+.D .tkBody{padding:2px 16px 14px}
+.D .sheet{padding-top:14px;gap:10px}
+.night.D .sheet{background:#18212D}
+.tr .rt{font-family:var(--display);font-weight:700;font-size:22px;line-height:24px;white-space:nowrap}
+.tr .rt.gain{color:var(--okText)}
+.tr.has{grid-template-columns:52px 16px 1fr auto}
+.tr.nx .rail i{background:transparent;border:2px solid var(--grey)}
+
+/* ═══ C · O MOSTRADOR ═══ */
+.C .scr{padding:0 16px 20px;gap:8px}
+.dial{position:relative;flex:none;height:262px;display:flex;align-items:center;justify-content:center}
+.dial svg{position:absolute;inset:0;margin:auto}
+.dialC{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;margin-top:-6px}
+.dialC .tag{color:var(--dsub)}
+.dialC .big{font-size:84px;line-height:.86;letter-spacing:-2.5px;color:var(--signal)}
+.calm .dialC .big{color:var(--ink)} .dialC .big small{font-size:36px;letter-spacing:-1px;margin-left:5px}
+.dialC .rt{font-size:26px;line-height:28px;margin-top:4px}
+.dialC{max-width:176px;text-align:center}
+.dialC .caption{color:var(--dsub)}
+.dEnd{position:absolute;bottom:2px;color:var(--dsub)} .dEnd.l{left:26px} .dEnd.r{right:26px;text-align:right}
+.dEnd b{display:block;font-family:var(--display);font-size:20px;line-height:22px;color:var(--dfg)}
+.tiles{display:flex;gap:8px;flex:none}
+.tile{flex:1;border-radius:16px;padding:10px 12px;min-width:0;background:rgba(127,127,127,.16);color:var(--dfg)}
+.calm .tile{background:var(--card)}
+.tile .tag{color:var(--dsub);display:block} .tile .num{font-size:26px;line-height:28px} .tile .num.gain{color:#46C98A}
+.calm .tile .num.gain{color:var(--okText)} .tile small{display:block;font-family:var(--body);font-weight:500;font-size:11px;line-height:14px;color:var(--dsub)}
+.rowC{flex:none;display:flex;align-items:center;gap:12px;border-radius:14px;min-height:44px;padding:8px 12px;background:rgba(127,127,127,.16)}
+.calm .rowC{background:var(--card)}
+.rowC .tag{color:var(--dsub)} .rowC .num{font-size:24px;line-height:26px;margin-left:auto} .rowC div{min-width:0} .rowC .label{white-space:nowrap}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>Início · três caminhos e uma mistura</h1>
+    <p>A pilha de faixas não agradou. Estes três partem de referências diferentes das tuas e não são variações uns dos outros. Cada um está em três estados: <b>em voo</b> (o mais cheio, o que hoje não cabe), <b>folga</b> e <b>pernoita à noite</b>. Por baixo de cada telemóvel está a medida do conteúdo nos 714 pt úteis.</p>
+    <p>Dados de teste (easyJet, piloto, base Lisboa). É um desenho no navegador com as letras e as cores da app; o que vale no fim é o iPhone.</p>
+  </div>
+  <div id="out"></div>
+</div>
+<script>
+(function(){
+  var P = {
+    sun:'<path d="M12 7.2a4.8 4.8 0 1 1 0 9.6 4.8 4.8 0 0 1 0-9.6zM11 2h2v3.2h-2V2zm0 16.8h2V22h-2v-3.2zM2 11h3.2v2H2v-2zm16.8 0H22v2h-3.2v-2zM4.6 6 6 4.6 8.3 6.9 6.9 8.3 4.6 6zm11.1 11.1 1.4-1.4 2.3 2.3-1.4 1.4-2.3-2.3zm2.3-12.5L19.4 6l-2.3 2.3-1.4-1.4 2.3-2.3zM4.6 18l2.3-2.3 1.4 1.4L6 19.4 4.6 18z"/>',
+    cloud:'<circle cx="7.6" cy="13.6" r="3.9"/><circle cx="12.6" cy="10.8" r="4.8"/><circle cx="16.9" cy="13.8" r="3.5"/><path d="M7.6 12.2h9.3v5.3H7.6z"/>',
+    cal:'<path d="M7 2h2.6v3H7V2zm7.4 0H17v3h-2.6V2zM4 5h16v3.6H4V5zm0 5h16v10a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 20V10zm3.4 3v2.8h2.8V13H7.4zm5 0v2.8h2.8V13h-2.8z"/>',
+    gauge:'<path d="M12 5a10 10 0 0 0-10 10.4h3.4A6.6 6.6 0 0 1 14 9.3l2.5-2.6A9.9 9.9 0 0 0 12 5zm7.4 3.3-6.1 5a2 2 0 1 0 2 2.1l5.4-5.7a10 10 0 0 0-1.3-1.4zM18.6 15.4h3.3c0-.5 0-1-.1-1.5l-3.3.7c.1.3.1.5.1.8z"/>',
+    share:'<path d="M17 3a2.8 2.8 0 1 1-2.6 3.8L8.6 10a2.8 2.8 0 0 1 0 4l5.8 3.2A2.8 2.8 0 1 1 13.6 19l-5.8-3.3a2.8 2.8 0 1 1 0-7.4l5.8-3.2A2.8 2.8 0 0 1 17 3z"/>',
+    shield:'<path d="M12 2l8 3v6c0 5-3.4 9.2-8 11-4.6-1.8-8-6-8-11V5l8-3z"/>',
+    bed:'<path d="M3 6h3.2v7H3V6zm0 8h18v5h-2.6v-2.2H5.6V19H3v-5zm5-4.6h8.6A4.4 4.4 0 0 1 21 13.8H8V9.4z"/>',
+    home:'<path d="M12 3l9.2 8.2h-2.5V21h-4.9v-6.4h-3.6V21H5.3v-9.8H2.8L12 3z"/>',
+    stats:'<path d="M4 12.5h3.8V20H4v-7.5zM10.1 5.5h3.8V20h-3.8V5.5zM16.2 9.5H20V20h-3.8V9.5z"/>',
+    user:'<path d="M12 3.4a3.7 3.7 0 1 1 0 7.4 3.7 3.7 0 0 1 0-7.4zM4.8 20.2c0-4 3.2-6.6 7.2-6.6s7.2 2.6 7.2 6.6a.8.8 0 0 1-.8.8H5.6a.8.8 0 0 1-.8-.8z"/>',
+    plus:'<path d="M10.4 4h3.2v6.4H20v3.2h-6.4V20h-3.2v-6.4H4v-3.2h6.4V4z"/>',
+    plane:'<path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>',
+    chevron:'<path d="M8.6 4.2 16.4 12l-7.8 7.8-1.9-1.9 5.9-5.9-5.9-5.9z"/>'
+  };
+  function ic(n, s, rot){ return '<svg class="ic" width="'+s+'" height="'+s+'" viewBox="0 0 24 24" aria-hidden="true"'+(rot?' style="transform:rotate('+rot+'deg)"':'')+'>'+P[n]+'</svg>'; }
+  function tabbar(){ return '<nav class="tabbar"><div class="tab on">'+ic('home',24)+'<span class="tl">Início</span><i class="dot"></i></div><div class="tab">'+ic('cal',24)+'<span class="tl">Escala</span><i class="dot"></i></div><div class="tab plus"><span class="pl">'+ic('plus',22)+'</span></div><div class="tab">'+ic('stats',24)+'<span class="tl">Números</span><i class="dot"></i></div><div class="tab">'+ic('user',24)+'<span class="tl">Perfil</span><i class="dot"></i></div></nav>'; }
+  function keys(k, onDesk){ return '<div class="keys'+(onDesk?' onDesk':'')+'">'+k.map(function(x,i){ return '<span class="key'+(i===0?' pri':'')+'">'+ic(x[0],20)+'<span class="bodyStrong">'+x[1]+'</span></span>'; }).join('')+'</div>'; }
+  function head(dot, left, bell, wx){ return '<div class="head"><span>'+(dot?'<i class="liveDot"></i>':'')+'<span class="eyebrow">'+left+'</span></span><span>'+(bell?'<span class="bell"><i></i>'+bell+'</span>':'')+(wx?'<span class="eyebrow" style="display:flex;gap:4px;align-items:center">'+ic(wx[0],14)+wx[1]+'</span>':'')+'</span></div>'; }
+  var ALERT = '<div class="alert">'+ic('cal',16)+'<b>A escala mudou</b><span>2 alterações por rever</span>'+ic('chevron',12)+'</div>';
+  var K = { voo:[['share','Partilhar a chegada'],['shield','Limites'],['bed','Hotel']], folga:[['cal','Ver o serviço'],['shield','Limites'],['gauge','Simular']], pern:[['bed','Hotel · mapas'],['cal','Serviço de amanhã'],['share','Partilhar']] };
+  function f(l, v, s, gain){ return '<div class="f"><span class="tag">'+l+'</span><span class="num'+(gain?' gain':'')+'">'+v+'</span>'+(s?'<small>'+s+'</small>':'')+'</div>'; }
+
+  // ═══ A · cartão de embarque ═══
+  var A = {
+    voo: head(1,'Em voo · EJU7625','2 novidades',['cloud','9° · LGW'])+ALERT+
+      '<div class="tk"><div class="tkTop"><span class="tag">Aterras às</span><div class="tkRow"><span class="num tkTime">13:50</span><span class="pill ink">A horas</span></div>'+
+        '<div class="leg"><span class="num">LIS</span><i><b style="width:59%"></b></i>'+ic('plane',20,90)+'<i style="flex:.7"></i><span class="num">LGW</span></div>'+
+        '<div class="tkCap caption"><span>partiu 11:10 · setor 3 de 3</span><span>falta 1 h 05</span></div></div>'+
+        '<div class="perf"><i></i></div>'+
+        '<div class="tkBody">'+f('Report','05:15')+f('PSV','7:30','de 11:45')+f('Margem','3:10')+f('Limite','17:00')+f('Depois','LGW','pernoita')+f('Hoje','+142,30 €','',1)+'</div></div>'+
+      '<div class="peek"><div><span class="tag">A seguir · mais 4</span><div class="label">qui 12 · LGW → LIS</div></div><span class="num">14:05</span>'+ic('chevron',12)+'</div>'+keys(K.voo,1),
+    folga: head(0,'quarta · 11 novembro',null,['sun','19°'])+
+      '<div class="tk"><div class="tkTop"><span class="tag">Próximo serviço daqui a</span><div class="tkRow"><span class="num tkTime">2<small>dias</small></span><span class="pill calm">Escala em dia</span></div>'+
+        '<div class="leg"><span class="num">LIS</span><i></i><span class="num">FNC</span><i></i><span class="num">LIS</span></div>'+
+        '<div class="tkCap caption"><span>sábado 14 · report 05:30</span><span>2 setores</span></div></div>'+
+        '<div class="perf"><i></i></div>'+
+        '<div class="tkBody">'+f('Livre até','sáb 14')+f('Novembro','2 431,50 €')+f('Férias','12','de 22')+f('7 dias','31 h','de 60')+f('28 dias','62 h','de 100')+f('Ano','412 h','de 900')+'</div></div>'+
+      '<div class="peek"><div><span class="tag">Depois · mais 3</span><div class="label">dom 15 · LIS → MAD → LIS</div></div><span class="num">06:10</span>'+ic('chevron',12)+'</div>'+keys(K.folga,1),
+    pern: head(0,'Pernoita · LGW',null,['cloud','7° · LGW'])+
+      '<div class="tk"><div class="tkTop"><span class="tag">Report amanhã às</span><div class="tkRow"><span class="num tkTime">14:05</span><span class="pill ink">Repouso ✓</span></div>'+
+        '<div class="leg"><span class="num">LGW</span><i></i>'+ic('plane',20,90)+'<i></i><span class="num">LIS</span></div>'+
+        '<div class="tkCap caption"><span>quinta 12 · parte 15:05</span><span>falta 16 h 25</span></div></div>'+
+        '<div class="perf"><i></i></div>'+
+        '<div class="tkBody">'+f('Repouso até','00:20')+f('Hotel','aeroporto')+f('Esta noite','+45,40 €','',1)+f('Amanhã','7°','chuva')+f('Mín.','10 h','(235)')+f('Novembro','2 431 €')+'</div></div>'+
+      '<div class="peek"><div><span class="tag">A seguir · mais 3</span><div class="label">sáb 14 · LIS → FNC → LIS</div></div><span class="num">05:30</span>'+ic('chevron',12)+'</div>'+keys(K.pern,1)
+  };
+
+  // ═══ B · semana e folha ═══
+  var WD = ['seg','ter','qua','qui','sex','sáb','dom'];
+  function week(today, duty, rot){ return '<div class="week">'+WD.map(function(w,i){ var n = 9+i, d = duty.indexOf(n) >= 0; return '<div class="day'+(n===today?' today':'')+(d||n===today?'':' off')+'"><span class="caption">'+w+'</span><span class="num">'+n+'</span>'+(d && n!==today?'<u></u>':'')+(rot && rot[0]===n?'<i class="rot" style="width:'+(52*(rot[1]-rot[0])+36)+'px"></i>':'')+'</div>'; }).join('')+'</div>'; }
+  function tr(t, a, b, cls){ return '<div class="tr'+(cls?' '+cls:'')+'"><span class="num">'+t+'</span><span class="rail"><i></i></span><span class="tx"><span class="bodyStrong">'+a+'</span>'+(b?'<span class="caption">'+b+'</span>':'')+'</span></div>'; }
+  var B = {
+    voo: '<div class="topB">'+head(1,'Em voo · EJU7625','2 novidades',['cloud','9° · LGW'])+week(11,[11,12,14,15],[11,12])+
+      '<div class="heroB"><div><span class="tag">Aterras às</span><div class="num big">13:50</div></div><div class="side"><span class="pill ok">A horas</span><span class="num">LIS → LGW</span><span class="caption">falta 1 h 05</span></div></div></div>'+
+      '<div class="sheet"><div class="sheetH"><span class="bodyStrong">Hoje</span><span><span class="num">7:30</span> <span class="caption">de 11:45 de PSV · margem 3:10</span></span></div>'+
+        '<div class="tl">'+tr('05:15','Report','Lisboa','done')+tr('06:15','LIS → FNC','EJU7601','done')+tr('08:40','FNC → LIS','EJU7602','done')+tr('11:10','LIS → LGW','EJU7625 · aterras 13:50','now')+tr('14:20','Fim de serviço','pernoita em LGW · Hotel do aeroporto')+tr('17:00','Limite do PSV','','lim')+'</div>'+
+        '<div class="chips"><div class="chip warn"><span class="tag">A escala mudou</span><span class="num">2 por rever</span></div><div class="chip"><span class="tag">Hoje</span><span class="num gain">+142,30 €</span></div></div>'+keys(K.voo)+'</div>',
+    folga: '<div class="topB">'+head(0,'quarta · 11 novembro',null,['sun','19°'])+week(11,[9,14,15],null)+
+      '<div class="heroB"><div><span class="tag">Próximo serviço daqui a</span><div class="num big">2<small>dias</small></div></div><div class="side"><span class="pill calm">Escala em dia</span><span class="num">sáb 14</span><span class="caption">livre até lá</span></div></div></div>'+
+      '<div class="sheet"><div class="sheetH"><span class="bodyStrong">A seguir</span><span class="caption">mais 3 na escala</span></div>'+
+        '<div class="tl">'+tr('05:30','LIS → FNC → LIS','sábado 14 · 2 setores','now')+tr('06:10','LIS → MAD → LIS','domingo 15 · 2 setores')+tr('12:20','LIS → CDG → LIS','terça 17 · 2 setores')+'</div>'+
+        '<div class="chips"><div class="chip"><span class="tag">Novembro · estimado</span><span class="num">2 431,50 €</span></div><div class="chip warn"><span class="tag">Férias 2026</span><span class="num">12 de 22</span></div></div>'+keys(K.folga)+'</div>',
+    pern: '<div class="topB">'+head(0,'Pernoita · LGW',null,['cloud','7° · LGW'])+week(11,[11,12,14,15],[11,12])+
+      '<div class="heroB"><div><span class="tag">Report amanhã às</span><div class="num big">14:05</div></div><div class="side"><span class="pill ok">Repouso ✓</span><span class="num">LGW → LIS</span><span class="caption">falta 16 h 25</span></div></div></div>'+
+      '<div class="sheet"><div class="sheetH"><span class="bodyStrong">Esta noite e amanhã</span><span class="caption">repouso mín. 10 h (235)</span></div>'+
+        '<div class="tl">'+tr('14:20','Fim de serviço','hoje · em LGW','done')+tr('00:20','Repouso cumprido','Hotel do aeroporto','now')+tr('14:05','Report','quinta 12')+tr('15:05','LGW → LIS','EJU7626')+'</div>'+
+        '<div class="chips"><div class="chip"><span class="tag">Esta noite</span><span class="num gain">+45,40 €</span></div><div class="chip"><span class="tag">Em LGW amanhã</span><span class="num">7° · chuva</span></div></div>'+keys(K.pern)+'</div>'
+  };
+
+  // ═══ D · a mistura (bilhete + linha do dia) ═══
+  function trv(t, a, b, cls, right, gain){ return '<div class="tr has'+(cls?' '+cls:'')+'"><span class="num">'+t+'</span><span class="rail"><i></i></span><span class="tx"><span class="bodyStrong">'+a+'</span>'+(b?'<span class="caption">'+b+'</span>':'')+'</span>'+(right?'<span class="rt'+(gain?' gain':'')+'">'+right+'</span>':'<span></span>')+'</div>'; }
+  var D = {
+    voo: '<div class="deskD">'+head(1,'Em voo · EJU7625','2 novidades',['cloud','9° · LGW'])+ALERT+
+      '<div class="tk"><div class="tkTop"><span class="tag">Aterras às</span><div class="tkRow"><span class="num tkTime">13:50</span><span class="pill ink">A horas</span></div>'+
+        '<div class="leg"><span class="num">LIS</span><i><b style="width:59%"></b></i>'+ic('plane',20,90)+'<i style="flex:.7"></i><span class="num">LGW</span></div>'+
+        '<div class="tkCap caption"><span>partiu 11:10 · setor 3 de 3</span><span>falta 1 h 05</span></div></div>'+
+        '<div class="perf"><i></i></div><div class="tkBody">'+f('PSV','7:30','de 11:45')+f('Limite','17:00')+f('Margem','3:10')+'</div></div></div>'+
+      '<div class="sheet"><div class="tl">'+trv('05:15','Já feito','report · LIS → FNC → LIS · 2 setores','done')+trv('11:10','LIS → LGW','EJU7625 · aterras 13:50','now')+trv('14:20','Fim de serviço','pernoita em LGW · Hotel do aeroporto','','+142,30 €',1)+trv('14:05','A seguir · qui 12','LGW → LIS · mais 4 na escala','nx',ic('chevron',12))+'</div>'+keys(K.voo)+'</div>',
+    folga: '<div class="deskD">'+head(0,'quarta · 11 novembro',null,['sun','19°'])+
+      '<div class="tk"><div class="tkTop"><span class="tag">Próximo serviço daqui a</span><div class="tkRow"><span class="num tkTime">2<small>dias</small></span><span class="pill calm">Escala em dia</span></div>'+
+        '<div class="leg"><span class="num">LIS</span><i></i><span class="num">FNC</span><i></i><span class="num">LIS</span></div>'+
+        '<div class="tkCap caption"><span>sábado 14 · report 05:30</span><span>livre até lá</span></div></div>'+
+        '<div class="perf"><i></i></div><div class="tkBody">'+f('Novembro','2 431,50 €')+f('Férias','12','de 22')+f('7 dias','31 h','de 60')+'</div></div></div>'+
+      '<div class="sheet"><div class="sheetH"><span class="bodyStrong">A seguir</span><span class="caption">mais 3 na escala</span></div>'+
+        '<div class="tl">'+trv('05:30','LIS → FNC → LIS','sábado 14 · 2 setores','now')+trv('06:10','LIS → MAD → LIS','domingo 15 · 2 setores')+trv('12:20','LIS → CDG → LIS','terça 17 · 2 setores')+trv('05:45','LIS → FNC → LIS','quarta 18 · 2 setores')+'</div>'+keys(K.folga)+'</div>',
+    pern: '<div class="deskD">'+head(0,'Pernoita · LGW',null,['cloud','7° · LGW'])+
+      '<div class="tk"><div class="tkTop"><span class="tag">Report amanhã às</span><div class="tkRow"><span class="num tkTime">14:05</span><span class="pill ink">Repouso ✓</span></div>'+
+        '<div class="leg"><span class="num">LGW</span><i></i>'+ic('plane',20,90)+'<i></i><span class="num">LIS</span></div>'+
+        '<div class="tkCap caption"><span>quinta 12 · parte 15:05</span><span>falta 16 h 25</span></div></div>'+
+        '<div class="perf"><i></i></div><div class="tkBody">'+f('Repouso até','00:20')+f('Mínimo','10 h','(235)')+f('Amanhã','7°','chuva')+'</div></div></div>'+
+      '<div class="sheet"><div class="tl">'+trv('14:20','Fim de serviço','hoje · em LGW','done')+trv('00:20','Repouso cumprido','Hotel do aeroporto','now','+45,40 €',1)+trv('14:05','Report','quinta 12 · LGW → LIS · parte 15:05')+trv('05:30','A seguir · sáb 14','LIS → FNC → LIS · mais 3 na escala','nx',ic('chevron',12))+'</div>'+keys(K.pern)+'</div>'
+  };
+
+  // ═══ C · mostrador ═══
+  function pt(r, a){ var t = a*Math.PI/180; return [(131 + r*Math.cos(t)).toFixed(2), (131 + r*Math.sin(t)).toFixed(2)]; }
+  function arc(r, a0, a1){ var p0 = pt(r,a0), p1 = pt(r,a1); return 'M'+p0[0]+' '+p0[1]+' A'+r+' '+r+' 0 '+((a1-a0)>180?1:0)+' 1 '+p1[0]+' '+p1[1]; }
+  // o anel vai de 135° a 405° (270° de arco): 0 = report, 1 = limite
+  function ang(x){ return 135 + 270*x; }
+  function dial(o){
+    var s = '<svg width="262" height="262" viewBox="0 0 262 262" aria-hidden="true" fill="none" stroke-linecap="round">'+
+      '<path d="'+arc(112,135,405)+'" stroke="'+o.track+'" stroke-width="6"/>'+
+      (o.now != null ? '<path d="'+arc(112,135,ang(o.now))+'" stroke="#FFB800" stroke-width="6"/>' : '')+
+      (o.segs||[]).map(function(g){ return '<path d="'+arc(112,ang(g[0]),ang(g[1]))+'" stroke="'+(g[2]?'#FFB800':o.seg)+'" stroke-width="14"/>'; }).join('')+
+      (o.mark != null ? '<path d="'+arc(112,ang(o.mark)-.4,ang(o.mark)+.4)+'" stroke="'+o.fg+'" stroke-width="20" stroke-linecap="butt"/>' : '')+
+      (o.now != null ? '<circle cx="'+pt(112,ang(o.now))[0]+'" cy="'+pt(112,ang(o.now))[1]+'" r="9" fill="'+o.bg+'" stroke="#FFB800" stroke-width="4"/>' : '')+
+      '</svg>';
+    return '<div class="dial">'+s+'<div class="dialC">'+o.center+'</div><span class="dEnd l caption"><b>'+o.l[0]+'</b>'+o.l[1]+'</span><span class="dEnd r caption"><b>'+o.r[0]+'</b>'+o.r[1]+'</span></div>';
+  }
+  function tile(l, v, s, gain){ return '<div class="tile"><span class="tag">'+l+'</span><span class="num'+(gain?' gain':'')+'">'+v+'</span>'+(s?' <small>'+s+'</small>':'')+'</div>'; }
+  function rowC(l, a, v){ return '<div class="rowC"><div><span class="tag">'+l+'</span><div class="label">'+a+'</div></div><span class="num">'+v+'</span>'+ic('chevron',12)+'</div>'; }
+  var C = {
+    voo: head(1,'Em voo · EJU7625','2 novidades',['cloud','9° · LGW'])+
+      dial({ track:'rgba(255,255,255,.16)', seg:'#A3A39B', fg:'#FFFFFF', bg:'#141414', now:.6383, mark:1, segs:[[.0851,.234,1],[.2908,.4326,1],[.5035,.6383,1],[.6383,.7305,0]],
+        center:'<span class="tag">Aterras às</span><span class="num big">13:50</span><span class="num rt">LIS → LGW</span><span class="caption">falta 1 h 05 · a horas</span>', l:['05:15','report'], r:['17:00','limite'] })+
+      '<div class="tiles">'+tile('PSV','7:30','de 11:45')+tile('Margem','3:10')+tile('Hoje','+142 €','',1)+'</div>'+ALERT+rowC('A seguir · mais 4','qui 12 · LGW → LIS','14:05')+keys(K.voo,1),
+    folga: head(0,'quarta · 11 novembro',null,['sun','19°'])+
+      dial({ track:'rgba(20,20,20,.10)', seg:'#141414', fg:'#141414', bg:'#EDEBE5', now:null, mark:null, segs:[[0,.08,0],[.74,.82,0],[.89,.97,0]],
+        center:'<span class="tag">Próximo serviço daqui a</span><span class="num big">2<small>dias</small></span><span class="num rt" style="font-size:22px">LIS → FNC → LIS</span><span class="caption">livre até sáb 14 · report 05:30</span>', l:['seg 9','esta semana'], r:['dom 15','3 serviços'] })+
+      '<div class="tiles">'+tile('Novembro','2 431 €')+tile('Férias','12','de 22')+tile('7 dias','31 h','de 60')+'</div>'+rowC('Depois · mais 3','dom 15 · LIS → MAD → LIS','06:10')+keys(K.folga,1),
+    pern: head(0,'Pernoita · LGW',null,['cloud','7° · LGW'])+
+      dial({ track:'rgba(255,255,255,.16)', seg:'#46C98A', fg:'#F4F2ED', bg:'#0D131C', now:.309, mark:.4211, segs:[],
+        center:'<span class="tag">Report amanhã às</span><span class="num big">14:05</span><span class="num rt">LGW → LIS</span><span class="caption">falta 16 h 25 · repouso ✓</span>', l:['14:20','fim de serviço'], r:['14:05','report'] })+
+      '<div class="tiles">'+tile('Repouso até','00:20')+tile('Esta noite','+45 €','',1)+tile('Amanhã','7°','chuva')+'</div>'+rowC('A seguir · mais 3','sáb 14 · LIS → FNC → LIS','05:30')+keys(K.pern,1)
+  };
+
+  var DIRS = [
+    ['D','A + B · O bilhete com a linha do dia','A mistura que pediste. Em cima, <b>o bilhete</b> do A (talão com a hora, picotado), agora com uma só linha de três factos. Por baixo, <b>a folha</b> do B com o dia em linha do tempo. Para caber, o que já passou junta-se numa linha esbatida ("Já feito"), o agora fica em destaque, e a lista acaba no próximo serviço. <b>Ganha:</b> a identidade do bilhete e a utilidade da linha do dia; o que rende o dia aparece na linha em que o dia acaba. <b>Perde:</b> a semana do B (não cabe) e três dos seis factos do A; é o mais denso dos quatro.', D],
+    ['A','A · O cartão de embarque','O momento é <b>um bilhete</b>: o talão amarelo com a hora (o amarelo quer dizer "agora"; na folga o talão é branco), o picotado, e o corpo com seis factos em grelha. O próximo serviço espreita por baixo, como numa carteira. <b>Ganha:</b> uma imagem que qualquer tripulante reconhece; seis factos sem empilhar cartões; o cartão de partilha e o Detalhe do serviço saem daqui de graça. <b>Perde:</b> a placa escura com a hora a amarelo, que foi vista e aprovada no iPhone.', A],
+    ['B','B · A semana e a folha','Em cima, <b>a semana</b> com o dia de hoje a amarelo e a rotação ligada por um traço; por baixo, numa <b>folha de cantos redondos</b>, o dia em <b>linha do tempo</b>: o que já passou esbatido, o agora em destaque, o limite no fim. <b>Ganha:</b> é o único que mostra onde estás na semana e no dia; a folha é a peça que depois serve para todos os modais. <b>Perde:</b> é o mais convencional dos três, e a linha do tempo repete parte da Escala.', B],
+    ['C','C · O mostrador','O dia de serviço é <b>um anel</b>: o arco vai do report ao limite, os setores são os troços grossos, a hora fica ao centro. Na pernoita o anel é o repouso (a marca é o mínimo); na folga é a semana. Por baixo, <b>três mosaicos</b>. <b>Ganha:</b> é o mais "uau" e o mais próprio de aviação; os limites leem-se como um instrumento. <b>Perde:</b> um anel lê-se pior do que uma linha quando há muitos setores, e precisa de texto alternativo cuidado para o VoiceOver.', C]
+  ];
+  var ST = [['voo','Em voo · o mais cheio','live','12:45'],['folga','Folga','calm','12:45'],['pern','Pernoita · à noite','live night','21:40']];
+  var out = document.getElementById('out');
+  DIRS.forEach(function(d){
+    var h = '<div class="dir"><h2>'+d[1]+'</h2><p>'+d[2]+'</p></div><section class="grid3">';
+    ST.forEach(function(s){ h += '<div class="shot"><h3>'+s[1]+'</h3><div class="fit"><div class="ph '+d[0]+' '+s[2]+'"><div class="status"><span>'+s[3]+'</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="scr">'+d[3][s[0]]+'</div>'+tabbar()+'</div></div><p class="m"></p></div>'; });
+    out.insertAdjacentHTML('beforeend', h+'</section>');
+  });
+  function run(){
+    document.querySelectorAll('.fit').forEach(function(f){ var k = Math.min(1, f.clientWidth / 406); f.firstElementChild.style.transform = 'scale('+k+')'; f.style.height = (860*k)+'px'; });
+    document.querySelectorAll('.ph').forEach(function(ph){
+      var scr = ph.querySelector('.scr'), ks = ph.querySelector('.keys'), prev = ks.previousElementSibling;
+      var gap = Math.round(ks.getBoundingClientRect().top - prev.getBoundingClientRect().bottom), kz = ph.getBoundingClientRect().width / 406, over = Math.max(scr.scrollHeight - scr.clientHeight, Math.round((ks.getBoundingClientRect().bottom - scr.getBoundingClientRect().bottom) / kz + 20));
+      var m = ph.closest('.shot').querySelector('.m');
+      m.textContent = over > 0 ? 'NÃO CABE: faltam '+over+' pt' : 'Cabe nos '+scr.clientHeight+' pt · '+gap+' pt livres antes das teclas';
+      m.style.color = over > 0 ? '#C6362B' : '';
+    });
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(run); else run();
+  addEventListener('resize', run);
+})();
+</script>
+</body>
+</html>

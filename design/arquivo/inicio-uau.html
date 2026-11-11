@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · Início · três esboços "uau"</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* Três esboços com outra ambição (2026-11-11) — o Nuno: "quero algo uau". Os anteriores eram arrumados e planos.
+     F · O CÉU — o fundo é o céu da hora e do sítio em que estás; o voo é um arco por cima do número; os factos numa folha de vidro.
+     G · O PAINEL DE ABAS — o painel de partidas como OBJETO: abas com dobradiça, relevo e sombra; viram quando a hora muda.
+     H · OS CARTÕES DE COR — a referência do calendário "13.12 DEC": a hora em duas linhas enormes e o dia em cartões de cor.
+   Cada um em dois estados. iPhone 390 × 844, 714 pt úteis. Dados de teste. É um desenho; o que vale no fim é o iPhone. */
+@font-face{font-family:'BarlowC';font-weight:700;src:url('../../node_modules/@expo-google-fonts/barlow-condensed/700Bold/BarlowCondensed_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:500;src:url('../../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--frame:#04060A;--display:'BarlowC','Arial Narrow',sans-serif;--body:'Hanken','Helvetica Neue',Arial,sans-serif;--signal:#FFB800}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+.lead{display:flex;flex-direction:column;gap:10px}
+.lead h1{font-family:var(--display);font-size:36px;letter-spacing:-.5px}
+.lead h2{font-family:var(--display);font-size:28px;letter-spacing:-.3px;margin-top:10px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted);max-width:820px} .lead b{color:var(--pfg)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,406px));gap:24px;justify-content:center}
+@media (max-width:880px){.grid2{grid-template-columns:minmax(0,406px)}}
+.shot{display:flex;flex-direction:column;gap:8px;min-width:0}
+.shot h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.shot .m{font-size:12px;color:var(--muted)}
+.fit{width:100%;position:relative;height:860px}
+.replay{align-self:flex-start;height:40px;padding:0 16px;border-radius:99px;border:1px solid #D6D4CD;background:#fff;color:#141414;font:700 13px var(--body);cursor:pointer}
+
+.ph{width:406px;height:860px;border:8px solid var(--frame);border-radius:52px;overflow:hidden;display:flex;flex-direction:column;transform-origin:top left;position:relative;background:#141414;color:#fff}
+.tag{font-weight:800;font-size:11px;line-height:14px;letter-spacing:.6px;text-transform:uppercase}
+.eyebrow{font-weight:800;font-size:11px;line-height:14px;letter-spacing:1.4px;text-transform:uppercase}
+.caption{font-weight:500;font-size:11px;line-height:15px}
+.num{font-family:var(--display);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ic{display:inline-block;flex:none;fill:currentColor}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px;position:relative;z-index:2}
+.scr{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;position:relative;z-index:2}
+.tabbar{height:83px;flex:none;display:flex;padding-bottom:34px;position:relative;z-index:2;background:var(--tbg,#fff);border-top:1px solid var(--tline,#ECEAE4)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--tsub,#77776F)}
+.tab .tl{font-size:11px;font-weight:700} .tab.on{color:var(--tfg,#141414)}
+.tab .dot{width:4px;height:4px;border-radius:2px} .tab.on .dot{background:var(--signal)}
+.tab.plus{flex:none;width:64px} .tab.plus .pl{width:44px;height:44px;border-radius:22px;background:var(--tfg,#141414);color:var(--tbg,#fff);display:flex;align-items:center;justify-content:center}
+.head{display:flex;align-items:center;justify-content:space-between;min-height:40px;padding:8px 0}
+.head>span{display:flex;align-items:center;gap:8px;white-space:nowrap}
+.liveDot{width:8px;height:8px;border-radius:4px;background:var(--signal);box-shadow:0 0 0 4px rgba(255,184,0,.22)}
+
+/* ═══ F · O CÉU ═══ */
+.F{--tbg:rgba(6,14,32,.72);--tfg:#fff;--tsub:rgba(255,255,255,.62);--tline:rgba(255,255,255,.14)}
+.F .sky{position:absolute;inset:0;z-index:0}
+.F.day .sky{background:radial-gradient(120% 60% at 78% 16%,rgba(255,236,190,.55),transparent 60%),linear-gradient(180deg,#0A2558 0%,#1B4FA8 30%,#4D8FE0 52%,#A9CEF5 66%,#E9F2FB 74%,#C9D9EA 100%)}
+.F.night .sky{background:radial-gradient(90% 40% at 22% 14%,rgba(160,190,255,.22),transparent 60%),linear-gradient(180deg,#03050C 0%,#081230 34%,#14285A 58%,#2A3F78 72%,#101C3D 100%)}
+.F .stars{position:absolute;inset:0;z-index:1;opacity:.9;background-image:radial-gradient(1.2px 1.2px at 12% 9%,#fff,transparent),radial-gradient(1px 1px at 31% 22%,#fff,transparent),radial-gradient(1.4px 1.4px at 58% 6%,#fff,transparent),radial-gradient(1px 1px at 74% 27%,#fff,transparent),radial-gradient(1.2px 1.2px at 88% 13%,#fff,transparent),radial-gradient(1px 1px at 44% 33%,#fff,transparent),radial-gradient(1px 1px at 7% 31%,#fff,transparent),radial-gradient(1.3px 1.3px at 93% 38%,#fff,transparent),radial-gradient(1px 1px at 66% 41%,#fff,transparent),radial-gradient(1px 1px at 22% 44%,#fff,transparent)}
+.F .scr{padding:0 16px 14px}
+.F .head .eyebrow{color:rgba(255,255,255,.8)}
+.F .arcBox{position:relative;height:254px;flex:none}
+.F .arcBox svg{position:absolute;left:0;top:0}
+.F .ctr{position:absolute;left:0;right:0;top:54px;display:flex;flex-direction:column;align-items:center;gap:6px;text-shadow:0 2px 18px rgba(4,12,40,.35)}
+.F .ctr .tag{opacity:.85}
+.F .ctr .big{font-size:112px;line-height:.86;letter-spacing:-3px}
+.F .ctr .big small{font-size:44px;letter-spacing:-1px;margin-left:6px}
+.F .end{position:absolute;bottom:0;display:flex;flex-direction:column} .F .end.r{right:0;text-align:right}
+.F .end .num{font-size:30px;line-height:32px} .F .end .caption{opacity:.8}
+.F .chips{display:flex;justify-content:center;gap:8px;margin:8px 0 10px;flex:none}
+.F .chip{border-radius:99px;padding:6px 12px;font-weight:700;font-size:12px;line-height:16px;background:rgba(6,14,32,.42);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(14px);white-space:nowrap}
+.F .chip.ok{color:#7BE3B0}
+.F .glass{flex:1;min-height:0;border-radius:28px;background:rgba(6,14,32,.56);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(22px) saturate(140%);padding:6px 16px 14px;display:flex;flex-direction:column;box-shadow:0 18px 40px rgba(2,8,26,.35)}
+.F .gr{display:flex;align-items:center;gap:12px;min-height:46px;border-bottom:1px solid rgba(255,255,255,.12)}
+.F .gr:last-of-type{border-bottom:0}
+.F .gr .t{flex:1;min-width:0;display:flex;flex-direction:column}
+.F .gr .t b{font-weight:700;font-size:14px;line-height:18px} .F .gr .t span{opacity:.72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.F .gr .v{font-family:var(--display);font-weight:700;font-size:24px;line-height:26px;white-space:nowrap}
+.F .gr .v.gain{color:#7BE3B0} .F .gr .mk{width:8px;height:8px;border-radius:4px;background:#FF9A4D;box-shadow:0 0 0 4px rgba(255,154,77,.25)}
+.F .gk{display:flex;gap:8px;margin-top:auto;padding-top:10px}
+.F .gk span{flex:1;height:56px;border-radius:18px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:13px;text-align:center;line-height:16px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);padding:0 8px}
+.F .gk span:first-child{background:#fff;color:#0A1B40;border-color:#fff}
+
+/* ═══ G · O PAINEL DE ABAS ═══ */
+.G{background:#0B0B0C;--tbg:#0B0B0C;--tfg:#fff;--tsub:#8F8F88;--tline:rgba(255,255,255,.10)}
+.G .scr{padding:0 14px 14px;gap:10px;background:radial-gradient(120% 50% at 50% 0%,#1B1B1D,#0B0B0C 70%)}
+.G .head .eyebrow{color:#A3A39B}
+.plate{align-self:flex-start;font-weight:800;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:#C9C6BC;padding:4px 8px;border-radius:4px;background:linear-gradient(#2A2A2C,#1A1A1C);box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 1px 0 #000}
+.flaps{display:flex;gap:6px;flex:none}
+.fl{position:relative;display:flex;align-items:center;justify-content:center;border-radius:7px;font-family:var(--display);font-weight:700;color:#fff;
+  background:linear-gradient(180deg,#34343A 0%,#232327 49.2%,#060607 49.3%,#060607 50.7%,#1B1B1F 50.8%,#262629 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -1px 0 rgba(0,0,0,.6),0 6px 14px rgba(0,0,0,.55)}
+.fl:before,.fl:after{content:"";position:absolute;top:50%;width:5px;height:9px;margin-top:-4.5px;background:#050506;border-radius:2px}
+.fl:before{left:-2px} .fl:after{right:-2px}
+.fl.y{color:var(--signal)} .fl.g{color:#5FE0A0}
+.XL .fl{width:62px;height:96px;font-size:86px;letter-spacing:-1px} .XL .fl.c{width:30px}
+.LG .fl{width:42px;height:60px;font-size:46px} .LG .pl{width:44px;display:flex;align-items:center;justify-content:center;color:#8F8F88}
+.SM .fl{width:23px;height:32px;font-size:22px;border-radius:4px} .SM .fl:before,.SM .fl:after{display:none} .SM{gap:3px}
+.led{font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:1.2px;text-transform:uppercase;color:#FFB800;text-shadow:0 0 10px rgba(255,184,0,.45);white-space:nowrap}
+.led.w{color:#EDEBE5;text-shadow:none} .led.o{color:#FF9A4D;text-shadow:0 0 10px rgba(255,154,77,.5)}
+.lamp{width:9px;height:9px;border-radius:5px;background:#FF9A4D;box-shadow:0 0 12px 3px rgba(255,154,77,.6);flex:none}
+.bar{height:8px;border-radius:4px;background:#050506;box-shadow:inset 0 1px 2px #000,0 1px 0 rgba(255,255,255,.07);position:relative;overflow:hidden}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:linear-gradient(90deg,#B37F00,#FFB800);box-shadow:0 0 10px rgba(255,184,0,.6)}
+.strip{display:flex;align-items:center;gap:12px;height:40px;border-radius:7px;padding:0 12px;flex:none;
+  background:linear-gradient(180deg,#2B2B30 0%,#1F1F23 49%,#060607 49.6%,#060607 50.4%,#19191C 51%,#222226 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 4px 10px rgba(0,0,0,.5)}
+.strip .tm{width:62px;color:var(--signal)} .strip .ds{flex:1} .strip .dy{color:#A3A39B}
+.strip span{font-family:var(--display);font-weight:700;font-size:24px;line-height:26px;white-space:nowrap}
+.btns{display:flex;gap:10px;margin-top:auto}
+.btn{flex:1;height:62px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;letter-spacing:.4px;text-transform:uppercase;text-align:center;line-height:15px;padding:0 8px;color:#EDEBE5;
+  background:linear-gradient(180deg,#34343A,#1C1C20);box-shadow:inset 0 1px 0 rgba(255,255,255,.16),inset 0 -2px 0 rgba(0,0,0,.5),0 8px 16px rgba(0,0,0,.6)}
+.btn.pri{color:#141414;background:linear-gradient(180deg,#FFC933,#E0A000);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(120,80,0,.5),0 8px 18px rgba(255,184,0,.28)}
+@media (prefers-reduced-motion: no-preference){
+  .go .fl,.go .strip{animation:flip .46s cubic-bezier(.3,.7,.3,1) backwards;transform-origin:50% 50%}
+  @keyframes flip{from{transform:perspective(300px) rotateX(-88deg);filter:brightness(.4)}}
+}
+
+/* ═══ H · OS CARTÕES DE COR ═══ */
+.H{background:#E3E1DB;color:#141414}
+.H .scr{padding:0}
+.H .topH{padding:0 18px 34px;flex:none}
+.H .segs{display:flex;align-items:center;gap:8px;padding:8px 0 14px}
+.H .seg{height:38px;padding:0 18px;border-radius:19px;display:flex;align-items:center;font-weight:700;font-size:13px;border:1.5px solid #141414}
+.H .seg.on{background:#141414;color:#fff}
+.H .plusH{margin-left:auto;width:42px;height:42px;border-radius:21px;background:#C9C6BE;display:flex;align-items:center;justify-content:center}
+.H .wd{font-weight:500;font-size:15px;line-height:20px;color:#3A3A36}
+.H .heroH{display:flex;align-items:stretch;gap:16px;margin-top:2px}
+.H .giant{font-family:var(--body);font-weight:700;font-size:86px;line-height:.9;letter-spacing:-4px}
+.H .giant small{font-size:38px;letter-spacing:-1px;margin-left:6px}
+.H .sideH{border-left:1.5px solid #141414;padding-left:14px;display:flex;flex-direction:column;justify-content:center;gap:12px}
+.H .sideH b{display:block;font-weight:700;font-size:19px;line-height:22px} .H .sideH span{font-weight:500;font-size:11px;color:#3A3A36}
+.H .sheetH{flex:1;min-height:0;margin-top:-18px;border-radius:30px 30px 0 0;background:#fff;padding:16px 12px 14px;display:flex;flex-direction:column;gap:8px}
+.H .shHead{display:flex;align-items:center;justify-content:space-between;padding:0 6px 4px}
+.H .shHead b{font-weight:800;font-size:15px} .H .ghost{height:34px;padding:0 14px;border-radius:17px;background:#F1EFEA;display:flex;align-items:center;font-weight:700;font-size:12px}
+.H .cd{border-radius:24px;padding:14px 16px;flex:none;display:flex;flex-direction:column;gap:10px}
+.H .cd.sand{background:#E8BE6E} .H .cd.sage{background:#B4C2A2} .H .cd.lilac{background:#C6BADF} .H .cd.sky{background:#A9C6DC} .H .cd.warn{background:#F0854A}
+.H .cd h4{font-weight:800;font-size:21px;line-height:24px;letter-spacing:-.3px} .H .cd h4 small{font-weight:500;font-size:12px;letter-spacing:0;margin-left:8px;opacity:.8}
+.H .cdRow{display:flex;align-items:flex-end;justify-content:space-between}
+.H .cdRow div b{display:block;font-weight:700;font-size:20px;line-height:22px} .H .cdRow div span{font-weight:500;font-size:11px;opacity:.8}
+.H .cdRow .r{text-align:right}
+.H .dur{height:28px;padding:0 12px;border-radius:14px;background:rgba(255,255,255,.85);display:flex;align-items:center;font-weight:700;font-size:12px}
+.H .mini{display:flex;gap:8px;flex:none}
+.H .mini .cd{flex:1;padding:12px 14px;gap:2px;min-width:0} .H .mini .cd span{font-weight:700;font-size:11px;opacity:.8} .H .mini .cd b{font-weight:800;font-size:19px;line-height:22px;white-space:nowrap}
+.H .kH{display:flex;gap:8px;margin-top:auto}
+.H .kH span{flex:1;height:48px;border-radius:24px;background:#F1EFEA;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;text-align:center;line-height:15px;padding:0 6px}
+.H .kH span:first-child{background:#141414;color:#fff}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>Início · três esboços "uau"</h1>
+    <p>Os anteriores estavam arrumados, mas eram planos. Estes três procuram o efeito por caminhos diferentes: <b>atmosfera</b>, <b>um objeto físico</b> e <b>cor</b>. Cada um está em dois estados. Dados de teste (easyJet, piloto, base Lisboa); é um desenho no navegador, o que vale no fim é o iPhone.</p>
+    <button class="replay" id="replay" type="button">Ver as abas a virar outra vez</button>
+  </div>
+  <div id="out"></div>
+</div>
+<script>
+(function(){
+  var P = {
+    cloud:'<circle cx="7.6" cy="13.6" r="3.9"/><circle cx="12.6" cy="10.8" r="4.8"/><circle cx="16.9" cy="13.8" r="3.5"/><path d="M7.6 12.2h9.3v5.3H7.6z"/>',
+    sun:'<path d="M12 7.2a4.8 4.8 0 1 1 0 9.6 4.8 4.8 0 0 1 0-9.6zM11 2h2v3.2h-2V2zm0 16.8h2V22h-2v-3.2zM2 11h3.2v2H2v-2zm16.8 0H22v2h-3.2v-2zM4.6 6 6 4.6 8.3 6.9 6.9 8.3 4.6 6zm11.1 11.1 1.4-1.4 2.3 2.3-1.4 1.4-2.3-2.3zm2.3-12.5L19.4 6l-2.3 2.3-1.4-1.4 2.3-2.3zM4.6 18l2.3-2.3 1.4 1.4L6 19.4 4.6 18z"/>',
+    moon:'<path d="M14.2 3a9.2 9.2 0 1 0 6.6 15.6A10.6 10.6 0 0 1 14.2 3z"/>',
+    cal:'<path d="M7 2h2.6v3H7V2zm7.4 0H17v3h-2.6V2zM4 5h16v3.6H4V5zm0 5h16v10a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 20V10zm3.4 3v2.8h2.8V13H7.4zm5 0v2.8h2.8V13h-2.8z"/>',
+    home:'<path d="M12 3l9.2 8.2h-2.5V21h-4.9v-6.4h-3.6V21H5.3v-9.8H2.8L12 3z"/>',
+    stats:'<path d="M4 12.5h3.8V20H4v-7.5zM10.1 5.5h3.8V20h-3.8V5.5zM16.2 9.5H20V20h-3.8V9.5z"/>',
+    user:'<path d="M12 3.4a3.7 3.7 0 1 1 0 7.4 3.7 3.7 0 0 1 0-7.4zM4.8 20.2c0-4 3.2-6.6 7.2-6.6s7.2 2.6 7.2 6.6a.8.8 0 0 1-.8.8H5.6a.8.8 0 0 1-.8-.8z"/>',
+    plus:'<path d="M10.4 4h3.2v6.4H20v3.2h-6.4V20h-3.2v-6.4H4v-3.2h6.4V4z"/>',
+    plane:'<path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>',
+    chev:'<path d="M8.6 4.2 16.4 12l-7.8 7.8-1.9-1.9 5.9-5.9-5.9-5.9z"/>'
+  };
+  function ic(n, s, rot){ return '<svg class="ic" width="'+s+'" height="'+s+'" viewBox="0 0 24 24" aria-hidden="true"'+(rot!=null?' style="transform:rotate('+rot+'deg)"':'')+'>'+P[n]+'</svg>'; }
+  function tabbar(){ var t = [['home','Início'],['cal','Escala'],null,['stats','Números'],['user','Perfil']]; return '<nav class="tabbar">'+t.map(function(x,i){ return x ? '<div class="tab'+(i===0?' on':'')+'">'+ic(x[0],24)+'<span class="tl">'+x[1]+'</span><i class="dot"></i></div>' : '<div class="tab plus"><span class="pl">'+ic('plus',22)+'</span></div>'; }).join('')+'</nav>'; }
+  function head(dot, left, right){ return '<div class="head"><span>'+(dot?'<i class="liveDot"></i>':'')+'<span class="eyebrow">'+left+'</span></span><span class="eyebrow">'+right+'</span></div>'; }
+
+  // ═══ F · o céu ═══  (o arco: de (14,196) a (344,196), cimo em (179,18); o avião a 59 % do caminho)
+  function bez(t){ var x = (1-t)*(1-t)*14 + 2*(1-t)*t*179 + t*t*344, y = (1-t)*(1-t)*196 + 2*(1-t)*t*(-160) + t*t*196; var dx = 2*(1-t)*(179-14) + 2*t*(344-179), dy = 2*(1-t)*(-160-196) + 2*t*(196+160); return [x, y, Math.atan2(dy, dx)*180/Math.PI]; }
+  function arcSvg(t, moon){
+    var p = bez(t), seg = '';
+    // a parte feita (até t) como curva própria: De Casteljau
+    var ax = 14, ay = 196, bx = 179, by = -160, cx = 344, cy = 196, q1x = ax+(bx-ax)*t, q1y = ay+(by-ay)*t;
+    seg = '<path d="M14 196 Q '+q1x.toFixed(1)+' '+q1y.toFixed(1)+' '+p[0].toFixed(1)+' '+p[1].toFixed(1)+'" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
+    return '<svg width="358" height="236" viewBox="0 0 358 236" aria-hidden="true">'+
+      '<path d="M14 196 Q 179 -160 344 196" stroke="rgba(255,255,255,.45)" stroke-width="2" stroke-dasharray="2 7" stroke-linecap="round" fill="none"/>'+seg+
+      '<circle cx="14" cy="196" r="4.5" fill="#fff"/><circle cx="344" cy="196" r="4.5" fill="none" stroke="#fff" stroke-width="2"/>'+
+      (moon ? '<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="9" fill="#F4F2ED"/><circle cx="'+(p[0]+4).toFixed(1)+'" cy="'+(p[1]-3).toFixed(1)+'" r="8" fill="#0C1A40"/>'
+        : '<g transform="translate('+p[0].toFixed(1)+' '+p[1].toFixed(1)+') rotate('+(p[2]+90).toFixed(1)+')"><circle r="15" fill="rgba(255,255,255,.18)"/><g transform="translate(-11 -11) scale(.92)" fill="#fff">'+P.plane+'</g></g>')+
+      '</svg>';
+  }
+  function gr(a, b, right, mk){ return '<div class="gr">'+(mk?'<i class="mk"></i>':'')+'<div class="t"><b>'+a+'</b><span class="caption">'+b+'</span></div>'+right+'</div>'; }
+  var CH = ic('chev',12);
+  var F1 = '<div class="sky"></div>'+
+    '<div class="status"><span>12:45</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="scr">'+head(1,'Em voo · EJU7625','Novidades [2]')+
+    '<div class="arcBox">'+arcSvg(.59)+'<div class="ctr"><span class="tag">Aterras às</span><span class="num big">13:50</span></div>'+
+      '<div class="end"><span class="num">LIS</span><span class="caption">partiu 11:10</span></div><div class="end r"><span class="num">LGW</span><span class="caption">9° · nublado</span></div></div>'+
+    '<div class="chips"><span class="chip">falta 1 h 05</span><span class="chip ok">a horas</span><span class="chip">margem 3:10</span></div>'+
+    '<div class="glass">'+gr('A escala mudou [2]','alterações por rever · nada entra sem ti',CH,1)+gr('PSV 7:30 de 11:45','report 05:15 · limite 17:00 · setor 3/3','<span class="v">64 %</span>')+gr('Depois · pernoita em LGW','Hotel do aeroporto','<span class="v gain">+142,30 €</span>')+gr('A seguir [5]','qui 12 · LGW → LIS','<span class="v">14:05</span>')+
+      '<div class="gk"><span>Partilhar a chegada</span><span>Limites</span><span>Hotel</span></div></div></div>';
+  var F2 = '<div class="sky"></div><div class="stars"></div>'+
+    '<div class="status"><span>21:40</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="scr">'+head(0,'Pernoita · LGW','7° · chuva')+
+    '<div class="arcBox">'+arcSvg(.31,1)+'<div class="ctr"><span class="tag">Report amanhã às</span><span class="num big">14:05</span></div>'+
+      '<div class="end"><span class="num">14:20</span><span class="caption">fim de serviço</span></div><div class="end r"><span class="num">LIS</span><span class="caption">parte 15:05</span></div></div>'+
+    '<div class="chips"><span class="chip">falta 16 h 25</span><span class="chip ok">repouso ✓</span><span class="chip">até 00:20</span></div>'+
+    '<div class="glass">'+gr('Hotel do aeroporto','guardado · abre nos mapas',CH)+gr('Esta noite','pernoita (acordo)','<span class="v gain">+45,40 €</span>')+gr('Em LGW amanhã','chuva · 5° a 9°','<span class="v">7°</span>')+gr('A seguir [4]','sáb 14 · LIS → FNC → LIS','<span class="v">05:30</span>')+
+      '<div class="gk"><span>Hotel · mapas</span><span>Serviço de amanhã</span><span>Partilhar</span></div></div></div>';
+
+  // ═══ G · o painel de abas ═══
+  function flaps(txt, cls, size){ var i = 0; return '<div class="flaps '+size+'">'+txt.split('').map(function(c){ return c === ' ' ? '<span style="width:8px"></span>' : c === '>' ? '<span class="pl">'+ic('plane',26,90)+'</span>' : '<span class="fl '+(cls||'')+(c===':'?' c':'')+'" style="animation-delay:'+(i++*55)+'ms">'+c+'</span>'; }).join('')+'</div>'; }
+  function strip(t, d, y, i){ return '<div class="strip" style="animation-delay:'+(500+i*90)+'ms"><span class="tm">'+t+'</span><span class="ds">'+d+'</span><span class="dy">'+y+'</span></div>'; }
+  var G1 = '<div class="status"><span>12:45</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="scr">'+head(1,'Em voo · EJU7625','9° · LGW')+
+    '<span class="plate">Aterras às</span>'+flaps('13:50','y','XL')+flaps('LIS>LGW','','LG')+
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">'+flaps('A HORAS','g','SM')+'<span class="led w">falta 1 h 05</span></div>'+
+    '<div class="bar"><i style="width:64%"></i></div><div style="display:flex;justify-content:space-between"><span class="led w">05:15 report</span><span class="led">PSV 7:30 / 11:45</span><span class="led w">17:00</span></div>'+
+    '<div style="display:flex;align-items:center;gap:10px;margin-top:2px"><i class="lamp"></i><span class="led o">A escala mudou [2]</span><span class="led w" style="margin-left:auto;color:#5FE0A0">+142,30 €</span></div>'+
+    '<span class="plate" style="margin-top:2px">A seguir [5]</span>'+strip('14:05','LGW → LIS','QUI 12',0)+strip('05:30','LIS → FNC → LIS','SÁB 14',1)+
+    '<div class="btns"><span class="btn pri">Partilhar a chegada</span><span class="btn">Limites</span><span class="btn">Hotel</span></div></div>';
+  var G2 = '<div class="status"><span>12:45</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="scr">'+head(0,'quarta · 11 novembro','19° · sol')+
+    '<span class="plate">Próximo serviço daqui a</span>'+flaps('2 DIAS','y','XL')+flaps('LIS>FNC','','LG')+
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">'+flaps('LIVRE','g','SM')+'<span class="led w">até sábado 14 · report 05:30</span></div>'+
+    '<div style="display:flex;justify-content:space-between;margin-top:4px"><span class="led w">Novembro</span><span class="led">2 431,50 €</span></div>'+
+    '<div style="display:flex;justify-content:space-between"><span class="led w">Serviço · 7 dias</span><span class="led">31 h / 60</span></div>'+
+    '<div style="display:flex;align-items:center;gap:10px"><i class="lamp"></i><span class="led o">Férias 2026</span><span class="led o" style="margin-left:auto">12 de 22</span></div>'+
+    '<span class="plate" style="margin-top:2px">A seguir [4]</span>'+strip('05:30','LIS → FNC → LIS','SÁB 14',0)+strip('06:10','LIS → MAD → LIS','DOM 15',1)+strip('12:20','LIS → CDG → LIS','TER 17',2)+
+    '<div class="btns"><span class="btn pri">Ver o serviço</span><span class="btn">Limites</span><span class="btn">Simular</span></div></div>';
+
+  // ═══ H · os cartões de cor ═══
+  function cd(color, title, sub, a, dur, b){ return '<div class="cd '+color+'"><h4>'+title+(sub?'<small>'+sub+'</small>':'')+'</h4><div class="cdRow"><div><b>'+a[0]+'</b><span>'+a[1]+'</span></div><span class="dur">'+dur+'</span><div class="r"><b>'+b[0]+'</b><span>'+b[1]+'</span></div></div></div>'; }
+  var segs = '<div class="segs"><span class="seg on">Hoje</span><span class="seg">Semana</span><span class="plusH">'+ic('plus',20)+'</span></div>';
+  var H1 = '<div class="status" style="color:#141414"><span>12:45</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="scr"><div class="topH">'+segs+
+    '<div class="wd">Em voo · EJU7625 · aterras às</div><div class="heroH"><div class="giant">13:50<br>LGW</div><div class="sideH"><div><b>1 h 05</b><span>falta para aterrar</span></div><div><b>3:10</b><span>de margem no PSV</span></div></div></div></div>'+
+    '<div class="sheetH"><div class="shHead"><b>O dia de hoje</b><span class="ghost">PSV 7:30 de 11:45</span></div>'+
+      cd('sand','LIS → LGW','setor 3 de 3 · a horas',['11:10','partiu'],'2 h 40',['13:50','aterra'])+
+      cd('sage','Pernoita em LGW','Hotel do aeroporto',['14:20','fim de serviço'],'repouso 10 h',['14:05','report · qui 12'])+
+      '<div class="mini"><div class="cd warn"><span>A escala mudou</span><b>2 por rever</b></div><div class="cd" style="background:#F1EFEA"><span>Hoje</span><b style="color:#0B6E43">+142,30 €</b></div></div>'+
+      '<div class="kH"><span>Partilhar a chegada</span><span>Limites</span><span>Hotel</span></div></div></div>';
+  var H2 = '<div class="status" style="color:#141414"><span>12:45</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="scr"><div class="topH">'+segs+
+    '<div class="wd">Quarta, 11 de novembro · próximo serviço daqui a</div><div class="heroH"><div class="giant">2<small>dias</small><br>FNC</div><div class="sideH"><div><b>sábado 14</b><span>livre até lá</span></div><div><b>05:30</b><span>report</span></div></div></div></div>'+
+    '<div class="sheetH"><div class="shHead"><b>A seguir</b><span class="ghost">mais 3 na escala</span></div>'+
+      cd('lilac','LIS → FNC → LIS','sábado 14',['05:30','report'],'2 setores',['11:10','fim'])+
+      cd('sky','LIS → MAD → LIS','domingo 15',['06:10','report'],'2 setores',['11:40','fim'])+
+      '<div class="mini"><div class="cd" style="background:#F1EFEA"><span>Novembro · estimado</span><b>2 431,50 €</b></div><div class="cd warn"><span>Férias 2026</span><b>12 de 22</b></div></div>'+
+      '<div class="kH"><span>Ver o serviço</span><span>Limites</span><span>Simular</span></div></div></div>';
+
+  var DIRS = [
+    ['F · O céu','O fundo é <b>o céu da hora e do sítio</b> onde estás: azul de altitude em voo, noite com estrelas na pernoita. O voo é <b>um arco</b> por cima do número, com o avião no ponto em que vais; à noite o arco é o repouso e o que o percorre é a lua. Os factos ficam numa <b>folha de vidro</b>. <b>Risco:</b> é a ideia que mais pesa no telemóvel (desfoque e gradientes), o texto sobre um fundo que muda exige cuidado com o contraste, e em julho recusaste um fundo de céu inteiro noutra forma.',
+      [['Em voo · de dia','F day',F1],['Pernoita · à noite','F night',F2]]],
+    ['G · O painel de abas','O painel de partidas do aeroporto como <b>objeto</b>: cada carácter numa aba com dobradiça, relevo e sombra; as abas <b>viram</b> quando a hora muda (carrega no botão lá em cima). Os avisos são lâmpadas e as teclas são botões com corpo. É a tua ideia do painel levada ao limite. <b>Risco:</b> o relevo cansa se for usado em tudo, por isso só vive no Início; e a letra em maiúsculas tipo LED lê-se pior em textos longos.',
+      [['Em voo','G go',G1],['Folga','G go',G2]]],
+    ['H · Os cartões de cor','A referência do calendário que guardaste duas vezes: a hora em <b>duas linhas enormes</b> com dois factos ao lado de um fio, e o dia numa folha branca em <b>cartões de cor</b> ("partiu · duração · aterra"). É o mais luminoso e o mais simpático dos três. <b>Risco:</b> sai da identidade de hoje (a placa escura e o amarelo desaparecem) e as cores novas teriam de ganhar significado fixo (voo, repouso, terra) para não serem decoração.',
+      [['Em voo','H',H1],['Folga','H',H2]]]
+  ];
+  var out = document.getElementById('out');
+  DIRS.forEach(function(d){
+    out.insertAdjacentHTML('beforeend', '<div class="lead"><h2>'+d[0]+'</h2><p>'+d[1]+'</p></div><section class="grid2">'+d[2].map(function(s){ return '<div class="shot"><h3>'+s[0]+'</h3><div class="fit"><div class="ph '+s[1]+'">'+s[2]+tabbar()+'</div></div><p class="m"></p></div>'; }).join('')+'</section>');
+  });
+  function run(){
+    document.querySelectorAll('.fit').forEach(function(f){ var k = Math.min(1, f.clientWidth / 406); f.firstElementChild.style.transform = 'scale('+k+')'; f.style.height = (860*k)+'px'; });
+    document.querySelectorAll('.ph').forEach(function(ph){
+      var scr = ph.querySelector('.scr'), kz = ph.getBoundingClientRect().width / 406, ks = ph.querySelector('.gk,.btns,.kH'), over = Math.round(Math.max(scr.scrollHeight - scr.clientHeight, (ks.getBoundingClientRect().bottom - scr.getBoundingClientRect().bottom) / kz));
+      var m = ph.closest('.shot').querySelector('.m'); m.textContent = over > 0 ? 'NÃO CABE: faltam '+over+' pt' : 'Cabe nos '+scr.clientHeight+' pt'; m.style.color = over > 0 ? '#C6362B' : '';
+    });
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(run); else run();
+  addEventListener('resize', run);
+  document.getElementById('replay').addEventListener('click', function(){ document.querySelectorAll('.G').forEach(function(p){ p.classList.remove('go'); void p.offsetWidth; p.classList.add('go'); }); });
+})();
+</script>
+</body>
+</html>

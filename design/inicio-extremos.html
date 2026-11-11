@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>Início · o mais cheio e o mais vazio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* Os dois extremos do Início, desenhados A PARTIR DO CÓDIGO (screens/HomeScreen.js, 11 de novembro de 2026):
+   as mesmas letras (os ficheiros da app), os mesmos tamanhos, espaços e cores (data/constants.js: TXT, SPACE, PELE, PLATE).
+   Não é uma captura do iPhone. Os números do estado em voo saem das funções reais (ftlForDuty, dutyLine, stateVoice). */
+@font-face{font-family:'BarlowC';font-weight:700;src:url('../node_modules/@expo-google-fonts/barlow-condensed/700Bold/BarlowCondensed_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{
+  --bg:#E8E7E2; --fg:#141414; --muted:#55554F; --frame:#04060A;
+  --paper:#FFFFFF; --ink:#141414; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --ghost:#E2E1DC;
+  --greyOnSoft:#5E5E57; --okText:#0B6E43; --warn:#E86A10; --red:#C6362B;
+  --plate:#141414; --pfg:#FFFFFF; --psub:#A3A39B; --prule:rgba(255,255,255,.14); --prulef:rgba(255,255,255,.08); --ptrack:rgba(255,255,255,.16);
+  --panel:#FFB800;
+  --display:'BarlowC','Arial Narrow',sans-serif; --body:'Hanken','Helvetica Neue',Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);padding:28px 16px 48px}
+.page{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--display);font-size:32px;letter-spacing:-.4px}
+.lead{font-size:14px;line-height:1.55;color:var(--muted);max-width:760px}
+.grid{display:flex;flex-wrap:wrap;gap:28px;justify-content:center}
+.shot{display:flex;flex-direction:column;gap:10px;width:406px;max-width:100%}
+.shot h2{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.shot p{font-size:13px;line-height:1.5;color:var(--muted)}
+.fit{width:100%;position:relative;height:860px}
+.ph{width:406px;height:860px;border:8px solid var(--frame);border-radius:52px;overflow:hidden;background:var(--paper);color:var(--ink);display:flex;flex-direction:column;transform-origin:top left}
+
+/* ── TXT (data/constants.js) ── */
+.tag{font-weight:800;font-size:11px;line-height:14px;letter-spacing:.6px;text-transform:uppercase}
+.eyebrow{font-weight:800;font-size:11px;line-height:14px;letter-spacing:1.4px;text-transform:uppercase}
+.caption{font-weight:500;font-size:11px;line-height:15px}
+.label{font-weight:700;font-size:12px;line-height:16px}
+.bodyT{font-weight:500;font-size:13px;line-height:19px}
+.bodyStrong{font-weight:700;font-size:13px;line-height:17px}
+.headline{font-weight:800;font-size:17px;line-height:22px}
+.ic{display:inline-block;flex:none;fill:currentColor}
+
+/* ── iPhone 390 × 844: barra de estado 47 · conteúdo 714 · barra de abas 83 ── */
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.live .status{background:var(--plate);color:var(--pfg)}
+.scr{flex:1;min-height:0;overflow:hidden;padding:0 16px 20px;display:flex;flex-direction:column}
+.live .scr{background:linear-gradient(var(--plate) 50%, var(--paper) 50%)}
+.tabbar{height:83px;flex:none;border-top:1px solid var(--line);display:flex;padding-bottom:34px;background:var(--paper)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--grey)}
+.tab .tl{font-size:11px;font-weight:700}
+.tab.on{color:var(--ink)}
+.tab .dot{width:4px;height:4px;border-radius:2px;background:transparent}
+.tab.on .dot{background:var(--panel)}
+.tab.plus{flex:none;width:64px}
+.tab.plus .pl{width:44px;height:44px;border-radius:22px;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center}
+
+/* ── A placa ── */
+.board{margin:0 -16px;padding:0 16px 8px}
+.live .board{background:var(--plate);color:var(--pfg)}
+.bHead{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0 8px;border-bottom:1px solid var(--line);min-height:40px}
+.live .bHead{border-bottom-color:var(--prule)}
+.bHeadL,.bHeadR{display:flex;align-items:center;gap:8px}
+.live .bHead .eyebrow{color:var(--psub)}
+.liveDot{width:8px;height:8px;border-radius:4px;background:var(--panel)}
+.bell{display:flex;align-items:center;gap:6px;background:var(--soft);border-radius:99px;padding:5px 11px;font-weight:800;font-size:10.5px;line-height:13px}
+.live .bell{background:rgba(244,242,237,.10);color:#F4F2ED}
+.bell i{width:6px;height:6px;border-radius:3px;background:var(--panel)}
+.wx{display:flex;align-items:center;gap:4px}
+.hero{display:flex;flex-direction:column;gap:8px;padding:8px 0 12px}
+.hero.ruled{border-bottom:1px solid var(--line)}
+.live .hero.ruled{border-bottom-color:var(--prule)}
+.heroTop{display:flex;flex-direction:column;gap:12px}
+.heroInfo{display:flex;flex-direction:column;gap:2px}
+.sub{color:var(--grey)} .live .sub{color:var(--psub)}
+.digits{display:flex;align-items:baseline;font-family:var(--display);font-weight:700;font-size:104px;line-height:104px;letter-spacing:-3px;color:var(--panel);font-variant-numeric:tabular-nums;margin-top:-8px;margin-bottom:-23px;
+  /* Acerto ao iPhone: o iOS assenta a Barlow mais acima na caixa do que o navegador. As medidas tiradas no telemóvel e
+     guardadas no código (TUNE.rhythm e TUNE.trimBottom) são ~19 pt visíveis do rótulo ao número e ~20 do número à rota;
+     sem este acerto o navegador dava 25 e 5. */
+  position:relative;top:-5.6px;margin-bottom:-13.6px}
+.destRow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.destRow.trim{margin-bottom:-7px}
+.dest{font-family:var(--display);font-weight:700;font-size:44px;line-height:46px;letter-spacing:-.5px}
+.pill{border-radius:8px;padding:4px 8px;font-weight:800;font-size:12px;line-height:15px;letter-spacing:.8px;text-transform:uppercase;white-space:nowrap}
+.pill.ok{background:rgba(70,201,138,.18);color:#46C98A}
+.pill.calm{background:var(--soft);color:var(--okText)}
+/* a linha do dia de serviço */
+.dl{display:flex;flex-direction:column;gap:6px}
+.dlBar{height:20px;position:relative}
+.dlBar>*{position:absolute}
+.dlTrack{left:0;right:0;top:9px;height:2px;border-radius:99px;background:var(--ptrack)}
+.dlTrack.done{right:auto;background:var(--panel)}
+.dlSec{top:7px;height:6px;border-radius:99px;overflow:hidden;background:var(--psub)}
+.dlSec>i{display:block;height:6px;background:var(--panel)}
+.dlTick{top:3px;width:2px;height:14px;margin-left:-1px;border-radius:99px;background:var(--pfg)}
+.dlNow{top:2px;width:16px;height:16px;margin-left:-8px;border-radius:99px;background:var(--plate);color:var(--pfg);display:flex;align-items:center;justify-content:center}
+.ends{display:flex;justify-content:space-between;gap:8px}
+/* as linhas */
+.nextTitle{padding-top:12px}
+.cols{display:flex;gap:8px;padding:4px 0 2px}
+.cTm{width:76px;flex:none}.cDs{flex:1;min-width:0}.cDy{width:72px;flex:none;text-align:right}
+.row{display:flex;align-items:center;gap:8px;min-height:44px}
+.row.ruled{border-bottom:1px solid var(--prulef)}
+.rowBig{font-family:var(--display);font-weight:700;font-size:26px;line-height:28px;white-space:nowrap;overflow:hidden}
+.live .row .cTm{color:var(--panel)}
+.more{display:flex;align-items:center;justify-content:flex-end;gap:4px;min-height:44px}
+
+/* ── O corpo ── */
+.body{flex:1;margin:0 -16px;padding:16px 16px 0;background:var(--paper);color:var(--ink);display:flex;flex-direction:column;gap:12px}
+.say{color:var(--grey)} .say b{font-weight:700;color:var(--ink)}
+.secs{display:flex;flex-direction:column;gap:8px}
+.sec{display:flex;align-items:center;gap:12px;border-radius:16px;padding:12px 16px;min-height:60px;background:var(--soft)}
+.secIc{width:32px;height:32px;border-radius:16px;background:var(--paper);display:flex;align-items:center;justify-content:center;flex:none}
+.secTx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.secTx .tag{color:var(--greyOnSoft)}
+.keys{display:flex;gap:8px;margin-top:auto;padding-top:4px}
+.key{flex:1;min-height:88px;border-radius:16px;padding:12px;display:flex;flex-direction:column;justify-content:space-between;gap:8px;background:var(--soft);color:var(--ink)}
+.key.pri{background:var(--ink);color:var(--paper)}
+
+.measure{font-size:12px;color:var(--muted)}
+.list{font-size:13px;line-height:1.6;color:var(--muted);max-width:760px}
+.list b{color:var(--fg)}
+</style>
+<body>
+<div class="page">
+  <h1>Início: o estado mais cheio e o mais vazio</h1>
+  <p class="lead">Desenhado a partir do código da app, com as letras, os tamanhos e as cores verdadeiros, num iPhone de 390 × 844. Não é uma captura do telemóvel: serve para ver a arrumação. Os dados são de teste (easyJet, piloto, base Lisboa, quarta 11 de novembro de 2026).</p>
+  <div class="grid">
+    <div class="shot"><h2>O mais cheio · em voo</h2><p>Último setor de um dia de três, com pernoita em Londres, uma alteração de escala por rever e novidades por ler.</p><div class="fit"><div class="ph live" id="full"></div></div><p class="measure" id="mFull"></p></div>
+    <div class="shot"><h2>O mais vazio · folga sem serviços</h2><p>Escala ligada mas sem nada marcado, numa companhia sem acordo modelado e sem previsão do tempo.</p><div class="fit"><div class="ph" id="empty"></div></div><p class="measure" id="mEmpty"></p></div>
+  </div>
+</div>
+<script>
+(function(){
+  var P = {
+    cloud:'<circle cx="7.6" cy="13.6" r="3.9"/><circle cx="12.6" cy="10.8" r="4.8"/><circle cx="16.9" cy="13.8" r="3.5"/><path d="M7.6 12.2h9.3v5.3H7.6z"/>',
+    moon:'<path d="M14.2 3a9.2 9.2 0 1 0 6.6 15.6A10.6 10.6 0 0 1 14.2 3z"/>',
+    cal:'<path d="M7 2h2.6v3H7V2zm7.4 0H17v3h-2.6V2zM4 5h16v3.6H4V5zm0 5h16v10a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 20V10zm3.4 3v2.8h2.8V13H7.4zm5 0v2.8h2.8V13h-2.8z"/>',
+    gauge:'<path d="M12 5a10 10 0 0 0-10 10.4h3.4A6.6 6.6 0 0 1 14 9.3l2.5-2.6A9.9 9.9 0 0 0 12 5zm7.4 3.3-6.1 5a2 2 0 1 0 2 2.1l5.4-5.7a10 10 0 0 0-1.3-1.4zM18.6 15.4h3.3c0-.5 0-1-.1-1.5l-3.3.7c.1.3.1.5.1.8z"/>',
+    share:'<path d="M17 3a2.8 2.8 0 1 1-2.6 3.8L8.6 10a2.8 2.8 0 0 1 0 4l5.8 3.2A2.8 2.8 0 1 1 13.6 19l-5.8-3.3a2.8 2.8 0 1 1 0-7.4l5.8-3.2A2.8 2.8 0 0 1 17 3z"/>',
+    shield:'<path d="M12 2l8 3v6c0 5-3.4 9.2-8 11-4.6-1.8-8-6-8-11V5l8-3z"/>',
+    bed:'<path d="M3 6h3.2v7H3V6zm0 8h18v5h-2.6v-2.2H5.6V19H3v-5zm5-4.6h8.6A4.4 4.4 0 0 1 21 13.8H8V9.4z"/>',
+    home:'<path d="M12 3l9.2 8.2h-2.5V21h-4.9v-6.4h-3.6V21H5.3v-9.8H2.8L12 3z"/>',
+    stats:'<path d="M4 12.5h3.8V20H4v-7.5zM10.1 5.5h3.8V20h-3.8V5.5zM16.2 9.5H20V20h-3.8V9.5z"/>',
+    user:'<path d="M12 3.4a3.7 3.7 0 1 1 0 7.4 3.7 3.7 0 0 1 0-7.4zM4.8 20.2c0-4 3.2-6.6 7.2-6.6s7.2 2.6 7.2 6.6a.8.8 0 0 1-.8.8H5.6a.8.8 0 0 1-.8-.8z"/>',
+    plus:'<path d="M10.4 4h3.2v6.4H20v3.2h-6.4V20h-3.2v-6.4H4v-3.2h6.4V4z"/>',
+    plane:'<path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>',
+    chevron:'<path d="M8.6 4.2 16.4 12l-7.8 7.8-1.9-1.9 5.9-5.9-5.9-5.9z"/>'
+  };
+  function ic(n, s, rot, color){ return '<svg class="ic" width="'+s+'" height="'+s+'" viewBox="0 0 24 24" aria-hidden="true" style="'+(rot?'transform:rotate('+rot+'deg);':'')+(color?'color:'+color:'')+'">'+P[n]+'</svg>'; }
+  function tabbar(){ return '<nav class="tabbar">'+
+    '<div class="tab on">'+ic('home',24)+'<span class="tl">Início</span><i class="dot"></i></div>'+
+    '<div class="tab">'+ic('cal',24)+'<span class="tl">Escala</span><i class="dot"></i></div>'+
+    '<div class="tab plus"><span class="pl">'+ic('plus',22)+'</span></div>'+
+    '<div class="tab">'+ic('stats',24)+'<span class="tl">Números</span><i class="dot"></i></div>'+
+    '<div class="tab">'+ic('user',24)+'<span class="tl">Perfil</span><i class="dot"></i></div></nav>'; }
+  function status(t){ return '<div class="status"><span>'+t+'</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>'; }
+  function key(icon, txt, pri){ return '<span class="key'+(pri?' pri':'')+'">'+ic(icon,20)+'<span class="bodyStrong">'+txt+'</span></span>'; }
+
+  // ── O MAIS CHEIO: hoje · em voo (dutyLine real: agora 63,8 % · setores 8,5–23,4 · 29,1–43,3 · 50,4–73,0, o 3.º a 59 %) ──
+  var ROWS = [['14:05','LGW → LIS','qui 12'],['05:30','LIS → FNC → LIS → OPO → LIS','sáb 14'],['06:10','LIS → MAD → LIS','dom 15'],['12:20','LIS → CDG → LIS','ter 17'],['05:45','LIS → FNC → LIS','qua 18']];
+  var SECS = [[8.51,23.40,100],[29.08,43.26,100],[50.35,73.05,59.4]];
+  function full(cap){
+    var shown = ROWS.slice(0, cap), more = ROWS.length - cap;
+    return status('12:45')+'<div class="scr">'+
+      '<div class="board">'+
+        '<div class="bHead"><div class="bHeadL"><i class="liveDot"></i><span class="eyebrow">Em voo · EJU7625</span></div>'+
+          '<div class="bHeadR"><span class="bell"><i></i>2 novidades</span><span class="wx">'+ic('cloud',14,0,'var(--psub)')+'<span class="eyebrow">9° · LGW</span></span></div></div>'+
+        '<div class="hero ruled">'+
+          '<div class="heroTop"><span class="tag sub">Aterras daqui a 1 h 05</span><div class="digits">13:50</div></div>'+
+          '<div class="heroInfo">'+
+            '<div class="destRow trim"><span class="dest">LIS → LGW</span><span class="pill ok">A horas</span></div>'+
+            '<div class="dl"><div class="dlBar"><i class="dlTrack"></i><i class="dlTrack done" style="width:63.83%"></i>'+
+              SECS.map(function(s){ return '<span class="dlSec" style="left:'+s[0]+'%;width:'+(s[1]-s[0])+'%"><i style="width:'+s[2]+'%"></i></span>'; }).join('')+
+              '<i class="dlTick" style="left:100%"></i><span class="dlNow" style="left:63.83%">'+ic('plane',14,90)+'</span></div>'+
+              '<div class="ends"><span class="caption sub">05:15 · report</span><span class="caption sub">limite · 17:00</span></div>'+
+              '<span class="label sub">PSV 7:30 de 11:45 · setor 3/3 · <span style="color:var(--pfg)">aterras com 3:10 de margem</span></span></div>'+
+          '</div>'+
+        '</div>'+
+        '<div><div class="tag nextTitle">Próximos serviços</div>'+
+          '<div class="cols"><span class="tag sub cTm">Report</span><span class="tag sub cDs">Rota</span><span class="tag sub cDy">Dia</span></div>'+
+          shown.map(function(r, i){ return '<div class="row'+((i < shown.length-1 || more > 0)?' ruled':'')+'"><span class="rowBig cTm">'+r[0]+'</span><span class="rowBig cDs fit26">'+r[1]+'</span><span class="label sub cDy">'+r[2]+'</span></div>'; }).join('')+
+          (more > 0 ? '<div class="more"><span class="label sub">Mais '+more+'</span>'+ic('chevron',12,90,'var(--psub)')+'</div>' : '')+
+        '</div>'+
+      '</div>'+
+      '<div class="body">'+
+        '<p class="bodyT say"><b>Está a correr como previsto.</b></p>'+
+        '<div class="secs">'+
+          '<div class="sec"><span class="secIc">'+ic('cal',16,0,'var(--warn)')+'</span><span class="secTx"><span class="tag">A escala mudou</span><span class="bodyStrong">2 alterações por rever · nada entra sem ti</span></span>'+ic('chevron',12,0,'var(--greyOnSoft)')+'</div>'+
+          '<div class="sec"><span class="secIc">'+ic('moon',16)+'</span><span class="secTx"><span class="tag">Depois</span><span class="bodyStrong">Pernoita em LGW · Hotel do aeroporto</span></span></div>'+
+        '</div>'+
+        '<div class="keys">'+key('share','Partilhar a chegada',true)+key('shield','Limites')+key('bed','Hotel')+'</div>'+
+      '</div>'+
+    '</div>'+tabbar();
+  }
+  // a rota encolhe para caber (adjustsFontSizeToFit, mínimo 0,6)
+  function fitRoutes(root){ root.querySelectorAll('.fit26').forEach(function(el){ var s = 26; while (el.scrollWidth > el.clientWidth + 0.5 && s > 15.6) { s -= 0.5; el.style.fontSize = s+'px'; } }); }
+  function over(root){ var scr = root.querySelector('.scr'); var k = root.querySelector('.keys'); var b = root.querySelector('.secs') || root.querySelector('.say'); return { h: scr.scrollHeight, v: scr.clientHeight, gap: k && b ? Math.round(k.getBoundingClientRect().top - b.getBoundingClientRect().bottom) : null }; }
+
+  var F = document.getElementById('full');
+  F.innerHTML = full(3); fitRoutes(F);
+  var m3 = over(F), cap = 3;
+  // A regra da app: 3 linhas, ou 2 se o conteúdo não couber sem deslizar (onContentSizeChange → setRowsCap(2)).
+  if (m3.h > m3.v + 1) { cap = 2; F.innerHTML = full(2); fitRoutes(F); }
+  var mf = over(F);
+  document.getElementById('mFull').textContent = 'Medido: com 3 linhas o conteúdo pede '+m3.h+' pt nos '+m3.v+' disponíveis'+(cap === 2 ? ' → a app dobra para 2 linhas ("Mais 3"), como aqui. ' : '. ')+'Com '+cap+' linhas: '+mf.h+' de '+mf.v+' pt; entre os cartões e as teclas ficam '+mf.gap+' pt.';
+
+  // ── O MAIS VAZIO: folga, sem serviços marcados, sem acordo modelado, sem tempo ──
+  var E = document.getElementById('empty');
+  E.innerHTML = status('12:45')+'<div class="scr">'+
+    '<div class="board"><div class="bHead"><div class="bHeadL"><span class="eyebrow">quarta · 11 novembro</span></div><div class="bHeadR"></div></div>'+
+      '<div class="hero"><div class="heroTop"></div><div class="heroInfo"><div class="destRow"><span class="headline">Sem serviços marcados</span><span class="pill calm">Escala em dia</span></div></div></div></div>'+
+    '<div class="body"><p class="bodyT say"><b>Folga a sério.</b> Nada pendente, nada a vigiar.</p>'+
+      '<div class="keys">'+key('shield','Limites',true)+key('gauge','Simular')+'</div></div>'+
+  '</div>'+tabbar();
+  var me = over(E);
+  document.getElementById('mEmpty').textContent = 'Medido: o conteúdo ocupa '+Math.round(E.querySelector('.say').getBoundingClientRect().bottom - E.querySelector('.scr').getBoundingClientRect().top)+' pt no topo e as duas teclas ficam presas ao fundo; entre a frase e as teclas ficam '+me.gap+' pt vazios.';
+
+  // em ecrãs estreitos, o telemóvel encolhe para caber
+  function scale(){ document.querySelectorAll('.fit').forEach(function(f){ var k = Math.min(1, f.clientWidth / 406); f.firstElementChild.style.transform = 'scale('+k+')'; f.style.height = (860*k)+'px'; }); }
+  scale(); addEventListener('resize', scale);
+})();
+</script>
+</body>
+</html>

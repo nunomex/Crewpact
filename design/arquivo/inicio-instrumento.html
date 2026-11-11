@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · Início · o instrumento</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* E · O INSTRUMENTO (2026-11-11) — a linguagem da referência do menu escuro (raen trading, enviada pelo Nuno) levada ao Início
+   e ao Perfil. Só tipografia e fios:
+     · NENHUM cartão nem fundo cheio: o que separa são fios de 1 pt;
+     · UMA cor de destaque (o amarelo), rara: a hora ao vivo, o ponto do agora, as setas;
+     · as ESQUADRIAS (quatro cantos) marcam o foco: o estado e a ação principal — no lugar das pílulas e dos botões cheios;
+     · a CONTAGEM entre parênteses retos: "A seguir [5]", "Novidades [2]";
+     · a LEGENDA TÉCNICA em maiúsculas pequenas para o que é referência (Zulu, margem, artigo da lei).
+   Mantém do Início de hoje: o número enorme, a rota, a linha do dia de serviço, as colunas dos próximos serviços, as letras.
+   Não traz da referência: a letra fina nem o cinzento claro (leem-se mal às 4 da manhã) nem uma terceira família de letra.
+   iPhone 390 × 844, 714 pt úteis. Dados de teste (easyJet, piloto, base Lisboa). É um desenho; o que vale é o iPhone. */
+@font-face{font-family:'BarlowC';font-weight:700;src:url('../../node_modules/@expo-google-fonts/barlow-condensed/700Bold/BarlowCondensed_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:500;src:url('../../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--frame:#04060A;--display:'BarlowC','Arial Narrow',sans-serif;--body:'Hanken','Helvetica Neue',Arial,sans-serif;--signal:#FFB800}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+.lead{max-width:860px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-family:var(--display);font-size:36px;letter-spacing:-.5px}
+.lead h2{font-family:var(--display);font-size:28px;letter-spacing:-.3px;margin-top:8px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,406px));gap:24px;justify-content:center}
+@media (max-width:1320px){.grid3{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),406px))}}
+.shot{display:flex;flex-direction:column;gap:8px;min-width:0}
+.shot h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.shot .m{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.fit{width:100%;position:relative;height:860px}
+
+.ph{width:406px;height:860px;border:8px solid var(--frame);border-radius:52px;overflow:hidden;display:flex;flex-direction:column;transform-origin:top left;
+  --bg:#FFFFFF;--fg:#141414;--sub:#6B6B64;--rule:#E4E1DA;--acc:#141414;--num:#141414;--ok:#0B6E43;--warn:#C2540A;--track:#E4E1DA;
+  --tbg:#FFFFFF;--tfg:#141414;--tsub:#77776F;--tline:#ECEAE4;background:var(--bg);color:var(--fg)}
+.ph.live{--bg:#141414;--fg:#FFFFFF;--sub:#A3A39B;--rule:rgba(255,255,255,.14);--acc:var(--signal);--num:var(--signal);--ok:#46C98A;--warn:#F08A3C;--track:rgba(255,255,255,.16)}
+.ph.night{--bg:#0D131C;--fg:#F4F2ED;--sub:rgba(244,242,237,.62);--rule:rgba(244,242,237,.14);--acc:var(--signal);--num:var(--signal);--ok:#46C98A;--warn:#F08A3C;--track:rgba(244,242,237,.16);
+  --tbg:#0D131C;--tfg:#F4F2ED;--tsub:rgba(244,242,237,.62);--tline:rgba(244,242,237,.14)}
+.tag{font-weight:800;font-size:11px;line-height:14px;letter-spacing:.6px;text-transform:uppercase}
+.eyebrow{font-weight:800;font-size:11px;line-height:14px;letter-spacing:1.4px;text-transform:uppercase}
+.caption{font-weight:500;font-size:11px;line-height:15px}
+.callout{font-weight:700;font-size:15px;line-height:20px}
+.num{font-family:var(--display);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sub{color:var(--sub)}
+.ic{display:inline-block;flex:none;fill:currentColor}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.scr{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;padding:0 16px}
+.tabbar{height:83px;flex:none;border-top:1px solid var(--tline);display:flex;padding-bottom:34px;background:var(--tbg)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--tsub)}
+.tab .tl{font-size:11px;font-weight:700} .tab.on{color:var(--tfg)}
+.tab .dot{width:4px;height:4px;border-radius:2px} .tab.on .dot{background:var(--signal)}
+.tab.plus{flex:none;width:64px} .tab.plus .pl{width:44px;height:44px;border-radius:22px;background:var(--tfg);color:var(--tbg);display:flex;align-items:center;justify-content:center}
+
+/* as esquadrias: quatro cantos de 2 pt à volta do que está em foco */
+.br{--s:8px;--w:2px;--c:currentColor;background:
+  linear-gradient(var(--c),var(--c)) top left/var(--s) var(--w) no-repeat,linear-gradient(var(--c),var(--c)) top left/var(--w) var(--s) no-repeat,
+  linear-gradient(var(--c),var(--c)) top right/var(--s) var(--w) no-repeat,linear-gradient(var(--c),var(--c)) top right/var(--w) var(--s) no-repeat,
+  linear-gradient(var(--c),var(--c)) bottom left/var(--s) var(--w) no-repeat,linear-gradient(var(--c),var(--c)) bottom left/var(--w) var(--s) no-repeat,
+  linear-gradient(var(--c),var(--c)) bottom right/var(--s) var(--w) no-repeat,linear-gradient(var(--c),var(--c)) bottom right/var(--w) var(--s) no-repeat}
+/* a seta pontilhada */
+.arr{display:inline-flex;align-items:center;color:var(--acc);flex:none}
+.arr i{width:16px;border-top:2px dotted currentColor;margin-right:-2px}
+.ct{color:var(--sub);font-weight:500;margin-left:4px}
+
+.head{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:40px;padding:12px 0 8px;border-bottom:1px solid var(--rule)}
+.head>span{display:flex;align-items:center;gap:10px;white-space:nowrap} .head .eyebrow{color:var(--sub)}
+.calm .head>span:first-child .eyebrow{color:var(--fg)}
+.liveDot{width:8px;height:8px;border-radius:4px;background:var(--signal)}
+.hero{display:flex;flex-direction:column;gap:8px;padding:10px 0 14px;border-bottom:1px solid var(--rule)}
+.digits{font-family:var(--display);font-weight:700;font-size:104px;line-height:1em;letter-spacing:-3px;color:var(--num);font-variant-numeric:tabular-nums;white-space:nowrap;margin-top:-.08em;position:relative;top:-.054em;margin-bottom:-.13em}
+.digits small{font-size:44px;line-height:44px;letter-spacing:-1px;margin-left:8px}
+.digits.xl{font-size:132px}
+.destRow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.dest{font-family:var(--display);font-weight:700;font-size:44px;line-height:46px;letter-spacing:-.5px;white-space:nowrap}
+.dest.md{font-size:32px;line-height:36px}
+.st{padding:5px 9px;color:var(--ok);white-space:nowrap}
+.dl{display:flex;flex-direction:column;gap:6px;margin-top:2px}
+.dlBar{height:20px;position:relative} .dlBar>*{position:absolute}
+.dlTrack{left:0;right:0;top:9px;height:2px;border-radius:99px;background:var(--track)} .dlTrack.done{right:auto;background:var(--signal)}
+.dlSec{top:7px;height:6px;border-radius:99px;overflow:hidden;background:var(--sub)} .dlSec>i{display:block;height:6px;background:var(--signal)}
+.dlTick{top:3px;width:2px;height:14px;margin-left:-1px;background:var(--fg)}
+.dlNow{top:2px;width:16px;height:16px;margin-left:-8px;border-radius:99px;background:var(--bg);color:var(--fg);display:flex;align-items:center;justify-content:center}
+.ends{display:flex;justify-content:space-between}
+.say{font-weight:500;font-size:13px;line-height:19px;color:var(--sub)} .say b{font-weight:700;color:var(--fg)}
+/* as linhas */
+.r{display:flex;align-items:center;gap:12px;min-height:48px;border-bottom:1px solid var(--rule);padding:6px 0}
+.r .t{flex:1;min-width:0;display:flex;flex-direction:column}
+.r .t .caption{color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r .v{font-family:var(--display);font-weight:700;font-size:24px;line-height:26px;white-space:nowrap}
+.r .v small{font-family:var(--body);font-weight:500;font-size:11px;color:var(--sub);margin-left:4px}
+.r .v.gain{color:var(--ok)}
+.r .mk{width:8px;height:8px;background:var(--warn);flex:none}
+.sec{display:flex;align-items:center;justify-content:space-between;padding:12px 0 2px}
+.sec .tag{color:var(--fg)} .sec .tag.sub{color:var(--sub)}
+.nx{display:flex;align-items:center;gap:8px;min-height:44px;border-bottom:1px solid var(--rule)}
+.nx .tm{width:76px;font-family:var(--display);font-weight:700;font-size:26px;line-height:28px;color:var(--num)}
+.nx .ds{flex:1;min-width:0;font-family:var(--display);font-weight:700;font-size:26px;line-height:28px;white-space:nowrap;overflow:hidden}
+.nx .dy{width:60px;text-align:right;font-weight:700;font-size:12px;color:var(--sub)}
+/* as ações: texto, com a principal entre esquadrias */
+.acts{display:flex;align-items:center;margin-top:auto;height:64px;gap:4px;padding-bottom:6px}
+.act{flex:1;height:44px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:13px;line-height:16px;text-align:center;min-width:0}
+.act.pri{flex:1.35;color:var(--acc);--s:10px}
+.calm .act.pri{color:var(--fg)}
+.act+.act:not(.pri){border-left:1px solid var(--rule)}
+
+/* ── o Perfil ── */
+.pName{font-family:var(--display);font-weight:700;font-size:44px;line-height:46px;letter-spacing:-.5px;margin-top:14px}
+.pCap{color:var(--sub);margin-top:6px;padding-bottom:16px;border-bottom:1px solid var(--rule)}
+.mr{display:flex;align-items:center;justify-content:space-between;min-height:58px;border-bottom:1px solid var(--rule)}
+.mr .num{font-size:30px;line-height:34px;letter-spacing:-.3px}
+.mr .ct{font-family:var(--display);font-weight:700;font-size:30px;margin-left:6px}
+.out{margin-top:auto;margin-bottom:14px;height:48px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:var(--acc);--s:10px}
+.calm .out{color:var(--fg)}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>E · O instrumento</h1>
+    <p>A linguagem da referência do menu escuro, levada ao Início e ao Perfil: <b>só tipografia e fios</b>. Nenhum cartão, nenhum fundo cheio. Uma só cor de destaque, rara. As <b>esquadrias</b> (os quatro cantos) marcam o que está em foco: o estado e a ação principal. As contagens vão <b>entre parênteses retos</b>, e o que é referência (Zulu, margem, artigo da lei) vai numa <b>legenda técnica</b> pequena.</p>
+    <p>Do Início de hoje ficam o número enorme, a rota, a linha do dia de serviço e as colunas dos próximos serviços. Da referência não trouxe a letra fina nem o cinzento claro. Dados de teste; é um desenho no navegador, o que vale no fim é o iPhone.</p>
+    <h2>O Início</h2>
+  </div>
+  <section class="grid3" id="g1"></section>
+  <div class="lead"><h2>O Perfil</h2><p>O mesmo desenho num ecrã de menu, que é o que a referência mostra: de dia e à noite. Os nomes das linhas são os do Perfil de hoje.</p></div>
+  <section class="grid3" id="g2"></section>
+</div>
+<script>
+(function(){
+  var P = {
+    sun:'<path d="M12 7.2a4.8 4.8 0 1 1 0 9.6 4.8 4.8 0 0 1 0-9.6zM11 2h2v3.2h-2V2zm0 16.8h2V22h-2v-3.2zM2 11h3.2v2H2v-2zm16.8 0H22v2h-3.2v-2zM4.6 6 6 4.6 8.3 6.9 6.9 8.3 4.6 6zm11.1 11.1 1.4-1.4 2.3 2.3-1.4 1.4-2.3-2.3zm2.3-12.5L19.4 6l-2.3 2.3-1.4-1.4 2.3-2.3zM4.6 18l2.3-2.3 1.4 1.4L6 19.4 4.6 18z"/>',
+    cloud:'<circle cx="7.6" cy="13.6" r="3.9"/><circle cx="12.6" cy="10.8" r="4.8"/><circle cx="16.9" cy="13.8" r="3.5"/><path d="M7.6 12.2h9.3v5.3H7.6z"/>',
+    cal:'<path d="M7 2h2.6v3H7V2zm7.4 0H17v3h-2.6V2zM4 5h16v3.6H4V5zm0 5h16v10a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 20V10zm3.4 3v2.8h2.8V13H7.4zm5 0v2.8h2.8V13h-2.8z"/>',
+    home:'<path d="M12 3l9.2 8.2h-2.5V21h-4.9v-6.4h-3.6V21H5.3v-9.8H2.8L12 3z"/>',
+    stats:'<path d="M4 12.5h3.8V20H4v-7.5zM10.1 5.5h3.8V20h-3.8V5.5zM16.2 9.5H20V20h-3.8V9.5z"/>',
+    user:'<path d="M12 3.4a3.7 3.7 0 1 1 0 7.4 3.7 3.7 0 0 1 0-7.4zM4.8 20.2c0-4 3.2-6.6 7.2-6.6s7.2 2.6 7.2 6.6a.8.8 0 0 1-.8.8H5.6a.8.8 0 0 1-.8-.8z"/>',
+    plus:'<path d="M10.4 4h3.2v6.4H20v3.2h-6.4V20h-3.2v-6.4H4v-3.2h6.4V4z"/>',
+    plane:'<path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>',
+    chev:'<path d="M8.6 4.2 16.4 12l-7.8 7.8-1.9-1.9 5.9-5.9-5.9-5.9z"/>'
+  };
+  function ic(n, s, rot){ return '<svg class="ic" width="'+s+'" height="'+s+'" viewBox="0 0 24 24" aria-hidden="true"'+(rot?' style="transform:rotate('+rot+'deg)"':'')+'>'+P[n]+'</svg>'; }
+  var ARR = '<span class="arr"><i></i>'+ic('chev',12)+'</span>';
+  function tabbar(on){ var t = [['home','Início'],['cal','Escala'],null,['stats','Números'],['user','Perfil']]; return '<nav class="tabbar">'+t.map(function(x,i){ return x ? '<div class="tab'+(i===on?' on':'')+'">'+ic(x[0],24)+'<span class="tl">'+x[1]+'</span><i class="dot"></i></div>' : '<div class="tab plus"><span class="pl">'+ic('plus',22)+'</span></div>'; }).join('')+'</nav>'; }
+  function head(dot, left, right){ return '<div class="head"><span>'+(dot?'<i class="liveDot"></i>':'')+'<span class="eyebrow">'+left+'</span></span><span>'+right+'</span></div>'; }
+  function wx(i, t){ return '<span class="eyebrow" style="display:flex;gap:4px;align-items:center">'+ic(i,14)+t+'</span>'; }
+  function r(title, cap, right, mark){ return '<div class="r">'+(mark?'<i class="mk"></i>':'')+'<div class="t"><span class="callout">'+title+'</span>'+(cap?'<span class="caption">'+cap+'</span>':'')+'</div>'+right+'</div>'; }
+  function v(x, small, gain){ return '<span class="v'+(gain?' gain':'')+'">'+x+(small?'<small>'+small+'</small>':'')+'</span>'; }
+  function nx(t, d, y){ return '<div class="nx"><span class="tm">'+t+'</span><span class="ds">'+d+'</span><span class="dy">'+y+'</span></div>'; }
+  function sec(a, n, b){ return '<div class="sec"><span class="tag">'+a+' <span class="ct">['+n+']</span></span><span style="display:flex;align-items:center;gap:6px"><span class="tag sub">'+b+'</span>'+ARR+'</span></div>'; }
+  function acts(a){ return '<div class="acts"><span class="act pri br">'+a[0]+'</span><span class="act">'+a[1]+'</span><span class="act">'+a[2]+'</span></div>'; }
+
+  var INI = [
+    ['Em voo · o mais cheio','live','12:45',
+      head(1,'Em voo · EJU7625','<span class="eyebrow">Novidades <span class="ct">[2]</span></span>'+wx('cloud','9° · LGW'))+
+      '<div class="hero"><span class="tag sub">Aterras às</span><div class="digits">13:50</div>'+
+        '<div class="destRow"><span class="dest">LIS → LGW</span><span class="tag st br">A horas</span></div>'+
+        '<span class="tag sub">Falta 1 h 05 · 13:50 Z · margem 3:10</span>'+
+        '<div class="dl"><div class="dlBar"><i class="dlTrack"></i><i class="dlTrack done" style="width:63.83%"></i>'+[[8.51,23.40,100],[29.08,43.26,100],[50.35,73.05,59.4]].map(function(x){ return '<span class="dlSec" style="left:'+x[0]+'%;width:'+(x[1]-x[0])+'%"><i style="width:'+x[2]+'%"></i></span>'; }).join('')+'<i class="dlTick" style="left:100%"></i><span class="dlNow" style="left:63.83%">'+ic('plane',14,90)+'</span></div>'+
+        '<div class="ends"><span class="caption sub">05:15 · report</span><span class="caption sub">PSV 7:30 de 11:45 · setor 3/3</span><span class="caption sub">limite · 17:00</span></div></div></div>'+
+      r('A escala mudou <span class="ct">[2]</span>','alterações por rever · nada entra sem ti',ARR,1)+
+      r('Depois','pernoita em LGW · Hotel do aeroporto',ARR)+
+      r('Ganhos de hoje','per diem 96,90 € · pernoita 45,40 €',v('+142,30 €','',1))+
+      sec('A seguir',5,'Escala')+nx('14:05','LGW → LIS','qui 12')+nx('05:30','LIS → FNC → LIS','sáb 14')+
+      acts(['Partilhar a chegada','Limites','Hotel'])],
+    ['Folga','calm','12:45',
+      head(0,'quarta · 11 novembro',wx('sun','19°'))+
+      '<div class="hero"><span class="tag sub">Próximo serviço daqui a</span><div class="digits xl">2<small>dias</small></div>'+
+        '<div class="destRow"><span class="dest md">LIS → FNC → LIS</span><span class="tag st br">Escala em dia</span></div>'+
+        '<span class="tag sub">Livre até sábado 14 · report 05:30</span>'+
+        '<p class="say"><b>Folga a sério.</b> Nada pendente, nada a vigiar.</p></div>'+
+      r('Novembro','estimado · inclui 812,40 € até hoje',v('2 431,50 €'))+
+      r('Férias 2026','o ano acaba daqui a 50 dias',v('12','de 22'),1)+
+      r('Serviço · 7 dias','de 60 h',v('31 h'))+
+      sec('A seguir',4,'Escala')+nx('06:10','LIS → MAD → LIS','dom 15')+nx('12:20','LIS → CDG → LIS','ter 17')+nx('05:45','LIS → FNC → LIS','qua 18')+
+      acts(['Ver o serviço','Limites','Simular'])],
+    ['Pernoita · à noite','live night','21:40',
+      head(0,'Pernoita · LGW',wx('cloud','7° · LGW'))+
+      '<div class="hero"><span class="tag sub">Report amanhã às</span><div class="digits">14:05</div>'+
+        '<div class="destRow"><span class="dest">LGW → LIS</span><span class="tag st br">Repouso ✓</span></div>'+
+        '<span class="tag sub">Falta 16 h 25 · repouso até 00:20 · mín. 10 h (235)</span></div>'+
+      r('Hotel do aeroporto','guardado · abre nos mapas',ARR)+
+      r('Esta noite','pernoita (acordo)',v('+45,40 €','',1))+
+      r('Em LGW amanhã','chuva · 5° a 9°',v('7°'))+
+      sec('A seguir',4,'Escala')+nx('05:30','LIS → FNC → LIS','sáb 14')+nx('06:10','LIS → MAD → LIS','dom 15')+
+      acts(['Hotel · mapas','Serviço de amanhã','Partilhar'])]
+  ];
+  function mr(t, n){ return '<div class="mr"><span class="num">'+t+(n?'<span class="ct">['+n+']</span>':'')+'</span>'+ARR+'</div>'; }
+  var PERFIL = head(0,'Perfil','<span class="eyebrow">Novidades <span class="ct">[2]</span></span>')+
+    '<div class="pName">Conta de teste</div><div class="tag pCap">easyJet · piloto · FO · base LIS · desde mar 2021</div>'+
+    mr('O teu trabalho')+mr('Acordo e serviço')+mr('Relatórios')+mr('Biblioteca')+mr('Hotéis',3)+mr('Família',2)+mr('Conta e segurança')+
+    '<span class="out br">Terminar sessão</span>';
+
+  function shot(title, cls, time, inner, tabOn){ return '<div class="shot"><h3>'+title+'</h3><div class="fit"><div class="ph '+cls+'"><div class="status"><span>'+time+'</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="scr">'+inner+'</div>'+tabbar(tabOn)+'</div></div><p class="m"></p></div>'; }
+  document.getElementById('g1').innerHTML = INI.map(function(s){ return shot(s[0], s[1], s[2], s[3], 0); }).join('');
+  document.getElementById('g2').innerHTML = shot('Perfil · de dia','calm','12:45',PERFIL,4)+shot('Perfil · à noite','live night','21:40',PERFIL,4);
+  function run(){
+    document.querySelectorAll('.fit').forEach(function(f){ var k = Math.min(1, f.clientWidth / 406); f.firstElementChild.style.transform = 'scale('+k+')'; f.style.height = (860*k)+'px'; });
+    document.querySelectorAll('.ph').forEach(function(ph){
+      var scr = ph.querySelector('.scr'), last = scr.lastElementChild, prev = last.previousElementSibling, kz = ph.getBoundingClientRect().width / 406;
+      ph.querySelectorAll('.nx .ds').forEach(function(el){ var z = 26; while (el.scrollWidth > el.clientWidth + 0.5 && z > 16) { z -= 1; el.style.fontSize = z+'px'; } });
+      var gap = Math.round((last.getBoundingClientRect().top - prev.getBoundingClientRect().bottom) / kz), over = Math.round(scr.scrollHeight - scr.clientHeight);
+      var m = ph.closest('.shot').querySelector('.m');
+      m.textContent = over > 0 ? 'NÃO CABE: faltam '+over+' pt' : 'Cabe nos '+scr.clientHeight+' pt · '+gap+' pt livres antes das ações';
+      m.style.color = over > 0 ? '#C6362B' : '';
+    });
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(run); else run();
+  addEventListener('resize', run);
+})();
+</script>
+</body>
+</html>
