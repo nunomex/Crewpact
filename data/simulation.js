@@ -28,6 +28,7 @@ export const SIM_RULES = {
   recovery168: 'ORO.FTL.235(d)', recovery60: 'CS FTL.1.235(a)(2)', transitionNight: 'CS FTL.1.235(a)(1)',
   recoveryDays: 'ORO.FTL.235(d)', baseChange: 'CS FTL.1.200(b)',
   nightSectors: 'CS FTL.1.205(a)(1)', limit: 'ORO.FTL.210',
+  placeGap: 'ORO.FTL.235(a)/(b)',
 };
 
 const SIM = '_sim';   // marca o serviço simulado dentro da escala hipotética (não sai deste módulo)
@@ -191,6 +192,46 @@ export const nightSectorIssues = (hypo, date, fdpOpts, baseOf, isTarget) => {
   return out;
 };
 
+// ── O SÍTIO: a partida não bate com a última chegada ──
+// Um serviço que parte de um aeroporto diferente daquele onde o anterior acabou (pernoita em LGW e o serviço seguinte a
+// partir de LIS, sem posicionamento na escala — pendência de 2026-11-04). Onde se está decide o repouso mínimo (12 h na base,
+// 10 h fora, ORO.FTL.235(a)/(b)), a aclimatação e a pernoita: a app não inventa a viagem que falta — avisa (incerto).
+//   · Só contam os serviços com sítio (as pernas ou a rota: voo e posicionamento); um serviço em terra não diz onde se está.
+//   · Um posicionamento SEM rota (o calendário nem sempre a traz) é uma viagem para sítio desconhecido: do outro lado dele
+//     não se avisa (revisão independente, E3 — dizia "falta um posicionamento" com ele na escala).
+//   · Até 7 dias de intervalo: depois de férias ou de folgas longas já não se avisa.
+// `targets`: os serviços a verificar no dia `date`. `after`: também o serviço seguinte (a Simulação; na importação cada dia
+// avisa o que lhe chega de trás, para o mesmo aviso não aparecer em dois dias).
+const PLACE_GAP_DAYS = 7;
+const apsOfSvc = (s) => {
+  const legs = Array.isArray(s && s.legs) ? s.legs.filter(Boolean) : [];
+  const up = (x) => (x ? String(x).trim().toUpperCase() : null);
+  let dep = legs.length ? up(legs[0].dep) : null, arr = legs.length ? up(legs[legs.length - 1].arr) : null;
+  if (!dep || !arr) { const r = String((s && s.route) || '').split(/[^A-Za-z]+/).filter(Boolean).map(up); if (r.length >= 2) { dep = dep || r[0]; arr = arr || r[r.length - 1]; } }
+  return dep && arr ? { dep, arr } : null;
+};
+export const placeGapIssues = (duties, date, targets, { after = false } = {}) => {
+  const clk = (t) => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(t || '')); return m ? (+m[1]) * 60 + (+m[2]) : null; };
+  const seq = [];
+  for (let k = -PLACE_GAP_DAYS; k <= PLACE_GAP_DAYS; k++) {
+    const iso = addDays(date, k), x = duties && duties[iso];
+    if (!x || x.deleted) continue;
+    const day = [x, ...(Array.isArray(x.extra) ? x.extra : [])].filter(Boolean)
+      .map((s, i) => ({ s, i, t: clk(s.report_time) ?? clk(s.block_off) ?? 0 })).sort((a, b) => (a.t - b.t) || (a.i - b.i));
+    for (const { s } of day) { const ap = apsOfSvc(s); if (ap) seq.push({ iso, s, ...ap }); else if ((s.kind || 'flight') === 'positioning') seq.push({ iso, s, unknown: true }); }
+  }
+  const out = [];
+  for (const tg of targets || []) {
+    const i = seq.findIndex((e) => e.s === tg);
+    if (i < 0) continue;
+    const me = seq[i], prev = seq[i - 1], next = seq[i + 1];
+    if (me.unknown) continue;
+    if (prev && !prev.unknown && prev.arr !== me.dep) out.push({ type: 'placeGap', date, dep: me.dep, from: prev.arr, prevIso: prev.iso, rule: SIM_RULES.placeGap });
+    if (after && next && !next.unknown && next.dep !== me.arr) out.push({ type: 'placeGap', next: true, date, arr: me.arr, dep: next.dep, nextIso: next.iso, rule: SIM_RULES.placeGap });
+  }
+  return out;
+};
+
 export const simulateDuty = (sim, ctx = {}) => {
   const { duties = {}, dayLog = {}, postFlightMin = 0, isPilot = false, base = null, baseAt = null, cabinGapMin, splitAdminMin, disruptiveType = null, tap = null, mode = 'replace' } = ctx || {};
   // `scope: 'day'` (a importação, bloco 4): a escala `duties` JÁ tem todos os serviços da leitura e verifica-se o DIA nela — os
@@ -270,6 +311,9 @@ export const simulateDuty = (sim, ctx = {}) => {
     const { type: kind, ...y } = x;
     add(x.uncertain ? 'unc' : 'bad', { type: 'recovery', kind, ...y, rule: R[kind] || 'ORO.FTL.235' });
   }
+
+  // ── O sítio: a partida não bate com a última chegada (ver placeGapIssues) ──
+  for (const it of placeGapIssues(hypo, date, dayScope ? list : [me], { after: !dayScope })) add('unc', it);
 
   // ── Noites seguidas: 4 setores por serviço (CS FTL.1.205(a)(1)) ──
   // "Consecutive night duties": a FAQ da EASA 47617 — "'Consecutive' is referring to two night duties only separated by a rest
@@ -392,6 +436,9 @@ export const issueText = (it, lang = 'pt', simDate = null) => {
       if (it.kind === 'baseChange') return l(`mudança de base sem 72 h de repouso${u}`, `base change without 72 h of rest${u}`);
       return l(`repouso de recuperação${u}`, `recovery rest${u}`);
     }
+    case 'placeGap': return it.next
+      ? l(`acaba em ${it.arr}, mas o serviço de ${ddmm(it.nextIso)} parte de ${it.dep} — falta um posicionamento na escala?`, `ends in ${it.arr}, but the duty on ${ddmm(it.nextIso)} departs from ${it.dep} — is a positioning missing from the roster?`)
+      : l(`parte de ${it.dep}, mas o serviço de ${ddmm(it.prevIso)} acabou em ${it.from} — falta um posicionamento na escala?`, `departs from ${it.dep}, but the duty on ${ddmm(it.prevIso)} ended in ${it.from} — is a positioning missing from the roster?`);
     case 'nightSectors': return it.doubt && it.why === 'acclim'
       ? l(`${it.sectors} setores à noite: não se sabe a que fuso estás aclimatado (Quadro 1) e, conforme o fuso, um dos serviços é ou não noturno — podem não ser noites seguidas (máx. ${it.limit})`,
         `${it.sectors} sectors at night: your acclimatisation is unknown (Table 1) and, depending on the time zone, one of the duties is or is not a night duty — the nights may not be consecutive (max ${it.limit})`)

@@ -381,5 +381,45 @@ for (const [who, C, ct] of [['cabine', CAB, 'cabin'], ['piloto', PIL, 'pilot']])
   eq('205(d)(1): veredicto', r.verdict, 'bad');
 }
 
+// ───────────────────────────────────────────────────────────────────────────────
+// O SÍTIO: a partida não bate com a última chegada (pendência de 2026-11-04: pernoita em LGW e o serviço seguinte a partir de
+// LIS, sem posicionamento na escala). Onde se está decide o repouso (12 h na base, 10 h fora, ORO.FTL.235(a)/(b)) e a
+// pernoita — a app não inventa a viagem que falta: avisa (incerto).
+{
+  const { issueText } = require(path.resolve('data/simulation.js'));
+  const base = { '2026-03-10': F('08:00', '11:00', 1, 'LIS-LGW') };
+  const r = simulateDuty(sim('2026-03-11', F('12:00', '18:00', 2, 'LIS-FNC-LIS')), { duties: base, ...PIL });
+  const g = issue(r, 'placeGap');
+  eq('sítio: parte de LIS depois de acabar em LGW → incerto', [g && g.level, g && g.dep, g && g.from, g && g.prevIso, r.verdict], ['unc', 'LIS', 'LGW', '2026-03-10', 'unc']);
+  eq('sítio: o texto diz de onde e desde quando', issueText(g, 'pt', '2026-03-11'), 'parte de LIS, mas o serviço de 10/3 acabou em LGW — falta um posicionamento na escala?');
+  // Encaixa: sem aviso.
+  eq('sítio: parte de onde acabou → sem aviso', has(simulateDuty(sim('2026-03-11', F('12:00', '18:00', 1, 'LGW-LIS')), { duties: base, ...PIL }), 'placeGap'), false);
+  // Um posicionamento pelo meio (com rota) fecha a cadeia.
+  const withPos = { ...base, '2026-03-10': { ...base['2026-03-10'], extra: [{ kind: 'positioning', report_time: '12:00', block_on: '15:00', sectors: 0, flight_minutes: 0, route: 'LGW-LIS' }] } };
+  eq('sítio: com o posicionamento na escala → sem aviso', has(simulateDuty(sim('2026-03-11', F('12:00', '18:00', 2, 'LIS-FNC-LIS')), { duties: withPos, ...PIL }), 'placeGap'), false);
+  // Revisão independente (E3): um posicionamento SEM rota pelo meio (o calendário nem sempre a traz) — não se sabe para onde
+  // foi, mas a viagem está na escala: não se avisa que falta.
+  const posNoRoute = { ...base, '2026-03-11': { kind: 'positioning', report_time: '09:00', block_on: '12:00', sectors: 0, flight_minutes: 0, route: null } };
+  eq('sítio: posicionamento sem rota pelo meio → sem aviso', has(simulateDuty(sim('2026-03-12', F('12:00', '18:00', 2, 'LIS-FNC-LIS')), { duties: posNoRoute, ...PIL }), 'placeGap'), false);
+  // Um dia de escritório (sem rota) pelo meio não diz onde se está: o aviso mantém-se.
+  const withOfc = { ...base, '2026-03-11': OFC('09:00', '13:00') };
+  eq('sítio: escritório pelo meio não fecha a cadeia', has(simulateDuty(sim('2026-03-12', F('12:00', '18:00', 2, 'LIS-FNC-LIS')), { duties: withOfc, ...PIL }), 'placeGap'), true);
+  // Mais de 7 dias depois (férias, folgas): já não se avisa.
+  eq('sítio: 8 dias depois → sem aviso', has(simulateDuty(sim('2026-03-18', F('12:00', '18:00', 2, 'LIS-FNC-LIS')), { duties: base, ...PIL }), 'placeGap'), false);
+  // O serviço simulado acaba num sítio e o SEGUINTE parte de outro.
+  const nxt = { '2026-03-12': F('12:00', '18:00', 2, 'LIS-FNC-LIS') };
+  const ra = simulateDuty(sim('2026-03-11', F('08:00', '11:00', 1, 'LIS-LGW')), { duties: nxt, ...PIL });
+  const ga = issue(ra, 'placeGap');
+  eq('sítio: acaba em LGW e o seguinte parte de LIS', [ga && ga.next, ga && ga.arr, ga && ga.dep, ga && ga.nextIso], [true, 'LGW', 'LIS', '2026-03-12']);
+  eq('sítio: o texto do seguinte', issueText(ga, 'pt', '2026-03-11'), 'acaba em LGW, mas o serviço de 12/3 parte de LIS — falta um posicionamento na escala?');
+  // Dois serviços no mesmo dia: o 2.º parte de onde o 1.º NÃO acabou.
+  const two = { '2026-03-11': F('06:00', '08:00', 1, 'LIS-FNC') };
+  const r2 = simulateDuty(sim('2026-03-11', F('20:00', '22:00', 1, 'LIS-OPO')), { duties: two, ...PIL, mode: 'append' });
+  eq('sítio: 2.º serviço do dia a partir de outro aeroporto', [(issue(r2, 'placeGap') || {}).from, (issue(r2, 'placeGap') || {}).prevIso], ['FNC', '2026-03-11']);
+  // Pelas pernas (a rota pode faltar): a 1.ª partida e a última chegada.
+  const legsOnly = { '2026-03-10': { ...F('08:00', '11:00', 1, null), legs: [{ dep: 'LIS', arr: 'LGW', off: '08:30', on: '11:00' }] } };
+  eq('sítio: pelas pernas, sem rota', (issue(simulateDuty(sim('2026-03-11', F('12:00', '18:00', 2, 'LIS-FNC-LIS')), { duties: legsOnly, ...PIL }), 'placeGap') || {}).from, 'LGW');
+}
+
 console.log(`\nSimulação: ${ok} ok · ${fail} falha(s)`);
 if (fail) process.exit(1);

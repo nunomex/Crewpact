@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { PELE, PELE_FONT, BRAND } from '../data/constants';
 import { diagnoseEvents } from '../data/calendar';
 import { importWindow, readCalendarRoster, absenceSuggestions, baseOfFor } from '../data/rosterRead';
-import { buildImportCandidates, importSaveFields, candidateKind, promoteMissing } from '../data/rosterImport';
+import { buildImportCandidates, importSaveFields, candidateKind, promoteMissing, verifyCandidates } from '../data/rosterImport';
 import { issueText } from '../data/simulation';
 import { parseEasyjetRoster, rosterLooksForeign } from '../data/pdfRoster';
 import * as DocumentPicker from 'expo-document-picker';
@@ -198,13 +198,15 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
   const correct = (c) => setCorrecting(c);
   // Opt-in dos CANCELADOS (ausência = sinal fraco, apagar é irreversível): toca para marcar/desmarcar apagar.
   const toggle = (cand) => setCands((cs) => cs.map((c) => (c.duty.duty_date === cand.duty.duty_date && c.kind === cand.kind ? { ...c, selected: !c.selected } : c)));
+  // Depois de corrigir, a verificação corre OUTRA VEZ para todos (risco R8 do bloco 4): o corrigido passa a entrar na escala
+  // desta leitura — é verificado com os outros, e os outros veem o repouso e os limites que ele muda.
   const applyCorrection = (corrected) => {
-    setCands((cs) => cs.map((c) => {
-      if (!(correcting && c.duty.duty_date === correcting.duty.duty_date && c.kind === correcting.kind)) return c;
+    setCands((cs) => verifyCandidates(cs.map((c) => {
+      if (!(correcting && c.duty.duty_date === correcting.duty.duty_date && c.kind === correcting.kind)) return { ...c };
       // Se outro serviço do dia ainda tem horas em falta, passa ele para a frente (é esse que se corrige a seguir).
       const p = promoteMissing({ ...c.duty, ...corrected }, corrected.kind || c.kind);
       return { ...c, duty: { ...p.duty, kind: p.kind }, kind: p.kind };
-    }));
+    }), { duties, dayLog, base, baseAt: homeBaseAt, isPilot, cabinGapMin, splitAdminMin, postFlightMin }));
     setCorrecting(null);
   };
   const fmtDay = (iso) => { const d = new Date(`${iso}T00:00:00`); if (isNaN(d)) return iso; const x = d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' }); return x.charAt(0).toUpperCase() + x.slice(1); };
@@ -390,8 +392,11 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
                   : c.status === 'refresh' ? l('Relido com a regra nova da importação — a escala não mudou', 'Re-read with the new import rule — the roster did not change')
                   : (c.prospect && c.prospect.verdict === 'bad')
                     ? (() => { const it = c.prospect.issues.find((x) => x.level === 'bad'); return it ? `⚠ ${issueText(it, lang, c.duty.duty_date)}` : null; })()
+                  // O "incerto" também se diz (risco R6 do bloco 4): falta um facto que a lei precisa, ou o sítio não bate.
+                  : (c.prospect && c.prospect.verdict === 'unc')
+                    ? (() => { const it = c.prospect.issues.find((x) => x.level === 'unc'); return it ? l(`Incerto — ${issueText(it, lang, c.duty.duty_date)}`, `Uncertain — ${issueText(it, lang, c.duty.duty_date)}`) : null; })()
                   : info.kind === 'info' ? l('Sem rota — não conta para per-diem', 'No route — no per-diem') : null;
-                const issueWarn = info.kind === 'fix' || !!(c.prospect && c.prospect.verdict === 'bad');
+                const issueWarn = info.kind === 'fix' || !!(c.prospect && (c.prospect.verdict === 'bad' || c.prospect.verdict === 'unc'));
                 const tappable = info.kind === 'fix' || info.kind === 'removed';
                 return (
                   <TouchableOpacity key={c.duty.duty_date + c.kind} onPress={() => (info.kind === 'fix' ? correct(c) : info.kind === 'removed' ? toggle(c) : null)} activeOpacity={tappable ? 0.7 : 1} style={[s.crow, info.kind === 'fix' && s.crowFix, info.kind === 'removed' && c.selected && s.crowDel]}>

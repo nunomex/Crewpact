@@ -373,7 +373,7 @@ export default function DutyDetailScreen({ route, navigation }) {
     { key: 'end', type: 'time', label: { pt: 'Fim', en: 'End' }, value: duty.block_on || '', optional: true, hint: planHint('block_on') },
   ];
   const realPatch = (v) => (isFlight
-    ? realTimesPatch(duty, { off: v.off && v.off !== duty.block_off ? v.off : null, on: v.on && v.on !== duty.block_on ? v.on : null, signOff: v.signOff || null })
+    ? realTimesPatch(duty, { off: v.off && v.off !== duty.block_off ? v.off : null, on: v.on && v.on !== duty.block_on ? v.on : null, signOff: v.signOff || null }, { date })
     : { report_time: isClock(v.start) ? v.start : duty.report_time, block_on: isClock(v.end) ? v.end : (duty.block_on || null) });
   const missFields = missing.map((f) => ({ key: f.key, type: 'time', label: f.label, value: '' }));
   const missPatch = (v) => Object.fromEntries(missing.filter((f) => isClock(v[f.key])).map((f) => [f.key, v[f.key]]));

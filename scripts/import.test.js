@@ -443,5 +443,89 @@ EJU8004 [320] OPO - LIS A21:40 - A22:40`, 'easyjet');
   eq('R2: cancelada que parte o dia → um candidato, a corrigir', [c2.length, candidateKind(c2[0]).kind], [1, 'fix']);
 }
 
+// ───────────────────────────────────────────────────────────────────────────────
+// IMPORTAÇÃO E FORMULÁRIO (2026-11-11)
+{
+  const { verifyCandidates } = require(path.resolve('data/rosterImport.js'));
+  // O sítio entre dias: dia 10 acaba em LGW (pernoita), dia 11 parte de LIS sem posicionamento → o dia 11 fica "incerto".
+  const g = [ev('EZY1 LIS-LGW', '2026-10-10T08:30:00', '2026-10-10T11:00:00', { notes: 'RP 07:30' }),
+    ev('EZY2 LIS-FNC', '2026-10-11T13:00:00', '2026-10-11T14:45:00', { notes: 'RP 12:00' }), ev('EZY3 FNC-LIS', '2026-10-11T15:30:00', '2026-10-11T17:10:00')];
+  const cg = buildImportCandidates({ activities: acts(g), ...PIL });
+  const d10 = cg.find((c) => c.duty.duty_date === '2026-10-10'), d11 = cg.find((c) => c.duty.duty_date === '2026-10-11');
+  const gap = d11.prospect.issues.find((i) => i.type === 'placeGap');
+  eq('sítio entre dias: o dia 11 avisa (incerto), o dia 10 não', [d11.prospect.verdict, gap && gap.from, gap && gap.dep, d10.prospect.issues.some((i) => i.type === 'placeGap'), d11.status], ['unc', 'LGW', 'LIS', false, 'ok']);
+
+  // Revisão independente (E4): o dia SEGUINTE já está guardado e é lido igual (não se aplica) — o aviso vai para o dia novo.
+  const st11 = { report_time: '12:00', block_off: '13:00', block_on: '17:10', sectors: 2, flight_minutes: 205, route: 'LIS-FNC-LIS', kind: 'flight', source: 'calendar',
+    legs: d11.duty.legs, snap: { report_time: '12:00', block_off: '13:00', block_on: '17:10', route: 'LIS-FNC-LIS', sectors: 2, kind: 'flight', officeType: null, eLearning: false, signOff: null, v: 2 } };
+  const cg2 = buildImportCandidates({ activities: acts(g), duties: { '2026-10-11': st11 }, ...PIL });
+  const n10 = cg2.find((c) => c.duty.duty_date === '2026-10-10'), n11 = cg2.find((c) => c.duty.duty_date === '2026-10-11');
+  const fwd = n10.prospect.issues.find((i) => i.type === 'placeGap');
+  eq('E4 sítio: o dia seguinte guardado e igual → o aviso fica no dia novo', [n11.status, n10.prospect.verdict, fwd && fwd.next, fwd && fwd.arr, fwd && fwd.dep, fwd && fwd.nextIso], ['same', 'unc', true, 'LGW', 'LIS', '2026-10-11']);
+
+  // R8: um candidato corrigido na folha volta a ser verificado COM os outros. Dia 10 sem horas das pernas ("a corrigir") e dia 11
+  // cedo: enquanto o dia 10 está de fora, o dia 11 não tem aviso; corrigido o dia 10 (acaba às 23:30), o repouso do dia 11 é curto.
+  const day11 = [ev('EZY5 LIS-FNC', '2026-10-11T07:00:00', '2026-10-11T08:45:00', { notes: 'RP 06:00' }), ev('EZY6 FNC-LIS', '2026-10-11T09:30:00', '2026-10-11T11:10:00')];
+  const c8 = buildImportCandidates({ activities: acts(day11), ...PIL });
+  const fix10 = { duty: { duty_date: '2026-10-10', kind: 'flight', report_time: '15:00', block_off: '16:00', block_on: '23:30', sectors: 2, flight_minutes: 300, route: 'LIS-FNC-LIS',
+    legs: [{ dep: 'LIS', arr: 'FNC', off: '16:00', on: '17:45' }, { dep: 'FNC', arr: 'LIS', off: '21:50', on: '23:30' }] }, kind: 'flight', status: 'ok', exists: false, diff: [], prospect: null, selected: true, action: 'save' };
+  eq('R8: antes da correção o dia 11 está bem', c8[0].prospect.verdict, 'ok');
+  const again = verifyCandidates([fix10, ...c8.map((c) => ({ ...c }))], { duties: {}, dayLog: {}, ...PIL });
+  const a11 = again.find((c) => c.duty.duty_date === '2026-10-11'), a10 = again.find((c) => c.duty.duty_date === '2026-10-10');
+  eq('R8: depois da correção, o repouso curto do dia 11 aparece', [a11.status, a11.prospect.issues.some((i) => i.type === 'restBefore'), !!a10.prospect], ['warn', true, true]);
+  // … e o aviso sai quando a correção o resolve (o estado volta a "ok").
+  const fixed = verifyCandidates([{ ...fix10, duty: { ...fix10.duty, block_on: '17:45', sectors: 1, route: 'LIS-FNC', legs: [fix10.duty.legs[0]] } }, ...again.filter((c) => c.duty.duty_date === '2026-10-11').map((c) => ({ ...c }))], { duties: {}, dayLog: {}, ...PIL });
+  eq('R8: um aviso que deixou de valer sai', fixed.find((c) => c.duty.duty_date === '2026-10-11').prospect.issues.some((i) => i.type === 'restBefore'), false);
+
+  // R10: o serviço PRINCIPAL do dia muda (entra um voo mais cedo): o papel fica no serviço em que foi registado, não no novo
+  // principal. Guardado: voo das 12:00 como instrutor. Leitura: um voo novo às 06:00 (principal) + o das 12:00 (extra).
+  const stored = { report_time: '12:00', block_off: '13:00', block_on: '15:00', sectors: 1, flight_minutes: 120, route: 'LIS-FNC', kind: 'flight', source: 'calendar', role: 'instr', dayOffWorked: 'ddo', special: { discretion: true } };
+  const read = { duty: { duty_date: '2026-10-20', kind: 'flight', report_time: '06:00', block_off: '07:00', block_on: '09:00', sectors: 1, flight_minutes: 120, route: 'LIS-OPO',
+    extra: [{ report_time: '12:00', block_off: '13:00', block_on: '15:00', sectors: 1, flight_minutes: 120, route: 'LIS-FNC', kind: 'flight' }] }, kind: 'flight' };
+  const f10 = importSaveFields(read, 'calendar', stored);
+  eq('R10: o papel e o caso especial vão para o serviço em que foram registados (agora extra)', [f10.extra[0].role, f10.extra[0].special, f10.role, f10.special], ['instr', { discretion: true }, null, null]);
+  eq('R10: a folga trabalhada segue o serviço em que foi registada', [f10.dayOffWorked, f10.extra[0].dayOffWorked], [null, 'ddo']);
+  // O contrário: o principal guardado sai da leitura e o extra guardado passa a principal → leva o papel dele.
+  const stored2 = { report_time: '06:00', block_off: '07:00', block_on: '09:00', sectors: 1, flight_minutes: 120, route: 'LIS-OPO', kind: 'flight', source: 'calendar', role: 'uprank',
+    extra: [{ report_time: '12:00', block_off: '13:00', block_on: '15:00', sectors: 1, flight_minutes: 120, route: 'LIS-FNC', kind: 'flight', source: 'calendar', role: 'instr' }] };
+  const read2 = { duty: { duty_date: '2026-10-20', kind: 'flight', report_time: '12:00', block_off: '13:00', block_on: '15:00', sectors: 1, flight_minutes: 120, route: 'LIS-FNC' }, kind: 'flight' };
+  eq('R10: o extra guardado que passa a principal leva o seu papel', importSaveFields(read2, 'calendar', stored2).role, 'instr');
+  // Sem mudança de lugar (o mesmo principal): nada se escreve — o saveDuty mantém o que está guardado.
+  const same = importSaveFields({ duty: { duty_date: '2026-10-20', kind: 'flight', report_time: '12:00', block_off: '13:00', block_on: '15:10', sectors: 1, flight_minutes: 130, route: 'LIS-FNC' }, kind: 'flight' }, 'calendar', stored);
+  eq('R10: o mesmo principal → o papel não se toca', 'role' in same, false);
+  // R11: um extra cuja apresentação mudou (o único da leitura e o único guardado, do mesmo tipo) continua a ser o mesmo serviço.
+  const stored3 = { report_time: '06:00', block_off: '07:00', block_on: '09:00', sectors: 1, flight_minutes: 120, route: 'LIS-OPO', kind: 'flight', source: 'calendar',
+    extra: [{ report_time: '12:00', block_off: '13:00', block_on: '15:00', sectors: 1, flight_minutes: 120, route: 'LIS-FNC', kind: 'flight', source: 'calendar', role: 'instr', accommodation: 'suitable' }] };
+  const read3 = { duty: { duty_date: '2026-10-20', kind: 'flight', report_time: '06:00', block_off: '07:00', block_on: '09:00', sectors: 1, flight_minutes: 120, route: 'LIS-OPO',
+    extra: [{ report_time: '12:30', block_off: '13:30', block_on: '15:30', sectors: 1, flight_minutes: 120, route: 'LIS-FNC', kind: 'flight' }] }, kind: 'flight' };
+  const f11 = importSaveFields(read3, 'calendar', stored3);
+  eq('R11: o extra com a apresentação mudada mantém o papel e o alojamento', [f11.extra[0].role, f11.extra[0].accommodation, f11.extra.length], ['instr', 'suitable', 1]);
+  // Revisão independente (E2): o principal lido SEM par não apaga o que estava guardado no principal (antes do casamento o
+  // saveDuty mantinha tudo). Caso A: o voo das 06:00 passa para as 06:30 e a leitura traz um posicionamento novo às 15:00.
+  const stA = { report_time: '06:00', block_off: '07:00', block_on: '09:00', sectors: 1, flight_minutes: 120, route: 'LIS-OPO', kind: 'flight', source: 'calendar', role: 'instr', dayOffWorked: 'ddo', special: { discretion: true }, accommodation: true };
+  const rdA = { duty: { duty_date: '2026-10-22', kind: 'flight', report_time: '06:30', block_off: '07:30', block_on: '09:30', sectors: 1, flight_minutes: 120, route: 'LIS-OPO',
+    extra: [{ kind: 'positioning', report_time: '15:00', block_on: '16:00', sectors: 0, flight_minutes: 0, route: 'OPO-LIS' }] }, kind: 'flight' };
+  const fA = importSaveFields(rdA, 'calendar', stA);
+  eq('E2-A: o único voo lido é o voo guardado (o posicionamento é outro tipo) → nada se apaga', ['role' in fA, 'dayOffWorked' in fA, 'special' in fA, 'accommodation' in fA, fA.extra[0].role || null], [false, false, false, false, null]);
+  // Caso B: a assistência no aeroporto com DDO foi convertida num voo (outro tipo): o principal substitui o principal.
+  const fB = importSaveFields({ duty: { duty_date: '2026-10-22', kind: 'flight', report_time: '08:00', block_off: '09:00', block_on: '11:00', sectors: 1, flight_minutes: 120, route: 'LIS-OPO' }, kind: 'flight' }, 'calendar',
+    { report_time: '06:00', block_on: '12:00', sectors: 0, flight_minutes: 0, route: null, kind: 'standby_airport', source: 'calendar', dayOffWorked: 'ddo' });
+  eq('E2-B: assistência convertida em voo → a folga trabalhada fica (não se escreve)', 'dayOffWorked' in fB, false);
+  // A folga trabalhada é do DIA (paga-se por dia): se o serviço em que estava saiu da escala, fica no principal.
+  const stC = { report_time: '06:00', block_off: '07:00', block_on: '09:00', sectors: 1, flight_minutes: 120, route: 'LIS-OPO', kind: 'flight', source: 'calendar',
+    extra: [{ kind: 'office', report_time: '14:00', block_on: '16:00', sectors: 0, flight_minutes: 0, route: null, source: 'calendar', dayOffWorked: 'ddo' }] };
+  const fC = importSaveFields({ duty: { duty_date: '2026-10-22', kind: 'flight', report_time: '06:00', block_off: '07:00', block_on: '09:00', sectors: 1, flight_minutes: 120, route: 'LIS-OPO' }, kind: 'flight' }, 'calendar', stC);
+  eq('E2-C: o extra com a folga trabalhada saiu da escala → a folga fica no dia', [fC.dayOffWorked, fC.extra], ['ddo', null]);
+  // R11: a pernoita ligada à mão numa formação fora (o calendário não a traz) fica quando a hora muda.
+  const trnS = { report_time: '09:00', block_on: '17:00', sectors: 0, flight_minutes: 0, route: null, kind: 'training', source: 'calendar', nightStop: true };
+  const trnR = { duty: { duty_date: '2026-10-21', kind: 'training', report_time: '09:30', block_off: null, block_on: '17:30', sectors: 0, flight_minutes: 0, route: null }, kind: 'training' };
+  eq('R11: a pernoita à mão numa formação fica', importSaveFields(trnR, 'calendar', trnS).nightStop, true);
+  eq('R11: … mas num voo manda a rota lida', importSaveFields({ duty: { duty_date: '2026-10-21', kind: 'flight', report_time: '09:30', block_off: '10:00', block_on: '12:00', sectors: 2, flight_minutes: 100, route: 'LIS-OPO-LIS', nightStop: false }, kind: 'flight' }, 'calendar', { ...trnS, kind: 'flight', route: 'LIS-OPO' }).nightStop, false);
+  // … mas dois serviços por casar de cada lado não se adivinham.
+  const stored4 = { ...stored3, extra: [stored3.extra[0], { ...stored3.extra[0], report_time: '18:00', block_off: '19:00', block_on: '21:00', role: 'uprank' }] };
+  const read4 = { duty: { ...read3.duty, extra: [read3.duty.extra[0], { ...read3.duty.extra[0], report_time: '18:30', block_off: '19:30', block_on: '21:30' }] }, kind: 'flight' };
+  eq('R11: dois por casar de cada lado → não se adivinha', importSaveFields(read4, 'calendar', stored4).extra.map((e) => e.role || null), [null, null]);
+}
+
 console.log(`\nimportação (bloco 4) — ${ok} passou, ${fail} falhou (${ok + fail} asserções)`);
 if (fail) process.exit(1);

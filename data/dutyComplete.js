@@ -6,6 +6,8 @@
 // Os textos e as condições vêm do formulário do serviço (components/DutyFormSheet.js), que continua para a Simulação e a
 // correção na importação.
 
+import { serviceRealMin } from './zulu';
+
 const L = (pt, en) => ({ pt, en });
 const clk = (s) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(s || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; };
 export const isClock = (s) => clk(s) != null && /^([01]?\d|2[0-3]):[0-5]\d$/.test(s);
@@ -256,7 +258,9 @@ export const completeRows = (svc = {}, ctx = {}) => {
 // ── "O calendário está errado?" ──
 // As HORAS REAIS (a lei conta o real, ORO.FTL.105(12)): calços fora, calços dentro e fim de serviço. As pernas acompanham —
 // a 1.ª partida e a última chegada mudam, e a Zulu do calendário dessas horas deixa de valer (sai, recalcula-se pelo fuso).
-export const realTimesPatch = (svc = {}, { off = null, on = null, signOff = null } = {}) => {
+// `date` (o dia do serviço): o tempo de voo é o DECORRIDO, pelos instantes (auditoria A-179 — o relógio de dois aeroportos
+// em fusos diferentes dava 2 h a mais num LIS→TLV); sem a data, o relógio.
+export const realTimesPatch = (svc = {}, { off = null, on = null, signOff = null } = {}, { date = null } = {}) => {
   const legs = Array.isArray(svc.legs) ? svc.legs.map((l) => ({ ...l })) : null;
   const patch = {};
   if (isClock(off)) {
@@ -271,7 +275,8 @@ export const realTimesPatch = (svc = {}, { off = null, on = null, signOff = null
   else if (isClock(signOff)) patch.signOff = signOff;
   if (legs && (patch.block_off || patch.block_on)) {
     patch.legs = legs;
-    const blk = legs.filter((l) => l && !l.dh).reduce((s, l) => { const a = clk(l.off), b = clk(l.on); if (a == null || b == null) return s; let d = b - a; while (d < 0) d += 1440; return s + d; }, 0);
+    const real = serviceRealMin(date || svc.duty_date || null, legs, svc.report_time || null).legMin;
+    const blk = legs.reduce((s, l, i) => ((l && !l.dh && real[i] != null) ? s + real[i] : s), 0);
     if (blk > 0) patch.flight_minutes = blk;
   } else if (!legs && (patch.block_off || patch.block_on)) {
     const a = clk(patch.block_off || svc.block_off), b = clk(patch.block_on || svc.block_on);

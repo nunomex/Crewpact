@@ -4,7 +4,7 @@
 import { dayFtlFromDuties, limitsAround, ftlForDuty, fatigueFromDuty, reconcileDayLog } from '../ftl';
 import { classify } from './rosterDiff';
 import { airportCoord } from './airports';
-import { simulateDuty, SIM_RULES } from './simulation';
+import { simulateDuty, SIM_RULES, placeGapIssues } from './simulation';
 import { recoveryIssues, restTimeline } from './today';
 
 const NONFLIGHT = new Set(['standby_airport', 'standby_home', 'positioning', 'office', 'training']);
@@ -245,9 +245,38 @@ export const buildImportCandidates = ({ activities = [], nonflights = [], duties
     c.exists = !!(ex && !ex.deleted);
     if (c.exists) { const cls = classify(ex, c.duty); c.status = cls.status; c.diff = cls.fields; c.selected = false; }
   }
-  // Verificação cumulativa: a escala com tudo o que esta leitura aplica (o que não está igual nem a corrigir).
+  verifyCandidates(out, { duties, dayLog, base, baseAt, isPilot, cabinGapMin, splitAdminMin, postFlightMin });
+  // CANCELADOS (Fase 4): duties source=calendar, dentro da janela, que sumiram do calendário.
+  // AUSÊNCIA é sinal FRACO (pode ser atraso/glitch do feed) e apagar é IRREVERSÍVEL (sem tombstone)
+  // → vêm POR MARCAR (selected: false). O utilizador opta-in serviço-a-serviço (toca para apagar).
+  // Manuais/PDF nunca entram aqui (só o feed vivo se cancela por ausência).
+  if (window && window.start && window.end) {
+    for (const date in duties) {
+      const d = duties[date];
+      if (!d || d.deleted || d.source !== 'calendar') continue;
+      if (date < window.start || date > window.end) continue;
+      if (inDates.has(date)) continue;
+      const kind = d.kind || 'flight';
+      out.push({ duty: { ...d, duty_date: date, kind }, kind, status: 'removed', exists: true, diff: [], selected: false, action: 'delete' });
+    }
+  }
+  const PRIO = { removed: 0, conflict: 1, changed: 2, warn: 3, ok: 4, refresh: 5, same: 6 };
+  out.sort((a, b) => ((PRIO[a.status] ?? 9) - (PRIO[b.status] ?? 9)) || (a.duty.duty_date < b.duty.duty_date ? -1 : a.duty.duty_date > b.duty.duty_date ? 1 : 0));
+  return out;
+};
+
+// A VERIFICAÇÃO cumulativa dos candidatos: a escala com tudo o que esta leitura aplica (o que não está igual, nem a corrigir,
+// nem é um cancelado). Escreve em cada candidato o `prospect` e, nos novos, o estado 'warn'/'ok'. Corre na leitura e OUTRA VEZ
+// quando um candidato é corrigido na folha (risco R8 do bloco 4: o corrigido entrava sem ser verificado com os outros, e os
+// outros não viam o repouso ou os limites que ele muda). Devolve a mesma lista.
+export const verifyCandidates = (out = [], { duties = {}, dayLog = {}, base = null, baseAt = null, isPilot = false, cabinGapMin, splitAdminMin, postFlightMin = 0 } = {}) => {
   const rc = { postFlightMin, isPilot, base, baseAt, cabinGapMin, splitAdminMin };
-  const applies = out.filter((c) => c.status !== 'same' && candidateKind(c).kind !== 'fix');
+  for (const c of out) {
+    if (c.action === 'delete') continue;
+    c.prospect = null;
+    if (!c.exists && c.status === 'warn') c.status = 'ok';
+  }
+  const applies = out.filter((c) => c.action !== 'delete' && c.status !== 'same' && candidateKind(c).kind !== 'fix');
   if (applies.length) {
     const cum = { ...duties };
     for (const c of applies) cum[c.duty.duty_date] = dayOfCandidate(c);
@@ -277,6 +306,17 @@ export const buildImportCandidates = ({ activities = [], nonflights = [], duties
       if (baseLog[k] && baseLog[k].psv && baseLog[k].psv.over) continue;
       orphans.push({ level: 'bad', type: 'fdpOther', date: k, rule: SIM_RULES.fdpOther });
     }
+    // O sítio para a FRENTE (revisão independente, E4): cada dia avisa o que lhe chega de trás, mas se o serviço seguinte está
+    // num dia que esta leitura NÃO aplica (guardado, ou lido igual) ninguém avisava — o aviso fica no candidato.
+    for (const c of applies) {
+      const date = c.duty.duty_date, dd = cum[date];
+      if (!c.prospect || !dd) continue;
+      for (const it of placeGapIssues(cum, date, [dd, ...(dd.extra || [])], { after: true })) {
+        if (!it.next || appliedSet.has(it.nextIso)) continue;
+        c.prospect.issues.push({ ...it, level: 'unc' });
+        if (c.prospect.verdict === 'ok') { c.prospect.verdict = 'unc'; c.prospect.ok = false; }
+      }
+    }
     const dayNum = (iso) => Math.round(+new Date(`${iso}T12:00:00`) / 86400000);
     for (const o of orphans) {
       let best = null;
@@ -289,22 +329,6 @@ export const buildImportCandidates = ({ activities = [], nonflights = [], duties
     }
     for (const c of applies) if (!c.exists && c.prospect && c.prospect.verdict === 'bad') c.status = 'warn';
   }
-  // CANCELADOS (Fase 4): duties source=calendar, dentro da janela, que sumiram do calendário.
-  // AUSÊNCIA é sinal FRACO (pode ser atraso/glitch do feed) e apagar é IRREVERSÍVEL (sem tombstone)
-  // → vêm POR MARCAR (selected: false). O utilizador opta-in serviço-a-serviço (toca para apagar).
-  // Manuais/PDF nunca entram aqui (só o feed vivo se cancela por ausência).
-  if (window && window.start && window.end) {
-    for (const date in duties) {
-      const d = duties[date];
-      if (!d || d.deleted || d.source !== 'calendar') continue;
-      if (date < window.start || date > window.end) continue;
-      if (inDates.has(date)) continue;
-      const kind = d.kind || 'flight';
-      out.push({ duty: { ...d, duty_date: date, kind }, kind, status: 'removed', exists: true, diff: [], selected: false, action: 'delete' });
-    }
-  }
-  const PRIO = { removed: 0, conflict: 1, changed: 2, warn: 3, ok: 4, refresh: 5, same: 6 };
-  out.sort((a, b) => ((PRIO[a.status] ?? 9) - (PRIO[b.status] ?? 9)) || (a.duty.duty_date < b.duty.duty_date ? -1 : a.duty.duty_date > b.duty.duty_date ? 1 : 0));
   return out;
 };
 
@@ -328,18 +352,50 @@ const timesSame = (a, b) => !!a && !!b && (a.report_time || null) === (b.report_
 // O serviço principal: o sign-off guardado só fica se as horas não mudaram (A-231: um sign-off antes dos novos calços contava
 // como do dia seguinte); o fim de um DH lido da escala vai como sign-off. E-learning e OFC vão SEMPRE (A-230: sem a chave, o
 // valor antigo ficava).
+// CASAR os serviços lidos com os guardados (riscos R10/R11 do bloco 4): o que o tripulante registou num serviço — papel, folga
+// trabalhada, casos especiais, alojamento — segue ESSE serviço, seja ele o principal ou um extra do dia. Antes só se casavam
+// extras com extras: se entrava um voo mais cedo (novo principal), o papel do principal antigo ficava no voo novo.
+//   1.º o mesmo serviço (`sameSvc`: a mesma apresentação, ou a mesma saída e rota);
+//   2.º por TIPO: se sobra UM lido e UM guardado desse tipo, é o mesmo serviço com a hora mudada; com mais de um de cada
+//       lado não se adivinha (ficam sem par);
+//   3.º o principal lido sem par e o principal guardado sem par: o principal substitui o principal, como sempre foi (o
+//       saveDuty mantém o que lá está) — revisão independente, E2: sem isto, um voo com a hora mudada ao lado de um serviço
+//       novo, ou uma assistência convertida em voo, perdiam o papel e a folga trabalhada.
+// A FOLGA TRABALHADA é do dia (paga-se por dia): se o serviço em que estava saiu da escala, fica no principal.
 export const importSaveFields = (c, source = 'calendar', existing = null) => {
   const d = c.duty;
   const stored = existing && !Array.isArray(existing) && !existing.deleted ? existing : null;
   const existingExtra = Array.isArray(existing) ? existing : (stored && Array.isArray(stored.extra) ? stored.extra : []);
-  const readExtra = (d.extra || []).map((e) => {
-    const was = existingExtra.find((x) => x && x.source !== 'manual' && sameSvc(x, e));
+  const kindOf = (x) => (x && x.kind) || 'flight';
+  const readAll = [{ ...d, kind: c.kind || d.kind }, ...(d.extra || [])];
+  const pool = [...(stored ? [stored] : []), ...existingExtra.filter((x) => x && x.source !== 'manual')];
+  const wasOf = new Array(readAll.length).fill(null);
+  const used = new Set();
+  readAll.forEach((r, i) => { const w = pool.find((x) => !used.has(x) && sameSvc(x, r)); if (w) { wasOf[i] = w; used.add(w); } });
+  for (const k of new Set(readAll.map(kindOf))) {
+    const fr = readAll.map((_, i) => i).filter((i) => !wasOf[i] && kindOf(readAll[i]) === k), fs = pool.filter((x) => !used.has(x) && kindOf(x) === k);
+    if (fr.length === 1 && fs.length === 1) { wasOf[fr[0]] = fs[0]; used.add(fs[0]); }
+  }
+  if (!wasOf[0] && stored && !used.has(stored)) { wasOf[0] = stored; used.add(stored); }
+  // A pernoita ligada à mão num serviço em terra (formação fora, por exemplo): o calendário não a traz — fica com o serviço.
+  const handNs = (was, r) => !!(was && was.nightStop && kindOf(r) !== 'flight' && !r.route && kindOf(was) === kindOf(r));
+  const readExtra = (d.extra || []).map((e, j) => {
+    const was = wasOf[j + 1];
     const keep = was ? {
       ...(was.role ? { role: was.role } : {}), ...(was.dayOffWorked ? { dayOffWorked: was.dayOffWorked } : {}),
       ...(was.special && !e.special ? { special: was.special } : {}), ...(was.signOff && !e.signOff && timesSame(was, e) ? { signOff: was.signOff } : {}),
+      ...(was.accommodation ? { accommodation: was.accommodation } : {}), ...(handNs(was, e) ? { nightStop: true } : {}),
     } : {};
     return { ...e, ...keep, source };
   });
+  // O serviço principal lido: se o seu par é o principal guardado (ou não há nada guardado), o saveDuty mantém o que lá está
+  // (não se escreve). Se o principal MUDOU (o par é um extra guardado, ou não tem par), escreve-se o que é do par — ou nada.
+  const primWas = wasOf[0];
+  const moved = !!stored && primWas !== stored;
+  const movedFields = moved ? {
+    role: (primWas && primWas.role) || null, dayOffWorked: (primWas && primWas.dayOffWorked) || null,
+    special: d.special || (primWas && primWas.special) || null, accommodation: (primWas && primWas.accommodation) || false,
+  } : {};
   const readSvcs = [d, ...(d.extra || [])];
   const keptManual = existingExtra.filter((e) => e && e.source === 'manual' && !readSvcs.some((r) => sameSvc(r, e)));   // os teus à mão sobrevivem
   const extra = [...readExtra, ...keptManual];
@@ -347,11 +403,15 @@ export const importSaveFields = (c, source = 'calendar', existing = null) => {
   // leitura, sem `source`) → o classify multi-serviço distingue "calendário mudou" de "tu editaste"
   // também nos extras. Single-serviço → sem snap.extra (idêntico ao legado).
   const snap = snapOfCandidate(c);
+  const dayOff = ([stored, ...existingExtra].find((x) => x && x.dayOffWorked) || {}).dayOffWorked || null;
+  const primDayOff = moved ? movedFields.dayOffWorked : ((stored && stored.dayOffWorked) || null);
+  const dayOffFix = (dayOff && !primDayOff && !extra.some((e) => e && e.dayOffWorked)) ? { dayOffWorked: dayOff } : {};
   // Sign-off do serviço principal: o lido (fim do DH) > o guardado, se foi o tripulante que o escreveu e as horas não mudaram
   // (sem a chave, o saveDuty mantém-no) > nenhum. Um sign-off guardado igual ao `snap.signOff` veio da escala (o fim de um DH):
   // se o DH saiu da escala, sai com ele (revisão do bloco 4, E6).
   let signOff = {};
   if (d.signOff) signOff = { signOff: d.signOff };
+  else if (moved) signOff = { signOff: (primWas && primWas.signOff && timesSame(primWas, d)) ? primWas.signOff : null };
   else if (stored) {
     const so = stored.signOff || null;
     const fromReader = !!so && !!stored.snap && ('signOff' in stored.snap) && so === stored.snap.signOff;
@@ -360,9 +420,11 @@ export const importSaveFields = (c, source = 'calendar', existing = null) => {
   return {
     report_time: d.report_time, block_off: d.block_off, block_on: d.block_on,
     sectors: d.sectors, flight_minutes: d.flight_minutes, route: d.route,
-    kind: c.kind, nightStop: !!d.nightStop, source, snap, legs: d.legs || null,
+    kind: c.kind, nightStop: !!d.nightStop || handNs(primWas, readAll[0]), source, snap, legs: d.legs || null,
     extra: extra.length ? extra : null,
     ...signOff,
+    ...movedFields,
+    ...dayOffFix,
     // Sinais de €€ do AE (auditoria 2026-07-11 e A-230): sempre, para nunca ficar o do serviço antigo.
     eLearning: !!d.eLearning,
     officeType: d.officeType || null,

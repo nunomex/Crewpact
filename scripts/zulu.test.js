@@ -139,6 +139,39 @@ eq('LGW inverno 08:30 → 08:30Z', airportZulu('2026-01-14', '08:30', 'LGW'), '0
 eq('ATH verão 14:00 → 11:00Z', airportZulu('2026-07-14', '14:00', 'ATH'), '11:00');
 eq('FAO verão 10:45 → 09:45Z', airportZulu('2026-07-14', '10:45', 'FAO'), '09:45');
 eq('JFK verão 18:00 → 22:00Z (oeste)', airportZulu('2026-07-14', '18:00', 'JFK'), '22:00');
+// ── As durações REAIS de um serviço (auditoria A-179/A-251): o relógio de cada aeroporto mistura fusos ──
+if (INTL_TZ_OK) {
+  const { serviceRealMin } = require(path.resolve('data/zulu.js'));
+  // A-251: LIS 10:00 → TLV 17:50 (TLV +2 h no inverno) são 5 h 50 de voo, não 7 h 50; apresentação às 09:00 → PSV 6 h 50.
+  const tlv = serviceRealMin('2026-01-15', [{ dep: 'LIS', arr: 'TLV', off: '10:00', on: '17:50' }], '09:00');
+  eqj('A-251 LIS→TLV: voo 5:50 e PSV 6:50', [tlv.legMin, tlv.fdpMin], [[350], 410]);
+  // A-251: LIS 10:00 → PDL 11:20 (PDL −1 h) são 2 h 20, não 1 h 20 (o relógio contava a MENOS).
+  const pdl = serviceRealMin('2026-01-15', [{ dep: 'LIS', arr: 'PDL', off: '10:00', on: '11:20' }], '09:00');
+  eqj('A-251 LIS→PDL: voo 2:20 e PSV 3:20', [pdl.legMin, pdl.fdpMin], [[140], 200]);
+  // A-179: TLV→LIS, apresentação 14:00 (hora de TLV), fora 15:00, dentro 18:15 em LIS → voo 5:15, PSV 6:15.
+  const back = serviceRealMin('2026-01-15', [{ dep: 'TLV', arr: 'LIS', off: '15:00', on: '18:15' }], '14:00');
+  eqj('A-179 TLV→LIS: voo 5:15 e PSV 6:15', [back.legMin, back.fdpMin], [[315], 375]);
+  // Ida e volta: os desvios anulam-se no PSV, mas cada perna tem a sua duração real.
+  const rt = serviceRealMin('2026-01-15', [{ dep: 'LIS', arr: 'MAD', off: '07:00', on: '09:20' }, { dep: 'MAD', arr: 'LIS', off: '10:00', on: '10:20' }], '06:00');
+  eqj('ida e volta LIS-MAD-LIS: 1:20 + 1:20, PSV 4:20', [rt.legMin, rt.fdpMin], [[80, 80], 260]);
+  // O PSV acaba nos calços do último setor OPERADO (105(12)): o posicionamento depois não conta.
+  const dh = serviceRealMin('2026-01-15', [{ dep: 'LIS', arr: 'MAD', off: '07:00', on: '09:20' }, { dep: 'MAD', arr: 'LIS', off: '10:00', on: '10:20', dh: true }], '06:00');
+  eqj('posicionamento no fim: o PSV acaba no setor operado', [dh.legMin, dh.fdpMin], [[80, 80], 140]);
+  // Passa a meia-noite.
+  const nite = serviceRealMin('2026-01-15', [{ dep: 'LIS', arr: 'FNC', off: '22:30', on: '00:15' }, { dep: 'FNC', arr: 'LIS', off: '01:05', on: '02:40' }], '21:30');
+  eqj('passa a meia-noite: 1:45 + 1:35, PSV 5:10', [nite.legMin, nite.fdpMin], [[105, 95], 310]);
+  // A Zulu do calendário manda (é a hora certa mesmo com o aeroporto desconhecido).
+  const z = serviceRealMin('2026-01-15', [{ dep: 'ZZZ', arr: 'QQQ', off: '10:00', on: '17:50', offZ: '10:00', onZ: '15:50' }], '09:00');
+  eqj('com a Zulu do calendário: 5:50', [z.legMin, z.fdpMin], [[350], 410]);
+  // Sem fuso e sem Zulu: o relógio, como antes.
+  const clk = serviceRealMin('2026-01-15', [{ dep: null, arr: null, off: '10:00', on: '12:30' }], '09:00');
+  eqj('sem aeroportos: o relógio', [clk.legMin, clk.fdpMin], [[150], 210]);
+  // Revisão independente (E5): um aeroporto do MEIO sem fuso parte a cadeia; o PSV sai na mesma pelas duas pontas (LIS e TLV
+  // têm fuso), como no motor — 05:00 em LIS às 14:00 em TLV (12:00Z) são 7 h, não 9 h.
+  eq('E5 aeroporto do meio sem fuso: o PSV pelas pontas', serviceRealMin('2026-01-15', [{ dep: 'LIS', arr: 'ZZZ', off: '06:00', on: '08:00' }, { dep: 'ZZZ', arr: 'TLV', off: '09:00', on: '14:00' }], '05:00').fdpMin, 420);
+  eqj('perna sem horas: null', serviceRealMin('2026-01-15', [{ dep: 'LIS', arr: 'FNC', off: '', on: '' }], '09:00'), { legMin: [null], fdpMin: null });
+}
+
 // Degradação: aeroporto/hora inválidos → null (o chamador faz fallback ao fuso do dispositivo).
 eq('Aeroporto desconhecido → null', airportZulu('2026-07-14', '08:30', 'ZZZ'), null);
 eq('Hora inválida → null', airportZulu('2026-07-14', '8h30', 'LGW'), null);

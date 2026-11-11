@@ -95,5 +95,61 @@ eq('manual: setores', aggManual.sectors, 2);
 eq('manual: sem horas → flightMin null', aggManual.flightMin, null);
 eq('manual: 1.º setor sozinho → rota LIS-OPO', aggregateLegs([manual[0]]).route, 'LIS-OPO');
 
+// ── A ORDEM das pernas (auditoria A-249/A-250): nunca pela hora do relógio sozinha ──
+// A-249: o serviço passa a meia-noite. LIS-FNC 22:30–00:15 e FNC-LIS 01:05–02:40 davam a rota 'FNC-LIS-FNC' (acabava "fora":
+// pernoita a mais, +157,50 € no comandante). Com a apresentação (21:30), a ordem é a dos minutos depois dela.
+const nite = [
+  { flightNo: 'EJU1', dep: 'LIS', arr: 'FNC', off: '22:30', on: '00:15' },
+  { flightNo: 'EJU2', dep: 'FNC', arr: 'LIS', off: '01:05', on: '02:40' },
+];
+const aN = aggregateLegs(nite, { report: '21:30' });
+eq('A-249 passa a meia-noite, com apresentação: rota LIS-FNC-LIS', [aN.route, aN.off, aN.on], ['LIS-FNC-LIS', '22:30', '02:40']);
+eq('A-249 … e introduzidas ao contrário', aggregateLegs([nite[1], nite[0]], { report: '21:30' }).route, 'LIS-FNC-LIS');
+// Sem apresentação: o serviço começa depois do MAIOR intervalo sem voo (aqui das 02:40 às 22:30).
+eq('A-249 sem apresentação: começa depois do maior intervalo', aggregateLegs([nite[1], nite[0]]).route, 'LIS-FNC-LIS');
+// Revisão independente (E1): um serviço REPARTIDO sem apresentação — a pausa do meio (10 h 30) é maior do que a da noite
+// (8 h 30). O intervalo da noite só deixa de ser o fim do serviço se for curto de mais para o ser (menos de 8 h); senão o
+// serviço não passa a meia-noite (a ordem do relógio).
+const rep4 = [
+  { dep: 'LIS', arr: 'OPO', off: '05:00', on: '06:00' }, { dep: 'OPO', arr: 'LIS', off: '06:30', on: '07:30' },
+  { dep: 'LIS', arr: 'FAO', off: '18:00', on: '19:00' }, { dep: 'FAO', arr: 'LIS', off: '19:30', on: '20:30' },
+];
+eq('E1 repartido sem apresentação: a ordem do relógio', aggregateLegs([rep4[2], rep4[3], rep4[0], rep4[1]]).route, 'LIS-OPO-LIS-FAO-LIS');
+eq('E1 repartido pela noite sem apresentação (intervalo da noite de 5 h): começa depois do maior intervalo',
+  aggregateLegs([{ dep: 'OPO', arr: 'LIS', off: '04:00', on: '06:00' }, { dep: 'LIS', arr: 'OPO', off: '21:00', on: '23:00' }]).route, 'LIS-OPO-LIS');
+// A-250: a 3.ª perna foi tirada e posta outra vez depois da 4.ª — a rota E as pernas saem pela mesma ordem (antes a rota era
+// reordenada e as horas ficavam pelo índice: o PSV acabava às 13:30 em vez das 17:00).
+const four = [
+  { flightNo: 'A1', dep: 'LIS', arr: 'FNC', off: '06:00', on: '07:45' },
+  { flightNo: 'A2', dep: 'FNC', arr: 'LIS', off: '08:30', on: '10:05' },
+  { flightNo: 'A4', dep: 'TFS', arr: 'LIS', off: '15:10', on: '17:00' },
+  { flightNo: 'A3', dep: 'LIS', arr: 'TFS', off: '11:00', on: '13:30' },
+];
+const a4 = aggregateLegs(four, { report: '05:15' });
+eq('A-250 a rota e as pernas pela mesma ordem', [a4.route, a4.legs.map((x) => x.flightNo).join(','), a4.on], ['LIS-FNC-LIS-TFS-LIS', 'A1,A2,A3,A4', '17:00']);
+// Um serviço repartido (pausa de 13 h entre as pernas) introduzido ao contrário: a apresentação manda, não o maior intervalo.
+const split = [{ dep: 'OPO', arr: 'LIS', off: '20:00', on: '21:00' }, { dep: 'LIS', arr: 'OPO', off: '06:00', on: '07:00' }];
+eq('repartido com apresentação: a apresentação manda', aggregateLegs(split, { report: '05:00' }).route, 'LIS-OPO-LIS');
+// Uma partida marcada uns minutos antes da apresentação (dado) não vai para o fim.
+eq('partida uns minutos antes da apresentação fica em 1.º', aggregateLegs([{ dep: 'FNC', arr: 'LIS', off: '08:00', on: '09:40' }, { dep: 'LIS', arr: 'FNC', off: '05:10', on: '06:55' }], { report: '05:15' }).route, 'LIS-FNC-LIS');
+// Uma perna à mão (sem horas) fica ONDE foi introduzida (antes ia sempre para o fim: 1.ª à mão + 2.ª detetada invertia a rota).
+const mix = [{ flightNo: 'M1', dep: 'LIS', arr: 'FNC', source: 'manual' }, { flightNo: 'D2', dep: 'FNC', arr: 'LIS', off: '08:30', on: '10:05' }];
+eq('perna à mão em 1.º fica em 1.º', aggregateLegs(mix, { report: '05:15' }).route, 'LIS-FNC-LIS');
+eq('… e sem apresentação', aggregateLegs(mix).route, 'LIS-FNC-LIS');
+eq('perna à mão no fim fica no fim', aggregateLegs([mix[1], { dep: 'LIS', arr: 'OPO', source: 'manual' }], { report: '07:30' }).route, 'FNC-LIS-OPO');
+
+// ── A Zulu de uma perna detetada é de OUTRO dia (histórico de julho num serviço de dezembro: a hora de verão já não é a mesma) ──
+{
+  const { legForDate, legsZulu } = require(path.resolve('data/zulu.js'));
+  const summer = { flightNo: 'EJU7', dep: 'LIS', arr: 'MAD', off: '07:00', on: '09:20', offZ: '06:00', onZ: '07:20' };
+  const w = legForDate('2026-12-10', summer);
+  eq('perna do histórico: a Zulu de outro dia sai', [w.offZ, w.onZ], [null, null]);
+  eq('… e a Zulu calcula-se pelo fuso no dia do serviço', legsZulu('2026-12-10', [w], '06:00')[0], { off: '07:00', on: '08:20' });
+  // Revisão independente (E6): com UMA ponta sem fuso, as duas Zulu ficam (tirar só uma misturava a de inverno com a de verão).
+  const half = legForDate('2026-12-10', { dep: 'LIS', arr: 'ZZZ', off: '07:00', on: '10:50', offZ: '06:00', onZ: '08:50' });
+  eq('E6 uma ponta sem fuso: ficam as duas Zulu', [half.offZ, half.onZ], ['06:00', '08:50']);
+  eq('aeroporto sem fuso conhecido: fica a Zulu que veio', legForDate('2026-12-10', { dep: 'ZZZ', arr: 'MAD', off: '07:00', on: '09:20', offZ: '06:00', onZ: '08:20' }).offZ, '06:00');
+}
+
 console.log(`\n${fail === 0 ? '✅' : '❌'}  flightDetect: ${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

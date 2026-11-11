@@ -19,6 +19,11 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   baixo, "Sem escala neste mês" + "Ir para a Escala"); Início "Quanto recebo?" e cartão do mês com o Natal; Números de
   novembro (linha Subsídios, cêntimos) e do ano (férias + Natal, % das 900 h); o mês da entrada (Perfil → novembro de 2026 com
   o dia em "—" → base "incerto"; com o dia 5 → um valor; repor a data).
+- **Importação e formulário (2026-11-11, nada visto no iPhone):** folha de importação com "Incerto — parte de LIS, mas o
+  serviço de 10/3 acabou em LGW" (calendário sintético: pernoita fora e o serviço seguinte a partir da base); corrigir um
+  candidato "a corrigir" e ver os avisos dos OUTROS dias mudar; Simulação com Detetar de duas pernas pela meia-noite (a rota
+  não inverte) e de um voo com fusos diferentes (Block e Duty hours pelo tempo decorrido); "Registar as horas reais" num voo
+  que acaba noutro fuso.
 - **Detalhe do serviço (v2), o que falta:** a hora REAL ao lado da prevista; repartido sem alojamento (Incerto → Completar →
   folha das 3 opções); cabine com a apresentação dos pilotos; "Faltou um dado" (só aparece num serviço sem apresentação); dia
   com 2 serviços (o 2.º abre o seu Detalhe); DH ("DH ·" e sign-off derivado); estadia de 2 noites; "não se aplica — sem
@@ -66,8 +71,11 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
 - **Campos por fazer (com Mobbin):** formação inicial (A-218); subsídio de idioma; exercício efetivo do VE (TAP); datas de
   atividade dos 9/3 e sazonais; reserva na configuração para o pós-voo da Ryanair/Hi Fly e para os números do Manual de Operações
   se os sindicatos não os derem (BLOCO 5 · 6 · 2026-11-08 Manual de Operações).
-- **Importação e formulário:** setor que não encaixa entre dias sem aviso (2026-11-04 madrugada); A-249 a A-251 e A-179 (pernas e
-  fusos no "Detetar"); A-241 (MTG/GND); riscos R3, R5–R8, R10–R12 do bloco 4 (BLOCO 4).
+- **Importação e formulário (o que ficou depois de 2026-11-11):** A-241 (MTG/GND) e R3 (DH marcado só nas notas) precisam de
+  uma escala real; R5 (serviço sem apresentação no mesmo PSV repartido); R6, 2.ª parte (o Início e os Números ignoram o máximo
+  dos serviços sem apresentação); R7 (um ADTY sem fim paga o garantido sem dizer "incerto" — só em dados antigos: desde o
+  bloco 4 fica "a corrigir" e não entra); manual com a saída ligeiramente diferente fica duplicado (R11, parte); os 4 riscos
+  da revisão de 2026-11-11 (noite) (BLOCO 4 · 2026-11-11 noite).
 - **Simulação:** "Juntar ao dia" (Mobbin primeiro); TAP ~45 ms por cálculo (BLOCO 2).
 - **Desenho:** modo escuro da app toda (prioridade, projeto próprio) (2026-11-04 tarde); esboço `design/inicio-v6.html` por
   atualizar; Escala "na linguagem do Início" e a etiqueta de um dia com 2 serviços; Validades e formulário de evento na escala
@@ -107,6 +115,48 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   (AlarmKit), hotel pelo Apple Maps, passkeys; Android; iPhone pequeno e grande; beta com 2–3 tripulantes no TestFlight;
   declaração de dados nas lojas; Supabase/Resend pagos e limites (e-mails por hora, DMARC).
 ---
+
+## 2026-11-11 (noite) — Importação e formulário (Fable 5.2) — o Nuno: "sim"
+
+- **Ordem das pernas (A-249, A-250):** `aggregateLegs(legs, { report })` deixou de ordenar pela hora do relógio — com a
+  apresentação, pelos minutos depois dela (3 h de folga para trás); sem ela, o serviço começa depois do maior intervalo sem
+  voo; uma perna à mão (sem horas) fica onde foi introduzida. O formulário guarda as pernas pela MESMA ordem da rota (antes a
+  rota era reordenada e as horas ficavam pelo índice). Exemplo do achado: LIS-FNC 22:30 + FNC-LIS 01:05 dava "FNC-LIS-FNC"
+  (pernoita a mais, +157,50 € no comandante).
+- **Durações pelo tempo decorrido (A-251, A-179):** `serviceRealMin` (data/zulu.js) — os minutos de cada perna e o PSV pelos
+  instantes (o fuso de cada aeroporto no seu dia), não pela diferença dos relógios. LIS 10:00 → TLV 17:50 = 5:50 (dava 7:50);
+  LIS 10:00 → PDL 11:20 = 2:20 (dava 1:20). Usam-no o formulário (Block hours, Duty hours e o `flight_minutes` que se grava) e
+  o "Registar as horas reais" do Detalhe (`realTimesPatch` com a data).
+- **Dois erros encontrados pelo caminho:** (1) no formulário, mudar a hora de uma perna importada deixava a Zulu antiga do
+  calendário — o PSV ficava o do plano (chegada 12:20 em vez de 10:20: PSV 4:20 em vez de 6:20); a Zulu da hora editada passa
+  a sair. (2) uma perna detetada pelo histórico ou pela API trazia a Zulu de OUTRO dia (hora de verão diferente = 1 h ao
+  lado); `legForDate` tira-a quando o fuso do aeroporto é conhecido.
+- **O sítio não bate (pendência de 2026-11-04):** aviso novo `placeGap`, "incerto" — "parte de LIS, mas o serviço de 10/3
+  acabou em LGW — falta um posicionamento na escala?". Na importação cada dia olha para trás; na Simulação também para o
+  serviço seguinte. Só serviços com sítio (pernas ou rota), até 7 dias de intervalo. Cita ORO.FTL.235(a)/(b) (o repouso
+  depende de onde se está); a app não inventa a viagem.
+- **Riscos do bloco 4:** R6 (1.ª parte) a folha de importação mostra "Incerto — …" (só mostrava o "⚠ excede"); R8 depois de
+  corrigir um candidato a verificação corre outra vez para todos (`verifyCandidates`); R10/R11 o papel, a folga trabalhada, os
+  casos especiais e o alojamento seguem o SERVIÇO em que foram registados (casam-se principal e extras lidos com os
+  guardados; um serviço único por casar de cada lado é o mesmo com a hora mudada), e a pernoita ligada à mão numa formação
+  fica; R12 fechado sem código (um candidato sem rota fica "a corrigir" e não entra; o formulário recalcula a pernoita pela
+  rota corrigida).
+- **Revisão independente (agente Opus, só com o código) — 6 erros confirmados, corrigidos no mesmo dia:** E1 sem apresentação,
+  um repartido com a pausa maior ao meio do dia começava à tarde (regressão minha) → sem apresentação vale a ordem do relógio,
+  a menos que o intervalo da noite tenha menos de 8 h; e a apresentação escrita DEPOIS das pernas volta a ordená-las (na
+  Simulação; na correção de um candidato não, que já vem na ordem da escala). E2 um principal lido sem par apagava o papel, a
+  folga trabalhada, os casos especiais e o alojamento (regressão minha) → casa-se também por tipo, o principal sem par
+  substitui o principal como sempre foi, e a folga trabalhada é do DIA (fica no principal se o serviço dela saiu da escala).
+  E3 aviso do sítio falso com um posicionamento sem rota pelo meio. E4 aviso do sítio em falta quando o dia seguinte já está
+  guardado e é lido igual → o aviso fica no dia novo. E5 um aeroporto do meio sem fuso: o PSV do formulário caía no relógio
+  (o motor usa as pontas) → igual ao motor. E6 `legForDate` tirava a Zulu só de uma ponta → as duas ou nenhuma. O formulário
+  bate com o motor (`ftlForDuty`) em 25 casos conferidos pelo revisor.
+- **Riscos que ficam (da revisão):** depois de corrigir um candidato a lista não volta a ordenar-se (um aviso novo pode ficar a
+  meio dos "ok"); longo curso para leste com mais de 21 h entre a apresentação e a última partida (ordem das pernas no
+  Detetar); a cauda de um posicionamento noutro fuso mede-se pelo relógio (motor e formulário; já era assim); o papel e os
+  casos especiais escritos na correção da importação não se gravam no principal (já era assim).
+- **Testes:** flightDetect 48, zulu 44, completar 28, importação 122, Simulação 113; 34 suites verdes; export iOS ✓. **Nada
+  visto no iPhone.**
 
 ## 2026-11-11 — Os grupos TAP e easyJet dos acertos de código (Opus 5.5 → Fable 5.2 a meio) — o Nuno: "vamos aos dois"
 

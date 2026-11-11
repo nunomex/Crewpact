@@ -222,6 +222,54 @@ export const legsChainMs = (dateISO, legs = [], reportHhmm = null) => {
     return { offMs, onMs };
   });
 };
+// ── As durações REAIS de um serviço de voo (auditoria A-179/A-251) ──
+// O relógio de cada aeroporto mistura fusos: LIS 10:00 → TLV 17:50 são 5 h 50 de voo, não 7 h 50; LIS 10:00 → PDL 11:20 são
+// 2 h 20, não 1 h 20. ORO.FTL.105(12)/(13): o PSV e o tempo de voo são tempo DECORRIDO. Pela cadeia dos instantes:
+//   · `legMin[i]`: os minutos de cada perna (calços a calços);
+//   · `fdpMin`: da apresentação (no relógio da 1.ª partida) aos calços da última perna OPERADA (105(12)).
+// O que a cadeia não resolve (aeroporto sem fuso, hora em falta) cai no relógio, como antes; sem horas → null.
+export const serviceRealMin = (dateISO, legs = [], reportHhmm = null) => {
+  const clock = (a, b) => { const x = hmOf(a), y = hmOf(b); return x == null || y == null ? null : (((y - x) % 1440) + 1440) % 1440; };
+  const list = Array.isArray(legs) ? legs : [];
+  const ch = dateISO && list.length ? legsChainMs(dateISO, list, reportHhmm) : [];
+  const legMin = list.map((l, i) => {
+    const c = ch[i];
+    if (c && c.offMs != null && c.onMs != null) return Math.round((c.onMs - c.offMs) / 60000);
+    return l ? clock(l.off, l.on) : null;
+  });
+  let iN = -1;
+  list.forEach((l, i) => { if (l && !l.dh) iN = i; });
+  if (iN < 0) iN = list.length - 1;
+  const l0 = list[0], lN = list[iN];
+  let fdpMin = null;
+  if (l0 && lN) {
+    const lead = clock(reportHhmm, l0.off), c0 = ch[0], cN = ch[iN];
+    if (lead != null && c0 && c0.offMs != null && cN && cN.onMs != null) {
+      const m = Math.round((cN.onMs - c0.offMs) / 60000) + lead;
+      if (m > 0 && m <= 1440) fdpMin = m;
+    }
+    if (fdpMin == null) {
+      // A cadeia não fecha (um aeroporto do meio sem fuso): como no motor (zuluTimingOf), a Zulu de cada PONTA pelo seu fuso, se o
+      // acerto ao relógio não passar de 12 h; senão o relógio (revisão independente, E5).
+      const byClock = clock(reportHhmm, lN.on);
+      const zOf = (i, which) => { const c = ch[i], ms = c ? c[`${which}Ms`] : null; if (ms != null) { const d = new Date(ms); return d.getUTCHours() * 60 + d.getUTCMinutes(); } return dateISO ? hmOf(legZulu(dateISO, list[i], which, reportHhmm)) : null; };
+      const z0 = zOf(0, 'off'), zN = zOf(iN, 'on');
+      const real = (lead != null && z0 != null && zN != null) ? ((((zN - (z0 - lead)) % 1440) + 1440) % 1440) : null;
+      fdpMin = (real != null && byClock != null && Math.abs(real - byClock) <= 720) ? real : byClock;
+    }
+  }
+  return { legMin, fdpMin };
+};
+// Uma perna DETETADA (do histórico ou da API) traz a Zulu de OUTRO dia: com a hora de verão diferente fica 1 h ao lado (um voo
+// de julho num serviço de dezembro). Com o fuso do aeroporto conhecido, a Zulu sai e calcula-se pelo fuso no dia do serviço; sem
+// fuso numa das pontas, ficam as DUAS que vieram (tirar só uma misturava a de um dia com a de outro — revisão independente, E6).
+export const legForDate = (dateISO, leg) => {
+  if (!leg) return leg;
+  const known = (hhmm, ap) => !!(dateISO && hhmm && ap && airportTz(ap) && airportUtcMs(dateISO, hhmm, ap) != null);
+  const both = known(leg.off, leg.dep) && known(leg.on, leg.arr);
+  return { ...leg, offZ: both ? null : (leg.offZ || null), onZ: both ? null : (leg.onZ || null) };
+};
+
 // As horas Zulu "HH:MM" de cada perna pela cadeia; o que a cadeia não resolve cai no legZulu (relógio/dispositivo).
 export const legsZulu = (dateISO, legs = [], reportHhmm = null) => {
   const ch = legsChainMs(dateISO, legs, reportHhmm);

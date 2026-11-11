@@ -76,6 +76,9 @@ eq('TAP cabine, DHC em económica num posicionamento', ids(C.completeRows({ kind
 const real = C.realTimesPatch(voo, { on: '07:55', signOff: '08:25' });
 eq('horas reais: calços dentro e fim de serviço; a última perna acompanha; o block recalcula', [real.block_on, real.signOff, real.legs[0].on, real.flight_minutes], ['07:55', '08:25', '07:55', 130]);
 eq('… a Zulu do calendário dessa hora sai (recalcula-se pelo fuso)', C.realTimesPatch({ ...voo, legs: [{ ...voo.legs[0], onZ: '06:20' }] }, { on: '07:55' }).legs[0].onZ, undefined);
+// As horas reais num voo com fusos diferentes (auditoria A-179): LIS 10:00 → TLV, dentro às 18:00 em vez das 17:50 → 6 h de
+// voo (antes o relógio dava 8 h, +2 h no voo dos 28 dias).
+eq('horas reais com fusos diferentes: o block é o tempo decorrido', C.realTimesPatch({ kind: 'flight', report_time: '09:00', block_off: '10:00', block_on: '17:50', sectors: 1, flight_minutes: 350, route: 'LIS-TLV', legs: [{ dep: 'LIS', arr: 'TLV', off: '10:00', on: '17:50', offZ: '10:00', onZ: '15:50' }] }, { on: '18:00' }, { date: '2026-01-15' }).flight_minutes, 360);
 eq('posicionamento no fim não é a última chegada operada', C.realTimesPatch({ ...voo, legs: [voo.legs[0], { dep: 'FNC', arr: 'LIS', off: '08:00', on: '09:40', dh: true }] }, { on: '07:55' }).legs.map((l) => l.on), ['07:55', '09:40']);
 eq('a prevista vem da escala publicada', C.plannedOf({ ...voo, block_on: '07:55', snap: { block_on: '07:20' } }, 'block_on'), '07:20');
 eq('sem diferença, sem prevista', C.plannedOf({ ...voo, snap: { block_on: '07:20' } }, 'block_on'), null);

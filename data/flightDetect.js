@@ -69,10 +69,38 @@ export async function detectLeg(flightNo, duties = {}) {
 
 // ── Agregação dos legs numa DUTY (regra de ouro: tempo de voo = SOMA por leg). ──
 // Devolve { route, off, on, flightMin, sectors, aircraft, legs } ou null.
-export function aggregateLegs(legs = []) {
+// A ORDEM (auditoria A-249/A-250): nunca pela hora do relógio sozinha — um serviço que passa a meia-noite ficava com a rota
+// invertida (22:30 depois de 01:05) e acabava "fora", com pernoita a mais.
+//   · Com a apresentação (`report`): pelos minutos DEPOIS dela (3 h de folga para trás: uma partida pode estar marcada uns
+//     minutos antes da apresentação).
+//   · Sem ela: a ordem do relógio (o serviço não passa a meia-noite) — a menos que o intervalo da NOITE (da última chegada à
+//     1.ª partida do relógio) seja curto de mais para ser o fim do serviço (menos de 8 h: um serviço não dura mais de 16 h);
+//     aí o serviço passa a meia-noite e começa depois do MAIOR intervalo sem voo. (Revisão independente, E1: só pelo maior
+//     intervalo, um repartido com 10 h 30 de pausa ao meio do dia começava à tarde.)
+//   · Uma perna sem horas (introduzida à mão) fica ONDE foi introduzida; as que têm horas ordenam-se entre si.
+// Quem chama guarda `legs` (a mesma ordem da rota): as horas de cada perna não podem ficar pelo índice de outra.
+const ORDER_SLACK_MIN = 180;
+const NIGHT_GAP_MIN = 480;
+export function aggregateLegs(legs = [], { report = null } = {}) {
   const valid = (legs || []).filter((l) => l && (l.dep || l.arr));
   if (!valid.length) return null;
-  const sorted = valid.slice().sort((a, b) => (toMin(a.off) ?? 9999) - (toMin(b.off) ?? 9999));
+  const timed = valid.filter((l) => toMin(l.off) != null);
+  let start = toMin(report);
+  if (start != null) start -= ORDER_SLACK_MIN;
+  else if (timed.length > 1) {
+    const byClock = timed.slice().sort((a, b) => toMin(a.off) - toMin(b.off));
+    const gaps = byClock.map((l, i) => {
+      const prev = byClock[(i - 1 + byClock.length) % byClock.length];
+      let gap = toMin(l.off) - (toMin(prev.on) ?? toMin(prev.off)); while (gap < 0) gap += 1440;
+      return gap;
+    });
+    start = 0;   // a ordem do relógio
+    if (gaps[0] < NIGHT_GAP_MIN) { let best = -1; gaps.forEach((g, i) => { if (g > best) { best = g; start = toMin(byClock[i].off); } }); }
+  }
+  const key = (l) => (start == null ? 0 : (((toMin(l.off) - start) % 1440) + 1440) % 1440);
+  const order = timed.map((l, i) => [l, i]).sort((a, b) => (key(a[0]) - key(b[0])) || (a[1] - b[1])).map((x) => x[0]);
+  let k = 0;
+  const sorted = valid.map((l) => (toMin(l.off) != null ? order[k++] : l));
   const route = [sorted[0].dep, ...sorted.map((l) => l.arr)].filter(Boolean).join('-');
   const off = sorted[0].off || null;
   const on = sorted[sorted.length - 1].on || null;
