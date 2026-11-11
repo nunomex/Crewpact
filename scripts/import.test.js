@@ -533,6 +533,33 @@ EJU8004 [320] OPO - LIS A21:40 - A22:40`, 'easyjet');
   eq('… e ganha ao que estava guardado', fK2.role, 'instr');
   const plain = importSaveFields({ duty: { duty_date: '2026-10-23', kind: 'flight', report_time: '06:00', block_off: '07:00', block_on: '09:00', sectors: 1, flight_minutes: 120, route: 'LIS-OPO', special: null }, kind: 'flight' }, 'calendar', null);
   eq('… sem nada escrito, nada se escreve (o guardado fica)', ['role' in plain, 'dayOffWorked' in plain, 'special' in plain, 'accommodation' in plain], [false, false, false, false]);
+  // O QUE ESTÁ GUARDADO acompanha o candidato (2026-11-11): a verificação da folha usa os casos especiais e o alojamento que o
+  // tripulante já registou no serviço — um repartido de 11 h 30 com alojamento adequado guardado é "dentro", não "incerto".
+  {
+    const { storedFacts } = require(path.resolve('data/rosterImport.js'));
+    const lg = [{ dep: 'LIS', arr: 'OPO', off: '07:00', on: '08:00' }, { dep: 'OPO', arr: 'LIS', off: '19:30', on: '20:30' }];
+    const mkC = (extra = {}) => ({ duty: { duty_date: '2026-10-20', kind: 'flight', report_time: '06:00', block_off: '07:00', block_on: '20:30', sectors: 2, flight_minutes: 130, route: 'LIS-OPO-LIS', legs: lg, ...extra }, kind: 'flight', status: 'changed', exists: true, diff: [], prospect: null, selected: false, action: 'save' });
+    const stS = { report_time: '06:00', block_off: '07:00', block_on: '20:20', sectors: 2, flight_minutes: 120, route: 'LIS-OPO-LIS', kind: 'flight', source: 'calendar', accommodation: true, role: 'instr', dayOffWorked: 'ddo', special: { discretion: true },
+      legs: [lg[0], { ...lg[1], on: '20:20' }] };
+    const vr = (c, duties) => verifyCandidates([c], { duties, dayLog: {}, ...PIL })[0].prospect;
+    eq('guardado: sem alojamento em lado nenhum → incerto', vr(mkC(), {}).issues.some((i) => i.type === 'fdpUncertain'), true);
+    eq('guardado: o alojamento guardado entra na verificação', vr(mkC(), { '2026-10-20': stS }).issues.some((i) => i.type === 'fdpUncertain'), false);
+    eq('guardado: o que o formulário mostra ao abrir a correção', storedFacts(mkC(), stS)[0], { role: 'instr', dayOffWorked: 'ddo', special: { discretion: true }, accommodation: true });
+    // Depois de passar pela correção (`edited`), o que lá ficou escrito manda — vazio APAGA o guardado.
+    const cleared = mkC({ edited: true, role: null, dayOffWorked: null, special: null, accommodation: false });
+    const fE = importSaveFields(cleared, 'calendar', stS);
+    eq('correção: vazio apaga o papel, a folga trabalhada, os casos especiais e o alojamento', [fE.role, fE.dayOffWorked, fE.special, fE.accommodation, 'edited' in fE], [null, null, null, false, false]);
+    eq('correção: … e a verificação já não usa o alojamento guardado', vr(cleared, { '2026-10-20': stS }).issues.some((i) => i.type === 'fdpUncertain'), true);
+    // Sem passar pela correção, vazio não apaga (o saveDuty mantém).
+    eq('sem correção: nada se escreve', 'role' in importSaveFields(mkC(), 'calendar', stS), false);
+    // Um extra: o guardado entra na verificação e, depois de corrigido e passado a extra, fica o que se escreveu.
+    const stX = { report_time: '02:00', block_on: '03:00', sectors: 0, flight_minutes: 0, route: null, kind: 'office', source: 'calendar', extra: [{ ...stS, source: 'calendar' }] };
+    const cX = { ...mkC(), duty: { duty_date: '2026-10-20', kind: 'office', report_time: '02:00', block_on: '03:00', sectors: 0, flight_minutes: 0, route: null, extra: [{ ...mkC().duty, duty_date: undefined }] }, kind: 'office' };
+    eq('guardado num extra: o que acompanha', storedFacts(cX, stX)[1], { role: 'instr', dayOffWorked: 'ddo', special: { discretion: true }, accommodation: true });
+    const cXe = { ...cX, duty: { ...cX.duty, extra: [{ ...cX.duty.extra[0], edited: true, role: 'uprank' }] } };
+    const fX = importSaveFields(cXe, 'calendar', stX);
+    eq('extra corrigido: fica o que se escreveu, sem a marca', [fX.extra[0].role, fX.extra[0].dayOffWorked || null, 'edited' in fX.extra[0], fX.snap.extra.some((e) => 'edited' in e || 'role' in e)], ['uprank', null, false, false]);
+  }
   // R11: a pernoita ligada à mão numa formação fora (o calendário não a traz) fica quando a hora muda.
   const trnS = { report_time: '09:00', block_on: '17:00', sectors: 0, flight_minutes: 0, route: null, kind: 'training', source: 'calendar', nightStop: true };
   const trnR = { duty: { duty_date: '2026-10-21', kind: 'training', report_time: '09:30', block_off: null, block_on: '17:30', sectors: 0, flight_minutes: 0, route: null }, kind: 'training' };

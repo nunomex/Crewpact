@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { PELE, PELE_FONT, BRAND } from '../data/constants';
 import { diagnoseEvents } from '../data/calendar';
 import { importWindow, readCalendarRoster, absenceSuggestions, baseOfFor } from '../data/rosterRead';
-import { buildImportCandidates, importSaveFields, candidateKind, promoteMissing, verifyCandidates, sortCandidates } from '../data/rosterImport';
+import { buildImportCandidates, importSaveFields, candidateKind, promoteMissing, verifyCandidates, sortCandidates, storedFacts } from '../data/rosterImport';
 import { issueText } from '../data/simulation';
 import { parseEasyjetRoster, rosterLooksForeign } from '../data/pdfRoster';
 import * as DocumentPicker from 'expo-document-picker';
@@ -196,6 +196,13 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
   // MODO CANDIDATO (pré-preenchido) → ao guardar devolve aqui o candidato corrigido (NÃO grava
   // no `duties`) → reavaliamos estado/per-diem. O gravar real é só no "Confirmar import".
   const correct = (c) => setCorrecting(c);
+  // A correção abre já com o que está GUARDADO nesse serviço (papel, folga trabalhada, casos especiais, alojamento): vê-se o
+  // que lá está e esvaziar um campo é apagá-lo. Depois de uma 1.ª correção (`edited`) vale o que ficou escrito.
+  const seedCorrection = (c) => {
+    const d = c.duty;
+    const f = (!d.edited && storedFacts(c, duties[d.duty_date])[0]) || {};
+    return { ...d, kind: c.kind, role: d.role || f.role || null, dayOffWorked: d.dayOffWorked || f.dayOffWorked || null, special: d.special || f.special || null, accommodation: d.accommodation || f.accommodation || false };
+  };
   // Opt-in dos CANCELADOS (ausência = sinal fraco, apagar é irreversível): toca para marcar/desmarcar apagar.
   const toggle = (cand) => setCands((cs) => cs.map((c) => (c.duty.duty_date === cand.duty.duty_date && c.kind === cand.kind ? { ...c, selected: !c.selected } : c)));
   // Depois de corrigir, a verificação corre OUTRA VEZ para todos (risco R8 do bloco 4): o corrigido passa a entrar na escala
@@ -204,7 +211,9 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
     setCands((cs) => sortCandidates(verifyCandidates(cs.map((c) => {
       if (!(correcting && c.duty.duty_date === correcting.duty.duty_date && c.kind === correcting.kind)) return { ...c };
       // Se outro serviço do dia ainda tem horas em falta, passa ele para a frente (é esse que se corrige a seguir).
-      const p = promoteMissing({ ...c.duty, ...corrected }, corrected.kind || c.kind);
+      // `edited`: passou pela correção — o que lá ficou escrito (papel, folga trabalhada, casos especiais, alojamento) manda,
+      // e vazio apaga o que estava guardado.
+      const p = promoteMissing({ ...c.duty, ...corrected, edited: true }, corrected.kind || c.kind);
       return { ...c, duty: { ...p.duty, kind: p.kind }, kind: p.kind };
     }), { duties, dayLog, base, baseAt: homeBaseAt, isPilot, cabinGapMin, splitAdminMin, postFlightMin })));
     setCorrecting(null);
@@ -472,7 +481,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
         </View>
 
         {/* Correção no import — DutyFormSheet em modo CANDIDATO (devolve o corrigido, não grava). */}
-        <DutyFormSheet visible={!!correcting} candidate={correcting ? { ...correcting.duty, kind: correcting.kind } : null} onCandidate={applyCorrection} onClose={() => setCorrecting(null)} />
+        <DutyFormSheet visible={!!correcting} candidate={correcting ? seedCorrection(correcting) : null} onCandidate={applyCorrection} onClose={() => setCorrecting(null)} />
       </View>
     </Modal>
   );

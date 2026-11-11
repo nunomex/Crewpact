@@ -58,7 +58,9 @@ export const isNightStop = (route, base, sectors) => {
 // Serviço-irmão (forma de `extra`): normaliza uma duty-row para os campos de um serviço do dia.
 // Partilhado por buildImportCandidates (merge do sheet) e buildIncoming (merge da auto-deteção).
 const isoOfDate = (t) => `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
-const svcFields = (d) => ({ report_time: d.report_time || null, block_off: d.block_off || null, block_on: d.block_on || null, sectors: d.sectors || 0, flight_minutes: d.flight_minutes || 0, route: d.route || null, kind: d.kind || 'flight', nightStop: !!d.nightStop, signOff: d.signOff || null, legs: d.legs || null, special: d.special || null, ...(d.eLearning ? { eLearning: true } : {}), ...(d.officeType ? { officeType: d.officeType } : {}) });
+// Leva também o que o tripulante escreveu na correção da folha (papel, folga trabalhada, alojamento e a marca `edited`): um
+// serviço corrigido que passa a extra (promoteMissing) não perde o que lá ficou escrito.
+const svcFields = (d) => ({ report_time: d.report_time || null, block_off: d.block_off || null, block_on: d.block_on || null, sectors: d.sectors || 0, flight_minutes: d.flight_minutes || 0, route: d.route || null, kind: d.kind || 'flight', nightStop: !!d.nightStop, signOff: d.signOff || null, legs: d.legs || null, special: d.special || null, ...(d.eLearning ? { eLearning: true } : {}), ...(d.officeType ? { officeType: d.officeType } : {}), ...(d.role ? { role: d.role } : {}), ...(d.dayOffWorked ? { dayOffWorked: d.dayOffWorked } : {}), ...(d.accommodation ? { accommodation: d.accommodation } : {}), ...(d.edited ? { edited: true } : {}) });
 
 // Atividade { dateISO, sectors, legs:[{ flightNo, report, depTime, arrTime, startDate, endDate, depAirport, arrAirport, dh? }] }
 // → { duty_date, kind, report_time, block_off, block_on, sectors, flight_minutes, route, signOff, legs }.
@@ -189,18 +191,58 @@ export const READER_VERSION = 2;
 const snapOfCandidate = (c) => {
   const d = c.duty || {};
   const snap = { report_time: d.report_time, block_off: d.block_off, block_on: d.block_on, route: d.route, sectors: d.sectors, kind: c.kind || d.kind || 'flight', officeType: d.officeType || null, eLearning: !!d.eLearning, signOff: d.signOff || null, v: READER_VERSION };
-  if ((d.extra || []).length) snap.extra = (d.extra || []).map(({ source: _s, ...f }) => f);
+  // O snap é a escala como foi PUBLICADA: sem o que o tripulante escreveu (papel, folga trabalhada, alojamento, a marca).
+  if ((d.extra || []).length) snap.extra = (d.extra || []).map(({ source: _s, edited: _e, role: _r, dayOffWorked: _w, accommodation: _a, ...f }) => f);
   return snap;
 };
 
-// O DIA tal como ficará gravado se o candidato for aplicado (para a verificação cumulativa).
-const dayOfCandidate = (c) => {
+// CASAR os serviços lidos com os guardados: o que o tripulante registou num serviço — papel, folga trabalhada, casos especiais,
+// alojamento — segue ESSE serviço, seja ele o principal ou um extra do dia (riscos R10/R11 do bloco 4).
+//   1.º o mesmo serviço (`sameSvc`: a mesma apresentação, ou a mesma saída e rota);
+//   2.º por TIPO: se sobra UM lido e UM guardado desse tipo, é o mesmo serviço com a hora mudada; com mais de um de cada
+//       lado não se adivinha (ficam sem par);
+//   3.º o principal lido sem par e o principal guardado sem par: o principal substitui o principal, como sempre foi.
+// Devolve, para cada serviço lido (0 = o principal), o guardado que lhe corresponde ou null.
+const svcKindOf = (x) => (x && x.kind) || 'flight';
+const splitExisting = (existing) => {
+  const stored = existing && !Array.isArray(existing) && !existing.deleted ? existing : null;
+  const existingExtra = Array.isArray(existing) ? existing : (stored && Array.isArray(stored.extra) ? stored.extra : []);
+  return { stored, existingExtra };
+};
+const matchStored = (readAll, stored, existingExtra) => {
+  const pool = [...(stored ? [stored] : []), ...existingExtra.filter((x) => x && x.source !== 'manual')];
+  const wasOf = new Array(readAll.length).fill(null);
+  const used = new Set();
+  readAll.forEach((r, i) => { const w = pool.find((x) => !used.has(x) && sameSvc(x, r)); if (w) { wasOf[i] = w; used.add(w); } });
+  for (const k of new Set(readAll.map(svcKindOf))) {
+    const fr = readAll.map((_, i) => i).filter((i) => !wasOf[i] && svcKindOf(readAll[i]) === k), fs = pool.filter((x) => !used.has(x) && svcKindOf(x) === k);
+    if (fr.length === 1 && fs.length === 1) { wasOf[fr[0]] = fs[0]; used.add(fs[0]); }
+  }
+  if (!wasOf[0] && stored && !used.has(stored)) { wasOf[0] = stored; used.add(stored); }
+  return wasOf;
+};
+// O que está GUARDADO em cada serviço lido (0 = o principal): { role, dayOffWorked, special, accommodation } ou null. A folha
+// usa-o para abrir a correção já com o que lá está (assim, esvaziar um campo é apagá-lo) e a verificação para contar com os
+// casos especiais e o alojamento que o tripulante já registou.
+export const storedFacts = (c, existing = null) => {
+  const d = (c && c.duty) || {};
+  const { stored, existingExtra } = splitExisting(existing);
+  const readAll = [{ ...d, kind: c.kind || d.kind }, ...(d.extra || [])];
+  return matchStored(readAll, stored, existingExtra).map((w) => (w ? { role: w.role || null, dayOffWorked: w.dayOffWorked || null, special: w.special || null, accommodation: w.accommodation || false } : null));
+};
+
+// O DIA tal como ficará gravado se o candidato for aplicado (para a verificação cumulativa). Com o dia guardado (`existing`),
+// cada serviço leva os casos especiais e o alojamento guardados no seu par — menos os que passaram pela correção da folha
+// (`edited`): nesses manda o que lá ficou escrito.
+const dayOfCandidate = (c, existing = null) => {
   const d = c.duty || {};
+  const facts = existing ? storedFacts(c, existing) : [];
+  const withFacts = (svc, f) => ((!f || svc.edited) ? svc : { ...svc, special: svc.special || f.special || null, ...((svc.accommodation || f.accommodation) ? { accommodation: svc.accommodation || f.accommodation } : {}) });
   const out = { kind: c.kind || d.kind || 'flight' };
   for (const k of ['report_time', 'block_off', 'block_on', 'sectors', 'flight_minutes', 'route', 'nightStop', 'signOff', 'legs', 'special', 'accommodation', 'eLearning', 'officeType']) if (d[k] !== undefined) out[k] = d[k];
   out.snap = snapOfCandidate(c);
-  out.extra = Array.isArray(d.extra) && d.extra.length ? d.extra : null;
-  return out;
+  out.extra = Array.isArray(d.extra) && d.extra.length ? d.extra.map((e, i) => withFacts(e, facts[i + 1])) : null;
+  return (!d.edited && facts[0]) ? withFacts(out, facts[0]) : out;
 };
 
 // Candidatos de importação: atividades (voos) + duties SEM-VOO do calendário.
@@ -282,7 +324,7 @@ export const verifyCandidates = (out = [], { duties = {}, dayLog = {}, base = nu
   const applies = out.filter((c) => c.action !== 'delete' && c.status !== 'same' && candidateKind(c).kind !== 'fix');
   if (applies.length) {
     const cum = { ...duties };
-    for (const c of applies) cum[c.duty.duty_date] = dayOfCandidate(c);
+    for (const c of applies) cum[c.duty.duty_date] = dayOfCandidate(c, duties[c.duty.duty_date]);
     // Todos entram juntos: verifica-se cada DIA na escala completa (scope 'day'), com o dayLog e os avisos de recuperação dela
     // calculados uma só vez (uma leitura de 12 meses tem centenas de candidatos).
     const cumLog = reconcileDayLog(cum, dayLog, rc);
@@ -290,7 +332,7 @@ export const verifyCandidates = (out = [], { duties = {}, dayLog = {}, base = nu
     const restLine = restTimeline(cum, { postFlightMin, isPilot, base, baseAt });
     for (const c of applies) {
       const date = c.duty.duty_date;
-      const sim = { duty_date: date, ...dayOfCandidate(c) };
+      const sim = { duty_date: date, ...dayOfCandidate(c, duties[date]) };
       sim.extra = sim.extra || [];
       c.prospect = simulateDuty(sim, { duties: cum, dayLog: cumLog, ...rc, mode: 'replace', scope: 'day', hypoLog: cumLog, recovery, restLine });
     }
@@ -355,35 +397,22 @@ const timesSame = (a, b) => !!a && !!b && (a.report_time || null) === (b.report_
 // O serviço principal: o sign-off guardado só fica se as horas não mudaram (A-231: um sign-off antes dos novos calços contava
 // como do dia seguinte); o fim de um DH lido da escala vai como sign-off. E-learning e OFC vão SEMPRE (A-230: sem a chave, o
 // valor antigo ficava).
-// CASAR os serviços lidos com os guardados (riscos R10/R11 do bloco 4): o que o tripulante registou num serviço — papel, folga
-// trabalhada, casos especiais, alojamento — segue ESSE serviço, seja ele o principal ou um extra do dia. Antes só se casavam
-// extras com extras: se entrava um voo mais cedo (novo principal), o papel do principal antigo ficava no voo novo.
-//   1.º o mesmo serviço (`sameSvc`: a mesma apresentação, ou a mesma saída e rota);
-//   2.º por TIPO: se sobra UM lido e UM guardado desse tipo, é o mesmo serviço com a hora mudada; com mais de um de cada
-//       lado não se adivinha (ficam sem par);
-//   3.º o principal lido sem par e o principal guardado sem par: o principal substitui o principal, como sempre foi (o
-//       saveDuty mantém o que lá está) — revisão independente, E2: sem isto, um voo com a hora mudada ao lado de um serviço
-//       novo, ou uma assistência convertida em voo, perdiam o papel e a folga trabalhada.
+// Os serviços lidos casam-se com os guardados (matchStored, acima): antes só se casavam extras com extras — se entrava um voo
+// mais cedo (novo principal), o papel do principal antigo ficava no voo novo; e sem o 3.º passo (revisão independente, E2) um
+// voo com a hora mudada ao lado de um serviço novo, ou uma assistência convertida em voo, perdiam o papel e a folga trabalhada.
 // A FOLGA TRABALHADA é do dia (paga-se por dia): se o serviço em que estava saiu da escala, fica no principal.
+// Um serviço que passou pela CORREÇÃO da folha (`edited`): manda o que lá ficou escrito — vazio apaga o guardado.
 export const importSaveFields = (c, source = 'calendar', existing = null) => {
   const d = c.duty;
-  const stored = existing && !Array.isArray(existing) && !existing.deleted ? existing : null;
-  const existingExtra = Array.isArray(existing) ? existing : (stored && Array.isArray(stored.extra) ? stored.extra : []);
-  const kindOf = (x) => (x && x.kind) || 'flight';
+  const { stored, existingExtra } = splitExisting(existing);
+  const kindOf = svcKindOf;
   const readAll = [{ ...d, kind: c.kind || d.kind }, ...(d.extra || [])];
-  const pool = [...(stored ? [stored] : []), ...existingExtra.filter((x) => x && x.source !== 'manual')];
-  const wasOf = new Array(readAll.length).fill(null);
-  const used = new Set();
-  readAll.forEach((r, i) => { const w = pool.find((x) => !used.has(x) && sameSvc(x, r)); if (w) { wasOf[i] = w; used.add(w); } });
-  for (const k of new Set(readAll.map(kindOf))) {
-    const fr = readAll.map((_, i) => i).filter((i) => !wasOf[i] && kindOf(readAll[i]) === k), fs = pool.filter((x) => !used.has(x) && kindOf(x) === k);
-    if (fr.length === 1 && fs.length === 1) { wasOf[fr[0]] = fs[0]; used.add(fs[0]); }
-  }
-  if (!wasOf[0] && stored && !used.has(stored)) { wasOf[0] = stored; used.add(stored); }
+  const wasOf = matchStored(readAll, stored, existingExtra);
   // A pernoita ligada à mão num serviço em terra (formação fora, por exemplo): o calendário não a traz — fica com o serviço.
   const handNs = (was, r) => !!(was && was.nightStop && kindOf(r) !== 'flight' && !r.route && kindOf(was) === kindOf(r));
-  const readExtra = (d.extra || []).map((e, j) => {
-    const was = wasOf[j + 1];
+  const readExtra = (d.extra || []).map((e0, j) => {
+    const { edited, ...e } = e0;
+    const was = edited ? null : wasOf[j + 1];
     const keep = was ? {
       ...(was.role ? { role: was.role } : {}), ...(was.dayOffWorked ? { dayOffWorked: was.dayOffWorked } : {}),
       ...(was.special && !e.special ? { special: was.special } : {}), ...(was.signOff && !e.signOff && timesSame(was, e) ? { signOff: was.signOff } : {}),
@@ -408,7 +437,7 @@ export const importSaveFields = (c, source = 'calendar', existing = null) => {
   const snap = snapOfCandidate(c);
   // O que o tripulante escreveu na CORREÇÃO da importação (o formulário devolve-o no candidato) grava-se — antes ficava pelo
   // caminho, porque o principal só levava os campos da escala. Só o que foi escrito: vazio não apaga o que está guardado.
-  const own = {
+  const own = d.edited ? { role: d.role || null, dayOffWorked: d.dayOffWorked || null, special: d.special || null, accommodation: d.accommodation || false } : {
     ...(d.role ? { role: d.role } : {}), ...(d.dayOffWorked ? { dayOffWorked: d.dayOffWorked } : {}),
     ...(d.special ? { special: d.special } : {}), ...(d.accommodation ? { accommodation: d.accommodation } : {}),
   };

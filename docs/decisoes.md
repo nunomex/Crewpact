@@ -23,7 +23,8 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   serviço de 10/3 acabou em LGW" (calendário sintético: pernoita fora e o serviço seguinte a partir da base); corrigir um
   candidato "a corrigir" e ver os avisos dos OUTROS dias mudar; Simulação com Detetar de duas pernas pela meia-noite (a rota
   não inverte) e de um voo com fusos diferentes (Block e Duty hours pelo tempo decorrido); "Registar as horas reais" num voo
-  que acaba noutro fuso.
+  que acaba noutro fuso; corrigir um candidato de um dia que já tinha papel ou alojamento guardados (a correção abre com
+  eles; apagar um e confirmar que sai).
 - **Detalhe do serviço (v2), o que falta:** a hora REAL ao lado da prevista; repartido sem alojamento (Incerto → Completar →
   folha das 3 opções); cabine com a apresentação dos pilotos; "Faltou um dado" (só aparece num serviço sem apresentação); dia
   com 2 serviços (o 2.º abre o seu Detalhe); DH ("DH ·" e sign-off derivado); estadia de 2 noites; "não se aplica — sem
@@ -74,9 +75,8 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
 - **Importação e formulário (o que ficou depois de 2026-11-11):** A-241 (MTG/GND) e R3 (DH marcado só nas notas) precisam de
   uma escala real; R5 (serviço sem apresentação no mesmo PSV repartido); R6, 2.ª parte (o Início e os Números ignoram o máximo
   dos serviços sem apresentação); R7 (um ADTY sem fim paga o garantido sem dizer "incerto" — só em dados antigos: desde o
-  bloco 4 fica "a corrigir" e não entra); manual com a saída ligeiramente diferente fica duplicado (R11, parte); na correção
-  da importação não se consegue APAGAR um papel ou um caso especial já guardado (só escrever); a verificação da folha não usa
-  os casos especiais nem o alojamento GUARDADOS do serviço principal (BLOCO 4 · 2026-11-11 noite).
+  bloco 4 fica "a corrigir" e não entra); manual com a saída ligeiramente diferente fica duplicado (R11, parte)
+  (BLOCO 4 · 2026-11-11 noite).
 - **Simulação:** "Juntar ao dia" (Mobbin primeiro); TAP ~45 ms por cálculo (BLOCO 2).
 - **Desenho:** modo escuro da app toda (prioridade, projeto próprio) (2026-11-04 tarde); esboço `design/inicio-v6.html` por
   atualizar; Escala "na linguagem do Início" e a etiqueta de um dia com 2 serviços; Validades e formulário de evento na escala
@@ -162,7 +162,13 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   posicionamento sozinho e o DH antes de operar já estavam certos (conferido). (4) O papel, a folga trabalhada, os casos
   especiais e o alojamento escritos na correção da importação gravam-se no serviço principal (só o que foi escrito: vazio não
   apaga o guardado), e a verificação da folha usa o alojamento escrito.
-- **Testes:** flightDetect 55, zulu 47, FTL golden 545, completar 28, importação 127, Simulação 113; 34 suites verdes; export
+- **Os dois limites que ficavam (o Nuno: "como corrigimos isso?"):** uma só ideia — o que está GUARDADO acompanha o
+  candidato (`storedFacts`: o papel, a folga trabalhada, os casos especiais e o alojamento do serviço guardado que casa com
+  cada serviço lido). (a) A verificação da folha conta com os casos especiais e o alojamento guardados (um repartido de
+  11 h 30 com alojamento adequado guardado dava "incerto"; agora "dentro"). (b) A correção abre já com o que está guardado, e
+  um serviço que passou pela correção leva a marca `edited`: manda o que lá ficou escrito e vazio APAGA o guardado (a marca
+  não se grava nem entra no snap). Um serviço corrigido que passa a extra não perde o que se escreveu.
+- **Testes:** flightDetect 55, zulu 47, FTL golden 545, completar 28, importação 135, Simulação 113; 34 suites verdes; export
   iOS ✓. **Nada visto no iPhone.**
 
 ## 2026-11-11 — Os grupos TAP e easyJet dos acertos de código (Opus 5.5 → Fable 5.2 a meio) — o Nuno: "vamos aos dois"
