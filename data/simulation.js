@@ -238,6 +238,11 @@ export const simulateDuty = (sim, ctx = {}) => {
   // avisos que caem no dia (não os que "este serviço cria", que aparecem no dia de cada um). Pode trazer já calculados o dayLog
   // da escala (`hypoLog`) e os avisos de recuperação (`recovery`): calculam-se uma vez por leitura, não uma por candidato.
   const { scope = 'sim', hypoLog: hypoLogIn = null, recovery: recoveryIn = null, restLine = null } = ctx || {};
+  // `memo` (um Map de quem chama, o formulário): o que só depende da escala GUARDADA — os avisos de recuperação e os problemas
+  // dos limites TAP sem o simulado — calcula-se uma vez e reaproveita-se a cada tecla (eram ~20 dos ~45 ms de cada conta com
+  // um ano de escala TAP). Quem chama deita-o fora quando a escala ou o perfil mudam.
+  const memo = ctx && ctx.memo instanceof Map ? ctx.memo : null;
+  const memoGet = (k, f) => { if (!memo) return f(); if (!memo.has(k)) memo.set(k, f()); return memo.get(k); };
   const empty = { verdict: 'none', ok: null, issues: [], psv: null, day: null, windows: [], tightest: {}, servico28: 0, voo28: 0, rest: { before: null, after: null, need: null }, fatigue: null, ae: null };
   const date = sim && sim.duty_date;
   if (!date) return empty;
@@ -305,7 +310,7 @@ export const simulateDuty = (sim, ctx = {}) => {
   // que a janela corta nas pontas aparece igual com e sem o simulado, e cai no filtro dos avisos novos.
   const near = (dd) => { const lo = addDays(date, -62), hi = addDays(date, 62), o = {}; for (const k in dd) if (k >= lo && k <= hi) o[k] = dd[k]; return o; };
   const dayScope = scope === 'day';
-  const baseKeys = dayScope ? null : new Set(recoveryIssues(near(duties), rcx).map(rkey));
+  const baseKeys = dayScope ? null : memoGet(`rec|${date}`, () => new Set(recoveryIssues(near(duties), rcx).map(rkey)));
   for (const x of (dayScope && recoveryIn ? recoveryIn : recoveryIssues(near(hypo), rcx))) {
     if (dayScope ? x.date !== date : (baseKeys.has(rkey(x)) && x.date !== date)) continue;
     const { type: kind, ...y } = x;
@@ -358,8 +363,7 @@ export const simulateDuty = (sim, ctx = {}) => {
     const ev = (dd) => evaluateTapLimits({ crewType: ct, duties: dd, baseAt: bAt, isTapAt: tap.isTapAt, fleetAt: tap.fleetAt || null, today: null }).rules;
     const fk = (id, f) => JSON.stringify([id, f.status, f.date || null, f.from || null, f.to || null, f.window || null, f.period || null, f.after || null]);
     const touches = (f) => f.date === date || f.after === date || (!!f.from && !!f.to && f.from <= date && date <= f.to);
-    const bk = new Set();
-    for (const r of ev(duties)) for (const f of r.findings || []) if (isProblem(f)) bk.add(fk(r.id, f));
+    const bk = memoGet(`tap|${ct}`, () => { const s = new Set(); for (const r of ev(duties)) for (const f of r.findings || []) if (isProblem(f)) s.add(fk(r.id, f)); return s; });
     const byId = new Map();
     for (const r of ev(hypo)) {
       if (FDP_IDS.has(r.id)) continue;

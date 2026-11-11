@@ -65,11 +65,11 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   de situação · `docs/05-verificacao.md`).
 
 ### 2. Acertos de código por fazer
-- **Cálculos (2026-11-11 TAP e easyJet):** mudar de cabine para piloto na MESMA companhia não conta como saída; o dia da saída
-  de uma companhia não se sabe (a linha guarda o mês: contam-se meses inteiros); um serviço em terra fora da base lê-se na hora de
-  lá para o dia de calendário da TAP (só os voos têm os instantes); na prestação complementar, quanto se desconta ao passar os 50
-  dias de baixa (n.º 3) e se as férias dão a prestação por inteiro — pergunta D27 do pacote (até lá: só como máximo).
-- **Campos por fazer (com Mobbin):** formação inicial (A-218); subsídio de idioma; exercício efetivo do VE (TAP); datas de
+- **Cálculos (à espera do advogado):** na prestação complementar, quanto se desconta ao passar os 50 dias de baixa (n.º 3) e
+  se as férias dão a prestação por inteiro — pergunta D27 (até lá: só como máximo); mudar de cabine para piloto na MESMA
+  companhia é saída ou continuidade — pergunta D28 (até lá: continuidade).
+- **Campos por fazer (com Mobbin):** o DIA da saída de uma companhia (a linha do tempo guarda só o mês: contam-se meses
+  inteiros; a coluna do dia já existe no "Na … desde" do Perfil); formação inicial (A-218); subsídio de idioma; exercício efetivo do VE (TAP); datas de
   atividade dos 9/3 e sazonais; reserva na configuração para o pós-voo da Ryanair/Hi Fly e para os números do Manual de Operações
   se os sindicatos não os derem (BLOCO 5 · 6 · 2026-11-08 Manual de Operações).
 - **Importação e formulário (o que ficou depois de 2026-11-11):** A-241 (MTG/GND) e R3 (DH marcado só nas notas) precisam de
@@ -77,7 +77,7 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   dos serviços sem apresentação); R7 (um ADTY sem fim paga o garantido sem dizer "incerto" — só em dados antigos: desde o
   bloco 4 fica "a corrigir" e não entra); manual com a saída ligeiramente diferente fica duplicado (R11, parte)
   (BLOCO 4 · 2026-11-11 noite).
-- **Simulação:** "Juntar ao dia" (Mobbin primeiro); TAP ~45 ms por cálculo (BLOCO 2).
+- **Simulação:** "Juntar ao dia" (Mobbin primeiro) (BLOCO 2).
 - **Desenho:** modo escuro da app toda (prioridade, projeto próprio) (2026-11-04 tarde); esboço `design/inicio-v6.html` por
   atualizar; Escala "na linguagem do Início" e a etiqueta de um dia com 2 serviços; Validades e formulário de evento na escala
   DS 2.0; mosaico "NOV · ESTIMADO" sem "bruto"; modelos de e-mail do Supabase com o cabeçalho antigo; cor das notificações
@@ -86,6 +86,7 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   Supabase; tabelas órfãs `rest_periods` e `user_additional_roles`; pasta `android/` desatualizada (2026-11-02).
 
 ### 3. À espera do advogado — `docs/pack-advogado.md` (Word: `docs/pack-advogado.docx`)
+- **Acrescentada a 2026-11-11 (noite), D28:** passar de cabine a piloto na mesma companhia (saída ou continuidade).
 - **Acrescentadas a 2026-11-11 (D24–D27):** o mês da entrada (÷ 30) e o ano da admissão; o ano da saída (acordo contra CT
   art. 245.º); a "média do pagamento variável" nos subsídios easyJet (que rubricas — sem isso a app só mostra a parte certa); a
   "disponibilidade" na prestação complementar dos pilotos TAP.
@@ -116,6 +117,24 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   (AlarmKit), hotel pelo Apple Maps, passkeys; Android; iPhone pequeno e grande; beta com 2–3 tripulantes no TestFlight;
   declaração de dados nas lojas; Supabase/Resend pagos e limites (e-mails por hora, DMARC).
 ---
+
+## 2026-11-11 (noite, 2) — "Sem telemóvel": os cálculos raros do grupo 2 (Fable 5.2)
+
+- **TAP, serviço em terra fora da base:** conta no dia de calendário DA BASE (cabine Cl. 7.ª, pilotos RUPT Cl. 6.ª, n.º 9), como
+  os voos. O sítio é o da última chegada (até 14 dias antes); as horas da escala são as de lá. Exemplo do teste: formação em
+  São Paulo às 22:00 de lá = 01:00 de Lisboa → o dia seguinte. Na base, sem base ou sem sítio: o dia da escala, como antes.
+  Dinheiro 166 ✓.
+- **Simulação mais rápida (era "TAP ~45 ms por cálculo"):** o que só depende da escala guardada (os avisos de recuperação e os
+  problemas dos limites TAP sem o simulado) calcula-se uma vez por abertura do formulário (`ctx.memo`), não a cada tecla. Com
+  um ano de escala: TAP de 49 para 24 ms, easyJet de 22 para 12 ms; o resultado é igual com e sem memória (teste).
+- **Cabine → piloto na mesma companhia:** não é erro de código, é dúvida jurídica (saída ou continuidade) → pergunta D28 do
+  pacote; a app continua a seguir a continuidade (a leitura que não inventa um acerto de saída).
+- **O dia da saída de uma companhia:** não se resolve sem o perguntar (a linha do tempo guarda o mês) → passou para os
+  "Campos por fazer (com Mobbin)".
+- **Plataforma, não feita sem telemóvel:** a navegação v7 muda o comportamento do `navigate` e tem de ser vista no iPhone
+  (regra 7: versões nativas só as do `expo install`); o "Secure email change" e o modelo de e-mail fazem-se no painel do
+  Supabase; apagar as tabelas órfãs é irreversível (fica o SQL para o Nuno aprovar); a pasta `android/` é local (está no
+  `.gitignore`).
 
 ## 2026-11-11 (noite) — Importação e formulário (Fable 5.2) — o Nuno: "sim"
 

@@ -421,5 +421,30 @@ for (const [who, C, ct] of [['cabine', CAB, 'cabin'], ['piloto', PIL, 'pilot']])
   eq('sítio: pelas pernas, sem rota', (issue(simulateDuty(sim('2026-03-11', F('12:00', '18:00', 2, 'LIS-FNC-LIS')), { duties: legsOnly, ...PIL }), 'placeGap') || {}).from, 'LGW');
 }
 
+// ───────────────────────────────────────────────────────────────────────────────
+// A MEMÓRIA do formulário (`ctx.memo`): o que só depende da escala guardada (a recuperação e os limites TAP SEM o simulado)
+// calcula-se uma vez por abertura, não a cada tecla. O resultado tem de ser exatamente o mesmo, com e sem ela, à 1.ª e à 2.ª.
+{
+  const yr = {};
+  for (let i = 0, d = new Date(2026, 0, 1, 12); i < 120; i++, d.setDate(d.getDate() + 1)) {
+    if (i % 6 >= 4) continue;
+    const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    yr[k] = { ...F('05:30', '14:30', 4, 'LIS-MAD-LIS-OPO-LIS'), legs: [{ dep: 'LIS', arr: 'MAD', off: '06:30', on: '08:50' }, { dep: 'MAD', arr: 'LIS', off: '09:30', on: '09:50' }, { dep: 'LIS', arr: 'OPO', off: '11:00', on: '12:00' }, { dep: 'OPO', arr: 'LIS', off: '13:30', on: '14:30' }] };
+  }
+  const strip = (r) => JSON.stringify(r, (k, v) => (k === 'ts' ? undefined : v));
+  const tap = { isTapAt: () => true, crewType: 'cabin', fleetAt: () => 'NB' };
+  for (const [name, extra] of [['easyJet', {}], ['TAP', { tap }]]) {
+    const memo = new Map();
+    const s1 = sim('2026-03-05', F('04:00', '15:00', 4, 'LIS-MAD-LIS-OPO-LIS')), s2 = sim('2026-03-05', F('12:00', '23:30', 2, 'LIS-FNC-LIS'));
+    const plain1 = strip(simulateDuty(s1, { duties: yr, ...CAB, ...extra })), plain2 = strip(simulateDuty(s2, { duties: yr, ...CAB, ...extra }));
+    eq(`memória (${name}): 1.ª conta igual`, strip(simulateDuty(s1, { duties: yr, ...CAB, ...extra, memo })) === plain1, true);
+    eq(`memória (${name}): 2.ª conta (outro serviço, a mesma memória) igual`, strip(simulateDuty(s2, { duties: yr, ...CAB, ...extra, memo })) === plain2, true);
+    eq(`memória (${name}): ficou guardada`, memo.size > 0, true);
+    // Outro dia: a recuperação de base é a desse dia (a chave leva a data).
+    const s3 = sim('2026-04-10', F('04:00', '15:00', 4, 'LIS-MAD-LIS-OPO-LIS'));
+    eq(`memória (${name}): outro dia igual`, strip(simulateDuty(s3, { duties: yr, ...CAB, ...extra, memo })) === strip(simulateDuty(s3, { duties: yr, ...CAB, ...extra })), true);
+  }
+}
+
 console.log(`\nSimulação: ${ok} ok · ${fail} falha(s)`);
 if (fail) process.exit(1);

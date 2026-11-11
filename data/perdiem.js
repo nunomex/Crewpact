@@ -5,7 +5,7 @@ import { eventCounts } from './aeEvents';
 import { isMediumHaul } from '../ae/tapLimits';
 import { ymShift, entryMonthBase, tenureEvents } from '../ae/tables';
 import { resolveCrew } from './crewHistory';
-import { legsChainMs, chainReportMs, airportOffsetMin } from './zulu';
+import { legsChainMs, chainReportMs, airportOffsetMin, airportUtcMs } from './zulu';
 
 // Índice do MÊS de uma data (pilotos easyJet: IPC desde 1-fev-2025; TAP pilotos: o degrau do VB, que o per diem ignora). Os
 // valores de cada serviço usam o MESMO índice do total do mês (auditoria L10: A-043/A-071/A-193/A-209/A-239).
@@ -172,6 +172,17 @@ export const tapCalendarDays = (duties = {}, ym, { baseAt = null } = {}) => {
   const groundDay = new Map();   // date → serviços sem voo (assistência, formação, escritório) — a Cl. 8.ª (cabine) e a 9.ª (pilotos)
   const svcs = [];
   let missing = 0, withRoute = 0;
+  // Um serviço EM TERRA não tem pernas: o sítio é o da última chegada (até 14 dias antes), e as horas da escala são as de lá. O
+  // seu dia de calendário é o da BASE nesse instante (Cl. 7.ª cabine / RUPT Cl. 6.ª, n.º 9), como nos voos: uma formação em São
+  // Paulo às 22:00 de lá é do dia seguinte em Lisboa. Na base, sem base ou sem sítio conhecido: o dia da escala.
+  let lastArr = null;   // { ap, date }
+  const arrApOf = (x) => { const lg = Array.isArray(x.legs) && x.legs.length ? x.legs[x.legs.length - 1].arr : null; const r = codesOf(x.route); return lg ? String(lg).trim().toUpperCase() : (r.length > 1 ? r[r.length - 1] : null); };
+  const groundDateOf = (s, date) => {
+    const b = baseOf(date);
+    if (!b || !lastArr || lastArr.ap === b || !s.report_time || isoAdd(lastArr.date, 14) < date) return date;
+    const ms = airportUtcMs(date, s.report_time, lastArr.ap), off = ms != null ? airportOffsetMin(b, ms) : null;
+    return off == null ? date : new Date(ms + off * 60000).toISOString().slice(0, 10);
+  };
   const dates = Object.keys(duties || {}).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d) && duties[d] && !duties[d].deleted).sort();
   for (const date of dates) {
     const d = duties[date];
@@ -184,11 +195,13 @@ export const tapCalendarDays = (duties = {}, ym, { baseAt = null } = {}) => {
     list.forEach((s, i) => {
       const kind = s.kind || 'flight';
       if (kind === 'standby_airport' || kind === 'standby_home' || kind === 'training' || kind === 'office') {
-        if (!groundDay.has(date)) groundDay.set(date, []);
-        groundDay.get(date).push(s);
+        const gd = groundDateOf(s, date);
+        if (!groundDay.has(gd)) groundDay.set(gd, []);
+        groundDay.get(gd).push(s);
         return;
       }
       if (kind !== 'flight' && kind !== 'positioning') return;
+      { const ap = arrApOf(s); if (ap) lastArr = { ap, date }; }
       let dists = kind === 'flight' ? sectorDistancesNM(s) : routeDistancesNM(s.route);
       if (kind === 'flight') {
         // Sem a distância de um setor o dia conta na mesma: a AC1 é fixa e o per diem A não depende dela (só a coluna, que fica

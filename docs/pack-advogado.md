@@ -621,6 +621,25 @@ janeiro de cada ano.
 - **Pergunta:** um mês com férias (ou com baixa até ao 10.º dia) dá direito à prestação pelos dias em falta, por inteiro ou
   em proporção?
 
+#### D28. Passar de tripulante de cabine a piloto na mesma companhia
+
+- **Situação:** um tripulante de cabine que passa a piloto na mesma companhia muda de acordo de empresa (do acordo com o
+  SNPVAC para o acordo com o SPAC) sem mudar de empregador.
+- **Texto:** os acordos pagam os subsídios «proporcionalmente nos anos de contratação e cessação» (as cláusulas da D24 e da
+  D25) e não dizem se esta mudança é uma cessação. Código do Trabalho, art. 263.º, n.º 2: o subsídio de Natal é proporcional
+  «no ano de admissão» e «no ano de cessação do contrato».
+- **As duas leituras:**
+  - Continuidade: o contrato é o mesmo, ou a antiguidade mantém-se. Não há acerto de saída, e cada subsídio paga-se por
+    inteiro, pelo acordo em vigor no mês em que é pago.
+  - Cessação e nova admissão: no mês da mudança há um acerto de saída pelo acordo da cabine (proporcionais e férias
+    vencidas), e esse ano conta como ano de admissão no acordo dos pilotos.
+- **A aplicação hoje:** segue a continuidade.
+- **Exemplo:** mudança em setembro de 2026. Subsídio de férias de junho por inteiro, pelo acordo da cabine; subsídio de Natal
+  de novembro por inteiro, pelo acordo dos pilotos; nenhum acerto em setembro.
+- **Pergunta:** qual das leituras vale em regra? Depende de ter sido assinado um contrato novo? A antiguidade conta desde a
+  entrada na companhia ou desde a mudança?
+- **Conservadora:** a continuidade (não mostra um acerto de saída que pode não existir).
+
 ### Anexo D-A — Factos que vou pedir aos sindicatos e à empresa (para contexto)
 
 Estas questões não pedem uma leitura jurídica. Pedem um documento ou uma prática.

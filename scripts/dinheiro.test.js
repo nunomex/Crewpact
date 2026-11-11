@@ -313,6 +313,19 @@ has('TAP cabine Cl. 7.ª/1 a) (+30 min)', TAPC, 'o seu término após trinta min
     eq('R12 TAP: calços 23:40 + sign-off 23:55 → 2 dias (calços + 30)', nD({ kind: 'flight', route: 'OPO-LIS', report_time: '21:40', block_on: '23:40', signOff: '23:55', legs: lgs('23:40') }), 2);
     eq('R12 TAP: sign-off antes da chegada ignora-se → 1 dia', nD({ kind: 'flight', route: 'OPO-LIS', report_time: '20:40', block_on: '22:45', signOff: '22:30', legs: [{ dep: 'OPO', arr: 'LIS', off: '21:45', on: '22:45' }] }), 1);
     eq('R12 TAP (sem base, pelo relógio): calços 23:40 + sign-off 23:55 → 2 dias', tapCalendarDays({ '2026-05-12': { kind: 'flight', route: 'OPO-LIS', report_time: '21:40', block_on: '23:40', signOff: '23:55' } }, '2026-05').flightDays.length, 2);
+    // Um serviço EM TERRA fora da base conta no dia de calendário DA BASE (cabine Cl. 7.ª: "horas locais da base"; pilotos RUPT
+    // Cl. 6.ª, n.º 9), como os voos. Voo LIS→GRU a 10-jan; formação em São Paulo a 11-jan às 22:00 de lá = 01:00 de Lisboa de
+    // 12-jan → o dia da formação é 12 (antes contava em 11, pela hora de lá).
+    const gru = {
+      '2026-01-10': { kind: 'flight', route: 'LIS-GRU', report_time: '09:00', block_on: '17:00', nightStop: true, legs: [{ dep: 'LIS', arr: 'GRU', off: '10:00', on: '17:00' }] },
+      '2026-01-11': { kind: 'training', report_time: '22:00', block_on: '23:30', trainingType: 'ground' },
+    };
+    eq('TAP em terra fora da base: o dia é o da base', tapCalendarDays(gru, '2026-01', { baseAt: 'LIS' }).groundDays.map((g) => g.date), ['2026-01-12']);
+    eq('TAP em terra NA base: o dia da escala', tapCalendarDays({ '2026-01-11': gru['2026-01-11'] }, '2026-01', { baseAt: 'LIS' }).groundDays.map((g) => g.date), ['2026-01-11']);
+    eq('TAP em terra fora, a meio do dia: o mesmo dia', tapCalendarDays({ ...gru, '2026-01-11': { ...gru['2026-01-11'], report_time: '10:00', block_on: '12:00' } }, '2026-01', { baseAt: 'LIS' }).groundDays.map((g) => g.date), ['2026-01-11']);
+    eq('TAP em terra sem base conhecida: o dia da escala', tapCalendarDays(gru, '2026-01').groundDays.map((g) => g.date), ['2026-01-11']);
+    // Mais de 14 dias depois da última chegada já não se presume que continua lá.
+    eq('TAP em terra 20 dias depois da última chegada: o dia da escala', tapCalendarDays({ '2026-01-10': gru['2026-01-10'], '2026-01-30': gru['2026-01-11'] }, '2026-01', { baseAt: 'LIS' }).groundDays.map((g) => g.date), ['2026-01-30']);
     // O valor de CADA serviço soma ao mês: quando dois serviços de datas seguidas caem no mesmo dia da base, o dia é do primeiro.
     // LIS→TLV a 1-jun (16:00 → 23:30 de Telavive) e TLV→LIS com apresentação às 00:30 de Telavive de 2-jun = 22:30 de Lisboa de
     // 1-jun, chegada às 05:00 de Lisboa de 2 → dias da base: 1 e 2 → 2 × AC1 = 300 no mês; o 1.º serviço leva o dia 1 (150), o 2.º

@@ -435,6 +435,8 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   // o PSV do seu bloco do dia, o repouso antes e depois, a recuperação, as noites seguidas, todos os períodos do 210 e, na TAP,
   // o acordo. O dia hipotético: candidato do import = o dia que ele traz · "+ serviço" = junta-se aos do dia · editar um extra
   // = fica no lugar dele · senão fica no lugar do serviço principal (os outros serviços do dia continuam a contar).
+  // A memória da Simulação: o que só depende da escala guardada calcula-se uma vez por abertura (ver simulateDuty, `memo`).
+  const simMemo = useMemo(() => new Map(), [visible, duties, dayLog]);   // eslint-disable-line react-hooks/exhaustive-deps
   const prospect = useMemo(() => {
     if (!isFlight || !isClock(form.report)) return null;   // projeção FTL assim que há apresentação válida
     const svc = {
@@ -449,7 +451,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     const mode = append ? 'append' : (editExtra != null ? { replaceExtra: editExtra } : 'replace');
     const isTapAt = (iso) => { const a = aeAt(iso); return !!a && /^tap/.test(String(a.AE_ID || '')); };
     return simulateDuty(svc, {
-      duties, dayLog, postFlightMin, isPilot, base, baseAt: homeBaseAt, cabinGapMin, splitAdminMin, mode,
+      duties, dayLog, postFlightMin, isPilot, base, baseAt: homeBaseAt, cabinGapMin, splitAdminMin, mode, memo: simMemo,
       tap: { isTapAt, crewType: isPilot ? 'pilot' : 'cabin', fleetAt: (iso) => ((crewAt(iso) || {}).fleet || crewFleet || null) },
     });
   }, [isFlight, form, dayLog, duties, postFlightMin, isPilot, special, accOn, base, candidate, append, editExtra]); // eslint-disable-line react-hooks/exhaustive-deps
