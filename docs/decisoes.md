@@ -65,6 +65,17 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   de situação · `docs/05-verificacao.md`).
 
 ### 2. Acertos de código por fazer
+- **Cálculos — pernas sobrepostas (achado no iPhone, 2026-11-11, "testar o calendário"; sessão Fable 5.2, golden primeiro):**
+  com a volta a sair antes de a ida chegar (eventos sintéticos 17:30–20:35 e 19:50–21:30), o `splitFromLegs` (`ftl/index.js`)
+  soma 24 h à pausa negativa (−45 min → 23 h 15) e dá "repartido" com PSV máximo 11:15–22:37. Pernas sobrepostas são
+  impossíveis: o motor não deve inventar a pausa, e a importação deve marcar o serviço "a corrigir" (as horas das pernas não
+  batem certo). Cuidado: a pausa que vira a meia-noite (chega 23:50, sai 00:30) é real e tem de continuar a dar 40 min.
+- **Importação — a mudança de uma perna do meio não se deteta (achado no iPhone, 2026-11-11; sessão Fable 5.2, golden
+  `test:diff` primeiro):** o `diffDuty` (`data/rosterDiff.js`) só compara tipo, rota, report, 1.ª partida, última chegada e
+  setores (`DIFF_FIELDS`). Mudar a chegada da 1.ª perna de um serviço de 2 setores dá "igual" e a escala guardada fica
+  velha sem aviso — e as pernas mudam o tempo de voo (ORO.FTL.210, 100 h/28 dias) e o repartido (CS FTL.1.220). Comparar
+  também as horas de cada perna (`legs` off/on) e o tempo de voo, sem partir o `refresh` (mesmos acontecimentos agrupados
+  de outra maneira = não é mudança).
 - **Cálculos (à espera do advogado):** na prestação complementar, quanto se desconta ao passar os 50 dias de baixa (n.º 3) e
   se as férias dão a prestação por inteiro — pergunta D27 (até lá: só como máximo); mudar de cabine para piloto na MESMA
   companhia é saída ou continuidade — pergunta D28 (até lá: continuidade).
@@ -79,8 +90,8 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   (BLOCO 4 · 2026-11-11 noite).
 - **Simulação:** "Juntar ao dia" (Mobbin primeiro) (BLOCO 2).
 - **Desenho — Início "cartões de cor" (2026-11-11): CONSTRUÍDO e meio visto no iPhone** (noite, 6: configuração, folga,
-  véspera, hoje, fecho, férias, baixa, documento ✅). Falta: em voo, standby, formação, disrupção, pós-voo e pernoita (precisam
-  de um serviço hoje → "testar o calendário"), letra grande, VoiceOver e iPhone pequeno; afinar a altura das linhas do número
+  véspera, hoje, fecho, férias, baixa, documento ✅; noite, 7: em voo, entre setores, pós-voo, pernoita, standby, formação,
+  VoiceOver em português ✅). Falta: disrupção (atraso real), aterrado, hora Zulu, iPhone pequeno; afinar a altura das linhas do número
   (`GIANT_LINE`); o movimento (skill `animacoes`); depois levar a linguagem aos outros ecrãs, janelas e menus (um de cada
   vez, com Mobbin) (2026-11-11 noite, 5).
 - **Desenho:** modo escuro da app toda (prioridade, projeto próprio) (2026-11-04 tarde); Escala "na linguagem do Início" e a etiqueta de um dia com 2 serviços; Validades e formulário de evento na escala
@@ -125,6 +136,33 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   (AlarmKit), hotel pelo Apple Maps, passkeys; Android; iPhone pequeno e grande; beta com 2–3 tripulantes no TestFlight;
   declaração de dados nas lojas; Supabase/Resend pagos e limites (e-mails por hora, DMARC).
 ---
+
+## 2026-11-11 (noite, 7) — "Testar o calendário": os estados do Início com serviço hoje (Opus 5.5) — eventos SINTÉTICOS
+
+Calendário "CrewPact Teste" com eventos sintéticos (EZY7841/7842 LIS-FNC-LIS, ADTY LIS, SEP TRAINING LIS), a mudar as horas
+entre rondas. **Visto no iPhone ✅ (o Nuno):** antes do report · em voo (com e sem report) · entre setores · pós-voo · pernoita
+(escura, hotel guardado, tempo de amanhã) · standby no aeroporto · formação · a linha do mês quando há um só cartão · VoiceOver
+em português no Início · letra grande. As contas conferidas no ecrã: PSV, limites (report + máximo), margens, fim de serviço (+30 min), repouso
+mínimo na base (12 h) e fora (10 h, ORO.FTL.235), per-diem, pernoita e standby (2 setores nominais), formação (3), o mês, e as
+9 h dos 7 dias (5 h 25 de hoje + 3 h 30 do dia 5 = 8 h 55).
+
+**Corrigido nesta sessão:**
+- **Em voo sem report:** o cartão ficava só com o título → partida — duração — última chegada.
+- **Em voo, a linha pequena** (Nuno: "o tripulante quer ver"): "próximo setor às 19:50 · última chegada 21:35" (a margem era até
+  à última chegada, mas a hora não aparecia); sem uma 2.ª fila de horas. **O limite depois da meia-noite** diz "limite · amanhã".
+- **Nunca vazio** (Nuno: "sim"): num estado com serviço, se a folha fica com um só cartão, junta-se a linha do mês. A baixa fica
+  de fora. Golden: 226 ✓.
+- **VoiceOver lia português com a voz inglesa:** na Expo Go a app corre dentro da Expo Go (só inglês) e o projeto não declarava o
+  português. `app.json` → `CFBundleDevelopmentRegion` pt-PT + `CFBundleLocalizations` (pt-PT, en) — vale no dev build e na
+  App Store; e `accessibilityLanguage` pela língua da app no Início, nos cartões, na barra de abas e no sino (vale já na Expo Go
+  e para quem escolhe inglês na app).
+
+**Achados que ficam para uma sessão Fable 5.2 (golden primeiro), escritos na lista do que falta:** pernas sobrepostas inventam
+uma pausa de 23 h (`splitFromLegs`); a mudança de uma perna do meio não se deteta na sincronização (`diffDuty`).
+
+**Falta:** disrupção (precisa de um atraso real no voo ao vivo) · aterrado antes do sign-off · hora Zulu (verão ou fora de Lisboa)
+· iPhone pequeno · os outros ecrãs com `accessibilityLanguage` (na Expo Go ainda falam com a voz inglesa) · no dev build, confirmar
+o VoiceOver em português na app toda. Os eventos sintéticos podem ficar no "CrewPact Teste" (ou apagar).
 
 ## 2026-11-11 (noite, 6) — "Testar os estados" do Início 3.0 no iPhone (Opus 5.5) — 1.ª ronda
 

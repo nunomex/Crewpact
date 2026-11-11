@@ -26,6 +26,7 @@ export default function NotificationsBell({ variant = 'bell', night = false }) {
   const navigation = useNavigation();
   const [open, setOpen] = useState(false);
   const l = (pt, en) => (lang === 'en' ? en : pt);
+  const AL = l('pt-PT', 'en-GB');   // a língua do VoiceOver = a da app
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
 
   // Resumo do MÊS ANTERIOR (evento "mês fechado") — só com atividade de voo; a categoria
@@ -88,7 +89,7 @@ export default function NotificationsBell({ variant = 'bell', night = false }) {
       {/* O leitor de ecrã DIZ quantas há por ler (o ponto visual era mudo p/ VoiceOver/TalkBack). */}
       {variant === 'round' ? (
         <TouchableOpacity style={[s.round, { backgroundColor: (night ? CARD.night : CARD.day).round }]} onPress={() => setOpen(true)} activeOpacity={0.8}
-          accessibilityRole="button" accessibilityLabel={`${t('home.notifsAria', lang)}${unread > 0 ? ` · ${unread} ${l('por ler', 'unread')}` : ''}`}>
+          accessibilityRole="button" accessibilityLanguage={AL} accessibilityLabel={`${t('home.notifsAria', lang)}${unread > 0 ? ` · ${unread} ${l('por ler', 'unread')}` : ''}`}>
           <Icon name="bell" size={20} color={(night ? CARD.night : CARD.day).ink} />
           {unread > 0 ? (
             <View style={[s.roundBadge, { backgroundColor: (night ? CARD.night : CARD.day).warn }]}>
@@ -98,7 +99,7 @@ export default function NotificationsBell({ variant = 'bell', night = false }) {
         </TouchableOpacity>
       ) : variant === 'pill' ? (
         <TouchableOpacity style={[s.pill, night && s.pillNight]} onPress={() => setOpen(true)} activeOpacity={0.8} hitSlop={8}
-          accessibilityRole="button" accessibilityLabel={`${t('home.notifsAria', lang)} · ${unread} ${l('por ler', 'unread')}`}>
+          accessibilityRole="button" accessibilityLanguage={AL} accessibilityLabel={`${t('home.notifsAria', lang)} · ${unread} ${l('por ler', 'unread')}`}>
           <View style={s.pillDot} />
           <Text style={[s.pillTxt, night && s.pillTxtNight]} numberOfLines={1}>
             {unread} {unread === 1 ? l('novidade', 'update') : l('novidades', 'updates')}
@@ -106,7 +107,7 @@ export default function NotificationsBell({ variant = 'bell', night = false }) {
         </TouchableOpacity>
       ) : (
       <TouchableOpacity style={s.hbtn} onPress={() => setOpen(true)} activeOpacity={0.8} hitSlop={8} accessibilityRole="button"
-        accessibilityLabel={`${t('home.notifsAria', lang)}${unread > 0 ? ` · ${unread} ${l('por ler', 'unread')}` : ''}`}>
+        accessibilityLanguage={AL} accessibilityLabel={`${t('home.notifsAria', lang)}${unread > 0 ? ` · ${unread} ${l('por ler', 'unread')}` : ''}`}>
         <Icon name="bell" size={18} color={PELE.ink} />
         {unread > 0 && <View style={s.dot} />}
       </TouchableOpacity>

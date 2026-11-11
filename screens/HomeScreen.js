@@ -854,6 +854,8 @@ export default function HomeScreen({ navigation }) {
     nowPct: dl ? dl.nowPct : null, marginMin: dl ? dl.marginMin : null,
     status: flightStatus ? (((fsDep && fsDep.delayMin) || 0) >= 15 ? 'late' : 'on') : null, delayMin: (fsDep && fsDep.delayMin) || 0,
     psvUntil,
+    // A partida do setor seguinte ao ativo (o "próximo setor às 19:50" do cartão em voo); null no último setor.
+    nextDep: activeSector && activeSector.idx < sectorLegs.length - 1 ? (sectorLegs[activeSector.idx + 1].off || null) : null,
   };
   // A disrupção: a hora nova, a antiga, o atraso, os limites com o atraso (liveFdpVerdict, ORO.FTL.205).
   const disF = (homeState === 'disrupcao' && flight) ? (() => {

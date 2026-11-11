@@ -28,7 +28,7 @@ const CONTENT_H = 49;   // altura útil = iOS NATIVO (a faixa da barra mantém-s
 const CAP = 56;         // altura da cápsula e diâmetro do ＋ (esboço: 56)
 
 // Um item da cápsula — a pílula clara marca a ativa; o ícone dá um pop curto quando ganha o foco.
-function TabItem({ focused, lbl, ic, badge, C, night, onPress, reduce }) {
+function TabItem({ focused, lbl, ic, badge, C, night, onPress, reduce, AL }) {
   const pop = useRef(new Animated.Value(1)).current;
   const first = useRef(true);
   useEffect(() => {
@@ -41,7 +41,7 @@ function TabItem({ focused, lbl, ic, badge, C, night, onPress, reduce }) {
   const fg = focused ? C.ink : C.tabSub;
   return (
     <TouchableOpacity style={[s.item, focused ? [{ backgroundColor: C.tabOn }, night ? null : s.itemOnShadow] : null]} onPress={onPress} activeOpacity={0.65}
-      accessibilityRole="tab" accessibilityState={{ selected: focused }} accessibilityLabel={lbl}>
+      accessibilityRole="tab" accessibilityState={{ selected: focused }} accessibilityLanguage={AL} accessibilityLabel={lbl}>
       <Animated.View style={{ transform: [{ scale: pop }] }}>
         <Icon name={ic} size={22} color={fg} />
         {badge ? <View style={[s.badge, { borderColor: C.neutral }]} /> : null}
@@ -56,6 +56,7 @@ export default function TabBar({ state, navigation }) {
   const { lang, homeNight, rosterChanges, openSimulation, openExtra, ae } = useContext(AppContext);
   const reduce = useReduceMotion();
   const l = (pt, en) => (lang === 'en' ? en : pt);
+  const AL = l('pt-PT', 'en-GB');   // a língua do VoiceOver = a da app (na Expo Go o iOS usava a voz inglesa)
 
   // O noturno é um estado do INÍCIO (véspera/pernoita) — as outras abas são sempre diurnas.
   const night = !!homeNight && state.routes[state.index]?.name === 'Início';
@@ -115,7 +116,7 @@ export default function TabBar({ state, navigation }) {
   const renderItem = (route, i) => (
     <TabItem key={route.key} focused={state.index === i}
       lbl={lblFor(route.name)} ic={ICON[route.name]}
-      badge={route.name === 'Escala' && escPending} C={C} night={night} reduce={reduce}
+      badge={route.name === 'Escala' && escPending} C={C} night={night} reduce={reduce} AL={AL}
       onPress={() => go(route, state.index === i)} />
   );
 
@@ -128,7 +129,7 @@ export default function TabBar({ state, navigation }) {
           </View>
           <TouchableOpacity onPress={openDial} activeOpacity={1}
             onPressIn={() => !reduce && pressTo(0.92)} onPressOut={() => !reduce && pressTo(1)} hitSlop={6}
-            accessibilityRole="button" accessibilityLabel={l('Criar', 'Create')} accessibilityState={{ expanded: open }}>
+            accessibilityRole="button" accessibilityLanguage={AL} accessibilityLabel={l('Criar', 'Create')} accessibilityState={{ expanded: open }}>
             <Animated.View style={[s.plus, { backgroundColor: C.ink }, { transform: [{ scale: press }] }]}>
               <Icon name="plus" size={22} color={C.sheet} />
             </Animated.View>
@@ -143,13 +144,13 @@ export default function TabBar({ state, navigation }) {
            ancorado ao fundo (bottom sem top mede bem). Ver PeleSheet para o mesmo bug. */}
        <View style={s.dialRoot}>
         <Animated.View style={[s.scrim, { opacity: anim }]}>
-          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => closeDial()} accessibilityLabel={l('Fechar', 'Close')} />
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => closeDial()} accessibilityLanguage={AL} accessibilityLabel={l('Fechar', 'Close')} />
         </Animated.View>
         <View pointerEvents="box-none" style={[s.dial, { bottom: capBottom + CAP + SPACE.md }]}>
           {ACTIONS.map((a, i) => ({ ...a, i })).reverse().map((a) => (
             <Animated.View key={a.key} style={[s.pillRow, itemAnim(a.i)]}>
               <TouchableOpacity style={[s.pill, { backgroundColor: P.paper, borderColor: P.line }]} activeOpacity={0.85}
-                onPress={() => fire(a.run)} accessibilityRole="button" accessibilityLabel={a.label}>
+                onPress={() => fire(a.run)} accessibilityRole="button" accessibilityLanguage={AL} accessibilityLabel={a.label}>
                 <View style={[s.pillIc, night ? s.pillIcNight : null]}><Icon name={a.icon} size={16} color={BRAND.onDark} /></View>
                 <Text numberOfLines={1} style={[s.pillTxt, { color: P.ink }]}>{a.label}</Text>
               </TouchableOpacity>
@@ -159,7 +160,7 @@ export default function TabBar({ state, navigation }) {
         {/* clone do ＋ no MESMO sítio (geometria partilhada) — roda para × com a abertura */}
         <Animated.View pointerEvents="box-none" style={[s.xWrap, { bottom: capBottom, opacity: anim }]}>
           <TouchableOpacity onPress={() => closeDial()} activeOpacity={0.85}
-            accessibilityRole="button" accessibilityLabel={l('Fechar menu', 'Close menu')}>
+            accessibilityRole="button" accessibilityLanguage={AL} accessibilityLabel={l('Fechar menu', 'Close menu')}>
             <View style={[s.plus, { backgroundColor: C.ink }]}>
               <Animated.View style={{ transform: [{ rotate: xRotate }] }}>
                 <Icon name="plus" size={22} color={C.sheet} />

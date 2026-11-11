@@ -185,10 +185,14 @@ export function homeCards(H = {}) {
     const line = live.nowPct != null;
     const kindLbl = live.legTotal > 1 ? l(`Dia de serviço · setor ${live.legIdx + 1} de ${live.legTotal}`, `Duty day · sector ${live.legIdx + 1} of ${live.legTotal}`) : l('Dia de serviço', 'Duty day');
     return { t: 'card', id: 'day', color: 'sand', kind: kindLbl, title: titleOf(d),
-      sub: live.status === 'late' ? l(`atraso +${live.delayMin} min`, `delay +${live.delayMin} min`) : live.status === 'on' ? l('a horas', 'on time') : null,
+      // A linha pequena diz QUANDO o dia continua e acaba (Nuno, iPhone 2026-11-11: a margem era até à última chegada, mas a hora
+      // não aparecia): o estado do voo ao vivo · o próximo setor · a última chegada. Sem uma 2.ª fila de horas (o selo é um só).
+      sub: [live.status === 'late' ? l(`atraso +${live.delayMin} min`, `delay +${live.delayMin} min`) : live.status === 'on' ? l('a horas', 'on time') : null,
+        live.nextDep ? l(`próximo setor às ${live.nextDep}`, `next sector at ${live.nextDep}`) : null,
+        d.lastArr && d.lastArr !== (H.phase === 'duty' ? live.depHm : live.arrHm) ? l(`última chegada ${d.lastArr}`, `last arrival ${d.lastArr}`) : null].filter(Boolean).join(' · ') || null,
       gain: null, a: d.report ? { v: d.report, l: 'report' } : null,
       dur: ps.running ? `PSV ${noLead(ps.running)}${ps.max ? ` ${l('de', 'of')} ${noLead(ps.max)}` : ''}` : null,
-      b: line && ps.latest ? { v: ps.latest, l: l('limite', 'limit') } : null,
+      b: line && ps.latest ? { v: ps.latest, l: ps.latestNextDay ? l('limite · amanhã', 'limit · tomorrow') : l('limite', 'limit') } : null,   // o limite depois da meia-noite diz-se (iPhone, 2026-11-11)
       pct: line ? Math.max(0, Math.min(100, Math.round(live.nowPct * 100))) : null,
       corner: d.shareable ? 'share' : 'chev', action: null, open: openDay(d) };
   };
@@ -463,6 +467,11 @@ export function homeCards(H = {}) {
         card.corner = 'chev'; card.action = completar(hero);
       } else if (!hero.report) {
         card.sub = [card.sub, l('sem hora de report — PSV não calculado', 'no report time — FDP not calculated')].filter(Boolean).join(' · ');
+        // Sem report não há linha do PSV, mas o dia tem partida e última chegada (iPhone, 2026-11-11: o cartão ficava só com o título).
+        if (!card.a && hero.dep) card.a = { v: hero.dep, l: l('partida', 'departure') };
+        if (!card.b && hero.lastArr && hero.lastArr !== big) card.b = { v: hero.lastArr, l: l('última chegada', 'last arrival') };
+        if (!card.dur && card.a && card.b) card.dur = F.dur(span(card.a.v, card.b.v));
+        if (card.b && card.b.v === hero.lastArr) card.sub = card.sub.split(' · ').filter((x) => !x.startsWith(l('última chegada', 'last arrival'))).join(' · ') || null;   // a última chegada já está na fila: nada se repete
       }
       const f2 = unc ? fact(l('Incerto', 'Uncertain'), l('PSV até', 'FDP until'))
         : marginFact() || (!card.b && psvOf(ps) ? fact(psvOf(ps), l('PSV até', 'FDP until')) : (!hero.report ? fact(l('Sem report', 'No report'), l('PSV não calculado', 'FDP not calculated')) : null));
@@ -475,6 +484,11 @@ export function homeCards(H = {}) {
     cards = [...wFirst, ...wLast];
   }
 
+  // NUNCA VAZIO (Nuno, iPhone 2026-11-11: "metade de baixo vazia"; a regra do v6): num estado com serviço, se a folha fica
+  // com um só cartão (sem nada a seguir), junta-se a linha do dinheiro do mês. A baixa fica de fora (a app baixa a voz).
+  if (['hoje', 'vespera', 'disrupcao', 'pernoita', 'posvoo'].includes(state) && cards.filter(Boolean).length === 1) {
+    const mc = monthCard(); if (mc) cards = [...cards, mc];
+  }
   const liveState = ['hoje', 'vespera', 'disrupcao', 'pernoita'].includes(state);
   return {
     state,

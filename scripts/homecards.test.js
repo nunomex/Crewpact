@@ -246,6 +246,8 @@ eq('aterrado · topo', [ater.top.what, ater.top.facts[0]], ['Aterraste às', { v
 // (8) Sem hora de report, depois da partida: di-lo.
 const semRep = homeCards({ ...S.emVoo, warns: [], phase: 'duty', hero: { ...S.emVoo.hero, report: null, psv: {} }, live: { ...S.emVoo.live, nowPct: null, marginMin: null, depHm: '09:00', minsToDep: 20, status: null } });
 eq('sem report · facto e cartão', [semRep.top.facts[1], semRep.cards[0].sub], [{ v: 'Sem report', l: 'PSV não calculado', tone: null }, 'sem hora de report — PSV não calculado']);
+const semRepAr = homeCards({ ...S.emVoo, warns: [], phase: 'air', hero: { ...S.emVoo.hero, report: null, psv: {}, dep: '15:56', lastArr: '21:35' }, live: { ...S.emVoo.live, nowPct: null, marginMin: null, arrHm: '17:15', minsToArr: 59, status: null } });
+eq('sem report em voo · o cartão mostra partida e última chegada (iPhone)', [semRepAr.cards[0].a, semRepAr.cards[0].dur, semRepAr.cards[0].b], [{ v: '15:56', l: 'partida' }, '5 h 39', { v: '21:35', l: 'última chegada' }]);
 // (9) O repouso que só acaba daqui a 2 dias (noites locais da rotação, CS FTL.1.235(b)(3)) diz o dia.
 const rot = homeCards({ ...S.posvoo, rest: { ...S.posvoo.rest, until: '06:00', untilIso: '2026-11-15', minMin: 2380 } });
 eq('repouso de 2 dias · o dia junto da hora', rot.cards[0].b, { v: '06:00', l: 'cumprido · dom 15' });
@@ -267,6 +269,18 @@ for (const st of ['hoje', 'vespera', 'disrupcao', 'doenca', 'posvoo', 'pernoita'
   const r = homeCards({ state: st, todayISO: D11, next: null, sick: { day: 0 }, rest: { hotel: null }, empty: { rosterOk: true, lastRead: '12:40' } });
   eq(`${st} sem serviço · mostra a folga, nunca "—"`, [r.state, r.top.giant.l1, r.top.what], ['folga', 'Livre', 'Sem serviços na escala']);
 }
+
+// ═══ Em voo, a linha pequena: o próximo setor e a última chegada (Nuno, iPhone 2026-11-11) · o limite de amanhã diz-se ═══
+const voo1 = homeCards({ ...S.emVoo, warns: [], hero: { ...S.emVoo.hero, stations: ['LIS', 'FNC', 'LIS'], lastArr: '21:35', psv: { max: '12:00', latest: '03:00', latestNextDay: true, running: '01:18' } },
+  live: { ...S.emVoo.live, legIdx: 0, legTotal: 2, legArr: 'FNC', arrHm: '17:15', status: null, nextDep: '19:50' } });
+eq('em voo · próximo setor e última chegada', voo1.cards[0].sub, 'próximo setor às 19:50 · última chegada 21:35');
+eq('em voo · o limite depois da meia-noite diz "amanhã"', voo1.cards[0].b, { v: '03:00', l: 'limite · amanhã' });
+
+// ═══ NUNCA VAZIO (Nuno, iPhone 2026-11-11): um só cartão num estado com serviço → a linha do mês ═══
+const so1 = homeCards({ ...S.emVoo, warns: [], next: null, hero: { ...S.emVoo.hero, nightStop: null }, month: MONTH });
+eq('em voo sem nada a seguir · junta o mês', so1.cards.map((c) => [c.t, c.id]), [['card', 'day'], ['slim', 'month']]);
+eq('em voo com pernoita · não junta o mês', homeCards({ ...S.emVoo, warns: [], month: MONTH }).cards.map((c) => c.id), ['day', 'night']);
+eq('baixa · nunca junta o mês (a app baixa a voz)', homeCards({ ...S.baixa, next: null, month: MONTH }).cards.map((c) => c.id), ['pay']);
 
 // ═══ AS REGRAS, em todos os estados ═══
 const F = fmt('pt');

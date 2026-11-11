@@ -8,7 +8,15 @@
     "icon": "./assets/icon.png",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.crewpact.app"
+      "bundleIdentifier": "com.crewpact.app",
+      "infoPlist": {
+        "CFBundleDevelopmentRegion": "pt-PT",
+        "CFBundleLocalizations": [
+          "pt-PT",
+          "en"
+        ],
+        "CFBundleAllowMixedLocalizations": true
+      }
     },
     "android": {
       "adaptiveIcon": {

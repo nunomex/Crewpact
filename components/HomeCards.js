@@ -20,7 +20,9 @@ export const pillWidth = (text, dot = false) => Math.ceil(2 * SPACE.lg + 3 + tex
 // letras no v6) e as duas linhas aproximadas por margem negativa até 0,9 em de base a base, como no esboço.
 export const GIANT_LINE = { lh: 1.1, lead: 0.9, trim: 0.1 };
 
-const MAX_SCALE = 1.3;   // letra grande: os cartões crescem até 130 % (a folha desliza); o topo fica fixo
+const MAX_SCALE = 1.3;
+// A língua do VoiceOver = a língua escolhida na app (na Expo Go o iOS usava a voz inglesa da Expo Go para ler português — iPhone, 2026-11-11).
+const a11yLang = (l) => (l ? l('pt-PT', 'en-GB') : 'pt-PT');   // letra grande: os cartões crescem até 130 % (a folha desliza); o topo fica fixo
 
 function toneOf(C, color) {
   if (color === 'dark') return { bg: C.ink, fg: C.sheet, sub: C.darkSub, kind: C.darkSub, go: C.darkGo };
@@ -38,6 +40,7 @@ function GainChip({ text }) {
 // `rightW` = a largura do que está à direita (o sino, 44; ou a pílula "Exemplo · sair").
 export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l }) {
   const { width: winW } = useWindowDimensions();
+  const AL = a11yLang(l);
   if (!top) return null;
   // As pílulas NUNCA se cortam ("Novem…" no iPhone, 2026-11-11): se as três não cabem numa linha, sai a de contorno
   // (a secundária). Medido com as larguras da Hanken, como o número gigante.
@@ -55,13 +58,13 @@ export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l }) {
   return (
     <View style={s.top}>
       <View style={s.pills}>
-        <View style={[s.pill, { backgroundColor: C.ink, borderColor: C.ink }]} accessible accessibilityLabel={top.pill.text}>
+        <View style={[s.pill, { backgroundColor: C.ink, borderColor: C.ink }]} accessible accessibilityLanguage={AL} accessibilityLabel={top.pill.text}>
           {top.pill.live ? <View style={[s.pillDot, { backgroundColor: BRAND.signal }]} /> : null}
           <Text style={[TXT3.pill, { color: C.desk }]} numberOfLines={1} allowFontScaling={false}>{top.pill.text}</Text>
         </View>
         {showP2 ? (
           <P2 style={[s.pill, s.pillOut, { borderColor: C.ink }]} {...(top.pill2.iso ? { onPress: () => onPill2(top.pill2.iso), activeOpacity: 0.7, hitSlop: { top: 3, bottom: 3, left: 2, right: 2 },
-            accessibilityRole: 'button', accessibilityLabel: top.pill2.text, accessibilityHint: l('Abre este dia na Escala', 'Opens this day in the Roster') } : { accessible: true, accessibilityLabel: top.pill2.text })}>
+            accessibilityRole: 'button', accessibilityLanguage: AL, accessibilityLabel: top.pill2.text, accessibilityHint: l('Abre este dia na Escala', 'Opens this day in the Roster') } : { accessible: true, accessibilityLanguage: AL, accessibilityLabel: top.pill2.text })}>
             <Text style={[TXT3.pill, { color: C.ink }]} numberOfLines={1} allowFontScaling={false}>{top.pill2.text}</Text>
           </P2>
         ) : null}
@@ -69,7 +72,7 @@ export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l }) {
         {right}
       </View>
       <Text style={[TXT3.what, { color: C.soft }]} numberOfLines={1} maxFontSizeMultiplier={1.15}>{top.what}</Text>
-      <View style={s.hero} accessible accessibilityLabel={heroA11y}>
+      <View style={s.hero} accessible accessibilityLanguage={AL} accessibilityLabel={heroA11y}>
         <View style={{ marginTop: -Math.round(size * GIANT_LINE.trim), marginBottom: -Math.round(size * GIANT_LINE.trim) }}>
           <View style={s.l1Row}>
             <Text style={giantStyle} numberOfLines={1} allowFontScaling={false}>{g.l1}</Text>
@@ -96,12 +99,13 @@ export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l }) {
 
 // ── O CARTÃO GRANDE ──
 function BigCard({ c, C, onOpen, l }) {
+  const AL = a11yLang(l);
   const T = toneOf(C, c.color);
   const a11y = [c.kind, c.title, c.sub, c.gain, c.a && `${c.a.l} ${c.a.v}`, c.dur, c.b && `${c.b.l} ${c.b.v}`].filter(Boolean).join('. ');
   const Main = c.open ? TouchableOpacity : View;
   const mainProps = c.open
-    ? { activeOpacity: 0.85, onPress: () => onOpen(c.open), accessibilityRole: 'button', accessibilityLabel: a11y, accessibilityHint: l('Abre o detalhe', 'Opens the detail') }
-    : { accessible: true, accessibilityLabel: a11y };
+    ? { activeOpacity: 0.85, onPress: () => onOpen(c.open), accessibilityRole: 'button', accessibilityLanguage: AL, accessibilityLabel: a11y, accessibilityHint: l('Abre o detalhe', 'Opens the detail') }
+    : { accessible: true, accessibilityLanguage: AL, accessibilityLabel: a11y };
   const share = c.corner === 'share';
   return (
     <View style={[s.cd, { backgroundColor: T.bg }]}>
@@ -143,7 +147,7 @@ function BigCard({ c, C, onOpen, l }) {
       {/* O canto: partilhar é um botão próprio (36 à vista, 44 de toque); a seta é só sinal — o cartão inteiro abre o detalhe. */}
       {share ? (
         <TouchableOpacity style={[s.go, { backgroundColor: T.go }]} onPress={() => onOpen({ to: c.id === 'rest' ? 'shareClose' : 'share' })} hitSlop={4} activeOpacity={0.7}
-          accessibilityRole="button" accessibilityLabel={l('Partilhar o voo', 'Share the flight')}>
+          accessibilityRole="button" accessibilityLanguage={AL} accessibilityLabel={l('Partilhar o voo', 'Share the flight')}>
           <Icon name="share" size={16} color={T.fg} />
         </TouchableOpacity>
       ) : c.open ? (
@@ -152,7 +156,7 @@ function BigCard({ c, C, onOpen, l }) {
         </View>
       ) : null}
       {c.action ? (
-        <TouchableOpacity style={[s.act, { backgroundColor: CARD.act }]} onPress={() => onOpen(c.action.open)} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel={c.action.label}>
+        <TouchableOpacity style={[s.act, { backgroundColor: CARD.act }]} onPress={() => onOpen(c.action.open)} activeOpacity={0.8} accessibilityRole="button" accessibilityLanguage={AL} accessibilityLabel={c.action.label}>
           <Icon name={c.action.icon} size={16} color={CARD.onCard} />
           <Text style={[TXT3.act, { color: CARD.onCard }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.action.label}</Text>
         </TouchableOpacity>
@@ -162,11 +166,12 @@ function BigCard({ c, C, onOpen, l }) {
 }
 
 // ── A LINHA FINA ──
-function Slim({ c, C, onOpen }) {
+function Slim({ c, C, onOpen, l }) {
+  const AL = a11yLang(l);
   const T = toneOf(C, c.dark ? 'dark' : c.color);
   const a11y = [c.title, c.sub, c.value].filter(Boolean).join('. ');
   const Box = c.open ? TouchableOpacity : View;
-  const props = c.open ? { activeOpacity: 0.85, onPress: () => onOpen(c.open), accessibilityRole: 'button', accessibilityLabel: a11y } : { accessible: true, accessibilityLabel: a11y };
+  const props = c.open ? { activeOpacity: 0.85, onPress: () => onOpen(c.open), accessibilityRole: 'button', accessibilityLanguage: AL, accessibilityLabel: a11y } : { accessible: true, accessibilityLanguage: AL, accessibilityLabel: a11y };
   return (
     <Box style={[s.slim, { backgroundColor: T.bg }]} {...props}>
       <View style={s.slimT}>
@@ -180,18 +185,19 @@ function Slim({ c, C, onOpen }) {
 }
 
 // ── LINHAS (as parcelas do mês · os três passos) ──
-function Lines({ c, C, onOpen }) {
+function Lines({ c, C, onOpen, l }) {
+  const AL = a11yLang(l);
   const T = toneOf(C, c.color);
   // Com uma ligação ("Completar", "Como é calculado?") ou linhas que abrem, o cartão NÃO é um botão inteiro: um botão por
   // cima de outro esconde o de dentro ao VoiceOver (revisão independente, 2026-11-11). A ligação é um botão próprio.
   const whole = !!c.open && !c.link && !(c.rows || []).some((r) => r.open);
   const Box = whole ? TouchableOpacity : View;
   const a11y = [c.kind, ...(c.rows || []).map((r) => `${r.k}${r.v ? `: ${r.v}` : ''}`), ...(c.foot || []).map((r) => `${r.k}: ${r.v}`), c.note].filter(Boolean).join('. ');
-  const props = whole ? { activeOpacity: 0.85, onPress: () => onOpen(c.open), accessibilityRole: 'button', accessibilityLabel: a11y } : {};
+  const props = whole ? { activeOpacity: 0.85, onPress: () => onOpen(c.open), accessibilityRole: 'button', accessibilityLanguage: AL, accessibilityLabel: a11y } : {};
   const row = (r) => {
     const R = r.open ? TouchableOpacity : View;
     return (
-      <R key={r.k} style={s.lineRow} {...(r.open ? { onPress: () => onOpen(r.open), hitSlop: { top: 12, bottom: 12 }, accessibilityRole: 'button', accessibilityLabel: `${r.k}: ${r.v}` } : {})}>
+      <R key={r.k} style={s.lineRow} {...(r.open ? { onPress: () => onOpen(r.open), hitSlop: { top: 12, bottom: 12 }, accessibilityRole: 'button', accessibilityLanguage: AL, accessibilityLabel: `${r.k}: ${r.v}` } : {})}>
         <Text style={[TXT3.line, s.lineK, { color: T.fg }]} numberOfLines={2} maxFontSizeMultiplier={MAX_SCALE}>{r.k}</Text>
         {r.v ? <Text style={[TXT3.lineVal, { color: T.fg }, r.open ? s.underline : null]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{r.v}</Text> : null}
       </R>
@@ -200,13 +206,13 @@ function Lines({ c, C, onOpen }) {
   return (
     <Box style={[s.cd, s.cdMain, { backgroundColor: T.bg }]} {...props}>
       <Text style={[TXT3.kind, { color: T.kind }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.kind}</Text>
-      <View style={s.lines} accessible={!whole && !(c.rows || []).some((r) => r.open)} accessibilityLabel={!whole ? [c.kind, ...(c.rows || []).map((r) => `${r.k}${r.v ? `: ${r.v}` : ''}`)].join('. ') : undefined}>{(c.rows || []).map(row)}</View>
+      <View style={s.lines} accessible={!whole && !(c.rows || []).some((r) => r.open)} accessibilityLanguage={AL} accessibilityLabel={!whole ? [c.kind, ...(c.rows || []).map((r) => `${r.k}${r.v ? `: ${r.v}` : ''}`)].join('. ') : undefined}>{(c.rows || []).map(row)}</View>
       {c.foot ? <View style={[s.lines, s.foot, { borderTopColor: CARD.rule }]}>{c.foot.map(row)}</View> : null}
       {(c.note || c.link) ? (
         <View style={s.noteRow}>
           {c.note ? <Text style={[TXT3.cardSub, { color: T.sub }]} maxFontSizeMultiplier={MAX_SCALE}>{c.note}</Text> : null}
           {c.link ? (
-            <TouchableOpacity onPress={() => onOpen(c.link.open)} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }} accessibilityRole="link" accessibilityLabel={c.link.label}>
+            <TouchableOpacity onPress={() => onOpen(c.link.open)} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }} accessibilityRole="link" accessibilityLanguage={AL} accessibilityLabel={c.link.label}>
               <Text style={[TXT3.cardSub, s.underline, { color: T.fg }]} maxFontSizeMultiplier={MAX_SCALE}>{c.link.label}</Text>
             </TouchableOpacity>
           ) : null}
@@ -217,10 +223,11 @@ function Lines({ c, C, onOpen }) {
 }
 
 // ── TEXTO (o que o acordo garante · quando aparecem os serviços) ──
-function TextCard({ c, C, onOpen }) {
+function TextCard({ c, C, onOpen, l }) {
+  const AL = a11yLang(l);
   const T = toneOf(C, c.color);
   const Box = c.open ? TouchableOpacity : View;
-  const props = c.open ? { activeOpacity: 0.85, onPress: () => onOpen(c.open), accessibilityRole: 'button', accessibilityLabel: `${c.kind}. ${c.text}` } : { accessible: true, accessibilityLabel: `${c.kind}. ${c.text}` };
+  const props = c.open ? { activeOpacity: 0.85, onPress: () => onOpen(c.open), accessibilityRole: 'button', accessibilityLanguage: AL, accessibilityLabel: `${c.kind}. ${c.text}` } : { accessible: true, accessibilityLanguage: AL, accessibilityLabel: `${c.kind}. ${c.text}` };
   return (
     <Box style={[s.cd, s.cdMain, { backgroundColor: T.bg }]} {...props}>
       <Text style={[TXT3.kind, { color: T.kind }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.kind}</Text>
@@ -233,9 +240,9 @@ export function HomeCards({ cards, C, onOpen, l }) {
   return (cards || []).map((c) => {
     const k = `${c.t}-${c.id}`;
     if (c.t === 'card') return <BigCard key={k} c={c} C={C} onOpen={onOpen} l={l} />;
-    if (c.t === 'slim') return <Slim key={k} c={c} C={C} onOpen={onOpen} />;
-    if (c.t === 'lines') return <Lines key={k} c={c} C={C} onOpen={onOpen} />;
-    if (c.t === 'text') return <TextCard key={k} c={c} C={C} onOpen={onOpen} />;
+    if (c.t === 'slim') return <Slim key={k} c={c} C={C} onOpen={onOpen} l={l} />;
+    if (c.t === 'lines') return <Lines key={k} c={c} C={C} onOpen={onOpen} l={l} />;
+    if (c.t === 'text') return <TextCard key={k} c={c} C={C} onOpen={onOpen} l={l} />;
     return null;
   });
 }

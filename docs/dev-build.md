@@ -123,6 +123,8 @@
 - [ ] Cifra v2: gravar/ler com emoji na escala + tempos de arranque aceitáveis
 - [ ] IAP sandbox: comprar/restaurar em conta de teste
 - [ ] Login social: Sign in with Apple + Google entram e criam sessão Supabase
+- [ ] VoiceOver em PORTUGUÊS na app toda (2026-11-11: na Expo Go lia com a voz inglesa; o `app.json` passou a declarar
+      `CFBundleDevelopmentRegion` pt-PT + `CFBundleLocalizations` — confirmar em todos os ecrãs, e em inglês com a app em inglês)
 
 ## Ideias guardadas para mais tarde (também não é dev build)
 
