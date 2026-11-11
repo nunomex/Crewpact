@@ -49,6 +49,15 @@ const type = (e, o) => { const v = evaluateDisruption(e, o); return v ? v.type :
 // fim: 17:30+30=18:00 → 19:35+30=20:05 = +125 min ≥119 → RDP
 eq('RDP: +125 min no fim, detetado no dia (cabine)', type(mk(), { isPilot: false }), 'rdp');
 eq('RDP: cláusula certa', evaluateDisruption(mk(), { isPilot: false }).clause, 'Cl. 67.ª');
+// Cl. 67.ª, n.º 4: "não há lugar a reclamação ... se o tripulante receber um pagamento por entrada em dia de descanso planeado (IDO
+// ou DDO) (exceto nos casos em que se verifique uma paragem noturna não planeada)"; n.º 5: o WFLY que entra na folga seguinte tem
+// "DDO/IDO não cumulativo com o RDP" → com a escala (`duties`), o RDP de um serviço marcado DDO, WFLY+DDO ou WFLY+IDO não se sugere;
+// com o IDO simples (a pernoita não planeada) continua.
+{
+  const { disruptionsByDuty } = require(path.resolve('data/disruption.js'));
+  const withDow = (dow) => disruptionsByDuty([mk()], { isPilot: false, duties: { '2026-07-14': { kind: 'flight', route: 'LIS-FNC-LIS', dayOffWorked: dow } } }).filter((c) => c.type === 'rdp').length;
+  eq('RDP com DDO / WFLY+DDO / WFLY+IDO: não se sugere; com IDO, sem folga ou sem a escala: sugere-se', JSON.stringify([withDow('ddo'), withDow('wfly+ddo'), withDow('wfly+ido'), withDow('ido'), withDow(null), disruptionsByDuty([mk()], { isPilot: false }).filter((c) => c.type === 'rdp').length]), '[0,0,0,1,1,1]');
+}
 eq('RDP: Δfim calculado (calços+30)', evaluateDisruption(mk(), { isPilot: false }).dEndMin, 125);
 // +100 min < 119 e <120 → nada (nem RDP nem SNC)
 eq('nem RDP nem SNC: +100 min', type(mk({ after: { report: '09:30', end: '19:10', sectors: 2, kind: 'flight' } }), { isPilot: false }), null);

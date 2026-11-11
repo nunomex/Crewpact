@@ -69,7 +69,7 @@ export const monthAudit = (duties = {}, { ym, ae = null, cat = null, fleet = nul
   const hasKind = (t) => kinds.some((k) => k && k.id === t);
   const registered = new Set((events || []).filter((e) => e && (e.type === 'snc' || e.type === 'rdp')).map((e) => `${e.type}|${e.date}`));
   const seen = new Set();
-  for (const c of disruptionsByDuty(rosterLog, { isPilot })) {   // um SNC/RDP por serviço, o plano contra o final (A-024/A-076)
+  for (const c of disruptionsByDuty(rosterLog, { isPilot, duties })) {   // um SNC/RDP por serviço, o plano contra o final (A-024/A-076)
     const date = c.dutyDate;
     if (!date || !String(date).startsWith(prefix)) continue;
     if (!hasKind(c.type)) continue;                       // AE sem crédito deste tipo (ex.: TAP) → fora

@@ -441,7 +441,7 @@ export default function EscalaScreen({ navigation, route }) {
       const collapsed = legs.length > 3 && !(secExpand && canExpand);
       const shown = collapsed ? legs.slice(0, 3) : legs;
       // € do serviço: a MESMA função e o MESMO índice do total do mês (serviceMoney; auditoria L2, L5 e L10, bloco 6).
-      const money = (aeD && catD) ? serviceMoney(aeD, catD, d, { date: sel, fleet: crewAt(sel).fleet, daySvcs: services, baseAt: homeBaseAt }) : null;
+      const money = (aeD && catD) ? serviceMoney(aeD, catD, d, { date: sel, fleet: crewAt(sel).fleet, daySvcs: services, baseAt: homeBaseAt, duties }) : null;
       const perDiem = money ? money.perDiem : null;
       const nsEur = money ? money.nightStop : null;   // TAP: estadia só nos dias sem voo (bloco 5)
       const svcEur = money && money.other && money.other.eur != null ? { lbl: money.other.lbl[lang === 'en' ? 'en' : 'pt'], eur: money.other.eur } : null;

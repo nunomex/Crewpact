@@ -16,6 +16,7 @@
 import { esc } from './ftlRecord';
 
 import { BRAND } from './constants';
+import { rdpBarredBy } from './aeEvents';
 export const POST_BLOCK_MIN = 30;   // fim do tempo de serviço = calços dentro + 30 min (Cl. 67.ª/1)
 
 const hm2min = (s) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(String(s || '')); return m ? (+m[1]) * 60 + (+m[2]) : null; };
@@ -102,7 +103,9 @@ const inWindow48 = (e) => {
   const startMs = new Date(`${e.dutyDate}T00:00:00`).getTime() + st * 60000;
   return det.getTime() <= startMs && startMs - det.getTime() <= 48 * 3600000;
 };
-export const disruptionsByDuty = (log = [], { isPilot = false } = {}) => {
+// `duties` (a escala): o RDP de um serviço que já recebe o DDO, ou de um WFLY que entrou na folga, não se sugere (Cl. 67.ª, n.os 4
+// e 5 — aeEvents.rdpBarredBy). Sem a escala, como antes.
+export const disruptionsByDuty = (log = [], { isPilot = false, duties = null } = {}) => {
   const byDuty = new Map();
   for (const e of log || []) {
     if (!e || !e.dutyDate || !e.before || !e.after || !e.detectedAt) continue;
@@ -125,7 +128,7 @@ export const disruptionsByDuty = (log = [], { isPilot = false } = {}) => {
       if (rdpList.length) {
         const m = merge(rdpList);
         const v = evaluateDisruption(m, { isPilot });
-        if (v && v.type === 'rdp') out.push({ ...m, ...v });
+        if (v && v.type === 'rdp') { if (!(duties && rdpBarredBy(duties[date]))) out.push({ ...m, ...v }); }
         else if (v && v.type === 'snc' && !out.some((c) => c.dutyDate === date && c.type === 'snc')) out.push({ ...m, ...v });   // antecipação ≥ 2 h no próprio dia (dentro das 48 h)
       }
     }

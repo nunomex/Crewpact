@@ -183,7 +183,7 @@ export default function DutyDetailScreen({ route, navigation }) {
   const rows = completeRows(duty, { isPilot: isPilotD, ae, category: catD, instructorRated: !!ctxAll.instructorRated,
     unknowns: (d && d.fdp && d.fdp.unknowns) || [], extRefused: d ? d.extRefused : null });
   const needRows = rows.filter((r) => r.need);
-  const money = (ae && catD) ? serviceMoney(ae, catD, duty, { date, fleet: crewAt(date).fleet, daySvcs: [duty, ...(Array.isArray(duty.extra) ? duty.extra : [])], baseAt: ctxAll.homeBaseAt }) : null;
+  const money = (ae && catD) ? serviceMoney(ae, catD, duty, { date, fleet: crewAt(date).fleet, daySvcs: [duty, ...(Array.isArray(duty.extra) ? duty.extra : [])], baseAt: ctxAll.homeBaseAt, duties }) : null;
   const perDiem = money ? money.perDiem : null;
   const nsEur = money ? money.nightStop : null;   // TAP: estadia só nos dias sem voo (bloco 5) — serviceMoney não a dá por serviço
   const svcEur = money && money.other && money.other.eur != null ? { lbl: money.other.lbl[lang === 'en' ? 'en' : 'pt'], eur: money.other.eur, max: money.other.max } : null;

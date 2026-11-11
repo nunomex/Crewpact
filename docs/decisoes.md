@@ -54,13 +54,10 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   de situação · `docs/05-verificacao.md`).
 
 ### 2. Acertos de código por fazer
-- **Cálculos (2026-11-11 TAP e easyJet):** o RDP da cabine easyJet com DDO no mesmo dia já não SOMA (Cl. 67.ª, n.os 4 e 5), mas a
-  Disrupção ainda o sugere; o valor de um serviço TAP não bate com o mês quando dois serviços de datas seguidas caem no mesmo dia
-  da base (só no ecrã); prestação complementar: o n.º 3 (mais de 50 dias de baixa no ano) por tratar; mudar de cabine para
-  piloto na MESMA companhia não conta como saída; o dia da saída de uma companhia não se sabe (a linha guarda o mês: contam-se
-  meses inteiros); nos meses de uma companhia ANTERIOR da TAP, a largada e as anuidades usam as datas da atual; subsídio de
-  férias da TAP no ano da saída (não se sabe o mês); um serviço em terra fora da base lê-se na hora de lá para o dia de calendário
-  da TAP (só os voos têm os instantes).
+- **Cálculos (2026-11-11 TAP e easyJet):** mudar de cabine para piloto na MESMA companhia não conta como saída; o dia da saída
+  de uma companhia não se sabe (a linha guarda o mês: contam-se meses inteiros); um serviço em terra fora da base lê-se na hora de
+  lá para o dia de calendário da TAP (só os voos têm os instantes); na prestação complementar, quanto se desconta ao passar os 50
+  dias de baixa (n.º 3) e se as férias dão a prestação por inteiro — pergunta D27 do pacote (até lá: só como máximo).
 - **Campos por fazer (com Mobbin):** formação inicial (A-218); subsídio de idioma; exercício efetivo do VE (TAP); datas de
   atividade dos 9/3 e sazonais; reserva na configuração para o pós-voo da Ryanair/Hi Fly e para os números do Manual de Operações
   se os sindicatos não os derem (BLOCO 5 · 6 · 2026-11-08 Manual de Operações).
@@ -148,7 +145,14 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   companhia anterior conta inteiro. Itens repetidos no mesmo mês juntam-se (`mergeItems`); os motivos do incerto somam-se
   (`reasons`); o art. 245.º do CT entrou em `fontes/pt/` (do mesmo PDF oficial, SHA conferido). O revisor confirmou sem erros:
   os dias na hora da base, a doença TAP no total do mês e do ano, o `dayOffWorked` composto e as noites de formação.
-- **Testes:** dinheiro 157, dinheiro a menos 279, stats 183, ae-golden; 34 suites verdes; export iOS ✓. **Nada visto no iPhone.**
+- **Os três que ficavam (o Nuno: "vamos ao que falta"):** (a) a Disrupção, os Relatórios e a Auditoria já não sugerem o RDP de
+  um serviço com DDO ou de um WFLY que entrou na folga (`disruptionsByDuty` com `duties`; a mesma regra dos eventos,
+  `rdpBarredBy`); (b) o valor de cada serviço TAP soma ao mês — o dia de calendário é do 1.º serviço que o toca (`owners`;
+  `serviceMoney` com `duties` no Detalhe, na Escala e no Início); (c) prestação complementar: a baixa do 11.º ao 50.º dia do
+  ano conta como disponível (Cl. 10.ª, n.º 2, b)) → só os 10 primeiros dias, os que passam dos 50 e o mês a seguir deixam a
+  prestação em dúvida.
+- **Testes:** dinheiro 161, dinheiro a menos 279, stats 183, ae-golden, disruption; 34 suites verdes; export iOS ✓. **Nada visto
+  no iPhone.**
 
 ---
 

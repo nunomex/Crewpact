@@ -30,7 +30,7 @@ const WD3 = { pt: ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'], en: ['SUN'
 const fmtEur = (n, lang) => { const [i, d] = Number(n || 0).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`; };
 
 export default function DisrupcaoScreen({ navigation }) {
-  const { lang, rosterLog, isPilot, aeAt, crewAt, crewCategory, user, company, notify, aeEvents, addAeEvents } = useContext(AppContext);
+  const { lang, rosterLog, duties, isPilot, aeAt, crewAt, crewCategory, user, company, notify, aeEvents, addAeEvents } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const lg = lang === 'en' ? 'en' : 'pt';
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
@@ -47,7 +47,7 @@ export default function DisrupcaoScreen({ navigation }) {
 
   // Candidatos do mês (motor puro sobre o arquivo) + valores crew-aware do AE (Anexo I).
   // Um SNC e um RDP por serviço: o plano contra o serviço final (Art. 63.º/4 · Cl. 66.ª/3 · Cl. 67.ª/1; auditoria A-024, bloco 5).
-  const all = useMemo(() => disruptionsByDuty(rosterLog, { isPilot }), [rosterLog, isPilot]);
+  const all = useMemo(() => disruptionsByDuty(rosterLog, { isPilot, duties }), [rosterLog, isPilot, duties]);
   const cands = useMemo(() => all.filter((c) => String(c.dutyDate).slice(0, 7) === ym), [all, ym]);
   const archivedMonth = useMemo(() => (rosterLog || []).filter((e) => String(e.dutyDate).slice(0, 7) === ym).length, [rosterLog, ym]);
   // Valores do Anexo I já MODELADOS no AE (effective-dated): snc(ym) · rdp(cat, ym) =

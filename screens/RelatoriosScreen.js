@@ -95,11 +95,11 @@ export default function RelatoriosScreen({ navigation }) {
   const hasDisruption = !!(ae && ae.SNC_EUR != null);
   const disCands = useMemo(() => {
     if (!hasDisruption) return [];
-    return disruptionsByDuty(rosterLog, { isPilot }).filter((c) => {   // um por serviço (bloco 5)
+    return disruptionsByDuty(rosterLog, { isPilot, duties }).filter((c) => {   // um por serviço (bloco 5)
       const d = String(c.dutyDate);
       return d >= period.start && d < period.end;
     });
-  }, [hasDisruption, rosterLog, isPilot, period.start, period.end]);
+  }, [hasDisruption, rosterLog, isPilot, duties, period.start, period.end]);
   // Cada caso pelo acordo e pela categoria DO SEU mês (linha do tempo do contrato, 2026-11-03).
   const disEur = useMemo(() => disCands.reduce((a, c) => {
     const ym = String(c.dutyDate).slice(0, 7);

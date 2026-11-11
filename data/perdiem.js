@@ -167,6 +167,7 @@ const baseDaysOf = (s, date, base) => {
 export const tapCalendarDays = (duties = {}, ym, { baseAt = null } = {}) => {
   const baseOf = (d) => String((typeof baseAt === 'function' ? baseAt(d) : baseAt) || '').trim().toUpperCase() || null;
   const flightDay = new Map();   // date → distâncias (NM) dos serviços que tocam esse dia
+  const owners = new Map();      // date → o 1.º serviço (de voo ou DHC) que toca esse dia: é dele o € do dia (serviceMoney)
   const haulDay = new Map();     // date → 'long' | 'medium' | 'unknown' (pilotos, RUPT Cl. 32.ª/37.ª; o pior caso do dia é o longo)
   const groundDay = new Map();   // date → serviços sem voo (assistência, formação, escritório) — a Cl. 8.ª (cabine) e a 9.ª (pilotos)
   const svcs = [];
@@ -217,6 +218,7 @@ export const tapCalendarDays = (duties = {}, ym, { baseAt = null } = {}) => {
       const mh = kind === 'flight' ? isMediumHaul(codesOf(s.route), 'pilot') : true;
       const haul = mh === false ? 'long' : mh === true ? 'medium' : 'unknown';
       for (let day = startDate; day <= endDate; day = isoAdd(day, 1)) {
+        if (!owners.has(day)) owners.set(day, s);
         if (!flightDay.has(day)) flightDay.set(day, []);
         flightDay.get(day).push(...dists);
         const prev = haulDay.get(day);
@@ -241,7 +243,7 @@ export const tapCalendarDays = (duties = {}, ym, { baseAt = null } = {}) => {
     flightDays: [...flightDay.entries()].filter(([d]) => inYm(d)).sort(([a], [b]) => a.localeCompare(b)).map(([date, dists]) => ({ date, dists, longHaul: lh(date) })),
     stayDays: stayDays.filter(inYm),
     groundDays: [...groundDay.entries()].filter(([d]) => inYm(d) && !flightDay.has(d)).sort(([a], [b]) => a.localeCompare(b)).map(([date, list]) => ({ date, list })),
-    withRoute, missing,
+    withRoute, missing, owners,
   };
 };
 
@@ -507,8 +509,15 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
         // toda); férias, baixa, a entrada ou a saída no mês deixam a "disponibilidade" (n.º 1) em dúvida → só como máximo.
         const todayYm = String(today || new Date().toISOString().slice(0, 10)).slice(0, 7);
         const earlier = Object.keys(duties || {}).some((date) => date.slice(0, 7) < ym && duties[date] && !duties[date].deleted);
-        const doubt = !(ym < todayYm) || !earlier
-          || (events || []).some((e) => e && (e.type === 'vacDays' || e.type === 'sickDays') && String(e.date).startsWith(ym))
+        // A baixa (n.º 2, b)): "desde o 11.º dia inclusive, no ano civil, até ao limite máximo de 50 dias no ano civil" conta como
+        // disponível → só põem em dúvida os dias de baixa do mês que sejam dos 10 primeiros ou passem dos 50 do ano, e o mês a
+        // seguir a passar os 50 (n.º 3: "será descontado ... um número equivalente de dias de disponibilidade ... no mês seguinte").
+        const sickYear = [...new Set(tenureEvents(events, serviceStart, serviceEnd).filter((e) => e && e.type === 'sickDays' && /^\d{4}-\d{2}-\d{2}$/.test(String(e.date)) && String(e.date).startsWith(ym.slice(0, 4))).map((e) => String(e.date)))].sort();
+        const sickDoubt = sickYear.some((d, i) => d.startsWith(ym) && (i < 10 || i >= 50))
+          || (sickYear.length > 50 && ymShift(sickYear[50].slice(0, 7), 1) === ym)
+          || (events || []).some((e) => e && e.type === 'sickDays' && String(e.date).length === 7 && e.date === ym);   // baixa registada só ao mês
+        const doubt = !(ym < todayYm) || !earlier || sickDoubt
+          || (events || []).some((e) => e && e.type === 'vacDays' && String(e.date).startsWith(ym))
           || (serviceStart && String(serviceStart).slice(0, 7) === ym) || (serviceEnd && ymShift(serviceEnd, -1) === ym);
         groundMaxDelta -= mA.reduce((acc, x) => acc + x.delta, 0);   // esses dias contam-se aqui, não no máximo do per diem
         prestCompl = { days: d0, eur: doubt ? 0 : sure, max: top };
@@ -652,7 +661,9 @@ export const extrasMonthEur = (ae, category, events = [], ym, { duties = null, i
 // MESMO índice do total do mês — a soma dos serviços bate com o mês. Devolve { perDiem, positioning, positioningMax, nightStop,
 // other: { lbl: {pt, en}, eur, max? } } (null onde não há). `daySvcs` = os serviços do dia (assistência chamada = há voo no dia).
 // TAP: o € é do DIA (AC1 / per diem A, B, complemento) — num dia com voo, um serviço sem voo não paga à parte.
-export const serviceMoney = (ae, category, svc, { date, fleet, daySvcs = null, baseAt = null } = {}) => {
+// `duties` (a escala): na TAP, o € de cada dia de calendário fica no 1.º serviço que o toca — com a escala à volta, dois serviços
+// de datas seguidas que caem no mesmo dia da base não o contam duas vezes (a soma dos serviços = o mês).
+export const serviceMoney = (ae, category, svc, { date, fleet, daySvcs = null, baseAt = null, duties = null } = {}) => {
   const out = { perDiem: null, positioning: null, positioningMax: null, nightStop: null, other: null };
   if (!ae || !category || !svc) return out;
   const kind = svc.kind || 'flight';
@@ -663,6 +674,21 @@ export const serviceMoney = (ae, category, svc, { date, fleet, daySvcs = null, b
     if (kind === 'flight' || kind === 'positioning') {
       // "Por cada dia de calendário" (Cl. 7.ª/9.ª): o € é do DIA — fica no 1.º serviço de voo/DHC do dia (os outros: `dayCounted`)
       // e um serviço que cruza a meia-noite leva um por cada dia em curso (revisão independente do bloco 6). A mesma conta do mês.
+      const inRoster = duties && duties[date] && [duties[date], ...(Array.isArray(duties[date].extra) ? duties[date].extra : [])].includes(svc);
+      if (inRoster) {
+        const near = {};
+        for (let k = -3; k <= 3; k++) { const dk = isoAdd(date, k); if (duties[dk]) near[dk] = duties[dk]; }
+        const tdN = tapCalendarDays(near, '', { baseAt });
+        const mine = tdN.flightDays.filter((f) => tdN.owners.get(f.date) === svc);
+        if (!mine.length) { out.dayCounted = true; return out; }
+        let sumN = 0, okN = false;
+        for (const f of mine) {
+          const v = ae.perDiem(category, f.dists, idx, fleet, f.date, { longHaul: f.longHaul == null ? undefined : f.longHaul });
+          if (v != null) { sumN += v; okN = true; }
+        }
+        if (okN) out.perDiem = r2(sumN);
+        return out;
+      }
       const flown = day.filter(Boolean).slice().sort((a, b) => (clockMin(a.report_time) ?? 0) - (clockMin(b.report_time) ?? 0))
         .filter((x) => (x.kind || 'flight') === 'flight' || x.kind === 'positioning');
       if (flown.indexOf(svc) > 0) { out.dayCounted = true; return out; }

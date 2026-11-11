@@ -313,6 +313,25 @@ has('TAP cabine Cl. 7.ª/1 a) (+30 min)', TAPC, 'o seu término após trinta min
     eq('R12 TAP: calços 23:40 + sign-off 23:55 → 2 dias (calços + 30)', nD({ kind: 'flight', route: 'OPO-LIS', report_time: '21:40', block_on: '23:40', signOff: '23:55', legs: lgs('23:40') }), 2);
     eq('R12 TAP: sign-off antes da chegada ignora-se → 1 dia', nD({ kind: 'flight', route: 'OPO-LIS', report_time: '20:40', block_on: '22:45', signOff: '22:30', legs: [{ dep: 'OPO', arr: 'LIS', off: '21:45', on: '22:45' }] }), 1);
     eq('R12 TAP (sem base, pelo relógio): calços 23:40 + sign-off 23:55 → 2 dias', tapCalendarDays({ '2026-05-12': { kind: 'flight', route: 'OPO-LIS', report_time: '21:40', block_on: '23:40', signOff: '23:55' } }, '2026-05').flightDays.length, 2);
+    // O valor de CADA serviço soma ao mês: quando dois serviços de datas seguidas caem no mesmo dia da base, o dia é do primeiro.
+    // LIS→TLV a 1-jun (16:00 → 23:30 de Telavive) e TLV→LIS com apresentação às 00:30 de Telavive de 2-jun = 22:30 de Lisboa de
+    // 1-jun, chegada às 05:00 de Lisboa de 2 → dias da base: 1 e 2 → 2 × AC1 = 300 no mês; o 1.º serviço leva o dia 1 (150), o 2.º
+    // só o dia 2 (150). Antes o 2.º mostrava 300 (os dois dias).
+    const tlv = {
+      '2026-06-01': { kind: 'flight', route: 'LIS-TLV', report_time: '15:00', block_on: '23:30', nightStop: true, legs: [{ dep: 'LIS', arr: 'TLV', off: '16:00', on: '23:30' }] },
+      '2026-06-02': { kind: 'flight', route: 'TLV-LIS', report_time: '00:30', block_on: '05:00', legs: [{ dep: 'TLV', arr: 'LIS', off: '01:30', on: '05:00' }] },
+    };
+    const sm = (d) => serviceMoney(tapC, 'CAB3', tlv[d], { date: d, daySvcs: [tlv[d]], baseAt: 'LIS', duties: tlv }).perDiem;
+    eq('TAP: o valor de cada serviço soma ao mês (o dia partilhado é do 1.º)', [sm('2026-06-01'), sm('2026-06-02'), monthlyAe(tlv, 'CAB3', '12/12', tapC, { ym: '2026-06', baseAt: 'LIS' }).perDiem], [150, 150, 300]);
+    // Prestação complementar e a baixa (Cl. 10.ª, n.º 2, b)): está "com disponibilidade" quem está de baixa "desde o 11.º dia
+    // inclusive, no ano civil, até ao limite máximo de 50 dias no ano civil" → os dias de baixa do 11.º ao 50.º do ano não põem a
+    // prestação em dúvida; os 10 primeiros, os que passam dos 50 e o mês a seguir a passar os 50 (n.º 3) sim.
+    const base2 = { '2026-04-20': { kind: 'flight', route: 'LIS-OPO-LIS', report_time: '06:00', block_on: '09:00' }, '2026-05-12': { kind: 'flight', route: 'LIS-OPO-LIS', report_time: '06:00', block_on: '09:00' }, '2026-05-20': { kind: 'flight', route: 'LIS-FAO-LIS', report_time: '06:00', block_on: '09:00' } };
+    const pcS = (ev) => monthlyAe(base2, 'OP3', '12/12', tapP, { ym: '2026-05', fleet: 'NB', today: '2026-11-11', events: ev }).prestCompl.eur;
+    const sickMay = [{ type: 'sickDays', date: '2026-05-25' }, { type: 'sickDays', date: '2026-05-26' }];
+    eq('TAP pilotos: baixa em maio nos 10 primeiros dias do ano → prestação em dúvida (0 certo)', pcS(sickMay), 0);
+    eq('TAP pilotos: baixa em maio do 17.º ao 18.º dia do ano → disponível → prestação certa', pcS([...days('2026-01-05', 16), ...sickMay]), 607.5);
+    eq('TAP pilotos: baixa em maio depois dos 50 dias do ano → em dúvida', pcS([...days('2026-01-05', 55), ...sickMay]), 0);
     // R8: prestação complementar com uma formação SEM TIPO (pode ser A, B, ou nenhum): 4 voos + 1 formação, com a escala do mês
     // anterior. B → 4 × 202,50 + 135 = 945; A → 1 012,50; nenhum → 810 + 1 dia de prestação = 1 012,50 → certo 945, máximo 1 012,50.
     const f4 = { '2026-04-20': { kind: 'flight', route: 'LIS-OPO-LIS', report_time: '06:00', block_on: '09:00' } };

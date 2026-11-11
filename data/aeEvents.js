@@ -59,6 +59,13 @@ const sickPaid = (days, sickFirst3) => {
 // gozado": voaste nesse dia → não é dia de férias nem de baixa. O DIA DE INSTRUTOR registado à parte num dia em que o
 // serviço já tem o papel de instrutor numa formação também não conta outra vez (Art. 42.º: "por cada dia", auditoria A-079).
 // `sickFirst3` = a regra da doença: true (pilotos, Art. 48.º) · false (cabine, Cl. 61.ª).
+// Cabine easyJet: o RDP não acumula com o DDO (Cl. 67.ª, n.º 4) nem com um WFLY que entrou na folga seguinte (n.º 5: "DDO/IDO não
+// cumulativo com o RDP"); com o IDO simples (a pernoita não planeada, a exceção do n.º 4) continua. `day` = o dia da escala.
+export const rdpBarredBy = (day) => {
+  if (!day || day.deleted) return false;
+  const dows = new Set([day, ...(Array.isArray(day.extra) ? day.extra : [])].flatMap((s) => (s && s.dayOffWorked ? String(s.dayOffWorked).split('+') : [])));
+  return dows.has('ddo') || (dows.has('wfly') && dows.has('ido'));
+};
 export const eventCounts = (events = [], ym, duties = null, sickFirst3 = true) => {
   const counts = {};
   if (!ym) return counts;
@@ -82,12 +89,7 @@ export const eventCounts = (events = [], ym, duties = null, sickFirst3 = true) =
     return [d, ...(Array.isArray(d.extra) ? d.extra : [])].some((s) => s && (s.kind === 'standby_airport' || s.kind === 'standby_home' || s.kind === 'office' || (s.kind === 'training' && !s.eLearning)));
   };
   const lateSeen = new Set();
-  const rdpBarred = (date) => {
-    const d = duties && duties[date];
-    if (!d || d.deleted) return false;
-    const dows = new Set([d, ...(Array.isArray(d.extra) ? d.extra : [])].flatMap((s) => (s && s.dayOffWorked ? String(s.dayOffWorked).split('+') : [])));
-    return dows.has('ddo') || (dows.has('wfly') && dows.has('ido'));
-  };
+  const rdpBarred = (date) => rdpBarredBy(duties && duties[date]);
   const sickDated = new Set();
   for (const e of events) {
     if (!e || !e.type || !e.date) continue;

@@ -757,7 +757,7 @@ export default function HomeScreen({ navigation }) {
     ? `${Math.floor(todayEnded.flight_minutes / 60)}:${String(todayEnded.flight_minutes % 60).padStart(2, '0')}` : null;
   let pdToday = null;
   if (todayEnded && !closeMulti && ae && crewCategory && todayEnded.route) {
-    pdToday = serviceMoney(ae, crewCategory, todayEnded, { date: todayISO, fleet: crewFleet, baseAt: homeBaseAt }).perDiem;   // índice do mês (L10)
+    pdToday = serviceMoney(ae, crewCategory, todayEnded, { date: todayISO, fleet: crewFleet, baseAt: homeBaseAt, duties }).perDiem;   // índice do mês (L10)
   }
   // Acordar sugerido (véspera): report − 75 min (estimativa: vestir + caminho).
   const wakeMs = (homeState === 'vespera' && reportMs != null) ? reportMs - TUNE.wakeBefore * 60000 : null;
