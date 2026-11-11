@@ -281,7 +281,51 @@ has('TAP cabine Cl. 7.ª/1 a) (+30 min)', TAPC, 'o seu término após trinta min
     const m0 = monthlyAe({}, cat, '12/12', ae, { ym: '2026-05', fleet: 'NB' }), b0 = m0.base, top = m0.baseRange ? m0.baseRange.max : b0;
     const ms = monthlyAe({}, cat, '12/12', ae, { ym: '2026-05', fleet: 'NB', events: sick5 });
     const lo5 = Math.round((b0 - b0 * 5 / 30) * 100) / 100;
-    eq(`TAP ${nm}: 5 dias de baixa → base incerta de base − 5/30 ao máximo`, [ms.base, ms.baseRange], [lo5, { min: lo5, max: top, reason: 'tapSick' }]);
+    // os motivos somam-se: a baixa não apaga a dúvida que a base já tinha (os 2 % do KPI na cabine; o VB nos pilotos)
+    const prevR = m0.baseRange ? [m0.baseRange.reason] : [];
+    eq(`TAP ${nm}: 5 dias de baixa → base incerta de base − 5/30 ao máximo`, [ms.base, ms.baseRange], [lo5, { min: lo5, max: top, reason: 'tapSick', ...(prevR.length ? { reasons: [...prevR, 'tapSick'] } : {}) }]);
+  }
+  // ── Revisão independente (2026-11-11) ──
+  {
+    // R7: doença no mês da ENTRADA — o dia de baixa vale a base INTEIRA ÷ 30 (não a já reduzida pela entrada). OP3 entra a 17-mai
+    // (15 dias: base × 15/30) e tem 5 dias de baixa → base × 15/30 − base × 5/30 = base ÷ 3.
+    const bF = monthlyAe({}, 'OP3', '12/12', tapP, { ym: '2026-05', fleet: 'NB' }).base;
+    const s5 = ['20', '21', '22', '23', '24'].map((d) => ({ type: 'sickDays', date: `2026-05-${d}` }));
+    eq('R7 TAP: baixa no mês da entrada desconta a base inteira ÷ 30', monthlyAe({}, 'OP3', '12/12', tapP, { ym: '2026-05', fleet: 'NB', serviceStart: '2026-05-17', startExact: true, events: s5 }).base, Math.round((bF * 15 / 30 - Math.round(bF * 5 / 30 * 100) / 100) * 100) / 100);
+    // R9: cancelamento tardio num dia com complemento da escala — "prevalecerá o pagamento de valor superior" (Cl. 7.ª, n.º 3, com
+    // a Cl. 8.ª): assistência no aeroporto (2 × 40 = 80) + AC2 (80) → 80, não 160; em casa (40) + AC2 → 80. Dois registos = 1 dia.
+    const lc = [{ type: 'lateCancelDays', date: '2026-05-11' }, { type: 'lateCancelDays', date: '2026-05-11' }];
+    for (const [nm, kind] of [['no aeroporto', 'standby_airport'], ['em casa', 'standby_home']]) {
+      const dd = { '2026-05-11': { kind, report_time: '06:00', block_on: '12:00' } };
+      const cnt = eventCounts(lc, '2026-05', dd, false);
+      const tot = monthlyAe(dd, 'CAB3', '12/12', tapC, { ym: '2026-05', events: lc }).extras + tapC.monthExtras('CAB3', cnt, { ym: '2026-05' }).total;
+      eq(`R9 TAP cabine: assistência ${nm} + cancelamento tardio = 80 € (o maior), 1 dia`, [cnt.lateCancelDays, tot], [1, 80]);
+    }
+    // R10: RDP não cumulativo com o DDO (cabine Cl. 67.ª, n.º 4) nem com o WFLY que entrou na folga (n.º 5); com o IDO simples (a
+    // pernoita não planeada, a exceção do n.º 4) continua.
+    const rd = (dow) => eventCounts([{ type: 'rdp', date: '2026-06-10' }], '2026-06', { '2026-06-10': { kind: 'flight', route: 'LIS-OPO-LIS', dayOffWorked: dow } }, false).rdp || 0;
+    eq('R10 cabine: RDP com DDO / WFLY+DDO / WFLY+IDO não conta; com IDO ou sem folga conta', [rd('ddo'), rd('wfly+ddo'), rd('wfly+ido'), rd('ido'), rd(null)], [0, 0, 0, 1, 1]);
+    // R12: o serviço da TAP acaba 30 min depois dos calços, ou no sign-off se for MAIS TARDE (Cl. 7.ª, n.º 1, a)). Calços 23:40 de
+    // Lisboa e sign-off 23:55 → acaba às 00:10 → 2 dias; um sign-off antes da chegada (dado incoerente) ignora-se.
+    const { tapCalendarDays } = R('data/perdiem.js');
+    const lgs = (on) => [{ dep: 'OPO', arr: 'LIS', off: '22:40', on }];
+    const nD = (d) => tapCalendarDays({ '2026-05-12': d }, '2026-05', { baseAt: 'LIS' }).flightDays.length;
+    eq('R12 TAP: calços 23:40 + sign-off 23:55 → 2 dias (calços + 30)', nD({ kind: 'flight', route: 'OPO-LIS', report_time: '21:40', block_on: '23:40', signOff: '23:55', legs: lgs('23:40') }), 2);
+    eq('R12 TAP: sign-off antes da chegada ignora-se → 1 dia', nD({ kind: 'flight', route: 'OPO-LIS', report_time: '20:40', block_on: '22:45', signOff: '22:30', legs: [{ dep: 'OPO', arr: 'LIS', off: '21:45', on: '22:45' }] }), 1);
+    eq('R12 TAP (sem base, pelo relógio): calços 23:40 + sign-off 23:55 → 2 dias', tapCalendarDays({ '2026-05-12': { kind: 'flight', route: 'OPO-LIS', report_time: '21:40', block_on: '23:40', signOff: '23:55' } }, '2026-05').flightDays.length, 2);
+    // R8: prestação complementar com uma formação SEM TIPO (pode ser A, B, ou nenhum): 4 voos + 1 formação, com a escala do mês
+    // anterior. B → 4 × 202,50 + 135 = 945; A → 1 012,50; nenhum → 810 + 1 dia de prestação = 1 012,50 → certo 945, máximo 1 012,50.
+    const f4 = { '2026-04-20': { kind: 'flight', route: 'LIS-OPO-LIS', report_time: '06:00', block_on: '09:00' } };
+    ['04', '06', '08', '12'].forEach((d) => { f4[`2026-05-${d}`] = { kind: 'flight', route: 'LIS-OPO-LIS', report_time: '06:00', block_on: '09:00' }; });
+    f4['2026-05-14'] = { kind: 'training', report_time: '09:00', block_on: '17:00' };
+    const m8 = monthlyAe(f4, 'OP3', '12/12', tapP, { ym: '2026-05', fleet: 'NB', today: '2026-11-11' });
+    const b8 = m8.base, var8 = Math.round((m8.total - b8) * 100) / 100;
+    const max8 = Math.round(((m8.perDiemMax != null ? m8.perDiemMax : m8.perDiem) + (m8.extrasMax != null ? m8.extrasMax : (m8.extras || 0))) * 100) / 100;
+    eq('R8 TAP pilotos: 4 voos + formação sem tipo → certo 945, máximo 1 012,50', [var8, max8], [945, 1012.5]);
+    // A prestação só é CERTA num mês passado com escala antes dele; no mês em curso (ou no 1.º mês com dados) fica só como máximo.
+    const twoP = { '2026-05-12': f4['2026-05-04'], '2026-05-20': f4['2026-05-04'] };
+    eq('TAP pilotos: mês em curso → prestação só como máximo', monthlyAe({ ...twoP, '2026-04-20': f4['2026-04-20'] }, 'OP3', '12/12', tapP, { ym: '2026-05', fleet: 'NB', today: '2026-05-25' }).prestCompl, { days: 3, eur: 0, max: 607.5 });
+    eq('TAP pilotos: 1.º mês com dados → prestação só como máximo', monthlyAe(twoP, 'OP3', '12/12', tapP, { ym: '2026-05', fleet: 'NB', today: '2026-11-11' }).prestCompl, { days: 3, eur: 0, max: 607.5 });
   }
   // Prestação retributiva complementar dos pilotos (regulamento de retribuições, Cl. 10.ª): o piloto disponível que não seja
   // escalado para serviços de per diem A ou B em pelo menos 5 dias de calendário no mês recebe o per diem A por cada dia em falta,
@@ -290,12 +334,13 @@ has('TAP cabine Cl. 7.ª/1 a) (+30 min)', TAPC, 'o seu término após trinta min
     '2026-05-12': { kind: 'flight', route: 'LIS-OPO-LIS', report_time: '06:00', block_on: '09:00' },
     '2026-05-20': { kind: 'flight', route: 'LIS-FAO-LIS', report_time: '06:00', block_on: '09:00' },
   };
-  const pc = monthlyAe(two2, 'OP3', '12/12', tapP, { ym: '2026-05', fleet: 'NB' });
+  two2['2026-04-20'] = two2['2026-05-12'];   // a escala já existia no mês anterior (a prestação só é certa com o mês completo)
+  const pc = monthlyAe(two2, 'OP3', '12/12', tapP, { ym: '2026-05', fleet: 'NB', today: '2026-11-11' });
   eq('TAP pilotos: 2 dias com per diem → prestação complementar de 3 dias (607,50 €)', pc.prestCompl, { days: 3, eur: 607.5, max: 607.5 });
-  const six = {}; ['04', '06', '08', '12', '14', '18'].forEach((d) => { six[`2026-05-${d}`] = two2['2026-05-12']; });
-  eq('TAP pilotos: 6 dias com per diem → sem prestação complementar', monthlyAe(six, 'OP3', '12/12', tapP, { ym: '2026-05', fleet: 'NB' }).prestCompl || null, null);
+  const six = { '2026-04-20': two2['2026-05-12'] }; ['04', '06', '08', '12', '14', '18'].forEach((d) => { six[`2026-05-${d}`] = two2['2026-05-12']; });
+  eq('TAP pilotos: 6 dias com per diem → sem prestação complementar', monthlyAe(six, 'OP3', '12/12', tapP, { ym: '2026-05', fleet: 'NB', today: '2026-11-11' }).prestCompl || null, null);
   // Com férias no mês a "disponibilidade" (n.º 1) fica em dúvida → certo 0, possível os 3 dias.
-  const pcV = monthlyAe(two2, 'OP3', '12/12', tapP, { ym: '2026-05', fleet: 'NB', events: [{ type: 'vacDays', date: '2026-05-25' }] });
+  const pcV = monthlyAe(two2, 'OP3', '12/12', tapP, { ym: '2026-05', fleet: 'NB', today: '2026-11-11', events: [{ type: 'vacDays', date: '2026-05-25' }] });
   eq('TAP pilotos: com férias no mês → prestação complementar incerta (0 a 607,50 €)', pcV.prestCompl, { days: 3, eur: 0, max: 607.5 });
   eq('TAP cabine: sem prestação complementar (é dos pilotos)', monthlyAe(two2, 'CAB3', '12/12', tapC, { ym: '2026-05' }).prestCompl || null, null);
 }

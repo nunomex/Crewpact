@@ -70,7 +70,14 @@ export const admissionRange = (serviceStart, year, toMonth = 12, startExact = fa
 //                 ano) e a do Código do Trabalho, art. 245.º, n.º 1 (as férias vencidas a 1 de janeiro por inteiro + as
 //                 proporcionais do ano da cessação); depois de junho as vencidas já foram pagas → de 0 às proporcionais.
 // null fora do ano da saída (ou sem `serviceEnd`).
-export const leavingAt = (serviceStart, serviceEnd, startExact, ym, natalMonth = 11) => {
+// `juneTo`: até que mês paga o subsídio de junho no ano da admissão (cabine easyJet 6 — Cl. 51.ª/4; pilotos 12).
+//   juneFrac   — o que junho paga (ou pagou) neste ano: o subsídio inteiro, ou no ano da admissão os meses até `juneTo`, nunca
+//                além da saída; null se junho não chega a pagar (saída antes, ou entrada depois de junho);
+//   venc       — as férias vencidas a 1 de janeiro: 1; nenhumas no ano da admissão; no ano seguinte ao da admissão, as do tempo
+//                de serviço desse ano (CT art. 245.º, n.º 3).
+//   feriasExit — mínimo: o proporcional do ano menos o que junho pagou (a leitura do acordo); máximo: vencidas + proporcional,
+//                menos o já pago (CT art. 245.º, n.º 1).
+export const leavingAt = (serviceStart, serviceEnd, startExact, ym, natalMonth = 11, juneTo = 12) => {
   const e = ymParts(serviceEnd), p = ymParts(ym);
   if (!e || !p) return null;
   const last = e.m === 1 ? { y: e.y - 1, m: 12 } : { y: e.y, m: e.m - 1 };
@@ -79,10 +86,14 @@ export const leavingAt = (serviceStart, serviceEnd, startExact, ym, natalMonth =
   const sameYear = !!(s && s.y === last.y);
   const frac = sameYear ? admissionRange(serviceStart, last.y, last.m, startExact) : { min: last.m / 12, max: last.m / 12 };
   const exitMonth = p.m === last.m;
+  const juneFrac = last.m < 6 ? null : !sameYear ? { min: 1, max: 1 } : (s.m <= 6 ? admissionRange(serviceStart, last.y, Math.min(juneTo, last.m), startExact) : null);
+  const paid = juneFrac || { min: 0, max: 0 };
+  const venc = sameYear ? 0 : (s && s.y === last.y - 1 ? admissionRange(serviceStart, s.y, 12, startExact).max : 1);
+  const fix = (x) => Math.max(0, Math.round(x * 1e9) / 1e9);
   return {
-    frac, lastM: last.m, exitMonth,
+    frac, lastM: last.m, exitMonth, juneFrac, venc, sameYear,
     natalHere: p.m === Math.min(natalMonth, last.m),
-    feriasExit: !exitMonth ? null : (sameYear || last.m >= 6) ? { min: 0, max: frac.max } : { min: frac.min, max: 1 + frac.max },
+    feriasExit: !exitMonth ? null : { min: fix(frac.min - paid.min), max: fix(venc + frac.max - paid.max) },
   };
 };
 export const LEAVE_NOTE = { pt: 'Ano da saída: proporcional aos meses até saíres. Nas férias, o acordo diz "proporcionalmente"; o Código do Trabalho (art. 245.º) dá as férias vencidas por inteiro mais as proporcionais do ano.', en: 'Year of leaving: pro rata to the months until you left. For holiday pay the agreement says "pro rata"; the Labour Code (art. 245) gives the accrued leave in full plus the pro rata of the year.' };
@@ -122,7 +133,43 @@ export const suspensionShare = (events, year, { minDays = null } = {}) => {
   }
   if (!all) return null;
   const n = ((+year % 4 === 0 && +year % 100 !== 0) || +year % 400 === 0) ? 366 : 365;
-  return { min: (n - all) / n, max: (n - after) / n };
+  return { min: (n - all) / n, max: (n - after) / n, all, after, n };
+};
+// A fração do ano com serviço PRESTADO (Código do Trabalho, art. 263.º, n.º 2: o Natal "é proporcional ao tempo de serviço prestado
+// no ano civil" na admissão, na cessação e na suspensão): a fração dos meses (`frac`: admissão e/ou saída) MENOS os dias de
+// contrato suspenso ÷ os dias do ano — somam-se, não se multiplicam (revisão de 2026-11-11). { min, max, suspended }.
+export const servedShare = (frac, events, year, opts = {}) => {
+  const sh = suspensionShare(events, year, opts);
+  if (!sh) return { min: frac.min, max: frac.max, suspended: false };
+  return { min: Math.max(0, frac.min - sh.all / sh.n), max: Math.max(0, frac.max - sh.after / sh.n), suspended: true };
+};
+// Os eventos (férias, baixas) do período NESTA companhia — de `serviceStart` até ao mês antes de `serviceEnd`: os de outra
+// companhia não mexem nos subsídios desta (uma baixa na nova reduzia o Natal da antiga; as férias da antiga tiravam o subsídio
+// de férias da TAP — revisão de 2026-11-11).
+export const tenureEvents = (events, serviceStart, serviceEnd) => {
+  const lo = /^\d{4}-\d{2}-\d{2}/.test(String(serviceStart || '')) ? String(serviceStart).slice(0, 10) : null;
+  const hi = /^\d{4}-\d{2}/.test(String(serviceEnd || '')) ? `${String(serviceEnd).slice(0, 7)}-01` : null;
+  if (!lo && !hi) return events || [];
+  return (events || []).filter((e) => {
+    if (!e || !e.date) return false;
+    const d = String(e.date), d10 = d.length === 7 ? `${d}-28` : d;
+    return (!lo || d10 >= lo) && (!hi || d10 < hi);
+  });
+};
+// Junta os itens repetidos do mesmo mês (junho + a saída em junho; janeiro + a saída): soma o certo e o máximo, une as marcas.
+export const mergeItems = (items) => {
+  const r2t = (x) => +(+x).toFixed(2);
+  const out = [];
+  for (const it of items) {
+    const prev = out.find((x) => x.id === it.id);
+    if (!prev) { out.push({ ...it }); continue; }
+    const mx = r2t((prev.max != null ? prev.max : prev.eur) + (it.max != null ? it.max : it.eur));
+    prev.eur = r2t(prev.eur + it.eur);
+    if (mx > prev.eur) prev.max = mx; else delete prev.max;
+    for (const k of ['leaving', 'admission', 'suspension', 'incomplete', 'tapRaise']) if (it[k]) prev[k] = true;
+    if (it.leaving) { prev.note = it.note; if (it.cite) prev.cite = it.cite; }
+  }
+  return out;
 };
 // Antes da entrada na companhia? (o mês `ym` é anterior ao da data de entrada)
 export const beforeStart = (serviceStart, ym) => {

@@ -127,6 +127,15 @@ export const companySpanAt = (history, ym) => {
   while (b + 1 < h.length && h[b + 1].company === h[i].company) b++;
   return { company: h[i].company, from: h[a].from, until: b + 1 < h.length ? h[b + 1].from : null };
 };
+// A data de entrada e a saída da companhia DO MÊS `ym`: nos meses de uma companhia anterior, a entrada é a dela e `serviceEnd` o
+// 1.º mês já fora — os subsídios desses anos e os proporcionais do ano da saída. Na atual (ou sem a linha), a data de entrada do
+// perfil. (Antes usava-se sempre a da atual: os anos passados na antiga ficavam sem subsídios.) A entrada numa companhia anterior
+// conta desde o dia 1 do mês da linha (`startExact: true`): o dia não se pode dar no Perfil, e "incerto" ficava para sempre.
+export const tenureAt = (companyHistory, ym, serviceStart, startExact) => {
+  const sp = companyHistory ? companySpanAt(companyHistory, ym) : null;
+  if (!sp || !sp.until) return { serviceStart, startExact, serviceEnd: null };
+  return { serviceStart: sp.from > '2000-01' ? `${sp.from}-01` : null, startExact: true, serviceEnd: sp.until };
+};
 // Cobertura do PAGAMENTO pelo AE (art. 496.º CT): por conta de outrem → abrangido, salvo o "não" do
 // perfil; agência/independente → nunca. (A mesma regra que o App usava, agora num só sítio.)
 export const coveredBy = (employment, aeCovered) => ((employment || 'employee') === 'employee' ? aeCovered !== false : false);

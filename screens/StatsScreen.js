@@ -126,7 +126,7 @@ export default function StatsScreen({ navigation }) {
     () => isYear
       ? yearStats(duties, { year, ae, aeAt, category: crewCategory, contract: crewContract || '12/12', crewHistory, companyHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt, serviceStart, startExact: serviceStartExact, largada, lifestyle })
       : monthStats(duties, { ym, ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, companyHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt, serviceStart, startExact: serviceStartExact, largada, lifestyle }),
-    [isYear, duties, year, ym, ae, aeNow, companyHistory, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, serviceStart, largada, lifestyle], // eslint-disable-line react-hooks/exhaustive-deps
+    [isYear, duties, year, ym, ae, aeNow, companyHistory, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, serviceStart, serviceStartExact, homeBaseAt, largada, lifestyle], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   // Saldo de férias do ANO (direito anual, Art. 238.º CT) — HONESTO: só dias efetivamente gozados
@@ -191,7 +191,7 @@ export default function StatsScreen({ navigation }) {
   const extrasSum = (A.extras || 0) + (A.events || 0) + (A.cash || 0);
   // 9/3 e sazonais sem as datas de atividade: a base do mês é incerta (Cl. 48.ª/80.ª; bloco 5) — diz-se o intervalo.
   // O motivo vem dos próprios meses (stats.js, `uncertainReasons`), não da companhia atual (um ano pode ter duas).
-  const reasons = isYear ? (A.uncertainReasons || []) : (A.baseRange ? [A.baseRange.reason || 'activity'] : []);
+  const reasons = isYear ? (A.uncertainReasons || []) : (A.baseRange ? (A.baseRange.reasons || [A.baseRange.reason || 'activity']) : []);
   const whyTap = l('atualização do vencimento base por confirmar', 'base pay update not confirmed'), whyAct = l('faltam as datas de atividade', 'activity dates missing');
   const whyAdm = l('falta o dia em que entraste', 'the day you joined is missing');
   const whySick = l('nos dias de baixa a TAP paga o líquido ou completa o subsídio da Segurança Social', 'on sick days TAP pays the net amount or tops up the social-security benefit');

@@ -54,8 +54,10 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   de situação · `docs/05-verificacao.md`).
 
 ### 2. Acertos de código por fazer
-- **Cálculos (2026-11-11 TAP e easyJet):** o RDP da cabine easyJet não é devido com DDO/IDO no mesmo dia (Cl. 67.ª, n.º 4 —
-  salvo pernoita não planeada) e a app ainda o sugere; o dia da saída de uma companhia não se sabe (a linha guarda o mês: contam-se
+- **Cálculos (2026-11-11 TAP e easyJet):** o RDP da cabine easyJet com DDO no mesmo dia já não SOMA (Cl. 67.ª, n.os 4 e 5), mas a
+  Disrupção ainda o sugere; o valor de um serviço TAP não bate com o mês quando dois serviços de datas seguidas caem no mesmo dia
+  da base (só no ecrã); prestação complementar: o n.º 3 (mais de 50 dias de baixa no ano) por tratar; mudar de cabine para
+  piloto na MESMA companhia não conta como saída; o dia da saída de uma companhia não se sabe (a linha guarda o mês: contam-se
   meses inteiros); nos meses de uma companhia ANTERIOR da TAP, a largada e as anuidades usam as datas da atual; subsídio de
   férias da TAP no ano da saída (não se sabe o mês); um serviço em terra fora da base lê-se na hora de lá para o dia de calendário
   da TAP (só os voos têm os instantes).
@@ -133,8 +135,20 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
 - **Média das variáveis:** não se resolve por código — a Cl. 51.ª/2 dá o período (12 meses) mas nenhum acordo diz as rubricas →
   pergunta D26 do pacote; a nota do subsídio diz o que falta.
 - **Pacote:** D24–D27 novas, Word gerado.
-- **Testes:** dinheiro 147, dinheiro a menos 266, stats 182, ae-golden com os casos novos; 34 suites verdes; export iOS ✓.
-  **Sem revisão independente** (9 pontos de dinheiro — fazer antes de dar por fechado). **Nada visto no iPhone.**
+- **Revisão independente (os 3 commits + o do mês da entrada):** 14 erros confirmados, todos corrigidos com golden primeiro —
+  (1) Natal com baixa no ano da saída/entrada: as reduções SOMAM-SE (meses − dias suspensos ÷ dias do ano, `servedShare`), não se
+  multiplicam; (2) as baixas e as férias de OUTRA companhia já não mexem nos subsídios desta (`tenureEvents`); (3) TAP na saída:
+  as férias vencidas dão o subsídio inteiro (AE Cl. 22.ª, n.º 6/n.º 3), o proporcional do ano como máximo; (4) as férias da
+  companhia anterior tiravam o subsídio de férias da TAP; (5–6) entra e sai no mesmo ano: junho nunca além da saída, e a saída
+  paga o resto como certo (`leavingAt` com `juneFrac`/`venc`; CT art. 245.º, n.º 3 no ano seguinte ao da admissão); (7) baixa
+  TAP no mês da entrada pela base inteira ÷ 30; (8) prestação complementar com formação sem tipo: os três casos juntos (certo
+  945, máximo 1 012,50), e só certa num mês passado com escala antes dele; (9) cancelamento tardio num dia com complemento:
+  o maior, e um por dia; (10) RDP não soma com DDO nem com WFLY+DDO/IDO; IDO antes de DDO; (11) o sino com a entrada e a saída
+  da companhia do mês; (12) o serviço TAP acaba aos calços + 30 min ou no sign-off se for mais tarde; (14) o 1.º mês de uma
+  companhia anterior conta inteiro. Itens repetidos no mesmo mês juntam-se (`mergeItems`); os motivos do incerto somam-se
+  (`reasons`); o art. 245.º do CT entrou em `fontes/pt/` (do mesmo PDF oficial, SHA conferido). O revisor confirmou sem erros:
+  os dias na hora da base, a doença TAP no total do mês e do ano, o `dayOffWorked` composto e as noites de formação.
+- **Testes:** dinheiro 157, dinheiro a menos 279, stats 183, ae-golden; 34 suites verdes; export iOS ✓. **Nada visto no iPhone.**
 
 ---
 

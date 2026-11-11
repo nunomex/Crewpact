@@ -6,7 +6,7 @@
 // É uma ESTIMATIVA DE APOIO ao piloto; NÃO substitui o processamento salarial
 // oficial da companhia. Categorias: CPT, SFO, FO, SO.
 
-import { pickTable, ymParts, admissionRange, beforeStart, suspensionShare, leavingAt, LEAVE_NOTE } from './tables';
+import { pickTable, ymParts, admissionRange, beforeStart, servedShare, tenureEvents, mergeItems, leavingAt, LEAVE_NOTE } from './tables';
 
 export const AE_ID = 'easyjet-spac';
 export const AE_LABEL = 'Easyjet · SPAC (pilotos)';
@@ -312,9 +312,10 @@ export const airportStandby = (cat, { called = false, over4h = false, index = 1,
 const BENEFITS_PRORATA = ['PPY 9/12', 'PPY 8/12', '14-14', '21-7', '7-7'];
 const RET_NOTE = { pt: 'Entre o valor proporcional ao PPY e o inteiro: o acordo manda pagar "proporcionalmente" a quem está "em regime de tempo parcial" e chama tempo parcial ao próprio PPY.', en: 'Between the PPY pro-rata amount and the full one: the agreement prorates it for "part-time" and calls the PPY itself part-time.' };
 const SUB_NOTE = { pt: 'Sem a média das prestações variáveis (o acordo não diz que rubricas nem que período).', en: 'Without the average of variable pay (the agreement does not say which items or period).' };
-export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceStart = null, startExact = false, serviceEnd = null, lifestyle = false, events = [] } = {}) => {
+export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceStart = null, startExact = false, serviceEnd = null, lifestyle = false, events: evAll = [] } = {}) => {
   const p = ymParts(ym), T = tableAt(ym);
   if (!p || !T || T.BASE_ANNUAL[cat] == null || beforeStart(serviceStart, ym)) return [];
+  const events = tenureEvents(evAll, serviceStart, serviceEnd);   // só as baixas do período nesta companhia
   const f = contractFactor(contract);
   const sub = (T.BASE_ANNUAL[cat] * f * index) / SALARY_INSTALMENTS;
   const s = ymParts(serviceStart);
@@ -323,24 +324,27 @@ export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceSta
   const add = (id, eur, extra = {}) => { if (eur > 0) out.push({ id, eur: r2(eur), ...extra }); };
   // O ano da admissão: a fração { min, max } (sem o dia da entrada → o certo e o máximo, marca `admission`).
   const adm = admissionRange(serviceStart, p.y, 12, startExact);
-  const admX = adm.max > adm.min ? { max: r2(sub * adm.max), admission: true } : {};
-  if (p.m === 6 && !(admY && s.m > 6)) add('ferias', sub * adm.min, { incomplete: true, note: SUB_NOTE, cite: 'Art. 36.º', ...admX });
-  if (p.m === 12 && admY && s.m > 6) add('ferias', sub * adm.min, { incomplete: true, note: SUB_NOTE, cite: 'Art. 36.º, n.º 2', ...admX });
   // O ano da saída (Art. 36.º/1: "proporcionalmente nos anos de contratação e cessação"): o Natal no seu mês ou no da saída; as
   // férias na saída, entre a leitura do acordo e a do Código do Trabalho (art. 245.º).
-  const lv = leavingAt(serviceStart, serviceEnd, startExact, ym, 11);
+  const lv = leavingAt(serviceStart, serviceEnd, startExact, ym, 11, 12);
   const LV = lv ? { leaving: true, note: LEAVE_NOTE, cite: 'Art. 36.º, n.º 1' } : {};
+  // Junho: no ano da saída nunca além dos meses até sair (entra e sai no mesmo ano: o ano todo vale os meses de serviço).
+  const jf = lv && lv.juneFrac ? lv.juneFrac : adm;
+  const jX = jf.max > jf.min ? { max: r2(sub * jf.max), admission: true } : {};
+  if (p.m === 6 && !(admY && s.m > 6)) add('ferias', sub * jf.min, { incomplete: true, note: SUB_NOTE, cite: 'Art. 36.º', ...jX });
+  if (p.m === 12 && admY && s.m > 6 && !lv) add('ferias', sub * adm.min, { incomplete: true, note: SUB_NOTE, cite: 'Art. 36.º, n.º 2', ...(adm.max > adm.min ? { max: r2(sub * adm.max), admission: true } : {}) });
   if (lv && lv.feriasExit && lv.feriasExit.max > 0) {
     const e0 = r2(sub * lv.feriasExit.min), m0 = r2(sub * lv.feriasExit.max);
     out.push({ id: 'ferias', eur: e0, ...(m0 > e0 ? { max: m0 } : {}), incomplete: true, ...LV });
+    out.splice(0, out.length, ...mergeItems(out));   // junho e a saída no mesmo mês: um só item
   }
   if (lv ? lv.natalHere : p.m === 11) {
-    // Baixa de mais de um mês no ano: o Natal fica proporcional (CT art. 263.º, n.º 2, c), e 296.º) — certo e máximo.
-    const sh = suspensionShare(events, p.y);
-    const nf = lv ? lv.frac : adm;
-    const v = sub * nf.min, vMax = sub * nf.max;
-    const eurN = sh ? v * sh.min : v, maxN = r2(sh ? vMax * sh.max : vMax);
-    add('natal', eurN, { incomplete: true, note: SUB_NOTE, cite: 'Art. 36.º', ...(maxN > r2(eurN) ? { max: maxN } : {}), ...(sh ? { suspension: true } : {}), ...(!lv && adm.max > adm.min ? { admission: true } : {}), ...LV });
+    // O tempo de serviço prestado: os meses (admissão, saída) menos os dias de baixa de mais de um mês (CT art. 263.º, n.º 2, e
+    // 296.º) — certo e máximo.
+    const fr = lv ? lv.frac : adm;
+    const nf = servedShare(fr, events, p.y);
+    const eurN = sub * nf.min, maxN = r2(sub * nf.max);
+    add('natal', eurN, { incomplete: true, note: SUB_NOTE, cite: 'Art. 36.º', ...(maxN > r2(eurN) ? { max: maxN } : {}), ...(nf.suspended ? { suspension: true } : {}), ...(!lv && adm.max > adm.min ? { admission: true } : {}), ...LV });
   }
   if (p.m === 4) add('benefits', (T.BENEFITS_ANNUAL[cat] || 0) * (BENEFITS_PRORATA.includes(contract) ? f : 1), { cite: 'Art. 45.º' });
   if (s && p.m === s.m && p.y > s.y) {

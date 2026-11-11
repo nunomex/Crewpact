@@ -16,7 +16,7 @@
 // (default = (1.03)^(ano-2023), EDITÁVEL, sempre marcado "estimado"). Per-diem (A-3.2) e
 // comando em cruzeiro NÃO são indexados (tabelas inalteradas) → golden e exatos.
 
-import { pickTable, ymParts, vacationPayYm, admissionRange, beforeStart, suspensionShare, leavingAt, LEAVE_NOTE } from './tables';
+import { pickTable, ymParts, vacationPayYm, admissionRange, beforeStart, servedShare, tenureEvents, mergeItems, leavingAt, LEAVE_NOTE } from './tables';
 
 export const AE_ID = 'tap-spac';
 export const AE_LABEL = 'TAP · SPAC (pilotos)';
@@ -228,9 +228,10 @@ export const vs = (cat, index = 1, ym, years = 1) => { const T = tableAt(ym); re
 // do tempo de trabalho prestado" (n.º 2). Férias (Cl. 7.ª, n.º 2-3): a RB, "pago de uma só vez, antes do início do 1.º período de
 // férias, com o vencimento do mês anterior ao do respetivo gozo" → o mês antes do 1.º dia de férias registado; sem férias
 // registadas o mês não se sabe (fica fora dos meses; o ano diz-o — `pendingAnnual`).
-export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceStart = null, startExact = false, serviceEnd = null, largada = null, history = null, events = [] } = {}) => {
+export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceStart = null, startExact = false, serviceEnd = null, largada = null, history = null, events: evAll = [] } = {}) => {
   const p = ymParts(ym);
   if (!p || beforeStart(serviceStart, ym) || !hasTableFor(cat, ym)) return [];
+  const events = tenureEvents(evAll, serviceStart, serviceEnd);   // só as férias e as baixas do período nesta companhia
   const out = [];
   const rb = monthlyBase(cat, { contract, index, ym, serviceStart, largada, history });
   if (rb == null) return out;
@@ -241,13 +242,22 @@ export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceSta
   if (lv ? lv.natalHere : p.m === 12) {
     // "No ano da admissão, no da cessação do contrato de trabalho, bem como no da suspensão do mesmo (...) na proporção do tempo de
     // trabalho prestado" (Cl. 8.ª, n.º 2; CT art. 296.º: a doença de mais de um mês suspende) — certo e máximo.
-    const sh = suspensionShare(events, p.y);
     const adm = lv ? lv.frac : admissionRange(serviceStart, p.y, 12, startExact);   // sem o dia da entrada: certo e máximo
-    const v = rb * adm.min, vMax = rbMax * adm.max;
-    const eur = r2(sh ? v * sh.min : v), max = r2(sh ? vMax * sh.max : vMax);
-    out.push({ id: 'natal', eur, cite: 'RRRGS Cl. 8.ª', ...(max > eur ? { max } : {}), ...(sh ? { suspension: true } : {}), ...up, ...(!lv && adm.max > adm.min ? { admission: true } : {}), ...(lv ? { leaving: true, note: LEAVE_NOTE } : {}) });
+    const nf = servedShare(adm, events, p.y);   // os meses menos os dias de contrato suspenso (somam-se)
+    const eur = r2(rb * nf.min), max = r2(rbMax * nf.max);
+    out.push({ id: 'natal', eur, cite: 'RRRGS Cl. 8.ª', ...(max > eur ? { max } : {}), ...(nf.suspended ? { suspension: true } : {}), ...up, ...(!lv && adm.max > adm.min ? { admission: true } : {}), ...(lv ? { leaving: true, note: LEAVE_NOTE } : {}) });
   }
   if ([p.y, p.y + 1].some((y) => vacationPayYm(events, y) === ym)) out.push({ id: 'ferias', eur: rb, cite: 'RRRGS Cl. 7.ª', ...(rbMax > rb ? { max: rbMax } : {}), ...up });
+  // Na saída: as férias vencidas a 1 de janeiro ainda por gozar dão o subsídio inteiro (AE Cl. 22.ª, n.º 3: "terá ainda direito a
+  // receber a retribuição correspondente a esse período, bem como o respetivo subsídio") — certo, se ainda não foi pago este ano;
+  // o proporcional do ano da cessação (CT art. 245.º, n.º 1, b)) como máximo.
+  if (lv && lv.exitMonth) {
+    const paidYm = vacationPayYm(events, p.y);
+    const venc = paidYm && paidYm <= ym ? 0 : lv.venc;
+    const eur = r2(rb * venc), max = r2(rbMax * (venc + lv.frac.max));
+    if (max > 0) out.push({ id: 'ferias', eur, ...(max > eur ? { max } : {}), cite: 'AE Cl. 22.ª, n.º 3', leaving: true, note: LEAVE_NOTE, ...up });
+    return mergeItems(out);
+  }
   return out;
 };
 // A RB com o VB no máximo do ano (indexRange). Só quando o `index` pedido é o do motor (o mínimo do ano); com outro índice
@@ -258,7 +268,7 @@ const rbAtMax = (cat, { contract, index, ym, serviceStart, largada, history }) =
   return monthlyBase(cat, { contract, index: ir.max, ym, serviceStart, largada, history });
 };
 export const pendingAnnual = (cat, { year, contract = '12/12', index = 1, serviceStart = null, largada = null, history = null, events = [] } = {}) => {
-  if (vacationPayYm(events, year)) return [];
+  if (vacationPayYm(tenureEvents(events, serviceStart, null), year)) return [];   // só as férias já nesta companhia
   const ym = `${year}-12`;
   const rb = monthlyBase(cat, { contract, index, ym, serviceStart, largada, history });
   if (rb == null) return [];

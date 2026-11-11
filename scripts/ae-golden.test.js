@@ -320,10 +320,10 @@ eq('routeDistances rota vazia', routeDistancesNM(null).length, 0);
   eq('ADTY mês cabine: 2 setores MÉDIOS (78 €)', monthlyAe({ '2026-06-10': sb('08:00', '20:00') }, 'CM', '12/12', cabin, { ym: '2026-06' }).extras, 78);
   // TAP pilotos: "Deslocação para serviço de assistência no aeroporto" = per diem A (RRRGS Cl. 9.ª, n.º 1, a), ii); bloco 6) —
   // sem voo efetivo, a coluna da frota (NB → 270). Base sem a data de entrada = só o VB (8 125). Com um só dia de per diem no
-  // mês entra a prestação retributiva complementar (regulamento de retribuições, Cl. 10.ª): os 4 dias em falta × o per diem A
-  // (270) = 1 080 → 8 125 + 270 + 1 080 = 9 475.
-  const sbM = monthlyAe({ '2026-06-10': sb('08:00', '20:00') }, 'CTE', '12/12', tapPilot, { ym: '2026-06' });
-  eq('TAP mês: assistência no aeroporto = per diem A (+ a prestação complementar de 4 dias)', JSON.stringify([sbM.total, sbM.prestCompl]), JSON.stringify([9475, { days: 4, eur: 1080, max: 1080 }]));
+  // mês há a prestação retributiva complementar (regulamento de retribuições, Cl. 10.ª): os 4 dias em falta × o per diem A (270)
+  // = 1 080 — mas só como MÁXIMO: é o 1.º mês com dados (a escala pode não estar toda) → o total certo fica 8 125 + 270.
+  const sbM = monthlyAe({ '2026-06-10': sb('08:00', '20:00') }, 'CTE', '12/12', tapPilot, { ym: '2026-06', today: '2026-11-11' });
+  eq('TAP mês: assistência no aeroporto = per diem A (a prestação complementar de 4 dias só como máximo)', JSON.stringify([sbM.total, sbM.prestCompl]), JSON.stringify([8395, { days: 4, eur: 0, max: 1080 }]));
 }
 
 // ── WFLY que entra na folga seguinte (cabine Cl. 67.ª/5: "Se um tripulante de cabine trabalhar num dia WFLY e este entrar no dia de

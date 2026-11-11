@@ -585,8 +585,13 @@ janeiro de cada ano.
 - **Exemplo:** FA easyJet que sai no fim de abril de 2026. Natal: 448,86 € (4/12). Férias: 448,86 € (acordo) contra
   1 795,43 € (Código do Trabalho: 1 346,57 € + 448,86 €).
 - **A aplicação hoje:** no mês da saída mostra o Natal proporcional e as férias com o valor do acordo como certo e o do
-  Código do Trabalho como máximo. Na TAP mostra só o Natal: o subsídio de férias paga-se no mês antes das férias e a
-  aplicação não sabe quando seriam.
+  Código do Trabalho como máximo. Na TAP, o acordo é expresso (AE Cl. 22.ª, n.º 6 cabine e n.º 3 pilotos: «Se o contrato
+  cessar antes de gozado o período de férias vencido no início do ano da cessação, o tripulante terá ainda direito a receber
+  a retribuição correspondente a esse período, bem como o respetivo subsídio»): mostra o subsídio das férias vencidas como
+  certo, se ainda não foi pago nesse ano, e o proporcional do ano como máximo.
+- **Natal com baixa no ano da saída ou da entrada:** a aplicação conta o tempo de serviço prestado como os meses de contrato
+  menos os dias de contrato suspenso a dividir pelos dias do ano (art. 263.º, n.º 2). Está certo somar as duas reduções
+  desta maneira?
 - **Pergunta:** qual das leituras vale? O acordo pode dar menos do que o art. 245.º?
 - **Conservadora:** a do acordo (o valor mais baixo como certo).
 

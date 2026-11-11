@@ -3,7 +3,7 @@
 import { sectorDistanceNM } from './airports';
 import { eventCounts } from './aeEvents';
 import { isMediumHaul } from '../ae/tapLimits';
-import { ymShift, entryMonthBase } from '../ae/tables';
+import { ymShift, entryMonthBase, tenureEvents } from '../ae/tables';
 import { resolveCrew } from './crewHistory';
 import { legsChainMs, chainReportMs, airportOffsetMin } from './zulu';
 
@@ -153,8 +153,12 @@ const baseDaysOf = (s, date, base) => {
   const ch = legsChainMs(date, legs, s.report_time);
   const last = ch[ch.length - 1];
   if (rep == null || !last || last.onMs == null) return null;
+  // O fim: 30 min depois dos calços, ou o sign-off se for MAIS TARDE (Cl. 7.ª, n.º 1, a): "o seu término após trinta minutos
+  // decorridos da imobilização definitiva da aeronave, ou em caso de irregularidade justificada, todo o tempo ..."). Um sign-off
+  // antes da chegada (dado incoerente) ignora-se (revisão de 2026-11-11).
   const so = clockMin(s.signOff), lastOn = clockMin(legs[legs.length - 1].on);
-  const endMs = so != null && lastOn != null ? last.onMs + ((((so - lastOn) % 1440) + 1440) % 1440) * 60000 : last.onMs + 30 * 60000;
+  const after = so != null && lastOn != null ? (((so - lastOn) % 1440) + 1440) % 1440 : 0;
+  const endMs = last.onMs + Math.max(30, after <= 720 ? after : 0) * 60000;
   const dayAt = (ms) => { const off = airportOffsetMin(base, ms); return off == null ? null : new Date(ms + off * 60000).toISOString().slice(0, 10); };
   const a = dayAt(rep), b = dayAt(endMs);
   return a && b && b >= a ? { start: a, end: b } : null;
@@ -202,7 +206,9 @@ export const tapCalendarDays = (duties = {}, ym, { baseAt = null } = {}) => {
         const r = clockMin(s.report_time);
         const so = clockMin(s.signOff), bo = clockMin(s.block_on);
         if (r != null && (so != null || bo != null)) {
-          const end = so != null ? so + (so < r ? 1440 : 0) : bo + (bo < r ? 1440 : 0) + 30;
+          // calços + 30 min, ou o sign-off se for mais tarde (a mesma regra do baseDaysOf)
+          const boA = bo != null ? bo + (bo < r ? 1440 : 0) : null, soA = so != null ? so + (so < r ? 1440 : 0) : null;
+          const end = boA != null ? Math.max(boA + 30, soA != null && soA >= boA ? soA : 0) : soA;
           endDate = isoAdd(date, Math.floor(end / 1440));
         }
       }
@@ -330,7 +336,8 @@ export const awayNights = (duties = {}, ym = null, { throughGround = false } = {
 // ficam incertos (ae/tables.js: entryFrac, admissionRange, entryMonthBase).
 // `baseAt`: a base (código ou função do dia) — na TAP os dias de calendário contam-se na hora da base (tapCalendarDays).
 // `serviceEnd`: o 1.º mês já fora da companhia (o ano da saída: subsídios proporcionais — ae/tables.js, leavingAt).
-export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1, fleet, fullShare, serviceStart = null, startExact = false, serviceEnd = null, largada = null, history = null, events = [], lifestyle = false, baseAt = null } = {}) => {
+// `today` ('AAAA-MM-DD', por omissão hoje): a prestação complementar dos pilotos TAP só é certa num mês já passado.
+export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1, fleet, fullShare, serviceStart = null, startExact = false, serviceEnd = null, largada = null, history = null, events = [], lifestyle = false, baseAt = null, today = null } = {}) => {
   if (!ae || !category || !ae.computeAeMonth) return null;
   if (ym && ae.hasTableFor && !ae.hasTableFor(category, ym)) return null;   // sem tabela nesse mês → o mês não dá € (bloco 5)
   const byDay = !!ae.PER_DIEM_BY_DAY;   // TAP: ajudas de custo por dia de calendário (tapCalendarDays)
@@ -366,7 +373,7 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
     // Um WFLY que entra na folga seguinte paga também o DDO ou o IDO (cabine Cl. 67.ª/5) → 'wfly+ddo' / 'wfly+ido'.
     const dows = new Set(svcs.flatMap((s) => (s && s.dayOffWorked ? String(s.dayOffWorked).split('+') : [])));
     if (dows.has('wfly')) wflyDaysAuto++;
-    if (dows.has('ddo')) ddoDaysAuto++; else if (dows.has('ido')) idoDaysAuto++;
+    if (dows.has('ido')) idoDaysAuto++; else if (dows.has('ddo')) ddoDaysAuto++;   // os dois no mesmo dia: o IDO (o maior)
     for (const s of svcs) {
       if (!s) continue;
       const kind = s.kind || 'flight';
@@ -431,6 +438,8 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
   // ── TAP: tudo por dia de calendário (Cl. 7.ª/8.ª cabine · Cl. 9.ª pilotos; bloco 6, L5) ──
   let groundEur = 0, groundMaxDelta = 0, complEur = 0, chefia = 0, extrasMaxDelta = 0, prestCompl = null;
   const abDays = [];   // dias de terra com per diem A ou B (pilotos TAP) — para a prestação complementar
+  const maybeADays = [];   // dias de formação sem tipo (A, B ou nenhum): { date, delta } — o que somaram ao máximo do per diem
+  const lateCancel = new Set((events || []).filter((e) => e && e.type === 'lateCancelDays' && e.date).map((e) => String(e.date)));
   if (byDay) {
     const td = tapCalendarDays(duties, ym || '', { baseAt });
     td.flightDays.forEach((f) => flights.push(ae.GROUND_PER_DIEM ? { dists: f.dists, longHaul: f.longHaul } : f.dists));
@@ -453,7 +462,7 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
         if (isB) { if (b != null) groundEur += b; stays.delete(g.date); abDays.push(g.date); continue; }
         if (maybeA) {
           const a = ae.perDiem(category, [0], 1, fleet, g.date, { longHaul: false });
-          if (a != null) groundMaxDelta += a - (stays.has(g.date) && b != null ? b : 0);
+          if (a != null) { const delta = a - (stays.has(g.date) && b != null ? b : 0); groundMaxDelta += delta; if (!stays.has(g.date)) maybeADays.push({ date: g.date, delta }); }
         }
       } else if (ae.EXTRAORD_FROM_ROSTER && ae.extraord) {
         // Cabine (Cl. 8.ª): assistência no aeroporto não acionada = 2 × o complemento (n.º 2); em casa, formação presencial,
@@ -464,7 +473,8 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
         const each = ae.extraord(g.date, category);
         if (!mult || each == null) continue;
         const comp = mult * each;
-        const ac2 = stays.has(g.date) ? (ae.nightStop(category, 1, g.date) || 0) : 0;
+        // Também num dia de cancelamento tardio registado (AC2, Cl. 7.ª, n.º 2, a)): "prevalecerá o pagamento de valor superior".
+        const ac2 = (stays.has(g.date) || lateCancel.has(g.date)) ? (ae.nightStop(category, 1, g.date) || 0) : 0;
         complEur += Math.max(0, comp - ac2);
       }
     }
@@ -482,14 +492,28 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
         if ([d, ...(Array.isArray(d.extra) ? d.extra : [])].some((s) => s && s.kind === 'training' && (s.role === 'instr' || s.instructor))) ab.add(date);   // verificador
       }
       const hasRoster = Object.keys(duties || {}).some((date) => date.startsWith(ym) && duties[date] && !duties[date].deleted);
-      const days = Math.max(0, ae.PREST_COMPL_DAYS - ab.size);
-      const a = days ? ae.perDiem(category, [0], 1, fleet, ym, { longHaul: false }) : null;
-      if (hasRoster && days && a != null) {
-        const full = r2(days * a);
-        const doubt = (events || []).some((e) => e && (e.type === 'vacDays' || e.type === 'sickDays') && String(e.date).startsWith(ym))
-          || (serviceStart && String(serviceStart).slice(0, 7) === ym);
-        prestCompl = { days, eur: doubt ? 0 : full, max: full };
-        if (!doubt) complEur += full; else extrasMaxDelta += full;
+      // Uma formação SEM TIPO pode ser A, B ou nenhum (Cl. 10.ª, n.º 2, d)): contam-se os três casos juntos — todos "nenhum" (o
+      // dia fica em falta), todos B, todos A — e fica o menor como certo e o maior como máximo (revisão de 2026-11-11: o certo
+      // contava a prestação e o máximo somava-lhe ainda o A do dia).
+      const mA = maybeADays.filter((x) => !ab.has(x.date));
+      const N = ae.PREST_COMPL_DAYS, c = ab.size, M = mA.length;
+      const d0 = Math.max(0, N - c), dM = Math.max(0, N - c - M);
+      const a = d0 ? ae.perDiem(category, [0], 1, fleet, ym, { longHaul: false }) : null;
+      const b = M && ae.perDiemB ? (ae.perDiemB(category, `${ym}-15`) || 0) : 0;
+      if (hasRoster && d0 && a != null) {
+        const t0 = d0 * a, tB = M * b + dM * a, tA = M * a + dM * a;
+        const sure = r2(Math.min(t0, tB)), top = r2(Math.max(t0, tA));
+        // Só é certa num mês PASSADO e com escala antes dele (o mês em curso, os futuros e o 1.º mês com dados podem não ter a escala
+        // toda); férias, baixa, a entrada ou a saída no mês deixam a "disponibilidade" (n.º 1) em dúvida → só como máximo.
+        const todayYm = String(today || new Date().toISOString().slice(0, 10)).slice(0, 7);
+        const earlier = Object.keys(duties || {}).some((date) => date.slice(0, 7) < ym && duties[date] && !duties[date].deleted);
+        const doubt = !(ym < todayYm) || !earlier
+          || (events || []).some((e) => e && (e.type === 'vacDays' || e.type === 'sickDays') && String(e.date).startsWith(ym))
+          || (serviceStart && String(serviceStart).slice(0, 7) === ym) || (serviceEnd && ymShift(serviceEnd, -1) === ym);
+        groundMaxDelta -= mA.reduce((acc, x) => acc + x.delta, 0);   // esses dias contam-se aqui, não no máximo do per diem
+        prestCompl = { days: d0, eur: doubt ? 0 : sure, max: top };
+        if (!doubt) complEur += sure;
+        extrasMaxDelta += top - (doubt ? 0 : sure);
       }
     }
     // Cabine: e-learning (Cl. 13.ª) e DHC fora de C/CL (Cl. 12.ª, n.º 4) do mês ANTERIOR, pagos neste.
@@ -539,6 +563,7 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
   if (!month) return null;
   // O mês da ENTRADA: o vencimento pelos dias desde a entrada (base ÷ 30 × dias, nunca mais do que o mês); sem o dia → incerto,
   // de 1 dia ao mês todo (antes pagava-se sempre o mês todo). Um intervalo que o acordo já desse (KPI da TAP…) escala com ele.
+  const fullBase = month.base;   // a base do mês inteiro: o dia de baixa vale esta ÷ 30, mesmo no mês da entrada
   const eb = entryMonthBase(month.base, serviceStart, ym, startExact);
   if (eb && eb.min < month.base) {
     const k = eb.min / month.base, kMax = eb.max / month.base, br = month.baseRange;
@@ -553,13 +578,16 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
   // até ao líquido — a app não calcula líquidos → a base desses dias fica incerta: de base − dias × base ÷ 30 (a convenção dos
   // acordos) ao máximo. Os dias com serviço não contam (como em aeEvents.eventCounts).
   if (ae.SICK_NET_TOPUP && ym && month.base > 0) {
-    const sick = new Set((events || []).filter((e) => e && e.type === 'sickDays' && /^\d{4}-\d{2}-\d{2}$/.test(String(e.date)) && String(e.date).startsWith(ym)
+    // só as baixas do período nesta companhia (com o dia da entrada dado, só desde esse dia)
+    const sick = new Set(tenureEvents(events, serviceStart, serviceEnd).filter((e) => e && e.type === 'sickDays' && /^\d{4}-\d{2}-\d{2}$/.test(String(e.date)) && String(e.date).startsWith(ym)
       && !(duties[e.date] && !duties[e.date].deleted)).map((e) => String(e.date)));
     if (sick.size) {
       const [yy, mm] = ym.split('-').map(Number), dim = new Date(Date.UTC(yy, mm, 0)).getUTCDate();
-      const loss = sick.size >= dim ? month.base : Math.min(month.base, r2((month.base * sick.size) / 30));
+      const loss = sick.size >= dim ? month.base : Math.min(month.base, r2((fullBase * sick.size) / 30));
       const br = month.baseRange;
-      month.baseRange = { min: r2((br ? br.min : month.base) - loss), max: br ? br.max : month.base, reason: 'tapSick' };
+      // os motivos somam-se (a baixa não apaga a dúvida do dia de entrada nem a da atualização do vencimento)
+      const reasons = [...new Set([...(br ? (br.reasons || [br.reason]) : []), 'tapSick'].filter(Boolean))];
+      month.baseRange = { min: r2((br ? br.min : month.base) - loss), max: br ? br.max : month.base, reason: 'tapSick', ...(reasons.length > 1 ? { reasons } : {}) };
       month.base = r2(month.base - loss);
       month.total = r2(month.total - loss);
     }

@@ -5,15 +5,7 @@
 // do motor FTL), para contar TUDO o que está na escala, importado ou manual.
 import { monthlyPerDiem, monthlyAe, awayNights } from './perdiem';
 import { eventCounts } from './aeEvents';
-import { resolveCrew, companySpanAt } from './crewHistory';
-// A data de entrada e a saída da companhia DO MÊS `ym` (linha do tempo da companhia): nos meses de uma companhia anterior, a
-// entrada é a dela (ao mês) e `serviceEnd` o 1.º mês já fora — os subsídios desses anos e os proporcionais do ano da saída. Na
-// atual (ou sem a linha), a data de entrada do perfil. (Antes usava-se sempre a da atual: os anos da antiga ficavam sem subsídios.)
-const tenureAt = (companyHistory, ym, serviceStart, startExact) => {
-  const sp = companyHistory ? companySpanAt(companyHistory, ym) : null;
-  if (!sp || !sp.until) return { serviceStart, startExact, serviceEnd: null };
-  return { serviceStart: sp.from > '2000-01' ? `${sp.from}-01` : null, startExact: false, serviceEnd: sp.until };
-};
+import { resolveCrew, tenureAt } from './crewHistory';
 import { restAfterDuty } from '../ftl';
 
 export const STAT_KINDS = ['flight', 'standby_airport', 'standby_home', 'positioning', 'office', 'training'];
@@ -138,7 +130,7 @@ export const yearStats = (duties = {}, { year, ae = null, aeAt = null, category 
       if (ae.hasTableFor && !ae.hasTableFor(catM, ym)) { noTable = true; continue; }   // sem tabela nesse mês: não soma (bloco 5)
       const m = monthlyAe(duties, catM, ctrM || '12/12', ae, { ym, index, fleet: fleetM || fleet, ...tenureAt(companyHistory, ym, serviceStart, startExact), largada, history, events, lifestyle, baseAt });   // à categoria e à frota desse mês (frota → coluna A no TAP)
       if (m) {
-        if (m.baseRange) { uncertain = true; uncReasons.add(m.baseRange.reason || 'activity'); }
+        if (m.baseRange) { uncertain = true; for (const r of (m.baseRange.reasons || [m.baseRange.reason || 'activity'])) uncReasons.add(r); }
         if (m.seniority && m.seniority.unknown) seniorityUnknown = true;
         baseY += m.base || 0; cashY += m.cashHandling || 0; perDiemY += m.perDiem || 0;
         nightY += m.nightStops || 0; extrasY += m.extras || 0; totalY += m.total || 0;

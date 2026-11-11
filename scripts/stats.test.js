@@ -190,6 +190,11 @@ const yCo = yearStats({}, { year: 2026, aeAt: aeAtL1, crewHistory: L1.crewHistor
 eq('ano 2026 com a linha da companhia: subsídios = saída da easyJet + Natal da TAP', yCo.aeYtd.annual, 1982.4);
 const y25 = yearStats({}, { year: 2025, aeAt: aeAtL1, crewHistory: L1.crewHistory, companyHistory: L1.companyHistory, now: NOW_DEC, serviceStart: '2026-05-01', startExact: true });
 eq('ano 2025 na companhia antiga: férias + Natal (os dois subsídios)', y25.aeYtd.annual > 2000, true);
+// R14 (revisão): o 1.º mês de uma companhia ANTERIOR conta inteiro (o dia dessa entrada não se pode dar no Perfil — ficava a
+// base de 1 dia para sempre).
+const Lr = [{ company: 'easyjet', crewType: 'cabin', from: '2025-03' }, { company: 'tap', crewType: 'cabin', from: '2026-05' }];
+const mr = monthStats({}, { ym: '2025-03', ae: getAe('easyjet', 'cabin'), crewHistory: [{ category: 'FA', contract: '12/12', from: '2025-03' }], companyHistory: Lr, now: NOW_DEC, serviceStart: '2026-05-01' });
+eq('1.º mês da companhia anterior: a base do mês inteiro, sem incerto', [mr.aeMonth.base > 1000, !!mr.aeMonth.baseRange], [true, false]);
 // Sem o dia (a data guarda-se ao mês): maio vai de 1 dia (1 627,02 ÷ 30 = 54,23) ao mês todo, e o Natal de 7 meses e 1/31 a 8/12
 // → o certo: base 4×1346,57 + 7×1627,02 + 54,23 = 16 829,65 €; Natal 1 627,02 × (7 + 1/31) ÷ 12 = 953,47 €; o ano fica incerto.
 const yU = yearStats({}, { year: 2026, aeAt: aeAtL1, crewHistory: L1.crewHistory, now: NOW_DEC, serviceStart: '2026-05-01' });

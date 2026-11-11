@@ -127,6 +127,32 @@ has('Cl. 48.ª/9 (9/3: média dos 12 meses)', CAB, 'Os subsídios de férias e d
   // Sai no fim de novembro: o Natal de novembro é o da saída (11/12), uma vez só.
   const ex11 = cab.annualItems('FA', { ym: '2026-11', serviceStart: old, serviceEnd: '2026-12' });
   eqj('cabine sai no fim de novembro: um só Natal, 11/12', [ex11.filter((x) => x.id === 'natal').length, eur(ex11, 'natal')], [1, 1234.36]);
+  // ── Revisão independente (2026-11-11) ──
+  {
+    const CT = flat(fs.readFileSync(path.resolve('fontes/pt/codigo-trabalho-2009.txt'), 'utf8'));
+    has('CT art. 245.º/1 (férias na cessação)', CT, 'a) Correspondentes a férias vencidas e não gozadas; b) Proporcionais ao tempo de serviço prestado no ano da cessação.');
+    has('CT art. 263.º/2 (Natal proporcional ao tempo de serviço prestado)', CT, 'O valor do subsídio de Natal é proporcional ao tempo de serviço prestado no ano civil');
+    // R1: saída e suspensão no mesmo ano SOMAM-SE (o tempo de serviço prestado), não se multiplicam: baixa de 5-jan a 20-fev de
+    // 2026 (47 dias; mais de 30 → suspende, Cl. 86.ª/2) e saída no fim de março → 3/12 − 47/365 (certo: a suspensão desde o 1.º
+    // dia) a 3/12 − 17/365 (só depois dos 30 dias).
+    const sickR = days('2026-01-05', 47, 'sickDays');
+    const n1 = item(cab.annualItems('FA', { ym: '2026-03', serviceStart: old, serviceEnd: '2026-04', events: sickR }), 'natal');
+    eqj('R1 cabine: Natal na saída com baixa = meses − dias suspensos', [n1.eur, n1.max], [rr(sub * (3 / 12 - 47 / 365)), rr(sub * (3 / 12 - 17 / 365))]);
+    // R2: uma baixa DEPOIS da saída (já na companhia nova) não mexe no Natal da antiga.
+    const n2 = item(cab.annualItems('FA', { ym: '2026-03', serviceStart: old, serviceEnd: '2026-04', events: days('2026-07-01', 60, 'sickDays') }), 'natal');
+    eqj('R2 cabine: baixa na companhia nova não reduz o Natal da antiga', [n2.eur, !!n2.suspension], [rr(sub * 3 / 12), false]);
+    // R5: entra e sai no mesmo ano (1-mar a fim de set, dia dado): o ano todo vale 7/12. Cabine: junho os meses até junho (4/12),
+    // a saída os restantes (3/12). Pilotos: junho 7/12 (não até dezembro), a saída nada.
+    const io = { serviceStart: '2026-03-01', startExact: true, serviceEnd: '2026-10' };
+    eqj('R5 cabine: entra em março, sai em setembro: junho 4/12 + saída 3/12', [eur(cab.annualItems('FA', { ym: '2026-06', ...io }), 'ferias'), eur(cab.annualItems('FA', { ym: '2026-09', ...io }), 'ferias'), item(cab.annualItems('FA', { ym: '2026-09', ...io }), 'ferias').max || null], [448.86, 336.64, null]);
+    const subC = 122000 / 14;
+    eqj('R5 piloto: entra em março, sai em setembro: junho 7/12 e nada na saída', [eur(pil.annualItems('CPT', { ym: '2026-06', ...io }), 'ferias'), item(pil.annualItems('CPT', { ym: '2026-09', ...io }), 'ferias')], [rr(subC * 7 / 12), null]);
+    // R6: entra a 1-ago e sai no fim de outubro: junho não pagou nada → a saída paga o proporcional (3/12), certo.
+    const io8 = { serviceStart: '2026-08-01', startExact: true, serviceEnd: '2026-11' };
+    eqj('R6: entra depois de junho e sai no mesmo ano → férias 3/12 certas', [eur(cab.annualItems('FA', { ym: '2026-10', ...io8 }), 'ferias'), eur(pil.annualItems('CPT', { ym: '2026-10', ...io8 }), 'ferias')], [336.64, rr(subC * 3 / 12)]);
+    // Saída em junho: um só item de férias no mês (junho + saída juntos).
+    eq('Saída em junho: um só item de férias', cab.annualItems('FA', { ym: '2026-06', serviceStart: old, serviceEnd: '2026-07' }).filter((x) => x.id === 'ferias').length, 1);
+  }
   // Pilotos (Art. 36.º/1, a mesma frase).
   const pex = pil.annualItems('FO', { ym: '2024-04', serviceStart: '2020-01-01', serviceEnd: '2024-05' });
   eqj('piloto sai no fim de abril de 2024: Natal 4/12 e férias de 4/12 a 16/12', [eur(pex, 'natal'), eur(pex, 'ferias'), item(pex, 'ferias').max], [1136.9, 1136.9, 4547.62]);
@@ -204,6 +230,25 @@ has('RTTP Cl. 7.ª (83,3 %)', TAPC, 'a) 10 meses por ano - 83,3 %');
   // TAP, ano da saída: o Natal "no da cessação ... na proporção" (cabine RRRGS Cl. 17.ª; pilotos Cl. 8.ª, n.º 2).
   eq('TAP CAB3 sai no fim de abril: Natal 4/12 no mês da saída', eur(tapC.annualItems('CAB3', { ym: '2026-04', serviceStart: '2016-03-01', serviceEnd: '2026-05', history: H }), 'natal'),
     Math.round(tapC.monthlyBase('CAB3', { ym: '2026-04', serviceStart: '2016-03-01', history: H }) * 4 / 12 * 100) / 100);
+  // R3: TAP, saída sem as férias do ano gozadas — "Se o contrato cessar antes de gozado o período de férias vencido no início do
+  // ano da cessação, o tripulante terá ainda direito a receber a retribuição correspondente a esse período, bem como o respetivo
+  // subsídio" (AE Cl. 22.ª, n.º 6 cabine · n.º 3 pilotos) → o subsídio de férias inteiro no mês da saída; o proporcional do ano
+  // (CT art. 245.º/1 b)) como máximo.
+  {
+    const exT = { serviceStart: '2016-03-01', serviceEnd: '2026-04', history: H };
+    const fT = item(tapC.annualItems('CAB3', { ym: '2026-03', ...exT }), 'ferias');
+    const full = tapC.pendingAnnual('CAB3', { year: 2026, serviceStart: '2016-03-01', history: H })[0].eur;
+    eqj('R3 TAP cabine: sai em março sem férias → o subsídio das vencidas, certo', [fT && fT.eur, !!(fT && fT.leaving), !!(fT && fT.max > fT.eur)], [full, true, true]);
+    // Com as férias já pagas antes (férias em fevereiro → subsídio em janeiro): na saída só o proporcional, como máximo.
+    const vacF = days('2026-02-10', 5, 'vacDays');
+    const fT2 = item(tapC.annualItems('CAB3', { ym: '2026-03', ...exT, events: vacF }), 'ferias');
+    eqj('R3 TAP cabine: férias já pagas → na saída 0 certo', [fT2 ? fT2.eur : 0], [0]);
+    // R4: as férias de OUTRA companhia não decidem o mês do subsídio da TAP: entra a 1-abr-2026, férias em fevereiro (na antiga) e
+    // em agosto (na TAP) → o subsídio da TAP em julho.
+    const ev4 = [...days('2026-02-10', 5, 'vacDays'), ...days('2026-08-10', 5, 'vacDays')];
+    eq('R4 TAP pilotos: férias da companhia anterior não tiram o subsídio de julho', !!item(tapP.annualItems('OP3', { ym: '2026-07', serviceStart: '2026-04-01', startExact: true, events: ev4 }), 'ferias'), true);
+    eq('R4 TAP pilotos: só com férias na antiga → o subsídio fica pendente (sem mês)', tapP.pendingAnnual('OP3', { year: 2026, serviceStart: '2026-04-01', events: days('2026-02-10', 5, 'vacDays') }).length, 1);
+  }
   const tm = monthlyAe({}, 'CAB3', '12/12', tapC, { ym: '2026-03', serviceStart: '2026-03-01', history: H });
   eq('TAP CAB3 mês da entrada, dia por saber: base incerta pelo dia', tm.baseRange && tm.baseRange.reason, 'admission');
   // Tempo parcial (RTTP Cl. 7.ª): 10 meses = 83,3 % → 2 020,73 × 0,833 = 1 683,27 €.
@@ -281,7 +326,8 @@ has('TAP pilotos Cl. 8.ª/2 (suspensão)', TAPP, 'bem como no da suspensão do m
   eq('FO: baixa de 30 dias não suspende', eur(pil.annualItems('FO', { ym: '2026-11', index: pil.indexFactor('2026-11'), events: days('2026-03-01', 30, 'sickDays') }), 'natal'), 3489.16);
   const nc = item(cab.annualItems('FA', { ym: '2026-11', events: sick }), 'natal');
   // Cabine: "superior a 30 (trinta) dias" (Cl. 86.ª, n.º 2) → o máximo conta a suspensão desde o 31.º dia (31 dias), não o 32.º.
-  eq('FA: Natal com suspensão (certo e máximo)', [nc.eur, nc.max], [1121.53, 1232.2]);
+  // (arredonda-se uma vez, no fim: 18 852 ÷ 14 × 334 ÷ 365 = 1 232,205 → 1 232,21)
+  eq('FA: Natal com suspensão (certo e máximo)', [nc.eur, nc.max], [1121.53, 1232.21]);
 }
 
 // ═══ TAP: rubricas que faltavam (pedido do Nuno 2026-11-06) ════════════════════════════════════════════════════════════
@@ -366,8 +412,13 @@ has('TAP cabine Cl. 11.ª/2 (mês seguinte)', TAPC, 'O montante devido nos termo
   // Há formação que não paga A nem B (Cl. 10.ª, n.º 2, d): "Formação profissional não abrangida pelo per diem B") → sem o tipo,
   // o certo é 0 e o possível é o A (revisão independente do bloco 6).
   has('TAP pilotos Cl. 10.ª/2 d) (formação sem per diem B)', TAPP, 'Formação profissional não abrangida pelo per diem B');
+  // Com 5 ou mais dias de per diem no mês, o possível fica no per diem (o A desse dia). Com menos de 5, a formação sem tipo
+  // conta-se com a prestação complementar (Cl. 10.ª: o dia sem A nem B fica "em falta" e paga o A) — o máximo passa para lá.
+  const five = {}; ['02', '04', '08', '10', '12'].forEach((d) => { five[`2026-06-${d}`] = { kind: 'flight', route: 'LIS-OPO-LIS', report_time: '06:00', block_on: '09:00' }; });
+  const unk5 = P({ ...five, '2026-06-14': { kind: 'training' } });
+  eq('TAP piloto: formação sem tipo (mês com 5 dias de voo) = 0 certo, A possível', [unk5.perDiem, unk5.perDiemMax], [1012.5, 1215]);
   const unk = P({ '2026-06-14': { kind: 'training' } });
-  eq('TAP piloto: formação sem tipo = 0 certo, A possível', [unk.perDiem, unk.perDiemMax], [0, 202.5]);
+  eq('TAP piloto: só a formação sem tipo no mês → certo 0, o possível na prestação complementar (5 × A)', [unk.perDiem, unk.perDiemMax, unk.prestCompl && unk.prestCompl.max], [0, null, 1012.5]);
   eq('TAP piloto: refrescamento marcado = B', P({ '2026-06-14': { kind: 'training', trainingType: 'ground' } }).perDiem, 135);
   eq('TAP piloto: assistência e voo no mesmo dia = um A', P({ '2026-06-15': { kind: 'standby_airport', report_time: '05:00', block_on: '07:00', extra: [{ kind: 'flight', route: 'LIS-MAD-LIS', report_time: '08:00', block_on: '13:00' }] } }).perDiem, 202.5);
   // Área geográfica (RUPT Cl. 32.ª e 37.ª): Dakar (14,7°N) e Istambul (28,8°E) ficam fora → longo curso (225,00 / CTE 300,00).

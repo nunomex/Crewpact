@@ -12,7 +12,7 @@
 // de haver "C/C", o supervisor passa a S/C 1..S/C 7. Per-diem e pernoita = "ajudas de
 // custo complementares" POR DIA DE CALENDÁRIO (cl. 7.ª), não por setor.
 
-import { pickTable, ymParts, ymShift, vacationPayYm, admissionRange, beforeStart, suspensionShare, leavingAt, LEAVE_NOTE } from './tables';
+import { pickTable, ymParts, ymShift, vacationPayYm, admissionRange, beforeStart, servedShare, tenureEvents, mergeItems, leavingAt, LEAVE_NOTE } from './tables';
 
 export const AE_ID = 'tap-snpvac';
 export const AE_LABEL = 'TAP · SNPVAC (cabine)';
@@ -202,9 +202,10 @@ const feriasEur = (cat, { year, payYm, contract, index, serviceStart, largada, h
   else if (year === 2024) extra = 675 * 10 / 12;
   return r2((b + extra) * contractFactor(contract));
 };
-export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceStart = null, startExact = false, serviceEnd = null, largada = null, history = null, events = [] } = {}) => {
+export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceStart = null, startExact = false, serviceEnd = null, largada = null, history = null, events: evAll = [] } = {}) => {
   const p = ymParts(ym);
   if (!p || beforeStart(serviceStart, ym) || !hasTableFor(cat, ym)) return [];
+  const events = tenureEvents(evAll, serviceStart, serviceEnd);   // só as férias e as baixas do período nesta companhia
   const out = [];
   // O ano da saída (Cl. 17.ª: "no da cessação ... na proporção"): o Natal no mês da saída, pelos meses do ano.
   const lv = leavingAt(serviceStart, serviceEnd, startExact, ym, 12);
@@ -213,13 +214,13 @@ export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceSta
     const b = monthlyBase(cat, { contract, index, ym, serviceStart, largada, history });
     // Baixa de mais de um mês no ano: proporcional ao tempo de serviço (CT art. 263.º, n.º 2, c), e 296.º — a Cl. 17.ª só fala da
     // admissão e da cessação; a lei completa-a) — certo e máximo.
-    const sh = suspensionShare(events, p.y);
-    const v = b == null ? null : b * adm.min;
+    const nf = servedShare(adm, events, p.y);   // os meses menos os dias de contrato suspenso (somam-se)
+    const v = b == null ? null : b * nf.min;
     const bK = kpiApplies(cat, ym) ? monthlyBase(cat, { contract, index, ym, serviceStart, largada, history, kpi: true }) : b;
-    const vK = bK == null ? null : bK * adm.max;
+    const vK = bK == null ? null : bK * nf.max;
     if (v != null) {
-      const eur = r2(sh ? v * sh.min : v), max = r2(sh ? vK * sh.max : vK);
-      out.push({ id: 'natal', eur, cite: 'RRRGS Cl. 17.ª', ...(max > eur ? { max } : {}), ...(sh ? { suspension: true } : {}), ...(bK > b ? { tapRaise: true } : {}), ...(!lv && adm.max > adm.min ? { admission: true } : {}), ...(lv ? { leaving: true, note: LEAVE_NOTE } : {}) });
+      const eur = r2(v), max = r2(vK);
+      out.push({ id: 'natal', eur, cite: 'RRRGS Cl. 17.ª', ...(max > eur ? { max } : {}), ...(nf.suspended ? { suspension: true } : {}), ...(bK > b ? { tapRaise: true } : {}), ...(!lv && adm.max > adm.min ? { admission: true } : {}), ...(lv ? { leaving: true, note: LEAVE_NOTE } : {}) });
     }
   }
   for (const year of [p.y, p.y + 1]) {
@@ -228,11 +229,26 @@ export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceSta
     const vK = kpiApplies(cat, ym) ? feriasEur(cat, { year, payYm: ym, contract, index, serviceStart, largada, history, kpi: true }) : v;
     if (v != null) out.push({ id: 'ferias', eur: v, cite: year === 2024 ? 'RRRGS Cl. 18.ª e Cl. 39.ª' : 'RRRGS Cl. 18.ª', ...(vK > v ? { max: vK, tapRaise: true } : {}) });
   }
+  // Na saída: "Se o contrato cessar antes de gozado o período de férias vencido no início do ano da cessação, o tripulante terá
+  // ainda direito a receber a retribuição correspondente a esse período, bem como o respetivo subsídio" (AE Cl. 22.ª, n.º 6) → o
+  // subsídio inteiro se ainda não foi pago este ano (certo); o proporcional do ano da cessação (CT art. 245.º, n.º 1, b)) como
+  // máximo (revisão de 2026-11-11: na saída só saía o Natal).
+  if (lv && lv.exitMonth) {
+    const paidYm = vacationPayYm(events, p.y);
+    const venc = paidYm && paidYm <= ym ? 0 : lv.venc;
+    const v = feriasEur(cat, { year: p.y, payYm: ym, contract, index, serviceStart, largada, history });
+    const vK = kpiApplies(cat, ym) ? feriasEur(cat, { year: p.y, payYm: ym, contract, index, serviceStart, largada, history, kpi: true }) : v;
+    if (v != null) {
+      const eur = r2(v * venc), max = r2((vK != null ? vK : v) * (venc + lv.frac.max));
+      if (max > 0) out.push({ id: 'ferias', eur, ...(max > eur ? { max } : {}), cite: 'AE Cl. 22.ª, n.º 6', leaving: true, note: LEAVE_NOTE });
+    }
+    return mergeItems(out);
+  }
   return out;
 };
 // O subsídio de férias de um ano sem férias registadas: o valor, sem mês (o ano mostra-o à parte).
 export const pendingAnnual = (cat, { year, contract = '12/12', index = 1, serviceStart = null, largada = null, history = null, events = [] } = {}) => {
-  if (vacationPayYm(events, year)) return [];
+  if (vacationPayYm(tenureEvents(events, serviceStart, null), year)) return [];   // só as férias já nesta companhia
   const ym = `${year}-12`;
   if (!hasTableFor(cat, ym)) return [];
   const v = feriasEur(cat, { year, payYm: ym, contract, index, serviceStart, largada, history });
