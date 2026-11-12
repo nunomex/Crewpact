@@ -18,13 +18,16 @@ companhias todas prontas.** Até lá, o que é só da TAP, da Hi Fly ou da Ryana
 delas. Pormenor na entrada "Uma companhia de cada vez", abaixo.
 
 **O que se faz a seguir (combinado com o Nuno a 2026-11-12, noite):**
-1. **Fechar o ramo dos cálculos — SESSÃO NOVA em Fable 5.2 (Alto): uma só função para a série de assistências.** A 3.ª
-   revisão independente está feita (entrada "3.ª revisão independente", abaixo): os casos reais batem, mas ficam 13 casos
-   raros errados, quase todos de assistências em várias entradas. Decidido com o Nuno: **não remendar mais** — três rondas
-   de remendos abriram sempre falhas ao lado, porque a série se calcula em três sítios com regras diferentes. O enunciado
-   da sessão está nessa entrada. Depois dela: revisão independente, e passar ao `main`. **Quando parar de rever:** quando
-   uma revisão já não encontrar nenhum "dentro" ou "certo" falso num cenário que um tripulante da easyJet possa mesmo ter;
-   o resto fica escrito na lista.
+1. **Fechar o ramo dos cálculos — a função única está FEITA (2026-11-12, sessão em Fable 5.2; entrada "A série de
+   assistências num só sítio", abaixo).** A assistência antes de um voo lê-se de `ftl/standbySeries.js`; o PSV e o repouso
+   leem dela. Os 13 casos da 3.ª revisão estão corrigidos, e a 4.ª revisão independente está feita: a propriedade "várias
+   entradas = entrada única" confirmada pelos dois revisores (cerca de 25 000 escalas deles, 0 diferenças); o que
+   encontraram ficou corrigido, salvo o que está na lista abaixo. As três dúvidas que ficaram (P3, as duas assistências
+   no mesmo dia, R8) fecharam-se pela regra do Nuno — "a lei é que está certa" — e estão na entrada. A **5.ª passagem**
+   (só sobre o que ninguém tinha revisto) também está feita: nenhum "dentro" nem "certo" falso vindo das correções; o que
+   apanhou ficou corrigido. **Falta:** gravar (nada está em commit) e passar ao `main`, quando o Nuno disser. As seis
+   correções da 5.ª passagem têm teste mas não foram, elas próprias, revistas por outro. **Quando parar de rever:** quando uma revisão já não encontrar nenhum "dentro" ou "certo" falso num
+   cenário que um tripulante da easyJet possa mesmo ter; o resto fica escrito na lista.
 2. **Decidir uma vez como se mostra um "Incerto"** (sistema de desenho): onde vai o motivo, quantas linhas, se abre uma
    folha com o texto inteiro, a cor — e o cartão que falta no Início. Foi o que falhou em todas as fotos do iPhone.
 3. **Layout, um ecrã de cada vez, na linguagem do Início:** Escala (grelha e folha do dia), Detalhe do serviço, folha de
@@ -36,7 +39,7 @@ delas. Pormenor na entrada "Uma companhia de cada vez", abaixo.
 ### 0. Repouso — o que ficou depois da verificação de 2026-11-12 (ramo `calculos-repouso-2`)
 A verificação está feita e os dois pontos maiores estão corrigidos (entradas "Verificação do repouso" e "A lei não olha
 para a data", "Como diz a lei", "Revisão independente das correções de hoje" e "2.ª revisão independente", abaixo). O
-motor está na versão **19**. **O que falta, por ordem:**
+motor está na versão **20**. **O que falta, por ordem:**
 1. **Os ecrãs** (grupo 2, 1.ª linha: nove acertos vistos no iPhone; sessão em Opus 5.5). Os que escondem informação
    primeiro: o motivo do "Incerto" cortado no Detalhe e na importação, o veredicto tapado num dia alterado, a linha verde
    "Repouso ✓" inventada na Escala.
@@ -54,34 +57,40 @@ motor está na versão **19**. **O que falta, por ordem:**
    n.º 2 — é o "diploma por confirmar" do D11 de `docs/ae-tap-limites.md`). Nada disto está no motor. Entra com a TAP.
 5. **Menores:** dois serviços que NÃO são assistência em casa (voo, escritório, assistência no aeroporto) com menos do
    que o mínimo entre eles continuam a ler-se de forma diferente no mesmo dia (um só período de serviço, julga-o o PSV do
-   dia) e de um dia para o outro ("curto") — um repartido que passa a meia-noite sai "curto"; a assistência em casa da
-   véspera que acaba DEPOIS da apresentação conta por inteiro no ORO.FTL.210 da véspera (a mais, nunca a menos); o
+   dia) e de um dia para o outro ("curto") — um repartido que passa a meia-noite sai "curto"; o
    `lastArrivalBefore` da aclimatação erra com dados incompletos (uma formação com a rota de um só aeroporto, ou um
    regresso sem apresentação no próprio dia); um serviço sem fim seguido de outro sem apresentação: o Início diz "sem
    dados" e a Simulação "incerto"; depois de a assistência começar, o Início já não mostra o repouso do voo chamado
-   durante ela (passa ao serviço seguinte); num dia com uma assistência e um voo separados por um repouso, o PSV do dia
-   que o registo guarda é o da assistência (sem números) quando o voo está dentro. As noites locais "incertas" sem limite
+   durante ela (passa ao serviço seguinte). As noites locais "incertas" sem limite
    de tempo ficam como estão (nenhum texto dá um limite); dois VOOS com as horas sobrepostas no mesmo dia continuam a ler-se como "23 h de repouso"
-   entre eles (já era assim; tentei juntá-los e dava pior — revisão independente); a assistência da véspera que acaba
-   DEPOIS da apresentação conta 25 % das horas todas no 210 da véspera (90 min a mais num exemplo); uma assistência em casa
-   de mais de 16 h na escala, seguida de um voo, não dá o aviso das 16 h; um bloco de serviços sem nenhum voo (assistência
-   em casa e escritório 1 h depois) é julgado como um PSV e pode "exceder" (já era assim); com várias bifurcações seguidas
+   entre eles (já era assim; tentei juntá-los e dava pior — revisão independente); com várias bifurcações seguidas
    só se veem as leituras "todas com chamada", "nenhuma" e "só a última"; o motivo mostrado num incerto que junta duas
    leituras pode não ser o exato; o registo dos dias demora mais num ano de escala (128 ms contra 75; sem mudanças 9 ms
    contra 1,5). A app não julga o tempo livre antes de um serviço que não é PSV (FAQ 47610; DL 25/2022, art.
    11.º, n.º 1).
 - **No iPhone:** os passos do grupo 1 (as três primeiras linhas) e o passo 16 de `docs/verificacao-calendario.md`, com o
   calendário sintético — por fazer.
-   **Da 2.ª revisão independente, por corrigir:** uma assistência partida à meia-noite com a chamada ANTES da meia-noite
-   deixa o pedaço de depois como "assistência depois do voo" e o voo do dia seguinte sai "curto" (já era assim); o serviço
-   no aeroporto SEM alojamento da véspera não se junta ao voo do dia seguinte, nem ao voo calculado sozinho; a assistência
-   seguida de escritório e depois de voo não reduz o PSV (já era assim); uma assistência sem hora de fim antes de um voo
-   dá "dentro" sem dizer o que falta (já era assim); com a assistência dentro de um PSV repartido o "possível" do 210 conta-a
-   a mais; o `noEnd` não tem teto mesmo quando o serviço sem fim só podia ter durado até ao seguinte ("incerto" a mais);
-   duas assistências com tempo livre entre elas, no MESMO dia, e o voo durante a 2.ª dão "certo" (de um dia para o outro,
-   "incerto"); o motivo das 16 h mostra as horas da série inteira; o repouso com assistências demora cerca do dobro.
-- **Sem revisão independente:** as correções da 2.ª revisão (entrada "2.ª revisão independente").
-- Só depois: passar ao `main`; a versão do motor (19) recalcula o registo dos dias no telemóvel.
+   **Das revisões independentes (2.ª a 4.ª), por corrigir — todos "dentro" ou "certo" a mais em cenários raros, já eram
+   assim:** (PSV) o serviço no aeroporto SEM alojamento da véspera não se junta ao voo do dia seguinte (21:00–00:00 e voo
+   às 00:00: "dentro" com 9:00, são 12:00 desde as 21:00); a assistência seguida de OUTRO serviço (escritório,
+   posicionamento sem rota, serviço no aeroporto) e só depois do voo não reduz o PSV; o intervalo entre dois voos passado
+   em assistência conta para o prolongamento do repartido, e o intervalo é "free of all tasks" (ORO.FTL.105(6)) — voo,
+   assistência, voo no mesmo dia; o serviço sem hora de fim antes de um voo dá "incerto" no dia mas o Detalhe do voo
+   continua "dentro"; com dois voos no mesmo bloco, cada um com a sua assistência, só conta a do 1.º; o PSV não vê a leitura "chamado na assistência ANTERIOR" quando há duas
+   com tempo livre (o repouso vê, e diz "incerto"); um voo sem pernas que passa a noite da mudança de hora mede-se pelo
+   relógio. (Repouso) o motivo das 16 h mostra as horas da série inteira e falta quando a assistência vem colada a outra;
+   "Repouso até" depois de uma assistência no aeroporto com voo durante ela conta do fim notificado e o "Tenho descanso?"
+   do fim do voo; a noite de 25/10 na hora repetida; assistência no aeroporto que acaba à hora exata do voo do dia
+   seguinte, ou com dois voos durante ela, dá "curto"; um voo sem apresentação antes de duas assistências com tempo livre
+   dá "curto" sem ver a leitura da 1.ª. **A mais (lado seguro):** voo e escritório
+   horas depois no mesmo dia contam o tempo livre do meio para o 210; "escritório cedo + voo de noite" com 10 h ou mais
+   pelo meio, lido como um PSV só, passa as 24 h e a conta dá a volta. **Limite da regra da série:** uma entrada de
+   assistência que comece depois de uma chamada mas ainda dentro das horas da assistência anterior lê-se como o resto
+   dessa (que acabou na apresentação), não como uma assistência nova; uma entrada das 06:00 às 06:00 lê-se como 24 h.
+   O repouso com assistências demora cerca do dobro.
+- **Sem revisão independente:** as correções feitas depois da 4.ª revisão (lista na entrada de 2026-11-12, "A série de
+  assistências num só sítio").
+- Só depois: gravar e passar ao `main`; a versão do motor (20) recalcula o registo dos dias no telemóvel.
 
 ### 1. Ver no iPhone (conta de teste: easyJet, piloto)
 - **Sessão de 2026-11-11 — visto ✅:** Perfil "Na … desde" com a coluna do dia (os 6 pontos); Escala sem toque longo; Detalhe
@@ -310,6 +319,98 @@ motor está na versão **19**. **O que falta, por ordem:**
   (AlarmKit), hotel pelo Apple Maps, passkeys; Android; iPhone pequeno e grande; beta com 2–3 tripulantes no TestFlight;
   declaração de dados nas lojas; Supabase/Resend pagos e limites (e-mails por hora, DMARC).
 ---
+
+## 2026-11-12 — A série de assistências num só sítio (Fable 5.2, sessão própria) e a 4.ª revisão independente
+
+O enunciado da entrada de baixo, feito. **Nada está gravado em commit; o `main` não foi tocado.** Golden 917 → 993;
+`npm test` verde (33 suites); motor na versão **20**.
+
+**O que mudou**
+- **`ftl/standbySeries.js` (novo, puro): a única leitura da assistência antes de um voo.** As entradas do mesmo tipo
+  contíguas ou sobrepostas — de qualquer dia, por qualquer ordem, duplicadas, uma dentro da outra — são uma série, do
+  início ao MAIOR fim; a série que precede um voo; a relação (durante → chamada certa; do fim até ao repouso mínimo → duas
+  leituras; depois → nada); e o 210 de cada entrada (o seu pedaço, até à apresentação se a chamada é certa; a soma dos
+  pedaços arredonda-se uma vez). Saíram `foldStandbyIntoFlight`, `takeRun`, `carriedStandbyOf`, `standbyBeforeOf` (PSV) e
+  `sbRun`/`sbCont`/`earlierCallOk` (repouso).
+- **PSV (`ftl/index.js`, `sbDayPlan`):** a assistência ligada a um voo fica à parte (conta para o 210 no seu dia, fora dos
+  blocos de PSV) e o voo leva o tempo de assistência; nenhuma assistência entra num bloco de PSV; um bloco sem voo não é
+  PSV; o PSV de um bloco acaba no último voo (ORO.FTL.105(12)); a assistência de antes de um voo reduz o máximo mesmo com
+  um escritório antes dela; o registo de um dia passa a depender também dos 2 dias seguintes (a assistência acaba na
+  apresentação do voo do dia seguinte).
+- **Repouso (`data/today.js`):** a série entra na linha como UMA entrada (no dia em que começa); a leitura "chamado na
+  assistência anterior" (`calledInOk`) refeita; o voo durante uma assistência no aeroporto junta-se a ela em qualquer dia
+  (salvo se ela vem colada a um serviço de outro dia).
+
+**Os 13 casos da 3.ª revisão** (cada um com teste no golden, bloco "A SÉRIE DE ASSISTÊNCIAS NUM SÓ SÍTIO"):
+P1 véspera em duas entradas → máximo 4:00, excede · P2 entrada dentro de outra → 9:00, excede, por qualquer ordem · P3
+ver abaixo · P4 sobrepostas → 210 uma vez (90 e 405 por dia local) · P5 voo sem hora de fim → o dia tem registo (135) ·
+R1 → curto 7:00 · R2 → incerto · R3 → incerto (o golden mudou de propósito) · R4 → incerto · R5 → curto 10:00 e 11:00 ·
+R6 → curto · R7 → curto · R8 → certo acima do teto que a lei dá (ver "As três dúvidas").
+
+**De caminho, o que as provas e a 4.ª revisão puseram à vista e ficou corrigido** (com teste): dois voos seguidos e
+assistência no aeroporto depois davam "dentro" com um PSV de 17:30 (o bloco passava as 24 h e lia-se 3:45); voo e
+assistência em casa depois, ou escritório e formação seguidos, eram um "PSV" que excedia; a assistência de dois dias
+atrás (começa às 23:30 e dura 16 h 45) nem se via; uma assistência de mais de 16 h com um voo a seguir não dava o aviso;
+o dia com assistência e voo separados por um repouso guardava o PSV da assistência; a assistência da véspera contava as
+horas todas no 210 mesmo acabando na apresentação; a assistência no aeroporto que passa a meia-noite com o voo durante
+ela dava "curto, −2:00"; duas assistências em casa no mesmo dia com tempo livre e o voo durante a 2.ª davam "certo".
+
+**4.ª revisão independente** (dois revisores Opus, só com o código, o diff e `fontes/`; geradores próprios).
+- *Confirmaram:* várias entradas = entrada única em cerca de 12 300 escalas (PSV, voo sozinho, 210 por dia local) e
+  12 664 (repouso, quatro vistas), 0 diferenças; o PSV contra o oráculo deles em 21 700 casos, 0 erros (o código anterior
+  tinha 103 a 125 "dentro" falsos em cada 3 000); o 210 em 6 000 casos, 0 erros (antes: 1 298 em 3 000); dias sem
+  assistência iguais ao commit anterior, salvo os blocos sem voo; o repouso sem assistência em casa: 14 223 serviços, 0
+  diferenças; R7 coerente; 2 700 escalas estragadas, 0 exceções; nenhuma regra decidida contraria os textos.
+- *Erros meus desta sessão que apanharam — corrigidos:* (1) uma entrada de assistência duplicada sem hora de fim tirava a
+  redução ("dentro"); (2) a assistência dentro da janela de um PSV de vários serviços contava duas vezes no 210; (3) o voo
+  à hora exata do início da assistência contava-a toda; (4) **um "certo" falso**: voo até às 19:30, assistência no
+  aeroporto às 20:00 e chamada às 02:00 → agora curto (0:30 de 18:00); (5) a leitura "chamado na 1.ª assistência" aceitava
+  como repouso um tempo com outra assistência inteira lá dentro → agora só a assistência DURANTE a qual o voo se apresenta
+  fica de fora (é o caso do R3).
+- *Antigos que apanharam — corrigidos:* o PSV prolongado por um serviço em terra depois do último voo; o repouso negativo
+  com um voo sem apresentação antes de duas assistências; o "incerto" num dia sem voo.
+- *Ficam na lista* (topo, grupo 0): os que já eram assim e pedem mais do que um remendo.
+- **As correções desta lista não foram revistas por ninguém.**
+
+**As três dúvidas, fechadas pela lei** (o Nuno, 2026-11-12: "quero que seja seguido como a lei diz; a lei é que está
+certa"). Devolvi-as como perguntas e não devia: nenhuma era uma escolha — a lei decidia as três. **Mudaram 5 goldens além
+do R3**, todos de propósito e antes do código:
+1. **P3 — a declarada à mão que não bate com a da escala.** A lei pede um facto — o tempo de assistência até à
+   apresentação (CS FTL.1.225(b)(7)) — e há duas fontes que não batem. Nenhum texto diz qual vale: a app não escolhe, dá
+   as duas pontas e o motivo (`standbyDeclared`: "as horas que indicaste não batem com a assistência da escala — corrige a
+   que estiver errada"). A menos de 1 h de diferença vale a declarada (o formulário é em horas inteiras); de outro tipo é
+   outra assistência e as duas contam. *2 goldens:* 7 h declaradas contra 11 h na escala davam "máximo 10:00"; dão "6:00 a
+   10:00" (excede nas duas; o 210 continua 765, com 825 no possível).
+2. **Duas assistências em casa no MESMO dia com tempo livre e o voo durante a 2.ª** (04–08, 1 h, 09–12, voo às 11:00). A
+   lei não tem "o mesmo dia": a assistência "is followed by a rest period in accordance with ORO.FTL.235" (CS
+   FTL.1.225(b)(4)) e acaba na apresentação ((b)(5)). Chamado na 2.ª, a 1.ª não foi seguida de um repouso; chamado na 1.ª,
+   conta desde o início dela (no máximo 16 h, (b)(1)). "Certo" não sai de nenhuma leitura → incerto, ou curto se as duas
+   falham. *1 golden* ("certo" → "incerto").
+3. **R8 — o serviço sem hora de fim.** A lei dá um teto: o período de serviço começa na apresentação e acaba quando o
+   tripulante fica livre de todos os serviços (ORO.FTL.105(11)) — não pode ser mais longo do que o tempo da apresentação
+   dele ao fim do último serviço antes do repouso. O mínimo a seguir é esse período ou o piso (ORO.FTL.235(a)(1); no máximo
+   as 14 h da CS FTL.1.235(b)(3)(ii) e da CS FTL.1.205(c)(6)), mais 4 h de um prolongamento (ORO.FTL.205(d)(1)) e o
+   aumento depois de um repouso talvez reduzido antes dele (CS FTL.1.235(c)(3)). Um repouso acima disso chega em qualquer
+   leitura → "certo"; abaixo, "incerto" com as duas pontas (antes: "incerto, sem teto", sempre). Um repouso conhecido pelo
+   caminho (44 h entre duas assistências) também cobre. *2 goldens:* "60 h livres depois da assistência: incerto" → certo
+   (teto 35:00); "Repouso até: 12:00 ou mais, sem teto" → "12:00 a 35:00". **Sem revisão independente.**
+
+**5.ª passagem independente** (um revisor Opus, só sobre as dez correções feitas depois da 4.ª e o teto do R8; cerca
+de 80 cenários dele e as provas, todas com 0 diferenças). No teto do serviço sem hora de fim não encontrou nenhum "certo"
+abaixo de uma leitura da lei. **Apanhou e ficou corrigido** (com teste): (1) *erro meu* — o desconto da assistência dentro
+de um PSV de vários serviços tirava-a também do 210 certo quando o bloco tem duas leituras (5:30 em vez de 15:30): agora
+só sai do possível; (2) *erro meu* — um voo sem apresentação antes de duas assistências dava "curto" onde o mesmo voo
+conhecido dá "incerto"; (3) *antigo* — um serviço com apresentação e sem hora de fim antes de um voo do mesmo dia saía
+das contas e o PSV ficava "dentro": agora "incerto", com o motivo novo `noEndBefore`; (4) *antigo, "certo" falso* — um
+escritório colado depois de um voo prolongado apagava as 4 h do prolongamento (e os pisos de 14 h): agora valem com o
+voo em qualquer sítio do bloco (ORO.FTL.205(d)(1)); (5) *antigo, "certo" falso* — o repouso DEPOIS de um PSV que veio a
+seguir a um serviço sem hora de fim: o de antes pode ter sido reduzido (CS FTL.1.235(c)(3)) → incerto até ao teto.
+Ficaram na lista do topo os que pedem mais do que um remendo.
+
+**Provas no fim** (`scripts/provas/`, README atualizado; a nova é `uma-entrada.js`): uma entrada contra a mesma partida
+2 966 escalas, 0 diferenças; a regra da assistência 10 158 casos, 0, e o voo sozinho igual ao dia; vistas 18 327, 0;
+"Repouso até" 36 182, 0; mais repouso nunca piora: as mesmas classes de antes; o repouso contra `3c217a5` sem assistência
+em casa: só os 33 "curto" falsos de sempre; contra o commit anterior sem assistência em casa: 0 diferenças.
 
 ## 2026-11-12 (noite) — 3.ª revisão independente e o enunciado da sessão seguinte (nada mudou no código)
 

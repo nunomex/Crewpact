@@ -1796,7 +1796,7 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
     const ls2 = legalStatus({ psv: { result: '05:00', max: '11:15', maxHi: '13:30', uncertain: true, unknowns: ['legTimes'] } }, { '2026-10-20': { servicoMin: 330, servico: 5.5, vooMin: 285, voo: 4.75 } }, new Date('2026-10-20T12:00:00'));
     eqj('PSV incerto sem limites excedidos → incerto', [ls2.status, ls2.kind], ['warn', 'psvUncertain']);
   }
-  eq('versão do motor: 19', ftl.ENGINE_VERSION, 19);
+  eq('versão do motor: 20', ftl.ENGINE_VERSION, 20);
 }
 
 
@@ -2577,7 +2577,11 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
     eqj('Detalhe: controlo, sem a escala à mão: o voo sozinho, como antes', one(dur, '2026-03-03', fl, { duties: null }), ['10:30', '11:00', '11:00', false, false]);
     // A assistência declarada à mão no voo (Completar → "Assistência antes do voo") manda: não se soma a da escala.
     const decl = { ...fl, special: { preStandby: { type: 'other', standbyH: 7 } } };
-    eqj('Detalhe: com a assistência declarada à mão no voo (7 h), vale a declarada: máximo 10:00', one({ '2026-03-03': { ...sbD('07:00', '19:00'), extra: [decl] } }, '2026-03-03', decl), ['10:30', '10:00', '10:00', true, false]);
+    // (2026-11-12, 3.ª revisão independente, P3.) 7 h declaradas contra as 11 h da escala: a app não sabe qual está certa →
+    // o máximo fica entre as duas leituras (6:00 pela escala, 10:00 pela declarada). Excede nas duas. Antes: só a declarada.
+    eqj('Detalhe: 7 h declaradas à mão contra 11 h na escala: máximo entre 6:00 e 10:00, excede nas duas (antes: só 10:00)', one({ '2026-03-03': { ...sbD('07:00', '19:00'), extra: [decl] } }, '2026-03-03', decl), ['10:30', '06:00', '10:00', true, false]);
+    const decl11 = { ...fl, special: { preStandby: { type: 'other', standbyH: 11 } } };
+    eqj('Detalhe: 11 h declaradas à mão e 11 h na escala (batem): vale a declarada, sem dúvida: máximo 6:00', one({ '2026-03-03': { ...sbD('07:00', '19:00'), extra: [decl11] } }, '2026-03-03', decl11), ['10:30', '06:00', '06:00', true, false]);
     // Um 2.º voo do dia, depois de outro voo, não herda a assistência da manhã.
     const am = F('12:00', '13:00', '14:00', 'LIS-OPO-LIS'), pm = F('22:00', '23:00', '01:00', 'LIS-OPO-LIS');
     eqj('Detalhe: controlo, o 2.º voo do dia não leva a assistência que foi do 1.º', one({ '2026-03-03': { ...sbD('04:00', '12:00'), extra: [am, pm] } }, '2026-03-03', pm).slice(1, 3), ['11:00', '11:00']); }
@@ -2677,7 +2681,10 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   // ── Repouso 1 · Duas assistências seguidas (ou uma partida em duas entradas, como o calendário faz à meia-noite) são uma só. ──
   const two = (sb2rep, sb2end, rep) => ({ '2026-03-02': short1, '2026-03-03': { ...sbD('04:00', '08:00'), extra: [sbD(sb2rep, sb2end), F(rep, '15:00', '16:00', 'LIS-OPO')] } });
   eqj('repouso: assistência 04–08 + 08–12 e voo às 11:00 (durante a 2.ª): certo, o repouso de antes da 1.ª (erro de hoje: curto)', v(befOf(two('08:00', '12:00', '11:00'), '2026-03-03', '11:00')), ['ok', null, 1050, 720]);
-  eqj('repouso: … 04–08 + 09–12 e voo às 11:00: o mesmo', v(befOf(two('09:00', '12:00', '11:00'), '2026-03-03', '11:00')), ['ok', null, 1050, 720]);
+  // (2026-11-12, 4.ª revisão independente.) Com 1 h LIVRE entre as duas já não são a mesma assistência (só as contíguas o são):
+  // chamado na 2.ª, a 1.ª não foi seguida de um repouso; chamado na 1.ª são 7 h de assistência e o repouso de antes chega →
+  // incerto, como de um dia para o outro. Este golden exigia "certo" (a regra antiga do mesmo dia juntava as duas).
+  eqj('repouso: … 04–08 + 09–12 (1 h livre) e voo às 11:00: incerto — chamada na 1.ª, ou a 1.ª sem repouso (antes: certo)', v(befOf(two('09:00', '12:00', '11:00'), '2026-03-03', '11:00')), ['unc', 'standbyCall', 60, 720]);
   eqj('repouso: … e voo às 14:00 (2 h depois da 2.ª): incerto — chamada ou repouso curto (erro de hoje: curto)', v(befOf(two('09:00', '12:00', '14:00'), '2026-03-03', '14:00')), ['unc', 'standbyCall', 120, 720]);
   { const d = { '2026-03-01': short1, '2026-03-02': sbD('20:00', '00:00'), '2026-03-03': { ...sbD('00:00', '04:00'), extra: [F('03:00', '04:00', '05:00', 'LIS-OPO')] } };
     eqj('repouso: assistência 20:00–00:00 e 00:00–04:00 (partida à meia-noite) e voo às 03:00: certo, 33 h 30 antes dela (erro de hoje: curto)', v(befOf(d, '2026-03-03', '03:00')), ['ok', null, 2010, 720]); }
@@ -2725,7 +2732,18 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
 
   eqj('voo sem hora de fim | assistência em casa | 12 h | voo: incerto, falta o fim desse serviço (antes: certo)', v(befOf(mk(sb, '02:00'), '2026-03-04')), ['unc', 'noEnd', 720, 720, '2026-03-02']);
   eqj('voo sem hora de fim | escritório | 12 h | voo: o mesmo (antes: certo)', v(befOf(mk(of, '02:00'), '2026-03-04')), ['unc', 'noEnd', 720, 720, '2026-03-02']);
-  eqj('… com 2 dias livres depois da assistência: continua incerto (não há teto sem a hora de fim)', befOf({ ...mk(sb, '02:00'), '2026-03-04': undefined, '2026-03-06': F('02:00', '08:00', '09:00', 'LIS-OPO') }, '2026-03-06').kind, 'noEnd');
+  // (2026-11-12, R8 da 3.ª revisão; o Nuno: "a lei é que está certa".) HÁ um teto, e vem da lei: o período de serviço começa
+  // na apresentação e acaba quando o tripulante fica livre de todos os serviços (ORO.FTL.105(11)) — o do serviço sem fim não
+  // pode ser mais longo do que o tempo da apresentação dele (07:00 do dia 2) ao fim do último serviço antes do repouso (14:00
+  // do dia 3): 31 h. O mínimo a seguir é esse período ou o piso (ORO.FTL.235(a)(1); 14 h no máximo, CS FTL.1.235(b)(3)(ii) e
+  // CS FTL.1.205(c)(6)), mais as horas de um prolongamento (4 h no máximo, ORO.FTL.205(d)(1)) → 35 h em qualquer leitura.
+  // Com 60 h de repouso está certo em todas; este golden dizia "incerto, sem teto".
+  { const fonte = fs.readFileSync(path.resolve('fontes/ftl/reg-ue-83-2014-en.txt'), 'utf8').replace(/\s+/g, ' ');
+    eq('fonte: ORO.FTL.105(11) o período de serviço acaba quando o tripulante fica livre de todos os serviços', fonte.includes('“duty period” means a period which starts when a crew member is required by an operator to report for or to commence a duty and ends when that person is free of all duties, including post-flight duty'), true);
+    const far = (rep, day) => befOf({ ...mk(sb, '02:00'), '2026-03-04': undefined, [day]: F(rep, '08:00', '09:00', 'LIS-OPO') }, day);
+    eqj('… com 60 h livres depois da assistência: certo — chega em qualquer leitura (teto de 35:00; antes: incerto, "sem teto")', [far('02:00', '2026-03-06').status, far('02:00', '2026-03-06').requiredMin], ['ok', 2100]);
+    const near = far('20:00', '2026-03-04');   // 30 h depois da assistência: abaixo do teto
+    eqj('… com 30 h livres: incerto, entre as 12:00 e o teto de 35:00', [near.status, near.kind, near.actualMin, near.requiredMin, near.requiredHiMin], ['unc', 'noEnd', 1800, 720, 2100]); }
   eqj('… 11 h depois da assistência (abaixo do piso, e 15 h desde o início dela: pode ser chamada): não é certo', befOf(mk(sb, '01:00'), '2026-03-04').status !== 'ok', true);
   eqj('… 11 h depois do escritório: curto (12:00 em qualquer leitura)', v(befOf(mk(of, '01:00'), '2026-03-04')).slice(0, 4), ['bad', null, 660, 720]);
   eqj('escritório sem hora de fim | assistência em casa | 12 h | voo: incerto, falta o fim', v(befOf(mk(sb, '02:00', { kind: 'office', report_time: '09:00', sectors: 0 }), '2026-03-04')).slice(0, 2), ['unc', 'noEnd']);
@@ -2735,7 +2753,10 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
     const rv = restVerdicts(d, C).filter((x) => x.nextIso === '2026-03-04')[0]; eqj('… e as Estatísticas', [rv.status, rv.kind], ['unc', 'noEnd']);
     const d2 = { '2026-03-02': noEnd, '2026-03-03': sb };
     const ru = restUntilAfter(d2, '2026-03-03', C), nd = restAround(d2, (s, i) => i === '2026-03-03', C).need;
-    eqj('… o "Repouso até" e a Simulação: 12:00 ou mais, sem teto, com o motivo', [ru.requiredLoMin, ru.requiredHiMin, !!ru.uncertain, ru.why, ru.estIso, nd.requiredLoMin, nd.requiredHiMin, nd.why], [720, null, true, 'noEnd', '2026-03-02', 720, null, 'noEnd']); }
+    eqj('… o "Repouso até" e a Simulação: entre as 12:00 e o teto de 35:00, com o motivo (antes: sem teto)', [ru.requiredLoMin, ru.requiredHiMin, !!ru.uncertain, ru.why, ru.estIso, nd.requiredLoMin, nd.requiredHiMin, nd.why], [720, 2100, true, 'noEnd', '2026-03-02', 720, 2100, 'noEnd']);
+    // Um repouso CONHECIDO, depois do serviço sem fim e acima do teto (44 h entre duas assistências), já cobre o mínimo dele.
+    const d3 = { '2026-03-02': noEnd, '2026-03-03': G('standby_home', '00:00', '04:00'), '2026-03-05': { ...G('standby_home', '00:00', '04:00'), extra: [F('16:00', '17:00', '18:00', 'LIS-OPO')] } };
+    eqj('voo sem hora de fim | assistência | 44 h livres | assistência | 12 h | voo: certo (R8; antes: incerto)', restAround(d3, (s, i) => i === '2026-03-05' && s.kind === 'flight', C).before.status, 'ok'); }
 }
 
 // ───────────────────────────── 2.ª REVISÃO INDEPENDENTE (2026-11-12/13): o PSV com a assistência em várias entradas ─────────────────────────────
@@ -2773,7 +2794,9 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   // ── 3 · A assistência da escala e a mesma declarada à mão no voo: vale a declarada, uma vez. ──
   { const fl = { ...F('18:00', '19:00', '04:30', 'LIS-FNC-LIS'), special: { preStandby: { type: 'other', standbyH: 7 } } };
     const e = dayOf({ '2026-03-03': { ...sbD('07:00', '19:00'), extra: [fl] } }, '2026-03-03');
-    eqj('assistência na escala + declarada à mão (7 h): PSV 10:30 contra 10:00, e o 210 conta-a uma vez (erro: PSV de 21:30)', [e.psv.result, e.psv.max, !!e.psv.over, e.servicoMin], ['10:30', '10:00', true, 765]); }
+    // (2026-11-12, P3.) As 7 h declaradas não batem com as 11 h da escala: máximo 6:00 a 10:00 (excede nas duas); o 210 conta
+    // a assistência uma vez em cada leitura — 765 se a certa é a declarada, 825 se é a da escala.
+    eqj('assistência na escala (11 h) + declarada à mão (7 h): PSV 10:30 contra 6:00 a 10:00, e o 210 conta-a uma vez (765 a 825)', [e.psv.result, e.psv.max, e.psv.maxHi, !!e.psv.over, e.servicoMin, e.servicoMaxMin], ['10:30', '06:00', '10:00', true, 765, 825]); }
 
   // ── 4 · O registo recalcula o dia do voo também quando a assistência da véspera entra como 2.º serviço desse dia. ──
   { const d1 = { '2026-03-02': F('06:00', '07:00', '09:00', 'LIS-OPO-LIS'), '2026-03-03': F('01:00', '02:00', '11:30', 'LIS-FNC-LIS') };
@@ -2797,10 +2820,16 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   const short1 = F('06:00', '07:00', '10:00', 'LIS-OPO-LIS');   // fim 10:30
 
   // ── 1 · Duas assistências com TEMPO LIVRE entre elas não são uma só (só as contíguas o são). ──
-  // 06:00–14:00, 11 h livres, 01:00–08:00 e voo às 07:00 (durante a 2.ª): chamado na 1.ª seriam 25 h de assistência (mais do que
-  // as 16 h); chamado na 2.ª, a 1.ª tinha de ser seguida de um repouso e 11 h não chegam → curto nas duas (erro: "certo").
+  // 06:00–14:00, 11 h livres, 01:00–08:00 e voo às 07:00 (durante a 2.ª). Chamado na 2.ª, a 1.ª tinha de ser seguida de um
+  // repouso e 11 h não chegam. Chamado na 1.ª: entre o fim dela (14:00) e a apresentação (07:00) há 17 h — um repouso mínimo, e
+  // "this time period should not count as standby duty" (GM1 CS FTL.1.225 (b)): a assistência foi de 8 h, não de 25 → essa
+  // leitura não falha → INCERTO. (3.ª revisão independente, R3: este golden exigia "curto" — contava as 25 h contra o teto
+  // das 16 h sem ver o repouso mínimo.)
   { const b = befOf({ '2026-03-02': short1, '2026-03-03': sbD('06:00', '14:00'), '2026-03-04': { ...sbD('01:00', '08:00'), extra: [F('07:00', '07:30', '08:30', 'LIS-OPO')] } }, '2026-03-04', '07:00');
-    eqj('assistência, 11 h livres, assistência e voo durante ela (25 h desde a 1.ª): curto nas duas leituras (erro: certo)', [b.status, b.actualMin, b.requiredMin], ['bad', 660, 720]); }
+    eqj('assistência, 11 h livres, assistência e voo durante ela, com 17 h desde o fim da 1.ª: incerto (R3; antes: curto)', [b.status, b.kind, b.actualMin, b.requiredMin], ['unc', 'standbyCall', 660, 720]);
+    // Controlo: sem repouso mínimo desde o fim da 1.ª (11 h) e mais de 16 h desde o início dela → curto nas duas leituras.
+    const c = befOf({ '2026-03-02': short1, '2026-03-03': sbD('06:00', '15:00'), '2026-03-04': { ...sbD('01:30', '08:00'), extra: [F('02:00', '02:30', '03:30', 'LIS-OPO')] } }, '2026-03-04', '02:00');
+    eqj('controlo: 11 h desde o fim da 1.ª e 20 h desde o início: curto nas duas leituras', [c.status, c.actualMin, c.requiredMin], ['bad', 630, 720]); }
   // 20:00–23:00, 10 h livres, 09:00–13:00 e voo às 12:00: chamado na 1.ª são 16 h (cabe); chamado na 2.ª o repouso foi de 10 h → incerto.
   { const b = befOf({ '2026-03-02': short1, '2026-03-03': sbD('20:00', '23:00'), '2026-03-04': { ...sbD('09:00', '13:00'), extra: [F('12:00', '13:00', '14:00', 'LIS-OPO')] } }, '2026-03-04', '12:00');
     eqj('assistência, 10 h livres, assistência e voo durante ela (16 h desde a 1.ª): incerto (erro: certo)', [b.status, b.kind], ['unc', 'standbyCall']); }
@@ -2828,6 +2857,286 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   // ── 5 · O "Repouso até" depois de uma chamada conta do fim do VOO, não do fim da assistência que estava na escala. ──
   { const ru = restUntilAfter({ '2026-03-02': short1, '2026-03-03': { ...sbD('18:00', '06:00'), extra: [F('19:00', '19:30', '22:30', 'LIS-OPO-LIS')] } }, '2026-03-03', C), u = new Date(ru.untilMs);
     eqj('assistência 18:00–06:00 com o voo chamado a acabar às 23:00: "Repouso até" às 11:00 do dia seguinte (erro: 18:00)', [u.getDate(), u.getHours(), u.getMinutes()], [4, 11, 0]); }
+}
+
+// ───────────────────────────── A SÉRIE DE ASSISTÊNCIAS NUM SÓ SÍTIO (2026-11-12, depois da 3.ª revisão independente) ─────────────────────────────
+// "A assistência antes de um voo" calculava-se em três sítios com regras diferentes; cada remendo desalinhava os outros. Agora
+// lê-se de ftl/standbySeries.js: as entradas do mesmo tipo contíguas ou sobrepostas — em qualquer dia, por qualquer ordem,
+// duplicadas ou uma dentro da outra — são UMA assistência, do início ao maior fim. O teste que manda: várias entradas dão o
+// mesmo que a entrada única (PSV, ORO.FTL.210 por dia local, repouso). Depois, os 13 casos da 3.ª revisão (P1–P5, R1–R7; o R8
+// ficou por decidir — ver docs/decisoes.md).
+{
+  const eqj = (n, g, w) => eq(n, JSON.stringify(g), JSON.stringify(w));
+  const norm = (s) => s.replace(/\s+/g, ' ');
+  const cs = norm(fs.readFileSync(path.resolve('fontes/ftl/cs-ftl1-2014-002-R.txt'), 'utf8'));
+  const reg = norm(fs.readFileSync(path.resolve('fontes/ftl/reg-ue-83-2014-en.txt'), 'utf8'));
+  const sbS = require(path.resolve('ftl/standbySeries.js'));
+  const ftlV = require(path.resolve('ftl/index.js'));
+  const { restAround, restUntilAfter, restVerdicts } = require(path.resolve('data/today.js'));
+  const { dayMin } = require(path.resolve('ftl/calculators/cumulativeCalculator.js'));
+  const O = { base: 'LIS', postFlightMin: 30, isPilot: true };
+  const F = (rep, off, on, route, x = {}) => ({ kind: 'flight', report_time: rep, block_off: off, block_on: on, sectors: route.split('-').length - 1, flight_minutes: 60, route, ...x });
+  const G = (kind, rep, end, x = {}) => ({ kind, report_time: rep, block_on: end, sectors: 0, flight_minutes: 0, route: null, ...x });
+  const sbD = (rep, end) => G('standby_home', rep, end);
+  const sbA = (rep, end) => G('standby_airport', rep, end, { accommodation: true });
+  const dayOf = (d, iso) => ftlV.dayFtlFromDuties([d[iso], ...(d[iso].extra || [])], { ...O, date: iso, duties: d });
+  const psv = (e) => (e ? [e.psv.result, e.psv.max, e.psv.maxHi || null, !!e.psv.over, !!e.psv.uncertain] : null);
+  const one = (d, iso, fl) => { const r = ftlV.ftlForDuty(fl, { ...O, date: iso, duties: d }); return [r.fdp.actualFdpStr, r.fdp.maxFdpStr, r.fdp.exact ? null : r.fdp.maxHiStr, !!r.fdp.over, !!r.fdp.uncertain]; };
+  const befOf = (d, iso, rep) => restAround(d, (s, i) => i === iso && (rep ? s.report_time === rep : (s.kind || 'flight') === 'flight'), O).before;
+  const v = (r) => (r ? [r.status, r.kind || null, r.actualMin, r.requiredMin] : null);
+  const short1 = F('06:00', '07:00', '10:00', 'LIS-OPO-LIS');   // fim 10:30
+  const long5 = F('05:00', '06:00', '17:30', 'LIS-FAO-LIS');    // 13:00 de serviço, fim 18:00
+  // O ORO.FTL.210 por DIA LOCAL de uma escala (o que os períodos de 7, 14 e 28 dias somam).
+  const d210 = (d) => { const log = ftlV.reconcileDayLog(d, {}, O); const out = {}; for (let k = 1; k <= 7; k++) { const iso = `2026-03-0${k}`, m = dayMin(log, iso, 'servico'); if (m) out[iso] = m; } return out; };
+
+  eq('fonte: CS FTL.1.225(b)(5) a assistência acaba na apresentação', cs.includes('standby ceases when the crew member reports at the designated reporting'), true);
+  eq('fonte: CS FTL.1.225(b)(1) a assistência fora do aeroporto dura no máximo 16 h', cs.includes('the maximum duration of standby other than airport standby is 16 hours'), true);
+  eq('fonte: GM1 CS FTL.1.225 (b) com um repouso mínimo antes da apresentação, esse tempo não é assistência', cs.includes('If a minimum rest period as specified in ORO.FTL.235 is provided before reporting for the duty assigned during the standby, this time period should not count as standby duty'), true);
+  eq('fonte: ORO.FTL.225(a) o início e o fim da assistência são definidos e notificados', reg.includes('the start and end time of standby shall be defined and'), true);
+  eq('o repouso mais curto do módulo das séries é o do motor', sbS.SB_SHORTEST_REST_MIN, ftlV.SHORTEST_REST_MIN);
+
+  // ── A função: as séries de uma escala. ──
+  { const days = [{ iso: '2026-03-02', list: [sbD('18:00', '00:00')] }, { iso: '2026-03-03', list: [sbD('00:00', '06:00'), sbD('09:00', '10:00'), sbA('09:00', '12:00'), sbD('03:00', '04:00')] }];
+    const ss = sbS.standbySeries(days).map((S) => [S.type, S.startIso, sbS.sbHhmm(S.startMs), sbS.sbHhmm(S.endMs), S.members.length]);
+    eqj('séries: 18–00 + 00–06 + (03–04 lá dentro) = uma, de 18:00 a 06:00; a das 09:00 em casa é outra; a do aeroporto é de outro tipo', ss, [['other', '2026-03-02', '18:00', '06:00', 3], ['airport', '2026-03-03', '09:00', '12:00', 1], ['other', '2026-03-03', '09:00', '10:00', 1]]);
+    const S = sbS.standbySeries(days)[0];
+    eqj('séries: o pedaço de cada entrada (o que as anteriores não cobriam): 18–00, 00–06, e nada da que está dentro', S.members.map((m) => [sbS.sbHhmm(m.segStartMs), sbS.sbHhmm(m.segEndMs)]), [['18:00', '00:00'], ['00:00', '06:00'], ['06:00', '06:00']]);
+    eqj('séries: o 210 é cumulativo — 18:00→05:10 (670 min, 25 %) = 168, em pedaços 90 + 78', [sbS.standbyCountMin(S, S.startMs, S.endMs, S.startMs + 670 * 60000), sbS.standbyCountMin(S, S.members[0].segStartMs, S.members[0].segEndMs, S.startMs + 670 * 60000), sbS.standbyCountMin(S, S.members[1].segStartMs, S.members[1].segEndMs, S.startMs + 670 * 60000)], [168, 90, 78]);
+    eqj('leitura: durante → certa; do fim até 10 h → chamada?; 10 h até ao repouso → repouso?; depois → nada', [sbS.standbyReading({ during: true, gapMin: -60 }, 720), sbS.standbyReading({ during: false, gapMin: 0 }, 720), sbS.standbyReading({ during: false, gapMin: 600 }, 720), sbS.standbyReading({ during: false, gapMin: 720 }, 720)], ['certain', 'call', 'rest', 'none']); }
+
+  // ── A GRELHA: várias entradas contra a entrada única (o teste escrito primeiro). ──
+  // A mesma assistência (início, fim) guardada de 7 maneiras, com o voo a apresentar-se antes do fim, à hora do fim e depois,
+  // no mesmo dia e de um dia para o outro: o PSV do dia do voo, o voo sozinho, o 210 de cada dia local e o repouso têm de ser
+  // os da entrada única.
+  { const pad = (n) => String(n).padStart(2, '0');
+    const hmS = (m) => `${pad(Math.floor((((m % 1440) + 1440) % 1440) / 60))}:${pad((((m % 1440) + 1440) % 1440) % 60)}`;
+    const isoOf = (k) => `2026-03-0${3 + k}`;
+    // As maneiras de partir [a, b] (minutos desde as 00:00 do dia 0) em entradas { t0, t1 }.
+    const shapes = (a, b) => {
+      const mid = a + Math.round((b - a) / 2 / 15) * 15, out = [[[a, mid], [mid, b]], [[mid, b], [a, mid]], [[a, b], [a, mid]], [[a, mid], [a, b]], [[a, b], [a + 30, b - 30]], [[a, mid + 60], [mid, b]], [[a, a + 60], [a + 60, mid], [mid, b]]];
+      if (a < 1440 && b > 1440) out.push([[a, 1440], [1440, b]], [[a, Math.min(b, 1500)], [1440, b]]);
+      return out.filter((sh) => sh.every(([x, y]) => y > x));
+    };
+    const build = (pieces, kind, flight, repT) => {
+      const d = { '2026-03-01': short1 };
+      const put = (t, s) => { const iso = isoOf(Math.floor(t / 1440)); d[iso] = d[iso] ? { ...d[iso], extra: [...(d[iso].extra || []), s] } : s; };
+      for (const [x, y] of pieces) put(x, kind === 'airport' ? sbA(hmS(x), hmS(y)) : sbD(hmS(x), hmS(y)));
+      if (flight) put(repT, flight);
+      return d;
+    };
+    let n = 0; const bad = [];
+    for (const kind of ['other', 'airport']) for (const a of [14 * 60, 18 * 60, 20 * 60 + 30]) for (const dur of [240, 480, 630, 780]) for (const gap of [-120, -15, 0, 180, 615, 735]) for (const fdp of [360, 600]) {
+      const b = a + dur, repT = b + gap;
+      if (repT <= a + 30) continue;
+      const fl = F(hmS(repT), hmS(repT + 45), hmS(repT + fdp), 'LIS-FNC-LIS');
+      const fIso = isoOf(Math.floor(repT / 1440));
+      const base = build([[a, b]], kind, fl, repT);
+      const key = (d) => JSON.stringify([psv(dayOf(d, fIso)), one(d, fIso, fl), d210(d), v(restAround(d, (x) => x === fl, O).before), (restUntilAfter(d, isoOf(Math.floor(a / 1440)), O) || {}).untilMs || null]);
+      const kb = key(base);
+      for (const sh of shapes(a, b)) { n++; const ks = key(build(sh, kind, fl, repT)); if (ks !== kb && bad.length < 3) bad.push(`${kind} ${hmS(a)}–${hmS(b)} voo ${hmS(repT)} ${JSON.stringify(sh)}\n        única:  ${kb}\n        várias: ${ks}`); else if (ks !== kb) bad.push(''); }
+    }
+    eq(`grelha: ${n} escalas com a assistência em várias entradas dão o mesmo que a entrada única (PSV, voo sozinho, 210 por dia, repouso, "Repouso até")${bad.length ? '\n        ' + bad.filter(Boolean).join('\n        ') : ''}`, bad.length, 0);
+    eq('grelha: tem casos que cheguem', n > 2000, true); }
+
+  // ── P1 · Duas entradas na VÉSPERA (14–21 + 21–04) e voo às 03:00: 13 h de assistência → máximo 4:00, excede (era 11:00, dentro). ──
+  { const fl = F('03:00', '03:30', '09:00', 'LIS-OPO-LIS');
+    const d = { '2026-03-03': { ...sbD('14:00', '21:00'), extra: [sbD('21:00', '04:00')] }, '2026-03-04': fl };
+    eqj('P1: duas entradas na véspera e voo às 03:00: máximo 4:00, excede', psv(dayOf(d, '2026-03-04')), ['06:00', '04:00', null, true, false]);
+    eqj('P1: … e o voo sozinho', one(d, '2026-03-04', fl), ['06:00', '04:00', null, true, false]);
+    // A véspera: uma assistência só, de 14:00 até à apresentação das 03:00 (13 h, 25 %) — e não um "PSV" de 14 h a exceder.
+    const y = dayOf(d, '2026-03-03');
+    eqj('P1: a véspera é um dia de assistência (sem PSV): 25 % das 13 h até à apresentação, 45 min já depois da meia-noite (era: PSV de 14:00, "excede")', [y.psv.result, !!y.psv.over, y.servicoMin, y.servicoNextMin], [null, false, 195, 45]); }
+
+  // ── P2 · Uma entrada dentro de outra, ou com o mesmo início: conta o MAIOR fim, por qualquer ordem. ──
+  { const fl = F('13:00', '13:30', '22:30', 'LIS-OPO-LIS');
+    const a = dayOf({ '2026-03-03': { ...sbA('06:00', '14:00'), extra: [sbA('07:00', '08:00'), fl] } }, '2026-03-03');
+    const b = dayOf({ '2026-03-03': { ...sbA('07:00', '08:00'), extra: [sbA('06:00', '14:00'), fl] } }, '2026-03-03');
+    eqj('P2: aeroporto 06–14 + 07–08 (dentro) e voo às 13:00: 7 h de assistência → máximo 9:00, excede (era 13:00, dentro)', [psv(a), a.servicoMin], [['09:30', '09:00', null, true, false], 1020]);
+    eqj('P2: … pela outra ordem, o mesmo', [psv(b), b.servicoMin], [psv(a), a.servicoMin]); }
+
+  // ── P3 · A declarada à mão que NÃO bate com a da escala; e a da escala que é OUTRA assistência. ──
+  { const fl = { ...F('18:00', '19:00', '04:30', 'LIS-FNC-LIS'), special: { preStandby: { type: 'other', standbyH: 2 } } };
+    const e = dayOf({ '2026-03-03': { ...sbD('06:00', '18:00'), extra: [fl] } }, '2026-03-03');
+    // 12 h na escala (até à apresentação) → 11:00 − 6:00 = 5:00; 2 h declaradas → 11:00. PSV 10:30: excede numa, dentro na outra.
+    eqj('P3: 12 h na escala e 2 h declaradas à mão: máximo entre 5:00 e 11:00 → incerto, falta saber qual está certa (era 11:00, dentro)', [psv(e), (e.psv.unknowns || []).includes('standbyDeclared')], [['10:30', '05:00', '11:00', false, true], true]);
+    eqj('P3: … o 210: 660 do voo + 30 (declarada) a 180 (escala)', [e.servicoMin, e.servicoMaxMin], [690, 840]);
+    const { unknownLabel } = require(path.resolve('data/ftlUnknowns.js'));
+    eq('P3: o motivo tem texto', unknownLabel('standbyDeclared') !== 'standbyDeclared' && unknownLabel('standbyDeclared', 'en') !== 'standbyDeclared', true);
+    // Assistência em casa 06–08 na escala e voo às 14:00 com 3 h de assistência NO AEROPORTO declaradas: são duas assistências.
+    const fl2 = { ...F('14:00', '15:00', '20:00', 'LIS-FNC-LIS'), special: { preStandby: { type: 'airport', standbyH: 3 } } };
+    const e2 = dayOf({ '2026-03-03': { ...sbD('06:00', '08:00'), extra: [fl2] } }, '2026-03-03');
+    eqj('P3: a da escala é OUTRA (em casa 06–08) e a declarada é no aeroporto: contam as duas — 390 + 180 + 30 (era 570: a de casa saía do 210)', [e2.psv.result, e2.psv.max, !!e2.psv.over, !!e2.psv.uncertain, e2.servicoMin], ['06:00', '12:30', false, false, 600]);
+    // Com a assistência na véspera também se confere (antes: a declarada nem olhava para a véspera).
+    const fl3 = { ...F('03:00', '03:30', '09:00', 'LIS-OPO-LIS'), special: { preStandby: { type: 'other', standbyH: 3 } } };
+    eqj('P3: 13 h na véspera e 3 h declaradas: máximo entre 4:00 e 11:00 → incerto', psv(dayOf({ '2026-03-03': sbD('14:00', '04:00'), '2026-03-04': fl3 }, '2026-03-04')), ['06:00', '04:00', '11:00', false, true]); }
+
+  // ── P4 · Entradas sobrepostas (véspera 18–01 + hoje 00–06) não contam a dobrar no 210. ──
+  { const fl = F('05:00', '05:30', '10:00', 'LIS-OPO-LIS');
+    const d = { '2026-03-02': sbD('18:00', '01:00'), '2026-03-03': { ...sbD('00:00', '06:00'), extra: [fl] } };
+    const c = { '2026-03-02': sbD('18:00', '06:00'), '2026-03-03': fl };
+    // 18:00 → 05:00 (a apresentação) = 11 h de assistência = 165 min de serviço: 90 no dia 2 e 75 no dia 3, mais os 330 do voo.
+    eqj('P4: sobrepostas — o 210 por dia local: 90 e 405, como a entrada única (era 90 e 420: a hora 00–01 a dobrar)', [d210(d), d210(c)], [{ '2026-03-02': 90, '2026-03-03': 405 }, { '2026-03-02': 90, '2026-03-03': 405 }]);
+    eqj('P4: … e o PSV', psv(dayOf(d, '2026-03-03')), psv(dayOf(c, '2026-03-03'))); }
+
+  // ── P5 · Um voo SEM HORA DE FIM depois de uma assistência: o dia continua a ter registo (a assistência conta). ──
+  { const fl = { kind: 'flight', report_time: '16:00', block_off: '16:30', sectors: 2, flight_minutes: 0, route: 'LIS-OPO-LIS' };
+    const e = dayOf({ '2026-03-03': { ...sbD('07:00', '11:00'), extra: [sbD('11:00', '17:00'), fl] } }, '2026-03-03');
+    const c = dayOf({ '2026-03-03': { ...sbD('07:00', '17:00'), extra: [fl] } }, '2026-03-03');
+    eqj('P5: série + voo sem hora de fim: o dia conta os 25 % das 9 h até à apresentação (era: dia sem registo)', [e && e.servicoMin, e && e.psv.result], [135, null]);
+    eqj('P5: … igual à entrada única', [e && e.servicoMin], [c && c.servicoMin]); }
+
+  // ── Uma assistência em casa de mais de 16 h na escala marca o dia, mesmo com um voo a seguir (CS FTL.1.225(b)(1)). ──
+  { const e = dayOf({ '2026-03-03': { ...sbD('00:00', '17:00'), extra: [F('19:00', '19:30', '21:00', 'LIS-OPO-LIS')] } }, '2026-03-03');
+    eqj('assistência 00:00–17:00 (17 h) e voo às 19:00: o dia marca a assistência acima das 16 h (antes: nada)', !!e.psv.sbOver, true);
+    const k = dayOf({ '2026-03-03': { ...sbD('04:00', '23:00'), extra: [F('12:00', '12:30', '14:00', 'LIS-OPO-LIS')] } }, '2026-03-03');
+    eqj('controlo: 04:00–23:00 na escala mas chamado às 12:00 (8 h de assistência): sem o aviso', !!k.psv.sbOver, false); }
+
+  // ── O registo dos dias: o dia da assistência recalcula quando o voo do dia SEGUINTE entra (a assistência acaba na apresentação). ──
+  { const d1 = { '2026-03-02': sbD('18:00', '06:00') };
+    const log1 = ftlV.reconcileDayLog(d1, {}, O);
+    const d2 = { ...d1, '2026-03-03': F('05:00', '05:30', '10:00', 'LIS-OPO-LIS') };
+    const log2 = ftlV.reconcileDayLog(d2, log1, O);
+    eqj('registo: assistência 18–06 sozinha conta 180; com o voo das 05:00 do dia seguinte, 165 (acabou na apresentação)', [log1['2026-03-02'].servicoMin, log2['2026-03-02'].servicoMin], [180, 165]);
+    eq('registo: … e a chamada seguinte não mexe em nada', ftlV.reconcileDayLog(d2, log2, O) === log2, true); }
+
+  // ── O que a prova "uma entrada contra a mesma partida" e a comparação com o commit anterior puseram à vista. ──
+  // Uma assistência NÃO faz parte de um PSV: a que não está ligada a um voo conta sozinha (antes juntava-se ao serviço do lado).
+  { const d = { '2026-03-03': { ...F('05:15', '06:00', '17:30', 'LIS-OPO-LIS'), extra: [F('18:00', '18:30', '22:45', 'LIS-OPO-LIS'), sbA('23:45', '09:00')] } };
+    eqj('dois voos seguidos (PSV de 17:30) e assistência no aeroporto depois: excede (era "dentro": o bloco passava as 24 h e lia-se 3:45)', psv(dayOf(d, '2026-03-03')).slice(0, 4), ['17:30', '11:15', null, true]);
+    const e = dayOf({ '2026-03-03': { ...F('06:00', '07:00', '10:00', 'LIS-OPO-LIS'), extra: [sbD('11:00', '21:00')] } }, '2026-03-03');
+    eqj('voo 06–10 e assistência em casa 11–21 no mesmo dia: PSV de 4:00, dentro; 270 do voo + 150 da assistência (era um "PSV" de 15:00, excede)', [e.psv.result, !!e.psv.over, e.servicoMin], ['04:00', false, 420]);
+    const g = dayOf({ '2026-03-03': { ...G('office', '06:00', '12:00'), extra: [G('training', '13:00', '21:00')] } }, '2026-03-03');
+    eqj('escritório e formação seguidos (dia sem voo): não há PSV, 14 h de serviço (era um "PSV" de 15:00, excede)', [g.psv.result, !!g.psv.over, g.servicoMin], [null, false, 840]); }
+  // A assistência de antes do voo conta mesmo com um escritório antes dela no mesmo dia (o PSV começa no escritório).
+  { const e = dayOf({ '2026-03-03': { ...G('office', '10:00', '11:15'), extra: [sbD('13:15', '18:15'), F('19:45', '20:15', '22:45', 'LIS-OPO-LIS')] } }, '2026-03-03');
+    eqj('escritório | assistência 13:15–18:15 | voo às 19:45: PSV 12:45 contra 12:30 (com chamada) a 17:00 → incerto', [psv(e), (e.psv.unknowns || []).includes('standbyCall')], [['12:45', '12:30', '17:00', false, true], true]); }
+  // A assistência que está DOIS dias atrás na escala (começa às 23:30 e dura 16 h 45) e o voo 11 h 15 depois do fim dela.
+  { const d = { '2026-03-02': sbD('23:30', '16:15'), '2026-03-04': F('03:30', '04:00', '07:00', 'LIS-OPO-LIS') };
+    const e = dayOf(d, '2026-03-04');
+    eqj('assistência de dois dias atrás (acaba 11 h 15 antes do voo): incerto, falta saber se houve repouso (antes: nem se via)', [!!e.psv.uncertain, (e.psv.unknowns || []).includes('standbyRest')], [true, true]); }
+
+  // ── Da 4.ª revisão independente (PSV), sobre este mesmo trabalho. ──
+  { const day = (list) => dayOf({ '2026-03-03': { ...list[0], extra: list.slice(1) } }, '2026-03-03');
+    const S = (a, b) => G('standby_airport', a, b);
+    // Uma entrada duplicada SEM hora de fim não apaga a assistência conhecida.
+    const a = day([sbD('07:00', '23:00'), sbD('07:00', null), F('15:00', '15:30', '01:30', 'LIS-OPO-LIS-OPO')]);
+    eqj('assistência 07–23 + a mesma sem hora de fim + voo às 15:00: máximo 9:30, excede (o duplicado sem fim tirava a redução: "dentro")', psv(a), ['10:30', '09:30', null, true, false]);
+    // A assistência dentro da janela de um PSV de vários serviços não conta duas vezes para o 210.
+    const b = day([F('05:00', '05:30', '09:00', 'LIS-OPO-LIS'), sbA('10:00', '16:00'), F('15:00', '15:30', '19:00', 'LIS-OPO-LIS')]);
+    const c = day([F('05:00', '05:30', '09:00', 'LIS-OPO-LIS'), sbD('10:00', '18:00'), F('15:00', '15:30', '19:00', 'LIS-OPO-LIS')]);
+    eqj('voo | assistência (aeroporto, ou casa) | voo sem repouso pelo meio: o 210 é o da janela 05:00–19:30, uma vez (870)', [b.servicoMin, c.servicoMin, !!b.psv.over, !!c.psv.over], [870, 870, true, true]);
+    // O voo que se apresenta à hora exata a que a assistência começava: 0 h de assistência.
+    const z = day([sbD('06:00', '14:00'), F('06:00', '06:30', '10:00', 'LIS-OPO-LIS')]);
+    eqj('assistência 06–14 e voo às 06:00: a assistência acabou ao começar — só o voo conta (270)', [z.psv.result, !!z.psv.over, z.servicoMin], ['04:00', false, 270]);
+    // O PSV acaba no último setor: um serviço em terra depois do último voo não o prolonga (ORO.FTL.105(12)).
+    eq('fonte: ORO.FTL.105(12) o PSV acaba no fim do último setor', reg.includes('finishes when the aircraft finally comes to rest and the engines are shut down, at the end of the last sector on which the crew member acts as an operating crew member'), true);
+    eqj('voo 06–14 e escritório 20–23: PSV de 8:00, dentro (era 17:00, excede)', psv(day([F('06:00', '06:30', '14:00', 'LIS-OPO-LIS'), G('office', '20:00', '23:00')])).slice(0, 4), ['08:00', '13:00', null, false]);
+    eqj('voo | assistência no aeroporto | serviço no aeroporto: PSV de 9:30, dentro', psv(day([F('08:45', '09:15', '18:15', 'LIS-OPO-LIS'), sbA('18:15', '19:45'), S('20:15', '02:30')])).slice(0, 4), ['09:30', '13:00', null, false]);
+    eqj('controlo: escritório ANTES do voo continua no PSV (13:30 contra 13:00 a 14:45: incerto)', psv(day([G('office', '06:00', '07:00'), F('11:00', '11:30', '19:30', 'LIS-OPO-LIS')])), ['13:30', '13:00', '14:45', false, true]);
+    const n = day([G('office', '04:30', '09:00'), G('positioning', '20:00', '21:15')]);
+    eqj('escritório e posicionamento com 11 h pelo meio (dia sem voo): sem PSV e sem "incerto"', [n.psv.result, !!n.psv.uncertain], [null, false]); }
+
+  // ── Da 4.ª revisão independente (repouso), sobre este mesmo trabalho. ──
+  { const fl = (a, b) => F(a, a, b, 'LIS-OPO-LIS');
+    const bf = (d, iso) => v(restAround(d, (s, i) => i === iso && (s.kind || 'flight') === 'flight', O).before);
+    // A assistência no aeroporto COLADA a um voo da véspera e a chamada durante ela no dia seguinte: não houve repouso nenhum.
+    eqj('voo até às 19:30 + assistência no aeroporto 20:00–04:00 | voo às 02:00: curto, 0:30 de 18:00 (a junção nova dava "certo", 25:30)',
+      bf({ '2026-03-01': fl('06:00', '08:00'), '2026-03-02': { ...fl('10:00', '19:00'), extra: [sbA('20:00', '04:00')] }, '2026-03-03': fl('02:00', '05:00') }, '2026-03-03'), ['bad', null, 30, 1080]);
+    // Duas assistências em casa no MESMO dia com tempo livre e o voo durante a 2.ª: são leituras, como de um dia para o outro.
+    eqj('assistência 05–09, 3 h livres, 12–23 e voo às 22:00 no mesmo dia: incerto, 3:00 de 12:00 (era "certo", 14:30)',
+      bf({ '2026-03-01': fl('08:00', '14:00'), '2026-03-02': { ...sbD('05:00', '09:00'), extra: [sbD('12:00', '23:00'), fl('22:00', '01:00')] } }, '2026-03-02'), ['unc', 'standbyCall', 180, 720]);
+    eqj('… 05–15, 1 h livre, 16–23 e voo às 22:00 (17 h desde a 1.ª e só 7 h desde o fim dela): curto nas duas leituras',
+      bf({ '2026-03-01': fl('08:00', '14:00'), '2026-03-02': { ...sbD('05:00', '15:00'), extra: [sbD('16:00', '23:00'), fl('22:00', '01:00')] } }, '2026-03-02').slice(0, 3), ['bad', null, 60]);
+    // O "repouso mínimo antes da apresentação" da leitura da 1.ª assistência não pode ter outra assistência inteira lá dentro.
+    eqj('assistência 05–08, assistência 18–06 e voo 11 h depois dela: curto (o repouso de 33 h "desde a 1.ª" tinha a 2.ª lá dentro)',
+      bf({ '2026-03-01': fl('07:00', '15:00'), '2026-03-02': { ...sbD('05:00', '08:00'), extra: [sbD('18:00', '06:00')] }, '2026-03-03': fl('17:00', '20:00') }, '2026-03-03'), ['bad', null, 660, 720]);
+    // Um serviço sem apresentação antes das assistências e o voo durante a 2.ª: nunca um repouso negativo.
+    { const b = restAround({ '2026-03-01': fl('12:30', '16:00'), '2026-03-03': { kind: 'flight', block_off: '11:00', block_on: '16:00', sectors: 2, route: 'LIS-OPO-LIS' }, '2026-03-04': { ...sbD('16:30', '19:00'), extra: [sbD('21:45', '14:30')] }, '2026-03-05': fl('04:00', '07:15') }, (s, i) => i === '2026-03-05', O).before;
+      eqj('voo sem apresentação | assistência, 2 h 45, assistência e voo durante ela: o repouso mostrado é 2:45 (era −10:30)', b.actualMin, 165); } }
+
+  // ── Da 5.ª passagem independente (só sobre as correções que ninguém tinha revisto). ──
+  { const day = (list) => dayOf({ '2026-03-10': { ...list[0], extra: list.slice(1) } }, '2026-03-10');
+    const bf = (d, iso) => restAround(d, (s, i) => i === iso && (s.kind || 'flight') === 'flight', O).before;
+    // Num bloco com as duas leituras, o 210 CERTO é o dos dois PSV separados mais a assistência inteira (ORO.FTL.225(c): 100 %;
+    // CS FTL.1.225(b)(3): 25 %); a assistência só se tira da leitura do PSV único.
+    const a = day([F('05:00', '05:45', '08:00', 'LIS-FAO-LIS'), sbA('09:00', '19:30'), F('19:00', '19:30', '20:30', 'LIS-OPO')]);
+    const c = day([F('05:00', '05:45', '08:00', 'LIS-FAO-LIS'), sbD('09:00', '19:30'), F('19:00', '19:30', '20:30', 'LIS-OPO')]);
+    eqj('voo | assistência de 10 h | voo, com 10 h 30 entre os voos: o 210 certo é 15:30 (aeroporto) e 8:00 (casa), o possível 16:00 (o desconto tirava-o do certo: 5:30)', [a.servicoMin, a.servicoMaxMin, c.servicoMin, c.servicoMaxMin], [930, 960, 480, 960]);
+    // Um serviço com apresentação e SEM hora de fim antes de um voo do mesmo dia: o PSV não fica "dentro" calado.
+    const s = day([G('standby_airport', '10:00', null), F('13:00', '13:45', '23:30', 'LIS-FNC-LIS')]);
+    eqj('serviço no aeroporto às 10:00 sem hora de fim e voo às 13:00: incerto, falta essa hora (era "dentro": o PSV pode contar das 10:00, ORO.FTL.225(d))', [!!s.psv.over, !!s.psv.uncertain, (s.psv.unknowns || []).includes('noEndBefore')], [false, true, true]);
+    const h = day([sbD('05:00', null), F('15:00', '15:30', '01:30', 'LIS-OPO-LIS-OPO')]);
+    eqj('assistência em casa sem hora de fim e voo: incerto, falta essa hora (era "dentro")', [!!h.psv.uncertain, (h.psv.unknowns || []).includes('noEndBefore')], [true, true]);
+    eq('o motivo novo tem texto', require(path.resolve('data/ftlUnknowns.js')).unknownLabel('noEndBefore') !== 'noEndBefore', true);
+    // As horas do prolongamento são do período de serviço: um escritório colado depois do voo prolongado não as apaga.
+    const ext = F('07:00', '07:45', '21:00', 'LIS-FNC-LIS', { special: { plannedExt: true } });
+    const wOff = (rep) => v(bf({ '2026-03-10': { ...ext, extra: [G('office', '21:30', '22:00')] }, '2026-03-11': F(rep, rep, '20:00', 'LIS-OPO-LIS') }, '2026-03-11'));
+    eqj('PSV prolongado + escritório até às 22:00 | 15:00 de repouso: curto — 15 h de serviço mais 4 h (era "certo")', wOff('13:00'), ['bad', null, 900, 1140]);
+    eqj('… com 19:00: certo', wOff('17:00').slice(0, 1), ['ok']);
+    // O repouso DEPOIS de um PSV que veio a seguir a um serviço sem hora de fim: o de antes pode ter sido reduzido.
+    const noEnd = { kind: 'flight', report_time: '07:00', sectors: 2, route: 'LIS-FNC-LIS' };
+    const after = (rep) => { const r = bf({ '2026-03-10': noEnd, '2026-03-11': F('10:00', '10:45', '18:00', 'LIS-OPO-LIS'), '2026-03-12': F(rep, rep, '21:00', 'LIS-OPO-LIS') }, '2026-03-12'); return [r.status, r.kind || null, r.requiredMin, r.requiredHiMin == null ? null : r.requiredHiMin]; };
+    eqj('voo sem hora de fim | PSV | 12:30 de repouso: incerto entre 12:00 e 23:00 — o repouso de antes pode ter sido reduzido (era "certo")', after('07:00'), ['unc', 'noEnd', 720, 1380]);
+    eqj('… com 23:30: certo em qualquer leitura', after('18:00').slice(0, 1), ['ok']);
+    // Um voo sem apresentação antes de duas assistências não dá pior do que o mesmo voo conhecido.
+    const d6 = { '2026-03-07': F('06:00', '06:30', '10:00', 'LIS-OPO-LIS'), '2026-03-10': { kind: 'flight', report_time: null, block_off: '06:00', block_on: '10:00', sectors: 2 }, '2026-03-11': { ...sbD('06:00', '10:00'), extra: [sbD('14:00', '22:00'), F('20:00', '20:45', '23:30', 'LIS-OPO-LIS')] } };
+    eqj('voo sem apresentação | assistência, 4 h livres, assistência e voo durante ela: incerto, como com o voo conhecido (as correções davam "curto")', [bf(d6, '2026-03-11').status, bf(d6, '2026-03-11').kind], ['unc', 'standbyCall']); }
+
+  // ── R1 · A assistência da noite partida à meia-noite (17–00 | 00–02), OUTRA de manhã (09–13) e voo às 10:00. ──
+  { const fl = F('10:00', '10:30', '11:30', 'LIS-OPO');
+    const d = { '2026-03-01': short1, '2026-03-02': sbD('17:00', '00:00'), '2026-03-03': { ...sbD('00:00', '02:00'), extra: [sbD('09:00', '13:00'), fl] } };
+    const c = { '2026-03-01': short1, '2026-03-02': sbD('17:00', '02:00'), '2026-03-03': { ...sbD('09:00', '13:00'), extra: [fl] } };
+    eqj('R1: 17–00 | 00–02, 7 h livres, 09–13 e voo às 10:00: curto, com as 7 h (era certo, 30:30: o pedaço de depois da meia-noite juntava-se à da manhã)', v(befOf(d, '2026-03-03', '10:00')), ['bad', null, 420, 720]);
+    eqj('R1: … igual à entrada única', v(befOf(d, '2026-03-03', '10:00')), v(befOf(c, '2026-03-03', '10:00'))); }
+
+  // ── R2 · Duas assistências no mesmo dia com tempo livre (20–21 e 22–06) e voo às 02:00 do dia seguinte. ──
+  // Chamado na 2.ª, a 1.ª não foi seguida de um repouso (1 h); chamado na 1.ª são 6 h de assistência e 33 h 30 de repouso antes → incerto.
+  { const d = { '2026-03-01': short1, '2026-03-03': { ...sbD('20:00', '21:00'), extra: [sbD('22:00', '06:00')] }, '2026-03-04': F('02:00', '02:30', '03:30', 'LIS-OPO') };
+    eqj('R2: 20–21, 1 h livre, 22–06 e voo às 02:00: incerto — chamada na 1.ª ou repouso curto (era curto: a 1.ª contava como um serviço verdadeiro)', v(befOf(d, '2026-03-04')), ['unc', 'standbyCall', 60, 720]);
+    // Controlo: colada a um VOO (1 h depois dele) não houve repouso nenhum, em leitura nenhuma → curto.
+    const g = { '2026-03-01': short1, '2026-03-03': { ...F('15:00', '15:30', '18:30', 'LIS-OPO-LIS'), extra: [sbD('20:00', '06:00')] }, '2026-03-04': F('02:00', '02:30', '03:30', 'LIS-OPO') };
+    eqj('R2: controlo, a assistência 1 h depois de um voo e a chamada durante ela no dia seguinte: curto', v(befOf(g, '2026-03-04')).slice(0, 3), ['bad', null, 60]); }
+
+  // ── R4 · O 3.º repouso abaixo do mínimo só é curto de certeza se os dois anteriores foram repousos reduzidos DE CERTEZA. ──
+  // O 2.º (12:30 de 13:00) veio antes de "escritório + voo 4 h 30 depois" — pode ser um repartido, e então foi só curto
+  // (ORO.FTL.220(c)), não um repouso reduzido: não gasta um dos dois (CS FTL.1.235(c)(5)).
+  { const d = { '2026-03-01': long5, '2026-03-02': F('06:30', '07:00', '08:30', 'LIS-OPO-LIS'), '2026-03-03': long5,
+      '2026-03-04': { ...G('office', '06:30', '07:30'), extra: [F('12:00', '12:30', '14:00', 'LIS-OPO-LIS')] }, '2026-03-05': long5, '2026-03-06': F('06:30', '07:00', '08:30', 'LIS-OPO-LIS') };
+    eqj('R4: o 3.º repouso de 12:30 depois de um que antecedeu "escritório + voo": incerto (era curto)', v(befOf(d, '2026-03-06')), ['unc', 'reducedRest', 750, 780]);
+    // Controlo: com três VOOS simples (os dois primeiros repousos só podiam ser reduzidos), o 3.º é curto.
+    const k = { ...d, '2026-03-04': F('06:30', '07:00', '08:30', 'LIS-OPO-LIS') };
+    eqj('R4: controlo, dois repousos reduzidos certos antes: o 3.º é curto', v(befOf(k, '2026-03-06')).slice(0, 1), ['bad']); }
+
+  // ── R7 · Voo e, 3 h depois, escritório: não é um repartido possível (o PSV acabou no último setor, ORO.FTL.105(12)). ──
+  // Logo o repouso de 12:30 antes desse dia só podia ser um repouso reduzido, e o seguinte não pode voltar a ser (CS 235(c)(3)).
+  { const d = { '2026-03-01': long5, '2026-03-02': { ...F('06:30', '07:00', '10:30', 'LIS-OPO-LIS'), extra: [G('office', '14:00', '20:00')] }, '2026-03-03': F('08:45', '09:15', '10:15', 'LIS-OPO') };
+    eqj('R7: repouso reduzido | voo + escritório 3 h depois | 12:45 de 13:30: curto (era incerto)', v(befOf(d, '2026-03-03')), ['bad', null, 765, 810]);
+    // Controlo: o escritório ANTES do voo pode ser um repartido → continua incerto.
+    const k = { '2026-03-01': long5, '2026-03-02': { ...G('office', '06:30', '07:30'), extra: [F('11:00', '11:30', '19:30', 'LIS-OPO-LIS')] }, '2026-03-03': F('08:45', '09:15', '10:15', 'LIS-OPO') };
+    eqj('R7: controlo, escritório + voo 3 h 30 depois (repartido possível): incerto', v(befOf(k, '2026-03-03')).slice(0, 2), ['unc', 'reducedRest']); }
+
+  // ── R5 · O repouso conta do fim do que ACABOU por último. ──
+  { const f1 = F('23:00', '23:30', '04:30', 'LIS-OPO-LIS'), f2 = F('15:00', '15:30', '16:30', 'LIS-OPO');
+    const d = { '2026-03-01': short1, '2026-03-02': { ...sbD('20:00', '00:00'), extra: [f1] }, '2026-03-03': { ...sbD('00:00', '02:00'), extra: [f2] } };
+    eqj('R5: 20–00 + voo às 23:00 (até às 05:00) | 00–02 + voo às 15:00: curto, 10 h desde o fim do voo (era certo, 13:00 desde o pedaço 00–02)', v(befOf(d, '2026-03-03', '15:00')), ['bad', null, 600, 720]);
+    const fl = F('07:00', '07:30', '08:30', 'LIS-OPO');
+    const n = { '2026-03-01': short1, '2026-03-02': { ...sbD('08:00', '20:00'), extra: [sbD('09:00', '10:00')] }, '2026-03-03': fl };
+    eqj('R5: 08–20 com 09–10 lá dentro e voo às 07:00: 11 h desde as 20:00 (era certo, 21:00 desde as 10:00)', v(befOf(n, '2026-03-03')).slice(0, 3), ['bad', 'standbyOver16', 660]);
+    const a = { '2026-03-01': short1, '2026-03-02': { ...G('standby_airport', '08:00', '20:00'), extra: [G('standby_airport', '09:00', '10:00')] }, '2026-03-03': fl };
+    eqj('R5: o mesmo com serviço no aeroporto: curto, 11 h de 12', v(befOf(a, '2026-03-03')), ['bad', null, 660, 720]);
+    // Quem procura pelo dia ou pela entrada encontra a série.
+    const rv = restVerdicts(d, O).filter((x) => x.nextIso === '2026-03-03');
+    eqj('R5: as Estatísticas contam um repouso só antes do voo das 15:00', rv.map((x) => [x.status, x.actualMin]), [['bad', 600]]); }
+
+  // ── A assistência NO AEROPORTO que passa a meia-noite, com o voo a apresentar-se durante ela: um período de serviço só. ──
+  { const d = { '2026-03-01': short1, '2026-03-03': sbA('18:00', '02:00'), '2026-03-04': F('00:00', '00:30', '06:00', 'LIS-OPO-LIS') };
+    eqj('aeroporto 18:00–02:00 e voo às 00:00 do dia seguinte: o repouso é o de antes da assistência (era curto, "−2:00")', v(befOf(d, '2026-03-04')), ['ok', null, 3330, 720]);
+    const ru = restUntilAfter(d, '2026-03-04', O);
+    eqj('… e o repouso a seguir mede-se pelo período inteiro, desde as 18:00 (ORO.FTL.225(c)): 12:30', ru.requiredMin, 750); }
+
+  // ── R6 · A leitura "chamado na assistência anterior" não vale se essa vem COLADA a um voo. ──
+  { const d = { '2026-03-02': { ...short1, extra: [sbD('12:00', '16:00')] }, '2026-03-03': { ...sbD('00:00', '08:00'), extra: [F('02:00', '02:30', '03:30', 'LIS-OPO')] } };
+    eqj('R6: voo até 10:30 + assistência 12–16 | assistência 00–08 + voo às 02:00: curto — não houve repouso em leitura nenhuma (era incerto)', v(befOf(d, '2026-03-03', '02:00')), ['bad', null, 480, 720]); }
 }
 
 console.log(`\nFTL golden — ${pass} passou, ${fail} falhou (${pass + fail} asserções)`);
