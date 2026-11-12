@@ -26,8 +26,9 @@ delas. Pormenor na entrada "Uma companhia de cada vez", abaixo.
    no mesmo dia, R8) fecharam-se pela regra do Nuno — "a lei é que está certa" — e estão na entrada. A **5.ª passagem**
    (só sobre o que ninguém tinha revisto) também está feita: nenhum "dentro" nem "certo" falso vindo das correções; o que
    apanhou ficou corrigido. Gravado no ramo `calculos-repouso-2` (commit `8f4bcfb`, mais o dos três pontos da lista que o
-   Nuno mandou corrigir). **Falta:** passar ao `main`, quando o Nuno disser, e ver no iPhone. As correções da 5.ª
-   passagem e as dos três pontos têm teste mas não foram, elas próprias, revistas por outro. **Quando parar de rever:** quando uma revisão já não encontrar nenhum "dentro" ou "certo" falso num
+   Nuno mandou corrigir) e **passado ao `main` a 2026-11-12** (avanço direto, sem push). **Falta:** ver no iPhone — a
+   versão 20 do motor recalcula o registo dos dias ao abrir. As correções da 5.ª passagem e as dos três pontos têm teste
+   mas não foram, elas próprias, revistas por outro. **Quando parar de rever:** quando uma revisão já não encontrar nenhum "dentro" ou "certo" falso num
    cenário que um tripulante da easyJet possa mesmo ter; o resto fica escrito na lista.
 2. **Decidir uma vez como se mostra um "Incerto"** (sistema de desenho): onde vai o motivo, quantas linhas, se abre uma
    folha com o texto inteiro, a cor — e o cartão que falta no Início. Foi o que falhou em todas as fotos do iPhone.
@@ -89,7 +90,7 @@ motor está na versão **20**. **O que falta, por ordem:**
    O repouso com assistências demora cerca do dobro.
 - **Sem revisão independente:** as correções feitas depois da 4.ª revisão (lista na entrada de 2026-11-12, "A série de
   assistências num só sítio").
-- Só depois: gravar e passar ao `main`; a versão do motor (20) recalcula o registo dos dias no telemóvel.
+- Gravado e no `main` (2026-11-12); a versão do motor (20) recalcula o registo dos dias no telemóvel.
 
 ### 1. Ver no iPhone (conta de teste: easyJet, piloto)
 - **Sessão de 2026-11-11 — visto ✅:** Perfil "Na … desde" com a coluna do dia (os 6 pontos); Escala sem toque longo; Detalhe
@@ -321,7 +322,7 @@ motor está na versão **20**. **O que falta, por ordem:**
 
 ## 2026-11-12 — A série de assistências num só sítio (Fable 5.2, sessão própria) e a 4.ª revisão independente
 
-O enunciado da entrada de baixo, feito. **Gravado no ramo (2 commits); o `main` não foi tocado.** Golden 917 → 1008;
+O enunciado da entrada de baixo, feito. **Gravado no ramo e passado ao `main` (sem push).** Golden 917 → 1008;
 `npm test` verde (33 suites); motor na versão **20**.
 
 **O que mudou**
