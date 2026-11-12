@@ -151,6 +151,8 @@ const buildLine = (duties = {}, ctx = {}, call = false) => {
   // têm um período de repouso no meio — são um só PSV repartido (CS FTL.1.220: "the break on the ground within the FDP"; o
   // mesmo critério do dayFtlFromDuties). O "período de serviço precedente" do ORO.FTL.235(a)(1) é então o bloco inteiro.
   // `blk` = o índice do 1.º serviço do bloco; `bStart` = o início do bloco.
+  // `call` = true/false (todas as bifurcações com chamada, ou nenhuma), ou uma função da assistência (para ler uma só delas).
+  const callOf = (sb) => (typeof call === 'function' ? !!call(sb) : !!call);
   for (let i = 0; i < svcs.length; i++) {
     const v = svcs[i], p = svcs[i - 1];
     const gapMin = p && p.end ? Math.round((+v.start - +p.end) / 60000) : null;
@@ -198,10 +200,17 @@ const buildLine = (duties = {}, ctx = {}, call = false) => {
       // até ao repouso mínimo → as duas leituras; depois → nada.
       const reading = standbyReading({ during: gapMin < 0, gapMin }, p.ra.requiredMin);
       if (reading === 'certain') joined = sbFree;
-      else if (reading !== 'none') { fork = sbFree && sbMin <= SB_MAX_OTHER_MIN; joined = call && fork; }
+      else if (reading !== 'none') { fork = sbFree && sbMin <= SB_MAX_OTHER_MIN; joined = fork && callOf(p); }
       // Acima das 16 h não há bifurcação, mas o motivo do "curto" é outro (ver `over16`): guarda-se quanto teria durado a assistência.
       if (sbFree && (reading === 'call' || reading === 'rest') && sbMin > SB_MAX_OTHER_MIN) v.sbOver16 = sbMin;
     }
+    // A ASSISTÊNCIA NO AEROPORTO que acaba à hora da apresentação do voo do dia seguinte, ou antes dela com menos do que o
+    // repouso mínimo (2026-11-12, o Nuno: "vamos corrigir isto"). A lei tem dois casos: "if not leading to the assignment of an
+    // FDP, airport standby is followed by a rest period" (CS FTL.1.225(a)(1)) e "if an assigned FDP starts during airport
+    // standby" ((a)(2)); sem alojamento, "the FDP shall count in full from the airport duty reporting time" (ORO.FTL.225(d)).
+    // A escala não diz se o voo foi atribuído durante ela: as duas leituras, como a de casa — a mesma bifurcação. No mesmo
+    // dia fica como estava (um bloco, que o PSV do dia julga); colada a outro serviço, não (curto).
+    if (p && p.end && p.ra && isAirportSb(p) && ((v.s && v.s.kind) || 'flight') === 'flight' && gapMin >= 0 && p.iso !== v.iso && p.blk === i - 1 && gapMin < p.ra.requiredMin) { fork = true; joined = callOf(p); }
     v.callFork = fork;
     // 10 h ou mais, mas menos do que o repouso do caso: intervalo de um PSV só OU repouso entre dois (ftl restBetweenDuties
     // 'either'). Fica junto (a leitura do PSV único, a que pede mais repouso a seguir) e leva a marca da dúvida. (Não na
@@ -217,6 +226,7 @@ const buildLine = (duties = {}, ctx = {}, call = false) => {
 // leitura em `svcs.alt` (os mesmos serviços, pela mesma ordem: `svcs[i].alt` é o mesmo serviço na outra linha).
 const restServices = (duties = {}, ctx = {}) => {
   const svcs = buildLine(duties, ctx, false);
+  svcs.src = { duties, ctx };
   if (svcs.some((v) => v.callFork)) {
     const alt = buildLine(duties, ctx, true);
     if (alt.length === svcs.length) { svcs.alt = alt; for (let i = 0; i < svcs.length; i++) svcs[i].alt = alt[i]; }
@@ -909,14 +919,23 @@ const needAfter = (svcs, last) => {
   if (!svcs.alt || !last.alt) return one;
   // Se na linha da chamada o bloco de `last` continua (é uma assistência com um voo logo a seguir), o mínimo dessa linha é o de
   // depois do VOO, outro repouso: fica o de depois da assistência (revisão independente: misturavam-se os dois).
-  { const ab = svcs.alt.filter((x) => x.blk === last.alt.blk); if (ab[ab.length - 1] !== last.alt) return one; }
+  // (2026-11-12.) … mas as bifurcações ANTERIORES continuam a ter as duas leituras, e o mínimo depois de uma assistência no
+  // aeroporto (que é período de serviço) pode depender delas: lê-se uma 3.ª linha, com chamada em todas menos nesta.
+  let L2 = svcs.alt, last2 = last.alt;
+  { const ab = svcs.alt.filter((x) => x.blk === last.alt.blk);
+    if (ab[ab.length - 1] !== last.alt) {
+      if (!isAirportSb(last) || !svcs.src) return one;
+      L2 = buildLine(svcs.src.duties, svcs.src.ctx, (sb) => !(sb.iso === last.iso && +sb.start === +last.start));
+      last2 = L2.find((x) => x.iso === last.iso && +x.start === +last.start && (x.s && x.s.kind) === (last.s && last.s.kind)) || null;
+      if (!last2) return one;
+    } }
   // Nas duas leituras de uma bifurcação anterior (ver pairBoth): a ponta de baixo é a menor, a de cima a maior.
-  const two = needOne(svcs.alt, last.alt);
+  const two = needOne(L2, last2);
   const lo = (n) => (n.uncertain ? n.requiredLoMin : n.requiredMin), hi = (n) => (n.uncertain ? n.requiredHiMin : n.requiredMin);
   if (lo(one) === lo(two) && hi(one) === hi(two)) return one;
   const l = Math.min(lo(one), lo(two)), h = (hi(one) == null || hi(two) == null) ? null : Math.max(hi(one), hi(two));
   if (h != null && l === h) return { requiredMin: h };
-  const ext = requirementAfter(svcs, last, null).extOption !== requirementAfter(svcs.alt, last.alt, null).extOption;
+  const ext = requirementAfter(svcs, last, null).extOption !== requirementAfter(L2, last2, null).extOption;
   return { requiredMin: h != null ? h : l, requiredLoMin: l, requiredHiMin: h, uncertain: true,
     why: one.why || two.why || (ext ? 'extAfterStandby' : 'reducedRestAfter'), estIso: one.estIso || two.estIso || null };
 };
