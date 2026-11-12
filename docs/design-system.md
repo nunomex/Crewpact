@@ -295,6 +295,12 @@ O que muda em relação à §2 ("branco · preto · amarelo, plana, hairline"):
   o intervalo entre elas · PSV e limites em h:mm, o que falta em "1 h 40" · o que um serviço rende vai a verde numa pílula
   branca, o total do mês a tinta com "estimado · bruto" · "Incerto" no lugar do número quando falta um facto, com o que
   falta e a barra "Completar".
+- **O repouso incerto** (Nuno, 2026-11-12: "tem é que seguir a lei"): quando o mínimo do repouso depende de uma leitura que
+  a lei não fecha, o cartão do repouso não escolhe uma hora. O selo diz as duas durações ("mín. 16 h–18 h", o traço do
+  "PSV … de 11:45–13:00"); a hora da direita é a de cima com a etiqueta "no máximo" (sem teto conhecido: a de baixo, "no
+  mínimo", e o selo "mín. 12 h ou mais"); a linha pequena diz "cumprido entre 12:00 e 14:00 · " e o motivo em menos de 50
+  letras. No topo da pernoita, "Repouso até" leva "Incerto" no número e as duas pontas como factos ("no mínimo" · "no
+  máximo"), como o dinheiro incerto. Nada de anatomia nova: tudo cabe nas peças do cartão.
 - **A hora Zulu do report** (Nuno, 2026-11-11, opção A): um 3.º facto na coluna ao lado do número ("04:15Z · report em UTC"),
   só quando é diferente da hora local e só quando o número grande é o report. Não encolhe o número nem acrescenta altura.
 - **Toque:** a pílula preta do estado não se toca; a de contorno abre esse dia na Escala (38 à vista, 44 de toque); o

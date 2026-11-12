@@ -252,6 +252,30 @@ eq('sem report em voo · o cartão mostra partida e última chegada (iPhone)', [
 const rot = homeCards({ ...S.posvoo, rest: { ...S.posvoo.rest, until: '06:00', untilIso: '2026-11-15', minMin: 2380 } });
 eq('repouso de 2 dias · o dia junto da hora', rot.cards[0].b, { v: '06:00', l: 'cumprido · dom 15' });
 
+// ═══ O REPOUSO INCERTO (2026-11-12, "tem é que seguir a lei"): quando o mínimo depende de uma leitura que a lei não fecha, o
+// cartão não escolhe — mostra as duas pontas, o motivo, e a hora grande só diz "Incerto" (o padrão do dinheiro incerto). ═══
+const SB_CLOSED = { kindLabel: 'Standby em casa', signOffDone: true };
+const restUnc = homeCards({ ...S.posvoo, closed: SB_CLOSED, rest: { signOff: '20:00', until: '14:00', untilIso: D14, minMin: 1080, pct: 3, unc: { lo: '12:00', hi: '14:00', minLo: 960, minHi: 1080, why: 'standbyHome' } } });
+eq('repouso incerto · o cartão diz as duas pontas e o motivo', C(restUnc.cards[0]),
+  { t: 'card', color: 'sage', kind: 'Repouso · na base', title: 'Descansa', sub: 'cumprido entre 12:00 e 14:00 · a companhia fixa o repouso depois da assistência', gain: null, a: { v: '20:00', l: 'fim de serviço' }, dur: 'mín. 16 h–18 h', b: { v: '14:00', l: 'no máximo' }, pct: 3, corner: 'chev', action: null });
+const restNoRep = homeCards({ ...S.posvoo, closed: SB_CLOSED, rest: { signOff: '20:00', until: '08:00', untilIso: D14, minMin: 720, pct: 3, unc: { lo: '08:00', hi: null, minLo: 720, minHi: null, why: 'noReport', estDay: '09/11' } } });
+eq('repouso incerto sem teto (falta uma apresentação) · só o mínimo, dito', [restNoRep.cards[0].sub, restNoRep.cards[0].dur, restNoRep.cards[0].b],
+  ['falta a hora de apresentação do serviço de 09/11', 'mín. 12 h ou mais', { v: '08:00', l: 'no mínimo' }]);
+eq('repouso incerto num dia que fechou acima do limite · as duas frases', homeCards({ ...S.posvoo, closed: { ...S.posvoo.closed, over: true }, rest: { ...S.posvoo.rest, unc: { lo: '02:20', hi: '03:20', minLo: 720, minHi: 780, why: 'legTimes' } } }).cards[0].sub,
+  'dia acima do limite · repouso 02:20–03:20 · as horas das pernas não batem certo');
+const perUnc = homeCards({ state: 'pernoita', todayISO: D11, rest: { signOff: '14:20', until: '03:20', minMin: 780, pct: 40, hotel: 'Hotel do aeroporto', pay: 45.4, station: 'FNC', unc: { lo: '00:20', hi: '03:20', minLo: 600, minHi: 780, why: 'standbyHome' } }, next: null });
+eq('pernoita com o repouso incerto · topo "Incerto" com as duas pontas', [perUnc.top.what, perUnc.top.giant, perUnc.top.facts],
+  ['Repouso até', { l1: 'Incerto', unit: null, l2: 'FNC', l2Grey: false }, [{ v: '00:20', l: 'no mínimo', tone: null }, { v: '03:20', l: 'no máximo', tone: null }]]);
+eq('… e o cartão diz o mínimo nas duas pontas e o motivo', [perUnc.cards[0].dur, perUnc.cards[0].sub], ['mín. 10 h–13 h', 'cumprido entre 00:20 e 03:20 · a companhia fixa o repouso depois da assistência']);
+eq('pernoita a seguir ao serviço de hoje · mínimo nas duas pontas', homeCards({ ...S.antes, hero: { ...HERO, restAfterMin: 780, restAfterLoMin: 600 } }).cards.find((c) => c.id === 'night').sub, 'Hotel do aeroporto · mínimo 10 h a 13 h');
+for (const why of ['standbyHome', 'extAfterStandby', 'extPreRest', 'rotationNights', 'groundBetween', 'legTimes', 'breakOrRest', 'reducedRestAfter', 'noReport']) for (const lang of ['pt', 'en']) {
+  const r = homeCards({ ...S.posvoo, lang, closed: SB_CLOSED, rest: { signOff: '20:00', until: '14:00', minMin: 1080, pct: 3, unc: { lo: '12:00', hi: why === 'noReport' ? null : '14:00', minLo: 960, minHi: why === 'noReport' ? null : 1080, why, estDay: '09/11' } } });
+  yes(`repouso incerto · ${why} · ${lang} · frase com motivo, sem indefinidos`, r.cards[0].sub.length > 20 && r.cards[0].sub.length <= 82 && r.cards[0].dur.length <= 20 && r.cards[0].b.l.length <= 10 && !/undefined|null|NaN/.test(JSON.stringify([r.cards[0].sub, r.cards[0].dur, r.cards[0].b])));
+}
+
+eq('repouso incerto pelas noites locais · o motivo', homeCards({ ...S.posvoo, closed: SB_CLOSED, rest: { signOff: '16:00', until: '06:00', untilIso: '2026-11-15', minMin: 2280, pct: 3, unc: { lo: '04:00', hi: '06:00', minLo: 720, minHi: 2280, why: 'rotationNights' } } }).cards[0].sub,
+  'cumprido entre 04:00 e 06:00 · a lei não diz se as noites locais ainda se pedem');
+
 // ═══ A HORA ZULU do report (Nuno, 2026-11-11, opção A): 3.º facto, só quando é diferente da local ═══
 const zAntes = homeCards({ ...S.antes, hero: { ...HERO, reportZ: '04:15' } });
 eq('Zulu · antes do report, 3.º facto', zAntes.top.facts[2], { v: '04:15Z', l: 'report em UTC', tone: null });

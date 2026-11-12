@@ -1794,7 +1794,7 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
     const ls2 = legalStatus({ psv: { result: '05:00', max: '11:15', maxHi: '13:30', uncertain: true, unknowns: ['legTimes'] } }, { '2026-10-20': { servicoMin: 330, servico: 5.5, vooMin: 285, voo: 4.75 } }, new Date('2026-10-20T12:00:00'));
     eqj('PSV incerto sem limites excedidos → incerto', [ls2.status, ls2.kind], ['warn', 'psvUncertain']);
   }
-  eq('versão do motor: 12', ftl.ENGINE_VERSION, 12);
+  eq('versão do motor: 14', ftl.ENGINE_VERSION, 14);
 }
 
 
@@ -1887,7 +1887,9 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   const extSb = { ...extDay, extra: [{ kind: 'standby_home', report_time: '21:30', block_on: '23:00', sectors: 0, flight_minutes: 0, route: null }] };
   const rSb = after({ '2026-10-20': extSb, '2026-10-21': F('14:00', '14:30', '16:00', 'LIS-OPO') });
   // (4.ª revisão: o mínimo de TODAS as leituras é o piso mais as 4 h — 16:00; as 18:00 são o da leitura mais exigente.)
-  eqj('prolongamento + assistência em casa no mesmo dia: 15 h de repouso → curto (abaixo das 16:00 de qualquer leitura)', [rSb.status, rSb.actualMin, rSb.requiredMin], ['bad', 900, 960]);
+  // (2026-11-12, a regra sem exceção: na leitura do piso o repouso depois da assistência são só as 12 h — as horas do
+  // prolongamento eram do repouso logo a seguir ao voo. Entre as 12:00 e as 18:00 → incerto; antes "curto" abaixo das 16:00.)
+  eqj('prolongamento + assistência em casa no mesmo dia: 15 h de repouso → incerto, entre 12:00 e 18:00', [rSb.status, rSb.kind, rSb.actualMin, rSb.requiredMin, rSb.requiredHiMin], ['unc', 'standbyHome', 900, 720, 1080]);
   // (2) Um repouso (talvez) reduzido depois de um prolongado também aumenta o repouso seguinte (CS 235(c)(3)) e não pode ser
   // seguido de outro reduzido. Prolongado (14:00 de serviço), 17 h de repouso (diferença 1:00), serviço curto, 12 h de repouso:
   // o mínimo fica entre 12:00 e 13:00 → incerto. Com um serviço de 13:00 e 12 h 30 a seguir: curto.
@@ -2001,8 +2003,10 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   // apaga: sem nenhum repouso de 16:00 (o piso mais as 4 h) desde o prolongado, 12 h depois da assistência são curtas em
   // qualquer leitura; com 17 h ficam entre as 16:00 (leitura B) e as 18:00 (leitura A) → incerto.
   const dx = (rep) => bOf({ '2026-11-02': extDay, '2026-11-03': sbD('08:00', '20:00'), '2026-11-04': F(rep, '14:00', '15:00', 'LIS-OPO') }, '2026-11-04');
-  eqj('prolongado, 11 h, 12 h de assistência em casa, 12 h: curto (16:00 em qualquer leitura)', [dx('08:00').status, dx('08:00').requiredMin], ['bad', 960]);
-  eqj('… com 17 h depois da assistência: incerto, entre 16:00 e 18:00', [dx('13:00').status, dx('13:00').kind, dx('13:00').requiredMin, dx('13:00').requiredHiMin], ['unc', 'standbyHome', 960, 1080]);
+  // (2026-11-12, a regra sem exceção: incerto entre o piso — 12:00 — e as 18:00 do voo; curto só abaixo das 12:00.)
+  eqj('prolongado, 11 h, 12 h de assistência em casa, 12 h: incerto, entre 12:00 e 18:00 (antes: curto)', [dx('08:00').status, dx('08:00').kind, dx('08:00').requiredMin, dx('08:00').requiredHiMin], ['unc', 'standbyHome', 720, 1080]);
+  eqj('… com 17 h depois da assistência: o mesmo incerto', [dx('13:00').status, dx('13:00').kind, dx('13:00').requiredMin, dx('13:00').requiredHiMin], ['unc', 'standbyHome', 720, 1080]);
+  eqj('… com 11 h: curto (abaixo do piso)', [dx('07:00').status, dx('07:00').requiredMin], ['bad', 720]);
   // O SÍTIO do repouso de um bloco só de assistência é onde o último serviço deixou o tripulante: voo LIS-FNC, assistência no
   // hotel no dia seguinte, voo FNC-LIS 11 h depois → fora da base, 10:00 (ORO.FTL.235(b)) → certo.
   const hot = bOf({ '2026-11-02': F('06:00', '07:00', '08:30', 'LIS-FNC'), '2026-11-03': sbD('08:00', '14:00'), '2026-11-04': F('01:00', '02:00', '03:30', 'FNC-LIS') }, '2026-11-04');
@@ -2064,6 +2068,383 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eqj('… 11 h de repouso: curto (12 h)', [aS(sbH, '07:00').status, aS(sbH, '07:00').requiredMin], ['bad', 720]);
   eqj('depois de 14 h de assistência no AEROPORTO, 13 h: só como repouso reduzido (o mínimo são as 14 h)', [aS({ ...sbH, kind: 'standby_airport' }, '09:00').status, aS({ ...sbH, kind: 'standby_airport' }, '09:00').requiredMin], ['unc', 840]);
   eqj('ftl: o mínimo depois da assistência em casa é o piso', [ftl.restAfterDuty(sbH, { inBase: true }).requiredMin, ftl.restAfterDuty({ ...sbH, kind: 'standby_airport' }, { inBase: true }).requiredMin], [720, 840]);
+}
+
+// ───────────────────────────── 5.ª REVISÃO INDEPENDENTE DO REPOUSO (2026-11-11, noite 12) ─────────────────────────────
+// Os nove achados (E1 a E5, M1 a M4) e um décimo que apareceu ao corrigir (M5). Cada caso é um cenário corrido na revisão.
+{
+  const eqj = (n, g, w) => eq(n, JSON.stringify(g), JSON.stringify(w));
+  const norm = (s) => s.replace(/\s+/g, ' ');
+  const reg = norm(fs.readFileSync(path.resolve('fontes/ftl/reg-ue-83-2014-en.txt'), 'utf8'));
+  const cs = norm(fs.readFileSync(path.resolve('fontes/ftl/cs-ftl1-2014-002-R.txt'), 'utf8'));
+  const { restAround, restStatus, restUntilAfter } = require(path.resolve('data/today.js'));
+  const C = { postFlightMin: 30, isPilot: true, base: 'LIS' };
+  const F = (rep, off, on, route, x = {}) => ({ kind: 'flight', report_time: rep, block_off: off, block_on: on, sectors: route.split('-').length - 1, flight_minutes: 60, route, ...x });
+  const N = (off, on, route) => F(null, off, on, route);   // sem hora de apresentação
+  const sbD = (rep, end) => ({ kind: 'standby_home', report_time: rep, block_on: end, sectors: 0, flight_minutes: 0, route: null });
+  const befOf = (d, iso, rep) => restAround(d, (s, i) => i === iso && (rep ? s.report_time === rep : true), C).before;
+  const v = (r) => [r.status, r.kind || null, r.actualMin, r.requiredMin, r.requiredHiMin == null ? null : r.requiredHiMin];
+  const at = (iso, hm) => { const [h, m] = hm.split(':').map(Number); const d = new Date(iso + 'T00:00:00'); d.setHours(h, m, 0, 0); return d; };
+
+  // As fontes: o que liga cada mínimo ao SEU voo ou à SUA rotação (uma assistência pelo meio não o apaga) e o repouso ser um só.
+  eq('fonte: ORO.FTL.105(21) o repouso é contínuo e livre de assistência e reserva', reg.includes('“rest period” means a continuous, uninterrupted and defined period of time, following duty or prior to duty, during which a crew member is free of all duties, standby and reserve'), true);
+  eq('fonte: CS FTL.1.235(b)(3)(ii) 14 h a seguir a ESSE PSV com 4 h de fuso', cs.includes('the minimum rest following that FDP is at least as long as the preceding duty period, or 14 hours, whichever is greater'), true);
+  eq('fonte: CS FTL.1.205(c)(6) 14 h no destino depois do repouso a bordo', cs.includes('The minimum rest at destination is at least as long as the preceding duty period, or 14 hours, whichever is greater.'), true);
+  eq('fonte: CS FTL.1.235(b)(3)(i) noites locais NA BASE depois de uma rotação com 4 h de fuso', cs.includes('At home base, if a rotation involves a 4 hour time difference or more, the minimum rest is as specified in the following table.'), true);
+  eq('fonte: ORO.FTL.205(d)(2) prolongamentos em PSV consecutivos', reg.includes('When extensions are used for consecutive FDPs, the additional pre- and post-flight rest between the two extended FDPs required under subparagraph 1 shall be provided consecutively.'), true);
+
+  // ── E1 · A assistência no hotel está onde o último serviço deixou o tripulante — em TODO o lado, não só no piso. ──
+  const out = { kind: 'flight', report_time: '10:00', block_on: '19:00', sectors: 1, legs: [{ dep: 'LIS', arr: 'EWR', off: '11:00', on: '19:00', offZ: '11:00', onZ: '19:00' }] };
+  const backSame = (rep, off, on) => ({ kind: 'flight', report_time: rep, block_on: on, sectors: 1, legs: [{ dep: 'EWR', arr: 'LIS', off, on }] });
+  // (a) Noites locais "na base" não se pedem num hotel. LIS→EWR (fim 19:30, −5 h: piso de 14 h), assistência no hotel 00:30–02:00.
+  const hotelN = (rep) => befOf({ '2026-01-10': out, '2026-01-11': { ...sbD('00:30', '02:00'), extra: [backSame(rep, '17:00', '23:00')] } }, '2026-01-11', rep);
+  eqj('E1: fuso + assistência no hotel + 14 h: certo, fora da base, sem noites locais', [hotelN('16:00').status, hotelN('16:00').place, hotelN('16:00').nightsRequired, hotelN('16:00').requiredMin], ['ok', 'away', null, 840]);
+  const ruH = restUntilAfter({ '2026-01-10': out, '2026-01-11': sbD('12:00', '14:00') }, '2026-01-11', C);
+  eqj('E1: "Repouso até" depois da assistência no hotel (16 h 30 livres antes dela): 10 h, sem noites', [ruH.requiredMin, ruH.nightsRequired, new Date(ruH.untilMs).getHours(), new Date(ruH.untilMs).getDate()], [600, null, 0, 12]);
+  // (b) Juntar serviços do mesmo dia: fora da base o repouso mínimo são 10 h — com 10 h 30 entre a assistência e o voo não há
+  // "chamada"; é o mesmo caso da assistência na véspera às 23:00.
+  const awayLong = F('08:30', '09:30', '21:00', 'LIS-FNC');   // 13:00 de serviço, fica no Funchal
+  const j1 = befOf({ '2026-11-02': awayLong, '2026-11-03': { ...sbD('00:30', '01:00'), extra: [F('11:30', '12:30', '14:00', 'FNC-LIS')] } }, '2026-11-03', '11:30');
+  const j0 = befOf({ '2026-11-02': { ...awayLong, extra: [sbD('23:00', '23:30')] }, '2026-11-03': F('10:00', '11:00', '12:30', 'FNC-LIS') }, '2026-11-03', '10:00');
+  eqj('E1: fora da base, assistência no hotel de madrugada e voo 10 h 30 depois: incerto 10:00–13:00', [...v(j1), j1.place], ['unc', 'standbyHome', 630, 600, 780, 'away']);
+  eqj('E1: … igual com a assistência antes da meia-noite', v(j0), v(j1));
+
+  // (c) O mesmo para qualquer serviço EM TERRA sem rota (formação, escritório, assistência no aeroporto): não move o tripulante.
+  // LIS→EWR, formação no dia seguinte (sem rota), voo de volta 12 h 30 depois: fora da base, sem noites locais "na base".
+  const trn = { kind: 'training', report_time: '14:00', block_on: '18:00', sectors: 0 };
+  const g1 = befOf({ '2026-01-10': out, '2026-01-11': trn, '2026-01-12': backSame('06:30', '07:30', '14:00') }, '2026-01-12');
+  eqj('E1: fuso + formação sem rota no destino + 12 h 30: certo, fora da base (10:00), sem noites locais', [g1.status, g1.place, g1.nightsRequired, g1.requiredMin], ['ok', 'away', null, 600]);
+  // Um VOO sem rota não se sabe onde acaba: a formação a seguir fica com o valor por omissão (na base), como antes.
+  const g2 = befOf({ '2026-01-10': F('08:00', '09:00', '10:30', 'LIS-FNC'), '2026-01-11': { kind: 'flight', report_time: '10:00', block_on: '12:00', sectors: 1 }, '2026-01-12': { ...trn, report_time: '08:00', block_on: '10:00' }, '2026-01-13': F('08:00', '09:00', '10:00', 'LIS-OPO') }, '2026-01-13');
+  eqj('E1: … depois de um voo sem rota o sítio não se sabe: fica na base (12:00)', [g2.status, g2.place, g2.requiredMin], ['ok', 'base', 720]);
+
+  // ── E2 · Os pisos de 14 h são desse PSV: uma assistência depois da meia-noite não os apaga. ──
+  const augX = { special: { augmented: { restClass: 1, additionalCrew: 1 } } };
+  const aug = F('07:30', '08:30', '20:00', 'LIS-FNC', augX);   // 13:00 de serviço, repouso a bordo → 14:00
+  const a2same = befOf({ '2026-01-10': { ...aug, extra: [sbD('21:00', '22:00')] }, '2026-01-11': F('10:00', '11:00', '12:30', 'FNC-LIS') }, '2026-01-11');
+  const a2next = (rep) => befOf({ '2026-01-10': aug, '2026-01-11': { ...sbD('00:30', '01:30'), extra: [F(rep, '16:30', '18:00', 'FNC-LIS')] } }, '2026-01-11', rep);
+  // (2026-11-12, a regra sem exceção: antes "curto (14:00)"; na leitura do piso são as 10 h de fora da base → incerto.)
+  eqj('E2: repouso a bordo + assistência no hotel no mesmo dia, 12 h: incerto entre 10:00 e 14:00', v(a2same), ['unc', 'standbyHome', 720, 600, 840]);
+  eqj('E2: … com a assistência depois da meia-noite, 12 h: o mesmo', v(a2next('13:30')), ['unc', 'standbyHome', 720, 600, 840]);
+  eqj('E2: … com 9 h 30 (menos do que as 10 h de fora da base; e só 4 h antes da assistência): curto nas duas leituras', a2next('11:00').status, 'bad');
+  eqj('E2: … com 14 h: certo', a2next('15:30').status, 'ok');
+  // Serviço de 15 h com repouso a bordo + assistência no mesmo dia: leitura A, as 15 h; leitura B, o piso de 14 h → incerto.
+  const aug15 = F('05:30', '06:30', '20:00', 'LIS-FNC', augX);
+  const a15 = befOf({ '2026-01-10': { ...aug15, extra: [sbD('21:00', '22:00')] }, '2026-01-11': F('12:30', '13:30', '15:00', 'FNC-LIS') }, '2026-01-11');
+  eqj('E2: 15 h de serviço com repouso a bordo + assistência, 14 h 30: incerto 10:00–15:00', v(a15), ['unc', 'standbyHome', 870, 600, 900]);
+  // O fuso (CS FTL.1.235(b)(3)(ii)) pelo mesmo caminho: LIS→EWR, assistência no hotel 5 h depois, voo 12 h depois dela.
+  eqj('E2: fuso de 5 h + assistência no hotel depois da meia-noite, 12 h: incerto 10:00–14:00, sem noites locais', [hotelN('14:00').status, hotelN('14:00').requiredMin, hotelN('14:00').requiredHiMin, hotelN('14:00').nightsRequired], ['unc', 600, 840, null]);
+
+  // ── E3 · Um serviço SEM apresentação antes da assistência não se esquece. ──
+  const noRep = N('06:00', '20:00', 'LIS-FNC-LIS');   // 14 h 30 à vista (calços + pós-voo); acaba na base
+  const e3 = (rep) => befOf({ '2026-10-18': noRep, '2026-10-19': sbD('10:00', '14:00'), '2026-10-20': F(rep, '07:00', '08:00', 'LIS-OPO') }, '2026-10-20');
+  eqj('E3: sem apresentação | assistência | 12 h: incerto (falta a apresentação), não certo', [e3('02:00').status, e3('02:00').kind, e3('02:00').actualMin, e3('02:00').estIso], ['unc', 'noReport', 720, '2026-10-18']);
+  eqj('E3: … 11 h depois da assistência, na base: curto (12:00 em qualquer leitura)', [e3('01:00').status, e3('01:00').requiredMin], ['bad', 720]);
+  {
+    const rs = restStatus({ '2026-10-18': noRep, '2026-10-19': sbD('10:00', '14:00'), '2026-10-20': F('02:00', '07:00', '08:00', 'LIS-OPO') }, '2026-10-20', at('2026-10-20', '01:00'), C);
+    eqj('E3: o Início diz o mesmo', [rs.status, rs.kind, rs.actualMin], ['warn', 'noReport', 720]);
+  }
+  // O sítio: LIS→FNC sem apresentação, assistência no hotel, voo 11 h depois → fora da base (10 h): não é curto.
+  const e3b = (sbEnd) => befOf({ '2026-11-02': N('07:00', '08:30', 'LIS-FNC'), '2026-11-03': sbD('08:00', sbEnd), '2026-11-04': F('01:00', '02:00', '03:30', 'FNC-LIS') }, '2026-11-04');
+  eqj('E3: LIS→FNC sem apresentação | assistência no hotel | 11 h: incerto (antes: "curto, 12:00 base")', [e3b('14:00').status, e3b('14:00').kind, e3b('14:00').actualMin], ['unc', 'noReport', 660]);
+  eqj('E3: … 9 h 30: curto (10:00, fora da base)', [e3b('15:30').status, e3b('15:30').requiredMin], ['bad', 600]);
+
+  // … e com o serviço sem apresentação ENTRE duas assistências (voo | assistência | sem apresentação | assistência | voo).
+  const e3c = befOf({ '2026-10-16': F('08:00', '09:00', '12:00', 'LIS-OPO-LIS'), '2026-10-17': sbD('10:00', '12:00'), '2026-10-18': noRep, '2026-10-19': sbD('10:00', '14:00'), '2026-10-20': F('02:00', '07:00', '08:00', 'LIS-OPO') }, '2026-10-20');
+  eqj('E3: … entre duas assistências: o mesmo incerto', [e3c.status, e3c.kind, e3c.estIso], ['unc', 'noReport', '2026-10-18']);
+
+  // ── E4 · O "Repouso até" num dia só de assistência não pode acabar antes de o "Tenho descanso?" deixar de dizer "Não". ──
+  const ext = { kind: 'flight', report_time: '07:00', block_on: '20:30', sectors: 1 };   // prolongado; 14:00 de serviço; sem serviço antes → +4 h = 18:00
+  const u1 = restUntilAfter({ '2026-11-02': ext, '2026-11-03': sbD('08:00', '20:00') }, '2026-11-03', C);
+  eqj('E4: prolongado, 11 h, assistência: "Repouso até" pelas 18:00 da leitura que pede mais (certo: 16:00), incerto', [u1.requiredMin, u1.requiredLoMin, !!u1.uncertain, new Date(u1.untilMs).getHours()], [1080, 720, true, 14]);
+  const long5 = F('05:00', '06:00', '17:30', 'LIS-FAO-LIS');   // 05:00 → 18:00 = 13:00 de serviço
+  const u2 = restUntilAfter({ '2026-11-02': long5, '2026-11-03': sbD('06:00', '18:00') }, '2026-11-03', C);
+  const u3 = restUntilAfter({ '2026-11-02': { ...long5, extra: [sbD('19:00', '22:00')] } }, '2026-11-02', C);
+  eqj('E4: 13 h de serviço, 12 h, assistência no dia seguinte: 13:00 (certo: 12:00), como com a assistência no mesmo dia', [u2.requiredMin, u2.requiredLoMin, !!u2.uncertain, u3.requiredMin, u3.requiredLoMin, !!u3.uncertain], [780, 720, true, 780, 720, true]);
+  const u4 = restUntilAfter({ '2026-11-02': long5, '2026-11-03': sbD('08:00', '18:00') }, '2026-11-03', C);
+  eqj('E4: com as 13 h cumpridas antes da assistência: 12:00, sem dúvida', [u4.requiredMin, !!u4.uncertain], [720, false]);
+  const n1 = restAround({ '2026-11-02': ext, '2026-11-03': sbD('08:00', '20:00') }, (s, i) => i === '2026-11-03', C).need;
+  eqj('E4: a Simulação mostra o mesmo mínimo', [n1.requiredMin, n1.requiredLoMin, !!n1.uncertain], [1080, 720, true]);
+
+  // ── E5 · As noites locais na base depois de uma rotação com fuso não se perdem com uma assistência em casa pelo meio. ──
+  const back = { kind: 'flight', report_time: '23:00', block_on: '07:00', sectors: 1, legs: [{ dep: 'EWR', arr: 'LIS', off: '00:00', on: '07:00', offZ: '00:00', onZ: '07:00' }] };
+  const local = (rep, end) => ({ kind: 'flight', report_time: rep, block_on: end, sectors: 2, legs: [{ dep: 'LIS', arr: 'OPO', off: rep, on: end }] });
+  const n5 = (sbIso, flIso) => befOf({ '2026-01-10': out, '2026-01-12': back, [sbIso]: sbD('12:00', '20:00'), [flIso]: local('08:00', '12:00') }, flIso);
+  // (2026-11-12, a regra sem exceção: a lei não diz se as noites ainda se pedem ao repouso DEPOIS da assistência → incerto.)
+  eqj('E5: regresso a 13/1 07:30, assistência em casa a 13/1, voo a 14/1: 1 de 2 noites → incerto (antes do ramo: "Sim")', [n5('2026-01-13', '2026-01-14').status, n5('2026-01-13', '2026-01-14').kind, n5('2026-01-13', '2026-01-14').nightsRequired, n5('2026-01-13', '2026-01-14').nightsActual], ['unc', 'rotationNights', 2, 1]);
+  eqj('E5: … assistência a 14/1, voo a 15/1 (1 noite antes, 1 depois — nunca 2 no mesmo repouso): incerto', [n5('2026-01-14', '2026-01-15').status, n5('2026-01-14', '2026-01-15').nightsRequired], ['unc', 2]);
+  eqj('E5: … assistência a 15/1, voo a 16/1 (2 noites antes da assistência): certo', [n5('2026-01-15', '2026-01-16').status, n5('2026-01-15', '2026-01-16').nightsRequired], ['ok', null]);
+  const ru5 = restUntilAfter({ '2026-01-10': out, '2026-01-12': back, '2026-01-13': sbD('12:00', '20:00') }, '2026-01-13', C);
+  eqj('E5: "Repouso até" depois dessa assistência: entre as 12 h (14/1 às 08:00) e as 2 noites (15/1 às 06:00)', [ru5.nightsRequired, !!ru5.uncertain, new Date(ru5.untilLoMs).getDate(), new Date(ru5.untilLoMs).getHours(), new Date(ru5.untilHiMs).getDate(), new Date(ru5.untilHiMs).getHours()], [2, true, 14, 8, 15, 6]);
+
+  // A rotação ACABA num regresso à base sem apresentação (fora da linha do repouso, mas o sítio dele sabe-se): os voos
+  // seguintes já não são dessa rotação e não herdam as noites dela. LIS→EWR a 10/1, regresso sem apresentação a 13/1 (07:00),
+  // voo local a 15/1 e outro a 16/1 → sem noites locais a pedir (antes: contadas desde o voo local).
+  const backNoRep = { kind: 'flight', report_time: null, block_off: '00:00', block_on: '07:00', sectors: 1, legs: [{ dep: 'EWR', arr: 'LIS', off: '00:00', on: '07:00' }] };
+  const n6 = befOf({ '2026-01-10': out, '2026-01-13': backNoRep, '2026-01-15': F('08:00', '09:00', '12:00', 'LIS-FAO-LIS'), '2026-01-16': local('08:00', '12:00') }, '2026-01-16');
+  eqj('E5: rotação fechada por um regresso sem apresentação: os voos seguintes não herdam as noites', [n6.status, n6.nightsRequired], ['ok', null]);
+
+  // ── M1 · Prolongado a seguir a um dia só de assistência: as +2 h só são certas se o repouso antes as teve nas duas leituras. ──
+  const m1 = (rep) => befOf({ '2026-01-10': long5, '2026-01-11': sbD('06:00', '16:30'), '2026-01-12': ext, '2026-01-13': F(rep, '18:00', '19:00', 'LIS-OPO') }, '2026-01-13');
+  eqj('M1: 13 h | 12 h | assistência | 14 h 30 | prolongado | 16 h: incerto 16:00–18:00', v(m1('13:00')), ['unc', 'extAfterStandby', 960, 960, 1080]);
+  eqj('M1: … 18 h: certo', m1('15:00').status, 'ok');
+  eqj('M1: … 15 h: só como repouso reduzido (12:00 + 2:00 na leitura das +2 h)', [m1('12:00').status, m1('12:00').kind], ['unc', 'reducedRest']);
+  eqj('M1: … 13 h 30: curto', m1('10:30').status, 'bad');
+  // Com as 13 h cumpridas antes da assistência não há dúvida: 14 h 30 ≥ 12:00 + 2:00 → opção (i): 16:00.
+  const m1ok = befOf({ '2026-01-10': long5, '2026-01-11': sbD('08:00', '16:30'), '2026-01-12': ext, '2026-01-13': F('13:00', '18:00', '19:00', 'LIS-OPO') }, '2026-01-13');
+  eqj('M1: … dívida paga antes da assistência: 16:00 certo', [m1ok.status, m1ok.requiredMin], ['ok', 960]);
+
+  // ── M2 · Dois prolongados com um dia só de assistência pelo meio continuam "consecutivos" (ORO.FTL.205(d)(2)). ──
+  const ext2 = { kind: 'flight', report_time: '06:30', block_on: '20:00', sectors: 1 };   // 13:30 de PSV: prolongado
+  const m2 = (sbEnd) => befOf({ '2026-10-28': F('08:00', '09:00', '12:00', 'LIS-OPO-LIS'), '2026-11-02': ext, '2026-11-03': sbD('08:00', sbEnd), '2026-11-04': ext2 }, '2026-11-04');
+  eqj('M2: prolongado | 11 h | assistência | 17 h | prolongado: incerto 16:00–18:00 (antes: certo com 16:00)', v(m2('13:30')), ['unc', 'standbyHome', 1020, 720, 1080]);
+  eqj('M2: … 18 h: certo', m2('12:30').status, 'ok');
+
+  // ── M3 · Depois de um repouso "incerto" por assistência em casa, o repouso seguinte pode levar a diferença (CS 235(c)(3)). ──
+  const m3 = (rep) => befOf({ '2026-01-10': long5, '2026-01-11': sbD('06:00', '16:30'), '2026-01-12': { ...F('05:00', '06:00', '08:30', 'LIS-OPO-LIS'), extra: [F(rep, '22:30', '23:20', 'LIS-OPO')] } }, '2026-01-12', rep);
+  eqj('M3: 13 h | assistência | 12 h 30 (incerto) | voo | 12 h 15: incerto 12:00–12:30', v(m3('21:15')), ['unc', 'reducedRestAfter', 735, 720, 750]);
+  eqj('M3: … 12 h 30: certo', m3('21:30').status, 'ok');
+  // M5 (apareceu ao corrigir): … e esse repouso anterior NÃO foi de certeza um repouso reduzido (na leitura do piso cumpriu):
+  // um 2.º repouso de 12 h 30 depois de 13 h de serviço é incerto (só como repouso reduzido), não curto.
+  const long8 = F('08:00', '09:00', '20:30', 'LIS-FAO-LIS');
+  const m5 = befOf({ '2026-11-10': { ...long5, extra: [sbD('18:30', '19:30')] }, '2026-11-11': long8, '2026-11-12': F('09:30', '10:30', '11:30', 'LIS-OPO') }, '2026-11-12');
+  eqj('M5: 13 h + assistência | 12 h 30 (incerto) | 13 h | 12 h 30: incerto, não curto', [m5.status, m5.kind], ['unc', 'reducedRest']);
+
+  // ── M4 · Uma reserva que começa durante o fim do serviço (o pós-voo) não é repouso: corta a recuperação. ──
+  const S = (rep, on) => F(rep, null, on, 'LIS-OPO-LIS');
+  const L6 = F('06:00', '07:00', '18:30', 'LIS-FAO-LIS');
+  const three = (d4) => restStatus({ '2026-03-01': long5, '2026-03-02': S('06:30', '09:30'), '2026-03-03': long5, '2026-03-04': d4, '2026-03-06': L6, '2026-03-07': S('07:30', '10:30') }, '2026-03-07', at('2026-03-07', '07:29'), C).status;
+  eqj('M4: 3.º repouso reduzido, com 44 h livres e 2 noites antes: incerto (houve recuperação)', three(S('06:30', '09:30')), 'warn');
+  eqj('M4: … reserva das 10:00 às 23:00 (começa quando o serviço acaba): sem recuperação → curto', three({ ...S('06:30', '09:30'), extra: [{ kind: 'reserve', report_time: '10:00', block_on: '23:00' }] }), 'bad');
+  eqj('M4: … reserva das 09:59 às 23:00 (1 minuto antes): o mesmo', three({ ...S('06:30', '09:30'), extra: [{ kind: 'reserve', report_time: '09:59', block_on: '23:00' }] }), 'bad');
+  eqj('M4: … reserva das 05:00 às 23:00 que ENVOLVE o serviço (chamado a meio dela): acaba com ele → incerto', three({ ...S('06:30', '09:30'), extra: [{ kind: 'reserve', report_time: '05:00', block_on: '23:00' }] }), 'warn');
+}
+
+// ───────────────────────────── 6.ª PASSAGEM (revisão independente das correções da 5.ª, 2026-11-12) ─────────────────────────────
+// Os achados 1 a 5 e a suspeita 7 (confirmada). Cada caso é o cenário que a revisão correu.
+{
+  const eqj = (n, g, w) => eq(n, JSON.stringify(g), JSON.stringify(w));
+  const { restAround, restStatus, restUntilAfter } = require(path.resolve('data/today.js'));
+  const C = { postFlightMin: 30, isPilot: true, base: 'LIS' };
+  const F = (rep, off, on, route, x = {}) => ({ kind: 'flight', report_time: rep, block_off: off, block_on: on, sectors: route.split('-').length - 1, flight_minutes: 60, route, ...x });
+  const sbD = (rep, end) => ({ kind: 'standby_home', report_time: rep, block_on: end, sectors: 0, flight_minutes: 0, route: null });
+  const befOf = (d, iso, rep, ctx = C) => restAround(d, (s, i) => i === iso && (rep ? s.report_time === rep : true), ctx).before;
+  const v = (r) => [r.status, r.kind || null, r.actualMin, r.requiredMin, r.requiredHiMin == null ? null : r.requiredHiMin];
+  const long5 = F('05:00', '06:00', '17:30', 'LIS-FAO-LIS');   // 13:00 de serviço, fim 18:00
+  const ext = { kind: 'flight', report_time: '07:00', block_on: '20:30', sectors: 1 };   // prolongado, 14:00 de serviço, fim 21:00
+
+  // ── 1 · Depois de um prolongado com "+2 h ou +4 h" incerto, o repouso seguinte também pode aumentar (CS FTL.1.235(c)(3)). ──
+  // 13 h | assistência | prolongado | 16 h 30 (incerto 16:00–18:00) | voo | 12 h 30 | voo. Na leitura das +4 h as 16 h 30 só são
+  // legais como repouso reduzido (12:00 + 4:00; diferença 1:30) → o repouso seguinte fica entre 12:00 e 13:30.
+  const p1 = { '2026-01-10': long5, '2026-01-11': sbD('06:00', '16:30'), '2026-01-12': ext, '2026-01-13': F('13:30', '14:00', '21:30', 'LIS-OPO-LIS'), '2026-01-14': F('10:30', '11:30', '13:00', 'LIS-OPO-LIS') };
+  eqj('6.ª/1: o repouso a seguir ao prolongado incerto: 16:00–18:00', v(befOf(p1, '2026-01-13')), ['unc', 'extAfterStandby', 990, 960, 1080]);
+  eqj('6.ª/1: … e o repouso seguinte: incerto 12:00–13:30 (antes: certo)', v(befOf(p1, '2026-01-14')), ['unc', 'reducedRestAfter', 750, 720, 810]);
+
+  // ── 2 · A opção (i)/(ii) do prolongamento quando o repouso ANTES dele tem o mínimo incerto por outro motivo. ──
+  // 13 h | 12 h 30 (talvez reduzido) | voo | 14 h | prolongado. O mínimo do repouso antes do prolongado é 12:00 ou 12:30
+  // (CS 235(c)(3)); com as +2 h, 14:00 ou 14:30 — houve 14 h: (i) numa leitura, (ii) na outra → a seguir, 16:00 a 18:00.
+  const p2 = (rep) => ({ '2026-01-10': long5, '2026-01-11': F('06:30', '07:30', '16:30', 'LIS-OPO-LIS'), '2026-01-12': ext, ...(rep ? { '2026-01-13': F(rep, '15:30', '16:30', 'LIS-OPO') } : {}) });
+  eqj('6.ª/2: 16 h depois do prolongado: incerto 16:00–18:00 (antes: certo com 16:00)', v(befOf(p2('13:00'), '2026-01-13')), ['unc', 'extPreRest', 960, 960, 1080]);
+  eqj('6.ª/2: … 18 h: certo', befOf(p2('15:00'), '2026-01-13').status, 'ok');
+  { const ru = restUntilAfter(p2(null), '2026-01-12', C); eqj('6.ª/2: o "Repouso até" com as duas pontas', [ru.requiredLoMin, ru.requiredHiMin, ru.why], [960, 1080, 'extPreRest']); }
+
+  // ── 3 · Noites locais depois de uma rotação com fuso, com um serviço EM TERRA pelo meio. ──
+  // Com assistência em casa (não é período de serviço): as noites continuam pedidas → curto (5.ª revisão, E5). Com formação,
+  // escritório ou assistência no aeroporto (são períodos de serviço): a FAQ 47610 da EASA mede o repouso antes do PSV pelo
+  // serviço que vem logo antes, e a CS FTL.1.235(b)(3)(i) não diz se as noites ainda se pedem → incerto (antes: "certo").
+  const out = { kind: 'flight', report_time: '10:00', block_on: '19:00', sectors: 1, legs: [{ dep: 'LIS', arr: 'EWR', off: '11:00', on: '19:00', offZ: '11:00', onZ: '19:00' }] };
+  const back = { kind: 'flight', report_time: '23:00', block_on: '07:00', sectors: 1, legs: [{ dep: 'EWR', arr: 'LIS', off: '00:00', on: '07:00', offZ: '00:00', onZ: '07:00' }] };
+  const local = (rep, end) => ({ kind: 'flight', report_time: rep, block_on: end, sectors: 2, legs: [{ dep: 'LIS', arr: 'OPO', off: rep, on: end }] });
+  const n3 = (x) => befOf({ '2026-01-10': out, '2026-01-12': back, '2026-01-13': x, '2026-01-14': local('08:00', '12:00') }, '2026-01-14');
+  const g = (kind) => ({ kind, report_time: '12:00', block_on: '16:00', sectors: 0 });
+  for (const k of ['training', 'office', 'standby_airport']) eqj(`6.ª/3: rotação com fuso, ${k} no dia do regresso, voo com 1 noite: incerto (1 de 2 noites)`, [n3(g(k)).status, n3(g(k)).kind, n3(g(k)).nightsRequired, n3(g(k)).nightsActual], ['unc', 'rotationNights', 2, 1]);
+  eqj('6.ª/3: … com assistência em casa: o mesmo incerto (2026-11-12, a regra sem exceção; antes: curto)', [n3(sbD('12:00', '16:00')).status, n3(sbD('12:00', '16:00')).kind, n3(sbD('12:00', '16:00')).nightsRequired], ['unc', 'rotationNights', 2]);
+  { const rs = restStatus({ '2026-01-10': out, '2026-01-12': back, '2026-01-13': g('training'), '2026-01-14': local('08:00', '12:00') }, '2026-01-14', new Date(2026, 0, 14, 7, 0), C);
+    eqj('6.ª/3: o Início diz o mesmo', [rs.status, rs.kind, rs.nightsRequired, rs.nightsActual], ['warn', 'rotationNights', 2, 1]); }
+  { const ru = restUntilAfter({ '2026-01-10': out, '2026-01-12': back, '2026-01-13': g('training') }, '2026-01-13', C);
+    eqj('6.ª/3: "Repouso até" depois da formação: entre as 12 h e as 2 noites', [!!ru.uncertain, ru.why, new Date(ru.untilLoMs).getDate(), new Date(ru.untilLoMs).getHours(), new Date(ru.untilHiMs).getDate(), new Date(ru.untilHiMs).getHours()], [true, 'rotationNights', 14, 4, 15, 6]); }
+  // O regresso e a formação no MESMO dia são um só período de serviço: as noites pedem-se de certeza (antes: perdiam-se).
+  const backDay = { kind: 'flight', report_time: '01:00', block_on: '09:00', sectors: 1, legs: [{ dep: 'EWR', arr: 'LIS', off: '02:00', on: '09:00', offZ: '02:00', onZ: '09:00' }] };
+  const n3b = befOf({ '2026-01-10': out, '2026-01-13': { ...backDay, extra: [{ kind: 'training', report_time: '10:00', block_on: '12:00', sectors: 0 }] }, '2026-01-14': local('08:00', '12:00') }, '2026-01-14');
+  eqj('6.ª/3: regresso + formação no mesmo dia, voo com 1 noite: curto (2 noites)', [n3b.status, n3b.nightsRequired, n3b.nightsActual], ['bad', 2, 1]);
+
+  // ── 4 · A assistência antes ou depois da meia-noite, quando o serviço antes dela veio depois de um repouso talvez reduzido. ──
+  const D4 = F('06:30', '07:30', '13:30', 'LIS-OPO-LIS');   // depois de 12 h 30 (13 h de serviço antes): talvez reduzido, diferença 0:30
+  const s4 = befOf({ '2026-01-10': long5, '2026-01-11': { ...D4, extra: [sbD('22:00', '23:30')] }, '2026-01-12': F('11:30', '12:30', '13:30', 'LIS-OPO') }, '2026-01-12');
+  const x4 = befOf({ '2026-01-10': long5, '2026-01-11': D4, '2026-01-12': { ...sbD('00:30', '02:00'), extra: [F('14:00', '15:00', '16:00', 'LIS-OPO')] } }, '2026-01-12', '14:00');
+  eqj('6.ª/4: assistência antes da meia-noite, 12 h: incerto 12:00–12:30', [s4.status, s4.actualMin, s4.requiredMin, s4.requiredHiMin], ['unc', 720, 720, 750]);
+  eqj('6.ª/4: … depois da meia-noite: o mesmo (antes: certo)', [x4.status, x4.actualMin, x4.requiredMin, x4.requiredHiMin], ['unc', 720, 720, 750]);
+
+  // ── 5 · O sítio de um serviço em terra mede-se contra a base DO DIA DELE (a base pode ter mudado). ──
+  const C5 = { postFlightMin: 30, isPilot: true, baseAt: (iso) => (iso >= '2026-01-11' ? 'OPO' : 'LIS') };
+  const m5 = (x, f) => befOf({ '2026-01-10': f, '2026-01-11': x, '2026-01-12': F('01:00', '02:00', '03:00', f.route === 'LIS-OPO' ? 'OPO-FAO' : 'LIS-OPO') }, '2026-01-12', null, C5);
+  const toNew = F('17:00', '18:00', '19:00', 'LIS-OPO'), toOld = F('17:00', '18:00', '19:00', 'OPO-LIS');
+  eqj('6.ª/5: voo para a NOVA base, assistência em casa, 11 h: na base, curto (12:00)', [m5(sbD('08:00', '14:00'), toNew).status, m5(sbD('08:00', '14:00'), toNew).place, m5(sbD('08:00', '14:00'), toNew).requiredMin], ['bad', 'base', 720]);
+  eqj('6.ª/5: … com formação: o mesmo', [m5({ kind: 'training', report_time: '08:00', block_on: '14:00', sectors: 0 }, toNew).status, m5({ kind: 'training', report_time: '08:00', block_on: '14:00', sectors: 0 }, toNew).requiredMin], ['bad', 720]);
+  eqj('6.ª/5: voo para a base ANTIGA, assistência lá (já não é a base), 11 h: fora, certo (10:00)', [m5(sbD('08:00', '14:00'), toOld).status, m5(sbD('08:00', '14:00'), toOld).place, m5(sbD('08:00', '14:00'), toOld).requiredMin], ['ok', 'away', 600]);
+
+  // ── 7 · O motor do PSV do dia lê o mesmo sítio: assistência no hotel e voo 10 h 30 depois é um repouso (fora: 10 h). ──
+  // Antes: lida "na base" (12 h) → "repouso ou chamada?" → PSV incerto entre 8:00 e 13:00. Na base continua incerto.
+  const hotelDay = { ...sbD('00:30', '01:00'), extra: [F('11:30', '12:30', '21:00', 'FNC-LIS')] };
+  const dayOf = (base) => ftl.dayFtlFromDuties([hotelDay, ...hotelDay.extra], { base, postFlightMin: 30, isPilot: true, date: '2026-11-03', duties: { '2026-11-02': F('08:30', '09:30', '21:00', 'LIS-FNC'), '2026-11-03': hotelDay } });
+  const away7 = dayOf('LIS'), base7 = dayOf('FNC');
+  eqj('6.ª/7: assistência no hotel + voo 10 h 30 depois: um repouso fora da base (10:00); PSV do voo certo, máximo 13:00', [away7.between[0].kind, away7.between[0].place, away7.between[0].requiredMin, away7.parts[1].max, away7.parts.some((p) => p.uncertain)], ['rest', 'away', 600, '13:00', false]);
+  eqj('6.ª/7: … a mesma assistência NA BASE (12 h): continua incerto', [!!base7.psv.uncertain, (base7.psv.unknowns || []).includes('standbyRest')], [true, true]);
+}
+
+// ───────────────────────────── A REGRA SEM EXCEÇÃO (2026-11-12, o Nuno: "tem é que seguir a lei… avança") ─────────────────────────────
+// "Curto" só quando é curto em TODAS as leituras. Três sítios onde a app ainda dizia "curto" ou "certo" por uma leitura sua:
+//   A · assistência num dia e voo no seguinte, abaixo do mínimo — pode ter sido uma chamada durante a assistência;
+//   B · depois de uma assistência em casa, o que vinha do último voo (14 h, horas do prolongamento, noites locais) — já mudado
+//       nos casos de cima; aqui só as noites locais;
+//   C · escritório ou formação entre um voo com horas a mais (prolongado, 14 h) e o PSV seguinte.
+{
+  const eqj = (n, g, w) => eq(n, JSON.stringify(g), JSON.stringify(w));
+  const norm = (s) => s.replace(/\s+/g, ' ');
+  const cs = norm(fs.readFileSync(path.resolve('fontes/ftl/cs-ftl1-2014-002-R.txt'), 'utf8'));
+  const { restAround, restStatus } = require(path.resolve('data/today.js'));
+  const C = { postFlightMin: 30, isPilot: true, base: 'LIS' };
+  const F = (rep, off, on, route, x = {}) => ({ kind: 'flight', report_time: rep, block_off: off, block_on: on, sectors: route.split('-').length - 1, flight_minutes: 60, route, ...x });
+  const sbD = (rep, end) => ({ kind: 'standby_home', report_time: rep, block_on: end, sectors: 0, flight_minutes: 0, route: null });
+  const befOf = (d, iso, rep) => restAround(d, (s, i) => i === iso && (rep ? s.report_time === rep : true), C).before;
+  const v = (r) => [r.status, r.kind || null, r.actualMin, r.requiredMin, r.requiredHiMin == null ? null : r.requiredHiMin];
+  const long5 = F('05:00', '06:00', '17:30', 'LIS-FAO-LIS');   // 13:00 de serviço, fim 18:00
+  const ext = { kind: 'flight', report_time: '07:00', block_on: '20:30', sectors: 1 };   // prolongado, 14:00 de serviço, fim 21:00
+
+  // ── A · Assistência num dia, voo no dia seguinte abaixo do mínimo. ──
+  eq('fonte: CS FTL.1.225(b)(5) a assistência acaba quando o tripulante se apresenta', cs.includes('standby ceases when the crew member reports at the designated reporting'), true);
+  eq('fonte: CS FTL.1.225(b)(1) a assistência fora do aeroporto dura no máximo 16 h', cs.includes('the maximum duration of standby other than airport standby is 16 hours'), true);
+  eq('fonte: GM1 CS FTL.1.225 (b) com um repouso mínimo antes da apresentação, esse tempo não conta como assistência', cs.includes('If a minimum rest period as specified in ORO.FTL.235 is provided before reporting for the duty assigned during the standby, this time period should not count as standby duty.'), true);
+  const short1 = F('06:00', '07:00', '10:00', 'LIS-OPO-LIS');   // fim 10:30
+  const a1 = (rep) => befOf({ '2026-03-02': short1, '2026-03-03': sbD('14:00', '22:00'), '2026-03-04': F(rep, '08:00', '09:00', 'LIS-OPO') }, '2026-03-04');
+  eqj('A: assistência 14:00–22:00, voo às 04:00 do dia seguinte (6 h depois): incerto — chamada ou repouso curto (antes: curto)', v(a1('04:00')), ['unc', 'standbyCall', 360, 720, null]);
+  eqj('A: … voo às 07:00 (9 h depois; 17 h desde o início da assistência, mais do que as 16 h): curto nas duas leituras', [a1('07:00').status, a1('07:00').requiredMin], ['bad', 720]);
+  eqj('A: … voo às 10:00 (12 h depois): certo', a1('10:00').status, 'ok');
+  // Na leitura da chamada o repouso antes do PSV é o que veio ANTES da assistência: se esse também é curto, é curto.
+  const a2 = befOf({ '2026-03-02': F('12:00', '13:00', '23:00', 'LIS-FAO-LIS'), '2026-03-03': sbD('10:00', '23:00'), '2026-03-04': F('01:00', '08:00', '09:00', 'LIS-OPO') }, '2026-03-04');
+  eqj('A: voo até às 23:30, assistência 10 h 30 depois (mínimo 12:00) e voo 2 h depois dela: curto', a2.status, 'bad');
+  const a3 = befOf({ '2026-03-03': { ...long5, extra: [sbD('19:00', '23:00')] }, '2026-03-04': F('04:00', '08:00', '09:00', 'LIS-OPO') }, '2026-03-04');
+  eqj('A: voo de 13 h + assistência no mesmo dia (1 h depois) e voo 5 h depois dela: curto', a3.status, 'bad');
+  { const d = { '2026-03-02': short1, '2026-03-03': sbD('14:00', '22:00'), '2026-03-04': F('04:00', '08:00', '09:00', 'LIS-OPO') };
+    const rs = restStatus(d, '2026-03-04', new Date(2026, 2, 4, 3, 0), C); eqj('A: o Início diz o mesmo', [rs.status, rs.kind], ['warn', 'standbyCall']); }
+
+  // ── B · Noites locais depois de uma rotação com fuso, só com assistência em casa pelo meio: incerto (antes: curto). ──
+  const out = { kind: 'flight', report_time: '10:00', block_on: '19:00', sectors: 1, legs: [{ dep: 'LIS', arr: 'EWR', off: '11:00', on: '19:00', offZ: '11:00', onZ: '19:00' }] };
+  const back = { kind: 'flight', report_time: '23:00', block_on: '07:00', sectors: 1, legs: [{ dep: 'EWR', arr: 'LIS', off: '00:00', on: '07:00', offZ: '00:00', onZ: '07:00' }] };
+  const local = (rep, end) => ({ kind: 'flight', report_time: rep, block_on: end, sectors: 2, legs: [{ dep: 'LIS', arr: 'OPO', off: rep, on: end }] });
+  const b1 = befOf({ '2026-01-10': out, '2026-01-12': back, '2026-01-14': local('08:00', '12:00') }, '2026-01-14');
+  eqj('B: sem nada pelo meio, 1 de 2 noites: curto (a lei é clara)', [b1.status, b1.nightsRequired, b1.nightsActual], ['bad', 2, 1]);
+
+  // ── C · Escritório ou formação entre um voo com horas a mais e o PSV seguinte. ──
+  // A FAQ 47610 da EASA mede o repouso antes do PSV pelo serviço que vem logo antes ("FDP1 – off duty – DP1 – off duty – DP2 –
+  // rest – FDP2"), mas não diz se as horas do prolongamento (ORO.FTL.205(d)(1)) ou as 14 h (CS FTL.1.205(c)(6), 235(b)(3)(ii))
+  // desse voo ainda se pedem: sem um repouso com elas desde esse voo → incerto (antes: "certo").
+  const office = (rep, end) => ({ kind: 'office', report_time: rep, block_on: end, sectors: 0 });
+  const c1 = (rep) => befOf({ '2026-11-02': ext, '2026-11-03': office('10:00', '18:00'), '2026-11-04': F(rep, '14:00', '15:00', 'LIS-OPO') }, '2026-11-04');
+  eqj('C: prolongado, 13 h, escritório, 14 h: incerto entre 12:00 e 18:00 (antes: certo)', v(c1('08:00')), ['unc', 'groundBetween', 840, 720, 1080]);
+  eqj('C: … 18 h depois do escritório: certo', c1('12:00').status, 'ok');
+  eqj('C: … 11 h: curto (12:00 em qualquer leitura)', [c1('05:00').status, c1('05:00').requiredMin], ['bad', 720]);
+  const c2 = befOf({ '2026-11-02': ext, '2026-11-03': office('15:00', '17:00'), '2026-11-04': F('05:00', '14:00', '15:00', 'LIS-OPO') }, '2026-11-04');
+  eqj('C: com as 18 h cumpridas ANTES do escritório, 12 h depois dele: certo', [c2.status, c2.requiredMin], ['ok', 720]);
+  // Sem horas a mais no voo, vale a resposta da EASA: o repouso mede-se pelo escritório.
+  const c3 = befOf({ '2026-11-02': long5, '2026-11-03': office('06:00', '10:00'), '2026-11-04': F('00:30', '14:00', '15:00', 'LIS-OPO') }, '2026-11-04');
+  eqj('C: voo de 13 h (sem horas a mais), 12 h, escritório, 14 h 30: certo (12:00)', [c3.status, c3.requiredMin], ['ok', 720]);
+  // As 14 h do repouso a bordo, com uma formação no hotel pelo meio.
+  const aug = F('07:30', '08:30', '20:00', 'LIS-FNC', { special: { augmented: { restClass: 1, additionalCrew: 1 } } });
+  const c4 = befOf({ '2026-01-10': aug, '2026-01-11': { kind: 'training', report_time: '06:00', block_on: '10:00', sectors: 0, extra: [F('22:00', '23:00', '23:50', 'FNC-LIS')] } }, '2026-01-11', '22:00');
+  eqj('C: repouso a bordo, 9 h 30, formação no hotel, 12 h: incerto entre 10:00 e 14:00', v(c4), ['unc', 'groundBetween', 720, 600, 840]);
+}
+
+// ───────────────────────────── 7.ª PASSAGEM (2026-11-12, revisão independente das correções da 6.ª) ─────────────────────────────
+// Três erros confirmados com cenário corrido:
+//   1 · a opção (i)/(ii) do prolongamento mudava com a meia-noite: com a assistência em casa num dia próprio, o mínimo do
+//       repouso antes do prolongado não via o aumento de um repouso talvez reduzido antes de D (CS FTL.1.235(c)(3));
+//   2 · o motor do PSV situava um serviço em terra sem rota com outra regra (saltava um voo sem rota, não via um serviço sem
+//       apresentação, não aceitava uma rota de um só aeroporto) e dizia "fora da base" com certeza;
+//   3 · um serviço SEM FIM entre o regresso da rotação e o PSV fazia as noites locais deixarem de se pedir, e o "Repouso até"
+//       discordava das outras vistas.
+{
+  const eqj = (n, g, w) => eq(n, JSON.stringify(g), JSON.stringify(w));
+  const norm = (s) => s.replace(/\s+/g, ' ');
+  const cs = norm(fs.readFileSync(path.resolve('fontes/ftl/cs-ftl1-2014-002-R.txt'), 'utf8'));
+  const { restAround, restStatus, restVerdicts, restUntilAfter } = require(path.resolve('data/today.js'));
+  const ftl = require(path.resolve('ftl/index.js'));
+  const C = { postFlightMin: 30, isPilot: true, base: 'LIS' };
+  const F = (rep, off, on, route, x = {}) => ({ kind: 'flight', report_time: rep, block_off: off, block_on: on, sectors: route ? route.split('-').length - 1 : 1, flight_minutes: 60, route, ...x });
+  const G = (kind, rep, end, route = null) => ({ kind, report_time: rep, block_on: end, sectors: 0, flight_minutes: 0, route });
+  const sbD = (rep, end) => G('standby_home', rep, end);
+  const befOf = (d, iso, rep) => restAround(d, (s, i) => i === iso && (rep ? s.report_time === rep : true), C).before;
+  const v = (r) => [r.status, r.kind || null, r.actualMin, r.requiredMin, r.requiredHiMin == null ? null : r.requiredHiMin];
+  const long5 = F('05:00', '06:00', '17:30', 'LIS-FAO-LIS');   // 13:00 de serviço, fim 18:00
+  const D4 = F('06:30', '07:30', '13:30', 'LIS-OPO-LIS');      // 12 h 30 depois (mínimo 13:00): talvez repouso reduzido, diferença 0:30; fim 14:00
+  const ext = { kind: 'flight', report_time: '07:00', block_on: '20:30', sectors: 1 };   // prolongado, 14:00 de serviço, fim 21:00
+
+  // ── 1 · O "+2 h ou +4 h" com a assistência em casa num dia próprio antes do prolongado. ──
+  eq('fonte: CS FTL.1.235(c)(3) o repouso a seguir ao repouso reduzido aumenta pela diferença', cs.includes('The rest period following the reduced rest is extended by the difference'), true);
+  // 13 h de serviço → 12 h 30 → D → 11 h → assistência em casa (dia próprio) → 14 h 15 → prolongado. O mínimo antes do prolongado é
+  // 12:00 ou 12:30 (D veio de um repouso talvez reduzido); a opção (i) pede +2 h antes: 14:00 ou 14:30. Com 14:15 → (i) ou (ii).
+  const e1 = { '2026-01-10': long5, '2026-01-11': D4, '2026-01-12': sbD('01:00', '16:45'), '2026-01-13': ext };
+  const e1after = (rep) => befOf({ ...e1, '2026-01-14': F(rep, '15:00', '16:00', 'LIS-OPO') }, '2026-01-14');
+  eqj('7.ª/1: assistência num dia próprio antes do prolongado, 17 h depois dele: incerto entre 16:00 e 18:00 (antes: certo)', v(e1after('14:00')), ['unc', 'extAfterStandby', 1020, 960, 1080]);
+  eqj('7.ª/1: … 18 h 30 depois: certo', e1after('15:30').status, 'ok');
+  eqj('7.ª/1: … 15 h 30 depois: abaixo das 16:00 de todas as leituras (não é certo)', e1after('12:30').status !== 'ok', true);
+  { const ru = restUntilAfter(e1, '2026-01-13', C); eqj('7.ª/1: o "Repouso até" diz o mesmo', [ru.requiredLoMin, ru.requiredHiMin, !!ru.uncertain, ru.why], [960, 1080, true, 'extAfterStandby']); }
+  // Controlo: a assistência no MESMO dia de D já dava isto (a resposta não pode mudar com a meia-noite).
+  const e1same = { '2026-01-10': long5, '2026-01-11': { ...D4, extra: [sbD('22:00', '23:59')] }, '2026-01-12': { kind: 'flight', report_time: '14:14', block_on: '03:44', sectors: 1 } };
+  eqj('7.ª/1: controlo, a assistência no mesmo dia de D: o mesmo incerto', v(befOf({ ...e1same, '2026-01-13': F('21:14', '22:00', '23:00', 'LIS-OPO') }, '2026-01-13')).slice(0, 2).concat([960, 1080]), ['unc', 'extPreRest', 960, 1080]);
+  // O mesmo com um ESCRITÓRIO num dia próprio no lugar da assistência (a regra C de cima: as horas a mais de D, aqui o aumento
+  // do repouso reduzido, não se sabe se ainda se pedem ao repouso depois do escritório).
+  const office = (rep, end) => G('office', rep, end);
+  const g1 = (rep) => befOf({ '2026-01-10': long5, '2026-01-11': D4, '2026-01-12': { ...office('01:00', '03:00'), extra: [F(rep, '17:00', '18:00', 'LIS-OPO')] } }, '2026-01-12', rep);
+  eqj('7.ª/1: repouso talvez reduzido, D, 11 h, escritório, 12 h 15: incerto entre 12:00 e 12:30 (antes: certo)', v(g1('15:15')), ['unc', 'groundBetween', 735, 720, 750]);
+  eqj('7.ª/1: … 12 h 30 depois do escritório: certo', g1('15:30').status, 'ok');
+  // D, 10 h 30, escritório (00:30–02:30), 14 h 15, prolongado às 16:45 (12 h de PSV, 12 h 30 de serviço, fim 05:15): o mínimo antes
+  // do prolongado é 12:00 ou 12:30, logo a seguir a ele 14:30 (opção i) ou 16:30 (ii).
+  const ext2 = { kind: 'flight', report_time: '16:45', block_on: '04:45', sectors: 1 };
+  const e1off = { '2026-01-10': long5, '2026-01-11': D4, '2026-01-12': { ...office('00:30', '02:30'), extra: [ext2] } };
+  eqj('7.ª/1: escritório antes do prolongado, 15 h 30 depois dele: incerto entre 14:30 e 16:30 (antes: certo)', v(befOf({ ...e1off, '2026-01-13': F('20:45', '21:30', '22:30', 'LIS-OPO') }, '2026-01-13')), ['unc', 'extPreRest', 930, 870, 990]);
+
+  // ── 2 · O motor do PSV e o repouso situam o serviço em terra com a MESMA regra. ──
+  const dayOf = (d, iso) => ftl.dayFtlFromDuties([d[iso], ...(d[iso].extra || [])], { base: 'LIS', postFlightMin: 30, isPilot: true, date: iso, duties: d });
+  const gapOf = (d, iso) => { const df = dayOf(d, iso); const b = df.between[df.between.length - 1]; return [b.kind, b.place, !!df.psv.uncertain]; };
+  const apt = { ...G('standby_airport', '08:00', '10:00'), extra: [F('20:30', '21:30', '23:00', 'LIS-OPO')] };   // voo 10 h 30 depois da assistência
+  const out1 = F('08:00', '09:00', '11:00', 'LIS-FNC');
+  // (a) um voo SEM rota no dia antes: não se sabe onde acabou → o valor por omissão (na base), 10 h 30 = intervalo ou repouso.
+  eqj('7.ª/2a: voo sem rota antes da assistência no aeroporto: não se sabe o sítio → "intervalo ou repouso", PSV incerto (antes: fora, certo)',
+    gapOf({ '2026-01-10': out1, '2026-01-11': F('07:00', '08:00', '09:30', null), '2026-01-12': apt }, '2026-01-12'), ['either', 'base', true]);
+  // (b) um voo SEM apresentação, FNC-LIS, na manhã do próprio dia: o tripulante está em Lisboa.
+  eqj('7.ª/2b: voo sem apresentação de volta à base na manhã do dia: na base (antes: fora, certo)',
+    gapOf({ '2026-01-10': out1, '2026-01-11': { kind: 'flight', report_time: null, block_off: '05:00', block_on: '06:30', sectors: 1, route: 'FNC-LIS', extra: [apt, ...apt.extra] } }, '2026-01-11'), ['either', 'base', true]);
+  // (c) uma formação com a rota de um só aeroporto (LIS) no dia antes: está em Lisboa.
+  eqj('7.ª/2c: formação com rota "LIS" antes: na base (antes: fora, certo)',
+    gapOf({ '2026-01-10': out1, '2026-01-11': G('training', '09:00', '17:00', 'LIS'), '2026-01-12': apt }, '2026-01-12'), ['either', 'base', true]);
+  // Controlo: depois de um voo que acabou mesmo fora (FNC), 10 h 30 são um repouso — como já era.
+  eqj('7.ª/2: controlo, a assistência no aeroporto do Funchal: fora da base, 10 h 30 são um repouso',
+    gapOf({ '2026-01-10': out1, '2026-01-12': { ...G('standby_airport', '08:00', '10:00'), extra: [F('20:30', '21:30', '23:00', 'FNC-LIS')] } }, '2026-01-12'), ['rest', 'away', false]);
+  // … e sem limite de dias: a última chegada foi há 20 dias.
+  eqj('7.ª/2: a última chegada foi há 20 dias (antes o motor só via 14): fora da base',
+    gapOf({ '2026-01-10': out1, '2026-01-30': { ...G('standby_airport', '08:00', '10:00'), extra: [F('20:30', '21:30', '23:00', 'FNC-LIS')] } }, '2026-01-30'), ['rest', 'away', false]);
+
+  // ── 3 · Um serviço em terra SEM FIM na cadeia: não se sabe quanto repouso houve depois dele → não conta, e a cadeia continua. ──
+  const out = { kind: 'flight', report_time: '10:00', block_on: '19:00', sectors: 1, legs: [{ dep: 'LIS', arr: 'EWR', off: '11:00', on: '19:00', offZ: '11:00', onZ: '19:00' }] };
+  const back = { kind: 'flight', report_time: '23:00', block_on: '07:00', sectors: 1, legs: [{ dep: 'EWR', arr: 'LIS', off: '00:00', on: '07:00', offZ: '00:00', onZ: '07:00' }] };
+  const local = (rep, end) => ({ kind: 'flight', report_time: rep, block_on: end, sectors: 2, legs: [{ dep: 'LIS', arr: 'OPO', off: rep, on: end }] });
+  const noEnd = (kind, rep) => ({ kind, report_time: rep, sectors: 0 });
+  const n3 = { '2026-01-10': out, '2026-01-12': back, '2026-01-13': { ...noEnd('training', '09:00'), extra: [G('office', '18:00', '20:00')] }, '2026-01-14': local('09:00', '12:00') };
+  const b3 = befOf(n3, '2026-01-14');
+  eqj('7.ª/3: rotação com fuso, formação SEM fim, escritório, voo com 1 de 2 noites: incerto (antes: certo, sem noites)', [b3.status, b3.kind, b3.nightsRequired, b3.nightsActual], ['unc', 'rotationNights', 2, 1]);
+  { const rs = restStatus(n3, '2026-01-14', new Date(2026, 0, 14, 8, 0), C); eqj('7.ª/3: o Início diz o mesmo', [rs.status, rs.kind, rs.nightsRequired], ['warn', 'rotationNights', 2]); }
+  { const rv = restVerdicts(n3, C).filter((x) => x.nextIso === '2026-01-14')[0]; eqj('7.ª/3: as Estatísticas dizem o mesmo', [rv.status, rv.kind], ['unc', 'rotationNights']); }
+  { const nd = restAround(n3, (s, i) => i === '2026-01-13' && s.kind === 'office', C).need; eqj('7.ª/3: a Simulação pede as 2 noites, incertas', [nd.nightsRequired, !!nd.nightsUncertain], [2, true]); }
+  { const ru = restUntilAfter(n3, '2026-01-13', C); eqj('7.ª/3: o "Repouso até" continua igual (entre 14/1 às 08:00 e 15/1 às 06:00)', [ru.nightsRequired, !!ru.uncertain, new Date(ru.untilLoMs).getDate(), new Date(ru.untilLoMs).getHours(), new Date(ru.untilHiMs).getDate(), new Date(ru.untilHiMs).getHours()], [2, true, 14, 8, 15, 6]); }
+  // O mesmo nas outras duas cadeias (prolongado → serviço em terra sem fim → escritório ou assistência → voo).
+  const c3 = befOf({ '2026-11-02': ext, '2026-11-03': { ...noEnd('training', '09:00'), extra: [G('office', '15:00', '18:00')] }, '2026-11-04': F('08:00', '14:00', '15:00', 'LIS-OPO') }, '2026-11-04');
+  eqj('7.ª/3: prolongado, formação sem fim, escritório, 14 h: incerto entre 12:00 e 18:00 (antes: certo)', v(c3), ['unc', 'groundBetween', 840, 720, 1080]);
+  const s3 = befOf({ '2026-11-02': ext, '2026-11-03': { ...noEnd('standby_home', '09:00'), extra: [sbD('15:00', '18:00')] }, '2026-11-04': F('08:00', '14:00', '15:00', 'LIS-OPO') }, '2026-11-04');
+  eqj('7.ª/3: prolongado, assistência em casa sem fim, outra assistência, 14 h: incerto entre 12:00 e 18:00 (antes: certo)', v(s3), ['unc', 'standbyHome', 840, 720, 1080]);
+  { const d = { '2026-11-02': ext, '2026-11-03': { ...noEnd('training', '09:00'), extra: [G('office', '15:00', '18:00')] } };
+    const ru = restUntilAfter(d, '2026-11-03', C), nd = restAround(d, (s, i) => i === '2026-11-03' && s.kind === 'office', C).need;
+    eqj('7.ª/3: "Repouso até" e Simulação dão o mesmo mínimo depois do escritório', [ru.requiredLoMin, ru.requiredHiMin, ru.why, nd.requiredLoMin, nd.requiredHiMin, nd.why], [720, 1080, 'groundBetween', 720, 1080, 'groundBetween']); }
 }
 
 console.log(`\nFTL golden — ${pass} passou, ${fail} falhou (${pass + fail} asserções)`);

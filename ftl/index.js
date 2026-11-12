@@ -58,7 +58,10 @@ import { airportOffsetMin, airportUtcMs, legZulu, legsChainMs, chainReportMs, se
 // v12 (2026-11-11, noites 8 a 10): pernas que não formam um PSV → sem repartido, PSV incerto; dois serviços no dia com 10 h ou
 // mais entre eles → as duas leituras ('either'); assistência + voo com 10 h ou mais → as duas leituras; o tempo entre serviços
 // pelo real na noite da mudança de hora; o pior bloco do dia: excede > incerto > dentro.
-export const ENGINE_VERSION = 12;
+// v13 (2026-11-12, 6.ª passagem): um serviço em terra sem rota está onde a última chegada o deixou (base ou fora) também no
+// intervalo entre serviços do dia.
+// v14 (2026-11-12, 7.ª passagem): esse sítio procura-se com a mesma regra do repouso (groundPlaceBefore).
+export const ENGINE_VERSION = 14;
 
 // Uma atividade (manual ou da escala) → PSV + repouso + legalidade num só objeto.
 // input: { state, report, end?, sectors, splitBreakH?, inBase?, postFlightMin? }
@@ -666,13 +669,77 @@ export const nightClockOf = (duty, { base = null, date = null, duties = null } =
 // rest/split. Deriva do ÚLTIMO aeroporto REAL (legs > rota) vs a base do tripulante — NUNCA por
 // paridade (que é palpite → arriscaria subestimar o repouso). Devolve true (fora, fiável) /
 // false (base, fiável) / null (sem dados → o caller usa o default conservador = na base).
-const endsAwayReliable = (duty, base) => {
-  const b = String(base || '').trim().toUpperCase();
-  if (!b || !duty) return null;
+// O último aeroporto REAL de um serviço (legs > rota), em maiúsculas; null se não tem nenhum.
+export const lastAirportOf = (duty) => {
+  if (!duty) return null;
   let lastAp = (Array.isArray(duty.legs) && duty.legs.length) ? duty.legs[duty.legs.length - 1].arr : null;
   if (!lastAp && duty.route) { const aps = String(duty.route).split(/[^A-Za-z]+/).filter(Boolean); lastAp = aps[aps.length - 1]; }
+  return lastAp ? String(lastAp).trim().toUpperCase() : null;
+};
+export const endsAwayReliable = (duty, base) => {
+  const b = String(base || '').trim().toUpperCase();
+  if (!b || !duty) return null;
+  const lastAp = lastAirportOf(duty);
   if (!lastAp) return null;
-  return String(lastAp).trim().toUpperCase() !== b;
+  return lastAp !== b;
+};
+// Base ou fora, para o intervalo DEPOIS de `prev` no motor do PSV do dia. Um serviço em terra sem rota (assistência em casa ou
+// no hotel, no aeroporto, formação, escritório) não move o tripulante: está onde a última chegada o deixou — a mesma regra do
+// repouso (data/today.js restServices; 6.ª passagem, 2026-11-12: a assistência no hotel era lida "na base", 12 h, e um voo
+// 10 h 30 depois ficava "repouso ou chamada?" quando fora da base 10 h já são um repouso). Sem a escala (`opts.duties`) ou sem
+// chegada conhecida fica o valor por omissão, como antes.
+// (7.ª passagem, 2026-11-12.) O sítio procura-se com a MESMA regra do repouso, não com o `lastArrivalBefore` (que serve a
+// aclimatação e tem outras regras): o último serviço a ACABAR antes de `prev` começar, com ou sem apresentação, em qualquer dia
+// para trás; um serviço em terra sem rota não conta (também não se moveu); um voo sem rota nem pernas conta e NÃO se sabe onde
+// acabou → o valor por omissão. Antes o motor saltava esse voo, não via um serviço sem apresentação do próprio dia nem uma
+// rota de um só aeroporto, e dizia "fora da base" com certeza onde o repouso dizia "na base" ou "não se sabe".
+// Devolve o aeroporto (maiúsculas), null se o último serviço não tem sítio, undefined se não há nenhum.
+const groundPlaceBefore = (prev, opts) => {
+  const duties = opts.duties, iso = String(opts.date);
+  const at = (d, min) => { const x = new Date(`${d}T00:00:00`); x.setHours(0, min, 0, 0); return +x; };
+  const rep = parseHhmm(prev.report_time);
+  if (rep == null || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return undefined;
+  const t0 = at(iso, rep);
+  const keys = Object.keys(duties).filter((k) => k <= iso).sort();
+  let best = null, daysAfterHit = 0;
+  for (let i = keys.length - 1; i >= 0 && daysAfterHit < 2; i--) {
+    const k = keys[i], x = duties[k];
+    if (best) daysAfterHit++;   // mais um dia para trás depois do 1.º achado (um serviço da véspera pode acabar mais tarde)
+    if (!x || x.deleted) continue;
+    for (const v of [x, ...(Array.isArray(x.extra) ? x.extra : [])]) {
+      if (!v || v.kind === 'reserve') continue;
+      const ap = lastAirportOf(v);
+      const kind = v.kind || 'flight';
+      if (!ap && GROUND_KINDS.has(kind)) continue;
+      const on = parseHhmm(v.block_on), so = parseHhmm(v.signOff);
+      const endM = so != null ? so : (on != null ? on + (kind === 'flight' ? (opts.postFlightMin || 0) : 0) : null);
+      const vRep = parseHhmm(v.report_time);
+      let t;
+      if (vRep != null) {
+        const s = at(k, vRep);
+        t = endM != null ? at(k, endM % 1440) : s;   // sem fim conhecido: o início (como data/today.js)
+        if (endM != null && t <= s) t = at(k, (endM % 1440) + 1440);
+      } else {
+        // Sem apresentação: dos calços ao fim (data/today.js estServices); sem uns ou outro não se situa no tempo.
+        const off = parseHhmm(v.block_off != null ? v.block_off : (Array.isArray(v.legs) && v.legs.length ? v.legs[0].off : null));
+        if (off == null || on == null) continue;
+        let e = endM; while (e < off) e += 1440;
+        t = at(k, e);
+      }
+      if (t <= t0 && (!best || t > best.t)) best = { t, ap };
+    }
+  }
+  return best ? best.ap : undefined;
+};
+const gapInBaseOf = (prev, opts) => {
+  const away = endsAwayReliable(prev, opts.base);
+  if (away != null) return !away;
+  const b = String(opts.base || '').trim().toUpperCase();
+  if (b && prev && GROUND_KINDS.has(prev.kind) && opts.duties && opts.date) {
+    const ap = groundPlaceBefore(prev, opts);
+    if (ap) return ap === b;
+  }
+  return opts.inBase !== false;
 };
 
 // Adapter: registo bruto de duty (tabela `duties`) → entrada do `dayLog` (store FTL),
@@ -1193,7 +1260,7 @@ export const dayFtlFromDuties = (list = [], opts = {}) => {
 };
 const dayFtlCore = (list = [], opts = {}, foldEither = true) => {
   const sbTag = (entry, arr0) => (foldEither && entry && arr0.some((d) => d && d.special && d.special.preStandby && d.special.preStandby.either) ? { ...entry, sbEither: true } : entry);
-  const gapInBase0 = (prev) => { const away = endsAwayReliable(prev, opts.base); return away == null ? (opts.inBase !== false) : !away; };
+  const gapInBase0 = (prev) => gapInBaseOf(prev, opts);
   const arr = foldStandbyIntoFlight(Array.isArray(list) ? list : [list], gapInBase0, opts.postFlightMin || 0, opts.date || null, foldEither);
   // Mantém a duty CRUA ao lado do registo FTL (precisa-se das horas p/ o repouso entre serviços).
   const all = arr.map((d) => ({ duty: d, entry: dutyToFtlDay(d, opts) })).filter((p) => p.entry);
@@ -1230,7 +1297,7 @@ const dayFtlCore = (list = [], opts = {}, foldEither = true) => {
   const r1 = (n) => +(Number(n) || 0).toFixed(1);
   // Base vs fora do INTERVALO = onde o serviço ANTERIOR acabou (é aí que repousas). Local fiável
   // (ORO.FTL.235: 12h base / 10h fora); desconhecido → default conservador (na base).
-  const gapInBase = (prev) => { const away = endsAwayReliable(prev, opts.base); return away == null ? (opts.inBase !== false) : !away; };
+  const gapInBase = (prev) => gapInBaseOf(prev, opts);
   // Intervalo ENTRE serviços consecutivos (235 + 220): classifica cada par. `gaps` é indexado
   // (gaps[i] = intervalo entre paired[i] e paired[i+1]) para o agrupamento em blocos; `between`
   // (sem nulos) é o que a UI consome.

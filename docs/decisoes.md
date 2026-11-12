@@ -12,6 +12,27 @@ Uma linha por pendência; o pormenor está na entrada indicada entre parênteses
 Quando uma coisa se fizer, sai daqui. **Regra do Nuno: "a lei é que manda"** — sem um facto, "incerto" com o que falta; nunca
 um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está feita: `docs/auditoria-calculos.md`.
 
+### 0. AMANHÃ (2026-11-13): verificar TUDO o que mudou no repouso — combinado com o Nuno a 2026-11-12
+"Temos que verificar tudo depois. Fazemos hoje isso, e amanhã fazemos a verificação de tudo." O ramo `calculos-repouso-2`
+está por gravar (sem commit) e fora do `main`. Sessão nova, Fable 5.2 em Alto (são contas e regras de lei). A verificar:
+- **A lei, ponto por ponto:** cada "curto", "certo" e "incerto" do repouso contra `fontes/ftl` e `fontes/easa` — as
+  correções da 5.ª revisão (E1 a E5, M1 a M5), as da 6.ª passagem (1 a 5 e 7), "a regra sem exceção" (A, B, C) e as
+  correções da 7.ª passagem (1 a 3) — as duas últimas **sem revisão independente**. Entradas de 2026-11-12, abaixo.
+- **O que ficou por fechar:** assistência e voo no MESMO dia a menos do mínimo continuam lidos sempre como
+  chamada ("certo"), no dia seguinte dão "incerto" — a mesma pergunta, duas respostas; ler o texto completo da FAQ 47642 da
+  EASA (apresentação depois do fim da assistência) e guardá-lo em `fontes/easa/`.
+- **Da 7.ª passagem, por decidir ou por fazer** (pormenor na entrada "7.ª passagem", abaixo): um serviço que VOA sem hora
+  de fim, seguido de assistência em casa ou de escritório e depois de um voo, ainda dá "certo" pelo piso (não se sabe o
+  mínimo desse serviço: devia ser "incerto", e pede um texto novo); as noites locais da rotação pedem-se como "incerto"
+  sem limite de tempo, com serviços em terra pelo meio (19 dias de escritório depois: ainda "incerto" — pode ser a mais);
+  o `lastArrivalBefore` da aclimatação (Quadro 1) continua com a regra antiga do sítio (14 dias, só serviços com
+  apresentação) — ver se também erra.
+- **O que não foi visto:** a lei portuguesa do tempo de trabalho da aviação (a EASA remete para ela, FAQ 47610); a reserva
+  entre um serviço e o PSV (o repouso mede-se através dela); o motor do PSV com assistência e voo em dias diferentes.
+- **Provas a repetir:** `npm test`; as três vistas em escalas aleatórias; motor do `main` contra o do ramo, classe a classe.
+- **No iPhone:** os passos do grupo 1 (as três primeiras linhas), com o calendário sintético.
+- Só depois: gravar, passar ao `main`, e a versão do motor (14) recalcula o registo dos dias no telemóvel.
+
 ### 1. Ver no iPhone (conta de teste: easyJet, piloto)
 - **Sessão de 2026-11-11 — visto ✅:** Perfil "Na … desde" com a coluna do dia (os 6 pontos); Escala sem toque longo; Detalhe
   do serviço só de leitura com "do calendário", secção Completar, "Tocou numa folga?" com WFLY + DDO, "O calendário está
@@ -19,6 +40,18 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   baixo, "Sem escala neste mês" + "Ir para a Escala"); Início "Quanto recebo?" e cartão do mês com o Natal; Números de
   novembro (linha Subsídios, cêntimos) e do ano (férias + Natal, % das 900 h); o mês da entrada (Perfil → novembro de 2026 com
   o dia em "—" → base "incerto"; com o dia 5 → um valor; repor a data).
+- **A regra sem exceção (2026-11-12 — nada visto no iPhone):** assistência em casa 14:00–22:00 e voo às 04:00 do dia
+  seguinte → "Incerto · 6:00 (mín 12:00)" com o texto da chamada; prolongado, assistência em casa e voo 12 h depois →
+  "Incerto (mín. entre 12:00 e 18:00)"; prolongado, escritório e voo 14 h depois → "Incerto (mín. entre 12:00 e 18:00)";
+  os textos cabem.
+- **Correções da 5.ª revisão do repouso (2026-11-12 — nada visto no iPhone):** com eventos sintéticos — voo com fuso
+  (LIS→EWR), assistência no hotel e voo de volta: "Tenho descanso?" sem "noites locais na base" e o "Repouso até" a 10 h ou
+  14 h; regresso de EWR, assistência em casa no dia seguinte e voo no outro: "Não · 1 de 2 noites locais na base";
+  prolongado, assistência em casa, e ver o cartão do repouso depois dela com as duas pontas ("mín. 16 h–18 h", "no
+  máximo", "cumprido entre … e …" — cabe em duas linhas num iPhone pequeno?), o topo da pernoita com "Incerto" e a
+  Simulação com "16:00 a 18:00"; um voo sem apresentação,
+  assistência em casa e voo: "Incerto — falta a hora de apresentação do serviço de …"; o texto novo do prolongado depois
+  de uma assistência ("aumenta 2 h … senão aumenta 4 h") cabe no cartão.
 - **Repouso depois do prolongamento, assistência em casa, Estatísticas, partir um serviço em dois, 2 repousos reduzidos
   (2026-11-12, noite, 11 — nada visto no iPhone):** passos 13 a 15 de `docs/verificacao-calendario.md` — Detalhe de um serviço
   com 10 h ou mais em terra entre pernas: "Horas das pernas" com as duas saídas ("As horas estão erradas" / "As horas estão
@@ -83,10 +116,13 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   de situação · `docs/05-verificacao.md`).
 
 ### 2. Acertos de código por fazer
-- **5.ª revisão independente do repouso, numa SESSÃO NOVA (decidido com o Nuno, 2026-11-11):** as correções da 4.ª passagem
-  (ramo `calculos-repouso-2`) não tiveram revisão. Fable 5.2, esforço Alto, sessão própria: rever `data/today.js` (a regra
-  da assistência em casa — `requirementAfter`, kind 'standbyHome', `refOf`; `recoveryIn`; `estBefore`), com os cenários
-  corridos, antes de passar o ramo para o `main`. As quatro passagens anteriores estão na entrada "2026-11-12 (noite, 11)".
+- **Repouso — o que as correções da 5.ª revisão deixaram (2026-11-12; ramo `calculos-repouso-2`, por gravar e por passar
+  ao `main`):** as leituras que a lei não fecha — a assistência em casa, as horas a mais de um voo depois de uma
+  assistência ou de um serviço em terra, as noites locais, a chamada durante a assistência — vão para a ANAC e para a
+  pergunta aos sindicatos (o esquema de cada companhia, ORO.FTL.225(f)(3)): com a resposta, os "incertos" passam a certos;
+  um serviço sem apresentação DENTRO de uma rotação não entra na conta das noites locais (só fecha a rotação se acabar
+  na base); o texto do "incerto" do repouso seguinte diz "o repouso anterior ficou abaixo do mínimo" mesmo quando só
+  ficou numa das leituras (`ux-copy`).
 - **Repouso depois de uma assistência em casa sem chamada — falta o que diz cada companhia (2026-11-11):** a lei não diz
   por que serviço se mede (ORO.FTL.225(f)(3): fixa-o o esquema da companhia) e a app dá "incerto" entre o piso e o mínimo do
   último serviço. Pedir a frase do OM-A da easyJet e da TAP (SPAC/SNPVAC, ou um tripulante) → regra por companhia.
@@ -112,7 +148,9 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   escala sem recuperações à vista; depois de um serviço SEM hora de apresentação o repouso fica sempre "incerto", por maior
   que seja (falta um teto certo para o que esse serviço pode ter durado); uma assistência em casa que passa a meia-noite
   antes de um voo de madrugada não se junta ao voo (são de dias diferentes) e dá "curto" — pela GM1 CS FTL.1.225 (b) a
-  chamada durante a assistência não pede repouso (já era assim).
+  chamada durante a assistência não pede repouso (já era assim). **2026-11-12:** o "sempre incerto" depois de um serviço
+  sem apresentação passou a valer também quando há só assistência em casa entre ele e o voo (antes dava "certo" — E3):
+  aparecem mais "incertos" até se pôr a apresentação desse serviço; o teto certo continua por fazer.
 - **Pernas e sincronização — o que ficou depois de 2026-11-11 (noites 8 a 10):** o formulário (Simulação e correção) não
   avisa das pernas que não batem certo enquanto se escreve, só o resultado; o repouso reduzido (noite 10): a app não mostra o
   máximo do PSV seguinte já reduzido — só decide se cabe; partir um serviço em dois (noite 11) só no serviço principal do dia,
@@ -194,6 +232,208 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   (AlarmKit), hotel pelo Apple Maps, passkeys; Android; iPhone pequeno e grande; beta com 2–3 tripulantes no TestFlight;
   declaração de dados nas lojas; Supabase/Resend pagos e limites (e-mails por hora, DMARC).
 ---
+
+## 2026-11-12 — As correções da 5.ª revisão do repouso (Fable 5.2, a mesma sessão; por gravar)
+
+O Nuno: "avança. e quero tudo corrigido". Testes primeiro em cada um (bloco "5.ª REVISÃO INDEPENDENTE DO REPOUSO" no fim de
+`scripts/ftl-golden.test.js`, 45 casos; o golden passou de 713 para 758). Nesta ronda só `data/today.js` mudou contas; na
+6.ª passagem (abaixo) mudou também o motor do PSV do dia, e a versão do motor subiu para 13. Nada visto no iPhone.
+
+**Os nove achados (entrada de baixo), como ficaram:**
+- **E1 · O sítio de um serviço em terra sem rota.** A assistência em casa ou no hotel, a assistência no aeroporto, a
+  formação e o escritório não levam o tripulante a lado nenhum: ficam onde o último serviço com rota o deixou (com ou sem
+  apresentação). Dali sai o piso (12 h na base, 10 h fora — ORO.FTL.235(a)(1)/(b)), o limiar de juntar serviços do mesmo dia e
+  as noites locais "na base", que num hotel já não se pedem. Depois de um voo sem rota não se sabe onde ele acabou: fica o
+  valor de antes. **Mudança de número, grande:** fora da base, os mínimos depois de formação, escritório e assistência no
+  aeroporto sem rota passam de 12 h para 10 h; e as rotações com fuso deixam de se "partir" nesses serviços — voltam a
+  pedir noites locais onde antes não pediam (LIS→EWR, assistência no aeroporto de lá, EWR→LIS: 2 noites na base).
+- **E2 · Os pisos de 14 h são desse PSV** ("the minimum rest following that FDP", CS FTL.1.235(b)(3)(ii); "the minimum
+  rest at destination", CS FTL.1.205(c)(6)): sem nenhum repouso de 14 h desde ele, uma assistência pelo meio não os apaga,
+  antes ou depois da meia-noite. Com o serviço acima das 14 h: entre as 14 h e o serviço → incerto.
+- **E3 · Serviço sem apresentação antes da assistência.** O veredicto passa a "incerto — falta a apresentação do serviço
+  de …" (curto abaixo do piso do sítio); o sítio da assistência vem dele. Também entre duas assistências.
+- **E4 · "Repouso até" e o mínimo da Simulação** nunca ficam antes de o "Tenho descanso?" deixar de dizer "Não". **E não
+  escolhem (o Nuno, 2026-11-12: "não faz mal mexer no desenho do cartão. tem é que seguir a lei"):** quando o mínimo
+  depende de uma leitura que a lei não fecha — a assistência em casa, o prolongamento depois dela, pernas que não batem
+  certo, serviço repartido ou dois, repouso anterior talvez reduzido, serviço sem apresentação —, o motor devolve as duas
+  pontas e o motivo (`restUntilAfter`: `untilLoMs`/`untilHiMs`, `requiredLoMin`/`requiredHiMin`, `why`) e os ecrãs
+  mostram-nas: o cartão do repouso ("mín. 16 h–18 h" · "14:00 no máximo" · "cumprido entre 12:00 e 14:00 · a companhia
+  fixa o repouso depois da assistência"), o topo da pernoita ("Incerto", com "no mínimo" e "no máximo"), a pernoita a
+  seguir ("mínimo 10 h a 13 h") e a Simulação ("16:00 a 18:00", com o artigo). Com as peças que o cartão já tinha (a
+  regra ficou em `docs/design-system.md` §14); golden `test:homecards` (+18).
+- **E5 · Noites locais depois de uma rotação com fuso.** Têm de caber num só repouso (ORO.FTL.105(21): contínuo, livre de
+  assistência); uma assistência em casa interrompe-o. Com 2 noites antes da assistência estão dadas; senão pedem-se ao
+  repouso depois dela. **Mudança de número, para o lado mais exigente** (antes: "Sim").
+- **M1** opção (i) ou (ii) do prolongamento incerta quando o repouso antes dele veio depois de uma assistência — caso novo
+  `extAfterStandby`, com texto no Início e na Simulação; **M2** dois prolongados com um dia só de assistência pelo meio
+  continuam "consecutivos"; **M3** o repouso a seguir a um "incerto" por assistência pode levar a diferença da
+  CS FTL.1.235(c)(3); **M4** uma reserva que começa durante o serviço anterior e continua depois dele corta a recuperação
+  (a que o envolve, não).
+
+**Mais três que apareceram ao corrigir (com teste):**
+- **M5** · depois de um repouso "incerto" por assistência no mesmo dia do serviço, o repouso seguinte abaixo do mínimo saía
+  "curto" como se o anterior tivesse sido de certeza um repouso reduzido; na leitura do piso não foi → incerto.
+- Uma formação sem rota num hotel continuava "na base" e, com a correção do E1, passava a apanhar as noites locais → o E1
+  foi alargado a todos os serviços em terra (acima).
+- Uma rotação fechada por um regresso SEM apresentação não se via fechada: os voos locais seguintes herdavam as noites
+  (LIS→EWR, regresso sem apresentação, voo local, voo: "1 de 3 noites"; já era assim) → um serviço sem apresentação que
+  acaba na base fecha a rotação.
+
+**Provas:** `npm test` verde (33 suites); exportação iOS sem erros. Motor antigo contra o novo, escalas aleatórias: sem
+sair da base e sem assistência em casa nem reserva, 32 002 veredictos e 0 diferenças; sem assistência nem reserva mas com
+longo curso, as diferenças são todas do sítio dos serviços em terra (E1); com assistência, vistas por classe (as maiores:
+noites locais, sítio, serviço sem apresentação). As três vistas (Início, Simulação, Estatísticas): 68 394 comparações com
+longo curso, 0 diferenças, 0 exceções. Mais repouso nunca piora o veredicto, salvo o caso já pendente (assistência e voo
+em dias diferentes).
+
+**Revisão independente destas correções — 6.ª passagem** (Opus, só com o código e a lei, sem as minhas conclusões). 0
+diferenças entre as três vistas, 0 exceções com dados incompletos, custo aceitável (um ano de escala: 209 → 332 ms). Achou
+seis erros e uma suspeita; cinco erros e a suspeita corrigidos com teste primeiro (bloco "6.ª PASSAGEM" no golden, +19; o
+golden está em 777), o sexto ficou como estava, com a razão:
+1. depois de um prolongado com "+2 h ou +4 h" incerto, o repouso seguinte saía "certo" quando na leitura das +4 h o anterior
+   só era legal como repouso reduzido (CS FTL.1.235(c)(3)) → incerto, entre 12:00 e 13:30 no cenário (era novo);
+2. a opção (i)/(ii) do prolongamento ignorava as outras dúvidas do repouso antes dele (repouso anterior talvez reduzido,
+   pernas, repartido ou dois) → caso novo `extPreRest`, "16:00 a 18:00" (já vinha de antes);
+3. noites locais depois de uma rotação com fuso, com formação, escritório ou assistência no aeroporto pelo meio: dava
+   "certo" (com a assistência em casa, "curto"). São períodos de serviço: a FAQ 47610 da EASA mede o repouso antes do PSV
+   pelo serviço que vem logo antes, e a CS FTL.1.235(b)(3)(i) não diz se as noites ainda se pedem → **incerto** ("1 de 2
+   noites locais na base", caso novo `rotationNights`; o "Repouso até" dá as duas pontas). O regresso e a formação no MESMO
+   dia são um só período de serviço: as noites pedem-se de certeza (antes perdiam-se). Só assistência em casa: continua curto;
+4. a resposta mudava com a meia-noite quando o serviço antes da assistência vinha depois de um repouso talvez reduzido
+   (12 540 pares: 967 diferenças → 0 no estado e nos números; fica só o motivo mostrado) (já vinha de antes);
+5. o sítio de um serviço em terra media-se contra a base do dia do VOO; com a base a mudar ficava trocado → guarda-se o
+   aeroporto e compara-se com a base do dia do serviço em terra;
+6. **não alterado nesta passagem — mudado ao fim do dia (ver "A regra sem exceção", B: passa a incerto).** A revisão diz
+   que manter as 14 h (fuso, repouso a bordo) na leitura do piso depois de uma assistência
+   é meia frase: "at least as long as the preceding duty period, or 14 hours". Fica como está porque é a mesma construção
+   da leitura do piso no caso geral — no ORO.FTL.235(a)(1), "the preceding duty period, or 12 hours", a leitura B também
+   dá por ausente o serviço precedente e fica com as 12 horas — e porque em qualquer leitura falta um repouso de 14 h
+   entre esse voo e o seguinte (ou o que vem logo a seguir ao voo, ou o que vem antes do PSV). Vai com o resto para a ANAC;
+7. (suspeita, confirmada) o motor do PSV do dia ainda lia a assistência no hotel "na base": voo 10 h 30 depois → "repouso
+   ou chamada?" e PSV incerto entre 8:00 e 13:00, quando fora da base 10 h já são um repouso → `gapInBaseOf` no `ftl`
+   (a última chegada, como no repouso). **A versão do motor sobe para 13** (o registo dos dias recalcula-se no telemóvel).
+Depois destas correções: três vistas 68 394 comparações, 0 diferenças; sem sair da base e sem assistência nem reserva,
+31 995 veredictos iguais e 7 que mudam só o mínimo mostrado (o `extPreRest`). **Estas últimas correções estão em revisão
+(7.ª passagem, só sobre elas).**
+
+**A regra sem exceção (2026-11-12, fim do dia).** O Nuno perguntou se estava tudo como a lei diz; a resposta foi "ainda
+não", com três sítios onde a app dizia "curto" ou "certo" por uma leitura sua. "Avança": os três passam a **incerto**, com
+teste primeiro (bloco "A REGRA SEM EXCEÇÃO" no golden; 18 casos novos e 12 expectativas mudadas de propósito; golden 795).
+- **A · Assistência em casa num dia e voo no dia seguinte, abaixo do mínimo** (antes: "curto"). Pode ter sido uma chamada:
+  "standby ceases when the crew member reports at the designated reporting point" (CS FTL.1.225(b)(5)). Incerto
+  (`standbyCall`). Só é curto quando a leitura da chamada também falha: mais de 16 h do início da assistência à
+  apresentação (CS FTL.1.225(b)(1)), ou o repouso ANTES da assistência já é curto.
+- **B · Depois de uma assistência em casa, o que vinha do último voo** — as 14 h, as horas do prolongamento, as noites
+  locais (antes: "curto" abaixo delas; decisão da 4.ª revisão para o prolongamento, estendida por mim às 14 h e às noites,
+  contestada na 6.ª). Na leitura do piso o repouso depois da assistência é só o piso do sítio (12 h / 10 h): incerto entre
+  o piso e o mínimo do voo; curto só abaixo do piso. **Mudança de número:** prolongado, assistência, 12 h → era "Não (mín
+  16:00)", agora "Incerto, entre 12:00 e 18:00".
+- **C · Escritório, formação ou assistência no aeroporto entre um voo com horas a mais e o PSV seguinte** (antes: "certo",
+  pela resposta da EASA, FAQ 47610). Sem um repouso com o mínimo desse voo desde ele: incerto (`groundBetween`), entre o
+  mínimo pelo serviço em terra e o do voo. Sem horas a mais no voo fica como estava (é o caso a que a FAQ responde).
+Três vistas: 68 394 comparações, 0 diferenças. Textos novos no Início e na Simulação; o cartão do repouso mostra as duas
+pontas também nestes casos. **Estas alterações não tiveram revisão independente: entram na verificação de amanhã.**
+
+**7.ª passagem (2026-11-12, noite): a revisão independente das correções da 6.ª (agente Opus, cenários corridos).** Chegou
+depois de "a regra sem exceção". Três erros confirmados — reproduzidos com os cenários do revisor e corrigidos com teste
+primeiro (bloco "7.ª PASSAGEM" no golden, 22 casos; golden 817):
+1. **O "+2 h ou +4 h" do prolongamento mudava com a meia-noite.** 13 h de serviço → 12 h 30 → D → assistência em casa num
+   dia próprio → 14 h 15 → prolongado. O mínimo antes do prolongado é 12:00 ou 12:30 (D veio de um repouso talvez reduzido,
+   CS FTL.1.235(c)(3)); com 14 h 15 a opção (i) só cabe numa das leituras (ORO.FTL.205(d)(1)). A app dizia "certo" com
+   16:00 a seguir ao prolongado; com a assistência no mesmo dia de D já dizia "incerto, 16:00–18:00". Causa: a cadeia da
+   assistência só via o aumento de D ao nível de cima (`requirementAfter`, `lvl === 0` → `lvl <= 1`). Agora dá o mesmo
+   incerto nos dois casos, e no "Repouso até". **Acrescento meu, sem revisão:** o mesmo com um escritório no lugar da
+   assistência, e o aumento do repouso reduzido passa a contar como "hora a mais" de D na regra C (repouso talvez
+   reduzido, D, 11 h, escritório, 12 h 15 → era "certo", agora "incerto entre 12:00 e 12:30", `groundBetween`).
+2. **O motor do PSV situava o serviço em terra com outra regra** (`lastArrivalBefore`: saltava um voo sem rota, não via um
+   serviço sem apresentação do próprio dia, não aceitava uma rota de um só aeroporto, só 14 dias para trás) e dizia "fora
+   da base" com certeza — 10 h 30 entre assistência no aeroporto e voo davam "repouso" e PSV certo, quando o repouso
+   (`data/today.js`) dizia "na base" ou "não se sabe". Agora `groundPlaceBefore` no `ftl`, com a regra do repouso: o
+   último serviço a acabar antes, com ou sem apresentação, sem limite de dias; voo sem rota = não se sabe = valor por
+   omissão. **A versão do motor sobe para 14.** Motor contra repouso com dados incompletos (voos sem rota, sem
+   apresentação, formação com rota de um aeroporto): 3 844 pares, 0 discordâncias.
+3. **Um serviço em terra SEM FIM na cadeia** (rotação com fuso → formação sem hora de fim → escritório → voo): as noites
+   locais deixavam de se pedir ("certo") e o "Repouso até" discordava ("incerto"). Agora o serviço sem fim não pára a
+   cadeia (o repouso depois dele não conta, porque não se sabe quanto foi) e dá "incerto" nas quatro vistas; o mesmo nas
+   cadeias da assistência em casa e do serviço em terra (prolongado → formação sem fim → escritório → 14 h: era "certo",
+   agora "incerto entre 12:00 e 18:00"). O "Repouso até" passa a usar a mesma linha das outras vistas (antes tirava os
+   serviços sem fim e contava o tempo deles como repouso).
+
+Suspeitas do revisor: (4) as noites da rotação pedem-se como "incerto" sem limite de tempo — **não mexi**, vai para a
+verificação (grupo 0); (5) o repouso estava 2 a 4 vezes mais lento do que no `main` — o mínimo de cada serviço passa a
+guardar-se por linha (`RQ_MEMO`) e a procura do serviço anterior deixa de ordenar a escala a cada pergunta: um ano de
+escala volta ao tempo do `main` (cerca de 100 ms no PC), com os resultados iguais (impressão digital de 2 000 escalas,
+antes e depois).
+**Fica por fazer (não é desta passagem, já era assim no `main`):** um serviço que VOA sem hora de fim, seguido de
+assistência em casa ou escritório e depois de um voo, dá "certo" pelo piso — o mínimo desse serviço não se sabe; devia
+ser "incerto" sem teto, com um texto novo ("falta a hora de fim do serviço de …"). Está no grupo 0.
+Provas: `npm test` verde (golden 817, cartões 251); três vistas 62 110 comparações em 3 sementes, 0 diferenças; com
+serviços sem fim, 59 654 comparações e 45 622 do "Repouso até" contra a Simulação, 0 diferenças; exportação iOS sem erros.
+**Nada visto no iPhone. Estas correções não tiveram revisão independente: entram na verificação de amanhã.**
+
+## 2026-11-11 (noite, 12) — 5.ª revisão independente do repouso (Fable 5.2, sessão própria; só revisão, nada mudou no código)
+
+Revisto: `data/today.js` no ramo `calculos-repouso-2` (a regra da assistência em casa — `requirementAfter`, 'standbyHome',
+`refOf`; `recoveryIn`; `estBefore`) contra `fontes/ftl` e `fontes/easa`, com cenários corridos (os ficheiros de cenários
+ficaram fora do repositório). `npm test` verde antes e depois (saída 0). Contexto de todos os cenários: pós-voo 30 min,
+base LIS, piloto. **Os achados foram corrigidos a seguir, na entrada de cima (2026-11-12).**
+
+**Erros (cada um com o cenário corrido):**
+- **E1 · A assistência no hotel ainda é lida "na base" em dois sítios.** A 4.ª passagem corrigiu o piso (`refOf`), mas o
+  `ra.inBase` da própria assistência (sem rota → "na base") continua a ser lido em:
+  - `rotationNights` (noites locais na base, CS FTL.1.235(b)(3)(i)): voo LIS→EWR a 10/1 (10:00–19:00), assistência no
+    hotel a 11/1 (00:30–02:00), voo de volta 14 h depois → "Não · 0 de 2 noites locais na base" (curto, com 14:00 de
+    repouso e mínimo mostrado 10:00). Com a assistência no hotel a 11/1 das 12:00 às 14:00, o "Repouso até" depois dela
+    salta para 13/1 às 06:00 (2 noites). No `main` já dava.
+  - juntar serviços do mesmo dia (`restServices`, limiar `p.ra.requiredMin` = 12 h): voo LIS→FNC (fim 21:30), assistência
+    no hotel 00:30–01:00, voo FNC→LIS 10 h 30 depois, no mesmo dia → "curto 3:00 (mín 13:00)"; a mesma assistência às
+    23:00–23:30 da véspera → "incerto, entre 10:00 e 13:00".
+- **E2 · Os pisos de 14 h apagam-se com uma assistência depois da meia-noite.** Voo reforçado LIS→FNC (07:30, calços
+  20:00, repouso a bordo: piso 14 h, CS FTL.1.205(c)(6)); assistência no hotel 21:00–22:00 do mesmo dia e voo 12 h depois →
+  "curto (14:00)"; assistência às 00:30–01:30 e voo 12 h depois → "incerto, entre 10:00 e 14:00". Pelo código, o mesmo com
+  o fuso de 4 h ou mais (CS FTL.1.235(b)(3)(ii): "the minimum rest following that FDP") — no cenário corrido fica tapado
+  pelo E1. É o caso que a 4.ª passagem corrigiu só para o
+  prolongamento e para os pisos de 12 h / 10 h (`if (ref.ra.floorMin === std)`; no bloco só de assistência o piso volta ao normal).
+- **E3 · Um serviço sem apresentação antes de uma assistência em casa é esquecido** (a regra só anda para trás pelos
+  serviços com apresentação):
+  - o mínimo: serviço sem apresentação 06:00–20:00 (14 h 30 à vista), assistência no dia seguinte 10:00–14:00, voo 12 h
+    depois → "certo (12:00)" nas três vistas; sem a assistência o mesmo repouso dá "incerto" (falta a apresentação);
+  - o sítio: LIS→FNC sem apresentação, assistência no hotel 08:00–14:00, voo FNC→LIS 11 h depois → "curto (12:00, base)";
+    com a apresentação → "certo (10:00, fora)".
+- **E4 · O "Repouso até" e o `need` da Simulação num dia só de assistência não acompanham o "Tenho descanso?"**
+  (`restUntilAfter` lê `requiredMin`, não o mínimo de todas as leituras). Prolongado a 2/11 (07:00, calços 20:30),
+  assistência a 3/11 (08:00–20:00): "Repouso até 08:00" (12 h), mas um voo às 08:00 dá "Não (mín 16:00)". Depois de um
+  serviço de 13 h e 12 h livres: "Repouso até" a 12 h, e o "Tenho descanso?" incerto até às 13 h.
+- **E5 · As noites locais na base depois de uma rotação com fuso perdem-se com uma assistência em casa pelo meio.**
+  Rotação LIS–EWR, regresso a 13/1 às 07:30, voo a 14/1 às 08:00 → "Não (1 de 2 noites)"; com uma assistência em casa a 13/1
+  (12:00–20:00) pelo meio → "Sim". Já era assim no `main`; é o lado permissivo.
+
+**Menores (terceira ordem; confirmados):**
+- **M1** · PSV prolongado a seguir a um bloco só de assistência: a opção (i) (+2 h) sai como certa quando, na leitura A, o
+  repouso antes não teve as +2 h (serviço de 13 h, 12 h, assistência, 14 h 30, prolongado → depois dele "certo com 16:00";
+  devia ficar entre 16:00 e 18:00).
+- **M2** · Dois prolongados com uma assistência num dia próprio pelo meio perdem o "consecutivos" (ORO.FTL.205(d)(2)):
+  "certo com 16:00"; sem a assistência, 18:00. A 2.ª passagem tratou só a assistência no mesmo dia do 2.º.
+- **M3** · Depois de um repouso "incerto" por assistência em casa, o repouso seguinte não leva a diferença da
+  CS FTL.1.235(c)(3): "certo com 12:00"; o mesmo caso sem a assistência dá "incerto, entre 12:00 e 12:30".
+- **M4** · Uma reserva que começa 1 minuto antes do fim do serviço (pós-voo incluído) é ignorada na conta da recuperação
+  (09:59–23:00 → há recuperação; 10:00–23:00 → não há).
+
+**Sem erro:**
+- `recoveryIn`: 17 cenários (reserva com e sem horas, só com início, a acabar depois do serviço seguinte, assistência,
+  escritório, serviço sem apresentação) — todos como a regra escrita.
+- `estBefore`: o teto das 10 h (9:59 curto, 10:00 incerto), mesmo dia e dia seguinte.
+- A regra da assistência com os pisos normais e com o prolongamento: grelha de 4 serviços × 5 posições da assistência (mesmo
+  dia, a atravessar a meia-noite, dia seguinte) × 12 repousos — o mesmo veredicto dos dois lados da meia-noite, salvo o E1.
+- Início, Simulação e Estatísticas: 54 902 comparações em 4 000 escalas aleatórias, 0 diferenças, 0 exceções.
+- Mais repouso nunca piora o veredicto: 67 016 veredictos, 45 retrocessos, todos do caso já pendente (assistência e voo em
+  dias diferentes não se juntam: voo às 23:45 do dia da assistência "certo", às 00:00 "curto").
+- A lei: as citações batem com `fontes/` (CS FTL.1.225(b)(4), ORO.FTL.225(c) e (f)(3), ORO.FTL.105(21), ORO.FTL.235(d),
+  CS FTL.1.235(c)(5), GM1 CS FTL.1.225(c)). "Se já houve um repouso com o mínimo do último serviço, chega o piso" é regra
+  da app, não texto da lei (já estava dito).
+
+**Não visto:** os ecrãs no iPhone; a reserva entre um serviço e o PSV seguinte (o repouso mede-se através dela — regra
+anterior a este ramo); o texto completo da FAQ 47642 da EASA (em `fontes/easa/` só está o extrato).
 
 ## 2026-11-12 (noite, 11) — Os cinco que tinham ficado: prolongamento, assistência em casa, Estatísticas, dois serviços, (c)(5)
 

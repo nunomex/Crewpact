@@ -575,7 +575,11 @@ export default function HomeScreen({ navigation }) {
     if (!ru) return null;
     const u = new Date(ru.untilMs);
     const uIso = `${u.getFullYear()}-${String(u.getMonth() + 1).padStart(2, '0')}-${String(u.getDate()).padStart(2, '0')}`;
-    return { hm: `${String(u.getHours()).padStart(2, '0')}:${String(u.getMinutes()).padStart(2, '0')}`, nextDay: uIso > todayISO, untilIso: uIso, untilMs: ru.untilMs, endMs: ru.endMs };
+    // O mínimo depende de uma leitura que a lei não fecha: as duas pontas e o motivo (restUntilAfter; "a lei é que manda").
+    const hmOf = (ms) => { const x = new Date(ms); return `${String(x.getHours()).padStart(2, '0')}:${String(x.getMinutes()).padStart(2, '0')}`; };
+    const unc = ru.uncertain ? { lo: hmOf(ru.untilLoMs), hi: ru.untilHiMs != null ? hmOf(ru.untilHiMs) : null, minLo: Math.round((ru.untilLoMs - ru.endMs) / 60000), minHi: ru.untilHiMs != null ? Math.round((ru.untilHiMs - ru.endMs) / 60000) : null,
+      why: ru.why || null, estDay: ru.estIso ? `${ru.estIso.slice(8, 10)}/${ru.estIso.slice(5, 7)}` : null } : null;
+    return { hm: `${String(u.getHours()).padStart(2, '0')}:${String(u.getMinutes()).padStart(2, '0')}`, nextDay: uIso > todayISO, untilIso: uIso, untilMs: ru.untilMs, endMs: ru.endMs, unc };
   })() : null;
 
   // O repouso para o "repouso cumprido" da véspera (auditoria do tripulante, 2026-11-04): a MESMA conta da pílula
@@ -587,7 +591,7 @@ export default function HomeScreen({ navigation }) {
     // "Verificado" só com a pergunta inteira a verde — também a recuperação (ORO.FTL.235(d)).
     // Incerto (as pernas do serviço anterior não batem certo, 'legTimes'; ou dois serviços que podem ser um PSV repartido ou dois,
     // 'breakOrRest'): nem "verificado" nem "curto" — sem saber.
-    if (r.kind === 'legTimes' || r.kind === 'breakOrRest' || r.kind === 'reducedRest' || r.kind === 'reducedRestAfter' || r.kind === 'noReport' || r.kind === 'standbyHome') return { restOk: null };
+    if (r.kind === 'legTimes' || r.kind === 'breakOrRest' || r.kind === 'reducedRest' || r.kind === 'reducedRestAfter' || r.kind === 'noReport' || r.kind === 'standbyHome' || r.kind === 'extAfterStandby' || r.kind === 'extPreRest' || r.kind === 'rotationNights' || r.kind === 'standbyCall' || r.kind === 'groundBetween') return { restOk: null };
     return { restOk: rI.status === 'ok', restHave: r.actualMin != null ? hm(r.actualMin) : null, restNeed: r.requiredMin != null ? hm(r.requiredMin) : null };
   })();
   // ── PÓS-VOO: o balanço do dia fechado (motor computeDuty, o MESMO dos golden) ──
@@ -832,7 +836,7 @@ export default function HomeScreen({ navigation }) {
       try { const o = serviceMoney(ae, crewCategory, svc, { date: flight.dateISO, fleet: crewFleet, baseAt: homeBaseAt, duties }).other; return o && o.eur > 0 ? { eur: o.eur, lbl: o.lbl ? (o.lbl[lang] || o.lbl.pt) : null } : null; } catch { return null; }
     })() : null;
     const restAfterMin = (svc && flight.nightStop) ? (() => {
-      try { const r = restUntilAfter(duties || {}, flight.dateISO, { inBase: false, baseAt: homeBaseAt, postFlightMin: postFlightMin || 0, isPilot }); return r ? r.requiredMin : null; } catch { return null; }
+      try { const r = restUntilAfter(duties || {}, flight.dateISO, { inBase: false, baseAt: homeBaseAt, postFlightMin: postFlightMin || 0, isPilot }); return r ? { min: r.requiredMin, lo: r.uncertain ? r.requiredLoMin : null, open: !!(r.uncertain && r.requiredHiMin == null) } : null; } catch { return null; }
     })() : null;
     return { ...b,
       flightNo: flightNo ? String(flightNo).toUpperCase() : (flight.flightNo ? String(flight.flightNo).toUpperCase() : null),
@@ -845,7 +849,7 @@ export default function HomeScreen({ navigation }) {
       nightStop: flight.nightStop && nsHotelStation ? { station: nsHotelStation, hotel: nsHotel ? nsHotel.name : null, pay: nsPayOn(flight.dateISO) } : null,
       // A hora do report em UTC, pelo fuso do aeroporto de partida (data/zulu.js; sem aeroporto conhecido, o fuso do telemóvel) — como no v6.
       reportZ: flight.report ? (airportZulu(flight.dateISO, flight.report, flight.depAirport) || toZulu(flight.dateISO, flight.report) || null) : null,
-      restAfterMin, shareable, hasReg: !flight.demo && hasDay(flight.dateISO) };
+      restAfterMin: restAfterMin ? restAfterMin.min : null, restAfterLoMin: restAfterMin ? restAfterMin.lo : null, restAfterOpen: !!(restAfterMin && restAfterMin.open), shareable, hasReg: !flight.demo && hasDay(flight.dateISO) };
   })();
   // O dia de voo de hoje (setor ativo, a linha do dia de serviço, o standby).
   const endDtHero = heroF && heroF.end && flight ? legInstant(flight.dateISO, heroF.end, flight.report || flight.depTime) : null;
@@ -881,7 +885,7 @@ export default function HomeScreen({ navigation }) {
     const e = new Date(restUntil.endMs);
     const span = Math.max(1, restUntil.untilMs - restUntil.endMs);
     return { ...where, signOff: `${String(e.getHours()).padStart(2, '0')}:${String(e.getMinutes()).padStart(2, '0')}`, until: restUntil.hm, untilIso: restUntil.untilIso,
-      minMin: Math.round(span / 60000), pct: Math.max(0, Math.min(100, ((now - restUntil.endMs) / span) * 100)) };
+      minMin: Math.round(span / 60000), pct: Math.max(0, Math.min(100, ((now - restUntil.endMs) / span) * 100)), unc: restUntil.unc || null };
   })() : null;
   // O documento a 7 dias ou menos: toma o topo na folga (esboço, estado "Documento a caducar").
   const docSoon = (() => {

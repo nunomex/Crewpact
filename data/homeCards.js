@@ -25,7 +25,9 @@
 //   live  — o dia de voo de hoje: { legIdx, legTotal, legDep, legArr, depHm, arrHm, minsToDep, minsToArr, cdMin,
 //           remainingMin, elapsedMin, totalMin, nowPct, marginMin, status:'on'|'late', delayMin, psvUntil }
 //   next  — o serviço que vem a seguir (mesma forma que o hero, sem os cálculos) · untilMin (folga: min até lá)
-//   rest  — o repouso depois do dia de HOJE (pós-voo · pernoita): { signOff, until, minMin, pct, hotel, pay, station }
+//   rest  — o repouso depois do dia de HOJE (pós-voo · pernoita): { signOff, until, minMin, pct, hotel, pay, station,
+//           unc: { lo, hi, minLo, minHi, why, estDay } } — `unc` quando o mínimo depende de uma leitura que a lei não fecha: as
+//           duas pontas (hora e duração; `hi`/`minHi` = null sem teto conhecido) e o motivo; `until`/`minMin` são então a de cima
 //   closed — pós-voo: { fdp, over, multi, signOffDone, gainToday, kindLabel }
 //   week  — { done, limit } (serviço nos últimos 7 dias, ORO.FTL.210) · wxTmw — { v, label } (tempo de amanhã)
 //   month — { name, total, base, unc:{ min, max, why, fix }, rows:[{ k, eur, max, open }], rest } · fechoDays
@@ -157,7 +159,7 @@ export function homeCards(H = {}) {
       if (gap < 0) gap = null;
     }
     const card = { t: 'card', id: 'night', color: 'sage', kind: l('A seguir', 'Next'), title,
-      sub: [ns.hotel || l('sem hotel guardado', 'no hotel saved'), d.restAfterMin ? `${l('mínimo', 'minimum')} ${F.dur(d.restAfterMin)}` : null].filter(Boolean).join(' · '),
+      sub: [ns.hotel || l('sem hotel guardado', 'no hotel saved'), d.restAfterMin ? ((d.restAfterLoMin != null && d.restAfterLoMin < d.restAfterMin) ? minRange(d.restAfterLoMin, d.restAfterMin) : d.restAfterOpen ? minRange(d.restAfterMin, null) : `${l('mínimo', 'minimum')} ${F.dur(d.restAfterMin)}`) : null].filter(Boolean).join(' · '),
       gain, a: d.end ? { v: d.end, l: l('fim de serviço', 'duty ends') } : null, dur: gap != null ? F.dur(gap) : null,
       b: n && n.report ? { v: n.report, l: `report · ${F.wds(n.iso)}` } : null, pct: null, corner: 'chev', action: null, open: { to: 'hotel' } };
     card.slim = { t: 'slim', id: 'night', color: 'sage', title, sub: [d.end ? `${l('fim de serviço', 'duty ends')} ${d.end}` : null, ns.hotel || l('sem hotel guardado', 'no hotel saved')].filter(Boolean).join(' · '),
@@ -199,9 +201,35 @@ export function homeCards(H = {}) {
   const marginFact = () => (live.marginMin != null
     ? (live.marginMin < 0 ? fact(F.hm(live.marginMin), l('depois do limite do PSV', 'past the FDP limit')) : fact(F.hm(live.marginMin), l('de margem no PSV', 'FDP margin')))
     : null);
+  // O REPOUSO INCERTO (2026-11-12, "a lei é que manda"): o motivo, numa frase curta, e o mínimo nas duas pontas.
+  const restWhy = (u) => ({
+    standbyHome: l('a companhia fixa o repouso depois da assistência', 'the operator sets the rest after standby'),
+    extAfterStandby: l('o prolongamento pede mais 2 h ou 4 h', 'the extension adds 2 h or 4 h'),
+    extPreRest: l('o prolongamento pede mais 2 h ou 4 h', 'the extension adds 2 h or 4 h'),
+    rotationNights: l('a lei não diz se as noites locais ainda se pedem', 'the law does not say if local nights still apply'),
+    groundBetween: l('não se sabe se as horas a mais do voo ainda contam', 'unclear if the flight’s extra hours still apply'),
+    legTimes: l('as horas das pernas não batem certo', 'the leg times do not add up'),
+    breakOrRest: l('serviço repartido ou dois serviços', 'one split duty or two duties'),
+    reducedRestAfter: l('aumenta se o repouso anterior foi reduzido', 'longer if the previous rest was reduced'),
+    noReport: l(`falta a hora de apresentação do serviço de ${u.estDay || '…'}`, `the duty on ${u.estDay || '…'} has no report time`),
+  }[u.why] || l('falta um dado', 'a fact is missing'));
+  const minRange = (lo, hi) => (hi != null && hi !== lo ? `${l('mínimo', 'minimum')} ${F.dur(lo)} ${l('a', 'to')} ${F.dur(hi)}` : `${l('mínimo', 'minimum')} ${F.dur(lo)} ${l('ou mais', 'or more')}`);
+  const minChip = (lo, hi) => (hi != null && hi !== lo ? `${l('mín.', 'min')} ${F.dur(lo)}–${F.dur(hi)}` : `${l('mín.', 'min')} ${F.dur(lo)} ${l('ou mais', 'or more')}`);
+  const restUncSub = (u) => (u.hi ? `${l('cumprido entre', 'met between')} ${u.lo} ${l('e', 'and')} ${u.hi} · ${restWhy(u)}` : restWhy(u));
   // O repouso depois do dia de hoje (pós-voo na base · pernoita fora).
-  const restCard = (base, { sub = null, action = null, title = null, corner = 'chev', open = null, withUntil = true } = {}) => {
+  const restCard = (base, { sub = null, action = null, title = null, corner = 'chev', open = null, withUntil = true, keepSub = false } = {}) => {
     const r = H.rest || {};
+    const u = r.unc && r.unc.lo ? r.unc : null;
+    if (u) {
+      return { t: 'card', id: 'rest', color: 'sage', kind: base ? l('Repouso · na base', 'Rest · at base') : l('Repouso · fora da base', 'Rest · away from base'),
+        title: title || (base ? l('Descansa', 'Rest') : (r.hotel || l('Sem hotel guardado', 'No hotel saved'))),
+        sub: keepSub && sub ? `${l('dia acima do limite', 'day over the limit')} · ${l('repouso', 'rest')} ${u.hi ? `${u.lo}–${u.hi}` : `${l('desde', 'from')} ${u.lo}`} · ${restWhy(u)}` : restUncSub(u),
+        gain: !base && r.pay != null ? F.eur(r.pay, '+') : null,
+        a: r.signOff ? { v: r.signOff, l: l('fim de serviço', 'duty ends') } : null,
+        dur: minChip(u.minLo, u.minHi),
+        b: withUntil ? (u.hi ? { v: u.hi, l: l('no máximo', 'at most') } : { v: u.lo, l: l('no mínimo', 'at least') }) : null,
+        pct: r.pct != null ? Math.max(0, Math.min(100, Math.round(r.pct))) : null, corner, action, open };
+    }
     return { t: 'card', id: 'rest', color: 'sage', kind: base ? l('Repouso · na base', 'Rest · at base') : l('Repouso · fora da base', 'Rest · away from base'),
       title: title || (base ? l('Descansa', 'Rest') : (r.hotel || l('Sem hotel guardado', 'No hotel saved'))),
       sub: sub != null ? sub : (base ? null : l('pernoita desta noite', 'tonight’s night stop')),
@@ -328,7 +356,7 @@ export function homeCards(H = {}) {
         c.fdp ? giantOf(noLead(c.fdp), 'h', l('fechado', 'closed'), true) : giantOf(l('Fechado', 'Closed')), fx);
       const sub = c.fdp ? (c.over ? l('o dia fechou acima do limite', 'the day closed over the limit') : l('o dia fechou nos limites', 'the day closed within limits')) : null;
       const act = c.signOffDone ? null : { id: 'signoff', icon: 'edit', label: l('Registar sign-off', 'Log sign-off'), open: { to: 'signoff', iso: today } };
-      cards = assemble(restCard(true, { sub, action: act, open: { to: 'day', iso: today } }), nextCard(next, l('A seguir', 'Next'), { withDay: true }));
+      cards = assemble(restCard(true, { sub, action: act, open: { to: 'day', iso: today }, keepSub: !!c.over }), nextCard(next, l('A seguir', 'Next'), { withDay: true }));
     }
   } else if (state === 'pernoita') {
     const r = H.rest || {};
@@ -342,7 +370,11 @@ export function homeCards(H = {}) {
         value: null, gain: false, open: openDay(hero) };
       cards = assemble(restCard(false, { corner: H.shareClose ? 'share' : 'chev', open: { to: 'hotel' } }), nx);
     } else {
-      T = r.until
+      const ru = r.unc && r.unc.lo ? r.unc : null;
+      T = ru
+        ? top({ text: l('Pernoita', 'Night stop'), live: false }, { text: stn, iso: today }, l('Repouso até', 'Rest until'), giantOf(l('Incerto', 'Uncertain'), null, stn || null),
+          facts(fact(ru.lo, l('no mínimo', 'at least')), ru.hi ? fact(ru.hi, l('no máximo', 'at most')) : null))
+        : r.until
         ? top({ text: l('Pernoita', 'Night stop'), live: false }, { text: stn, iso: today }, l('Repouso até', 'Rest until'), giantOf(r.until, null, stn || null), null)
         : top({ text: l('Pernoita', 'Night stop'), live: false }, todayPill(), l('Pernoita em', 'Night stop in'), giantOf(stn || '—'), null);
       cards = assemble(restCard(false, { corner: H.shareClose ? 'share' : 'chev', open: { to: 'hotel' }, withUntil: false }), next ? nextCard(next, l('A seguir', 'Next'), { withDay: true }) : null);

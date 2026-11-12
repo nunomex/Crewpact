@@ -119,8 +119,24 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
   // O mínimo a seguir — a regra do "Repouso até" do Início (ORO.FTL.235 + prolongamento + noites locais depois de fusos).
   const need = sim.rest && sim.rest.need;
   if (need && need.requiredMin != null) {
-    items.push({ icon: 'bed', q: l('Descanso mínimo a seguir?', 'Min rest after?'), a: hm(need.requiredMin),
-      adv: need.nightsRequired ? l(`E ${need.nightsRequired} noites locais na base (CS FTL.1.235(b)(3)).`, `And ${need.nightsRequired} local nights at base (CS FTL.1.235(b)(3)).`) : null });
+    // Com o mínimo a depender de uma leitura que a lei não fecha: as duas pontas e o motivo, nunca uma só ("a lei é que manda").
+    const whyTxt = need.uncertain ? ({
+      standbyHome: l('Depois de uma assistência em casa a lei não diz por que serviço se mede o repouso: fixa-o o esquema da companhia (ORO.FTL.225(f)(3)).', 'After home standby the law does not say which duty the rest is measured by: the operator’s scheme sets it (ORO.FTL.225(f)(3)).'),
+      extAfterStandby: l('Depois do prolongamento o repouso aumenta 2 h ou 4 h, conforme o repouso antes dele (ORO.FTL.205(d)(1)).', 'After the extension the rest is increased by 2 h or 4 h, depending on the rest before it (ORO.FTL.205(d)(1)).'),
+      extPreRest: l('Depois do prolongamento o repouso aumenta 2 h ou 4 h, conforme o repouso antes dele (ORO.FTL.205(d)(1)).', 'After the extension the rest is increased by 2 h or 4 h, depending on the rest before it (ORO.FTL.205(d)(1)).'),
+      groundBetween: l('O último voo pede horas a mais de repouso (prolongamento, fuso ou repouso a bordo) e pelo meio houve um serviço em terra: a lei não diz se ainda se pedem.', 'The last flight calls for extra rest (extension, time zones or in-flight rest) and there was a ground duty in between: the law does not say whether it still applies.'),
+      rotationNights: l('Noites locais da rotação: a lei não diz se ainda se pedem depois de uma assistência ou de um serviço em terra.', 'Local nights after the rotation: the law does not say whether they still apply after standby or a ground duty.'),
+      legTimes: l('As horas das pernas não batem certo: o mínimo depende das horas certas.', 'The leg times do not add up: the minimum depends on the correct times.'),
+      breakOrRest: l('Os serviços do dia podem ser um serviço repartido ou dois serviços (ORO.FTL.105(6)).', 'The day’s duties may be one split duty or two duties (ORO.FTL.105(6)).'),
+      reducedRestAfter: l('Se o repouso anterior foi um repouso reduzido, este aumenta pela diferença (CS FTL.1.235(c)(3)).', 'If the previous rest was a reduced rest, this one is extended by the difference (CS FTL.1.235(c)(3)).'),
+      noReport: l('Falta a hora de apresentação de um serviço anterior: sem ela não se sabe o mínimo.', 'An earlier duty has no report time: without it the minimum is unknown.'),
+    }[need.why] || null) : null;
+    const nightsTxt = need.nightsRequired ? (need.nightsUncertain
+      ? l(`Talvez também ${need.nightsRequired} noites locais na base: desde o regresso da rotação houve uma assistência ou um serviço em terra, e a lei não diz se ainda se pedem (CS FTL.1.235(b)(3)).`, `Possibly also ${need.nightsRequired} local nights at base: there was standby or a ground duty since the rotation returned, and the law does not say whether they still apply (CS FTL.1.235(b)(3)).`)
+      : l(`E ${need.nightsRequired} noites locais na base (CS FTL.1.235(b)(3)).`, `And ${need.nightsRequired} local nights at base (CS FTL.1.235(b)(3)).`)) : null;
+    items.push({ icon: 'bed', q: l('Descanso mínimo a seguir?', 'Min rest after?'),
+      a: need.uncertain ? (need.requiredHiMin != null ? `${hm(need.requiredLoMin)} ${l('a', 'to')} ${hm(need.requiredHiMin)}` : `${hm(need.requiredLoMin)} ${l('ou mais', 'or more')}`) : hm(need.requiredMin),
+      adv: [whyTxt, nightsTxt].filter(Boolean).join(' ') || null });
   }
   if (ae && (perDiem != null || nsEur != null)) {
     const total = (perDiem || 0) + (nsEur || 0);
