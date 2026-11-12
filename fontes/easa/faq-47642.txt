@@ -1,15 +1,31 @@
 EASA — FAQ n.º 47642 (Flight Time Limitations, CS FTL.1.225 (b); ver também ORO.FTL.105 (25))
 Fonte: https://www.easa.europa.eu/en/faq/47642 — última atualização indicada pela EASA: 09/04/2019.
-Consultada a 2026-11-11. Extrato literal (a pergunta e a frase final da resposta; o resto da resposta trata da chamada
-perto do fim da assistência e não se copia aqui).
+Consultada a 2026-11-11 (extrato) e a 2026-11-12 (texto completo). Citação literal da pergunta e da resposta inteira.
 
 Pergunta: Other-standby CS FTL.1.225 (b), (see also ORO.FTL.105 (25)): Is it possible during other-standby to assign an
 FDP with a reporting time after the rostered end of that standby period has elapsed?
 
-Resposta (frase final):
+Resposta:
+It is possible during other-standby to assign a duty that will start after the rostered end of the standby period.
+Duties assigned during other-standby should in principle start within the operator’s defined response time from the call. For example, a cabin crew while on home standby between 08:00h and 14:00h (as planned in the roster) receives a call at 13:55 h to report for duty at 14:55 h since the operator’s response time is 60 min. The response time between the call and reporting is considered a continuation of the standby, notwithstanding the rostered end of the standby; this time also includes travelling to the reporting point.
+Operators describe their procedures and practices regarding standby, including reporting after the rostered standby period ends, in the OM-A. In doing so, they take into account that the Regulation provides a number of cumulative protections to crew member from excessive periods of combined standby and duty:
+Operators shall only use the rostered standby availability period to place their call for duty. ORO.FTL.105 (25) defines standby as the period of time during which a crew member is required by the operator to be available to receive an assignment for a flight;
+The maximum duration of other-standby is 16 hours. In its OM-A however, the operator may specify shorter periods considering its type of operation and the impact of the time spent on standby on the duty that may be assigned. Under the obligations of ORO.FTL.110 (b & e), operators must carefully evaluate what duration of standby is safely allowable within their particular operation;
+The combination of standby and FDP do not lead to more than 18 hours awake time (see FAQ # 60);
+The maximum FDP is reduced, if the standby period ceases after the first 6 hours (or 8 hours in case of extended FDP);
+A crew member is always able to consider whether his/her duties on board an aircraft will be performed with the necessary level of alertness (CAT.GEN.MPA.100(c))
 If no duty has been assigned during the rostered standby availability period, other-standby is followed by a rest period in accordance with ORO.FTL.235.
 
-O que responde (paráfrase): uma assistência em casa em que não houve chamada é seguida de um repouso do ORO.FTL.235 —
-o mesmo que diz a CS FTL.1.225(b)(4).
+O que responde (paráfrase):
+- Um voo pode ser atribuído durante a assistência em casa com a apresentação já DEPOIS do fim da assistência que estava na
+  escala. A chamada tem de ser feita dentro do período de assistência; o tempo entre a chamada e a apresentação conta como
+  continuação da assistência (não é repouso), e "em princípio" cabe no tempo de resposta que a companhia definiu no OM-A.
+- Continuam a valer as 16 horas de máximo da assistência, as 18 horas acordado e a redução do PSV máximo quando a
+  assistência acaba depois das primeiras 6 horas.
+- Sem nenhuma atribuição durante a assistência, segue-se um repouso do ORO.FTL.235 — o mesmo que diz a CS FTL.1.225(b)(4).
+
+O que NÃO responde: quanto tempo depois do fim da assistência pode ser a apresentação (só "em princípio" o tempo de resposta
+da companhia, que a app não conhece). Por isso, com menos do que o repouso mínimo entre o fim de uma assistência em casa e
+um voo, a app não sabe se foi uma chamada (legal) ou um voo que já estava na escala (repouso curto): fica "incerto".
 
 Valor jurídico: as FAQ da EASA não são vinculativas (pergunta E0 do pack do advogado).

@@ -92,6 +92,8 @@ cada frase no texto e calcula com ela.
 | `pt/rmmg.txt` | DL 107/2023 (2024: € 820), DL 112/2024 (2025: € 870,00), DL 139/2025 (2026: € 920,00) | a base do tripulante de cabine do 1.º ano da easyJet ("Salário mínimo nacional (SMN)", Anexo I.1) |
 | `pt/ipc-2024-11.txt` | DREM, "Preços em foco — novembro de 2024" (11-12-2024), com o valor nacional do INE: 2,3 % | a indexação dos pilotos easyJet desde 1-fev-2025 (Anexo I.1/I.2) |
 
+| `pt/dl-25-2022.txt` (+ `.pdf`, só neste PC) | Decreto-Lei n.º 25/2022, de 15 de março (DR 1.ª série n.º 52, p. 3–22) — limites do tempo de voo, do tempo de serviço e requisitos do repouso do pessoal móvel da aviação civil; **revoga o DL 139/2004** (art. 33.º) e mantém transposta a Diretiva 2000/79/CE. Texto inteiro (`pdftotext -layout`), com `=====[PDF p.N]=====` em cada página. Descarregado a 12-11-2026 de https://files.dre.pt/1s/2022/03/05200/0000300022.pdf — SHA-256 `057fd327534b8cbbb365aa32fbc1f390581000a96bd3e1541659cfe6713770b1` | a lei portuguesa para onde a EASA remete (FAQ 47610). Vale para as operações com aviões de operadores com **estabelecimento principal em Portugal** (art. 2.º, n.º 1, a): TAP, Hi Fly — não a easyJet Europe nem a Ryanair). O repouso é o do ORO.FTL.235 (art. 11.º, n.º 1), mais 7 folgas por mês e 96 por ano (n.º 2); **o repouso a seguir a um PSV que excedeu os limites "deve ser acrescido do dobro do tempo" do excesso (art. 9.º, b)**; e o repartido tem condições a mais (art. 8.º). **Ainda não está no motor** — ver `docs/decisoes.md` (verificação do repouso, 12-11-2026) |
+
 - São **extratos literais** (pdftotext) dos PDF oficiais; cada ficheiro diz de onde veio e o SHA-256 do PDF. Os PDF não
   se guardam no repositório.
 - **O que falta:** o Código do Trabalho na versão consolidada da DRE (o art. 255.º, n.º 2, a) não mudou desde 2009, mas
@@ -109,6 +111,11 @@ o Regulamento não fixa mínimo para o tempo livre antes de um serviço sem PSV 
 de um repouso do ORO.FTL.235 (47642); depois de uma reserva sem atribuição não há repouso mínimo (47645). Nenhuma diz por
 que serviço se mede o repouso depois de uma assistência em casa sem chamada — a app dá as duas leituras. O teste
 `scripts/ftl-golden.test.js` confere as frases citadas. (`faq-47599.txt`: discrição do comandante depois do prolongamento.)
+
+**12 de novembro de 2026** — a `faq-47642.txt` passou a ter a resposta inteira (antes só a frase final): a chamada durante
+a assistência pode ter a apresentação depois do fim da assistência que estava na escala; esse tempo é continuação da
+assistência e "em princípio" cabe no tempo de resposta da companhia. Não diz quanto: a dúvida "chamada ou repouso curto"
+continua aberta.
 
 ## Radiação cósmica (`eu/euratom-2013-59-pt.txt`, `pt/dl-108-2018-republicado.txt`) — auditoria, bloco 7 (6 de novembro de 2026)
 

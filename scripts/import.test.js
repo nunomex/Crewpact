@@ -369,8 +369,11 @@ A07:00 - A08:45`);
   const fa = buildDuties([mapFlight(ev('EZY8001 LIS-TFS', '2026-10-21T11:45:00', '2026-10-21T15:30:00', { notes: 'RP 11:00' }), codes),
     mapFlight(ev('EZY8002 TFS-LIS', '2026-10-21T16:30:00', '2026-10-21T20:30:00'), codes)], { baseOf: () => 'LIS' });
   const hc = buildImportCandidates({ activities: fa, nonflights: hs, ...PIL });
-  eq('A-234 HSBY + voo importados: PSV 09:30 de 13:00, 210 = 11:30', [hc.length, hc[0].prospect.psv && hc[0].prospect.psv.result, hc[0].prospect.psv && hc[0].prospect.psv.max, hc[0].prospect.day.servicoMin, hc[0].prospect.verdict],
-    [1, '09:30', '13:00', 690, 'ok']);
+  // (2026-11-12, "tem que ser como diz a lei".) A assistência acaba na escala à hora da apresentação: a app não sabe se o voo
+  // foi atribuído durante ela (sem repouso entre os dois, CS FTL.1.225(b)(5)) ou se já estava na escala (repouso curto) →
+  // o PSV e o 210 ficam iguais, o veredicto passa a incerto, com o repouso antes do voo como motivo (antes: "ok").
+  eq('A-234 HSBY + voo importados: PSV 09:30 de 13:00, 210 = 11:30; chamada ou repouso curto → incerto', [hc.length, hc[0].prospect.psv && hc[0].prospect.psv.result, hc[0].prospect.psv && hc[0].prospect.psv.max, hc[0].prospect.day.servicoMin, hc[0].prospect.verdict, hc[0].prospect.issues.filter((i) => i.type === 'restBefore').map((i) => i.kind)],
+    [1, '09:30', '13:00', 690, 'unc', ['standbyCall']]);
 
   // Períodos do 210 com serviços sem apresentação: o serviço é um mínimo (de calços a calços + pós-voo). Excede só quando o
   // mínimo passa o limite; quando só o possível passa (a apresentação no próprio dia), incerto.

@@ -92,6 +92,19 @@ que o eCrew escreveria — cada um testa um ramo do parser:
     13:00" (a lei não diz por que serviço se mede; fixa-o a companhia).
 15. **Estatísticas** (2026-11-12): Números → mosaico Corpo → "N curtos · M incertos" quando há
     repousos que só são legais como repouso reduzido.
+16. **Assistência em casa e voo: chamada ou repouso curto** (2026-11-12): assistência em casa
+    06:00–12:00 e um voo com apresentação às 16:00 do MESMO dia → depois do meio-dia, "Tenho
+    descanso?" diz "Incerto · 4:00 (mín 12:00)" com o texto da chamada (antes: "Sim"). Com a
+    apresentação às 10:00 (durante a assistência) → "Sim". Assistência 14:00–02:00 e, no dia
+    seguinte, apresentação à 01:00 e chegada às 11:30 → "Dentro dos limites?" diz excede, com o
+    máximo 6:00 (antes: 11:00, dentro), e o Detalhe desse voo mostra o mesmo máximo.
+    Assistência 07:00–18:00 e apresentação às 18:00 com chegada às 04:30 → "Dentro dos
+    limites?" diz "Incerto", máximo entre 6:00 e 11:00, com "se o voo te foi atribuído durante a
+    assistência…" (antes: excede); o texto cabe no cartão e no Detalhe?
+    Assistência 14:00–22:00 e, no dia seguinte, apresentação às 07:00 (17 h desde o início) →
+    "Tenho descanso?" diz "Não · 9:00 (mín 12:00)" com o texto das duas hipóteses ("Se o voo já
+    estava na escala, o repouso é curto. Se te foi atribuído durante a assistência… acima do
+    máximo de 16 h"); o texto cabe?
 
 ## C · Colheita (o produto da sessão)
 

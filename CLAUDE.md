@@ -6,6 +6,10 @@ Hi Fly). Lê a escala do calendário do telemóvel e, **no próprio dispositivo*
 fadiga (FTL — Reg. UE 83/2014 · CS-FTL.1) e a remuneração prevista pelos acordos de empresa (AE).
 É **consultiva**: estima, nunca declara legalidade nem processa salários. Sem AI: tudo determinístico.
 
+- **Uma companhia de cada vez (decisão de 2026-11-12):** a **easyJet primeiro**, até ficar pronta. As outras ficam na app
+  como "em breve" (visíveis, sem acesso) e fazem-se depois, uma a uma. **O lançamento para o mercado só com todas
+  prontas.** Trabalho que é só da TAP, da Hi Fly ou da Ryanair não entra na fila: anota-se para a vez delas. O código da
+  TAP não se apaga.
 - **Cliente:** o próprio Nuno (produto próprio, sem cliente externo). Decide tudo.
 - **Ramo:** aplicação de **telemóvel** (iOS primeiro; Android não montado neste PC).
 - **Caminho:** Expo (React Native) SDK 58 (RN 0.88) · Supabase (contas, sync, Edge Functions) · GitHub.

@@ -61,7 +61,15 @@ import { airportOffsetMin, airportUtcMs, legZulu, legsChainMs, chainReportMs, se
 // v13 (2026-11-12, 6.ª passagem): um serviço em terra sem rota está onde a última chegada o deixou (base ou fora) também no
 // intervalo entre serviços do dia.
 // v14 (2026-11-12, 7.ª passagem): esse sítio procura-se com a mesma regra do repouso (groundPlaceBefore).
-export const ENGINE_VERSION = 14;
+// v15 (2026-11-12, verificação do repouso): um serviço que se apresenta ANTES de o anterior do mesmo dia acabar (a chamada
+// durante a assistência) já não tem "23 h de repouso" antes dele: a assistência junta-se ao voo e reduz o máximo do PSV.
+// v16 (2026-11-12): a assistência da VÉSPERA reduz o máximo do PSV do 1.º voo do dia como a do mesmo dia (carriedStandbyOf); o
+// registo de cada dia guarda sempre a assinatura dos dias antes.
+// v17 (2026-11-12): uma assistência que acaba à hora da apresentação do voo, ou antes, já não se lê sempre como chamada — o
+// PSV fica entre o máximo reduzido e o inteiro (incerto: 'standbyCall'); só a apresentação DURANTE a assistência é certa.
+// v18 (2026-11-12, revisão independente): a regra dos serviços sobrepostos só vale para assistência + voo; a assistência no
+// aeroporto conta até ao fim do período notificado; acima das 16 h de assistência a dúvida da chamada mantém-se.
+export const ENGINE_VERSION = 18;
 
 // Uma atividade (manual ou da escala) → PSV + repouso + legalidade num só objeto.
 // input: { state, report, end?, sectors, splitBreakH?, inBase?, postFlightMin? }
@@ -114,6 +122,12 @@ export const computeDuty = ({
   // Só é um facto em falta quando as duas leituras dão pausas contáveis diferentes (pausa ≥ 6 h ou no WOCL).
   if (preStandby && preStandby.type !== 'airport' && preStandby.standbyH > 0 && preStandby.startMin != null
     && (preStandby.startMin >= 23 * 60 || preStandby.startMin < 7 * 60)) unknowns.push('standbyContact');
+  // A ASSISTÊNCIA DE ANTES PODE NÃO CONTAR (`preStandby.either`, 2026-11-12; ver foldStandbyIntoFlight): 'call' = o voo
+  // apresenta-se depois do fim da assistência da escala, e a app não sabe se foi atribuído durante ela (CS FTL.1.225(b)(5):
+  // só então a assistência vai até à apresentação e reduz o máximo, (b)(7)); true = entre os dois pode ter havido um repouso
+  // mínimo (GM1 CS FTL.1.225 (b)). O garantido leva a redução; o possível não.
+  const sbMaybe = !!(preStandby && preStandby.either && preStandby.standbyH > 0);
+  if (sbMaybe) unknowns.push(preStandby.either === 'call' ? 'standbyCall' : 'standbyRest');
   if (accBasic && splitBreakH > 0) {
     const brk = Math.round(splitBreakH * 60);
     if (splitCountedBreakMin(brk, splitStartMin, 'basic') !== splitCountedBreakMin(brk, splitStartMin, 'basic-easa')) unknowns.push('splitAccRule');
@@ -156,7 +170,7 @@ export const computeDuty = ({
       else if (a.maxFdpMin != null) { m = a.maxFdpMin; modifier = 'augmented'; }
     }
     // Standby anterior (CS 225): reduz o teto (aeroporto > 4 h e o teto de 16 h; casa > 6 h).
-    if (preStandby && preStandby.standbyH > 0 && m != null) {
+    if (preStandby && preStandby.standbyH > 0 && m != null && !(hi && sbMaybe)) {
       // CS FTL.1.225(b)(8): com o PSV prolongado por repouso a bordo ou por repartido, as 6 h de (6)/(7) passam a 8 h
       // (revisão do 8b, reparo 10: a app usava sempre 6 h).
       // Com um adiamento (CS 205(d)) o máximo já não leva a extensão do repartido → só as 6 h.
@@ -210,10 +224,12 @@ export const computeDuty = ({
   const excessMin = over ? actual - maxHiMin : 0;
   // Avisos do standby (CS 225) com o PSV REAL do serviço e o teto possível.
   let stdbyOver = false, stdbyOverKind = null;
-  if (preStandby && preStandby.standbyH > 0) {
+  if (preStandby && preStandby.standbyH > 0 && !sbMaybe) {   // (com a assistência em dúvida, estes avisos não são certos)
     const sb = computeStandby({ type: preStandby.type, standbyH: preStandby.standbyH, maxFdpMin: maxHiMin, actualFdpMin: actual, startMin: preStandby.startMin != null ? preStandby.startMin : null, reduced: true });
     if (sb.combinedOver) { stdbyOver = true; stdbyOverKind = 'combined'; }
-    else if (sb.awakeOver) { stdbyOver = true; stdbyOverKind = 'awake'; }
+    // "18 hours awake time" (CS FTL.1.225(b)(2)) é dos procedimentos da companhia e mede o tempo ACORDADO: com a assistência
+    // tirada da escala (`folded`) a app não sabe a que horas o tripulante acordou → não é um erro certo (revisão independente).
+    else if (sb.awakeOver && !preStandby.folded) { stdbyOver = true; stdbyOverKind = 'awake'; }
     else if (sb.overMaxStandby) { stdbyOver = true; stdbyOverKind = 'maxStandby'; }
   }
   const fdp = {
@@ -775,6 +791,9 @@ export const ftlForDuty = (duty = {}, ctx = {}) => {
   // Casos especiais — repouso a bordo (205e), adiamento (205g), redução por standby (225): mexem no TETO do PSV
   // deste serviço. Vêm em `duty.special` (persistido em roster_meta).
   const sp = duty.special || {};
+  // A assistência de antes do voo que está na ESCALA (no mesmo dia ou na véspera): quem calcula o voo sozinho — Detalhe,
+  // pós-voo do Início, registo 245 — vê-a como o registo do dia (2026-11-12). A declarada à mão no voo manda.
+  const autoSb = (!sp.preStandby && ctx.autoStandby !== false) ? standbyBeforeOf(duty, ctx) : null;
   // Split duty (CS FTL.1.220): `splitBreakH` EXPLÍCITO (bloco combinado do dayFtlFromDuties, ou form)
   // ganha; senão DERIVA a maior pausa em terra ≥3h das próprias legs.
   const der = splitFromLegs(duty.legs, { date, report: duty.report_time || null });
@@ -799,7 +818,7 @@ export const ftlForDuty = (duty = {}, ctx = {}) => {
   const args = {
     state: stateEff, report: duty.report_time, end: duty.block_on || null, sectors: duty.sectors || 0, inBase: ib, postFlightMin: pf,
     splitBreakH: duty.splitBreakH || der.splitBreakH, splitBreakStart: duty.splitBreakStart || der.splitBreakStart, accommodation: acc,
-    augmented: sp.augmented || null, delayedFrom: sp.delayedFrom || null, preStandby: sp.preStandby || null, isPilot,
+    augmented: sp.augmented || null, delayedFrom: sp.delayedFrom || null, preStandby: sp.preStandby || autoSb || null, isPilot,
     discretion: !!sp.discretion, longestSectorMin: longestSectorOf(duty), tzDiffH, cabinReportGapMin: cabinGap,
     splitAdminMin: ctx.splitAdminMin,   // CS 220(b): o tempo do OM — null = desconhecido (App), undefined = 30
     bandShiftMin: zt.bandShiftMin, elapsedAdjMin: zt.elapsedAdjMin,
@@ -1016,7 +1035,7 @@ const noReportEntry = (duty = {}, { postFlightMin = 0 } = {}) => {
   };
 };
 
-export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = null, postFlightMin = null, isPilot = false, date = null, cabinGapMin, splitAdminMin, duties = null } = {}) => {
+export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = null, postFlightMin = null, isPilot = false, date = null, cabinGapMin, splitAdminMin, duties = null, autoStandby } = {}) => {
   // Reserva (ORO.FTL.230): é DISPONIBILIDADE, não serviço — 0 h FTL até ser convertida num
   // serviço (que é então registado à parte). Nunca contribui para os acumulados de 28 d.
   if (duty.kind === 'reserve') return null;
@@ -1025,7 +1044,7 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = n
   // fica por calcular (auditoria A-161: o dia inteiro, voo incluído, saía dos 210).
   if (!duty.report_time) return noReportEntry(duty, { postFlightMin });
   if (!duty.block_on) return null;
-  const d = ftlForDuty(duty, { state, inBase, base, postFlightMin, isPilot, date, cabinGapMin, splitAdminMin, duties });
+  const d = ftlForDuty(duty, { state, inBase, base, postFlightMin, isPilot, date, cabinGapMin, splitAdminMin, duties, autoStandby });
   inBase = d.inBase;
   const sp = duty.special || {};
   if (d.fdp.actualFdpMin == null) return null;
@@ -1041,8 +1060,9 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = n
     ? computeStandby({ type: 'other', standbyH: (d.dutyPeriodMin || 0) / 60 }).dutyCountMin
     : (d.dutyPeriodMin || 0);
   const sp225 = duty.special && duty.special.preStandby;
+  // (Uma assistência da VÉSPERA, `carried`: o registo desse dia já contou as horas dela — aqui só o que vai do fim à apresentação.)
   const sbExtraMin = (sp225 && sp225.standbyH > 0)
-    ? computeStandby({ type: sp225.type, standbyH: sp225.standbyH }).dutyCountMin
+    ? computeStandby({ type: sp225.type, standbyH: Math.max(0, sp225.standbyH - (sp225.countedH || 0)) }).dutyCountMin
     : 0;
   // Em MINUTOS inteiros (auditoria A-148): a soma das janelas faz-se ao minuto; as horas ficam só para a vista.
   const servicoMin = Math.round(baseServicoMin + sbExtraMin);
@@ -1172,6 +1192,23 @@ export const restBetweenDuties = (prev, next, { inBase = true, postFlightMin = 0
   const ra = restAfterDuty(prev, { inBase, postFlightMin, date });
   if (!ra || repNext == null) return null;
   const endPrev = ra.endMin, prevDutyMin = ra.dutyMin;
+  // `next` APRESENTA-SE ANTES DE `prev` ACABAR (verificação de 2026-11-12): a chamada durante uma assistência que na escala ainda
+  // não tinha acabado ("standby ceases when the crew member reports", CS FTL.1.225(b)(5)), ou dois serviços com as horas
+  // sobrepostas. Não há tempo nenhum entre os dois — antes a conta dava a volta à meia-noite e saía um "repouso" de 23 h: a
+  // assistência não se juntava ao voo, o máximo do PSV não se reduzia ((b)(7)) e o dia ficava "dentro".
+  // Só com o dia (`date`: os dois serviços são desse dia, por ordem de apresentação). Sem ele vale a convenção de sempre: uma
+  // apresentação com a hora antes do fim de `prev` é a do dia seguinte.
+  // SÓ para uma ASSISTÊNCIA seguida de um VOO (revisão independente, 2026-11-12): com outro par qualquer os dois iam para um
+  // "PSV" só — um dia de assistência e formação sobrepostas passava a exceder sem ter voo, e um voo encaixado noutro ficava
+  // "dentro". Dois serviços com as horas sobrepostas ficam como eram.
+  const sbThenFlight = (prev.kind === 'standby_home' || prev.kind === 'standby_airport') && (next.kind || 'flight') === 'flight';
+  if (sbThenFlight && date && /^\d{4}-\d{2}-\d{2}$/.test(String(date))) {
+    const repPrev0 = parseHhmm(prev.report_time);
+    if (repPrev0 != null && repNext >= repPrev0) {
+      const span = (((endPrev - repPrev0) % 1440) + 1440) % 1440;   // quanto dura `prev` (pode passar a meia-noite)
+      if (span > 0 && repNext - repPrev0 < span) return { gapMin: 0, requiredMin: ra.requiredMin, kind: 'continuous', legal: false, place: ra.inBase ? 'base' : 'away', prevDutyMin, overlap: true };
+    }
+  }
   let gapMin = repNext - endPrev; while (gapMin < 0) gapMin += 1440;          // next reporta depois do fim de prev
   if (date && /^\d{4}-\d{2}-\d{2}$/.test(String(date))) {
     const at = (min, add = 0) => { const x = new Date(`${date}T00:00:00`); x.setDate(x.getDate() + add); x.setHours(Math.floor(min / 60), min % 60, 0, 0); return +x; };
@@ -1223,9 +1260,25 @@ const foldStandbyIntoFlight = (list, inBaseOf, postFlightMin, date = null, foldE
     if (foldable) {
       const gap = restBetweenDuties(sb, nx, { inBase: inBaseOf(sb), postFlightMin, date });
       const st = parseHhmm(sb.report_time), rp = parseHhmm(nx.report_time);
-      if (gap && gap.kind === 'either' && !foldEither) { out.push({ ...sb, restAfter: true }); continue; }
+      // A DÚVIDA (2026-11-12, "tem que ser como diz a lei"): só o voo que se apresenta DURANTE a assistência é uma chamada de
+      // certeza (`gap.overlap`). Com a apresentação no fim dela ou depois, a escala não diz se o voo foi atribuído durante a
+      // assistência ('call': com chamada reduz o máximo; sem chamada não — e então curto é o repouso, que é outra pergunta);
+      // com 10 h ou mais pode ter havido um repouso mínimo (true). Antes, abaixo das 10 h, lia-se sempre como chamada.
+      const doubt = (!gap || gap.kind === 'rest' || gap.overlap) ? null : (gap.kind === 'either' ? true : 'call');
+      if (doubt && !foldEither) { out.push({ ...sb, restAfter: true }); continue; }
       if (gap && gap.kind !== 'rest' && st != null && rp != null) {
-        const preStandby = { type: sb.kind === 'standby_airport' ? 'airport' : 'other', standbyH: durationMin(st, rp) / 60, startMin: st, folded: true, ...(gap.kind === 'either' ? { either: true } : {}) };
+        // As horas de assistência: tempo DECORRIDO (com o dia; só muda na noite da mudança de hora), e a do aeroporto só até
+        // ao fim do período notificado (ORO.FTL.225(b): "until the end of the notified airport standby period").
+        const en = parseHhmm(sb.signOff != null ? sb.signOff : sb.block_on);
+        const real = (a, b) => {
+          if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(String(date))) return durationMin(a, b);
+          const at = (m, add = 0) => { const x = new Date(`${date}T00:00:00`); x.setDate(x.getDate() + add); x.setHours(Math.floor(m / 60), m % 60, 0, 0); return +x; };
+          const r = Math.round((at(b, b < a ? 1 : 0) - at(a)) / 60000);
+          return Number.isFinite(r) && r >= 0 ? r : durationMin(a, b);
+        };
+        let sbMinF = real(st, rp);
+        if (sb.kind === 'standby_airport' && en != null) sbMinF = Math.min(sbMinF, real(st, en));
+        const preStandby = { type: sb.kind === 'standby_airport' ? 'airport' : 'other', standbyH: sbMinF / 60, startMin: st, folded: true, ...(doubt ? { either: doubt } : {}) };
         out.push({ ...nx, special: { ...(nx.special || {}), preStandby } });
         i++;
         continue;
@@ -1234,6 +1287,67 @@ const foldStandbyIntoFlight = (list, inBaseOf, postFlightMin, date = null, foldE
     out.push(sb);
   }
   return out;
+};
+
+// A ASSISTÊNCIA DA VÉSPERA (2026-11-12, verificação do repouso; a lei não olha para a data). O último serviço da véspera foi uma
+// assistência (em casa, ou no aeroporto com alojamento) e o 1.º serviço de hoje é um voo que se apresenta antes de passar um
+// repouso mínimo desde o fim dela — ou ainda durante ela, quando passa a meia-noite. É o caso do foldStandbyIntoFlight, só que
+// com a meia-noite pelo meio: "standby ceases when the crew member reports at the designated reporting point" (CS
+// FTL.1.225(b)(5)) e o máximo do PSV reduz-se pelo tempo de assistência acima das 6 h ((b)(7)). Antes o motor do dia não via a
+// véspera: máximo sem redução, "dentro".
+//   · apresentação durante a assistência, ou menos de 10 h depois do fim → a assistência vai até à apresentação (como no mesmo dia);
+//   · 10 h ou mais, mas menos do que o repouso do caso → as duas leituras (`either`, ver dayFtlFromDuties);
+//   · com um repouso mínimo no meio → nada (GM1 CS FTL.1.225 (b));
+//   · assistência em casa com mais de 16 h do início à apresentação e a apresentação depois do fim dela → não pode ter sido uma
+//     chamada (CS FTL.1.225(b)(1)): nada — o que falha é o repouso, e quem o diz é o "Tenho descanso?".
+// `countedH` = as horas da assistência que o registo da VÉSPERA já contou para o ORO.FTL.210: hoje só conta o que vai do fim
+// dela à apresentação. Precisa da escala (`opts.duties`) e do dia. Devolve { fl (o voo de hoje), preStandby } ou null.
+const carriedStandbyOf = (list, opts) => {
+  const duties = opts.duties, date = String(opts.date || '');
+  if (!duties || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+  const rep = (x) => parseHhmm(x && x.report_time);
+  const order = (arr) => arr.filter((x) => x && x.kind !== 'reserve' && rep(x) != null).sort((a, b) => rep(a) - rep(b));
+  const fl = order(Array.isArray(list) ? list : [list])[0];
+  if (!fl || (fl.kind || 'flight') !== 'flight' || (fl.special && fl.special.preStandby)) return null;
+  const yIso = isoBack(date, 1), y = duties[yIso];
+  if (!y || y.deleted) return null;
+  const ys = order([y, ...(Array.isArray(y.extra) ? y.extra : [])]);
+  const sb = ys[ys.length - 1];
+  if (!sb || !(sb.kind === 'standby_home' || (sb.kind === 'standby_airport' && sb.accommodation))) return null;
+  const st = rep(sb), en = parseHhmm(sb.signOff != null ? sb.signOff : sb.block_on);
+  if (en == null) return null;
+  const at = (iso, min, add = 0) => { const x = new Date(`${iso}T00:00:00`); x.setDate(x.getDate() + add); x.setHours(Math.floor(min / 60), min % 60, 0, 0); return +x; };
+  const sMs = at(yIso, st); let eMs = at(yIso, en); if (eMs <= sMs) eMs = at(yIso, en, 1);
+  const rMs = at(date, rep(fl));
+  const gapMin = Math.round((rMs - eMs) / 60000), sbMin = Math.round((rMs - sMs) / 60000);
+  const ra = restAfterDuty(sb, { inBase: gapInBaseOf(sb, { ...opts, date: yIso }), postFlightMin: opts.postFlightMin || 0, date: yIso });
+  if (!ra || sbMin <= 0 || gapMin >= ra.requiredMin) return null;
+  // (Revisão independente.) Acima das 16 h do início à apresentação a leitura da chamada NÃO se tira (era supor que a companhia
+  // cumpriu o máximo, CS FTL.1.225(b)(1)): fica a dúvida, como no mesmo dia. A assistência no aeroporto só vai até ao fim do
+  // período notificado (ORO.FTL.225(b)).
+  const rosteredMin = Math.round((eMs - sMs) / 60000);
+  const sbEffMin = sb.kind === 'standby_airport' ? Math.min(sbMin, rosteredMin) : sbMin;
+  const countedH = Math.min(sbEffMin, rosteredMin) / 60;
+  const doubt = gapMin < 0 ? null : (gapMin >= SHORTEST_REST_MIN ? true : 'call');   // como no foldStandbyIntoFlight
+  return { fl, preStandby: { type: sb.kind === 'standby_airport' ? 'airport' : 'other', standbyH: sbEffMin / 60, startMin: st, folded: true, carried: true, countedH, ...(doubt ? { either: doubt } : {}) } };
+};
+
+// A ASSISTÊNCIA LOGO ANTES DE UM VOO, para quem calcula o voo sozinho (ftlForDuty com a escala em `ctx.duties`): a do mesmo dia
+// (foldStandbyIntoFlight) ou a da véspera (carriedStandbyOf) — a mesma conta do registo do dia. O voo tem de estar na escala
+// desse dia tal como veio (a mesma apresentação e o mesmo fim); senão não se sabe que assistência é a dele → null.
+const standbyBeforeOf = (duty, ctx) => {
+  const duties = ctx && ctx.duties, date = String((ctx && ctx.date) || '');
+  if (!duties || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !duty || (duty.kind || 'flight') !== 'flight') return null;
+  const day = duties[date];
+  if (!day || day.deleted) return null;
+  const mine = (x) => !!x && (x.kind || 'flight') === 'flight' && x.report_time === duty.report_time && (x.block_on || null) === (duty.block_on || null);
+  const list = [day, ...(Array.isArray(day.extra) ? day.extra : [])];
+  if (!list.some(mine)) return null;
+  const folded = foldStandbyIntoFlight(list, (prev) => gapInBaseOf(prev, ctx), ctx.postFlightMin || 0, date, true);
+  const f = folded.find((x) => mine(x) && x.special && x.special.preStandby && x.special.preStandby.folded);
+  if (f) return f.special.preStandby;
+  const c = carriedStandbyOf(folded, ctx);
+  return c && mine(c.fl) ? c.preStandby : null;
 };
 
 // AS DUAS LEITURAS de uma assistência seguida de um voo com 10 h ou mais entre os dois (ver foldStandbyIntoFlight). As contas do
@@ -1254,14 +1368,19 @@ export const dayFtlFromDuties = (list = [], opts = {}) => {
   const lower = entryMin(b0, 'servico') <= entryMin(resA, 'servico') ? b0 : resA;
   const range = sHi > sLo ? { servicoMin: sLo, servico: sLo / 60, servicoNextMin: lower.servicoNextMin, servicoMaxMin: sHi, servicoMaxReadings: true } : {};
   if (st(resA) === st(b0) && st(resA) !== 1) return { ...resA, ...range };
-  const psv = { ...resA.psv, over: false, excess: null, uncertain: true, unknowns: Array.from(new Set([...(resA.psv.unknowns || []), 'standbyRest'])) };
+  const named = (resA.psv.unknowns || []).some((u) => u === 'standbyCall' || u === 'standbyRest');   // o motor já disse qual das duas dúvidas é
+  const psv = { ...resA.psv, over: false, excess: null, uncertain: true, unknowns: Array.from(new Set([...(resA.psv.unknowns || []), ...(named ? [] : [a.sbEither === 'call' ? 'standbyCall' : 'standbyRest'])])) };
   const folded = (m) => !!(m && m.special && m.special.preStandby && m.special.preStandby.either);
   return { ...resA, ...range, psv, ...(resA.blocks ? { blocks: resA.blocks.map((bl) => (bl.members.some(folded) ? { ...bl, psv } : bl)) } : {}) };
 };
 const dayFtlCore = (list = [], opts = {}, foldEither = true) => {
-  const sbTag = (entry, arr0) => (foldEither && entry && arr0.some((d) => d && d.special && d.special.preStandby && d.special.preStandby.either) ? { ...entry, sbEither: true } : entry);
+  const sbTag = (entry, arr0) => { const t = (foldEither && entry) ? arr0.map((d) => d && d.special && d.special.preStandby && d.special.preStandby.either).find(Boolean) : null; return t ? { ...entry, sbEither: t } : entry; };
+  opts = { ...opts, autoStandby: false };   // a assistência de antes já é tratada aqui (não outra vez no ftlForDuty)
   const gapInBase0 = (prev) => gapInBaseOf(prev, opts);
-  const arr = foldStandbyIntoFlight(Array.isArray(list) ? list : [list], gapInBase0, opts.postFlightMin || 0, opts.date || null, foldEither);
+  let arr = foldStandbyIntoFlight(Array.isArray(list) ? list : [list], gapInBase0, opts.postFlightMin || 0, opts.date || null, foldEither);
+  // … e a assistência da véspera, no 1.º voo de hoje (na leitura "houve um repouso mínimo" de um 'either', fica de fora).
+  const carry = carriedStandbyOf(arr, opts);
+  if (carry && (foldEither || !carry.preStandby.either)) arr = arr.map((d) => (d === carry.fl ? { ...d, special: { ...(d.special || {}), preStandby: carry.preStandby } } : d));
   // Mantém a duty CRUA ao lado do registo FTL (precisa-se das horas p/ o repouso entre serviços).
   const all = arr.map((d) => ({ duty: d, entry: dutyToFtlDay(d, opts) })).filter((p) => p.entry);
   if (!all.length) return null;
@@ -1271,8 +1390,12 @@ const dayFtlCore = (list = [], opts = {}, foldEither = true) => {
   const blk1 = (p) => [{ psv: p.entry.psv, members: [p.duty] }];
   // Serviços SEM report (A-161): somam ao 210 (voo sempre; serviço estimado), mas não entram nos blocos de PSV nem no
   // repouso — não se sabe quando começaram.
-  const noRep = all.filter((p) => !p.duty.report_time);
-  const paired = all.filter((p) => p.duty.report_time);
+  // … e, na leitura "sem chamada" / "houve um repouso" de uma assistência (`restAfter`), também ela: conta para o 210 mas não
+  // entra nos blocos — os serviços à volta continuam a medir-se um contra o outro (revisão independente: a assistência entre
+  // dois voos com 8 h 30 partia o dia em dois e o PSV de 18 h deixava de exceder).
+  const aside = (p) => !p.duty.report_time || !!p.duty.restAfter;
+  const noRep = all.filter(aside);
+  const paired = all.filter((p) => !aside(p));
   const extraMin = (key) => noRep.reduce((s, p) => s + entryMin(p.entry, key), 0);
   // O que os serviços sem report podem acrescentar no máximo (ver noReportEntry): soma-se ao mínimo do dia.
   const estMax = noRep.reduce((s, p) => s + ((typeof p.entry.servicoMaxMin === 'number' ? p.entry.servicoMaxMin : entryMin(p.entry, 'servico')) - entryMin(p.entry, 'servico')), 0);
@@ -1306,8 +1429,7 @@ const dayFtlCore = (list = [], opts = {}, foldEither = true) => {
     const g = restBetweenDuties(paired[i].duty, paired[i + 1].duty, { inBase: gapInBase(paired[i].duty), postFlightMin: opts.postFlightMin || 0, date: opts.date || null });
     // A leitura "houve um repouso mínimo depois da assistência" (foldStandbyIntoFlight, `restAfter`): é um repouso.
     // … e a assistência (que não é PSV) também não se junta ao serviço de ANTES dela.
-    const sbRest = g && ((g.kind === 'either' && paired[i].duty.restAfter) || (g.kind !== 'rest' && paired[i + 1].duty.restAfter));
-    gaps.push(sbRest ? { ...g, kind: 'rest', legal: true } : g);
+    gaps.push(g);
   }
   const between = gaps.filter(Boolean);
   // `split` = algum par ficou junto num PSV só para as contas do dia (repartido certo, ou a leitura A de um 'either');
@@ -1466,7 +1588,8 @@ export const reconcileDayLog = (duties = {}, dayLog = {}, { postFlightMin = 0, i
     const baseD = typeof baseAt === 'function' ? baseAt(date) : base;
     const sig = dayLogSig(d, { postFlightMin, isPilot, base: baseD, cabinGapMin, splitAdminMin });
     // Um prolongamento (205(d)) depende também dos 6 dias antes (os "2 em 7 dias"): recalcula se eles mudarem.
-    if (cur && cur.sig === sig && (cur.nsig === undefined || cur.nsig === nbrSig(duties, date))) continue;   // já em dia
+    const nsig = nbrSig(duties, date);
+    if (cur && cur.sig === sig && cur.nsig === nsig) continue;   // já em dia
     // Um dia pode ter N períodos de serviço (210 conta por serviço): primária + `extra`.
     const primary = {
       report_time: d.report_time, block_off: d.block_off, block_on: d.block_on,
@@ -1476,8 +1599,9 @@ export const reconcileDayLog = (duties = {}, dayLog = {}, { postFlightMin = 0, i
     };
     const entry = dayFtlFromDuties([primary, ...((d.extra && d.extra.length) ? d.extra : [])], { postFlightMin, isPilot, base: baseD, date, cabinGapMin, splitAdminMin, duties });
     if (!entry) { if (cur) put(date, null); continue; }   // já não há nada para contar → sai a derivada antiga
-    // Depende dos dias antes (prolongamento: os 2 em 7; aclimatação: o Quadro 1) → guarda-se a assinatura deles.
-    put(date, { ...entry, sig, ...(entry.psv && (entry.psv.extended || entry.psv.acclim) ? { nsig: nbrSig(duties, date) } : {}) });
+    // Depende dos dias antes (prolongamento: os 2 em 7; aclimatação: o Quadro 1; a assistência da véspera, que pode entrar na
+    // escala depois deste dia já estar calculado) → guarda-se sempre a assinatura deles.
+    put(date, { ...entry, sig, nsig });
   }
   return next;
 };
