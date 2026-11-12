@@ -426,6 +426,7 @@ export const issueText = (it, lang = 'pt', simDate = null) => {
     case 'restAfter': {
       const who = it.type === 'restBefore' ? l('repouso antes', 'rest before') : l(`repouso antes de ${ddmm(it.nextIso)}`, `rest before ${ddmm(it.nextIso)}`);
       if (it.status === 'unc' && it.kind === 'noReport') return l(`falta a hora de apresentação do serviço de ${ddmm(it.estIso)}`, `missing the report time of the duty on ${ddmm(it.estIso)}`);
+      if (it.status === 'unc' && it.kind === 'noEnd') return l(`falta a hora de fim do serviço de ${ddmm(it.estIso)}: sem ela não se sabe o repouso mínimo a seguir`, `missing the end time of the duty on ${ddmm(it.estIso)}: without it the minimum rest after it is unknown`);
       // As pernas do serviço anterior não batem certo (ftl legsBrokenKind): o mínimo depende das horas certas (2026-11-11).
       // Abaixo do mínimo normal mas com as 12 h (base) / 10 h (fora) do repouso reduzido: só é legal se a companhia o tiver.
       if (it.status === 'unc' && it.kind === 'reducedRest') return l(`${who} ${hm(it.actualMin)} de ${hm(it.requiredMin)} — só é legal como repouso reduzido (CS FTL.1.235(c): se a companhia o tiver; o PSV seguinte reduz ${hm(it.diffMin)} e o repouso seguinte aumenta ${hm(it.diffMin)})`, `${who} ${hm(it.actualMin)} of ${hm(it.requiredMin)} — only legal as reduced rest (CS FTL.1.235(c): if the operator has it; the next FDP is reduced by ${hm(it.diffMin)} and the next rest extended by ${hm(it.diffMin)})`);

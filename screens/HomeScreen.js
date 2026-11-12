@@ -591,7 +591,7 @@ export default function HomeScreen({ navigation }) {
     // "Verificado" só com a pergunta inteira a verde — também a recuperação (ORO.FTL.235(d)).
     // Incerto (as pernas do serviço anterior não batem certo, 'legTimes'; ou dois serviços que podem ser um PSV repartido ou dois,
     // 'breakOrRest'): nem "verificado" nem "curto" — sem saber.
-    if (r.kind === 'legTimes' || r.kind === 'breakOrRest' || r.kind === 'reducedRest' || r.kind === 'reducedRestAfter' || r.kind === 'noReport' || r.kind === 'standbyHome' || r.kind === 'extAfterStandby' || r.kind === 'extPreRest' || r.kind === 'rotationNights' || r.kind === 'standbyCall' || r.kind === 'groundBetween') return { restOk: null };
+    if (r.kind === 'legTimes' || r.kind === 'breakOrRest' || r.kind === 'reducedRest' || r.kind === 'reducedRestAfter' || r.kind === 'noReport' || r.kind === 'noEnd' || r.kind === 'standbyHome' || r.kind === 'extAfterStandby' || r.kind === 'extPreRest' || r.kind === 'rotationNights' || r.kind === 'standbyCall' || r.kind === 'groundBetween') return { restOk: null };
     return { restOk: rI.status === 'ok', restHave: r.actualMin != null ? hm(r.actualMin) : null, restNeed: r.requiredMin != null ? hm(r.requiredMin) : null };
   })();
   // ── PÓS-VOO: o balanço do dia fechado (motor computeDuty, o MESMO dos golden) ──

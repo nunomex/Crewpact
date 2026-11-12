@@ -212,6 +212,7 @@ export function homeCards(H = {}) {
     breakOrRest: l('serviço repartido ou dois serviços', 'one split duty or two duties'),
     reducedRestAfter: l('aumenta se o repouso anterior foi reduzido', 'longer if the previous rest was reduced'),
     noReport: l(`falta a hora de apresentação do serviço de ${u.estDay || '…'}`, `the duty on ${u.estDay || '…'} has no report time`),
+    noEnd: l(`falta a hora de fim do serviço de ${u.estDay || '…'}`, `the duty on ${u.estDay || '…'} has no end time`),
   }[u.why] || l('falta um dado', 'a fact is missing'));
   const minRange = (lo, hi) => (hi != null && hi !== lo ? `${l('mínimo', 'minimum')} ${F.dur(lo)} ${l('a', 'to')} ${F.dur(hi)}` : `${l('mínimo', 'minimum')} ${F.dur(lo)} ${l('ou mais', 'or more')}`);
   const minChip = (lo, hi) => (hi != null && hi !== lo ? `${l('mín.', 'min')} ${F.dur(lo)}–${F.dur(hi)}` : `${l('mín.', 'min')} ${F.dur(lo)} ${l('ou mais', 'or more')}`);

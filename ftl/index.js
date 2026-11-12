@@ -69,7 +69,9 @@ import { airportOffsetMin, airportUtcMs, legZulu, legsChainMs, chainReportMs, se
 // PSV fica entre o máximo reduzido e o inteiro (incerto: 'standbyCall'); só a apresentação DURANTE a assistência é certa.
 // v18 (2026-11-12, revisão independente): a regra dos serviços sobrepostos só vale para assistência + voo; a assistência no
 // aeroporto conta até ao fim do período notificado; acima das 16 h de assistência a dúvida da chamada mantém-se.
-export const ENGINE_VERSION = 18;
+// v19 (2026-11-13, 2.ª revisão independente): várias assistências seguidas (ou uma partida à meia-noite) contam como uma;
+// a assistência da escala não se soma à declarada à mão; o registo vê a assistência no 2.º serviço da véspera.
+export const ENGINE_VERSION = 19;
 
 // Uma atividade (manual ou da escala) → PSV + repouso + legalidade num só objeto.
 // input: { state, report, end?, sectors, splitBreakH?, inBase?, postFlightMin? }
@@ -1115,6 +1117,9 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = n
       over: sbAcc ? false : lt ? ltOver : (disc205 ? disc205.over : d.fdp.over),
       excess: sbAcc ? null : ((disc205 && disc205.used && !disc205.over) ? null : d.fdp.excessStr),
       extended: usedExtension, extRefused: d.extRefused || undefined, ts: Date.now(),
+      // A assistência em casa que foi até à apresentação passou das 16 h (CS FTL.1.225(b)(1)) — só quando a chamada é certa
+      // (com a dúvida, `stdbyOver` não se marca): o "Dentro dos limites?" diz "assistência acima de 16 h".
+      sbOver: (d.fdp.stdbyOver && d.fdp.stdbyOverKind === 'maxStandby') || undefined,
       acclim: (d.acclim && d.acclim.letter !== 'in') ? (d.acclim.letter || 'unknown') : undefined,   // Quadro 1
       disc205f: disc205 ? { used: disc205.used, over: disc205.over, maxStr: disc205.maxStr, extStr: disc205.extStr } : undefined,
       standby: sbAcc || undefined,
@@ -1250,6 +1255,22 @@ export const restBetweenDuties = (prev, next, { inBase = true, postFlightMin = 0
 // repouso do caso ('either'), há duas leituras — a assistência só acaba na apresentação (CS FTL.1.225(b)(5): dobra-se no voo),
 // ou houve um repouso mínimo no meio e esse tempo não conta como assistência (GM1 CS FTL.1.225(b)). `true` = a 1.ª leitura
 // (a de sempre; o voo leva `preStandby.either`); `false` = a 2.ª (a assistência fica à parte, com `restAfter`).
+const isFoldSb = (x) => !!x && (x.kind === 'standby_home' || (x.kind === 'standby_airport' && !!x.accommodation));
+// Tira do fim de `out` as assistências que formam uma série com `sb` (mesmo tipo; cada uma começa antes de a anterior acabar,
+// ou no minuto em que acaba) e devolve-as por ordem.
+const takeRun = (out, sb) => {
+  const run = []; let cur = sb;
+  while (out.length) {
+    const p = out[out.length - 1];
+    if (!isFoldSb(p) || p.restAfter || p.kind !== cur.kind) break;
+    const ps = parseHhmm(p.report_time), pe = parseHhmm(p.signOff != null ? p.signOff : p.block_on), cs = parseHhmm(cur.report_time);
+    if (ps == null || pe == null || cs == null || cs < ps) break;
+    const span = (((pe - ps) % 1440) + 1440) % 1440;
+    if (cs - ps > span) break;   // tempo livre entre as duas: não são a mesma
+    run.unshift(out.pop()); cur = p;
+  }
+  return run;
+};
 const foldStandbyIntoFlight = (list, inBaseOf, postFlightMin, date = null, foldEither = true) => {
   const sorted = list.filter(Boolean).slice().sort((a, b) => (parseHhmm(a.report_time) ?? 0) - (parseHhmm(b.report_time) ?? 0));
   const out = [];
@@ -1257,16 +1278,27 @@ const foldStandbyIntoFlight = (list, inBaseOf, postFlightMin, date = null, foldE
     const sb = sorted[i], nx = sorted[i + 1];
     const foldable = sb && (sb.kind === 'standby_home' || (sb.kind === 'standby_airport' && sb.accommodation))
       && nx && (nx.kind || 'flight') === 'flight' && !(nx.special && nx.special.preStandby);
+    // A assistência da escala e a MESMA declarada à mão no voo (Completar → "Assistência antes do voo"): vale a declarada, e a
+    // da escala sai (2.ª revisão independente: ficava colada ao voo num "PSV" contado desde o início dela, e no 210 a dobrar).
+    if (isFoldSb(sb) && nx && (nx.kind || 'flight') === 'flight' && nx.special && nx.special.preStandby) {
+      const g0 = restBetweenDuties(sb, nx, { inBase: inBaseOf(sb), postFlightMin, date });
+      if (g0 && g0.kind !== 'rest') { takeRun(out, sb); continue; }
+    }
     if (foldable) {
       const gap = restBetweenDuties(sb, nx, { inBase: inBaseOf(sb), postFlightMin, date });
-      const st = parseHhmm(sb.report_time), rp = parseHhmm(nx.report_time);
+      let st = parseHhmm(sb.report_time); const rp = parseHhmm(nx.report_time);
       // A DÚVIDA (2026-11-12, "tem que ser como diz a lei"): só o voo que se apresenta DURANTE a assistência é uma chamada de
       // certeza (`gap.overlap`). Com a apresentação no fim dela ou depois, a escala não diz se o voo foi atribuído durante a
       // assistência ('call': com chamada reduz o máximo; sem chamada não — e então curto é o repouso, que é outra pergunta);
       // com 10 h ou mais pode ter havido um repouso mínimo (true). Antes, abaixo das 10 h, lia-se sempre como chamada.
       const doubt = (!gap || gap.kind === 'rest' || gap.overlap) ? null : (gap.kind === 'either' ? true : 'call');
-      if (doubt && !foldEither) { out.push({ ...sb, restAfter: true }); continue; }
+      // A SÉRIE (2.ª revisão independente): as assistências do mesmo tipo logo antes desta, sem tempo livre entre elas — ou uma
+      // só, partida em várias entradas — são a mesma assistência: conta desde o início da 1.ª (CS FTL.1.225(b)(7): "standby
+      // time"; a janela da noite da (b)(9) é a da hora a que a série COMEÇOU).
+      if (doubt && !foldEither) { const run = takeRun(out, sb); for (const r of run) out.push({ ...r, restAfter: true }); out.push({ ...sb, restAfter: true }); continue; }
       if (gap && gap.kind !== 'rest' && st != null && rp != null) {
+        const run = takeRun(out, sb);
+        if (run.length && parseHhmm(run[0].report_time) != null) st = parseHhmm(run[0].report_time);
         // As horas de assistência: tempo DECORRIDO (com o dia; só muda na noite da mudança de hora), e a do aeroporto só até
         // ao fim do período notificado (ORO.FTL.225(b): "until the end of the notified airport standby period").
         const en = parseHhmm(sb.signOff != null ? sb.signOff : sb.block_on);
@@ -1308,7 +1340,11 @@ const carriedStandbyOf = (list, opts) => {
   const rep = (x) => parseHhmm(x && x.report_time);
   const order = (arr) => arr.filter((x) => x && x.kind !== 'reserve' && rep(x) != null).sort((a, b) => rep(a) - rep(b));
   const fl = order(Array.isArray(list) ? list : [list])[0];
-  if (!fl || (fl.kind || 'flight') !== 'flight' || (fl.special && fl.special.preStandby)) return null;
+  if (!fl || (fl.kind || 'flight') !== 'flight') return null;
+  // O voo já leva a assistência de HOJE (dobrada da escala, e é o 1.º serviço do dia): a da véspera só conta se for a mesma, a
+  // continuar pela meia-noite (2.ª revisão independente) — ver `ext`, abaixo. Declarada à mão: não se mexe.
+  const own = (fl.special && fl.special.preStandby) || null;
+  if (own && !(own.folded && !own.carried && own.startMin != null)) return null;
   const yIso = isoBack(date, 1), y = duties[yIso];
   if (!y || y.deleted) return null;
   const ys = order([y, ...(Array.isArray(y.extra) ? y.extra : [])]);
@@ -1318,6 +1354,13 @@ const carriedStandbyOf = (list, opts) => {
   if (en == null) return null;
   const at = (iso, min, add = 0) => { const x = new Date(`${iso}T00:00:00`); x.setDate(x.getDate() + add); x.setHours(Math.floor(min / 60), min % 60, 0, 0); return +x; };
   const sMs = at(yIso, st); let eMs = at(yIso, en); if (eMs <= sMs) eMs = at(yIso, en, 1);
+  if (own) {
+    // A série de hoje começou em `own.startMin`; a da véspera é a mesma assistência se acaba nesse minuto ou depois, e é do
+    // mesmo tipo. Então conta desde o início da véspera; o registo da véspera já contou a parte dela para o 210.
+    const t0 = at(date, own.startMin), addMin = Math.round((t0 - sMs) / 60000);
+    if ((sb.kind === 'standby_airport' ? 'airport' : 'other') !== own.type || eMs < t0 || addMin <= 0) return null;
+    return { fl, preStandby: { ...own, standbyH: own.standbyH + addMin / 60, startMin: st, carried: true, countedH: addMin / 60 } };
+  }
   const rMs = at(date, rep(fl));
   const gapMin = Math.round((rMs - eMs) / 60000), sbMin = Math.round((rMs - sMs) / 60000);
   const ra = restAfterDuty(sb, { inBase: gapInBaseOf(sb, { ...opts, date: yIso }), postFlightMin: opts.postFlightMin || 0, date: yIso });
@@ -1345,9 +1388,9 @@ const standbyBeforeOf = (duty, ctx) => {
   if (!list.some(mine)) return null;
   const folded = foldStandbyIntoFlight(list, (prev) => gapInBaseOf(prev, ctx), ctx.postFlightMin || 0, date, true);
   const f = folded.find((x) => mine(x) && x.special && x.special.preStandby && x.special.preStandby.folded);
-  if (f) return f.special.preStandby;
-  const c = carriedStandbyOf(folded, ctx);
-  return c && mine(c.fl) ? c.preStandby : null;
+  const c = carriedStandbyOf(folded, ctx);   // a da véspera, sozinha ou a continuar na de hoje
+  if (c && mine(c.fl)) return c.preStandby;
+  return f ? f.special.preStandby : null;
 };
 
 // AS DUAS LEITURAS de uma assistência seguida de um voo com 10 h ou mais entre os dois (ver foldStandbyIntoFlight). As contas do
@@ -1563,7 +1606,7 @@ const nbrSig = (duties, date) => {
     const t = new Date(y, m - 1, dd - k, 12);
     const iso = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
     const x = duties[iso];
-    parts.push(x && !x.deleted ? [pickSig(x), x.snap || null] : null);
+    parts.push(x && !x.deleted ? [pickSig(x), x.snap || null, Array.isArray(x.extra) ? x.extra.map(pickSig) : null] : null);   // … e os outros serviços do dia (a assistência da véspera pode ser o 2.º)
   }
   return djb2(JSON.stringify(parts));
 };

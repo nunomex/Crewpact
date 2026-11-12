@@ -155,11 +155,15 @@ const buildLine = (duties = {}, ctx = {}, call = false) => {
     //   · A série COLADA a outro serviço (menos de 10 h depois dele, no mesmo bloco): no mesmo dia do PSV fica como sempre
     //     foi — um bloco só com esse serviço, que o PSV do dia julga; de um dia para o outro não houve repouso nenhum antes do
     //     PSV, com ou sem chamada → não se junta (curto).
-    if (p && p.end && p.ra && isHomeSb(p) && isHomeSb(v)) joined = gapMin < p.ra.requiredMin;
-    v.sbRun = isHomeSb(v) ? ((joined && isHomeSb(p)) ? p.sbRun : i) : null;
+    // (2.ª revisão independente.) Só as CONTÍGUAS (a 2.ª começa quando a 1.ª acaba, ou antes) são a mesma assistência, em
+    // qualquer dia. Com tempo livre entre as duas há duas leituras — chamado na 1.ª, ou na 2.ª depois de um "repouso" que
+    // pode não chegar (CS FTL.1.225(b)(4)) — e quem as vê é `earlierCallOk`.
+    const sbCont = !!(p && p.end && p.ra && isHomeSb(p) && isHomeSb(v) && gapMin <= 0);
+    if (sbCont) joined = true;
+    v.sbRun = isHomeSb(v) ? (sbCont ? p.sbRun : i) : null;
     let fork = false;
     if (p && p.end && p.ra && isHomeSb(p) && v.fdp) {
-      const run = svcs[p.sbRun], glued = !(run.blk === p.sbRun || run.either);
+      const run = svcs[p.sbRun], glued = run.blk !== p.sbRun;   // (com 10 h ou mais antes dela também: ou é um repouso curto, ou um PSV só)
       const sbFree = !glued || (p.sbRun > 0 && svcs[p.sbRun - 1].iso === v.iso);
       const sbMin = Math.round((+v.start - +run.start) / 60000);
       if (gapMin < 0) joined = sbFree;
@@ -345,7 +349,7 @@ const requirementAfterRaw = (svcs, prev, next = null, deep = true, lvl = 0) => {
         if (diff > 0) {
           reducedBefore = diff; hiMin += diff;
           const sure = preRest < lowMin ? bLo || reducedBand(preRest, lowMin, rq.ref, incLo) : null;
-          reducedBeforeSure = !!(sure && nextFitsReduced(svcs, head, sure.diffMin));
+          reducedBeforeSure = !!(sure && nextFitsReduced(svcs, head, sure.diffMin, true));
         }
       }
     }
@@ -364,6 +368,11 @@ const requirementAfterRaw = (svcs, prev, next = null, deep = true, lvl = 0) => {
   //     dizia "curto" abaixo dele: era uma leitura da app ("em algum lado falta um repouso"), não o texto → agora incerto
   //     entre o piso e o mínimo de D, curto só abaixo do piso.
   // Vale igual com a assistência no mesmo bloco de D (mesmo dia) ou num bloco só dela (dias seguintes).
+  // UM SERVIÇO SEM HORA DE FIM logo antes da série de assistências ou de serviços em terra (2026-11-13): o mínimo pode
+  // medir-se por ele (a leitura do último serviço verdadeiro; as horas a mais de um voo) e dele não se sabe quanto durou nem
+  // quanto repouso houve a seguir → `openIso` = o dia desse serviço: quem lê dá "incerto" ('noEnd'), sem teto. Antes a cadeia
+  // parava ali e ficava o piso, "certo".
+  let openIso = null;
   let standbyDoubt = false, incMin = extLoCut ? extLoMin : null, specialFloor = false, sbIncHi = null;
   if (deep) {
     const blkAll = svcs.filter((x) => x.blk === prev.blk);
@@ -383,7 +392,7 @@ const requirementAfterRaw = (svcs, prev, next = null, deep = true, lvl = 0) => {
           if (!pp) break;
           // Uma assistência SEM FIM conhecido: não se sabe quanto repouso houve depois dela → não conta, e a cadeia continua
           // para trás (7.ª passagem: a cadeia parava aqui e a dúvida desaparecia).
-          if (!pp.end) { if (!isHomeSb(pp)) break; head = pp; continue; }
+          if (!pp.end) { if (!isHomeSb(pp)) { openIso = pp.iso; break; } head = pp; continue; }
           best = Math.max(best, Math.round((+head.start - +pp.end) / 60000));
           if (svcs.some((x) => x.blk === pp.blk && !isHomeSb(x))) { found = { pp, head }; break; }
           head = headOf(svcs, pp);
@@ -420,7 +429,7 @@ const requirementAfterRaw = (svcs, prev, next = null, deep = true, lvl = 0) => {
         const pp = before(svcs, head.start)[0] || null;
         if (!pp) break;
         // Um serviço em terra SEM FIM conhecido: não se sabe quanto repouso houve depois dele → não conta, e a cadeia continua.
-        if (!pp.end) { if (!isGroundSvc(pp.s)) break; head = pp; continue; }
+        if (!pp.end) { if (!isGroundSvc(pp.s)) { openIso = pp.iso; break; } head = pp; continue; }
         best = Math.max(best, Math.round((+head.start - +pp.end) / 60000));
         if (!svcs.filter((x) => x.blk === pp.blk).every((x) => isGroundSvc(x.s))) { d = pp; break; }
         head = headOf(svcs, pp);
@@ -443,7 +452,7 @@ const requirementAfterRaw = (svcs, prev, next = null, deep = true, lvl = 0) => {
   }
   const doubtKind = doubts.length ? (doubts.every((x) => x.either) ? 'breakOrRest' : 'legTimes')
     : (standbyDoubt ? 'standbyHome' : (groundDoubt ? 'groundBetween' : (extLoCut ? (extWhy || 'extPreRest') : (reducedBefore ? 'reducedRestAfter' : null))));
-  return { prevDutyMin, floorMin, requiredMin, extOption, loMin, hiMin, ref, doubtKind, reducedBefore, reducedBeforeSure, incMin, incHiMin: standbyDoubt && sbIncHi != null ? sbIncHi : (extLoCut ? extMin : null), specialFloor };
+  return { openIso, prevDutyMin, floorMin, requiredMin, extOption, loMin, hiMin, ref, doubtKind, reducedBefore, reducedBeforeSure, incMin, incHiMin: standbyDoubt && sbIncHi != null ? sbIncHi : (extLoCut ? extMin : null), specialFloor };
 };
 
 // O REPOUSO REDUZIDO (ORO.FTL.235(c) · CS FTL.1.235(c) — 2026-11-11, noite 10). Um repouso abaixo do mínimo do 235(a)/(b) mas
@@ -472,9 +481,12 @@ const reducedBand = (actualMin, normalMin, prev, incMin = 0) => {
 // (ORO.FTL.105(6)). Uma assistência em casa (que nem é período de serviço para o repouso), um escritório ou uma formação seguidos
 // de um voo no mesmo dia não são um PSV repartido de certeza — antes contavam como tal e o repouso saía "curto" em vez de incerto.
 const isFlightSvc = (x) => ((x && x.s && x.s.kind) || 'flight') === 'flight';
-const nextFitsReduced = (svcs, next, diffMin) => {
+// `strict` (2.ª revisão independente): para dizer que o repouso de antes "só podia ser um repouso reduzido" o bloco tem de
+// caber DE CERTEZA — um repartido só possível (escritório ou assistência e voo com 3 h ou mais pelo meio) já não serve.
+const nextFitsReduced = (svcs, next, diffMin, strict = false) => {
   if (!next || !next.ra) return true;
   const blk = svcs.filter((x) => x.blk === next.blk);
+  if (strict && blk.some((x, i) => i > 0 && x.joinGapMin != null && x.joinGapMin >= 180)) return false;
   if (blk.some((x, i) => i > 0 && !x.either && x.joinGapMin != null && x.joinGapMin >= 180 && isFlightSvc(x) && isFlightSvc(blk[i - 1]))) return false;
   const first = blk[0], last = blk[blk.length - 1];
   const whole = blk.every((x) => x === first || !x.either);   // um PSV só (serviços pegados) ou o 1.º de dois
@@ -554,6 +566,8 @@ const restVerdict = (actualMin, req, nightsShort, svcs = null, prev = null, next
     if (band && nextFitsReduced(svcs || [], next, band.diffMin) && reducedSinceRecovery(svcs || [], prev) < 2) return { status: 'unc', kind: 'reducedRest', requiredMin: req.loMin, reducedFloorMin: band.floorMin, diffMin: band.diffMin };
   }
   if (nightsShort || actualMin < req.loMin) return { status: 'bad', requiredMin: req.loMin };
+  // Falta a hora de fim de um serviço de que o mínimo pode depender (ver `openIso`): acima do piso, incerto, sem teto.
+  if (req.openIso) return { status: 'unc', kind: 'noEnd', requiredMin: req.loMin, estIso: req.openIso };
   if (actualMin < req.hiMin) return { status: 'unc', kind: req.doubtKind || 'legTimes', requiredMin: req.loMin, requiredHiMin: req.hiMin };
   return { status: 'ok', requiredMin: req.hiMin };
 };
@@ -706,6 +720,24 @@ const mergePair = (p, q) => {
   const kind = u ? u.kind : (p.req.extOption !== q.req.extOption ? 'extAfterStandby' : 'reducedRestAfter');
   return { ...p, v: { status: 'unc', kind, requiredMin: Math.min(p.req.loMin, q.req.loMin), requiredHiMin: Math.max(p.req.hiMin, q.req.hiMin) } };
 };
+// O voo pode ter sido atribuído numa assistência ANTERIOR (a que vem antes da série, com tempo livre pelo meio)? Então o
+// repouso de antes do PSV é o de antes dessa assistência. Anda para trás pelas assistências em casa: basta uma leitura em que o
+// repouso não seja curto e em que a assistência não passe das 16 h até à apresentação (CS FTL.1.225(b)(1)).
+const earlierCallOk = (L, sb, fdpStartMs) => {
+  let cur = sb;
+  for (let g = 0; g < 6 && cur; g++) {
+    const h = headOf(L, cur);
+    if ((fdpStartMs - +(svcs0(L, cur)).start) / 60000 > 960) return false;
+    const pp = before(L, h.start)[0] || null;
+    if (!pp || !pp.end) return true;
+    if (pairOne(L, pp, h).v.status !== 'bad') return true;
+    if (!isHomeSb(pp)) return false;
+    cur = pp;
+  }
+  return false;
+};
+// O início da série de assistências de `sb` (a 1.ª das contíguas).
+const svcs0 = (L, sb) => (sb.sbRun != null && L[sb.sbRun] ? L[sb.sbRun] : sb);
 // O bloco de `b` é uma bifurcação (na linha da chamada vem atrás de uma assistência)?
 const isFork = (svcs, b) => !!(svcs.alt && b.alt && headOf(svcs.alt, b.alt) !== b.alt);
 // A leitura da chamada também dá "curto"? Mede-se o repouso de antes da série de assistências: na linha `alt` (todas as
@@ -719,6 +751,7 @@ const forkCallBad = (svcs, a, b) => {
   const eb = estBefore(alt.est, alt, pC, hC);
   if (eb) return eb.status === 'bad';
   if (pairOne(alt, pC, hC).v.status !== 'bad') return false;
+  if (isHomeSb(pC) && earlierCallOk(alt, pC, +b.start)) return false;
   const hN = headOf(svcs, a);
   if (!svcs.some((x, i) => x.callFork && i < hN.blk)) return true;
   const pN = before(svcs, hN.start)[0] || null;
@@ -736,6 +769,12 @@ const pairBoth = (svcs, a, b) => {
   if (!svcs.alt || !a.alt || !b.alt) out = one;
   else if (isFork(svcs, b)) out = (one.v.status !== 'bad' || forkCallBad(svcs, a, b)) ? one : { ...one, v: { status: 'unc', kind: 'standbyCall', requiredMin: one.v.requiredMin } };
   else out = mergePair(one, pairOne(svcs.alt, a.alt, b.alt));
+  // O bloco de `b` começa numa assistência com o voo chamado durante ela, e antes dela há OUTRA assistência com tempo livre
+  // pelo meio: "curto" só se também o for na leitura em que o voo foi atribuído nessa assistência anterior.
+  if (out.v.status === 'bad' && !out.v.kind && isHomeSb(a) && isHomeSb(b)) {
+    const fdp = svcs.find((x) => x.blk === b.blk && x.fdp);
+    if (fdp && earlierCallOk(svcs, a, +fdp.start)) out = { ...out, v: { status: 'unc', kind: 'standbyCall', requiredMin: out.v.requiredMin } };
+  }
   const v = over16(b, out.v);
   return v === out.v ? out : { ...out, v };
 };
@@ -768,6 +807,8 @@ const needAfter = (svcs, last) => {
 const needOne = (svcs, last) => {
   const req = requirementAfter(svcs, last, null);
   const noReport = isHomeSb(last) ? estBeforeStandby(svcs.est, svcs, last, last) : null;
+  // Falta a hora de fim de um serviço anterior (ver `openIso`): o mínimo de todas as leituras, sem teto, com o motivo.
+  if (req.openIso && !noReport) return { requiredMin: req.loMin, requiredLoMin: req.loMin, requiredHiMin: null, uncertain: true, why: 'noEnd', estIso: req.openIso };
   const uncertain = req.loMin < req.hiMin || !!noReport;
   if (!uncertain) return { requiredMin: Math.max(req.requiredMin, req.loMin) };
   return { requiredMin: noReport ? req.loMin : req.hiMin, requiredLoMin: req.loMin, requiredHiMin: noReport ? null : req.hiMin, uncertain: true,
@@ -907,7 +948,11 @@ export function restUntilAfter(duties = {}, iso, ctx = {}) {
   const ofDay = svcs.filter((v) => v.iso === iso && v.end).sort((a, b) => +b.end - +a.end)[0];
   if (!ofDay) return null;
   // Conta-se do fim do BLOCO: uma assistência com o voo chamado durante ela (que pode ser já do dia seguinte) só acaba com o voo.
-  const mine = svcs.filter((v) => v.blk === ofDay.blk && v.end).sort((a, b) => +b.end - +a.end)[0] || ofDay;
+  // … e uma assistência com um serviço do bloco a apresentar-se DURANTE ela acabou nessa apresentação ("standby ceases when
+  // the crew member reports", CS FTL.1.225(b)(5)): o fim que estava na escala não conta (2.ª revisão independente).
+  const blkAll = svcs.filter((v) => v.blk === ofDay.blk && v.end);
+  const cut = (sb) => isHomeSb(sb) && blkAll.some((x) => !isHomeSb(x) && +x.start >= +sb.start && +x.start < +sb.end);
+  const mine = blkAll.filter((v) => !cut(v)).sort((a, b) => +b.end - +a.end)[0] || ofDay;
   const nd = needAfter(svcs, mine);
   const { requiredMin } = nd;
   // Noites locais na base depois de uma rotação com fuso (CS 235(b)(3)(i)): o repouso só acaba quando as tiver.

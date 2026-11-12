@@ -19,10 +19,11 @@ delas. Pormenor na entrada "Uma companhia de cada vez", abaixo.
 
 ### 0. Repouso — o que ficou depois da verificação de 2026-11-12 (ramo `calculos-repouso-2`)
 A verificação está feita e os dois pontos maiores estão corrigidos (entradas "Verificação do repouso" e "A lei não olha
-para a data", "Como diz a lei" e "Revisão independente das correções de hoje", abaixo). Tudo por gravar; o motor está na
-versão **18**. **O que falta, por ordem:**
-1. **Um serviço que VOA sem hora de fim, depois assistência em casa ou escritório, depois voo:** continua "certo" pelo
-   piso; devia ser "incerto", com texto novo ("falta a hora de fim do serviço de …") em 5 sítios.
+para a data", "Como diz a lei", "Revisão independente das correções de hoje" e "2.ª revisão independente", abaixo). O
+motor está na versão **19**. **O que falta, por ordem:**
+1. **Os ecrãs** (grupo 2, 1.ª linha: nove acertos vistos no iPhone; sessão em Opus 5.5). Os que escondem informação
+   primeiro: o motivo do "Incerto" cortado no Detalhe e na importação, o veredicto tapado num dia alterado, a linha verde
+   "Repouso ✓" inventada na Escala.
 2. **Assistência e voo: a app não diz as duas coisas juntas.** Com a assistência a acabar antes da apresentação e o PSV
    entre o máximo reduzido e o inteiro, "Dentro dos limites?" e "Tenho descanso?" dizem os dois "incerto" — mas o dia
    está fora em qualquer leitura (com chamada excede o PSV; sem chamada o repouso é curto). O texto do PSV já o diz; falta
@@ -55,7 +56,16 @@ versão **18**. **O que falta, por ordem:**
    11.º, n.º 1).
 - **No iPhone:** os passos do grupo 1 (as três primeiras linhas) e o passo 16 de `docs/verificacao-calendario.md`, com o
   calendário sintético — por fazer.
-- Só depois: gravar, passar ao `main`; a versão do motor (18) recalcula o registo dos dias no telemóvel.
+   **Da 2.ª revisão independente, por corrigir:** uma assistência partida à meia-noite com a chamada ANTES da meia-noite
+   deixa o pedaço de depois como "assistência depois do voo" e o voo do dia seguinte sai "curto" (já era assim); o serviço
+   no aeroporto SEM alojamento da véspera não se junta ao voo do dia seguinte, nem ao voo calculado sozinho; a assistência
+   seguida de escritório e depois de voo não reduz o PSV (já era assim); uma assistência sem hora de fim antes de um voo
+   dá "dentro" sem dizer o que falta (já era assim); com a assistência dentro de um PSV repartido o "possível" do 210 conta-a
+   a mais; o `noEnd` não tem teto mesmo quando o serviço sem fim só podia ter durado até ao seguinte ("incerto" a mais);
+   duas assistências com tempo livre entre elas, no MESMO dia, e o voo durante a 2.ª dão "certo" (de um dia para o outro,
+   "incerto"); o motivo das 16 h mostra as horas da série inteira; o repouso com assistências demora cerca do dobro.
+- **Sem revisão independente:** as correções da 2.ª revisão (entrada "2.ª revisão independente").
+- Só depois: passar ao `main`; a versão do motor (19) recalcula o registo dos dias no telemóvel.
 
 ### 1. Ver no iPhone (conta de teste: easyJet, piloto)
 - **Sessão de 2026-11-11 — visto ✅:** Perfil "Na … desde" com a coluna do dia (os 6 pontos); Escala sem toque longo; Detalhe
@@ -140,6 +150,27 @@ versão **18**. **O que falta, por ordem:**
   de situação · `docs/05-verificacao.md`).
 
 ### 2. Acertos de código por fazer
+- **Ecrãs — o que as fotos do iPhone de 2026-11-12 mostraram (por fazer; são acertos de ecrã: sessão em Opus 5.5):**
+  (1) Detalhe do serviço, linha "Incerto": o texto do que falta fica numa só linha e corta ("falta a hora a que a empresa
+  te contactou durant…"); o 2.º motivo nunca aparece e a palavra "Incerto" à esquerda desaparece. Com um texto comprido a
+  etiqueta da esquerda também se parte ("PS" / "V"). (2) Detalhe: com três aeroportos no título (LIS → TFS → LIS) o título
+  fica por cima do número grande cinzento. (3) Detalhe: "FDP realizado" e "PSV máx (FDP)" misturam as duas siglas.
+  (4) Detalhe: a etiqueta vertical "VOO · EZY1001" entra na zona da barra de estado — confirmar se é de propósito.
+  (5) Detalhe de um voo sem apresentação: a etiqueta diz "SEM DADOS DE FIM" e o que falta é a apresentação. (6) Folha de
+  importação: num dia ALTERADO a linha da alteração ocupa o lugar do veredicto — um dia que mudou e passou a exceder entra
+  com visto verde e sem "⚠"/"Incerto" (erro silencioso); e chama "On-block" à hora de fim de uma assistência. Num dia
+  NOVO a linha do veredicto aparece mas corta às duas linhas ("⚠ repouso antes 9:30 de 12:00 — curto se o voo já estava na
+  e…": a 2.ª hipótese, a das 16 h, nunca se lê), e o dia fica com visto verde e "1 prontas" ao lado do "⚠". (7) Início
+  3.0: uma resposta "Incerto" (repouso ou limites) não tem cartão — só o primeiro "Não" aparece. Decisão de desenho.
+  (9) Escala, folha do dia: quando a assistência se junta ao voo (chamada), a linha entre os dois serviços diz "Repouso
+  entre serviços ·  (mín  base) ✓" a verde, com os números em branco — um repouso inventado (`EscalaScreen.js`: sem
+  intervalo calculado cai num "repouso ✓" de recurso); e os serviços aparecem pela ordem em que foram guardados (o voo das
+  11:00 antes da assistência das 06:00), não pela hora.
+  (8) Importação: uma apresentação nas notas a mais de 6 h da partida, no mesmo dia, é aceite (a regra das 6 h só se
+  aplica quando a hora cai na véspera): `RP 00:00` num voo das 19:00 deu um PSV de 19 h. Por corrigir com teste (`test:calendar`).
+  Visto e certo: o alerta de SNC com o texto longo cabe; a folha de importação diz "⚠ repouso antes 9:30 de 12:00 — curto
+  se o voo já estava na e…" no caso das 16 h (os números certos, o texto cortado); o Detalhe do voo depois de uma assistência mostra "Incerto",
+  máximo 07:30–11:30 e "Calços até às (garantido) 23:30", como o motor calcula.
 - **Companhias "em breve" (2026-11-12, por fazer; tarefa própria, depois de fechar o ramo do repouso):** no onboarding e
   no Perfil só a easyJet se pode escolher; as outras aparecem como "em breve" (não escondidas: quem não vê a sua companhia
   escolhe outra e recebe números errados). O bloqueio fica no catálogo `airlines` da base de dados (abrir uma companhia é
@@ -263,6 +294,54 @@ versão **18**. **O que falta, por ordem:**
   (AlarmKit), hotel pelo Apple Maps, passkeys; Android; iPhone pequeno e grande; beta com 2–3 tripulantes no TestFlight;
   declaração de dados nas lojas; Supabase/Resend pagos e limites (e-mails por hora, DMARC).
 ---
+
+## 2026-11-12 (noite) — Voo sem hora de fim, iPhone e 2.ª revisão independente (Fable 5.2, a mesma sessão)
+
+O Nuno: "vamos fazer esses 3 passos" (ver no iPhone; revisão independente das correções que não a tinham tido; o voo sem
+hora de fim). Testes primeiro em tudo. Golden 889 → 917.
+
+**1 · Um serviço sem hora de fim antes de uma assistência ou de um serviço em terra** (`data/today.js`, `openIso`, motivo
+`noEnd`). Voo sem hora de fim, assistência em casa (ou escritório), 12 h, voo: era "certo" pelo piso; agora "Incerto —
+falta a hora de fim do serviço de DD/MM", sem teto (o mínimo pode medir-se por esse serviço e não se sabe quanto durou).
+Abaixo do piso continua "Não". Texto novo no Início, no cartão do repouso e na Simulação.
+
+**2 · iPhone** (conta de teste, calendário sintético). Os cálculos bateram em tudo o que se viu: o Detalhe do voo depois
+de uma assistência mostra "Incerto", máximo 07:30–11:30 e "Calços até às (garantido) 23:30"; a importação mostra "⚠
+repouso antes 9:30 de 12:00" no caso das 16 h; o alerta de SNC com o texto longo cabe. O que falhou foi a apresentação:
+nove acertos de ecrã e de importação, no grupo 2. Não se viu: o texto do voo sem hora de fim; o voo durante a assistência
+com um só máximo reduzido; o "Tenho descanso? Incerto" (o Início 3.0 não tem cartão para ele).
+
+**3 · 2.ª revisão independente** (dois revisores Opus, só com o código e `fontes/`; reproduzi cada achado). Confirmaram:
+as vistas do repouso iguais (4 693 pares, 0 diferenças); "Repouso até" contra "Tenho descanso?" (4 511 dias, 0 erros);
+sem assistência em casa, só mudam os casos esperados (cerca de 150 000 comparações); o PSV com a assistência antes do voo
+conferido à mão, mesmo dia contra véspera (3 360 pares) e zero diferenças face ao commit anterior nos dias sem assistência
+antes de um voo (cerca de 5 200 dias). **Erros corrigidos:**
+- **PSV — a assistência em várias entradas.** Duas assistências seguidas antes de um voo (07–11 e 11–17, voo às 16:00)
+  davam um PSV de 19:00 contado desde a 1.ª (erro meu da 1.ª revisão); uma assistência partida à meia-noite pelo
+  calendário (18–00 e 00–06, voo às 05:00) perdia a parte da véspera e dava "dentro" (já era assim). Agora as contíguas
+  contam como uma: 10:00 contra 8:30, e máximo 7:00 — excede, como a entrada única.
+- **PSV — a assistência da escala e a mesma declarada à mão no voo** davam um PSV de 21:30 e o 210 a dobrar. Vale a
+  declarada, uma vez.
+- **PSV — o registo dos dias** não recalculava quando a assistência da véspera entrava como 2.º serviço desse dia.
+- **PSV — uma assistência de mais de 16 h com a chamada durante ela** não era assinalada em lado nenhum; o dia passa a
+  marcar "assistência acima de 16 h" (CS FTL.1.225(b)(1)).
+- **Repouso — só as assistências contíguas são uma série.** Com tempo livre entre duas (erro meu da 1.ª revisão: juntava
+  tudo o que tivesse menos de 12 h pelo meio) há duas leituras — chamado na 1.ª, ou na 2.ª depois de um "repouso" que pode
+  não chegar: 11 h livres e 25 h desde a 1.ª → "Não" (era "Sim"); 10 h livres e 16 h desde a 1.ª → "Incerto" (era "Sim").
+- **Repouso — a assistência 10 h depois de um serviço e a chamada no dia seguinte:** "Sim" (erro meu); agora "Não" (ou
+  as 10 h são um repouso curto, ou é um PSV só de 21 h).
+- **Repouso — "só podia ser um repouso reduzido"** exige agora que o bloco seguinte não possa ser um repartido (a
+  correção do "curto" falso tinha criado outro "curto" falso, 3 a 6 casos em 1 500 escalas).
+- **"Repouso até" depois de uma chamada** contava do fim da assistência que estava na escala; conta do fim do voo.
+**A versão do motor sobe para 19.**
+
+**Provas no fim:** `npm test` verde (33 suites; golden 917, cartões 251); exportação iOS sem erros; todos os cenários das
+duas revisões com o resultado que a lei dá; a regra da assistência 10 158 combinações, 0 diferenças, e o voo sozinho igual
+ao registo do dia; vistas 37 050 comparações, 1 diferença (a de sempre); "Repouso até" 32 824, 0; mais repouso nunca piora:
+as mesmas classes; contra o commit `3c217a5` sem assistência em casa: só o "curto" falso corrigido (33 e 35 casos).
+
+**O padrão destas duas noites, para não o esconder:** cada ronda de correções minhas no caso "assistência antes de um voo"
+abriu falhas novas que só a revisão seguinte apanhou. As correções desta 2.ª revisão não foram revistas.
 
 ## 2026-11-12 — Revisão independente das correções de hoje (dois revisores Opus) e o que se corrigiu
 

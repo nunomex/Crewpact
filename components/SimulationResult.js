@@ -130,6 +130,7 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
       breakOrRest: l('Os serviços do dia podem ser um serviço repartido ou dois serviços (ORO.FTL.105(6)).', 'The day’s duties may be one split duty or two duties (ORO.FTL.105(6)).'),
       reducedRestAfter: l('Se o repouso anterior foi um repouso reduzido, este aumenta pela diferença (CS FTL.1.235(c)(3)).', 'If the previous rest was a reduced rest, this one is extended by the difference (CS FTL.1.235(c)(3)).'),
       noReport: l('Falta a hora de apresentação de um serviço anterior: sem ela não se sabe o mínimo.', 'An earlier duty has no report time: without it the minimum is unknown.'),
+      noEnd: l('Falta a hora de fim de um serviço anterior: sem ela não se sabe o mínimo.', 'An earlier duty has no end time: without it the minimum is unknown.'),
     }[need.why] || null) : null;
     const nightsTxt = need.nightsRequired ? (need.nightsUncertain
       ? l(`Talvez também ${need.nightsRequired} noites locais na base: desde o regresso da rotação houve uma assistência ou um serviço em terra, e a lei não diz se ainda se pedem (CS FTL.1.235(b)(3)).`, `Possibly also ${need.nightsRequired} local nights at base: there was standby or a ground duty since the rotation returned, and the law does not say whether they still apply (CS FTL.1.235(b)(3)).`)

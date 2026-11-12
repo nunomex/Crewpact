@@ -176,6 +176,11 @@ export function buildTodayItems(ctx, lang) {
       const dd = rest.estIso ? `${rest.estIso.slice(8, 10)}/${rest.estIso.slice(5, 7)}` : '';
       answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} ${l('antes do report', 'before report')}`;
       suggestion = l(`Falta a hora de apresentação do serviço de ${dd}: sem ela não se sabe quanto durou, nem o repouso mínimo a seguir (ORO.FTL.235). Põe-a no detalhe desse serviço.`, `The duty on ${dd} has no report time: without it its length is unknown, and so is the minimum rest after it (ORO.FTL.235). Add it in that duty's detail.`);
+    } else if (rest.kind === 'noEnd') {
+      // Um serviço SEM hora de fim antes da assistência ou do serviço em terra que veio a seguir: o mínimo pode depender dele.
+      const dd = rest.estIso ? `${rest.estIso.slice(8, 10)}/${rest.estIso.slice(5, 7)}` : '';
+      answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} ${l('antes do report', 'before report')}`;
+      suggestion = l(`Falta a hora de fim do serviço de ${dd}: sem ela não se sabe quanto durou, nem o repouso mínimo a seguir (ORO.FTL.235). Põe-a no detalhe desse serviço.`, `The duty on ${dd} has no end time: without it its length is unknown, and so is the minimum rest after it (ORO.FTL.235). Add it in that duty's detail.`);
     } else if (rest.kind === 'standbyHome') {
       // Só assistência em casa entre o último serviço e este PSV, sem um repouso com o mínimo desse serviço pelo meio.
       answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} (${l('mín. entre', 'min between')} ${hhmm(rest.requiredMin)} ${l('e', 'and')} ${hhmm(rest.requiredHiMin)})`;
