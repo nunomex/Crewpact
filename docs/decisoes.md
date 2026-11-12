@@ -93,6 +93,8 @@ motor está na versão **20**. **O que falta, por ordem:**
 - Gravado e no `main` (2026-11-12); a versão do motor (20) recalcula o registo dos dias no telemóvel.
 
 ### 1. Ver no iPhone (conta de teste: easyJet, piloto)
+- **A série de assistências (2026-11-12, motor v20 — nada visto no iPhone):** o passo 17 de
+  `docs/verificacao-calendario.md`, sete cenários com o calendário sintético (a a g).
 - **Sessão de 2026-11-11 — visto ✅:** Perfil "Na … desde" com a coluna do dia (os 6 pontos); Escala sem toque longo; Detalhe
   do serviço só de leitura com "do calendário", secção Completar, "Tocou numa folga?" com WFLY + DDO, "O calendário está
   errado?" → horas reais. **Retomar no bloco 3** (dinheiro): Números de um mês SEM serviços (o bloco do dinheiro com a base e, por

@@ -105,6 +105,23 @@ que o eCrew escreveria — cada um testa um ramo do parser:
     "Tenho descanso?" diz "Não · 9:00 (mín 12:00)" com o texto das duas hipóteses ("Se o voo já
     estava na escala, o repouso é curto. Se te foi atribuído durante a assistência… acima do
     máximo de 16 h"); o texto cabe?
+17. **A série de assistências e a 4.ª/5.ª revisões** (2026-11-12, motor v20; nada visto no iPhone). Ao abrir, o registo
+    dos dias recalcula-se: os Números de um mês com assistências podem mudar uns minutos (a assistência da véspera acaba na
+    apresentação do voo). Eventos sintéticos, `HSBY` = assistência em casa, `ADTY LIS` = no aeroporto:
+    a) **Partida à meia-noite:** `HSBY` 18:00–00:00 e, no dia seguinte, `HSBY` 00:00–06:00 + voo com apresentação às 05:00
+       e chegada às 16:00 → Detalhe do voo e "Dentro dos limites?": PSV 11:00, máximo 07:00, excede (antes: 12:00, dentro).
+    b) **Duas seguidas no mesmo dia:** `HSBY` 07:00–11:00 + `HSBY` 11:00–17:00 + voo às 16:00 com chegada às 02:00 → PSV
+       10:00, máximo 08:30, excede. Sem o voo, o dia das duas assistências não mostra PSV nenhum.
+    c) **Com tempo livre no mesmo dia:** `HSBY` 04:00–08:00, `HSBY` 09:00–12:00 e voo às 11:00 → "Tenho descanso?":
+       "Incerto · 1:00 (mín 12:00)" com o texto da chamada (antes: "Sim").
+    d) **Mais de 16 h:** `HSBY` 00:00–17:00 e voo às 19:00 → "Dentro dos limites?" diz assistência acima de 16 h.
+    e) **Aeroporto à hora do fim:** `ADTY LIS` 18:00–02:00 e, no dia seguinte, voo com apresentação às 02:00 → "Tenho
+       descanso?": "Incerto · 0:00 (mín 12:00)"; o texto cita o aeroporto, "(a)(2)" (antes: "Não · 0:00").
+    f) **Declarada à mão:** `HSBY` 07:00–19:00 + voo às 18:00 com chegada às 04:30; no Detalhe → Completar → "Assistência
+       antes do voo" → em casa, 7 h → máximo "06:00 a 10:00" e o motivo "as horas que indicaste não batem com a assistência
+       que está na escala"; com 11 h → máximo 06:00, sem dúvida. O texto cabe?
+    g) **Voo e assistência depois:** voo 06:00–10:00 e `HSBY` 11:00–21:00 no mesmo dia → PSV 04:00, dentro (antes: um
+       "PSV" de 15:00, excede).
 
 ## C · Colheita (o produto da sessão)
 
