@@ -83,7 +83,7 @@ referência para o layout das páginas que faltam e para o sistema de desenho. *
   `design/escala-cartoes.html` (6 estados medidos; o dia dobrado em mês — régua + uma linha por serviço — e aberto na
   semana; o acerto 9), com as três propostas: a perna com as horas grandes (§14 B2 já corrigido); o iPhone pequeno abre
   na semana; o bloco junta só a rotação com pernoita fora e as férias seguidas. `escala-v3` arquivado.
-  **A Escala 3.0 está no código (2026-11-13, por ver no iPhone; sem commit):** `data/escalaDay.js` (puro: as células, a
+  **A Escala 3.0 (cartões) esteve no código (2026-11-13) e foi substituída no mesmo dia pela agenda (abaixo):** `data/escalaDay.js` (puro: as células, a
   ordem pela hora, os intervalos do motor só no par certo, a régua, as linhas e os cartões; golden novo `npm run
   test:escala`, 61 casos, no `npm test`) · `components/DayRuler.js` (B3) · `components/HomeCards.js` ganhou as pernas no
   cartão grande (B2) e o toque longo na linha fina · `screens/EscalaScreen.js` refeito (a lógica ficou: importação, SNC,
@@ -122,7 +122,7 @@ referência para o layout das páginas que faltam e para o sistema de desenho. *
   nos dias passados** ("isto tudo é para ser fácil para o utilizador… ver sempre na perspectiva dele") → o mesmo esboço
   refeito com três maneiras COM diferença: **C** tom mais claro · **D** cinzento com um ponto da cor do tipo (o título
   16,03, o € 6,31) · **E** só o contorno. **ESCOLHIDO: D.**
-  **A ESCALA EM AGENDA ESTÁ NO CÓDIGO (2026-11-13, por ver no iPhone; sem commit):** `data/escalaDay.js` ganhou
+  **A ESCALA EM AGENDA ESTÁ NO CÓDIGO (2026-11-13, por ver no iPhone; gravado no ramo `calculos-repouso-2`, commit `a2cb836`, sem push):** `data/escalaDay.js` ganhou
   `agendaRows` (as linhas da agenda), `yearMonths` (o ano em meses) e `prettyRoute` (LIS-OPO → LIS → OPO) — golden
   `test:escala` 82 casos · `components/DayBar.js` (a barra do dia, o passado em D, a linha das folgas, a coluna da data) ·
   `components/HomeCards.js` · `HomeTop` aceita o topo sem pílula preta e a de contorno como botão (seta ▾ e dica) ·
