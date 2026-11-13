@@ -128,7 +128,8 @@ que o eCrew escreveria — cada um testa um ramo do parser:
     (antes de declarar) · g sem "excede" (o cartão mostra o aviso de o voo partir de LIS com o serviço anterior acabado em
     OPO — é dos voos de teste, todos só de ida). No Detalhe do f ✅: 10:30 contra 06:00, excesso 04:30;
     com 7 h declaradas "06:00–10:00", excesso 00:30 (faltava o motivo: linha nova "Dois máximos"); com 11 h volta a 06:00.
-    Por ver, no Detalhe: os números de a, b e g, e se a linha "Dois máximos" cabe. Para o trabalho dos ecrãs: o Detalhe não
+    A linha "Dois máximos" (e a do "Incerto") passou a mostrar o
+    motivo em texto inteiro, por baixo do título — visto ✅. Por ver, no Detalhe: os números de a, b e g. Para o trabalho dos ecrãs: o Detalhe não
     diz que o máximo foi reduzido pela assistência (cita só o 205(b)), e "Assistência antes do voo" diz "Não" com a da
     escala já contada. O motivo do "Incerto" aparece cortado ("se o voo foi at…") e repete a palavra
     "incerto" — é da apresentação (grupo 2 de `docs/decisoes.md`).
