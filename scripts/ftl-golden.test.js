@@ -1796,7 +1796,7 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
     const ls2 = legalStatus({ psv: { result: '05:00', max: '11:15', maxHi: '13:30', uncertain: true, unknowns: ['legTimes'] } }, { '2026-10-20': { servicoMin: 330, servico: 5.5, vooMin: 285, voo: 4.75 } }, new Date('2026-10-20T12:00:00'));
     eqj('PSV incerto sem limites excedidos → incerto', [ls2.status, ls2.kind], ['warn', 'psvUncertain']);
   }
-  eq('versão do motor: 20', ftl.ENGINE_VERSION, 20);
+  eq('versão do motor: 21', ftl.ENGINE_VERSION, 21);
 }
 
 
@@ -3124,6 +3124,12 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
       eqj('serviço no aeroporto sem hora de fim e voo: o Detalhe do voo também fica incerto, com o mesmo motivo (era "dentro")', [!!r.fdp.over, !!r.fdp.uncertain, (r.fdp.unknowns || []).includes('noEndBefore'), !!e.psv.uncertain], [false, true, true, true]);
       const r0 = ftlV.ftlForDuty(fl, { ...O, date: '2026-03-10', duties: { '2026-03-10': fl } });
       eqj('controlo: sem esse serviço, o voo fica dentro', [!!r0.fdp.over, !!r0.fdp.uncertain], [false, false]); } }
+
+  // ── A folha do dia não chama "repartido" ao tempo entre uma assistência e um voo (visto no iPhone a 2026-11-13). ──
+  { const e = dayOf({ '2026-03-10': { ...F('11:00', '11:30', '13:00', 'LIS-OPO'), extra: [sbD('04:00', '08:00'), sbD('09:00', '12:00')] } }, '2026-03-10');
+    eqj('assistência 04–08, assistência 09–12 e voo às 11:00: o PSV é o do voo (2:00) e não há "repartido" na lista de intervalos', [e.psv.result, (e.between || []).map((b) => b.kind), !!e.split], ['02:00', [], false]);
+    const r = dayOf({ '2026-03-10': { ...sbD('02:00', '06:00'), extra: [F('18:00', '19:00', '21:00', 'LIS-OPO-LIS')] } }, '2026-03-10');
+    eqj('controlo: assistência e voo 12 h depois: continua a mostrar o repouso', (r.between || []).map((b) => b.kind), ['rest']); }
 
   // ── R1 · A assistência da noite partida à meia-noite (17–00 | 00–02), OUTRA de manhã (09–13) e voo às 10:00. ──
   { const fl = F('10:00', '10:30', '11:30', 'LIS-OPO');

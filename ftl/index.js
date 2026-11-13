@@ -75,7 +75,9 @@ import { standbySeries, standbyBefore, standbyReading, standbyCountMin, seriesEn
 // v20 (2026-11-12, 3.ª revisão independente): a assistência antes de um voo lê-se num só sítio (ftl/standbySeries.js) — as
 // entradas contíguas ou sobrepostas, de qualquer dia, são uma série (do início ao maior fim); cada entrada conta para o 210 o
 // seu pedaço, até à apresentação quando a chamada é certa; a declarada à mão que não bate com a da escala → as duas leituras.
-export const ENGINE_VERSION = 20;
+// v21 (2026-11-13, visto no iPhone): a lista de intervalos do dia (`between`) já não chama "repartido" ao tempo entre uma
+// assistência e outro serviço — os registos guardados recalculam-se.
+export const ENGINE_VERSION = 21;
 
 // Uma atividade (manual ou da escala) → PSV + repouso + legalidade num só objeto.
 // input: { state, report, end?, sectors, splitBreakH?, inBase?, postFlightMin? }
@@ -1542,7 +1544,11 @@ const dayFtlBlocks = (plan, opts, foldEither) => {
     const g = restBetweenDuties(paired[i].duty, paired[i + 1].duty, { inBase: gapInBase(paired[i].duty), postFlightMin: opts.postFlightMin || 0, date: opts.date || null });
     gaps.push(g);
   }
-  const between = gaps.filter(Boolean);   // (o que a folha do dia mostra: o intervalo entre cada serviço e o seguinte)
+  const isSbP0 = (p) => { const t = standbyTypeOf(p.duty); return t === 'other' || t === 'airport'; };
+  // O que a folha do dia mostra: o intervalo entre cada serviço e o seguinte. Entre uma ASSISTÊNCIA e outro serviço só se
+  // mostra um repouso: "repartido" ou "perto de mais" são coisas de um PSV, e a assistência não faz parte de nenhum (visto no
+  // iPhone a 2026-11-13: "Split duty · 3:00 < mín 10:00 → conta como 1 serviço" entre uma assistência em casa e um voo).
+  const between = gaps.filter((g, i) => g && !((isSbP0(paired[i]) || isSbP0(paired[i + 1])) && g.kind !== 'rest'));
   // UMA ASSISTÊNCIA NÃO FAZ PARTE DE UM PSV (2026-11-12): a de casa "counts (partly) as duty for the purpose of ORO.FTL.210
   // only" (GM1 CS FTL.1.225 (c)); a do aeroporto com alojamento é assistência, não PSV (ORO.FTL.225(b), (c)). As que não estão
   // ligadas a um voo (as ligadas já ficaram à parte, sbDayPlan) contam sozinhas: os blocos de PSV fazem-se só com os OUTROS
