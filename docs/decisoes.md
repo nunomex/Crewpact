@@ -144,7 +144,7 @@ referência para o layout das páginas que faltam e para o sistema de desenho. *
   serviços" · **1B** a 2.ª linha com o outro serviço ("e Standby Casa · 09:00–15:00") · **1C** hoje e o próximo serviço
   abertos; **2A** botão "Mês" com nome (folha com a grelha e a legenda) · **2B** "Lista | Mês" no topo da folha (B11; a
   legenda debaixo da grelha, acaba 23 pt abaixo do ecrã) · **2C** a semana sempre à vista + "Ver o mês ›". Recomendo 1B + 2B.
-  **ESCOLHIDO pelo Nuno: 1B + 2B — JÁ NO CÓDIGO (2026-11-13, por ver no iPhone; por gravar).** **1B:** a barra de um dia
+  **ESCOLHIDO pelo Nuno: 1B + 2B — JÁ NO CÓDIGO (2026-11-13, por ver no iPhone; gravado no ramo `calculos-repouso-2`, commit `18328be`, sem push).** **1B:** a barra de um dia
   com dois serviços diz o outro por escrito numa 2.ª linha ("e Assistência em casa · 06:00–12:00"; um voo diz "e LIS → OPO ·
   report 18:00"; com três, "· e mais 1"); os dois pontos saem das barras (ficam na grelha, que tem legenda). O título é o
   serviço principal (o voo manda). `agendaRows` ganhou o campo `also` — golden `test:escala` 87 casos. **2B:** "Lista | Mês"
