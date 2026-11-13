@@ -200,6 +200,51 @@ export function monthLegend(cells = [], lang = 'pt') {
   return LEGEND_KEYS.filter(([key]) => cells.some((c) => cellMatches(c, key))).map(([key, pt, en]) => ({ key, label: lang === 'en' ? en : pt }));
 }
 
+// ── A LEGENDA J3 (design/escala-legenda-3.html, escolhida pelo Nuno a 2026-11-13): na 1.ª vez a GUIADA, depois a PEQUENA ──
+// A guiada: um balão por sinal que EXISTA no mês, apontado a um dia que ainda vem (nunca hoje, que tem o seu balão no fim);
+// pela ordem voo · terra · 2 ou mais · pernoita · por sincronizar · férias e baixa · feito, no máximo 5 sinais; no fim, "toca num
+// dia" sobre hoje (sem hoje no mês: o 1.º dia com serviço que vem). Sem nenhum sinal no mês, não há guiada.
+export function legendTour(cells = [], lang = 'pt') {
+  const l = (pt, en) => (lang === 'en' ? en : pt);
+  const pick = (pred) => cells.find((c) => pred(c) && !c.past && !c.today) || cells.find((c) => pred(c) && !c.today) || null;
+  const SIGNS = [
+    ['voo', (c) => c.kind === 'voo' && !c.two, l('Um anel azul é um dia de voo. Por baixo, o destino.', 'A blue ring is a flight day. Below it, the destination.')],
+    ['terra', (c) => c.kind === 'terra' && !c.two, l('O anel lilás é um serviço em terra: assistência, formação, escritório.', 'A lilac ring is a ground duty: standby, training, office.')],
+    ['two', (c) => c.two, l('Fatias: um dia com mais de um serviço — uma fatia por serviço, pela hora.', 'Slices: a day with more than one duty — one slice per duty, in time order.')],
+    ['ns', (c) => c.ns, l('A lua ao lado do destino: dormes fora da base.', 'The moon next to the destination: you sleep away from base.')],
+    ['dirty', (c) => c.dirty, l('O ponto laranja: a escala mudou no calendário e falta rever.', 'The orange dot: the roster changed in the calendar and needs a review.')],
+    ['abs', (c) => c.kind === 'fer' || c.kind === 'doe', l('Tracejado: férias (FÉR) ou baixa (DOE).', 'Dashed: leave (LVE) or sick leave (SCK).')],
+    ['past', (c) => c.past && !!c.kind, l('A cinzento: os dias que já passaram.', 'Grey: the days already done.')],
+  ];
+  const steps = [];
+  for (const [key, pred, text] of SIGNS) {
+    if (steps.length >= 5) break;
+    const c = pick(pred);
+    if (c) steps.push({ key, iso: c.iso, text });
+  }
+  if (!steps.length) return [];
+  const t = cells.find((c) => c.today) || cells.find((c) => c.kind && !c.past) || cells.find((c) => c.kind);
+  const tapTxt = l('Toca num dia para ver os serviços dele; tocar num serviço abre tudo o que é dele.', 'Tap a day to see its duties; tap a duty to open everything about it.');
+  if (t) steps.push({ key: 'tap', iso: t.iso, text: t.today ? `${l('A tinta: hoje.', 'Ink: today.')} ${tapTxt}` : tapTxt });
+  return steps;
+}
+
+// A pequena: os quatro grupos com TODOS os sinais (os que não há no mês ficam a 0 — o Nuno: "mete todas as legendas que
+// existem"); os três primeiros contam e acendem os dias (cellMatches); "Os dias" só explicam (count null).
+const LEGEND_GROUPS = [
+  [['Serviços', 'Duties'], [['voo', 'Voo', 'Flight'], ['terra', 'Terra', 'Ground'], ['two', '2 ou mais', '2 or more']]],
+  [['Ausências', 'Absences'], [['fer', 'Férias', 'Leave'], ['doe', 'Baixa', 'Sick']]],
+  [['No dia', 'On the day'], [['ns', 'Pernoita', 'Night stop'], ['dirty', 'Por sincronizar', 'Pending sync']]],
+  [['Os dias', 'The days'], [['today', 'Hoje', 'Today'], ['past', 'Feito', 'Done'], ['sel', 'Escolhido', 'Selected'], ['free', 'Folga', 'Day off']]],
+];
+export function legendGroups(cells = [], lang = 'pt') {
+  const en = lang === 'en';
+  return LEGEND_GROUPS.map(([t, items], gi) => ({
+    title: en ? t[1] : t[0],
+    items: items.map(([key, pt, enL]) => ({ key, label: en ? enL : pt, count: gi === 3 ? null : cells.filter((c) => cellMatches(c, key)).length })),
+  }));
+}
+
 // ── a ordem do dia: pela HORA ──
 const startKey = (svc) => {
   const r = clkMin(svc && svc.report_time); if (r != null) return r;

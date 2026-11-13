@@ -339,6 +339,74 @@ referência para o layout das páginas que faltam e para o sistema de desenho. *
   golden (volta a 251), `Days` em `HomeCards.js` e os dias do `HomeScreen` — esses ficheiros estão iguais ao último commit; só
   fica o `HomeTop compact` da Escala. O esboço `design/inicio-a-seguir.html` fica como registo. Perda aceite: as horas da semana
   só na Escala (um toque por dia).
+  **Depois (gravado e enviado em `014afe6`), o Nuno mandou quatro imagens de calendários e perguntou qual serve o mês.** A minha
+  resposta: o pocket cal (já é a base da Q1); dos círculos nada (não cabe "LGW" + lua); do "Dec Jan" o título do mês com o
+  seguinte a espreitar; do pocket cal a contagem nas pílulas → esboço `design/escala-mes-acertos.html` (Q1 como está · R1 contagem
+  · R2 título com o seguinte a espreitar · R3 meses seguidos). **A meio, o Nuno mudou o gesto: "sem subir a folha; aparecer só
+  os serviços, e carregando num serviço é que pode abrir uma folha" + "os serviços a aparecer por baixo dos dias do mês, quando
+  está selecionado o dia".** Concordei (é o calendário do iPhone e o "Dec Jan"; separa o leve — o dia — do pesado — o serviço),
+  com uma condição: caber (topo ~300 + mês 356). → esboço `design/escala-dia-por-baixo.html`: o mês inteiro, o dia escolhido
+  com contorno, os serviços por baixo da grelha (no lugar da legenda; ✕ ou tocar outra vez no dia volta à legenda), tocar num
+  serviço abre a folha do serviço (o "Ver tudo"; ✕, a pega ou tocar fora fecham). **V1** o topo recolhe ao escolher um dia ·
+  **V2** a folha desliza sozinha · **V3** sem o número grande ("Novembro Dezembro" na folha + os números numa linha). Medido
+  (390 × 844, o dia 13 com 2 serviços): V1 os 2 à vista, sem deslizar, 6 de 6 semanas · V2 desliza 93 pt, 4 de 6 semanas · V3
+  desliza 8 pt, 6 de 6. Recomendei **V1**. **ESCOLHIDA pelo Nuno: V1** — e, com uma imagem (task tracking), "os números podem ser
+  em círculos; a linha do círculo pode ser pintada com os serviços, ou o interior; 2 serviços = duas cores, 3 = três, 1 = uma".
+  Notas minhas: antes recusou os círculos cinzentos todos iguais — aqui só os dias com serviço têm cor; a cor é a do TIPO (dois
+  voos = duas fatias céu com um fio branco); na app desenha-se com o `react-native-svg` que já existe (ícones). → esboço
+  `design/escala-circulos.html` (o 18 com 3 serviços): **A** o anel com as cores + o destino por baixo · **B** o interior com as
+  cores + o destino · **C** só o anel, sem o destino (a lua no anel). Medido: o 13 (2 serviços) à vista sem deslizar e o mês
+  inteiro nos três; o 18 (3) mostra 2 de 3 na A e na B (o 3.º a um pequeno deslize), 3 de 3 na C. Recomendo **A**. Fica de fora
+  a rotação junta (os círculos não se ligam). **E a legenda** (o Nuno: "pode estar melhor organizada; mete todas as que existem"):
+  no mesmo esboço, 2.ª fila com o círculo A — os 11 sinais, também os que não há no mês (a baixa com 0, mais clara), em quatro
+  grupos: Serviços (voo · terra · 2 ou mais) · Ausências (férias · baixa) · No dia (pernoita · por sincronizar) — estes filtram e
+  contam — e Os dias (hoje · feito · escolhido · folga), que só explicam; a amostra é o próprio sinal do mês. **L1** em grupos,
+  tudo à vista (285 pt; desliza-se 225 até ela) · **L2** uma fila a deslizar (9 de 11 escondidos para o lado) · **L3** um cartão
+  "Legenda" em duas colunas (352 pt). Recomendei **L1**. **ESCOLHIDO pelo Nuno: o círculo A; a legenda não — "vê outras opções,
+  pesquisa".** Mobbin (calendar key, legendas de calendário, folhas que explicam sinais) → esboço `design/escala-legenda.html`:
+  **N1** a chave numa folha (por baixo do mês uma linha "Legenda ›", 64 pt; a folha com uma semana de amostra e os 11 sinais, cada
+  um com uma frase e quantos dias tem; tocar acende esses dias e uma pílula preta por cima do mês diz o que está aceso — Fitbit
+  "Calendar key", Cal AI "Ring Colors Explained", Strava) · **N2** pequena por baixo do mês, sem caixas, uma linha por grupo (163 pt;
+  WHOOP, Ultrahuman) · **N3** o botão ⓘ em cima da grelha que abre um cartão por cima do mês (30 pt; o mês desce 36; Stardust,
+  Peerspace). Recomendei **N1**. **O Nuno: "faz tudo menos a legenda ainda; quero mais opções das legendas".**
+  **JÁ NO CÓDIGO (2026-11-13, por ver no iPhone; por gravar):** `screens/EscalaScreen.js` — **o círculo A** (react-native-svg, já
+  na app pelos ícones: o anel de 38 pt com uma fatia por serviço pela hora — `orderServices` —, na cor do tipo; fio de 5° entre
+  fatias; feito = `CARD.rule`; férias/baixa = anel tracejado; hoje = disco a tinta por dentro; escolhido = anel de tinta por fora;
+  ponto laranja no anel; o destino e a lua por baixo; a rotação já não se junta) · **a V1**: o mês fica sempre inteiro; tocar num
+  dia recolhe o topo (`HomeTop compact`, com LayoutAnimation 260 ms) e põe por baixo da grelha, no lugar da legenda, o cabeçalho
+  do dia (✕) e as linhas dos serviços; a folha desliza o mínimo para os mostrar (só desce); escolher um dia repõe o filtro da
+  legenda; tocar numa linha abre a **folha do serviço** (`Modal pageSheet`: o título do serviço, o dia, ✕ e o `DutyDetailBody`;
+  "outros serviços" troca o serviço na folha; apagar fecha tudo). Saíram a semana sozinha, a folha do dia que subia, ‹ ›, os
+  deslizes do dia e da semana. **A legenda NÃO mudou** (pedido do Nuno): continua a L2 (pílulas sem contagem) e as amostras ainda
+  são as etiquetas antigas — fica para a escolha. `npm test` verde (37), guardião sem dívida nova, `test:escala` 99, pacote iOS gera.
+  **Ver no iPhone:** os anéis (1, 2 e 3 serviços; dois voos no mesmo dia), hoje, feito, férias, o ponto · tocar num dia (o topo
+  recolhe sem saltos; os serviços à vista) · tocar noutro dia · ✕ e re-tocar na aba · a folha do serviço (abrir, "outros
+  serviços", puxar para baixo) · deslizar o mês para o lado · movimentos reduzidos · VoiceOver.
+  **Mais legendas** → esboço `design/escala-legenda-2.html` (Mobbin): **M1** o mês num anel (o resumo por tipo de dia é a legenda:
+  anel grande com voo 13 · terra 3 · férias e baixa 2 · folga 12, as linhas acendem; os outros sinais numa linha e "Legenda
+  completa" — Buddy, Starling, Plum) · **M2** a legenda guiada (na 1.ª vez, 6 balões sobre os dias verdadeiros; depois "Rever a
+  legenda" — Turo, Clue) · **M3** "Mostrar no mês" (um botão abre a folha com cada tipo, a explicação e uma caixa — Partiful).
+  Recomendei **M1**. **O Nuno: "gosto da M2"** — avisei que a M2 não tem o filtro (acender os dias) — **e logo a seguir: "fazer
+  junção com mais alguma? gosto que esteja no início, mas depois ter outra opção".** → esboço `design/escala-legenda-3.html`: na
+  1.ª vez a guiada (os balões sobre os dias verdadeiros; o último ensina a tocar num dia, por isso substitui a dica "Toca num
+  dia"); depois **J1** a chave numa folha (N1; a folha ganha "Ver no meu mês", que repete os balões) · **J2** o mês num anel (M1;
+  "Rever" e "Legenda completa") · **J3** a pequena por baixo (N2; "Rever a legenda no meu mês"). Recomendo **J2** (responde a
+  "quantas folgas tenho?" e acende os dias). Na app, os dias que os balões apontam escolhem-se dos dados do mês (um por sinal que
+  exista no mês; só os que existem) — vai para `data/escalaDay.js` com golden. **ESCOLHIDA pelo Nuno: J3** ("eu gosto"; concordei:
+  a guiada ensina no próprio mês, a pequena fica completa e acende com um toque; ~165 pt só com o mês em repouso). **E as guias
+  para a app toda** (o Nuno: "gosto desses guias para a app toda, na 1.ª vez… mas onde faz sentido"; aprovou as regras e a
+  Escala como piloto) → regras e sítios em `docs/guias.md`.
+  **JÁ NO CÓDIGO (2026-11-13, por ver no iPhone; por gravar):** `data/escalaDay.js` · `legendTour` (um balão por sinal que exista no
+  mês, num dia que vem e nunca hoje; ordem voo · terra · 2 ou mais · pernoita · por sincronizar · férias e baixa · feito, no máximo
+  5; no fim "A tinta: hoje. Toca num dia…" sobre hoje) e `legendGroups` (os 4 grupos com todos os sinais; os que não há a 0) —
+  golden `test:escala` 99 → 111, escrito antes · `components/GuideBubble.js` (o balão das guias, uma peça só) · `EscalaScreen`:
+  a guiada na 1.ª vez com escala (depois das boas-vindas; chave `cp_tour_escala_<uid>`; conta como vista ao acabar, saltar, tocar
+  num dia, mudar de mês ou sair da aba; o dia acende com um anel largo; a folha desliza para o balão; o VoiceOver lê-o) — saiu a
+  dica "Toca num dia" (`Tip`) · a legenda pequena (uma linha por grupo; amostras = o sinal do mês em SVG; tocar acende, 0 = mais
+  claro e não toca; "Os dias" só explicam; "Rever a legenda no meu mês"). `npm test` verde (37), guardião sem dívida nova, pacote
+  iOS gera. **Ver no iPhone:** a 1.ª vez (apagar `cp_tour_escala_<uid>` para repetir) — os balões no sítio certo, a seta no dia,
+  "Saltar", "Já percebi", o VoiceOver · "Rever a legenda" · a legenda pequena (acender, os 0) · o balão nas duas últimas semanas
+  (por cima do dia).
   **Ver no iPhone:** o Início (voo a céu, assistência a lilás, o aviso laranja com "!") · a Escala (barras, legenda do Mês, os
   dias feitos com o ponto azul) · o Detalhe de um serviço dentro (sem verde), incerto (pílula tracejada) e com fadiga · os
   Números (barras a tinta, laranja aos 85 %) · as Validades.

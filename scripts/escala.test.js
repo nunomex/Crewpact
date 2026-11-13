@@ -86,6 +86,27 @@ eq('filtrar "Terra" acende o dia 12 (o outro serviço é terra) e o 7; não o 2'
 eq('filtrar "Voo": o 12 e o 2 sim, o 7 e uma folga não', [E.cellMatches(C(12), 'voo'), E.cellMatches(C(2), 'voo'), E.cellMatches(C(7), 'voo'), E.cellMatches(C(5), 'voo')], [true, true, false, false]);
 eq('filtrar férias, baixa, pernoita, 2 serviços e por sincronizar', [E.cellMatches(C(24), 'fer'), E.cellMatches(C(27), 'doe'), E.cellMatches(C(3), 'ns'), E.cellMatches(C(19), 'two'), E.cellMatches(C(28), 'dirty'), E.cellMatches(C(27), 'fer')], [true, true, true, true, true, false]);
 
+// ════════ A LEGENDA J3 (design/escala-legenda-3.html, escolhida pelo Nuno a 2026-11-13): na 1.ª vez a guiada, depois a pequena ════════
+// A guiada: um balão por sinal que EXISTA no mês, num dia que ainda vem (nunca hoje, que tem o seu balão), pela ordem voo · terra
+// · 2 ou mais · pernoita · por sincronizar · férias e baixa · feito — no máximo 5 sinais —, e no fim "toca num dia" sobre hoje.
+const T = E.legendTour(G.cells);
+eq('a guiada: os sinais do mês, num dia que vem, e o toque no fim (sobre hoje)', T.map((s) => [s.key, s.iso.slice(8)]),
+  [['voo', '14'], ['terra', '30'], ['two', '19'], ['ns', '15'], ['dirty', '28'], ['tap', '13']]);
+yes('no máximo 6 balões', T.length <= 6);
+eq('o último fala de hoje e ensina a tocar', T[T.length - 1].text, 'A tinta: hoje. Toca num dia para ver os serviços dele; tocar num serviço abre tudo o que é dele.');
+eq('o primeiro: o anel azul', T[0].text, 'Um anel azul é um dia de voo. Por baixo, o destino.');
+eq('um mês sem escala não tem guiada', E.legendTour(E.monthCells({ ym: '2026-12', duties: D, base: 'LIS' }).cells), []);
+eq('só voos e hoje: o voo e o toque', E.legendTour(E.monthCells({ ym: '2026-11', duties: { '2026-11-14': D['2026-11-14'] }, base: 'LIS', today: '2026-11-13' }).cells).map((s) => s.key), ['voo', 'tap']);
+eq('sem hoje no mês, o toque vai para o 1.º dia com serviço que vem', E.legendTour(E.monthCells({ ym: '2026-11', duties: D, absences: ABS, base: 'LIS', today: '2026-10-20' }).cells).slice(-1).map((s) => [s.key, s.iso.slice(8), s.text.slice(0, 13)]), [['tap', '02', 'Toca num dia ']]);
+yes('em inglês', E.legendTour(G.cells, 'en')[0].text === 'A blue ring is a flight day. Below it, the destination.');
+// A pequena (J3): os quatro grupos, sempre todos os sinais (os que não há no mês com 0); "Os dias" só explicam.
+const LG = E.legendGroups(G.cells);
+eq('a legenda pequena: os grupos e os sinais', LG.map((g) => [g.title, g.items.map((i) => `${i.key}:${i.count == null ? '-' : i.count}`)]), [
+  ['Serviços', ['voo:10', 'terra:4', 'two:2']], ['Ausências', ['fer:3', 'doe:1']], ['No dia', ['ns:4', 'dirty:1']], ['Os dias', ['today:-', 'past:-', 'sel:-', 'free:-']]]);
+eq('os nomes', LG.map((g) => g.items.map((i) => i.label)), [['Voo', 'Terra', '2 ou mais'], ['Férias', 'Baixa'], ['Pernoita', 'Por sincronizar'], ['Hoje', 'Feito', 'Escolhido', 'Folga']]);
+eq('um mês vazio também leva todos os sinais (a 0)', E.legendGroups(E.monthCells({ ym: '2026-12', duties: D, base: 'LIS' }).cells)[0].items.map((i) => i.count), [0, 0, 0]);
+eq('em inglês', E.legendGroups(G.cells, 'en').map((g) => g.title), ['Duties', 'Absences', 'On the day', 'The days']);
+
 // ════════ a ordem do dia: pela hora (acerto 9) ════════
 const o19 = E.orderServices(D['2026-11-19']);
 eq('dia 19: a assistência das 06:00 vem antes do voo das 10:40', o19.map((o) => [o.idx, o.svc.report_time]), [[1, '06:00'], [0, '10:40']]);

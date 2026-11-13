@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · Escala, o mês com os acertos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* O MÊS DA ESCALA COM OS ACERTOS (2026-11-13). O Nuno mandou quatro imagens (o calendário de círculos cinzentos, o pocket cal,
+   os círculos com anel, o "Dec Jan" com números soltos) e perguntou qual fica bem no mês. A resposta: o pocket cal (é a base da
+   Q1, que está no código); do "Dec Jan" vale trazer o título do mês com o seguinte a espreitar, e do pocket cal a contagem nas
+   pílulas. Quatro telemóveis: a Q1 como está no código e três maneiras com os acertos. O gesto é o de sempre (tocar num dia: a
+   semana fica em cima e a folha sobe). Dados de teste (novembro de 2026; hoje = sexta 13). iPhone 390 × 844. */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1760px;margin:0 auto;display:flex;flex-direction:column;gap:26px}
+.lead{max-width:940px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,406px),406px));gap:26px 24px;justify-content:center}
+@media (max-width:1320px){.grid3{grid-template-columns:repeat(auto-fit,minmax(min(100%,406px),406px))}}
+.opt{display:flex;flex-direction:column;gap:10px;min-width:0}
+.opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:var(--muted);min-height:112px} .opt > p b{color:var(--pfg)}
+.opt > p.m{font-size:12px;min-height:0;font-variant-numeric:tabular-nums}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.ctl{display:flex;gap:8px;flex-wrap:wrap}
+.ctl button{border:1px solid #CFCDC6;background:#fff;border-radius:10px;padding:6px 10px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:940px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card2 li{font-size:13px;line-height:1.5;color:var(--muted)} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:var(--pfg)}
+.refs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:10px}
+.refs a,.refs div{display:block;background:#fff;border:1px solid #D6D4CD;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.4;color:var(--muted);text-decoration:none} .refs b{color:var(--pfg)}
+#meas{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+.ph{width:406px;height:860px;border:8px solid #04060A;border-radius:52px;overflow:hidden;position:relative;display:flex;flex-direction:column;
+  --desk:#E3E1DB;--ink:#141414;--soft:#3A3A36;--sheet:#FFFFFF;--neutral:#F1EFEA;--tsub:#5E5E57;--round:rgba(127,127,127,.22);--sub:rgba(20,20,20,.82);--rule:rgba(127,127,127,.3);
+  --voo:#6DBEFA;--terra:#C3A1BE;--rest:#B4C2A2;--alert:#F0854A;--gain:#0B6E43;
+  --vooT:#DCEFFD;--terraT:#F0E6EF;   /* Q2: os tons suaves (a cor do tipo clareada — tinta sobre eles ≥ 15:1) */
+  background:var(--desk);color:var(--ink)}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.sc{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none} .sc::-webkit-scrollbar{display:none}
+.tabbar{height:83px;flex:none;background:var(--sheet);padding:5px 12px 22px;display:flex;gap:8px;align-items:center}
+.tcap{flex:1;height:56px;border-radius:28px;background:var(--neutral);display:flex;padding:4px;gap:2px}
+.tcap .t{flex:1;border-radius:24px;display:flex;align-items:center;justify-content:center;color:var(--tsub);font-weight:700;font-size:11px}
+.tcap .t.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(20,20,20,.14)}
+.fab{width:56px;height:56px;border-radius:28px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;flex:none;font-size:26px}
+.top{padding:0 16px}
+.pills{display:flex;align-items:center;gap:8px;padding:8px 0 14px}
+.pill{height:38px;padding:0 16px;border-radius:19px;display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px;border:1.5px solid var(--ink);white-space:nowrap}
+.round{width:44px;height:44px;border-radius:22px;background:var(--round);margin-left:auto;flex:none}
+.what{font-weight:500;font-size:15px;line-height:20px;color:var(--soft)}
+.hero{display:flex;align-items:stretch;gap:16px;margin-top:4px;padding-bottom:30px}
+.giant{font-weight:700;font-size:62px;line-height:.9;letter-spacing:-2.8px;white-space:nowrap} .giant s{text-decoration:none;color:rgba(20,20,20,.5)}
+.side{border-left:1.5px solid var(--ink);padding-left:16px;display:flex;flex-direction:column;justify-content:center;gap:12px}
+.side b{display:block;font-weight:700;font-size:20px;line-height:22px} .side span{font-weight:500;font-size:11px;color:var(--soft)}
+.sheet{background:var(--sheet);border-radius:32px 32px 0 0;margin-top:-16px;padding:12px 12px 24px;min-height:560px}
+.wk{display:flex;gap:4px;margin-bottom:6px}
+.wk span{flex:1;text-align:center;font-weight:800;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--tsub)}
+.g{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.c{position:relative;cursor:pointer;transition:opacity .18s ease}
+.c.blank{cursor:default}
+.ph .c.gone{display:none}
+.c.dim{opacity:.22}
+@media (prefers-reduced-motion: reduce){.c{transition:none}}
+.code{font-weight:800;font-size:10.5px;letter-spacing:.4px;line-height:1;white-space:nowrap}
+.moon{width:9px;height:9px;flex:none;vertical-align:-1px}
+.pend{position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:4px;background:var(--alert);box-shadow:0 0 0 1.5px #fff}
+
+/* Q1 · o quadrado calmo e uma fita de cor em baixo (a cor só na fita) */
+.Q1 .c{height:56px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:7px 0 0;overflow:hidden}
+.Q1 .c.has{background:var(--neutral)}
+.Q1 .n{font-weight:700;font-size:15px;line-height:18px;font-variant-numeric:tabular-nums}
+.Q1 .c.past .n{color:var(--tsub)}
+.Q1 .c .code{color:var(--soft)}
+.Q1 .strip{align-self:stretch;height:5px;margin-top:3px}
+.Q1 .strip.jr{margin-right:-4px} .Q1 .strip.jl{margin-left:-4px}
+.Q1 .strip.two{background:linear-gradient(90deg,var(--terra) 0 30%,var(--voo) 30% 100%)}
+.Q1 .c.today{background:var(--ink)} .Q1 .c.today .n,.Q1 .c.today .code{color:#fff}
+.Q1 .c.sel{box-shadow:inset 0 0 0 2px var(--ink)}
+.Q1 .c.today.sel{box-shadow:none}
+/* Q2 · o quadrado cheio, a cor suave (3406) */
+.Q2 .c{height:56px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border:1.5px solid var(--neutral)}
+.Q2 .c.has{border-color:transparent} .Q2 .c.blank{border-color:transparent}
+.Q2 .c.voo{background:var(--vooT)} .Q2 .c.terra{background:var(--terraT)} .Q2 .c.abs{background:#fff;border:1.5px dashed rgba(127,127,127,.45)}
+.Q2 .c.past.has{background:var(--neutral)}
+.Q2 .n{font-weight:700;font-size:15px;line-height:18px}
+.Q2 .c.past .n{color:var(--tsub)}
+.Q2 .c .code{color:var(--ink);display:inline-flex;align-items:center;gap:2px}
+.Q2 .c.past .code{color:var(--tsub)}
+.Q2 .c .kd{display:inline-block;width:6px;height:6px;border-radius:2px;margin-right:2px}
+.Q2 .c.today{background:var(--ink);border-color:var(--ink)} .Q2 .c.today .n,.Q2 .c.today .code{color:#fff}
+.Q2 .c.sel{box-shadow:0 0 0 2px var(--ink)}
+.Q2 .c.today.sel{box-shadow:none}
+/* Q3 · o dia escrito: o destino e a hora do report dentro do dia (Outlook, Google Calendar, 3406) */
+.Q3 .g{gap:3px}
+.Q3 .c{height:82px;border-radius:10px;padding:5px 3px 3px;display:flex;flex-direction:column;gap:3px;background:#fff;border:1px solid var(--neutral)}
+.Q3 .n{font-weight:700;font-size:13px;line-height:16px;padding-left:3px}
+.Q3 .c.past .n{color:var(--tsub)}
+.Q3 .chip{border-radius:5px;padding:2px 3px 2px;display:flex;flex-direction:column;gap:1px;min-width:0}
+.Q3 .chip b{font-weight:800;font-size:10px;letter-spacing:.2px;line-height:11px;white-space:nowrap;overflow:hidden;display:flex;align-items:center;gap:1px}
+.Q3 .chip span{font-weight:600;font-size:9.5px;line-height:10px;white-space:nowrap}
+.Q3 .c.past .chip{opacity:.55}
+.Q3 .c.today .n{display:inline-flex;align-items:center;justify-content:center;width:22px;height:18px;border-radius:6px;background:var(--ink);color:#fff;padding:0}
+.Q3 .c.sel{border:2px solid var(--ink)} .Q3 .c.blank{border-color:transparent}
+/* as pílulas da legenda com contagem (3406) — tocar acende esses dias */
+.chips{display:flex;gap:6px;overflow-x:auto;padding:12px 0 2px;scrollbar-width:none} .chips::-webkit-scrollbar{display:none}
+.chip2{flex:none;height:32px;padding:0 12px 0 10px;border-radius:16px;background:var(--neutral);display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12px;cursor:pointer;border:1.5px solid transparent}
+.chip2.on{background:#fff;border-color:var(--ink)}
+.chip2 i{width:12px;height:12px;border-radius:4px;display:inline-block} .chip2 em{font-style:normal;font-weight:800;color:var(--tsub)}
+/* o título do mês na folha, com o seguinte a espreitar (R2) · os meses seguidos (R3) */
+.mt{display:flex;align-items:baseline;gap:12px;white-space:nowrap;overflow:hidden;margin:2px 4px 10px;cursor:default}
+.mt b{font-weight:800;font-size:26px;line-height:32px;letter-spacing:-.5px} .mt span{font-weight:800;font-size:26px;line-height:32px;letter-spacing:-.5px;color:rgba(20,20,20,.22)}
+.mt.next b{color:rgba(20,20,20,.4)}
+.mt + .wk{margin-top:0}
+.nextm{margin-top:22px}
+.nextm .c{cursor:default}
+.nextm .cap2{font-weight:500;font-size:12px;line-height:16px;color:var(--tsub);margin:8px 4px 0}
+.ph.open .mt,.ph.open .nextm{display:none}
+.chips.topc{padding:0 0 12px}
+/* A FOLHA DO DIA: sobe por baixo da semana, que fica em cima à vista (o gesto que o Nuno queria — a folha com pega das
+   versões anteriores). O topo grande recolhe; o mês fica só na semana do dia. */
+.ph.open .hero,.ph.open .what{display:none}
+.ph.open .sheet{min-height:0;padding-bottom:8px}
+.dsheet{position:absolute;left:0;right:0;bottom:83px;top:200px;background:#fff;border-radius:28px 28px 0 0;box-shadow:0 -10px 28px rgba(20,20,20,.16);z-index:5;display:flex;flex-direction:column;transform:translateY(110%)}
+.dsheet.up{transform:none}
+@media (prefers-reduced-motion: no-preference){.dsheet{transition:transform .32s cubic-bezier(.2,.8,.2,1)}}
+.dsheet .grab{display:flex;justify-content:center;padding:8px 0 2px;cursor:pointer} .dsheet .grab i{width:40px;height:5px;border-radius:3px;background:rgba(127,127,127,.35)}
+.dsheet .dsb{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;padding:0 12px 24px} .dsheet .dsb::-webkit-scrollbar{display:none}
+/* o dia (dentro da folha) */
+.day{display:flex;flex-direction:column;gap:8px;margin-top:4px;touch-action:pan-y}
+.dhead{display:flex;align-items:center;gap:8px;padding:2px 4px 4px}
+.dhead .tt{flex:1;min-width:0} .dhead b{display:block;font-weight:800;font-size:16px;line-height:20px} .dhead span{font-weight:600;font-size:12px;color:var(--tsub)}
+.ib{width:36px;height:36px;border-radius:18px;background:var(--round);display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer;font-weight:700;font-size:16px}
+.cd{border-radius:22px;padding:14px;display:flex;flex-direction:column;gap:10px;color:#141414}
+.cd.voo{background:var(--voo)} .cd.terra{background:var(--terra)} .cd.neutral{background:var(--neutral)}
+.cd.slim{padding:11px 14px;flex-direction:row;align-items:center;gap:10px;cursor:pointer}
+.cd.slim .t{flex:1;min-width:0} .cd.slim b{display:block;font-weight:800;font-size:15px} .cd.slim span{font-weight:500;font-size:12px;opacity:.82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.cd .kind{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;opacity:.72}
+.cd h4{font-weight:800;font-size:20px;line-height:24px}
+.gainChip{height:26px;padding:0 10px;border-radius:13px;background:#fff;color:var(--gain);font-weight:800;font-size:13px;display:inline-flex;align-items:center;white-space:nowrap}
+.b2{display:flex;align-items:flex-start;gap:8px} .b2 .t b{display:block;font-weight:700;font-size:24px;line-height:26px} .b2 .t span{font-weight:600;font-size:11px;opacity:.82} .b2 .t.r{text-align:right}
+.b2 .mid{flex:1;display:flex;align-items:center;gap:6px;padding-top:8px} .b2 .mid i{flex:1;height:1.5px;background:currentColor;opacity:.35}
+.b2 .dur{height:22px;padding:0 8px;border-radius:11px;background:rgba(255,255,255,.85);font-weight:700;font-size:11px;display:inline-flex;align-items:center}
+.ln{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--rule);font-size:14px} .ln:first-child{border-top:0}
+.ln .k{font-weight:500} .ln .k small{display:block;font-size:11px;font-weight:600;color:var(--tsub)} .ln .v{font-weight:700;white-space:nowrap}
+.b9 .val{display:flex;justify-content:space-between;align-items:baseline} .b9 .val b{font-weight:800;font-size:22px} .b9 .val b small{font-size:13px;color:var(--tsub);font-weight:600} .b9 .val span{font-weight:700;font-size:12.5px}
+.b9 .bar{height:7px;border-radius:4px;background:rgba(20,20,20,.12);margin-top:6px;overflow:hidden} .b9 .bar i{display:block;height:100%;background:var(--ink)}
+.swh{text-align:center;font-weight:500;font-size:11px;color:var(--tsub);padding-top:4px}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>O mês da Escala com os acertos</h1>
+    <p>Das quatro imagens, a que serve um mês de escala é o <b>pocket cal</b> — e já é a base da <b>Q1</b> que está no código. Das outras vale trazer duas coisas: do <b>"Dec Jan"</b>, o <b>título do mês com o seguinte a espreitar</b> (mostra que se desliza para o lado); do <b>pocket cal</b>, a <b>contagem nas pílulas</b> da legenda. Primeiro a Q1 como está, depois três maneiras. <b>Toca nos dias</b> (a folha sobe como no código); <b>desliza dentro do R3</b> para ver dezembro.</p>
+  </div>
+  <div class="grid3" id="opts"></div>
+  <p id="meas"></p>
+  <div class="card2"><h3>A minha recomendação: R2</h3><ul>
+    <li><b>R2</b> resolve o que hoje não se vê — que há outro mês para o lado — sem mudar o gesto (deslizar para o lado continua a mudar de mês) e sem repetir o mês: a pílula de cima passa a dizer só o ano. Leva também a contagem nas pílulas.</li>
+    <li><b>R1</b> é o mínimo (só a contagem): seguro, mas deixa o mês seguinte escondido.</li>
+    <li><b>R3</b> é o gesto do calendário do iPhone, mas choca com o topo: o número grande e os factos são do mês — ao descer para dezembro, o topo continuava a falar de novembro (ou mudava enquanto se desliza). E o mês seguinte quase sempre está vazio (a escala sai a meio do mês).</li></ul></div>
+  <h2 style="font-size:13px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase">Referências</h2>
+  <div class="refs">
+    <div><b>As tuas imagens</b> — o pocket cal (quadrados com o que há escrito e pílulas com contagem) e o "Dec Jan" (o mês a tinta e o seguinte a cinzento; a folha "Plans" por baixo). Dos círculos (o calendário cinzento e o de anéis) não se traz nada: "LGW" com a lua não cabe num círculo de 40 pt.</div>
+    <a href="https://mobbin.com/screens/26fae4e6-2163-4d93-8c47-5bd9839cb369" target="_blank"><b>Structured · mês</b> — o mês no título, a semana com o tipo de cada dia.</a>
+  </div>
+</div>
+
+<script>
+var MOON = '<svg class="moon" viewBox="0 0 24 24" fill="currentColor"><path d="M20 15.3A8.5 8.5 0 0 1 8.7 4a8.5 8.5 0 1 0 11.3 11.3z"/></svg>';
+var WD = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'], WDL = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+var TODAY = 13, LEAD = 6, DAYS = 30;
+var weekOf = function(d){ return Math.floor((LEAD + d - 1) / 7); };
+var V = function(t, r, sub, eur, ns){ return { k:'voo', t:t, r:r, sub:sub, eur:eur, ns:ns }; }, T = function(t, r){ return { k:'terra', t:t, r:r, sub:r }; };
+var D = {
+  3:{ code:'FNC', ns:1, jr:1, s:[V('LIS → FNC','06:20','EZY8351 · 07:05–08:50 · report 06:20','+64,30 €','Funchal')] }, 4:{ code:'FNC', jl:1, s:[V('FNC → LIS','09:30','EZY8352 · 10:15–11:55 · report 09:30','+23,40 €')] },
+  5:{ code:'BCN', s:[V('LIS → BCN → LIS','05:50','EZY8411 · 06:35–14:20 · report 05:50','+45,60 €')] }, 11:{ code:'FNC', s:[V('LIS → FNC → LIS','06:30','EZY8341 · 07:15–12:30 · report 06:30','+45,60 €')] },
+  13:{ code:'OPO', ns:1, jr:1, s:[T('Assistência em casa','06:00–12:00'), V('LIS → OPO','18:00','EZY1873 · 18:45–19:40 · report 18:00','+96,90 €','Porto')] },
+  14:{ code:'OPO', jl:1, s:[V('OPO → LIS','09:40','EZY1874 · 10:25–11:20 · report 09:40','+23,40 €')] },
+  16:{ code:'SBY', s:[T('Assistência em casa','06:00–14:00')] }, 17:{ code:'FRM', s:[T('Formação','08:00–17:00')] },
+  19:{ code:'LGW', s:[V('LIS → LGW → LIS','07:10','EZY8351 · 07:55–15:40 · report 07:10','+45,60 €')] }, 20:{ code:'OPO', ns:1, jr:1, s:[T('Assistência em casa','09:00–15:00'), V('LIS → OPO','18:00','EZY1873 · 18:45–19:40 · report 18:00','+96,90 €','Porto')] },
+  21:{ code:'OPO', jl:1, s:[V('OPO → LIS','09:40','EZY1874 · 10:25–11:20 · report 09:40','+23,40 €')] }, 24:{ code:'BCN', pend:1, s:[V('LIS → BCN → LIS','05:50','EZY8411 · 06:35–14:20 · report 05:50','+45,60 €')] },
+  25:{ code:'FÉR', abs:1, jr:1, s:[] }, 26:{ code:'FÉR', abs:1, jl:1, s:[] }, 27:{ code:'OPO', ns:1, jr:1, s:[T('Assistência em casa','09:00–15:00'), V('LIS → OPO','18:00','EZY1873 · 18:45–19:40 · report 18:00','+96,90 €','Porto')] },
+  28:{ code:'OPO', jl:1, s:[V('OPO → LIS','09:40','EZY1874 · 10:25–11:20 · report 09:40','+23,40 €')] }, 30:{ code:'SBY', s:[T('Assistência em casa','06:00–14:00')] }
+};
+function kOf(x){ return !x ? null : x.abs ? 'abs' : x.s.some(function(s){ return s.k === 'voo'; }) ? 'voo' : 'terra'; }
+var COL = { voo:'var(--voo)', terra:'var(--terra)', abs:'#fff' };
+var NSVC = 0, NNS = 0; for (var dd in D) { if (D[dd].s.length) NSVC++; if (D[dd].ns) NNS++; }
+var ST = {};
+function matches(d, f){ var x = D[d]; if (!f || !x) return !f; if (f === 'voo') return x.s.some(function(s){ return s.k === 'voo'; }); if (f === 'terra') return x.s.some(function(s){ return s.k === 'terra'; }); if (f === 'abs') return !!x.abs; if (f === 'ns') return !!x.ns; if (f === 'two') return x.s.length > 1; return false; }
+function cell(o, pid, d){
+  var x = D[d], k = kOf(x), past = d < TODAY, st = ST[pid], sel = st.day === d, gone = st.day && weekOf(d) !== weekOf(st.day), dim = st.f && !matches(d, st.f);
+  var cls = 'c' + (x ? ' has ' + k : '') + (past ? ' past' : '') + (d === TODAY ? ' today' : '') + (sel ? ' sel' : '') + (gone ? ' gone' : '') + (dim ? ' dim' : '');
+  var h = '<div class="' + cls + '" onclick="tap(\'' + pid + '\',' + d + ')">';
+  if (o === 'Q1') {
+    h += '<span class="n">' + d + '</span>' + (x ? '<span class="code">' + x.code + (x.ns ? MOON : '') + '</span>' : '<span></span>');
+    if (x) { var two = x.s.length > 1; h += '<i class="strip' + (two && !past ? ' two' : '') + (x.jr ? ' jr' : '') + (x.jl ? ' jl' : '') + '" style="background:' + (past ? '#D9D7D1' : x.abs ? 'repeating-linear-gradient(90deg,#B9B7B0 0 4px,transparent 4px 7px)' : COL[k]) + '"></i>'; }
+    else h += '<i class="strip" style="background:transparent"></i>';
+  }
+  if (o === 'Q2') {
+    h += '<span class="n">' + d + '</span>' + (x ? '<span class="code">' + x.code + (x.ns ? MOON : '') + '</span>' : '');
+  }
+  if (o === 'Q3') {
+    h += '<span class="n">' + d + '</span>';
+    if (x && x.abs) h += '<span class="chip" style="background:var(--neutral)"><b>FÉR</b></span>';
+    else if (x) { var vs = x.s.filter(function(s){ return s.k === 'voo'; }); var tz = x.s.filter(function(s){ return s.k === 'terra'; });
+      if (tz.length) h += '<span class="chip" style="background:var(--terraT)"><b>' + (tz[0].t === 'Formação' ? 'FRM' : 'SBY') + '</b><span>' + tz[0].r.slice(0, 5) + '</span></span>';
+      if (vs.length) h += '<span class="chip" style="background:var(--vooT)"><b>' + x.code + (x.ns ? MOON : '') + '</b><span>' + vs[0].r + '</span></span>'; }
+  }
+  if (x && x.pend) h += '<i class="pend"></i>';
+  return h + '</div>';
+}
+function month(o, pid){
+  var st = ST[pid], v = st.v, h = '';
+  var cnt = function(f){ var n = 0; for (var d2 = 1; d2 <= DAYS; d2++) if (matches(d2, f)) n++; return n; };
+  var chip = function(f, label, sw){ return '<span class="chip2' + (st.f === f ? ' on' : '') + '" onclick="filt(\'' + pid + '\',\'' + f + '\')"><i style="background:' + sw + '"></i>' + label + (v === 'A' ? '' : ' <em>' + cnt(f) + '</em>') + '</span>'; };
+  var chips = function(cls){ return '<div class="chips' + (cls ? ' ' + cls : '') + '">' + chip('voo', 'Voo', 'var(--voo)') + chip('terra', 'Terra', 'var(--terra)') + chip('ns', 'Pernoita', 'var(--rest)') + chip('two', '2 serviços', 'var(--neutral)') + chip('abs', 'Férias', '#fff;border:1.5px dashed #B9B7B0') + '</div>'; };
+  if (v === 'R3' && !st.day) h += chips('topc');
+  if (v === 'R2') h += '<div class="mt"><b>Novembro</b><span onclick="alert(\'Na app: leva a dezembro (como deslizar para o lado).\')" style="cursor:pointer">Dezembro</span></div>';
+  if (v === 'R3') h += '<div class="mt"><b>Novembro</b></div>';
+  h += '<div class="wk">' + WD.map(function(w){ return '<span>' + w + '</span>'; }).join('') + '</div><div class="g">';
+  for (var i = 0; i < LEAD; i++) h += '<div class="c blank' + (st.day && weekOf(st.day) !== 0 ? ' gone' : '') + '"></div>';
+  for (var d = 1; d <= DAYS; d++) h += cell(o, pid, d);
+  h += '</div>';
+  if (!st.day && v !== 'R3') h += chips('');
+  if (v === 'R3') {   // o mês seguinte por baixo: sem escala ainda (a companhia publica-a a meio do mês)
+    h += '<div class="nextm"><div class="mt next"><b>Dezembro</b></div><div class="wk">' + WD.map(function(w){ return '<span>' + w + '</span>'; }).join('') + '</div><div class="g">';
+    h += '<div class="c blank"></div>';   // 1 de dezembro de 2026 é uma terça
+    for (var e = 1; e <= 31; e++) h += '<div class="c"><span class="n" style="color:var(--tsub)">' + e + '</span><span></span><i class="strip" style="background:transparent"></i></div>';
+    h += '</div><p class="cap2">A escala de dezembro ainda não saiu. Quando a companhia a publicar no calendário, aparece aqui.</p></div>';
+  }
+  return h;
+}
+function svcOpen(sv){
+  if (sv.k !== 'voo') return '<div class="cd terra"><span class="kind">Serviço em terra</span><h4>' + sv.t + '</h4><div class="ln" style="border:0;padding:0"><span class="k">início · fim</span><span class="v">' + sv.r + '</span></div></div><div class="cd neutral"><span class="kind">Limites · FTL</span><div class="ln"><span class="k">PSV</span><span class="v">não se aplica — sem setores</span></div></div>';
+  var p = sv.sub.split(' · ')[1].split('–');
+  return '<div class="cd voo"><span class="kind">Voo · 1 setor' + (sv.ns ? ' · pernoita' : '') + '</span><h4>' + sv.t + (sv.ns ? ' ' + MOON : '') + '</h4><div class="b2"><div class="t"><b>' + p[0] + '</b><span>' + sv.t.split(' → ')[0] + '</span></div><div class="mid"><i></i><span class="dur">✈ 55 min</span><i></i></div><div class="t r"><b>' + p[1] + '</b><span>' + sv.t.split(' → ').slice(-1)[0] + '</span></div></div><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-weight:500;font-size:12px;opacity:.82">report ' + sv.r + '</span><span class="gainChip">' + sv.eur + '</span></div></div>'
+    + '<div class="cd neutral"><span class="kind">Limites · FTL</span><div class="b9"><div class="val"><b>3:10 <small>/13:00</small></b><span>faltam 9:50</span></div><div class="bar"><i style="width:24%"></i></div></div><div class="ln"><span class="k">Repouso mínimo depois<small>§ ORO.FTL.235 ›</small></span><span class="v">10:00</span></div></div>'
+    + '<div class="cd neutral"><span class="kind">Horário · Pernoita · Pagamento · …</span><div class="ln"><span class="k">o resto do "Ver tudo" (já construído)</span><span class="v">›</span></div></div>';
+}
+function dayBlock(pid, d){
+  var x = D[d], st = ST[pid], n = x ? x.s.length : 0;
+  var sub = [d === TODAY ? 'hoje' : null, n ? n + (n === 1 ? ' serviço' : ' serviços') : (x && x.abs ? 'Férias' : 'sem serviços')].filter(Boolean).join(' · ');
+  var h = '<div class="day" id="' + pid + '-day"><div class="dhead"><div class="tt"><b>' + WDL[new Date(2026, 10, d).getDay()] + ', ' + d + ' de novembro</b><span>' + sub + '</span></div><span class="ib" onclick="step(\'' + pid + '\',-1)">‹</span><span class="ib" onclick="step(\'' + pid + '\',1)">›</span><span class="ib" onclick="tap(\'' + pid + '\',' + d + ')">✕</span></div>';
+  if (!n) h += '<div class="cd neutral slim"><div class="t"><b>' + (x && x.abs ? 'Férias' : 'Folga') + '</b><span>' + (x && x.abs ? 'marcado nos extras do mês' : 'sem serviço neste dia') + '</span></div></div><div class="swh">Desliza para o lado para ver o dia seguinte.</div>';
+  else x.s.forEach(function(sv, i){
+    if (st.svc === i) h += '<div onclick="tapSvc(\'' + pid + '\',' + i + ')">' + svcOpen(sv).replace('<div class="cd ' + sv.k + '">', '<div class="cd ' + sv.k + '" style="cursor:pointer">') + '</div>';
+    else h += '<div class="cd ' + sv.k + ' slim" onclick="tapSvc(\'' + pid + '\',' + i + ')"><div class="t"><b>' + sv.t + (sv.ns ? ' ' + MOON : '') + '</b><span>' + sv.sub + (sv.ns ? ' · pernoita em ' + sv.ns : '') + '</span></div>' + (sv.eur ? '<span class="gainChip">' + sv.eur + '</span>' : '') + '</div>';
+  });
+  return h + '</div>';
+}
+function phone(o, pid){
+  var st = ST[pid];
+  return '<div class="ph ' + o + (st.day ? ' open' : '') + '" id="' + pid + '"><div class="status"><span>17:31</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="sc" id="' + pid + '-sc"><div class="top"><div class="pills"><span class="pill">' + (st.v === 'R2' || st.v === 'R3' ? '2026 ▾' : 'Novembro 2026 ▾') + '</span><span class="round"></span></div><div class="what">A tua escala de novembro</div><div class="hero"><div class="giant">' + NSVC + '<br><s>serviços</s></div><div class="side"><div><b>' + NNS + '</b><span>pernoitas</span></div><div><b>2 008,66 €</b><span>per diem · estimado</span></div></div></div></div>'
+    + '<div class="sheet">' + month(o, pid) + '</div></div>'
+    + '<div class="dsheet" id="' + pid + '-ds"><div class="grab" onclick="back(\'' + pid + '\')"><i></i></div><div class="dsb">' + (st.day ? dayBlock(pid, st.day) : '') + '</div></div><nav class="tabbar"><div class="tcap"><div class="t">Início</div><div class="t on">Escala</div><div class="t">Números</div><div class="t">Perfil</div></div><span class="fab">+</span></nav></div>';
+}
+var OPTS = [
+  ['A', 'Q1 · como está no código', false, 'Para comparar: o dia Q1 (o quadrado calmo, a cor numa fita), a legenda das cores por baixo <b>sem contagem</b>, o mês só na pílula de cima ("Novembro 2026 ▾"). Para mudar de mês, desliza-se para o lado — mas nada o mostra.'],
+  ['R1', 'R1 · Só a contagem nas pílulas', false, 'O mínimo: tudo igual, e cada pílula da legenda diz <b>quantos dias</b> tem ("Voo 12", "Pernoita 4", como o pocket cal). Tocar continua a acender esses dias.'],
+  ['R2', 'R2 · O título do mês com o seguinte a espreitar', true, 'Da imagem "Dec Jan": em cima da grelha, <b>"Novembro" a tinta e "Dezembro" a cinzento, cortado na margem</b> — mostra que há outro mês para o lado (deslizar, ou tocar em "Dezembro"). A pílula de cima passa a "2026 ▾" (abre o ano), para o mês não aparecer duas vezes. Com a contagem.'],
+  ['R3', 'R3 · Os meses seguidos, a deslizar para baixo', false, 'Como o calendário do iPhone: <b>os meses um por baixo do outro</b>; dezembro espreita por baixo de novembro. A legenda vai para cima da grelha. Mas o número grande do topo ("15 serviços") é de novembro — ao descer até dezembro deixava de bater certo.']
+];var html = '';
+OPTS.forEach(function(o){
+  var pid = 'p' + o[0]; ST[pid] = { o: 'Q1', v: o[0], day: null, svc: -1, f: null };
+  html += '<div class="opt"><h3>' + o[1] + (o[2] ? '<span class="rec">RECOMENDO</span>' : '') + '</h3><p>' + o[3] + '</p><div id="w' + pid + '">' + phone('Q1', pid) + '</div><div class="ctl"><button onclick="tap(\'' + pid + '\',13)">Tocar no 13 (hoje)</button><button onclick="back(\'' + pid + '\')">Voltar ao mês</button></div><p class="m" id="m' + o[0] + '"></p></div>';
+});
+document.getElementById('opts').innerHTML = html;
+var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function render(pid, anim){
+  var w = document.getElementById('w' + pid);
+  w.innerHTML = phone(ST[pid].o, pid);
+  var ph = document.getElementById(pid), ds = document.getElementById(pid + '-ds');
+  document.getElementById(pid + '-sc').scrollTop = 0;
+  if (!ST[pid].day) return;
+  var g = ph.querySelector('.sheet .g'), top = g.getBoundingClientRect().bottom - ph.getBoundingClientRect().top - 8 + 6;
+  ds.style.top = Math.round(top) + 'px';   // a folha começa logo por baixo da semana
+  if (anim && !reduce) { void ds.offsetHeight; ds.classList.add('up'); }   // parte de baixo (já medida) e sobe
+  else { ds.style.transition = 'none'; ds.classList.add('up'); void ds.offsetHeight; ds.style.transition = ''; }   // já aberta: aparece no sítio, sem voltar a subir
+  bindSwipe(pid);
+}
+function openIdx(d){ var x = D[d]; return x && x.s.length === 1 ? 0 : -1; }
+function tap(pid, d){ var st = ST[pid]; if (st.day === d) { back(pid); return; } var was = !!st.day; st.day = d; st.svc = openIdx(d); st.f = null; render(pid, !was); }
+function back(pid){   // a folha desce e o mês volta inteiro
+  var st = ST[pid], ds = document.getElementById(pid + '-ds');
+  var go = function(){ st.day = null; st.svc = -1; render(pid, false); };
+  if (!ds || reduce) return go(); ds.classList.remove('up'); setTimeout(go, 300);
+}
+function tapSvc(pid, i){ var st = ST[pid]; st.svc = st.svc === i ? -1 : i; render(pid, false); }
+function filt(pid, f){ var st = ST[pid]; st.f = st.f === f ? null : f; render(pid, false); }
+function step(pid, dir){ var st = ST[pid]; if (!st.day) return; var nd = Math.min(DAYS, Math.max(1, st.day + dir)); if (nd === st.day) return;
+  var el = document.getElementById(pid + '-day'), go = function(){ st.day = nd; st.svc = openIdx(nd); render(pid, false); if (reduce) return; var n = document.getElementById(pid + '-day'); n.style.transition = 'none'; n.style.transform = 'translateX(' + (dir * 40) + 'px)'; n.style.opacity = '0'; requestAnimationFrame(function(){ requestAnimationFrame(function(){ n.style.transition = 'transform .2s cubic-bezier(.2,.8,.2,1), opacity .2s ease'; n.style.transform = ''; n.style.opacity = '1'; }); }); };
+  if (reduce || !el) return go(); el.style.transition = 'transform .14s ease, opacity .14s ease'; el.style.transform = 'translateX(' + (-dir * 40) + 'px)'; el.style.opacity = '0'; setTimeout(go, 140); }
+function bindSwipe(pid){ var el = document.getElementById(pid + '-day'); if (!el) return; var x0 = null, dx = 0;
+  el.addEventListener('pointerdown', function(e){ if (e.target.closest('.ib')) return; x0 = e.clientX; dx = 0; try { el.setPointerCapture(e.pointerId); } catch (_) {} });
+  el.addEventListener('pointermove', function(e){ if (x0 == null) return; dx = e.clientX - x0; if (Math.abs(dx) > 8) { el.style.transform = 'translateX(' + dx + 'px)'; el.style.opacity = String(1 - Math.min(.5, Math.abs(dx) / 300)); } });
+  var end = function(){ if (x0 == null) return; x0 = null; if (Math.abs(dx) > 60) { step(pid, dx < 0 ? 1 : -1); return; } el.style.transition = 'transform .18s ease, opacity .18s ease'; el.style.transform = ''; el.style.opacity = '1'; };
+  el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end); }
+function check(){ if (!document.getElementById('pA')) return;
+  OPTS.forEach(function(o){
+    var ph = document.getElementById('p' + o[0]), sc = ph.querySelector('.sc'), g = ph.querySelector('.sheet .g'), chips = ph.querySelector('.chips'), mt = ph.querySelector('.mt span');
+    var t = 'O mês: ' + Math.round(g.getBoundingClientRect().height) + ' pt';
+    if (chips) { var vis = [].filter.call(chips.children, function(c){ return c.getBoundingClientRect().right <= ph.getBoundingClientRect().right - 8; }).length; t += ' · pílulas à vista: ' + vis + ' de ' + chips.children.length; }
+    if (mt) { var peek = Math.round(ph.getBoundingClientRect().right - 8 - mt.getBoundingClientRect().left - 12); t += ' · "Dezembro" espreita ' + Math.max(0, peek) + ' pt'; }
+    var below = Math.round(sc.scrollHeight - sc.clientHeight); t += below > 0 ? ' · desliza ' + below + ' pt para baixo' : ' · cabe sem deslizar';
+    document.getElementById('m' + o[0]).textContent = t;
+  });
+  var cut = 0; document.querySelectorAll('.code, .chip2, .mt b, .dhead b').forEach(function(e){ if (e.scrollWidth > e.clientWidth + 1) cut++; });
+  document.getElementById('meas').textContent = 'Verificação do esboço: textos cortados ' + cut + ' · tocar num dia: a semana fica em cima e a folha sobe (320 ms); reduzido = salta.';
+}
+setTimeout(check, 150); if (document.fonts) document.fonts.ready.then(function(){ setTimeout(check, 200); });
+</script>
+</body>
+</html>

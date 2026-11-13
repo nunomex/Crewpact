@@ -1,10 +1,11 @@
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, RefreshControl, Linking, Platform, PanResponder, Dimensions, LayoutAnimation, PixelRatio, Animated, Easing } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, RefreshControl, Linking, Platform, PanResponder, Dimensions, LayoutAnimation, PixelRatio, Animated, Easing, Modal, AccessibilityInfo } from 'react-native';
+import Svg, { Circle as SvgCircle } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import Tip from '../components/Tip';
+import GuideBubble from '../components/GuideBubble';
 import AsyncStorage from '../data/secureStorage';   // wrapper de cifra-em-repouso (flag OFF por agora = passthrough)
-import { RADIUS, GUTTER, SPACE, TXT, TXT3, TYPE, CARD, PELE, PELE_FONT, BRAND, SHADOW } from '../data/constants';
+import { RADIUS, GUTTER, SPACE, TXT, TXT3, TYPE, CARD, PELE, PELE_FONT, BRAND } from '../data/constants';
 import Icon from '../components/Icon';
 import IconButton from '../components/IconButton';
 import PeleSheet from '../components/PeleSheet';
@@ -19,21 +20,25 @@ import { monthlyAe, serviceMoney, aeIndex, awayNights } from '../data/perdiem';
 import { sncToRegister } from '../data/disruption';
 import { nightStopStation, hotelMapsUrl } from '../data/hotels';
 import { baseCityName } from '../data/countries';
-import { monthCells, orderServices, dayCards, yearMonths, monthLegend, cellMatches } from '../data/escalaDay';
+import { monthCells, orderServices, dayCards, yearMonths, cellMatches, prettyRoute, legendTour, legendGroups } from '../data/escalaDay';
 import HotelSheet from '../components/HotelSheet';
 import RosterImportSheet from '../components/RosterImportSheet';
 import CalendarPickerSheet from '../components/CalendarPickerSheet';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import useReduceMotion from '../hooks/useReduceMotion';
 
-// O dia do mês (Q1 de design/escala-semana.html, escolhida pelo Nuno a 2026-11-13 — "sem círculos e com a cor mais calma"):
-// um quadrado de 56 pt, neutro quando há serviço, com o número e o destino; a cor do tipo só numa FITA de 5 pt em baixo
-// (dois serviços = as duas cores; a rotação junta as fitas; férias e baixa a tracejado; feito = fita cinzenta). Hoje é o
-// quadrado a tinta; o escolhido leva um contorno.
-const ROW_H = 56;
-const STRIP_H = 5;
-const DASHES = 8;   // a fita tracejada das férias e da baixa
+// O dia do mês (o círculo A de design/escala-circulos.html, escolhido pelo Nuno a 2026-11-13 — "os números em círculos; a linha
+// do círculo pintada com os serviços; 2 serviços = duas cores, 3 = três"): o número num círculo de 38 pt; a cor dos serviços no
+// ANEL, uma fatia por serviço, na cor do TIPO e pela hora (dois voos = duas fatias céu com um fio branco); o destino por baixo.
+// Folga = só o número; férias e baixa = anel tracejado; feito = anel cinzento; hoje = o círculo a tinta; o escolhido = um anel de
+// tinta por fora, afastado. A rotação já não se junta (os círculos não se ligam); a pernoita fica na lua ao lado do destino.
+const RING = 38;                 // o círculo
+const RING_W = 4;                // a grossura do anel
+const RING_GAP_DEG = 5;          // o fio branco entre duas fatias
+const ROW_H = RING + 22;         // o círculo, o anel do escolhido por fora e o destino por baixo
 const ROW_GAP = SPACE.xs;
+const TOUR_W = 260;              // o balão da guiada
+const TOUR_H = 140;              // a altura que o balão costuma ter (para a folha deslizar até ele)
 const GAP = SPACE.xs;
 const C = CARD.day;   // a barra de abas só escurece no Início; a Escala fica de dia como o resto (design-system §14)
 const valid = (d) => !!(d && !d.deleted);
@@ -44,15 +49,13 @@ const isoOf = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(
 // o número de serviços e os factos. Por baixo, numa folha branca, o MÊS no desenho A (design/escala-mes.html: o número limpo e
 // uma etiqueta na cor do tipo com o destino; o que cada célula mostra decide-o data/escalaDay.js · monthCells, golden
 // test:escala) e a legenda que filtra (L2: tocar numa cor acende esses dias). Deslizar para o lado EM CIMA DA GRELHA muda de mês.
-// TOCAR NUM DIA (design/escala-semana.html, aprovado pelo Nuno a 2026-11-13: "subia um modal… e ficava a semana em cima"):
-// o topo grande recolhe para a fila das pílulas, o mês fica SÓ NA SEMANA desse dia, em cima, e SOBE UMA FOLHA com pega logo
-// por baixo (320 ms; reduzido = aparece). Tocar noutro dia da semana troca o dia; deslizar na semana muda de semana; a pega,
-// puxar a folha para baixo ou ✕ descem-na (300 ms) e o mês volta inteiro. Na folha: o cabeçalho (o dia, ‹ › e ✕), uma linha
-// por serviço (a pernoita vai na linha do voo) e, no serviço aberto — o único do dia, ou o que se tocar —
-// TUDO o que é dele, como o antigo "Ver tudo" (pedido do Nuno, 2026-11-13), no 3.0 (design/detalhe-3.html, B): a linha cresce
-// para o cartão de cor com a perna e vêm os cartões dos Limites (o PSV numa barra), do horário (a régua das 24 h), do completar,
-// da pernoita, do pagamento e dos outros serviços — o corpo do Detalhe (screens/DutyDetailScreen.js · DutyDetailBody). Na
-// folha, deslizar para o lado muda de dia.
+// TOCAR NUM DIA (a V1 de design/escala-dia-por-baixo.html, escolhida pelo Nuno a 2026-11-13: "sem subir a folha; aparecer só os
+// serviços, por baixo dos dias do mês; carregando num serviço é que abre uma folha"): o MÊS FICA INTEIRO, o topo grande recolhe
+// para a fila das pílulas e, por baixo da grelha (no lugar da legenda), aparecem o dia (o título, "hoje" · quantos serviços, ✕)
+// e uma linha por serviço (a pernoita vai na linha do voo). Tocar noutro dia troca; ✕, tocar outra vez no dia ou re-tocar na aba
+// voltam à legenda. TOCAR NUM SERVIÇO abre a FOLHA dele (a janela nativa do iPhone) com TUDO o que é dele, como o antigo "Ver
+// tudo" (design/detalhe-3.html, B): o cartão de cor com a perna, os Limites (o PSV numa barra), o horário (a régua das 24 h), o
+// completar, a pernoita, o pagamento e os outros serviços — o corpo do Detalhe (screens/DutyDetailScreen.js · DutyDetailBody).
 // A escala vem do calendário (criar à mão morreu 2026-07-10); o Detalhe só lê a escala e completa os factos que a lei precisa.
 export default function EscalaScreen({ navigation, route }) {
   const { lang, duties, dayLog, user, company, ae: aeNow, aeAt, homeBaseAt, crewAt, postFlightMin, rosterChanges, checkRosterChanges, liveSync, notify,
@@ -67,9 +70,9 @@ export default function EscalaScreen({ navigation, route }) {
 
   // Mês visível (1.º dia). Default = mês de hoje.
   const [monthDate, setMonthDate] = useState(() => { const t0 = new Date(); return new Date(t0.getFullYear(), t0.getMonth(), 1); });
-  // O DIA ABERTO: null = o mês inteiro (a aba abre sempre assim); com um dia, o mês encolhe para a semana dele.
+  // O DIA ESCOLHIDO: null = a legenda por baixo do mês (a aba abre sempre assim); com um dia, os serviços dele por baixo do mês.
   const [selIso, setSelIso] = useState(null);
-  const [svcIdx, setSvcIdx] = useState(0);          // o serviço do dia a que o "Ver tudo" se refere (0 = o registo principal)
+  const [svcSheet, setSvcSheet] = useState(null);   // a folha do serviço: { iso, idx } (idx = 0 o registo principal, n o extra n)
   const [filterKey, setFilterKey] = useState(null); // L2 · a pílula da legenda que está a filtrar
   const [hotelOpen, setHotelOpen] = useState(false);
   const [hotelStation, setHotelStation] = useState(null);
@@ -78,15 +81,11 @@ export default function EscalaScreen({ navigation, route }) {
   const [gridW, setGridW] = useState(() => Dimensions.get('window').width - GUTTER * 2);
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);   // A1 · o ano em meses (toque em "Novembro 2026 ▾")
   const reduceMotion = useReduceMotion();
-  const dayX = useRef(new Animated.Value(0)).current;   // o dia a deslizar para o lado (o seguinte entra do outro)
   const dimRef = useRef({});                            // iso → Animated.Value (1 aceso · 0,22 esbatido): a legenda que filtra
-  // A FOLHA DO DIA: o deslize vertical (0 = em cima, logo por baixo da semana; a altura dela = fora de vista, em baixo).
-  const winH = Dimensions.get('window').height;
-  const sheetHRef = useRef(0);                          // a altura da folha (medida); antes da 1.ª medida, 70 % do ecrã
-  const sheetOff = () => sheetHRef.current || Math.round(winH * 0.7);
-  const sheetY = useRef(new Animated.Value(winH)).current;
-  const closingRef = useRef(false);
-  const reduceRef = useRef(reduceMotion); reduceRef.current = reduceMotion;
+  const scrollH = useRef(0);                            // a altura à vista da folha (para os serviços do dia ficarem à vista)
+  const scrollY = useRef(0);                            // quanto a folha já está deslizada
+  const dayBlockRef = useRef({ y: 0, h: 0 });           // onde ficam os serviços do dia, dentro da folha
+  const wantScroll = useRef(false);                     // escolheu-se um dia: desliza o mínimo para os serviços aparecerem
   const [pickYear, setPickYear] = useState(null);
 
   const [importOpen, setImportOpen] = useState(false);
@@ -99,7 +98,7 @@ export default function EscalaScreen({ navigation, route }) {
   const scrollRef = useRef(null);
   const selRef = useRef(null); selRef.current = selIso;
   // O ouvinte da aba e o gesto não veem o estado novo: chamam a versão mais recente por estas refs.
-  const closeDayRef = useRef(null), openDayRef = useRef(null), stepDayRef = useRef(null);
+  const closeDayRef = useRef(null), openDayRef = useRef(null);
   // Re-tocar na aba Escala: com um dia aberto, volta ao mês; com o mês, sobe ao topo.
   useEffect(() => navigation.addListener('tabPress', () => {
     if (!navigation.isFocused()) return;
@@ -107,29 +106,32 @@ export default function EscalaScreen({ navigation, route }) {
     scrollRef.current?.scrollTo({ y: 0, animated: !reduceMotion });
   }), [navigation, reduceMotion]);
 
-  // ── DICA da grelha (1.ª abertura pós-folha de boas-vindas). Morre a qualquer toque. ──
-  const [gridTip, setGridTip] = useState(false);
+  // ── A GUIADA DA LEGENDA (J3, o piloto das guias da app — components/GuideBubble.js): na 1.ª vez que a Escala abre com escala
+  // (depois da folha de boas-vindas), balões sobre os dias verdadeiros do mês, um por sinal; o último ensina a tocar num dia
+  // (substitui a dica "Toca num dia"). Conta como vista ao acabar, ao saltar, ao tocar num dia ou ao sair da aba a meio.
+  // Repete-se em "Rever a legenda no meu mês", por baixo da legenda. Os dias que aponta: data/escalaDay.js · legendTour. ──
+  const [tourIdx, setTourIdx] = useState(null);       // o balão à vista (null = a guiada desligada)
+  const tourLenRef = useRef(0);                       // quantos balões tem este mês (0 = nada a ensinar)
+  const tourKey = user?.id ? `cp_tour_escala_${user.id}` : null;
   const escBusyRef = useRef(false);
   useEffect(() => {
     escBusyRef.current = !!(importOpen || hubOpen || hotelOpen || calPickerOpen || monthPickerOpen);
   }, [importOpen, hubOpen, hotelOpen, calPickerOpen, monthPickerOpen]);
   useFocusEffect(useCallback(() => {
     let on = true; let tId = null;
-    if (user?.id) {
+    if (tourKey) {
       tId = setTimeout(() => {
-        if (!on || escBusyRef.current) return;
-        Promise.all([AsyncStorage.getItem(`cp_welcome_${user.id}`), AsyncStorage.getItem(`cp_tip_escala_${user.id}`)])
-          .then(([w, t2]) => { if (on && !escBusyRef.current && w === 'seen' && !t2) setGridTip(true); })
+        if (!on || escBusyRef.current || selRef.current || !tourLenRef.current) return;
+        Promise.all([AsyncStorage.getItem(`cp_welcome_${user.id}`), AsyncStorage.getItem(tourKey)])
+          .then(([w, seen]) => { if (on && !escBusyRef.current && !selRef.current && w === 'seen' && !seen) setTourIdx(0); })
           .catch(() => {});
       }, 800);
     }
-    return () => { on = false; if (tId) clearTimeout(tId); setGridTip((p) => { if (p && user?.id) AsyncStorage.setItem(`cp_tip_escala_${user.id}`, '1').catch(() => {}); return false; }); };
-  }, [user?.id]));
-  const dismissGridTip = () => {
-    if (!gridTip) return;
-    setGridTip(false);
-    if (user?.id) AsyncStorage.setItem(`cp_tip_escala_${user.id}`, '1').catch(() => {});
-  };
+    return () => { on = false; if (tId) clearTimeout(tId); setTourIdx((p) => { if (p != null && tourKey) AsyncStorage.setItem(tourKey, '1').catch(() => {}); return null; }); };
+  }, [tourKey]));
+  const endTour = () => { setTourIdx(null); if (tourKey) AsyncStorage.setItem(tourKey, '1').catch(() => {}); };
+  const tourRef = useRef(null); tourRef.current = tourIdx;
+  const endTourRef = useRef(endTour); endTourRef.current = endTour;
 
   // Vindo do sino/bilhete "Alterações na escala" → abre a revisão. Consome-e-LIMPA o param.
   useEffect(() => {
@@ -213,34 +215,15 @@ export default function EscalaScreen({ navigation, route }) {
   const monthDutyDays = Object.keys(duties).filter((iso) => iso.startsWith(ym) && duties[iso] && !duties[iso].deleted).sort();
 
   // Mudar de mês (o deslizar para o lado e o ano em meses). dir: +1 próximo · -1 anterior.
-  const changeMonth = (dir) => { select(); setMonthDate((d) => new Date(d.getFullYear(), d.getMonth() + dir, 1)); };
+  const changeMonth = (dir) => { select(); if (tourRef.current != null) endTourRef.current(); setMonthDate((d) => new Date(d.getFullYear(), d.getMonth() + dir, 1)); };
   // "Hoje" (noutro mês): o mês de hoje, com hoje aberto.
   const goToday = () => { select(); const t0 = new Date(); setMonthDate(new Date(t0.getFullYear(), t0.getMonth(), 1)); openDayRef.current?.(today); };
-  // Arrastar ← / → em cima da GRELHA muda de mês; dentro da janela do dia muda de dia (cada gesto faz uma só coisa).
+  // Arrastar ← / → em cima da GRELHA muda de mês (o único gesto para o lado na Escala).
   const changeMonthRef = useRef(changeMonth); changeMonthRef.current = changeMonth;
   const swipeDir = (g) => ((Math.abs(g.dx) > 30 || Math.abs(g.vx) > 0.25) ? (g.dx < 0 ? 1 : -1) : 0);
   const monthPan = useRef(PanResponder.create({
     onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 14 && Math.abs(g.dx) > Math.abs(g.dy) * 1.4,
     onPanResponderRelease: (_, g) => { const dir = swipeDir(g); if (dir) changeMonthRef.current(dir); },
-  })).current;
-  const dayPan = useRef(PanResponder.create({
-    onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 14 && Math.abs(g.dx) > Math.abs(g.dy) * 1.4,
-    onPanResponderTerminationRequest: () => false,
-    onPanResponderRelease: (_, g) => { const dir = swipeDir(g); if (dir) stepDayRef.current?.(dir); },
-  })).current;
-  // Na SEMANA (com um dia aberto), deslizar para o lado muda de semana: o mesmo dia da semana, 7 dias depois ou antes.
-  const weekPan = useRef(PanResponder.create({
-    onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 14 && Math.abs(g.dx) > Math.abs(g.dy) * 1.4,
-    onPanResponderRelease: (_, g) => { const dir = swipeDir(g); if (dir) stepDayRef.current?.(dir, 7); },
-  })).current;
-  // Puxar a folha para baixo (pela pega ou pelo cabeçalho): segue o dedo; largada abaixo de 90 pt, ou depressa, desce e fecha;
-  // senão volta ao sítio.
-  const backUp = () => { if (reduceRef.current) { sheetY.setValue(0); return; } Animated.spring(sheetY, { toValue: 0, useNativeDriver: true, bounciness: 0, speed: 18 }).start(); };
-  const sheetPan = useRef(PanResponder.create({
-    onMoveShouldSetPanResponder: (_, g) => g.dy > 8 && Math.abs(g.dy) > Math.abs(g.dx) * 1.2,
-    onPanResponderMove: (_, g) => sheetY.setValue(Math.max(0, g.dy)),
-    onPanResponderRelease: (_, g) => { if (g.dy > 90 || g.vy > 0.8) closeDayRef.current?.(); else backUp(); },
-    onPanResponderTerminate: () => backUp(),
   })).current;
 
   // Extras do mês PROJETADOS na grelha (SÓ-LEITURA, derivados dos aeEvents). AUSÊNCIA = férias/doença.
@@ -292,63 +275,73 @@ export default function EscalaScreen({ navigation, route }) {
   const PR = PixelRatio.get();
   const cellW = gridW ? Math.floor(((gridW - GAP * 6) / 7) * PR) / PR : 0;
 
-  // ── O DIA ABERTO (na janela) ──
+  // ── O DIA ESCOLHIDO (os serviços por baixo do mês) e a FOLHA DO SERVIÇO ──
   // Os serviços do dia pela posição no registo (0 = o principal, n = o extra n — a mesma conta do Detalhe).
   const svcsAt = (iso) => { const d = duties[iso]; return valid(d) ? [d, ...(Array.isArray(d.extra) ? d.extra : [])] : []; };
   // O serviço principal (o voo manda, como na célula e na Lista) — para o nome da célula.
   const mainIdxOf = (iso) => { const sv = svcsAt(iso); const i = sv.findIndex((x) => x && (x.kind || 'flight') === 'flight'); return i >= 0 ? i : (sv.length ? 0 : -1); };
-  // O serviço que abre na janela: o único do dia; com vários, nenhum — toca-se no que se quer (pedido do Nuno).
-  const openIdxOf = (iso) => { const sv = svcsAt(iso); const idx = sv.map((x, i) => (x ? i : -1)).filter((i) => i >= 0); return idx.length === 1 ? idx[0] : -1; };
+  // O topo recolhe e os serviços aparecem: um movimento curto das posições (260 ms; reduzido = troca logo).
   const layoutAnim = () => { if (!reduceMotion) LayoutAnimation.configureNext(LayoutAnimation.create(260, LayoutAnimation.Types.easeInEaseOut, LayoutAnimation.Properties.opacity)); };
   const resetDim = () => Object.values(dimRef.current).forEach((v) => v.setValue(1));
-  // Abrir um dia: a folha, com o único serviço já aberto (com vários, nenhum — toca-se no que se quer). Vinda do mês inteiro,
-  // a folha parte de baixo (fora de vista) e sobe no efeito de baixo; com um dia já aberto, só troca o dia.
-  const openDayAt = (iso) => {
-    if (!selRef.current) { closingRef.current = false; sheetY.stopAnimation(); sheetY.setValue(reduceMotion ? 0 : sheetOff()); }
-    else if (closingRef.current) { closingRef.current = false; sheetY.stopAnimation(); backUp(); }   // tocada a meio da descida
-    setSelIso(iso); setSvcIdx(openIdxOf(iso));
-  };
+  // Escolher um dia: o topo recolhe e os serviços dele aparecem por baixo do mês; a legenda que filtra volta a mostrar tudo
+  // (sai de vista com o dia escolhido — um mês esbatido sem a pílula que o desfaz seria um beco).
+  const openDayAt = (iso) => { layoutAnim(); setFilterKey(null); resetDim(); setSelIso(iso); wantScroll.current = true; };
   const isOpen = !!selIso;
-  useEffect(() => {
-    if (!isOpen) return;
-    if (reduceMotion) { sheetY.setValue(0); return; }
-    Animated.timing(sheetY, { toValue: 0, duration: 320, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
-  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
-  // Fechar: a folha desce (300 ms) e o mês volta inteiro; reduzido = fecha logo.
-  const closeDay = () => {
-    if (!selRef.current || closingRef.current) return;
-    select();
-    if (reduceMotion) { setSelIso(null); return; }
-    closingRef.current = true;
-    Animated.timing(sheetY, { toValue: sheetOff(), duration: 300, easing: Easing.in(Easing.cubic), useNativeDriver: true }).start(() => {
-      if (!closingRef.current) return;   // reaberta a meio
-      closingRef.current = false; setSelIso(null);
-    });
+  const closeDay = () => { if (!selRef.current) return; select(); layoutAnim(); setSelIso(null); };
+  // Tocar num dia: escolhe-o; tocar no escolhido volta à legenda.
+  const pickDay = (iso) => { if (tourRef.current != null) endTourRef.current(); if (iso === selRef.current) { closeDay(); return; } select(); openDayAt(iso); };
+  // Tocar num serviço: abre a folha dele (a janela nativa do iPhone, com o corpo do Detalhe).
+  const pickSvc = (idx) => { if (!selRef.current) return; select(); setSvcSheet({ iso: selRef.current, idx }); };
+  const closeSvc = () => setSvcSheet(null);
+  // Enquanto a janela desce, continua a mostrar o serviço que tinha (senão descia vazia).
+  const lastSvcRef = useRef(null); if (svcSheet) lastSvcRef.current = svcSheet;
+  const svcShown = svcSheet || lastSvcRef.current;
+  const svcTitleOf = ({ iso, idx }) => { const sv = svcsAt(iso)[idx]; if (!sv) return ''; const k = sv.kind || 'flight'; return (k === 'flight' && prettyRoute(sv.route)) || kindLabel(k); };
+  // Os serviços do dia à vista: depois de aparecerem, desliza-se o mínimo (o dia escolhido continua à vista no mês).
+  const scrollToDay = () => {
+    if (!wantScroll.current || !scrollRef.current) return;
+    wantScroll.current = false;
+    const { y: by, h: bh } = dayBlockRef.current;
+    const target = Math.max(0, by + Math.min(bh, 200) - scrollH.current + SPACE.md);
+    if (target > scrollY.current) scrollRef.current.scrollTo({ y: target, animated: !reduceMotion });   // só desce; nunca sobe por cima do que se está a ver
   };
-  // Tocar num dia: abre-o; tocar no dia aberto (na semana) fecha a folha.
-  const pickDay = (iso) => { if (iso === selRef.current) { closeDay(); return; } select(); openDayAt(iso); };
-  // Tocar num serviço: abre por baixo dele tudo o que é dele; tocar no aberto fecha-o.
-  const pickSvc = (idx) => { select(); layoutAnim(); setSvcIdx((cur) => (cur === idx ? -1 : idx)); };
-  // Deslizar no dia: o seguinte ou o anterior (as folgas também; passa de mês na ponta). Sai para um lado e entra do outro.
-  // n = 7: a semana seguinte ou anterior (deslizar na semana).
-  const stepDay = (dir, n = 1) => {
-    const cur = selRef.current; if (!cur) return;
-    const dt = new Date(`${cur}T12:00:00`); dt.setDate(dt.getDate() + dir * n);
-    const nx = isoOf(dt);
-    select();
-    const go = () => { if (!nx.startsWith(ym)) setMonthDate(new Date(dt.getFullYear(), dt.getMonth(), 1)); openDayAt(nx); };
-    if (reduceMotion) { go(); return; }
-    Animated.timing(dayX, { toValue: -dir * 40, duration: 140, easing: Easing.in(Easing.quad), useNativeDriver: true }).start(() => {
-      go(); dayX.setValue(dir * 40);
-      Animated.timing(dayX, { toValue: 0, duration: 200, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
-    });
-  };
-  closeDayRef.current = closeDay; openDayRef.current = openDayAt; stepDayRef.current = stepDay;
+  closeDayRef.current = closeDay; openDayRef.current = openDayAt;
 
-  // ── L2 · a legenda que filtra (design/escala-mes.html): só as pílulas do que há neste mês; tocar numa acende esses dias e
-  // esbate os outros (180 ms; reduzido = salta); outra vez repõe ──
-  const legend = monthLegend(G.cells, lang);
+  // ── A LEGENDA J3 (design/escala-legenda-3.html): a pequena, por baixo do mês — quatro grupos com TODOS os sinais; os que contam
+  // acendem esses dias e esbatem os outros (180 ms; reduzido = salta); outra vez repõe (data/escalaDay.js · legendGroups) ──
+  const legGroups = legendGroups(G.cells, lang);
   const dimOf = (iso) => (dimRef.current[iso] || (dimRef.current[iso] = new Animated.Value(1)));
+  // ── A GUIADA: os balões deste mês (data/escalaDay.js · legendTour) ──
+  const tourSteps = legendTour(G.cells, lang);
+  tourLenRef.current = tourSteps.length;
+  const tourStep = tourIdx != null ? tourSteps[tourIdx] || null : null;
+  const calYRef = useRef(0);                            // onde começa a grelha, dentro da folha
+  const startTour = () => { if (!tourSteps.length) return; select(); setFilterKey(null); resetDim(); setTourIdx(0); };
+  const nextTour = () => { select(); if (tourIdx == null || tourIdx + 1 >= tourSteps.length) endTour(); else setTourIdx(tourIdx + 1); };
+  // Cada balão: o VoiceOver lê-o; a folha desliza o mínimo para o dia e o balão ficarem à vista.
+  useEffect(() => {
+    if (!tourStep) return;
+    AccessibilityInfo.announceForAccessibility(tourStep.text);
+    const c = G.cells.find((x) => x.iso === tourStep.iso); if (!c || !scrollRef.current) return;
+    const row = Math.floor((G.firstWeekday + c.day - 1) / 7), above = row >= G.nRows - 2;
+    const top = calYRef.current + row * (ROW_H + ROW_GAP) - (above ? TOUR_H : 0);
+    const bottom = calYRef.current + (row + 1) * (ROW_H + ROW_GAP) + (above ? 0 : TOUR_H);
+    if (bottom > scrollY.current + scrollH.current) scrollRef.current.scrollTo({ y: bottom - scrollH.current, animated: !reduceMotion });
+    else if (top < scrollY.current) scrollRef.current.scrollTo({ y: Math.max(0, top), animated: !reduceMotion });
+  }, [tourIdx]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Onde fica o balão: por baixo do dia (por cima nas duas últimas semanas), centrado nele sem sair da grelha.
+  const tourBubble = () => {
+    if (!tourStep || !cellW) return null;
+    const c = G.cells.find((x) => x.iso === tourStep.iso); if (!c) return null;
+    const i = G.firstWeekday + c.day - 1, col = i % 7, row = Math.floor(i / 7);
+    const W = Math.min(TOUR_W, gridW), cx = col * (cellW + GAP) + cellW / 2, left = Math.max(0, Math.min(gridW - W, cx - W / 2));
+    const above = row >= G.nRows - 2, calH = G.nRows * ROW_H + (G.nRows - 1) * ROW_GAP, rowTop = row * (ROW_H + ROW_GAP);
+    return (
+      <GuideBubble text={tourStep.text} step={tourIdx + 1} total={tourSteps.length} onNext={nextTour} onSkip={() => { select(); endTour(); }}
+        width={W} arrowX={cx - left} above={above} l={l}
+        style={[{ left }, above ? { bottom: calH - rowTop + SPACE.xs } : { top: rowTop + ROW_H + SPACE.xxs }]} />
+    );
+  };
   const pickFilter = (key) => {
     select();
     const next = filterKey === key ? null : key;
@@ -362,19 +355,23 @@ export default function EscalaScreen({ navigation, route }) {
     if (anims.length) Animated.parallel(anims).start();
   };
 
-  // Uma célula (Q1): o quadrado neutro com o número e o destino; a cor do tipo só na fita de baixo. Dois serviços = a fita
-  // em duas (o outro serviço à esquerda, um terço; o principal à direita); a rotação junta as fitas por cima do espaço entre
-  // os dias; férias e baixa a tracejado; feito = fita cinzenta e número cinzento. Hoje = o quadrado a tinta.
-  const typeBg = (k) => (k === 'voo' ? C.flight : k === 'terra' ? C.ground : null);
+  // Uma célula (o círculo A): o número num círculo; o anel com uma fatia por serviço, pela hora, na cor do tipo (voo céu ·
+  // terra lilás; feito = cinzento); o destino por baixo. Férias e baixa = anel tracejado; folga = só o número; hoje = o
+  // círculo a tinta por dentro do anel; o escolhido = um anel de tinta por fora.
+  const RR = (RING - RING_W) / 2, CIRC = 2 * Math.PI * RR, CX = RING / 2;
+  const ringSegs = (c) => {
+    const d = duties[c.iso];
+    if (!valid(d)) return [];
+    return orderServices(d).map((o) => (c.past ? CARD.rule : ((o.svc.kind || 'flight') === 'flight' ? C.flight : C.ground)));
+  };
   const renderCell = (c) => {
     const svcs = svcsAt(c.iso).filter(Boolean);
     const mi = mainIdxOf(c.iso), main = mi >= 0 ? svcsAt(c.iso)[mi] : null;
     const abs = !svcs.length ? dayAbs[c.iso] : null;
     const isAbs = c.kind === 'fer' || c.kind === 'doe';
-    const has = !!c.kind;
-    const stripColor = !has || isAbs ? null : c.past ? C.round : typeBg(c.kind);
-    const twoColor = has && !isAbs && c.two && !c.past ? typeBg(c.twoKind) : null;
-    const fg = c.today ? C.sheet : C.ink;
+    const segs = isAbs ? [] : ringSegs(c);
+    const gapLen = segs.length > 1 ? (CIRC * RING_GAP_DEG) / 360 : 0;
+    const segLen = segs.length ? CIRC / segs.length - gapLen : 0;
     const a11y = [
       `${c.day} ${monthName}`,
       c.today ? l('hoje', 'today') : null,
@@ -386,43 +383,32 @@ export default function EscalaScreen({ navigation, route }) {
     ].filter(Boolean).join(' · ');
     return (
       <Animated.View key={c.iso} style={{ width: cellW, opacity: dimOf(c.iso) }}>
-        <TouchableOpacity activeOpacity={0.7} onPress={() => pickDay(c.iso)}
-          style={[s.cell, has ? { backgroundColor: C.neutral } : null, c.today ? { backgroundColor: C.ink } : null, c.joinR ? s.cellJR : null, c.joinL ? s.cellJL : null]}
+        <TouchableOpacity activeOpacity={0.7} onPress={() => pickDay(c.iso)} style={s.cell}
           accessibilityRole="button" accessibilityLabel={a11y} accessibilityState={{ selected: c.sel }}
-          accessibilityHint={c.sel ? l('Volta ao mês', 'Back to the month') : l('Abre o dia', 'Opens the day')}>
-          <Text style={[TXT3.lineVal, s.numTxt, { color: c.today ? C.sheet : c.past ? C.tabSub : C.ink }]} allowFontScaling={false}>{c.day}</Text>
+          accessibilityHint={c.sel ? l('Volta à legenda', 'Back to the legend') : l('Mostra os serviços deste dia', 'Shows this day’s duties')}>
+          <View style={s.ring}>
+            <Svg width={RING} height={RING} style={StyleSheet.absoluteFill}>
+              {isAbs ? <SvgCircle cx={CX} cy={CX} r={RR} stroke={C.caption} strokeWidth={1.5} strokeDasharray="3 3" fill="none" /> : null}
+              {segs.length === 1 ? <SvgCircle cx={CX} cy={CX} r={RR} stroke={segs[0]} strokeWidth={RING_W} fill="none" /> : null}
+              {segs.length > 1 ? segs.map((col, i) => (
+                <SvgCircle key={i} cx={CX} cy={CX} r={RR} stroke={col} strokeWidth={RING_W} fill="none" strokeDasharray={`${segLen} ${CIRC - segLen}`}
+                  rotation={-90 + (i * 360) / segs.length + RING_GAP_DEG / 2} origin={`${CX}, ${CX}`} />
+              )) : null}
+              {c.today ? <SvgCircle cx={CX} cy={CX} r={segs.length || isAbs ? RR - RING_W / 2 : CX} fill={C.ink} /> : null}
+            </Svg>
+            <Text style={[TXT3.lineVal, s.numTxt, { color: c.today ? C.sheet : c.past ? C.tabSub : C.ink }]} allowFontScaling={false}>{c.day}</Text>
+            {c.dirty ? <View style={[s.pend, { backgroundColor: C.alert, borderColor: C.sheet }]} pointerEvents="none" /> : null}
+            {c.sel ? <View style={[s.selRing, { borderColor: C.ink }]} pointerEvents="none" /> : null}
+            {tourStep && tourStep.iso === c.iso ? <View style={[s.tourRing, { borderColor: C.ink }]} pointerEvents="none" /> : null}
+          </View>
           {c.code ? (
             <View style={s.code}>
-              <Text style={[TXT.tag, { color: c.today ? C.sheet : C.soft }]} numberOfLines={1} allowFontScaling={false}>{c.code}</Text>
-              {c.ns ? <Icon name="moon" size={9} color={c.today ? C.sheet : C.soft} /> : null}
+              <Text style={[TXT.tag, { color: c.past ? C.tabSub : C.soft }]} numberOfLines={1} allowFontScaling={false}>{c.code}</Text>
+              {c.ns ? <Icon name="moon" size={9} color={c.past ? C.tabSub : C.soft} /> : null}
             </View>
-          ) : <View />}
-          <View style={s.strip}>
-            {isAbs ? Array.from({ length: DASHES }).map((_, i) => <View key={i} style={[s.dash, { backgroundColor: CARD.rule }]} />) : null}
-            {twoColor ? <View style={[s.stripTwo, { backgroundColor: twoColor }]} /> : null}
-            {stripColor ? <View style={[s.flex, { backgroundColor: stripColor }]} /> : null}
-          </View>
-          {c.dirty ? <View style={[s.pend, { backgroundColor: C.alert, borderColor: C.sheet }]} pointerEvents="none" /> : null}
-          {c.sel && !c.today ? <View style={[s.selRing, { borderColor: C.ink }, c.joinR ? s.cellJR : null, c.joinL ? s.cellJL : null]} pointerEvents="none" /> : null}
+          ) : null}
         </TouchableOpacity>
-        {/* a rotação: a fita continua por cima do espaço até ao dia seguinte */}
-        {c.joinR && stripColor ? <View style={[s.stripJoin, { backgroundColor: stripColor }]} pointerEvents="none" /> : null}
       </Animated.View>
-    );
-  };
-  // A SEMANA do dia aberto (em cima, com a folha por baixo): os sete dias da linha dele, com as mesmas células.
-  const renderWeek = () => {
-    const sel = G.cells.find((c) => c.sel);
-    if (!sel) return null;
-    const row = G.cells.filter((c) => c.row === sel.row);
-    return (
-      <View {...weekPan.panHandlers}>
-        <View style={s.wkhead}>{WD.map((w, i) => <Text key={i} style={[TXT.tag, s.wkh, { width: cellW, color: C.tabSub }]} allowFontScaling={false}>{w}</Text>)}</View>
-        <View style={s.cal} onLayout={(e) => { const w = e.nativeEvent.layout.width; setGridW((p) => (Math.abs(w - p) > 0.5 ? w : p)); }}>
-          {sel.row === 0 ? Array.from({ length: G.firstWeekday }).map((_, i) => <View key={`lead${i}`} style={[s.cellBlank, { width: cellW }]} />) : null}
-          {cellW ? row.map(renderCell) : null}
-        </View>
-      </View>
     );
   };
 
@@ -434,7 +420,7 @@ export default function EscalaScreen({ navigation, route }) {
     if (!o) return;
     if (o.to !== 'detail') select();
     const iso = ctx.iso;
-    if (o.to === 'detail') { pickSvc(o.idx || 0); return; }   // o serviço abre por baixo dele (a fila de ícones e o painel)
+    if (o.to === 'detail') { pickSvc(o.idx || 0); return; }   // o serviço abre a folha dele (o "Ver tudo")
     else if (o.to === 'hotel') { if (ctx.nsHotel) Linking.openURL(hotelMapsUrl(ctx.nsHotel.name, ctx.nsSt, Platform.OS)).catch(() => {}); else { setHotelStation(ctx.nsSt); setHotelOpen(true); } }
     else if (o.to === 'hotelEdit') { setHotelStation(ctx.nsSt); setHotelOpen(true); }
     else if (o.to === 'sync') { if (calendarId) onSync(); else connectCalendar(); }
@@ -478,13 +464,8 @@ export default function EscalaScreen({ navigation, route }) {
   );
   const topRightW = 44 + hojeW;
 
-  // ── O SERVIÇO ABERTO: a linha tocada cresce para o cartão de cor com a perna e, por baixo, TUDO o que é dele — o corpo do
-  // Detalhe no 3.0 (design/detalhe-3.html, B; screens/DutyDetailScreen.js · DutyDetailBody). Tocar no cartão de cor fecha-o. ──
-  const renderSvcOpen = (iso, idx) => (
-    <DutyDetailBody date={iso} idx={idx} navigation={navigation} onCollapse={() => pickSvc(idx)} onDeleted={() => setSelIso(null)} onOpenService={(i) => { layoutAnim(); setSvcIdx(i); }} />
-  );
-  // ── O DIA (na janela): uma linha por serviço (pela hora; a pernoita vai na linha do voo e no Hotel); o serviço aberto leva por
-  // baixo tudo o que é dele. Sem serviço: a folga ou a ausência. ──
+  // ── O DIA (por baixo do mês): uma linha por serviço (pela hora; a pernoita vai na linha do voo e no Hotel); tocar numa abre a
+  // folha do serviço. Sem serviço: a folga ou a ausência. ──
   const dayTitleOf = (iso) => {
     const dt = new Date(`${iso}T00:00:00`);
     const tx = dt.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
@@ -503,7 +484,6 @@ export default function EscalaScreen({ navigation, route }) {
             ? cardsOf([{ t: 'lines', id: 'abs', color: 'neutral', kind: extraLabel(abs.type), rows: absEur != null ? [{ k: l('Paga neste dia', 'Pays on this day'), v: fmtEur(absEur) }] : [],
                 note: l('Marcado nos extras do mês.', 'Marked in the month’s extras.'), link: { label: l('Apagar dos extras', 'Remove from extras'), open: { to: 'rmAbsAsk', id: abs.id } } }], { iso })
             : cardsOf([{ t: 'slim', id: 'off', color: 'neutral', title: l('Folga', 'Day off'), sub: l('Sem serviço neste dia.', 'No duty on this day.') }], { iso })}
-          <Text style={[TXT.caption, s.swHint, { color: C.tabSub }]}>{l('Desliza para o lado para ver o dia seguinte.', 'Swipe sideways to see the next day.')}</Text>
         </>
       );
     } else {
@@ -532,10 +512,9 @@ export default function EscalaScreen({ navigation, route }) {
               ? l('Como voaste, este dia não é férias gozadas e o suplemento não paga aqui. Marca as férias noutro dia para o receberes.', 'Since you flew, this isn’t taken leave — the supplement isn’t paid here. Re-mark the leave on another day to get it.')
               : l('Como voaste, este dia não conta como doença.', 'Since you flew, this day doesn’t count as sick leave.'),
             link: { label: l('Remover deste dia', 'Remove from this day'), open: { to: 'rmAbs', id: abs.id } } }], ctx) : null}
-          {lines.map(({ c, i, sv }) => (
+          {lines.map(({ c, sv }) => (
             <View key={c.id} style={s.svcBlock}>
-              {i === svcIdx ? renderSvcOpen(iso, i)
-                : cardsOf([(sv && sv.nightStop && nsName) ? { ...c, sub: [c.sub, l(`pernoita em ${nsName}`, `night stop in ${nsName}`)].filter(Boolean).join(' · ') } : c], ctx)}
+              {cardsOf([(sv && sv.nightStop && nsName) ? { ...c, sub: [c.sub, l(`pernoita em ${nsName}`, `night stop in ${nsName}`)].filter(Boolean).join(' · ') } : c], ctx)}
             </View>
           ))}
           {/* Extras PAGOS neste dia trabalhado (SNC/RDP) — compensações por cima do serviço. */}
@@ -544,13 +523,14 @@ export default function EscalaScreen({ navigation, route }) {
       );
     }
     return (
-      <Animated.View {...dayPan.panHandlers} style={[s.day, { transform: [{ translateX: dayX }], opacity: dayX.interpolate({ inputRange: [-40, 0, 40], outputRange: [0, 1, 0] }) }]}>
+      <View style={s.day} onLayout={(e) => { const { y: by, height: bh } = e.nativeEvent.layout; dayBlockRef.current = { y: by, h: bh }; setTimeout(scrollToDay, 300); }}>
+        {renderDayHead(iso)}
         {body}
-      </Animated.View>
+      </View>
     );
   };
-  // O cabeçalho da janela: o dia (e "hoje" · quantos serviços) à esquerda; à direita ‹ › (para quem não descobre o deslizar, e
-  // para o VoiceOver) e ✕ (§10: o fecho à direita).
+  // O cabeçalho do dia: o dia (e "hoje" · quantos serviços) à esquerda; ✕ à direita (§10) volta à legenda. Outro dia = tocar
+  // nele no mês, que está inteiro por cima.
   const renderDayHead = (iso) => {
     const nSvc = svcsAt(iso).filter(Boolean).length, abs = dayAbs[iso];
     const sub = [iso === today ? l('hoje', 'today') : null, nSvc ? `${nSvc} ${plural(nSvc, l('serviço', 'duty'), l('serviços', 'duties'))}` : abs ? extraLabel(abs.type) : l('sem serviços', 'no duties')].filter(Boolean).join(' · ');
@@ -560,41 +540,66 @@ export default function EscalaScreen({ navigation, route }) {
           <Text style={[TXT3.slimTitle, { color: C.ink }]} numberOfLines={1} accessibilityRole="header">{dayTitleOf(iso)}</Text>
           <Text style={[TXT3.cardSub, { color: C.tabSub }]} numberOfLines={1}>{sub}</Text>
         </View>
-        <IconButton icon="back" onPress={() => stepDay(-1)} label={l('Dia anterior', 'Previous day')} style={{ backgroundColor: C.round }} />
-        <IconButton icon="back" rot={180} onPress={() => stepDay(1)} label={l('Dia seguinte', 'Next day')} style={{ backgroundColor: C.round }} />
-        <IconButton icon="close" onPress={closeDay} label={l('Voltar ao mês', 'Back to the month')} style={{ backgroundColor: C.round }} />
+        <IconButton icon="close" onPress={closeDay} label={l('Fechar o dia', 'Close the day')} style={{ backgroundColor: C.round }} />
       </View>
     );
   };
-  // As pílulas da legenda (L2): a amostra de cada uma é a etiqueta da célula em pequeno.
-  const legSwatch = (key) => {
-    const abs = key === 'fer' || key === 'doe';
+  // A amostra de cada sinal é o próprio sinal do mês, em pequeno (14 pt): o anel, as fatias, o tracejado, a lua, o ponto, o hoje,
+  // o feito, o escolhido e a folga (só o número).
+  const SW = 14, SWR = (SW - 2.5) / 2, SWC = SW / 2, SWCIRC = 2 * Math.PI * SWR;
+  const legSwatch = (key, on) => {
+    if (key === 'ns') return <View style={s.legSw}><Icon name="moon" size={11} color={on ? C.sheet : C.soft} /></View>;
+    if (key === 'free') return <View style={s.legSw}><Text style={[TXT.tag, { color: on ? C.sheet : C.ink }]} allowFontScaling={false}>7</Text></View>;
+    if (key === 'dirty') return <View style={s.legSw}><View style={[s.legDot, { backgroundColor: C.alert }]} /></View>;
+    const half = SWCIRC / 2 - (SWCIRC * RING_GAP_DEG) / 360;
     return (
-      <View style={[s.legSw, { backgroundColor: key === 'terra' ? C.ground : abs ? C.sheet : C.flight }, abs ? [s.legSwAbs, { borderColor: CARD.rule }] : null]}>
-        {key === 'ns' ? <Icon name="moon" size={9} color={CARD.onCard} /> : null}
-        {key === 'two' ? <View style={[s.legSwEdge, { backgroundColor: C.ground }]} /> : null}
-        {key === 'dirty' ? <View style={[s.legSwDot, { backgroundColor: C.alert }]} /> : null}
+      <View style={s.legSw}>
+        <Svg width={SW} height={SW}>
+          {key === 'voo' || key === 'terra' || key === 'past' ? <SvgCircle cx={SWC} cy={SWC} r={SWR} stroke={key === 'voo' ? C.flight : key === 'terra' ? C.ground : CARD.rule} strokeWidth={2.5} fill="none" /> : null}
+          {key === 'two' ? [C.ground, C.flight].map((col, i) => <SvgCircle key={i} cx={SWC} cy={SWC} r={SWR} stroke={col} strokeWidth={2.5} fill="none" strokeDasharray={`${half} ${SWCIRC - half}`} rotation={-90 + i * 180 + RING_GAP_DEG / 2} origin={`${SWC}, ${SWC}`} />) : null}
+          {key === 'fer' || key === 'doe' ? <SvgCircle cx={SWC} cy={SWC} r={SWR} stroke={C.caption} strokeWidth={1.2} strokeDasharray="2 2" fill="none" /> : null}
+          {key === 'today' ? <SvgCircle cx={SWC} cy={SWC} r={SWC} fill={C.ink} /> : null}
+          {key === 'sel' ? <SvgCircle cx={SWC} cy={SWC} r={SWC - 1} stroke={C.ink} strokeWidth={1.5} fill="none" /> : null}
+        </Svg>
       </View>
     );
   };
-  const renderLegend = () => (legend.length ? (
-    <>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.chipsWrap} contentContainerStyle={s.chips}>
-        {legend.map((it) => {
-          const on = filterKey === it.key;
-          return (
-            <TouchableOpacity key={it.key} onPress={() => pickFilter(it.key)} activeOpacity={0.8} style={[s.chip, { backgroundColor: on ? C.sheet : C.neutral, borderColor: on ? C.ink : C.neutral }]}
-              accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={it.label}
-              accessibilityHint={on ? l('Mostra todos os dias', 'Shows every day') : l('Destaca estes dias no mês', 'Highlights these days in the month')}>
-              {legSwatch(it.key)}
-              <Text style={[TXT.label, { color: C.ink }]} allowFontScaling={false}>{it.label}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-      <Text style={[TXT.caption, s.chipsHint, { color: C.tabSub }]}>{filterKey ? l('Toca outra vez para ver todos os dias.', 'Tap again to see every day.') : l('Toca numa cor para ver esses dias.', 'Tap a colour to see those days.')}</Text>
-    </>
-  ) : null);
+  // A pequena (J3): uma linha por grupo, o nome à esquerda e sinal + nome + quantos dias à direita; tocar acende esses dias; os
+  // que não há no mês ficam a 0, mais claros. "Os dias" só explicam. No fim, "Rever a legenda no meu mês" (a guiada).
+  const renderLegend = () => (
+    <View style={s.leg}>
+      {legGroups.map((g) => (
+        <View key={g.title} style={[s.legRow, { borderBottomColor: CARD.rule }]}>
+          <Text style={[TXT.tag, s.legT, { color: C.tabSub }]} allowFontScaling={false}>{g.title}</Text>
+          <View style={s.legItems}>
+            {g.items.map((it) => {
+              const on = filterKey === it.key, can = it.count != null && it.count > 0;
+              const a11y = `${it.label}${it.count != null ? `, ${it.count} ${it.count === 1 ? l('dia', 'day') : l('dias', 'days')}` : ''}`;
+              const inner = (
+                <>
+                  {legSwatch(it.key, on)}
+                  <Text style={[TXT.label, { color: on ? C.sheet : it.count === 0 ? C.tabSub : C.ink }]} allowFontScaling={false}>{it.label}</Text>
+                  {it.count != null ? <Text style={[TXT.label, { color: on ? C.sheet : C.tabSub }]} allowFontScaling={false}>{it.count}</Text> : null}
+                </>
+              );
+              return can ? (
+                <TouchableOpacity key={it.key} onPress={() => pickFilter(it.key)} activeOpacity={0.8} style={[s.legItem, on ? { backgroundColor: C.ink } : null]}
+                  accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={a11y}
+                  accessibilityHint={on ? l('Mostra todos os dias', 'Shows every day') : l('Acende estes dias no mês', 'Highlights these days in the month')}>
+                  {inner}
+                </TouchableOpacity>
+              ) : <View key={it.key} style={s.legItem} accessible accessibilityLabel={a11y}>{inner}</View>;
+            })}
+          </View>
+        </View>
+      ))}
+      {tourSteps.length ? (
+        <TouchableOpacity onPress={startTour} hitSlop={{ top: SPACE.sm, bottom: SPACE.sm }} accessibilityRole="button" style={s.legReplay}>
+          <Text style={[TXT.label, s.legReplayTxt, { color: C.ink }]}>{l('Rever a legenda no meu mês', 'Replay the legend on my month')}</Text>
+        </TouchableOpacity>
+      ) : null}
+    </View>
+  );
   // B4 · um mês sem escala nenhuma: o estado vazio, com a ação principal (debaixo da grelha).
   const renderEmpty = () => (
     <>
@@ -613,21 +618,24 @@ export default function EscalaScreen({ navigation, route }) {
     <View>
       <View {...monthPan.panHandlers}>
       <View style={s.wkhead}>{WD.map((w, i) => <Text key={i} style={[TXT.tag, s.wkh, { width: cellW, color: C.tabSub }]} allowFontScaling={false}>{w}</Text>)}</View>
-      <View style={s.cal} onLayout={(e) => { const w = e.nativeEvent.layout.width; setGridW((p) => (Math.abs(w - p) > 0.5 ? w : p)); }}>
+      <View style={s.cal} onLayout={(e) => { const { width: w, y: cy } = e.nativeEvent.layout; calYRef.current = SPACE.md + cy; setGridW((p) => (Math.abs(w - p) > 0.5 ? w : p)); }}>
         {cellW ? (
           <>
             {Array.from({ length: G.firstWeekday }).map((_, i) => <View key={`lead${i}`} style={[s.cellBlank, { width: cellW }]} />)}
             {G.cells.map(renderCell)}
+            {/* a guiada: o balão por cima das células (o último filho fica por cima) */}
+            {tourBubble()}
           </>
         ) : null}
       </View>
       </View>
-      {renderLegend()}
+      {/* Com um dia escolhido, os serviços dele ficam no lugar da legenda. */}
+      {selIso ? renderDay(selIso) : renderLegend()}
     </View>
   );
 
   return (
-    <SafeAreaView style={[s.safe, { backgroundColor: C.desk }]} edges={['top']} onTouchStart={gridTip ? dismissGridTip : undefined}>
+    <SafeAreaView style={[s.safe, { backgroundColor: C.desk }]} edges={['top']}>
       <View style={s.body}>
         {!anyDuty ? (
           /* ── Arranque — sem escala nenhuma: o estado vazio e as formas de importar ── */
@@ -659,27 +667,11 @@ export default function EscalaScreen({ navigation, route }) {
           <>
             {/* O topo do Início: "Novembro 2026 ▾" abre o ano em meses; à direita, ler a escala. Com um dia aberto, só a fila. */}
             <HomeTop top={top} C={C} size={giant.size} compact={isOpen} onPill2={() => { select(); setPickYear(y); setMonthPickerOpen(true); }} right={topRight} rightW={topRightW} l={l} />
-            {/* A FOLHA: o mês (Q1); tocar num dia deixa só a semana dele, em cima, e a folha do dia sobe por baixo. */}
+            {/* A FOLHA: o mês inteiro (o círculo A); por baixo, a legenda — ou, com um dia escolhido, os serviços dele. */}
             <View style={[s.sheet, { backgroundColor: C.sheet }]}>
-              {isOpen ? (
-                <>
-                  <View style={s.weekWrap}>{renderWeek()}</View>
-                  <Animated.View style={[s.daySheet, { backgroundColor: C.sheet, transform: [{ translateY: sheetY }] }]}
-                    onLayout={(e) => { sheetHRef.current = Math.round(e.nativeEvent.layout.height); }}>
-                    <View {...sheetPan.panHandlers}>
-                      <TouchableOpacity style={s.dsGrab} onPress={closeDay} activeOpacity={0.6} hitSlop={{ top: SPACE.sm, bottom: SPACE.xs }}
-                        accessibilityRole="button" accessibilityLabel={l('Voltar ao mês', 'Back to the month')}>
-                        <View style={[s.dsGrabBar, { backgroundColor: C.round }]} />
-                      </TouchableOpacity>
-                      {renderDayHead(selIso)}
-                    </View>
-                    <ScrollView style={s.flex} contentContainerStyle={[s.dsBody, { paddingBottom: tabSpace + SPACE.xxxl }]} showsVerticalScrollIndicator={false}>
-                      {renderDay(selIso)}
-                    </ScrollView>
-                  </Animated.View>
-                </>
-              ) : (
               <ScrollView ref={scrollRef} style={s.flex} contentContainerStyle={[s.list, { paddingBottom: tabSpace + SPACE.lg }]} showsVerticalScrollIndicator={false}
+                  onLayout={(e) => { scrollH.current = e.nativeEvent.layout.height; }}
+                  onScroll={(e) => { scrollY.current = e.nativeEvent.contentOffset.y; }} scrollEventThrottle={32}
                   refreshControl={<RefreshControl refreshing={refreshing} tintColor={C.caption} colors={[C.caption]}
                     onRefresh={async () => {
                       setRefreshing(true); const t0 = Date.now();
@@ -688,14 +680,34 @@ export default function EscalaScreen({ navigation, route }) {
                       setRefreshing(false);
                     }} />}>
                 {renderMonth()}
-                {(!monthDutyDays.length && !monthHasAbs) ? renderEmpty() : null}
-                <Text style={[TXT.caption, s.foot, { color: C.tabSub }]}>{t('duties.syncHint', lang)}</Text>
+                {(!selIso && !monthDutyDays.length && !monthHasAbs) ? renderEmpty() : null}
+                {!selIso ? <Text style={[TXT.caption, s.foot, { color: C.tabSub }]}>{t('duties.syncHint', lang)}</Text> : null}
               </ScrollView>
-              )}
             </View>
           </>
         )}
       </View>
+
+      {/* A FOLHA DO SERVIÇO: a janela nativa do iPhone (puxar para baixo fecha) com tudo o que é dele — o corpo do Detalhe. */}
+      <Modal visible={!!svcSheet} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeSvc}>
+        {svcShown ? (
+          <View style={[s.dsRoot, { backgroundColor: C.sheet }]}>
+            <View style={s.dsGrab}><View style={[s.dsGrabBar, { backgroundColor: C.round }]} /></View>
+            <View style={s.ssHead}>
+              <View style={[s.flex, s.dsTitle]}>
+                <Text style={[TXT3.slimTitle, { color: C.ink }]} numberOfLines={1} accessibilityRole="header">{svcTitleOf(svcShown)}</Text>
+                <Text style={[TXT3.cardSub, { color: C.tabSub }]} numberOfLines={1}>{dayTitleOf(svcShown.iso)}</Text>
+              </View>
+              <IconButton icon="close" onPress={closeSvc} label={l('Fechar', 'Close')} style={{ backgroundColor: C.round }} />
+            </View>
+            <ScrollView style={s.flex} contentContainerStyle={s.dsBody} showsVerticalScrollIndicator={false}>
+              <DutyDetailBody date={svcShown.iso} idx={svcShown.idx} navigation={navigation}
+                onDeleted={() => { setSvcSheet(null); setSelIso(null); }}
+                onOpenService={(i) => setSvcSheet((cur) => (cur ? { ...cur, idx: i } : cur))} />
+            </ScrollView>
+          </View>
+        ) : null}
+      </Modal>
 
       <RosterImportSheet visible={importOpen} initialSource={importSource} onConnect={connectCalendar}
         onDone={({ saved, source }) => {
@@ -832,11 +844,6 @@ export default function EscalaScreen({ navigation, route }) {
       </PeleSheet>
 
 
-      {/* Dica da agenda (1.ª abertura pós-folha) — flutua sobre a folha, seta para cima. */}
-      <Tip visible={gridTip} arrow="up" lang={lang} style={{ top: 300 }}
-        bold={l('Toca num dia', 'Tap a day')}
-        tail={l('para o abrir — os serviços, as horas e o que rende.', 'to open it — the duties, the times and what it pays.')}
-        onDismiss={dismissGridTip} />
     </SafeAreaView>
   );
 }
@@ -863,44 +870,41 @@ const s = StyleSheet.create({
   privTxt: { fontFamily: PELE_FONT.bodyBold },
   foot: { marginTop: SPACE.md, paddingHorizontal: SPACE.xs },
 
-  // O mês — o dia Q1 (design/escala-semana.html): o quadrado calmo com o número e o destino; a cor só na fita de baixo
+  // O mês — o círculo A (design/escala-circulos.html): o número num círculo, o anel com os serviços, o destino por baixo
   wkhead: { flexDirection: 'row', gap: GAP, marginBottom: SPACE.xs },
   wkh: { textAlign: 'center' },
   cal: { flexDirection: 'row', flexWrap: 'wrap', columnGap: GAP, rowGap: ROW_GAP },
   cellBlank: { height: ROW_H },
-  cell: { height: ROW_H, borderRadius: RADIUS.sm, alignItems: 'center', justifyContent: 'space-between', paddingTop: SPACE.s, overflow: 'hidden' },
-  cellJR: { borderBottomRightRadius: 0 },
-  cellJL: { borderBottomLeftRadius: 0 },
+  cell: { height: ROW_H, alignItems: 'center', paddingTop: SPACE.xs, gap: SPACE.xxs },
+  ring: { width: RING, height: RING, alignItems: 'center', justifyContent: 'center' },
   numTxt: { fontVariant: ['tabular-nums'] },
   code: { flexDirection: 'row', alignItems: 'center', gap: SPACE.xxs },
-  strip: { alignSelf: 'stretch', height: STRIP_H, flexDirection: 'row', justifyContent: 'space-between' },
-  stripTwo: { flex: 0.45, marginRight: SPACE.xxs },   // o outro serviço: um terço da fita (0,45 : 1), com um fio entre os dois
-  stripJoin: { position: 'absolute', right: -GAP, width: GAP, bottom: 0, height: STRIP_H },
-  dash: { width: SPACE.xs, height: STRIP_H },
-  selRing: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: RADIUS.sm, borderWidth: 2 },
-  pend: { position: 'absolute', top: 3, right: 3, width: 7, height: 7, borderRadius: RADIUS.pill, borderWidth: 1.5 },
-  // L2 · a legenda que filtra
-  chipsWrap: { marginTop: SPACE.md, marginHorizontal: -SPACE.md },
-  chips: { paddingHorizontal: SPACE.md, gap: SPACE.s },
-  chip: { height: 32, borderRadius: RADIUS.pill, borderWidth: 1.5, paddingLeft: SPACE.sm, paddingRight: SPACE.md, flexDirection: 'row', alignItems: 'center', gap: SPACE.s },
-  legSw: { width: 22, height: 16, borderRadius: RADIUS.xs, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  legSwAbs: { borderWidth: 1.5, borderStyle: 'dashed' },   // férias e baixa: a tracejado, como a fita do dia
-  legSwEdge: { position: 'absolute', left: 0, top: 0, bottom: 0, width: SPACE.s },
-  legSwDot: { position: 'absolute', top: 2, right: 2, width: 6, height: 6, borderRadius: RADIUS.pill },
-  chipsHint: { marginTop: SPACE.s, paddingHorizontal: SPACE.xxs },
+  selRing: { position: 'absolute', top: -SPACE.xs, left: -SPACE.xs, right: -SPACE.xs, bottom: -SPACE.xs, borderRadius: RADIUS.pill, borderWidth: 2 },   // o escolhido: por fora, afastado
+  pend: { position: 'absolute', top: 0, right: 0, width: 8, height: 8, borderRadius: RADIUS.pill, borderWidth: 1.5 },
+  // A legenda J3 · a pequena (design/escala-legenda-3.html): uma linha por grupo, sem caixas
+  leg: { marginTop: SPACE.md },
+  legRow: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.sm, paddingVertical: SPACE.sm, borderBottomWidth: StyleSheet.hairlineWidth },
+  legT: { width: 76, lineHeight: 24 },
+  legItems: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', columnGap: SPACE.xs, rowGap: SPACE.xxs },
+  legItem: { height: 24, flexDirection: 'row', alignItems: 'center', gap: SPACE.s, paddingHorizontal: SPACE.s, borderRadius: RADIUS.pill },
+  legSw: { width: 14, height: 14, alignItems: 'center', justifyContent: 'center' },
+  legDot: { width: 8, height: 8, borderRadius: RADIUS.pill },
+  legReplay: { alignSelf: 'flex-start', marginTop: SPACE.md, paddingHorizontal: SPACE.xxs },
+  legReplayTxt: { textDecorationLine: 'underline' },
+  // a guiada: o dia de que o balão fala acende com um anel de tinta mais largo por fora
+  tourRing: { position: 'absolute', top: -SPACE.s, left: -SPACE.s, right: -SPACE.s, bottom: -SPACE.s, borderRadius: RADIUS.pill, borderWidth: 3 },
 
-  // A semana em cima e a folha do dia que sobe por baixo dela (design/escala-semana.html)
-  weekWrap: { paddingHorizontal: SPACE.md, paddingTop: SPACE.md, paddingBottom: SPACE.sm },
-  daySheet: { flex: 1, borderTopLeftRadius: RADIUS.sheet, borderTopRightRadius: RADIUS.sheet, ...SHADOW.sm, shadowOffset: { width: 0, height: -SPACE.sm } },
+  // O dia escolhido, por baixo do mês (design/escala-dia-por-baixo.html, V1)
+  day: { gap: SPACE.sm, marginTop: SPACE.md },
+  dsHead: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, paddingHorizontal: SPACE.xs },
+  dsTitle: { minWidth: 0 },
+  svcBlock: { gap: SPACE.sm },
+  // A folha do serviço (a janela nativa do iPhone)
+  dsRoot: { flex: 1 },
   dsGrab: { alignItems: 'center', paddingTop: SPACE.sm, paddingBottom: SPACE.s },
   dsGrabBar: { width: 40, height: 5, borderRadius: RADIUS.pill },
-  dsHead: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, paddingHorizontal: SPACE.lg, paddingBottom: SPACE.md },
-  dsTitle: { minWidth: 0 },
+  ssHead: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, paddingHorizontal: SPACE.lg, paddingBottom: SPACE.md },
   dsBody: { paddingHorizontal: SPACE.md, paddingBottom: SPACE.xxxl },
-  day: { gap: SPACE.sm },
-
-  swHint: { textAlign: 'center', marginTop: SPACE.xs },
-  svcBlock: { gap: SPACE.sm },
 
   // A1 · o ano em meses
   yHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.md },
