@@ -10,6 +10,7 @@ import IconButton from '../components/IconButton';
 import PeleSheet from '../components/PeleSheet';
 import { HomeCards, HomeTop, pillWidth } from '../components/HomeCards';
 import { DayBar, OffBar, DayCol } from '../components/DayBar';
+import Segmented from '../components/Segmented';
 import { fitGiant } from '../data/homeCards';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
@@ -63,7 +64,7 @@ export default function EscalaScreen({ navigation, route }) {
   // (user 2026-07-16). O onLayout só corrige casos raros (split-screen, rotação).
   const [gridW, setGridW] = useState(() => Dimensions.get('window').width - GUTTER * 2);
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);   // A1 · o ano em meses (toque em "Novembro 2026 ▾")
-  const [gridOpen, setGridOpen] = useState(false);                 // a grelha do mês (o botão do calendário)
+  const [view, setView] = useState('list');                         // 2B · "Lista | Mês" no topo da folha
   const reduceMotion = useReduceMotion();
   const [pickYear, setPickYear] = useState(null);
 
@@ -78,9 +79,13 @@ export default function EscalaScreen({ navigation, route }) {
   const todayYRef = useRef(null);        // onde começa "Hoje" na agenda (ao abrir o mês corrente, a agenda começa aí)
   const rowYRef = useRef({});            // onde começa cada linha (para ir a um dia escolhido na grelha)
   const needTodayRef = useRef(true);     // ainda falta pôr a agenda em "Hoje" neste mês
+  const pendingRef = useRef(null);       // o dia escolhido no Mês: a lista vai até ele quando a sua linha aparecer
   // Re-tocar na aba Escala → volta a "Hoje" (a lista começa no dia 1; o topo seria o que já passou).
+  const viewRef = useRef('list');
+  const changeViewRef = useRef(null);    // a troca de vista mais recente (o ouvinte da aba não vê o estado novo)
   useEffect(() => navigation.addListener('tabPress', () => {
     if (!navigation.isFocused()) return;
+    if (viewRef.current !== 'list') { changeViewRef.current?.('list', true); return; }   // no Mês: volta à lista, em "Hoje"
     const yTo = todayYRef.current != null ? Math.max(0, todayYRef.current - SPACE.sm) : 0;
     scrollRef.current?.scrollTo({ y: yTo, animated: !reduceMotion });
   }), [navigation, reduceMotion]);
@@ -89,8 +94,8 @@ export default function EscalaScreen({ navigation, route }) {
   const [gridTip, setGridTip] = useState(false);
   const escBusyRef = useRef(false);
   useEffect(() => {
-    escBusyRef.current = !!(importOpen || hubOpen || hotelOpen || calPickerOpen || monthPickerOpen || gridOpen);
-  }, [importOpen, hubOpen, hotelOpen, calPickerOpen, monthPickerOpen, gridOpen]);
+    escBusyRef.current = !!(importOpen || hubOpen || hotelOpen || calPickerOpen || monthPickerOpen);
+  }, [importOpen, hubOpen, hotelOpen, calPickerOpen, monthPickerOpen]);
   useFocusEffect(useCallback(() => {
     let on = true; let tId = null;
     if (user?.id) {
@@ -243,17 +248,21 @@ export default function EscalaScreen({ navigation, route }) {
   const WD = lang === 'en' ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
   const dayDateLbl = (iso) => { const dt = new Date(`${iso}T00:00:00`); if (isNaN(dt)) return iso; const sx = dt.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' }); return sx.charAt(0).toUpperCase() + sx.slice(1); };
 
-  // ── A grelha do mês (na folha do botão do calendário; o que cada célula mostra decide-o data/escalaDay.js · monthCells) ──
+  // ── O Mês (2B: "Lista | Mês"; o que cada célula mostra decide-o data/escalaDay.js · monthCells) ──
   const absTypes = {}; Object.keys(dayAbs).forEach((iso) => { absTypes[iso] = dayAbs[iso].type; });
   const G = monthCells({ ym, duties, absences: absTypes, base: homeBaseAt, today, sel: openDay, lang });
   const cellW = gridW ? (gridW - GAP * 6) / 7 : 0;
-  // Tocar num dia da grelha: fecha a folha, abre esse dia na agenda e leva a agenda até ele.
-  const pickFromGrid = (iso) => {
-    select(); setGridOpen(false); setOpenIso(iso);
-    const keys = Object.keys(rowYRef.current).filter((k) => k <= iso).sort();
-    const k = keys[keys.length - 1];
-    setTimeout(() => { const yy = k ? rowYRef.current[k] : 0; scrollRef.current?.scrollTo({ y: Math.max(0, (yy || 0) - SPACE.sm), animated: !reduceMotion }); }, 350);
+  // Trocar de vista ("Lista | Mês"): o Mês começa no topo; a lista volta a "Hoje" (no mês corrente).
+  const changeView = (v, quiet) => {
+    if (!quiet) select();
+    viewRef.current = v;
+    scrollRef.current?.scrollTo({ y: 0, animated: false });   // a outra vista começa no topo; "Hoje" ou o dia escolhido vêm depois
+    if (v === 'list') { rowYRef.current = {}; todayYRef.current = null; needTodayRef.current = isCurrentMonth && !pendingRef.current; }
+    setView(v);
   };
+  changeViewRef.current = changeView;
+  // Tocar num dia do Mês: volta à lista com esse dia aberto, e a lista vai até ele quando a sua linha aparecer.
+  const pickFromGrid = (iso) => { pendingRef.current = iso; setOpenIso(iso); changeView('list'); };
   const toneOf = (kind) => (kind === 'voo' ? C.sand : kind === 'terra' ? C.lilac : (kind === 'fer' || kind === 'doe') ? C.neutral : null);
   // Uma célula: cor do tipo · número (hoje = círculo de tinta) · etiqueta (código; lua) · o bloco · os dois pontos · o ponto laranja.
   const renderCell = (c) => {
@@ -346,7 +355,7 @@ export default function EscalaScreen({ navigation, route }) {
   };
   const giant = fitGiant(top, winW - SPACE.lgPlus * 2);
   // A pílula do mês nunca pode sair (é a maneira de mudar de mês): se a fila não couber, sai o "Hoje" (o mês atual fica no ano em meses).
-  const baseRowW = pillWidth(monthLabel) + 12 + SPACE.sm + SPACE.sm + 44 * 2 + SPACE.sm;
+  const baseRowW = pillWidth(monthLabel) + 12 + SPACE.sm + SPACE.sm + 44;
   const showHoje = !isCurrentMonth && baseRowW + pillWidth(l('Hoje', 'Today')) + SPACE.sm <= winW - SPACE.lgPlus * 2;
   const hojeW = showHoje ? pillWidth(l('Hoje', 'Today')) + SPACE.sm : 0;
   const topRight = (
@@ -356,16 +365,13 @@ export default function EscalaScreen({ navigation, route }) {
           <Text style={[TXT3.pill, { color: C.ink }]} allowFontScaling={false}>{l('Hoje', 'Today')}</Text>
         </TouchableOpacity>
       ) : null}
-      <TouchableOpacity style={[s.round, { backgroundColor: C.round }]} onPress={() => { select(); setGridOpen(true); }} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={l('Ver o mês em grelha', 'See the month as a grid')}>
-        <Icon name="cal" size={20} color={C.ink} />
-      </TouchableOpacity>
       <TouchableOpacity style={[s.round, { backgroundColor: C.round }]} onPress={openHub} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={calendarId ? l('Calendário e sincronizar', 'Calendar and sync') : l('Importar escala', 'Import roster')}>
         <Icon name={calendarId ? 'sync' : 'download'} size={20} color={C.ink} />
         {(rcCounts?.total || lsCount) ? <View style={[s.hdrDot, { backgroundColor: C.warn, borderColor: C.desk }]} /> : null}
       </TouchableOpacity>
     </View>
   );
-  const topRightW = 44 * 2 + SPACE.sm + hojeW;
+  const topRightW = 44 + hojeW;
 
   // ── A AGENDA (o que vai para onde decide-o data/escalaDay.js · agendaRows) ──
   const rows = agendaRows({ ym, duties, absences: absTypes, today, money: dayMoney, kindLabel, fmtEur, lang });
@@ -422,6 +428,41 @@ export default function EscalaScreen({ navigation, route }) {
     }
     return <View style={s.openRow}>{col}<View style={s.openCol}>{body}</View></View>;
   };
+  // 2B · O MÊS (dentro da folha): a grelha (B1, com os dois pontos) e, por baixo, a legenda das cores e dos símbolos.
+  const legCell = (bg, code, o = {}) => (
+    <View style={[s.legCell, { backgroundColor: bg }, o.border ? { borderWidth: 1, borderColor: C.round } : null, o.two ? s.legCellTwo : null, o.style || null]}>
+      <Text style={[TXT.tag, { color: CARD.onCard }]} allowFontScaling={false}>{code}</Text>
+      {o.moon ? <Icon name="moon" size={10} color={CARD.onCard} /> : null}
+      {o.two ? <View style={s.legDots}><View style={[s.dot, { backgroundColor: CARD.onCardSub }]} /><View style={[s.dot, { backgroundColor: CARD.onCardSub }]} /></View> : null}
+      {o.pend ? <View style={[s.legPend, { backgroundColor: C.warn }]} /> : null}
+    </View>
+  );
+  const legItem = (sw, txt, key) => (
+    <View key={key} style={s.legIt}>{sw}<Text style={[TXT.label, s.legTxt, { color: C.soft }]} numberOfLines={2}>{txt}</Text></View>
+  );
+  const renderMonth = () => (
+    <View>
+      <View style={s.wkhead}>{WD.map((w, i) => <Text key={i} style={[TXT.tag, s.wkh, { width: cellW, color: C.tabSub }]} allowFontScaling={false}>{w}</Text>)}</View>
+      <View style={s.cal} onLayout={(e) => { const w = e.nativeEvent.layout.width; setGridW((p) => (Math.abs(w - p) > 0.5 ? w : p)); }}>
+        {cellW ? (
+          <>
+            {Array.from({ length: G.firstWeekday }).map((_, i) => <View key={`lead${i}`} style={[s.cellBlank, { width: cellW }]} />)}
+            {G.cells.map(renderCell)}
+          </>
+        ) : null}
+      </View>
+      <View style={[s.legend, { backgroundColor: C.neutral }]} accessible accessibilityLabel={l('Legenda: areia, voo; lilás, serviço em terra; neutro, férias ou baixa; lua, pernoita fora; dois pontos, dois serviços no dia; dias juntos, rotação seguida; círculo, hoje; ponto laranja, por sincronizar.', 'Legend: sand, flight; lilac, ground duty; neutral, leave or sick; moon, night stop away; two dots, two duties that day; joined days, a trip; circle, today; orange dot, pending sync.')}>
+        {legItem(legCell(C.sand, 'LGW'), l('Voo · destino', 'Flight · destination'), 'voo')}
+        {legItem(legCell(C.lilac, 'SBY'), l('Serviço em terra', 'Ground duty'), 'terra')}
+        {legItem(legCell(C.neutral, absCode('vacDays'), { border: true }), l('Férias · baixa', 'Leave · sick'), 'fer')}
+        {legItem(legCell(C.sand, 'OPO', { moon: true }), l('Pernoita fora', 'Night stop away'), 'ns')}
+        {legItem(legCell(C.sand, 'OPO', { two: true }), l('2 serviços no dia', '2 duties that day'), 'two')}
+        {legItem(<View style={s.tagRow}>{legCell(C.sand, 'FNC', { style: s.legJoinL })}{legCell(C.sand, 'FNC', { style: s.legJoinR })}</View>, l('Rotação seguida', 'Trip'), 'join')}
+        {legItem(<View style={[s.legToday, { backgroundColor: C.ink }]}><Text style={[TXT.tag, { color: C.sheet }]} allowFontScaling={false}>{Number(today.slice(8, 10))}</Text></View>, l('Hoje', 'Today'), 'hoje')}
+        {legItem(legCell(C.sand, 'FNC', { pend: true }), l('Por sincronizar', 'Pending sync'), 'pend')}
+      </View>
+    </View>
+  );
   const renderAgenda = () => {
     // B4 · um mês sem escala nenhuma: o estado vazio, com a ação principal.
     if (!monthDutyDays.length && !monthHasAbs) {
@@ -447,7 +488,14 @@ export default function EscalaScreen({ navigation, route }) {
         );
       }
       const key = r.t === 'off' ? `o-${r.from}` : `b-${r.iso}`;
-      const keepY = (e) => { rowYRef.current[r.t === 'off' ? r.from : r.iso] = e.nativeEvent.layout.y; };
+      const keepY = (e) => {
+        const yy = e.nativeEvent.layout.y, pend = pendingRef.current;
+        rowYRef.current[r.t === 'off' ? r.from : r.iso] = yy;
+        if (pend && (r.t === 'off' ? (pend >= r.from && pend <= r.to) : pend === r.iso)) {
+          pendingRef.current = null;
+          requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: Math.max(0, yy - SPACE.sm), animated: !reduceMotion }));
+        }
+      };
       if (r.t === 'off') return <View key={key} onLayout={keepY}><OffBar row={r} C={C} l={l} /></View>;
       return (
         <View key={key} onLayout={keepY}>
@@ -488,10 +536,15 @@ export default function EscalaScreen({ navigation, route }) {
           </>
         ) : (
           <>
-            {/* O topo do Início: "Novembro 2026 ▾" abre o ano em meses; à direita, a grelha do mês e ler a escala. */}
+            {/* O topo do Início: "Novembro 2026 ▾" abre o ano em meses; à direita, ler a escala. */}
             <HomeTop top={top} C={C} size={giant.size} onPill2={() => { select(); setPickYear(y); setMonthPickerOpen(true); }} right={topRight} rightW={topRightW} l={l} />
             {/* A FOLHA: a escala em agenda (o mês corrente abre em "Hoje"; o que já passou fica por cima). */}
             <View style={[s.sheet, { backgroundColor: C.sheet }]}>
+              {/* 2B · "Lista | Mês" (B11, a pílula desliza): as duas vistas da mesma escala, no mesmo sítio. */}
+              <View style={s.segWrap}>
+                <Segmented C={C} reduce={reduceMotion} value={view} onChange={changeView}
+                  options={[{ value: 'list', label: l('Lista', 'List') }, { value: 'month', label: l('Mês', 'Month') }]} />
+              </View>
               <ScrollView ref={scrollRef} style={s.flex} contentContainerStyle={[s.list, { paddingBottom: tabSpace + SPACE.lg }]} showsVerticalScrollIndicator={false}
                   refreshControl={<RefreshControl refreshing={refreshing} tintColor={C.caption} colors={[C.caption]}
                     onRefresh={async () => {
@@ -500,7 +553,7 @@ export default function EscalaScreen({ navigation, route }) {
                       const dt = Date.now() - t0; if (dt < 600) await new Promise((r) => setTimeout(r, 600 - dt));
                       setRefreshing(false);
                     }} />}>
-                {renderAgenda()}
+                {view === 'month' ? renderMonth() : renderAgenda()}
                 <Text style={[TXT.caption, s.foot, { color: C.caption }]}>{t('duties.syncHint', lang)}</Text>
               </ScrollView>
             </View>
@@ -642,20 +695,6 @@ export default function EscalaScreen({ navigation, route }) {
         <Text style={[TXT.caption, { color: C.caption }]}>{l('O contorno é o mês em que estás. A tracejado, os meses sem escala no calendário.', 'The outlined month is the current one. Dashed: months with no roster in the calendar.')}</Text>
       </PeleSheet>
 
-      {/* A grelha do mês (o botão do calendário) — a célula B1; tocar num dia abre-o na agenda. */}
-      <PeleSheet visible={gridOpen} onClose={() => setGridOpen(false)}>
-        <Text style={[TXT3.cardTitle, { color: C.ink }]} allowFontScaling={false}>{monthLabel}</Text>
-        <View style={s.wkhead}>{WD.map((w, i) => <Text key={i} style={[TXT.tag, s.wkh, { width: cellW, color: C.tabSub }]} allowFontScaling={false}>{w}</Text>)}</View>
-        <View style={s.cal} onLayout={(e) => { const w = e.nativeEvent.layout.width; setGridW((p) => (Math.abs(w - p) > 0.5 ? w : p)); }}>
-          {cellW ? (
-            <>
-              {Array.from({ length: G.firstWeekday }).map((_, i) => <View key={`lead${i}`} style={[s.cellBlank, { width: cellW }]} />)}
-              {G.cells.map(renderCell)}
-            </>
-          ) : null}
-        </View>
-        <Text style={[TXT.caption, s.gridLegend, { color: C.caption }]}>{l('Areia: voo · lilás: serviço em terra · lua: pernoita · dois pontos: dois serviços no dia', 'Sand: flight · lilac: ground duty · moon: night stop · two dots: two duties that day')}</Text>
-      </PeleSheet>
 
       {/* Dica da agenda (1.ª abertura pós-folha) — flutua sobre a folha, seta para cima. */}
       <Tip visible={gridTip} arrow="up" lang={lang} style={{ top: 300 }}
@@ -692,7 +731,7 @@ const s = StyleSheet.create({
   foot: { marginTop: SPACE.md, paddingHorizontal: SPACE.xs },
 
   // A grelha do mês (na folha do botão do calendário) — B1
-  wkhead: { flexDirection: 'row', gap: GAP, marginTop: SPACE.md, marginBottom: SPACE.s },
+  wkhead: { flexDirection: 'row', gap: GAP, marginBottom: SPACE.xs },
   wkh: { textAlign: 'center' },
   cal: { flexDirection: 'row', flexWrap: 'wrap', columnGap: GAP, rowGap: ROW_GAP },
   cellBlank: { height: ROW_H },
@@ -709,7 +748,18 @@ const s = StyleSheet.create({
   tagRow: { minHeight: 14, flexDirection: 'row', alignItems: 'center', gap: SPACE.xxs },
   selRing: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: RADIUS.sm, borderWidth: 2 },
   pend: { position: 'absolute', top: 3, left: 3, width: 7, height: 7, borderRadius: RADIUS.pill, borderWidth: 1.5 },
-  gridLegend: { marginTop: SPACE.md },
+  segWrap: { paddingHorizontal: SPACE.md, paddingTop: SPACE.md, paddingBottom: SPACE.xs },
+  // a legenda (debaixo da grelha): as cores e os símbolos, numa caixa neutra em duas colunas
+  legend: { flexDirection: 'row', flexWrap: 'wrap', rowGap: SPACE.sm, borderRadius: RADIUS.xl, padding: SPACE.md, marginTop: SPACE.md },
+  legIt: { width: '50%', flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, paddingRight: SPACE.xs },
+  legTxt: { flex: 1 },
+  legCell: { minWidth: 40, height: 24, paddingHorizontal: SPACE.xs, borderRadius: RADIUS.xs, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACE.xxs },
+  legCellTwo: { paddingBottom: SPACE.s },
+  legDots: { position: 'absolute', left: 0, right: 0, bottom: 2, flexDirection: 'row', justifyContent: 'center', gap: SPACE.xs },
+  legJoinL: { minWidth: 30, borderTopRightRadius: 0, borderBottomRightRadius: 0 },
+  legJoinR: { minWidth: 30, borderTopLeftRadius: 0, borderBottomLeftRadius: 0, marginLeft: -1 },
+  legToday: { width: 24, height: 24, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
+  legPend: { position: 'absolute', top: 3, left: 3, width: 7, height: 7, borderRadius: RADIUS.pill },
 
   // A1 · o ano em meses
   yHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.md },

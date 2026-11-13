@@ -138,7 +138,40 @@ referência para o layout das páginas que faltam e para o sistema de desenho. *
   cinzento com o ponto de cor e o € · tocar numa barra (abre no sítio; tocar na data fecha) · as folgas tracejadas · tocar em
   "Novembro 2026 ▾" (o ano em meses) e noutro mês · o botão do calendário (a grelha; tocar num dia leva a agenda até ele) ·
   "Hoje" noutro mês · puxar para ler a escala · um mês sem escala (o estado vazio) · o iPhone pequeno · o VoiceOver numa
-  barra. Visto de passagem: o onboarding diz "brevemente" e o Perfil "Em breve" (i18n
+  barra.
+  **Visto no iPhone pelo Nuno (2026-11-13, noite):** os dois pontos dos dois serviços não se percebem; e o mês (o botão do
+  calendário) está escondido e sem legendas. → três esboços para cada em `design/escala-acertos.html`: **1A** pílula "2
+  serviços" · **1B** a 2.ª linha com o outro serviço ("e Standby Casa · 09:00–15:00") · **1C** hoje e o próximo serviço
+  abertos; **2A** botão "Mês" com nome (folha com a grelha e a legenda) · **2B** "Lista | Mês" no topo da folha (B11; a
+  legenda debaixo da grelha, acaba 23 pt abaixo do ecrã) · **2C** a semana sempre à vista + "Ver o mês ›". Recomendo 1B + 2B.
+  **ESCOLHIDO pelo Nuno: 1B + 2B — JÁ NO CÓDIGO (2026-11-13, por ver no iPhone; por gravar).** **1B:** a barra de um dia
+  com dois serviços diz o outro por escrito numa 2.ª linha ("e Assistência em casa · 06:00–12:00"; um voo diz "e LIS → OPO ·
+  report 18:00"; com três, "· e mais 1"); os dois pontos saem das barras (ficam na grelha, que tem legenda). O título é o
+  serviço principal (o voo manda). `agendaRows` ganhou o campo `also` — golden `test:escala` 87 casos. **2B:** "Lista | Mês"
+  no topo da folha, com a peça nova `components/Segmented.js` (B11: a pílula de tinta desliza 220 ms; com movimentos
+  reduzidos, salta; leitor de ecrã: separadores). O "Mês" mostra a grelha (B1) e, por baixo, a legenda das cores e dos
+  símbolos (voo · destino, serviço em terra, férias · baixa, pernoita fora, 2 serviços no dia, rotação seguida, hoje, por
+  sincronizar). Tocar num dia volta à lista com esse dia aberto e a lista vai até ele. Saíram o botão do calendário e a folha
+  da grelha. Re-tocar na aba, no Mês, volta à lista em "Hoje". **Diferença ao esboço, de propósito:** o Mês não repete o nome
+  do mês (já está no topo). Medido: "Lista/Mês" por escolher 5,68 · escolhido 18,42 · texto da legenda 9,94 · a 2.ª linha
+  da barra 7,16 (areia) e 6,92 (lilás). `npm test` verde (37), guardião sem dívida nova, pacote iOS gera.
+  **Ver no iPhone:** um dia com dois serviços (a 2.ª linha; cabe sem cortar?) · "Lista | Mês" (a pílula desliza) · o Mês
+  com a legenda inteira à vista ou a deslizar · tocar num dia do Mês (volta à lista, aberto, no sítio) · re-tocar na aba no
+  Mês · outro mês no Mês · o VoiceOver no seletor e na legenda · com movimentos reduzidos.
+  **AS CORES DA APP (2026-11-13, pedido do Nuno: "temos que organizar as cores para tudo… pensar no tipo de app").**
+  Contado no código: o verde quer dizer dinheiro ganho, dentro do limite, fadiga baixa, "Ligar" e férias (61 sítios); o
+  laranja quer dizer perto do limite, falta informação, "Incerto", por sincronizar e folga trabalhada (52); o vermelho quer
+  dizer limite ultrapassado, apagar e erro (91) — **e nos Números a barra fica vermelha aos 90 %, antes de passar o limite,
+  com a nota a escrever "Amarelo" pintado a laranja** (`StatsScreen.js` `barColor` e `baptismNote`); há quatro paletas a
+  conviver (CARD, PELE, PLATE, o amarelo da marca). Medido: areia (voo) × laranja (atenção) ΔE 33, mas 12 com deuteranopia.
+  Enquadramento: a gramática do cockpit (CS-25.1322 — vermelho aviso, âmbar cautela, vermelho/âmbar/amarelo limitados fora
+  dos alertas; "cockpit escuro"). → Esboço `design/cores.html`: o mapa (base · tipo · estado — dentro sem cor, perto laranja
+  + "!", passa vermelho + "✕", incerto neutro tracejado + "?" · dinheiro — verde só no que se ganha · ação — tinta; amarelo
+  só no painel ao vivo) e três maneiras: **A** arrumar os sentidos (as cores dos cartões ficam) · **B** frio e quente (voo
+  céu `#8DB4DE`, terra lilás claro `#D9CDEB`, repouso salva; voo × atenção passa a ΔE 79 no pior caso; voo × terra desce a
+  14, os dois com o nome escrito) · **C** só o estado tem cor. Recomendo B. **À espera da escolha.** Os erros de significado
+  (a barra aos 90 %, "Amarelo", "Incerto" a laranja, folga trabalhada a laranja) corrigem-se em qualquer das três.
+  Visto de passagem (de antes): o onboarding diz "brevemente" e o Perfil "Em breve" (i18n
   `onb.soon` existe mas o `OnboardingScreen` escreve à mão) — acertar quando o Perfil e a entrada migrarem.
 
 **O que se faz a seguir (combinado com o Nuno a 2026-11-12, noite):**

@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · As cores da app</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* As cores da app (2026-11-13). O Nuno: "temos que organizar as cores para tudo… tem que ser bom para o utilizador e ele perceber…
+   e também temos que pensar no tipo de app que temos, e enquadrar isso." Um mapa (igual nas três) + três maneiras de o aplicar,
+   lado a lado e medidas (regra: sempre três esboços). Linguagem do Início 3.0. Dados de teste. Medições: WCAG 2.1 (contraste) e
+   ΔE em Lab com a simulação de Machado (2009) para deuteranopia e protanopia — ΔE abaixo de ~15 confunde-se de relance. */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+.lead{max-width:920px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px}
+.lead p,.sec p.t{font-size:14px;line-height:1.55;color:var(--muted)} .lead b,.sec p.t b{color:var(--pfg)}
+h2.sec{font-size:13px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;margin-top:6px}
+.card{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.card h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card li,.card p{font-size:13px;line-height:1.5;color:var(--muted)} .card ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card b,.card a{color:var(--pfg)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px}
+
+/* hoje: uma cor, muitos sentidos */
+.mean{display:flex;flex-direction:column;gap:8px}
+.mean .sw{height:34px;border-radius:10px;display:flex;align-items:center;padding:0 12px;font-weight:800;font-size:13px;color:#fff}
+.mean ul{padding-left:18px}
+.bad{color:#B3261E !important}
+
+/* o mapa */
+.map{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px}
+.fam{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.fam h4{font-size:15px;font-weight:800} .fam p{font-size:12.5px;line-height:1.45;color:var(--muted)} .fam p b{color:var(--pfg)}
+.fam .chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 10px;border-radius:13px;font-weight:700;font-size:12px;background:#F1EFEA;color:#141414;white-space:nowrap}
+
+/* as três maneiras */
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,406px));gap:26px 24px;justify-content:center}
+@media (max-width:1320px){.grid3{grid-template-columns:repeat(auto-fit,minmax(min(100%,390px),406px))}}
+.opt{display:flex;flex-direction:column;gap:10px;min-width:0}
+.opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:var(--muted);min-height:118px} .opt > p b{color:var(--pfg)}
+.opt > p.m{font-size:12px;min-height:0;font-variant-numeric:tabular-nums}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.palette{display:flex;gap:6px;flex-wrap:wrap}
+.palette span{height:30px;padding:0 10px;border-radius:9px;display:inline-flex;align-items:center;font-weight:800;font-size:11.5px;color:#141414;gap:5px}
+
+/* o ecrã de amostra (a folha branca sobre a secretária, à escala real do iPhone: 390 pt) */
+.screen{width:100%;max-width:406px;background:#E3E1DB;border-radius:28px;padding:14px 0 0;overflow:hidden;
+  --ink:#141414;--soft:#3A3A36;--sheet:#FFFFFF;--neutral:#F1EFEA;--tsub:#5E5E57;--caption:#77776F;--sub:rgba(20,20,20,.82)}
+.desk{padding:0 16px 22px;display:flex;flex-direction:column;gap:10px}
+.toprow{display:flex;align-items:center;gap:8px}
+.tpill{height:34px;padding:0 14px;border-radius:17px;display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px;border:1.5px solid var(--ink);white-space:nowrap}
+.tpill.on{background:var(--ink);color:#E3E1DB} .tpill i{width:7px;height:7px;border-radius:4px;display:inline-block}
+.big{border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:6px;color:#141414}
+.big .k{font-weight:700;font-size:12px;color:var(--sub);display:flex;align-items:center;gap:6px}
+.big .tt{font-weight:800;font-size:24px;letter-spacing:-.4px;line-height:1.1}
+.big .row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:500;font-size:13px;color:var(--sub)}
+.gain{background:#fff;color:#0B6E43;border-radius:12px;height:26px;padding:0 10px;display:inline-flex;align-items:center;font-weight:800;font-size:13px;white-space:nowrap}
+.sheet{background:var(--sheet);border-radius:32px 32px 0 0;padding:14px 12px 18px;display:flex;flex-direction:column;gap:8px}
+.agH{font-weight:800;font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--tsub);padding:6px 4px 0}
+.dr{display:flex;align-items:center;gap:10px}
+.dc{width:40px;flex:none;text-align:center;display:flex;flex-direction:column;align-items:center;gap:0}
+.dc b{font-weight:800;font-size:17px;line-height:20px} .dc span{font-weight:700;font-size:11px;color:var(--tsub);text-transform:uppercase}
+.dc.today b{width:28px;height:28px;border-radius:14px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px}
+.bar{flex:1;min-width:0;min-height:52px;border-radius:16px;padding:8px 12px;display:flex;align-items:center;gap:8px;color:#141414}
+.bar .tw{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.bar .t{font-weight:800;font-size:15px;line-height:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
+.bar small{font-weight:500;font-size:12px;line-height:16px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .r{font-weight:700;font-size:13px;white-space:nowrap}
+.bar .dot{width:12px;height:12px;border-radius:6px;flex:none}
+.bar .tic{width:22px;height:22px;flex:none;display:flex;align-items:center;justify-content:center}
+.off{flex:1;min-height:40px;border:1.5px dashed rgba(127,127,127,.45);border-radius:14px;display:flex;align-items:center;padding:0 12px;font-weight:700;font-size:13px;color:var(--tsub)}
+/* os limites (o bloco do Detalhe e dos Números) */
+.lim{background:var(--neutral);border-radius:22px;padding:6px 12px;display:flex;flex-direction:column}
+.lim .ln{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(127,127,127,.22)} .lim .ln:last-child{border-bottom:0}
+.lim .lt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.lim .lt b{font-weight:700;font-size:13.5px;line-height:18px} .lim .lt span{font-weight:500;font-size:12px;line-height:16px;color:var(--soft)}
+.lim .v{font-weight:800;font-size:13.5px;white-space:nowrap;text-align:right}
+.st{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 9px 0 5px;border-radius:12px;font-weight:800;font-size:11.5px;white-space:nowrap}
+.st i{width:16px;height:16px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-size:11px;font-weight:800;line-height:1}
+.money{display:flex;align-items:baseline;justify-content:space-between;padding:4px 4px 0}
+.money b{font-weight:800;font-size:22px;letter-spacing:-.3px} .money b small{font-size:14px} .money span{font-weight:500;font-size:12px;color:var(--soft)}
+.mrow{display:flex;justify-content:space-between;align-items:center;padding:6px 4px;border-top:1px solid rgba(127,127,127,.22);font-weight:500;font-size:13px}
+.warnc{border-radius:20px;padding:12px 14px;display:flex;align-items:center;gap:10px;color:#141414}
+.warnc .tw{flex:1;display:flex;flex-direction:column;gap:1px} .warnc b{font-weight:800;font-size:14px} .warnc span{font-weight:500;font-size:12px;color:var(--sub)}
+.leg{background:var(--neutral);border-radius:20px;padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:8px 10px}
+.leg div{display:flex;align-items:center;gap:8px;font-weight:600;font-size:12px;color:var(--soft)}
+.lc{min-width:40px;height:24px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;gap:3px;font-weight:800;font-size:10.5px;letter-spacing:.4px;color:#141414;flex:none}
+.refs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:10px}
+.refs a{display:block;background:#fff;border:1px solid #D6D4CD;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.4;color:var(--muted);text-decoration:none} .refs a b{color:var(--pfg)}
+#meas{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>As cores da app — um mapa para tudo</h1>
+    <p>Pelos olhos do tripulante: abre a app às 04:30, antes de um report, e quer saber duas coisas num relance — <b>o que tenho</b> e <b>se há alguma coisa de que me deva preocupar</b>. Para isso cada cor tem de dizer <b>uma só coisa</b>, sempre a mesma, em todas as páginas. Hoje não diz.</p>
+    <p><b>O tipo de app.</b> A CrewPact vive no mundo do cockpit. Os pilotos treinam uma gramática de cor que a EASA fixa para os alertas da cabine de pilotagem (CS-25.1322): <b>vermelho = aviso</b>, <b>âmbar = cautela</b>, e o vermelho, o âmbar e o amarelo usados para outras coisas "devem ser limitados". E o "cockpit escuro": quando está tudo normal, não se acende nada. A tripulação de cabine conhece a mesma regra pelo semáforo. A app é consultiva (estima, nunca declara legalidade) e fala de três coisas: a escala, os limites da lei e o dinheiro. As cores têm de separar essas três coisas, e nunca gritar quando está tudo bem.</p>
+  </div>
+
+  <h2 class="sec">1 · Hoje: uma cor, muitos sentidos (contado no código)</h2>
+  <div class="cols">
+    <div class="card mean"><div class="sw" style="background:#118A55">Verde · 61 sítios</div>
+      <ul><li>dinheiro ganho (+96,90 €)</li><li>dentro do limite</li><li>fadiga baixa</li><li>o botão "Ligar" do hotel</li><li>o ponto das férias</li></ul>
+      <p>O mesmo verde diz "ganhaste", "está tudo bem" e "toca aqui".</p></div>
+    <div class="card mean"><div class="sw" style="background:#E86A10">Laranja · 52 sítios</div>
+      <ul><li>perto do limite (acima de 70 %)</li><li>falta uma informação</li><li>o selo "Incerto"</li><li>por sincronizar</li><li>folga publicada trabalhada (é dinheiro, não um aviso)</li></ul>
+      <p>"Incerto" não é um aviso: é a lei que não fecha o número. Pintado de laranja, parece um alarme.</p></div>
+    <div class="card mean"><div class="sw" style="background:#C6362B">Vermelho · 91 sítios</div>
+      <ul><li>limite ultrapassado (Detalhe)</li><li class="bad">acima de 90 %, <b>antes</b> de passar o limite (Números)</li><li>apagar · erro num campo</li></ul>
+      <p class="bad">Nos Números a barra fica vermelha aos 90 % e a nota escreve "Amarelo" pintado a laranja. No Detalhe, o vermelho quer dizer "passou".</p></div>
+    <div class="card mean"><div class="sw" style="background:#E8BE6E;color:#141414">Areia (voo) e o laranja</div>
+      <p>O voo, a coisa mais frequente da app, veste uma cor da família do âmbar. Medido: areia × laranja "pede atenção" dá ΔE 33 com visão normal, mas <b class="bad">12 com deuteranopia</b> (1 em cada 12 homens tem alguma forma de daltonismo) — um aviso pode parecer só mais um voo.</p>
+      <p>E há quatro paletas a conviver: a 3.0 (CARD, 3 ecrãs), a 2.0 (PELE, 43 ficheiros), a do painel ao vivo e o amarelo da marca (33 sítios, como sinal de seleção).</p></div>
+  </div>
+
+  <h2 class="sec">2 · O mapa (igual nas três maneiras) — cinco famílias, uma tarefa cada</h2>
+  <div class="map">
+    <div class="fam"><h4>Base</h4><p>A secretária, a folha branca, a tinta e os cinzentos. <b>É quase tudo.</b> A interface é calma; o dia do tripulante é o protagonista.</p><div class="chips"><span class="chip" style="background:#E3E1DB">secretária</span><span class="chip" style="background:#fff;border:1px solid #D6D4CD">folha</span><span class="chip" style="background:#141414;color:#fff">tinta</span></div></div>
+    <div class="fam"><h4>Tipo · o que é</h4><p>Voo, serviço em terra, repouso. Só nos cartões e nas barras da escala. <b>Nunca sozinha</b>: o tipo diz-se também por escrito (A3). Os dias feitos ficam a cinzento com o ponto do tipo (D).</p></div>
+    <div class="fam"><h4>Estado · como estás face à lei</h4><p><b>Dentro:</b> sem cor (cockpit escuro); um ✓ só onde se pergunta. <b>Perto:</b> laranja + "!" + a palavra. <b>Passa:</b> vermelho + "✕" + a palavra, só quando o número passa o limite. <b>Incerto:</b> neutro tracejado + "?" + as duas pontas — não é um aviso.</p></div>
+    <div class="fam"><h4>Dinheiro</h4><p><b>Verde só no que se ganha</b> (+96,90 € numa pílula branca). Totais e parcelas a tinta. <b>Nunca vermelho no dinheiro</b>: um mês mais baixo não é perigo. O dinheiro esquecido é "pede atenção" (laranja), porque pede uma ação.</p></div>
+    <div class="fam"><h4>Ação</h4><p>O que se toca é a tinta (botões, a pílula escolhida, o ＋). <b>O amarelo da marca fica só no painel ao vivo</b> (a convenção dos painéis de aeroporto). Apagar e erros num campo: o vermelho do iOS, só no texto do botão ou da linha.</p></div>
+  </div>
+  <p class="t" style="font-size:13px;color:var(--muted)"><b style="color:var(--pfg)">Regra para o tripulante, numa frase:</b> nas maneiras A e B, "a cor diz o que é; o laranja e o vermelho dizem que tens de olhar". Na B fica ainda mais simples: <b style="color:var(--pfg)">"frio é a tua escala, quente é para olhares"</b>.</p>
+
+  <h2 class="sec">3 · Três maneiras de o aplicar (as mesmas peças, os mesmos dados de teste)</h2>
+  <div class="grid3" id="opts"></div>
+  <p id="meas"></p>
+
+  <div class="cols">
+    <div class="card"><h3>A minha recomendação: B</h3>
+      <p>É a que encaixa no tipo de app. O voo é a coisa que o tripulante mais vê; vestido de céu, deixa as cores quentes livres para uma só tarefa — "olha para isto". Um piloto lê isto sem legenda, porque é a gramática do cockpit. Mede melhor onde importa: voo × "pede atenção" passa de ΔE 12 para 79 no pior caso. O preço: voo × terra desce de 63 para 14 no pior caso — mas os dois têm sempre o nome escrito ("LIS → OPO", "Assistência em casa") e o ícone, por isso não se confundem.</p>
+      <p>A <b>A</b> é a mais barata (as cores dos cartões ficam) e já arruma os significados — mas o voo continua na família do âmbar. A <b>C</b> é a mais calma, mas a Escala perde a leitura de relance que escolheste nas barras de cor.</p></div>
+    <div class="card"><h3>Depois da escolha</h3>
+      <ul><li>O mapa entra no <b>design-system §14</b> (antes de qualquer página) e em tokens com nome de tarefa (estado, dinheiro), não de cor.</li>
+      <li>O guardião ganha uma regra: verde, laranja e vermelho só pelos tokens de estado e de dinheiro.</li>
+      <li>Corrige-se já, em todas as páginas, o que é erro de significado: a barra vermelha aos 90 %, a palavra "Amarelo", o "Incerto" a laranja, a folga trabalhada a laranja, o verde de "está tudo bem".</li>
+      <li>Os cartões e as barras mudam de cor no Início e na Escala (se for a B); as outras páginas recebem o mapa quando migrarem para o 3.0.</li>
+      <li>À noite, as mesmas cores um tom abaixo (mede-se no esboço de cada página).</li></ul></div>
+  </div>
+
+  <h2 class="sec">Referências (Mobbin)</h2>
+  <div class="refs">
+    <a href="https://mobbin.com/screens/19978438-40f3-4262-a0fb-7b63f3269fc9" target="_blank"><b>Singapore Airlines · estado do voo</b> — tudo neutro; só "Delayed" leva cor, com o ícone e a palavra.</a>
+    <a href="https://mobbin.com/screens/2ffba5ef-9b21-48ad-9396-44dafb52ee34" target="_blank"><b>American Airlines</b> — o atraso numa pílula e numa faixa com ícone; a ação é azul, o resto neutro.</a>
+    <a href="https://mobbin.com/screens/4df264c7-321a-4c5e-9a46-43bac516a471" target="_blank"><b>Rocket Money · orçamento</b> — "At Risk ⓘ" em laranja, com a palavra; o resto calmo.</a>
+    <a href="https://mobbin.com/screens/f094bf8d-058e-44b8-8968-f5e68743f543" target="_blank"><b>YNAB · movimentos</b> — saídas a tinta, só a entrada a verde. (Também Up e Cleo.)</a>
+    <a href="https://mobbin.com/screens/1dcb42dc-3483-44ec-896d-0a3b5fcc6308" target="_blank"><b>Fitbit · sem dados</b> — "No score" neutro e explicado; a falta de dados não é um alarme.</a>
+    <a href="https://mobbin.com/screens/adee76e9-7d96-402a-b4a5-19d16056b506" target="_blank"><b>Tempo · os níveis</b> — cada cor com o nome e uma frase: a legenda ensina a cor.</a>
+    <a href="https://mobbin.com/screens/3a21d1a0-0bec-472b-9c07-8a33dddf45cf" target="_blank"><b>Outlook · agenda</b> — a cor do tipo num ponto ou ícone; a lista neutra.</a>
+  </div>
+</div>
+
+<script>
+var MOON = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M20 15.3A8.5 8.5 0 0 1 8.7 4a8.5 8.5 0 1 0 11.3 11.3z"/></svg>';
+var PLANE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>';
+var HOUSE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3 2 11h3v9h5v-6h4v6h5v-9h3z"/></svg>';
+function st(kind){ // os estados: iguais nas três maneiras
+  if (kind === 'ok') return '<span class="st" style="background:transparent;color:#141414;padding-left:0"><i style="background:transparent;border:1.5px solid #141414;font-size:10px">✓</i>dentro</span>';
+  if (kind === 'near') return '<span class="st" style="background:#FBEAD2;color:#9A4508"><i style="background:#F0854A;color:#141414">!</i>perto</span>';
+  if (kind === 'over') return '<span class="st" style="background:#FBE3E0;color:#B3261E"><i style="background:#EC7A6C;color:#141414">✕</i>passa</span>';
+  return '<span class="st" style="background:#F1EFEA;color:#3A3A36;border:1.5px dashed rgba(20,20,20,.35)"><i style="background:transparent;color:#3A3A36">?</i>incerto</span>';
+}
+var OPTS = [
+  { id:'A', name:'A · Arrumar os sentidos', rec:false,
+    p:'As cores dos cartões <b>ficam</b> (areia voo · lilás terra · salva repouso). Muda o que cada estado quer dizer: dentro sem cor, perto a laranja, passa a vermelho, incerto neutro; verde só no dinheiro ganho. O aviso laranja leva sempre o "!". Pouca mudança à vista.',
+    voo:'#E8BE6E', terra:'#C6BADF', rep:'#B4C2A2', typed:true },
+  { id:'B', name:'B · Frio e quente', rec:true,
+    p:'O mapa com a gramática do cockpit. O voo passa a <b>céu</b>, a terra a <b>lilás claro</b>, o repouso fica <b>salva</b>: as cores frias são a escala. <b>Quente</b> (laranja, vermelho) só quer dizer "olha para isto". O amarelo da marca fica só no painel ao vivo.',
+    voo:'#8DB4DE', terra:'#D9CDEB', rep:'#B4C2A2', typed:true },
+  { id:'C', name:'C · Só o estado tem cor', rec:false,
+    p:'O cockpit escuro levado ao fim: os tipos <b>sem cor</b> — barras neutras com o ícone (avião, casa) e o nome. A cor aparece só quando há alguma coisa (laranja, vermelho) e no dinheiro ganho. A mais calma; perde a leitura do mês por cores.',
+    voo:'#F1EFEA', terra:'#F1EFEA', rep:'#F1EFEA', typed:false }
+];
+function bar(o, k, title, sub, right, past, extra){
+  var bg = past ? '#F1EFEA' : (k === 'voo' ? o.voo : k === 'terra' ? o.terra : o.rep);
+  var lead = '';
+  if (!o.typed) lead = '<span class="tic">' + (k === 'voo' ? PLANE : HOUSE) + '</span>';
+  else if (past) lead = '<span class="dot" style="background:' + (k === 'voo' ? o.voo : o.terra) + '"></span>';
+  return '<div class="bar" style="background:' + bg + (o.typed ? '' : ';border:1px solid #E2E0DA') + '">' + lead + '<div class="tw"><span class="t">' + title + (extra || '') + '</span>' + (sub ? '<small>' + sub + '</small>' : '') + '</div>' + right + '</div>';
+}
+function dr(day, wd, body, today){ return '<div class="dr"><div class="dc' + (today ? ' today' : '') + '"><b>' + day + '</b><span>' + wd + '</span></div>' + body + '</div>'; }
+function screen(o){
+  var bigBg = o.typed ? o.voo : '#FFFFFF';
+  var s = '<div class="screen"><div class="desk">';
+  s += '<div class="toprow"><span class="tpill on">' + (o.id === 'A' ? '<i style="background:#FFB800"></i>' : '') + 'Hoje · 13 nov</span></div>';
+  s += '<div class="big" style="background:' + bigBg + '"><span class="k">' + (o.typed ? '' : PLANE) + 'Voo · a seguir</span><span class="tt">LIS → OPO</span><div class="row"><span>report 18:00 · pernoita no Porto</span><span class="gain">+96,90 €</span></div></div>';
+  s += '<div class="warnc" style="background:#F0854A"><span class="st" style="background:rgba(255,255,255,.55);color:#141414;padding:0 6px"><i style="background:#141414;color:#F0854A">!</i></span><div class="tw"><b>Certificado médico</b><span>acaba a 2 de dezembro · renova antes</span></div></div>';
+  s += '</div><div class="sheet">';
+  s += '<div class="agH">Já feito</div>';
+  s += dr(11, 'qua', bar(o, 'voo', 'LIS → FNC → LIS', null, '<span class="gain" style="background:#fff">+64,30 €</span>', true));
+  s += '<div class="agH">Hoje · sexta 13</div>';
+  s += dr(13, 'sex', bar(o, 'voo', 'LIS → OPO', 'e Assistência em casa · 06:00–12:00', '<span class="r">report 18:00</span>', false, ' ' + MOON), true);
+  s += '<div class="agH">A seguir</div>';
+  s += dr(14, 'sáb', bar(o, 'voo', 'OPO → LIS', null, '<span class="r">report 09:40</span>', false));
+  s += dr('15', 'dom', '<div class="off">Folga · 2 dias</div>');
+  s += dr(17, 'ter', bar(o, 'terra', 'Formação', '08:00–17:00 · Lisboa', '', false));
+  s += '<div class="agH">Os limites (Detalhe · Números)</div>';
+  s += '<div class="lim">'
+    + '<div class="ln"><div class="lt"><b>Serviço de voo hoje</b><span>máximo 13 h 00</span></div><span class="v">9 h 40</span>' + st('ok') + '</div>'
+    + '<div class="ln"><div class="lt"><b>Horas de voo em 28 dias</b><span>máximo 100 h</span></div><span class="v">92 h</span>' + st('near') + '</div>'
+    + '<div class="ln"><div class="lt"><b>Repouso antes do report</b><span>mínimo 12 h 00</span></div><span class="v">10 h 30</span>' + st('over') + '</div>'
+    + '<div class="ln"><div class="lt"><b>Serviço com assistência</b><span>falta a hora da chamada</span></div><span class="v">12 h 15 a 13 h</span>' + st('unc') + '</div>'
+    + '</div>';
+  s += '<div class="money"><span>Novembro · estimado · bruto</span><b>4 312,<small>58 €</small></b></div>';
+  s += '<div class="mrow"><span>Paragem noturna · OPO</span><span class="gain" style="background:#F1EFEA">+91,20 €</span></div>';
+  s += '<div class="leg">'
+    + '<div><span class="lc" style="background:' + (o.typed ? o.voo : '#F1EFEA') + '">' + (o.typed ? 'LGW' : PLANE) + '</span>Voo</div>'
+    + '<div><span class="lc" style="background:' + (o.typed ? o.terra : '#F1EFEA') + '">' + (o.typed ? 'SBY' : HOUSE) + '</span>Serviço em terra</div>'
+    + '<div><span class="lc" style="background:' + (o.typed ? o.rep : '#F1EFEA') + '">' + MOON + '</span>Repouso · pernoita</div>'
+    + '<div><span class="lc" style="background:#F0854A">!</span>Pede atenção</div>'
+    + '</div>';
+  return s + '</div></div>';
+}
+var html = '';
+OPTS.forEach(function(o){
+  var pal = o.typed ? '<span style="background:' + o.voo + '">voo</span><span style="background:' + o.terra + '">terra</span><span style="background:' + o.rep + '">repouso</span>' : '<span style="background:#F1EFEA">tipos sem cor</span>';
+  pal += '<span style="background:#F0854A">perto · atenção</span><span style="background:#EC7A6C">passa</span><span style="background:#fff;color:#0B6E43;border:1px solid #D6D4CD">+ € ganho</span>';
+  html += '<div class="opt"><h3>' + o.name + (o.rec ? '<span class="rec">RECOMENDO</span>' : '') + '</h3><p>' + o.p + '</p><div class="palette">' + pal + '</div>' + screen(o) + '<p class="m" id="m' + o.id + '"></p></div>';
+});
+document.getElementById('opts').innerHTML = html;
+// as medições de cada maneira (calculadas em scratchpad/final.py; WCAG + ΔE com simulação de daltonismo)
+document.getElementById('mA').innerHTML = 'Tinta sobre as cores: 10,55 · 10,08 · 9,81. Pior par (ΔE normal · deuteranopia · protanopia): <b>voo × atenção 33 · 12 · 16</b>. Voo × terra 63 · 63 · 65.';
+document.getElementById('mB').innerHTML = 'Tinta sobre as cores: 8,52 · 12,18 · 9,81. <b>Voo × atenção 84 · 79 · 68</b>. Pior par: voo × terra 21 · 19 · 14 (os dois com o nome escrito). Terra × neutro 21 · 19 · 19.';
+document.getElementById('mC').innerHTML = 'Sem pares de tipo. Atenção × passa 22 · 20 · 24 (nas três maneiras: os dois levam sempre o ícone e a palavra).';
+// verificação: textos cortados ou a sair da caixa (corre ao abrir e ao mudar a largura)
+function check(){
+var cut = 0; document.querySelectorAll('.bar .t, .bar small, .lim .lt b, .lim .lt span, .st, .gain, .leg div').forEach(function(e){ if (e.scrollWidth > e.clientWidth + 1) cut++; });
+var over = 0; document.querySelectorAll('.screen').forEach(function(sc){ if (sc.scrollWidth > sc.clientWidth + 1) over++; });
+document.getElementById('meas').textContent = 'Verificação do esboço: textos cortados ' + cut + ' · ecrãs a transbordar ' + over + ' · estados: pílula "perto" 5,51 · "passa" 5,34 · "incerto" 9,94 · tinta sobre o laranja 7,16 · sobre o vermelho 6,64 · ganho 6,31 (folha) · 5,50 (neutro).';
+}
+check(); if (document.fonts) document.fonts.ready.then(check); window.addEventListener('resize', check);   // mede depois de a Hanken carregar
+</script>
+</body>
+</html>

@@ -314,11 +314,14 @@ O que muda em relação à §2 ("branco · preto · amarelo, plana, hairline"):
 
 **No código (2026-11-13, por ver no iPhone):** a Escala em AGENDA (esboços `design/escala-agenda.html` — A2 + o ano em
 meses da A1 — e `design/escala-passado.html` — D; a página de `escala-cartoes.html` foi substituída no mesmo dia, depois de
-vista no iPhone). Peças novas: **B14 · a barra do dia** (`components/DayBar.js`: a data à esquerda, o título, a lua, os dois
-pontos, a hora ou o que rendeu; hoje e o que vem na cor do tipo; **o que já passou a cinzento (neutro) com um ponto da cor do
+vista no iPhone). Peças novas: **B14 · a barra do dia** (`components/DayBar.js`: a data à esquerda, o título, a lua, a 2.ª
+linha com o outro serviço, a hora ou o que rendeu; hoje e o que vem na cor do tipo; **o que já passou a cinzento (neutro) com um ponto da cor do
 tipo** — escolha D, o título a 16:1 e o € a 6,3:1) · **B15 · o ano em meses** (12 mosaicos: n.º de dias com serviço; o atual
 com contorno; sem escala a tracejado) · **a linha das folgas** (tracejada; "Folga" só entre serviços, senão "Sem serviços na
-escala"). B1 (a célula, com os dois pontos — escolha C) vive na grelha do botão do calendário; B2 nas pernas do cartão grande
+escala"); **dois serviços no dia: uma 2.ª linha na barra diz o outro por escrito** (escolha 1B de `design/escala-acertos.html`;
+os dois pontos ficam só na grelha) · **"Lista | Mês" no topo da folha** (escolha 2B; **B11** em `components/Segmented.js`, a
+pílula de tinta desliza 220 ms, reduzido = salta). B1 (a célula, com os dois pontos — escolha C) vive no "Mês", com a legenda
+das cores e dos símbolos por baixo (já não há botão do calendário); B2 nas pernas do cartão grande
 de `components/HomeCards.js`; B3 (`components/DayRuler.js`) fica para o Detalhe do serviço; B4 no mês sem escala. O topo da
 Escala é o `HomeTop` do Início. Tokens: `TXT3.month`. O que vai para onde: `data/escalaDay.js`, golden `npm run test:escala`.
 
@@ -368,7 +371,8 @@ no código quando migra a primeira página que a usa.
   base e extras = neutro. **Por resolver no esboço dos Números, com 2–3 soluções medidas:** o neutro sobre a folha branca
   dá 1,15, e a base — quase sempre a parcela maior — desaparece. → Números.
 - **B11 · O seletor com pílula deslizante.** Cápsula com a escolhida numa pílula (a mesma da barra de abas); pode abrir um
-  2.º nível dentro da escolhida. → Números (Mês | Ano; dentro de Ano: civil · 12 meses), Estatísticas.
+  2.º nível dentro da escolhida. → Números (Mês | Ano; dentro de Ano: civil · 12 meses), Estatísticas. **No código desde
+  2026-11-13:** `components/Segmented.js`, 1.º uso "Lista | Mês" na Escala (44 pt, cápsula neutra, pílula de tinta).
 - **B12 · As linhas do Perfil.** Agrupadas em cartões brancos (`RADIUS.xxl`) com fios; ícone num círculo neutro
   (`CARD.neutral`) · rótulo · valor à direita · › ou interruptor ou "Mudar"; secções com eyebrow. Leva a pergunta do SNC
   reforçado (sim / não / não sei, por ano) e a qualificação LTC / TRI / TRE, e o cartão apagado com "EM BREVE" das

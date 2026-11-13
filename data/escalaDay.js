@@ -107,9 +107,19 @@ export function agendaRows({ ym, duties = {}, absences = {}, today = null, money
       ? (main.report_time ? `report ${main.report_time}` : (legsOf(main)[0] && legsOf(main)[0].off) || null)
       : (t.start != null ? `${fmtHm(t.start)}–${t.end != null ? fmtHm(t.end) : '—'}` : null);
     const eur = base.past ? money(iso) : null;
+    // 1B (escolha do Nuno, design/escala-acertos.html): um dia com mais de um serviço diz o outro por escrito, numa 2.ª linha
+    // ("e Standby Casa · 09:00–15:00"; com três ou mais, "· e mais 1") — sem símbolo para aprender.
+    const others = ord.filter((o) => o.svc !== main);
+    let also = null;
+    if (others.length) {
+      const o0 = others[0].svc, t0 = svcTimes(iso, o0, 0);
+      const name0 = (o0.route ? prettyRoute(o0.route) : null) || kindLabel(o0.kind || 'flight');
+      const when0 = isFlightSvc(o0) ? (o0.report_time ? `report ${o0.report_time}` : null) : (t0.start != null ? `${fmtHm(t0.start)}–${t0.end != null ? fmtHm(t0.end) : '—'}` : null);
+      also = [l(`e ${name0}`, `and ${name0}`), when0, others.length > 1 ? l(`e mais ${others.length - 1}`, `and ${others.length - 1} more`) : null].filter(Boolean).join(' · ');
+    }
     items.push({ ...base, kind: ord.some((o) => isFlightSvc(o.svc)) ? 'voo' : 'terra',
       title: (flight ? prettyRoute(main.route) : (main.route ? prettyRoute(main.route) : null)) || kindLabel(main.kind || 'flight'),
-      ns: hasNightStop(duty), two: ord.length > 1, right: eur ? { gain: `+${fmtEur(eur)}` } : (time ? { time } : null) });
+      ns: hasNightStop(duty), two: ord.length > 1, also, right: eur ? { gain: `+${fmtEur(eur)}` } : (time ? { time } : null) });
   }
   flush();
   // os cabeçalhos

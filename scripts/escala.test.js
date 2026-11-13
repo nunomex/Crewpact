@@ -188,5 +188,13 @@ eq('novembro: 12 dias com serviço (o apagado não conta), é o mês atual', [Y[
 eq('dezembro sem escala', [Y[11].count, Y[11].empty, Y[11].current], [0, true, false]);
 eq('doze meses', Y.length, 12);
 
+// ════════ 1B · o outro serviço por escrito na barra ════════
+eq('dia 19: "e Assistência em casa · 06:00–12:00"', bar('2026-11-19').also, 'e Assistência em casa · 06:00–12:00');
+eq('dia 12: "e Formação · 08:00–12:00" (o voo manda no título)', [bar('2026-11-12').title, bar('2026-11-12').also], ['LIS → FNC → LIS', 'e Formação · 08:00–12:00']);
+eq('dia com um só serviço: sem 2.ª linha', bar('2026-11-13').also, null);
+const tres = { '2026-11-10': { ...voo('LIS-OPO', '18:00', [leg('EZY1', 'LIS', '19:00', 'OPO', '20:00')]), extra: [terra('standby_home', '06:00', '10:00'), terra('office', '11:00', '13:00')] } };
+eq('três serviços: o primeiro dos outros pela hora e "e mais 1"', E.agendaRows({ ym: '2026-11', duties: tres, today: '2026-11-01', kindLabel, fmtEur }).find((r) => r.iso === '2026-11-10').also, 'e Assistência em casa · 06:00–10:00 · e mais 1');
+eq('em inglês: "and …"', E.agendaRows({ ym: '2026-11', duties: D, today: '2026-11-13', lang: 'en', kindLabel, fmtEur }).find((r) => r.iso === '2026-11-19').also, 'and Assistência em casa · 06:00–12:00');
+
 console.log(`\n${fail ? '✗' : '✓'} escala (escalaDay): ${ok} certos, ${fail} errados`);
 process.exit(fail ? 1 : 0);

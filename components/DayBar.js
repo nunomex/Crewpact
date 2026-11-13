@@ -1,7 +1,8 @@
 // A BARRA DO DIA da Escala em agenda (design-system §14, 2026-11-13; esboços design/escala-agenda.html — A2 — e
 // design/escala-passado.html — D). Só desenha o que data/escalaDay.js · agendaRows decidiu.
-//   DayBar — um dia com serviço (ou férias/baixa): a data à esquerda, o título (o voo manda), a lua da pernoita, os dois pontos
-//            de dois serviços e, à direita, a hora (dias que vêm) ou o que rendeu (dias feitos).
+//   DayBar — um dia com serviço (ou férias/baixa): a data à esquerda, o título (o voo manda), a lua da pernoita, o OUTRO serviço
+//            do dia por escrito numa 2.ª linha (1B, escolha do Nuno: os dois pontos não se percebiam) e, à direita, a hora (dias
+//            que vêm) ou o que rendeu (dias feitos).
 //            · hoje e o que vem: o fundo na cor do tipo (areia voo · lilás terra · neutro férias e baixa);
 //            · JÁ FEITO (D): o fundo a cinzento claro (neutro) e a cor do tipo num ponto ao lado do título — o passado
 //              distingue-se de relance e continua todo legível (o título a 16:1, o € na pílula branca a 6,3:1).
@@ -32,7 +33,7 @@ export function DayBar({ row, C, onPress, l }) {
   const bg = past ? C.neutral : toneOf(C, row.kind);
   const fg = past || row.kind === 'fer' || row.kind === 'doe' ? C.ink : CARD.onCard;
   const a11y = [`${row.wd} ${row.day}`, row.today ? l('hoje', 'today') : null, row.title, row.ns ? l('pernoita', 'night stop') : null,
-    row.two ? l('dois serviços', 'two duties') : null, row.right && row.right.gain ? `${l('rendeu', 'earned')} ${row.right.gain}` : row.right && row.right.time,
+    row.also || null, row.right && row.right.gain ? `${l('rendeu', 'earned')} ${row.right.gain}` : row.right && row.right.time,
     past ? l('já feito', 'done') : null].filter(Boolean).join(', ');
   return (
     <TouchableOpacity style={[s.bar, { backgroundColor: bg }]} onPress={onPress} activeOpacity={0.8}
@@ -44,13 +45,13 @@ export function DayBar({ row, C, onPress, l }) {
         <Text style={[TXT.tag, { color: fg }]} allowFontScaling={false}>{row.wd}</Text>
       </View>
       {past ? <View style={[s.sq, { backgroundColor: toneOf(C, row.kind) }]} /> : null}
-      <View style={s.titleRow}>
-        <Text style={[TXT3.slimTitle, s.title, { color: fg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{row.title}</Text>
-        {row.ns ? <Icon name="moon" size={12} color={fg} /> : null}
+      <View style={s.textCol}>
+        <View style={s.titleRow}>
+          <Text style={[TXT3.slimTitle, s.title, { color: fg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{row.title}</Text>
+          {row.ns ? <Icon name="moon" size={12} color={fg} /> : null}
+        </View>
+        {row.also ? <Text style={[TXT3.cardSub, { color: past ? C.neutralSub : CARD.onCardSub }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{row.also}</Text> : null}
       </View>
-      {row.two ? (
-        <View style={s.dots}><View style={[s.dot, { backgroundColor: CARD.onCardSub }]} /><View style={[s.dot, { backgroundColor: CARD.onCardSub }]} /></View>
-      ) : null}
       {row.right && row.right.gain ? (
         <View style={s.chip}><Text style={[TXT3.chip, { color: CARD.gain }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{row.right.gain}</Text></View>
       ) : row.right && row.right.time ? (
@@ -82,10 +83,9 @@ const s = StyleSheet.create({
   date: { width: 40, alignItems: 'center' },
   todayDotSm: { minWidth: 28, height: 28, paddingHorizontal: SPACE.xs, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
   sq: { width: 12, height: 12, borderRadius: RADIUS.pill },   // o ponto de cor do tipo (D)
-  titleRow: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: SPACE.xs },
+  textCol: { flex: 1, minWidth: 0, gap: SPACE.xxs },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.xs },
   title: { flexShrink: 1 },
-  dots: { flexDirection: 'row', gap: SPACE.xs },
-  dot: { width: 4, height: 4, borderRadius: RADIUS.pill },
   chip: { height: 26, paddingHorizontal: SPACE.sm, borderRadius: RADIUS.pill, backgroundColor: CARD.chip, justifyContent: 'center', flexShrink: 0 },
   time: { flexShrink: 0, fontVariant: ['tabular-nums'] },
   offRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md },
