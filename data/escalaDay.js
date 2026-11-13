@@ -202,7 +202,7 @@ export function monthLegend(cells = [], lang = 'pt') {
 
 // ── A LEGENDA J3 (design/escala-legenda-3.html, escolhida pelo Nuno a 2026-11-13): na 1.ª vez a GUIADA, depois a PEQUENA ──
 // A guiada: um balão por sinal que EXISTA no mês, apontado a um dia que ainda vem (nunca hoje, que tem o seu balão no fim);
-// pela ordem voo · terra · 2 ou mais · pernoita · por sincronizar · férias e baixa · feito, no máximo 5 sinais; no fim, "toca num
+// pela ordem voo · terra · 2 ou mais · pernoita · por sincronizar · férias e baixa, no máximo 5 sinais; no fim, "toca num
 // dia" sobre hoje (sem hoje no mês: o 1.º dia com serviço que vem). Sem nenhum sinal no mês, não há guiada.
 export function legendTour(cells = [], lang = 'pt') {
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -214,7 +214,7 @@ export function legendTour(cells = [], lang = 'pt') {
     ['ns', (c) => c.ns, l('A lua ao lado do destino: dormes fora da base.', 'The moon next to the destination: you sleep away from base.')],
     ['dirty', (c) => c.dirty, l('O ponto laranja: a escala mudou no calendário e falta rever.', 'The orange dot: the roster changed in the calendar and needs a review.')],
     ['abs', (c) => c.kind === 'fer' || c.kind === 'doe', l('Tracejado: férias (FÉR) ou baixa (DOE).', 'Dashed: leave (LVE) or sick leave (SCK).')],
-    ['past', (c) => c.past && !!c.kind, l('A cinzento: os dias que já passaram.', 'Grey: the days already done.')],
+    // os dias que já passaram ficam iguais aos outros (o Nuno, 2026-11-13): "feito" não é um sinal, não tem balão
   ];
   const steps = [];
   for (const [key, pred, text] of SIGNS) {
@@ -235,7 +235,7 @@ const LEGEND_GROUPS = [
   [['Serviços', 'Duties'], [['voo', 'Voo', 'Flight'], ['terra', 'Terra', 'Ground'], ['two', '2 ou mais', '2 or more']]],
   [['Ausências', 'Absences'], [['fer', 'Férias', 'Leave'], ['doe', 'Baixa', 'Sick']]],
   [['No dia', 'On the day'], [['ns', 'Pernoita', 'Night stop'], ['dirty', 'Por sincronizar', 'Pending sync']]],
-  [['Os dias', 'The days'], [['today', 'Hoje', 'Today'], ['past', 'Feito', 'Done'], ['sel', 'Escolhido', 'Selected'], ['free', 'Folga', 'Day off']]],
+  [['Os dias', 'The days'], [['today', 'Hoje', 'Today'], ['sel', 'Escolhido', 'Selected'], ['free', 'Folga', 'Day off']]],   // os feitos ficam iguais aos outros: sem sinal
 ];
 export function legendGroups(cells = [], lang = 'pt') {
   const en = lang === 'en';

@@ -102,8 +102,10 @@ yes('em inglês', E.legendTour(G.cells, 'en')[0].text === 'A blue ring is a flig
 // A pequena (J3): os quatro grupos, sempre todos os sinais (os que não há no mês com 0); "Os dias" só explicam.
 const LG = E.legendGroups(G.cells);
 eq('a legenda pequena: os grupos e os sinais', LG.map((g) => [g.title, g.items.map((i) => `${i.key}:${i.count == null ? '-' : i.count}`)]), [
-  ['Serviços', ['voo:10', 'terra:4', 'two:2']], ['Ausências', ['fer:3', 'doe:1']], ['No dia', ['ns:4', 'dirty:1']], ['Os dias', ['today:-', 'past:-', 'sel:-', 'free:-']]]);
-eq('os nomes', LG.map((g) => g.items.map((i) => i.label)), [['Voo', 'Terra', '2 ou mais'], ['Férias', 'Baixa'], ['Pernoita', 'Por sincronizar'], ['Hoje', 'Feito', 'Escolhido', 'Folga']]);
+  ['Serviços', ['voo:10', 'terra:4', 'two:2']], ['Ausências', ['fer:3', 'doe:1']], ['No dia', ['ns:4', 'dirty:1']], ['Os dias', ['today:-', 'sel:-', 'free:-']]]);
+// Os dias que já passaram ficam iguais aos outros (o Nuno, 2026-11-13): "feito" deixou de ser um sinal — nem na legenda nem na guiada.
+eq('os nomes', LG.map((g) => g.items.map((i) => i.label)), [['Voo', 'Terra', '2 ou mais'], ['Férias', 'Baixa'], ['Pernoita', 'Por sincronizar'], ['Hoje', 'Escolhido', 'Folga']]);
+yes('a guiada não fala dos dias feitos (mesmo num mês só com dias feitos)', !E.legendTour(E.monthCells({ ym: '2026-11', duties: D, absences: ABS, base: 'LIS', today: '2026-12-20' }).cells).some((s) => s.key === 'past'));
 eq('um mês vazio também leva todos os sinais (a 0)', E.legendGroups(E.monthCells({ ym: '2026-12', duties: D, base: 'LIS' }).cells)[0].items.map((i) => i.count), [0, 0, 0]);
 eq('em inglês', E.legendGroups(G.cells, 'en').map((g) => g.title), ['Duties', 'Absences', 'On the day', 'The days']);
 

@@ -356,13 +356,14 @@ export default function EscalaScreen({ navigation, route }) {
   };
 
   // Uma célula (o círculo A): o número num círculo; o anel com uma fatia por serviço, pela hora, na cor do tipo (voo céu ·
-  // terra lilás; feito = cinzento); o destino por baixo. Férias e baixa = anel tracejado; folga = só o número; hoje = o
+  // terra lilás; os dias feitos ficam iguais aos outros); o destino por baixo. Férias e baixa = anel tracejado; folga = só o número; hoje = o
   // círculo a tinta por dentro do anel; o escolhido = um anel de tinta por fora.
   const RR = (RING - RING_W) / 2, CIRC = 2 * Math.PI * RR, CX = RING / 2;
   const ringSegs = (c) => {
     const d = duties[c.iso];
     if (!valid(d)) return [];
-    return orderServices(d).map((o) => (c.past ? CARD.rule : ((o.svc.kind || 'flight') === 'flight' ? C.flight : C.ground)));
+    // Os dias que já passaram ficam iguais aos outros — o anel, o número e o destino com as cores normais (o Nuno, 2026-11-13).
+    return orderServices(d).map((o) => ((o.svc.kind || 'flight') === 'flight' ? C.flight : C.ground));
   };
   const renderCell = (c) => {
     const svcs = svcsAt(c.iso).filter(Boolean);
@@ -396,15 +397,15 @@ export default function EscalaScreen({ navigation, route }) {
               )) : null}
               {c.today ? <SvgCircle cx={CX} cy={CX} r={segs.length || isAbs ? RR - RING_W / 2 : CX} fill={C.ink} /> : null}
             </Svg>
-            <Text style={[TXT3.lineVal, s.numTxt, { color: c.today ? C.sheet : c.past ? C.tabSub : C.ink }]} allowFontScaling={false}>{c.day}</Text>
+            <Text style={[TXT3.lineVal, s.numTxt, { color: c.today ? C.sheet : C.ink }]} allowFontScaling={false}>{c.day}</Text>
             {c.dirty ? <View style={[s.pend, { backgroundColor: C.alert, borderColor: C.sheet }]} pointerEvents="none" /> : null}
             {c.sel ? <View style={[s.selRing, { borderColor: C.ink }]} pointerEvents="none" /> : null}
             {tourStep && tourStep.iso === c.iso ? <View style={[s.tourRing, { borderColor: C.ink }]} pointerEvents="none" /> : null}
           </View>
           {c.code ? (
             <View style={s.code}>
-              <Text style={[TXT.tag, { color: c.past ? C.tabSub : C.soft }]} numberOfLines={1} allowFontScaling={false}>{c.code}</Text>
-              {c.ns ? <Icon name="moon" size={9} color={c.past ? C.tabSub : C.soft} /> : null}
+              <Text style={[TXT.tag, { color: C.soft }]} numberOfLines={1} allowFontScaling={false}>{c.code}</Text>
+              {c.ns ? <Icon name="moon" size={9} color={C.soft} /> : null}
             </View>
           ) : null}
         </TouchableOpacity>
@@ -555,7 +556,7 @@ export default function EscalaScreen({ navigation, route }) {
     return (
       <View style={s.legSw}>
         <Svg width={SW} height={SW}>
-          {key === 'voo' || key === 'terra' || key === 'past' ? <SvgCircle cx={SWC} cy={SWC} r={SWR} stroke={key === 'voo' ? C.flight : key === 'terra' ? C.ground : CARD.rule} strokeWidth={2.5} fill="none" /> : null}
+          {key === 'voo' || key === 'terra' ? <SvgCircle cx={SWC} cy={SWC} r={SWR} stroke={key === 'voo' ? C.flight : C.ground} strokeWidth={2.5} fill="none" /> : null}
           {key === 'two' ? [C.ground, C.flight].map((col, i) => <SvgCircle key={i} cx={SWC} cy={SWC} r={SWR} stroke={col} strokeWidth={2.5} fill="none" strokeDasharray={`${half} ${SWCIRC - half}`} rotation={-90 + i * 180 + RING_GAP_DEG / 2} origin={`${SWC}, ${SWC}`} />) : null}
           {key === 'fer' || key === 'doe' ? <SvgCircle cx={SWC} cy={SWC} r={SWR} stroke={C.caption} strokeWidth={1.2} strokeDasharray="2 2" fill="none" /> : null}
           {key === 'today' ? <SvgCircle cx={SWC} cy={SWC} r={SWC} fill={C.ink} /> : null}
