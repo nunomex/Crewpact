@@ -150,8 +150,10 @@ export function yearMonths({ year, duties = {}, today = null, lang = 'pt' }) {
   });
 }
 
-// ── B1 · as células do mês ──
+// ── B1 · as células do mês (desenho A de design/escala-mes.html, escolhido a 2026-11-13: número limpo + etiqueta) ──
 // absences: { iso: 'vacDays' | 'sickDays' } (o 1.º evento de ausência do dia). base(ym) → código da base nesse mês.
+// O VOO MANDA, como na Lista (1B): num dia com assistência e voo, a célula é do voo (cor, destino) e twoKind diz o tipo do
+// outro serviço (a ponta da etiqueta). past = antes de hoje (a etiqueta fica neutra com o ponto da cor, como a Lista D).
 export function monthCells({ ym, duties = {}, absences = {}, base, today = null, sel = null, lang = 'pt' }) {
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const [y, m] = String(ym).split('-').map(Number);
@@ -163,12 +165,15 @@ export function monthCells({ ym, duties = {}, absences = {}, base, today = null,
     const iso = `${ym}-${String(day).padStart(2, '0')}`;
     const d = valid(duties[iso]) ? duties[iso] : null;
     const abs = !d ? (absences[iso] || null) : null;
-    const kind = d ? (isFlightSvc(d) ? 'voo' : 'terra') : abs ? (abs === 'sickDays' ? 'doe' : 'fer') : null;
-    const code = d ? dutyCode(d, b) : abs ? (abs === 'sickDays' ? l('DOE', 'SCK') : l('FÉR', 'LVE')) : null;
+    const svcs = d ? orderServices(d).map((o) => o.svc) : [];
+    const main = svcs.find(isFlightSvc) || svcs[0] || null;
+    const other = main ? svcs.find((x) => x !== main) || null : null;
+    const kind = main ? (isFlightSvc(main) ? 'voo' : 'terra') : abs ? (abs === 'sickDays' ? 'doe' : 'fer') : null;
+    const code = main ? dutyCode(main, b) : abs ? (abs === 'sickDays' ? l('DOE', 'SCK') : l('FÉR', 'LVE')) : null;
     const col = (firstWeekday + day - 1) % 7;
     cells.push({ iso, day, col, row: Math.floor((firstWeekday + day - 1) / 7), kind, code,
-      ns: hasNightStop(d), two: !!(d && Array.isArray(d.extra) && d.extra.filter(Boolean).length), dirty: !!(d && d.dirty),
-      today: iso === today, sel: iso === sel, joinR: false, joinL: false });
+      ns: hasNightStop(d), two: !!other, twoKind: other ? (isFlightSvc(other) ? 'voo' : 'terra') : null, dirty: !!(d && d.dirty),
+      today: iso === today, sel: iso === sel, past: !!today && iso < today, joinR: false, joinL: false });
   }
   // O bloco: a rotação (pernoita fora e serviço no dia seguinte) e as férias seguidas, dentro da mesma semana e do mês.
   for (let i = 0; i < cells.length - 1; i++) {
@@ -177,6 +182,22 @@ export function monthCells({ ym, duties = {}, absences = {}, base, today = null,
     if ((c.kind === 'fer' && n.kind === 'fer') || (c.ns && (n.kind === 'voo' || n.kind === 'terra'))) { c.joinR = true; n.joinL = true; }
   }
   return { firstWeekday, nRows: Math.ceil((firstWeekday + dim) / 7), dim, cells };
+}
+
+// ── L2 · a legenda que filtra (escolhida a 2026-11-13): só as pílulas do que há neste mês; tocar numa acende esses dias ──
+const LEGEND_KEYS = [['voo', 'Voo', 'Flight'], ['terra', 'Terra', 'Ground'], ['fer', 'Férias', 'Leave'], ['doe', 'Baixa', 'Sick'],
+  ['ns', 'Pernoita', 'Night stop'], ['two', '2 serviços', '2 duties'], ['dirty', 'Por sincronizar', 'Pending sync']];
+export const cellMatches = (c, key) => {
+  if (!c) return false;
+  if (key === 'voo' || key === 'terra') return c.kind === key || c.twoKind === key;
+  if (key === 'fer' || key === 'doe') return c.kind === key;
+  if (key === 'ns') return !!c.ns;
+  if (key === 'two') return !!c.two;
+  if (key === 'dirty') return !!c.dirty;
+  return false;
+};
+export function monthLegend(cells = [], lang = 'pt') {
+  return LEGEND_KEYS.filter(([key]) => cells.some((c) => cellMatches(c, key))).map(([key, pt, en]) => ({ key, label: lang === 'en' ? en : pt }));
 }
 
 // ── a ordem do dia: pela HORA ──

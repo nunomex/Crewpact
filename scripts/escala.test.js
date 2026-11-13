@@ -72,6 +72,20 @@ eq('as férias seguidas são um bloco (24–25–26); a baixa do dia 27 fica de 
 eq('dois dias de voo que voltam à base não se juntam (2 · 3)', [C(2).joinR, C(3).joinL], [false, false]);
 eq('a pernoita no último dia do mês não junta', C(30).joinR, false);
 
+// ════════ O Mês, escolha A + L2 (2026-11-13): o dia feito, o tipo do outro serviço, o voo manda e a legenda que filtra ════════
+eq('o voo manda na célula, como na Lista (dia 12: formação + voo → voo FNC; o outro serviço é terra)', [C(12).kind, C(12).code, C(12).twoKind], ['voo', 'FNC', 'terra']);
+eq('dia 19: voo MAD com assistência (o outro serviço é terra)', [C(19).kind, C(19).code, C(19).twoKind], ['voo', 'MAD', 'terra']);
+eq('um só serviço: sem outro tipo', [C(2).twoKind, C(7).twoKind], [null, null]);
+eq('os dias feitos (antes de hoje): 12 sim, 13 (hoje) e 14 não', [C(12).past, C(13).past, C(14).past], [true, false, false]);
+eq('sem "hoje" nada é feito', E.monthCells({ ym: '2026-11', duties: D, base: 'LIS' }).cells[1].past, false);
+eq('a legenda só leva o que há neste mês, por esta ordem', E.monthLegend(G.cells).map((x) => x.key), ['voo', 'terra', 'fer', 'doe', 'ns', 'two', 'dirty']);
+eq('os nomes das pílulas', E.monthLegend(G.cells).map((x) => x.label), ['Voo', 'Terra', 'Férias', 'Baixa', 'Pernoita', '2 serviços', 'Por sincronizar']);
+eq('em inglês', E.monthLegend(G.cells, 'en').map((x) => x.label), ['Flight', 'Ground', 'Leave', 'Sick', 'Night stop', '2 duties', 'Pending sync']);
+eq('um mês sem escala não tem legenda', E.monthLegend(E.monthCells({ ym: '2026-12', duties: D, base: 'LIS' }).cells), []);
+eq('filtrar "Terra" acende o dia 12 (o outro serviço é terra) e o 7; não o 2', [E.cellMatches(C(12), 'terra'), E.cellMatches(C(7), 'terra'), E.cellMatches(C(2), 'terra')], [true, true, false]);
+eq('filtrar "Voo": o 12 e o 2 sim, o 7 e uma folga não', [E.cellMatches(C(12), 'voo'), E.cellMatches(C(2), 'voo'), E.cellMatches(C(7), 'voo'), E.cellMatches(C(5), 'voo')], [true, true, false, false]);
+eq('filtrar férias, baixa, pernoita, 2 serviços e por sincronizar', [E.cellMatches(C(24), 'fer'), E.cellMatches(C(27), 'doe'), E.cellMatches(C(3), 'ns'), E.cellMatches(C(19), 'two'), E.cellMatches(C(28), 'dirty'), E.cellMatches(C(27), 'fer')], [true, true, true, true, true, false]);
+
 // ════════ a ordem do dia: pela hora (acerto 9) ════════
 const o19 = E.orderServices(D['2026-11-19']);
 eq('dia 19: a assistência das 06:00 vem antes do voo das 10:40', o19.map((o) => [o.idx, o.svc.report_time]), [[1, '06:00'], [0, '10:40']]);

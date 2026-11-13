@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · Escala só com o Mês</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* A Escala só com o Mês (2026-11-13). O Nuno: "se meto só a aparecer o mês, e tirava a lista desta aba. E quando carregasse no
+   número, abrir e aparecer o dia como a lista, e aparecer por baixo disso, como se fosse o ver tudo" + a imagem da fila de ícones
+   redondos que trocam o conteúdo no mesmo sítio. Três maneiras de arranjar espaço para o dia (o mês sozinho já enche o ecrã de
+   390 × 844), todas com o dia A (número limpo + etiqueta), a legenda que filtra (L2), o mapa das cores B (tom 2) e a fila de
+   ícones do "Ver tudo" com o nome no escolhido. Dados de teste (novembro de 2026; hoje = sexta 13, 17:31). Movimento (skill
+   animacoes): só transform e opacity no esboço; na app, LayoutAnimation/Animated com "reduzir movimento" = sem animação. */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:26px}
+.lead{max-width:940px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)}
+.optrow{display:grid;grid-template-columns:406px 406px minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:1300px){.optrow{grid-template-columns:repeat(auto-fit,minmax(min(100%,406px),406px))}}
+.oh{grid-column:1/-1;display:flex;flex-direction:column;gap:6px;max-width:940px}
+.oh h2{font-size:15px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.oh p{font-size:13.5px;line-height:1.5;color:var(--muted)} .oh p b{color:var(--pfg)}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.cap{font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.notes{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.notes h3{font-size:12.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.notes li,.notes p{font-size:13px;line-height:1.5;color:var(--muted)} .notes ul{padding-left:18px;display:flex;flex-direction:column;gap:5px} .notes b{color:var(--pfg)}
+.notes .m{font-variant-numeric:tabular-nums}
+.ctl{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.ctl button{border:1px solid #CFCDC6;background:#fff;border-radius:10px;padding:6px 10px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:940px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card2 li,.card2 p{font-size:13px;line-height:1.5;color:var(--muted)} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:var(--pfg)}
+#meas{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* o telemóvel (390 × 844 de ecrã + moldura de 8) e as peças do Início 3.0 */
+.ph{width:406px;height:860px;border:8px solid #04060A;border-radius:52px;overflow:hidden;position:relative;display:flex;flex-direction:column;
+  --desk:#E3E1DB;--ink:#141414;--soft:#3A3A36;--sheet:#FFFFFF;--neutral:#F1EFEA;--tsub:#5E5E57;--caption:#77776F;--round:rgba(127,127,127,.22);--sub:rgba(20,20,20,.82);
+  --voo:#6DBEFA;--terra:#C3A1BE;--rest:#B4C2A2;--alert:#F0854A;background:var(--desk);color:var(--ink)}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.body{flex:1;min-height:0;position:relative;overflow:hidden}
+.scroll{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none} .scroll::-webkit-scrollbar{display:none}
+.tabbar{height:83px;flex:none;background:var(--sheet);padding:5px 12px 22px;display:flex;gap:8px;align-items:center;position:relative;z-index:20}
+.tcap{flex:1;height:56px;border-radius:28px;background:var(--neutral);display:flex;padding:4px;gap:2px}
+.tcap .t{flex:1;border-radius:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:var(--tsub);font-weight:700;font-size:11px}
+.tcap .t.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(20,20,20,.14)}
+.fab{width:56px;height:56px;border-radius:28px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;flex:none;font-size:26px;font-weight:500}
+.top{padding:0 16px;transition:opacity .2s ease}
+.pills{display:flex;align-items:center;gap:8px;padding:8px 0 14px}
+.pill{height:38px;padding:0 16px;border-radius:19px;display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px;border:1.5px solid var(--ink);white-space:nowrap}
+.round{width:44px;height:44px;border-radius:22px;background:var(--round);margin-left:auto;flex:none}
+.what{font-weight:500;font-size:15px;line-height:20px;color:var(--soft)}
+.hero{display:flex;align-items:stretch;gap:16px;margin-top:4px;padding-bottom:30px}
+.giant{font-weight:700;font-size:62px;line-height:.9;letter-spacing:-2.8px;white-space:nowrap}   /* o fitGiant da app: 86 → 62 para os factos caberem ao lado */ .giant s{text-decoration:none;color:rgba(20,20,20,.5)}
+.side{border-left:1.5px solid var(--ink);padding-left:16px;display:flex;flex-direction:column;justify-content:center;gap:12px}
+.side b{display:block;font-weight:700;font-size:20px;line-height:22px} .side span{font-weight:500;font-size:11px;color:var(--soft)}
+.mini{display:none;align-items:baseline;gap:8px;padding:0 0 18px;font-weight:700;font-size:15px} .mini span{font-weight:500;font-size:13px;color:var(--soft)}
+.sheet{background:var(--sheet);border-radius:32px 32px 0 0;margin-top:-16px;padding:12px 12px 24px;position:relative;min-height:calc(100% - 200px)}
+.wk{display:flex;gap:4px;margin-bottom:4px}
+.wk span{width:48.67px;text-align:center;font-weight:800;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--tsub)}
+.g{display:flex;flex-wrap:wrap;column-gap:4px;row-gap:6px}
+.c{width:48.67px;height:52px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:3px;gap:4px;cursor:pointer;transition:opacity .18s ease}
+.c.blank{cursor:default}
+.c.hide{display:none}
+.n{font-weight:700;font-size:15px;line-height:20px;font-variant-numeric:tabular-nums}
+.n.past{color:var(--tsub)}
+.n.today{width:28px;height:28px;border-radius:14px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;margin-top:-4px}
+.tag{height:20px;align-self:stretch;margin:0 2px;border-radius:7px;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.tag.jr{margin-right:-2px;border-top-right-radius:0;border-bottom-right-radius:0} .tag.jl{margin-left:-2px;border-top-left-radius:0;border-bottom-left-radius:0}
+.tag.abs{background:#fff !important;border:1.5px solid rgba(127,127,127,.4)}
+.tag .edge{position:absolute;left:0;top:0;bottom:0;width:8px} .tag.two{padding-left:8px}
+.tag .dot{width:6px;height:6px;border-radius:3px;margin-right:2px;flex:none}
+.code{font-weight:800;font-size:11px;letter-spacing:.5px;color:#141414;line-height:1;display:inline-flex;align-items:center;gap:2px;white-space:nowrap}
+.moon{width:10px;height:10px;flex:none}
+.pend{position:absolute;top:2px;right:4px;width:7px;height:7px;border-radius:4px;background:var(--alert);box-shadow:0 0 0 1.5px #fff}
+.selr{position:absolute;inset:-1px;border:2px solid var(--ink);border-radius:13px;pointer-events:none}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:12px 0 2px;scrollbar-width:none} .chips::-webkit-scrollbar{display:none}
+.chip{flex:none;height:32px;padding:0 12px 0 8px;border-radius:16px;background:var(--neutral);display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12px}
+.chip .sw{width:22px;height:16px;border-radius:5px;position:relative;overflow:hidden;display:inline-flex;align-items:center;justify-content:center}
+.hint{font-weight:500;font-size:11px;color:var(--tsub);padding:6px 2px 0}
+
+/* o dia aberto (os cartões da Lista) e o "Ver tudo" com a fila de ícones */
+.day{display:flex;flex-direction:column;gap:8px}
+.dhd{display:flex;align-items:center;justify-content:space-between;padding:4px 4px 2px}
+.dhd b{font-weight:800;font-size:17px} .dhd span{font-weight:700;font-size:12px;color:var(--tsub)}
+.xbtn{width:36px;height:36px;border-radius:18px;background:var(--round);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;cursor:pointer;flex:none}
+.big{border-radius:22px;padding:14px;display:flex;flex-direction:column;gap:4px;color:#141414}
+.big .k{font-weight:700;font-size:12px;color:var(--sub)} .big .tt{font-weight:800;font-size:20px;letter-spacing:-.3px;line-height:1.15}
+.big .row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:500;font-size:13px;color:var(--sub)}
+.gain{background:#fff;color:#0B6E43;border-radius:12px;height:26px;padding:0 10px;display:inline-flex;align-items:center;font-weight:800;font-size:13px;white-space:nowrap}
+.slim{border-radius:18px;padding:11px 14px;display:flex;align-items:center;gap:8px;color:#141414}
+.slim .tw{flex:1;display:flex;flex-direction:column;gap:1px} .slim b{font-weight:800;font-size:14px} .slim span{font-weight:500;font-size:12px;color:var(--sub)}
+.vt{margin-top:6px}
+.vth{font-weight:800;font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--tsub);padding:6px 4px 8px}
+.icons{display:flex;gap:6px;align-items:center}
+.ib{height:44px;min-width:44px;border-radius:22px;background:var(--neutral);display:inline-flex;align-items:center;justify-content:center;gap:6px;position:relative;cursor:pointer;flex:none;padding:0 12px;font-weight:700;font-size:13px;color:var(--ink);transition:background-color .2s ease}
+.ib .lb{display:none;white-space:nowrap}
+.ib.on{background:var(--ink);color:#fff} .ib.on .lb{display:inline}
+.ib:not(.on){width:44px;padding:0}
+.badge{position:absolute;top:-2px;right:-2px;min-width:16px;height:16px;border-radius:8px;background:var(--alert);color:#141414;font-weight:800;font-size:10px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px #fff}
+.panel{margin-top:10px;background:var(--neutral);border-radius:22px;padding:6px 12px;opacity:1;transform:none}
+.panel.swap{opacity:0;transform:translateY(6px)}
+@media (prefers-reduced-motion: no-preference){.panel{transition:opacity .2s cubic-bezier(.2,.8,.2,1),transform .2s cubic-bezier(.2,.8,.2,1)}}
+.ln{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(127,127,127,.22)} .ln:last-child{border-bottom:0}
+.ln .lt{flex:1;display:flex;flex-direction:column;gap:1px} .ln .lt b{font-weight:700;font-size:13.5px} .ln .lt span{font-weight:500;font-size:12px;color:var(--soft)}
+.ln .v{font-weight:800;font-size:13.5px;white-space:nowrap;text-align:right}
+.ln .act{height:30px;border-radius:15px;background:var(--ink);color:#fff;font-weight:700;font-size:12px;padding:0 12px;display:inline-flex;align-items:center;white-space:nowrap}
+.ok{display:inline-flex;align-items:center;gap:4px;font-weight:800;font-size:11.5px}
+.ok i{width:15px;height:15px;border-radius:8px;border:1.5px solid var(--ink);font-style:normal;font-size:9px;display:inline-flex;align-items:center;justify-content:center}
+
+/* 1 · os acertos (2026-11-13): os ícones com o nome por baixo, todos (a fila de ações da folha de partilhar do iPhone) */
+.icons1{display:flex;gap:6px}
+.ib1{width:56px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;flex:none}
+.ib1 .cir{width:44px;height:44px;border-radius:22px;background:var(--neutral);display:flex;align-items:center;justify-content:center;color:var(--ink);position:relative}
+/* a aba ligada (a imagem do Nuno): o ícone escolhido assenta numa aba da mesma cor do painel, com curvas para dentro onde
+   encontra o painel; ao tocar noutro, a aba desliza até ele e "cola-se" (240 ms; reduzido = salta). */
+.vt1{position:relative}
+.vt1 .icons1{position:relative;z-index:2;padding:8px 0 10px}
+.tab1{position:absolute;z-index:1;left:0;top:0;width:56px;height:82px;background:var(--neutral);border-radius:20px 20px 0 0}
+.tab1::before,.tab1::after{content:"";position:absolute;bottom:0;width:12px;height:12px}
+.tab1::before{left:-12px;background:radial-gradient(circle at 0 0, transparent 11.5px, var(--neutral) 12px)}
+.tab1::after{right:-12px;background:radial-gradient(circle at 100% 0, transparent 11.5px, var(--neutral) 12px)}
+.vt1.first .tab1::before,.vt1.last .tab1::after{display:none}
+@media (prefers-reduced-motion: no-preference){.tab1{transition:transform .24s cubic-bezier(.2,.8,.2,1)}}
+.panel1{background:var(--neutral);border-radius:22px;padding:6px 12px}
+.vt1.first .panel1{border-top-left-radius:0} .vt1.last .panel1{border-top-right-radius:0}
+.panel1.swap{opacity:0;transform:translateY(6px)}
+@media (prefers-reduced-motion: no-preference){.panel1{transition:opacity .2s cubic-bezier(.2,.8,.2,1),transform .2s cubic-bezier(.2,.8,.2,1)}}
+@media (prefers-reduced-motion: no-preference){.ib1 .cir{transition:background-color .2s ease,color .2s ease}}
+.ib1 .nm{font-weight:600;font-size:11px;line-height:14px;color:var(--tsub);white-space:nowrap}
+/* a foto do Nuno: os círculos são do mesmo material da aba e do painel; o escolhido não muda de cor — está ligado pela aba
+   e leva um anel fino de tinta (2026-11-13) */
+.ib1.on .cir{background:var(--neutral);box-shadow:inset 0 0 0 1.5px var(--ink)} .ib1.on .nm{color:var(--ink);font-weight:800}
+.ib1.off{opacity:.38;cursor:default}
+.offnote{font-weight:500;font-size:13px;line-height:18px;color:var(--soft);padding:4px 4px 0}
+.day{touch-action:pan-y}
+.swhint{font-weight:500;font-size:11px;color:var(--tsub);text-align:center;padding-top:10px}
+/* 1 · o mês encolhe para a semana */
+.o1.open .c.other{display:none}
+.o1 .wkline{display:none}
+/* 2 · o dia numa folha por cima do mês */
+.dsheet{position:absolute;left:0;right:0;bottom:0;height:calc(100% - 300px);background:#fff;border-radius:32px 32px 0 0;box-shadow:0 -8px 30px rgba(20,20,20,.16);z-index:10;
+  transform:translateY(105%);padding:8px 12px 24px;overflow:hidden}
+@media (prefers-reduced-motion: no-preference){.dsheet{transition:transform .28s cubic-bezier(.2,.8,.2,1)}}
+.o2.open .dsheet{transform:translateY(0)}
+.o2.full .dsheet{transform:translateY(-250px);height:calc(100% - 50px)}
+.grab{width:40px;height:5px;border-radius:3px;background:rgba(127,127,127,.4);margin:0 auto 8px;cursor:pointer}
+.dsheet .inner{height:100%;overflow-y:auto;scrollbar-width:none} .dsheet .inner::-webkit-scrollbar{display:none}
+/* o degrau da imagem: a fila de ícones assenta numa aba da folha */
+.step{position:relative;margin:0 -12px;padding:0 12px}
+/* 3 · o topo dá lugar */
+.o3.open .hero, .o3.open .what{display:none}
+.o3.open .mini{display:flex}
+.o3 .day3{display:none} .o3.open .day3{display:flex}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>A Escala só com o Mês</h1>
+    <p>A tua ideia: a aba Escala mostra <b>só o mês</b> (sai a Lista e o "Lista | Mês"); tocar num número <b>abre esse dia</b> com os cartões da Lista e, <b>por baixo, o "Ver tudo"</b> — as secções do Detalhe do serviço numa <b>fila de ícones redondos</b> que trocam o conteúdo no mesmo sítio (a imagem que mandaste). O problema a resolver é o espaço: num iPhone de 390 × 844 o topo ocupa ~275 pt e o mês ~435 pt — <b>o mês sozinho já enche o ecrã</b>. Três maneiras de dar lugar ao dia, todas com o dia A, a legenda que filtra e a fila de ícones (o escolhido mostra o nome; os contadores são laranja e só aparecem quando há alguma coisa).</p>
+    <p><b>Toca nos ecrãs:</b> num dia com serviço para o abrir, no ✕ ou na semana para voltar ao mês, e nos ícones do "Ver tudo".</p>
+  </div>
+  <div id="opts"></div>
+  <p id="meas"></p>
+  <div class="card2"><h3>A minha recomendação: 1 · o mês encolhe para a semana</h3>
+    <ul><li><b>Escolhida pelo Nuno ("gosto da 1"), com os acertos:</b> deslizar entre dias, os ícones com nome, abrir no mês fechado, a secção certa para cada dia.</li>
+    <li>É a única em que, <b>sem deslizar, se vê tudo o que importa</b> (medido): a semana do dia, o 1.º cartão e a fila de ícones do "Ver tudo" — o dia começa a 345 pt. Podes saltar para o dia seguinte com um toque na semana. É o que o Calendário do iPhone faz — o tripulante já conhece o gesto.</li>
+    <li>A <b>2</b> (folha por cima) é a mais "iOS Mapas" e deixa ver o mês por trás, mas a fila de ícones fica meio escondida até puxares a folha, e é mais uma camada a arrastar. Fica bem com o degrau da imagem.</li>
+    <li>A <b>3</b> (o topo dá lugar) põe o dia mais acima (194 pt), mas para isso a página desliza e <b>a semana do dia sai de vista</b>: para mudar de dia tens de subir outra vez.</li>
+    <li>Nas três, a fila de ícones substitui o ecrã "Ver tudo": o Detalhe passa a viver dentro da Escala (o Início, ao tocar num serviço, abre a Escala nesse dia).</li></ul></div>
+  <div class="card2"><h3>Referências</h3>
+    <ul><li>A tua imagem (fila de botões redondos com contadores que trocam o conteúdo; a aba em degrau da folha) — fica de fora o fundo em degradé com vidro (A4), o avatar e os contadores vermelhos.</li>
+    <li>Calendário do iPhone (mês → semana com o dia por baixo) · Mapas do iPhone (a folha que se puxa) · Lifesum e Structured (o dia A) · Weverse (a legenda que filtra) — Mobbin, nas rondas anteriores (<code>design/escala-mes.html</code>).</li></ul></div>
+</div>
+
+<script>
+var MOON = '<svg class="moon" viewBox="0 0 24 24" fill="currentColor"><path d="M20 15.3A8.5 8.5 0 0 1 8.7 4a8.5 8.5 0 1 0 11.3 11.3z"/></svg>';
+var I = {   // ícones simples (traço), no lugar dos da app (design/icons.js): avião · medidor · carteira · cama · partilhar · lápis
+  plane:'<path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z" fill="currentColor" stroke="none"/>',
+  gauge:'<path d="M4 15a8 8 0 1 1 16 0"/><path d="M12 15l4-5"/><circle cx="12" cy="15" r="1.4" fill="currentColor"/>',
+  wallet:'<rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18"/><circle cx="16.5" cy="14.5" r="1.2" fill="currentColor"/>',
+  bed:'<path d="M3 18V7"/><path d="M3 14h18v4"/><path d="M21 14v-2a3 3 0 0 0-3-3h-7v5"/><circle cx="7" cy="11" r="1.8"/>',
+  share:'<path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 12v7h14v-7"/>',
+  edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/>'
+};
+function ic(n, s){ return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + I[n] + '</svg>'; }
+var WD = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'], WDL = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+var TODAY = 13, LEAD = 6, DAYS = 30;
+var D = {
+  3:{ k:'voo', code:'FNC', ns:1, jr:1 }, 4:{ k:'voo', code:'FNC', jl:1 }, 5:{ k:'voo', code:'BCN' }, 11:{ k:'voo', code:'FNC' },
+  13:{ k:'voo', code:'OPO', ns:1, two:1, jr:1 }, 14:{ k:'voo', code:'OPO', jl:1 }, 16:{ k:'terra', code:'SBY' }, 17:{ k:'terra', code:'FRM' },
+  19:{ k:'voo', code:'LGW' }, 20:{ k:'voo', code:'OPO', ns:1, two:1, jr:1 }, 21:{ k:'voo', code:'OPO', jl:1 }, 24:{ k:'voo', code:'BCN', pend:1 },
+  25:{ k:'abs', code:'FÉR', jr:1 }, 26:{ k:'abs', code:'FÉR', jl:1 }, 27:{ k:'voo', code:'OPO', ns:1, two:1, jr:1 }, 28:{ k:'voo', code:'OPO', jl:1 }, 30:{ k:'terra', code:'SBY' }
+};
+var COL = { voo:'var(--voo)', terra:'var(--terra)', abs:'#fff' };
+var weekOf = function(d){ return Math.floor((LEAD + d - 1) / 7); };
+// o conteúdo de um dia (os cartões da Lista) — com dados de teste para 13 e 14; os outros dias, um cartão genérico
+function dayCards(d){
+  if (d === 13) return '<div class="big" style="background:var(--terra)"><span class="k">Serviço em terra</span><span class="tt">Assistência em casa</span><div class="row"><span>06:00 → 12:00 · 6 h</span></div></div>'
+    + '<div class="big" style="background:var(--voo)"><span class="k">Voo · a seguir</span><span class="tt">LIS → OPO ' + MOON + '</span><div class="row"><span>report 18:00 · fim do serviço 21:10 · pernoita no Porto</span><span class="gain">+96,90 €</span></div></div>';
+  if (d === 14) return '<div class="big" style="background:var(--voo)"><span class="k">Voo</span><span class="tt">OPO → LIS</span><div class="row"><span>report 09:40 · fim do serviço 11:55</span><span class="gain">+23,40 €</span></div></div>';
+  var x = D[d]; if (!x) return '<div class="slim" style="background:var(--neutral)"><div class="tw"><b>Folga</b><span>sem serviços</span></div></div>';
+  return '<div class="big" style="background:' + (x.k === 'abs' ? 'var(--neutral)' : COL[x.k]) + '"><span class="k">' + (x.k === 'voo' ? 'Voo' : x.k === 'abs' ? 'Férias' : 'Serviço em terra') + '</span><span class="tt">' + (x.k === 'voo' ? 'LIS → ' + x.code : x.k === 'abs' ? 'Férias' : x.code === 'FRM' ? 'Formação' : 'Assistência em casa') + '</span></div>';
+}
+// o "Ver tudo": a fila de ícones e o painel de cada secção (as do Detalhe do serviço)
+var SECS = [
+  ['legs','plane','Pernas',null],['lim','gauge','Limites',null],['eur','wallet','Dinheiro',null],['hotel','bed','Hotel','1'],['share','share','Partilhar',null],['fix','edit','Corrigir',null]
+];
+var PANELS = {
+  legs:'<div class="ln"><div class="lt"><b>EZY1873 · LIS → OPO</b><span>sai 18:45 · chega 19:40 · 55 min · Zulu 18:45–19:40</span></div></div><div class="ln"><div class="lt"><b>Horas de voo do dia</b><span>soma dos block</span></div><span class="v">55 min</span></div>',
+  lim:'<div class="ln"><div class="lt"><b>Serviço de voo (PSV)</b><span>máximo 13 h 00</span></div><span class="v">3 h 10</span><span class="ok"><i>✓</i>dentro</span></div>'
+    + '<div class="ln"><div class="lt"><b>Repouso antes do report</b><span>mínimo 12 h 00</span></div><span class="v">18 h 30</span><span class="ok"><i>✓</i>dentro</span></div>'
+    + '<div class="ln"><div class="lt"><b>Fadiga</b><span>estimativa · não é um limite da lei</span></div><span class="v">baixa</span></div>',
+  eur:'<div class="ln"><div class="lt"><b>Per diem · 1 setor</b><span>AE easyJet · cabine</span></div><span class="gain" style="background:#fff">+45,60 €</span></div><div class="ln"><div class="lt"><b>Paragem noturna · OPO</b><span>AE easyJet</span></div><span class="gain" style="background:#fff">+51,30 €</span></div><div class="ln"><div class="lt"><b>Este dia</b><span>estimado · bruto</span></div><span class="v">96,90 €</span></div>',
+  hotel:'<div class="ln"><div class="lt"><b>Pernoita no Porto</b><span>fim do serviço 21:10 · report de volta 09:40</span></div></div><div class="ln"><div class="lt"><b>Hotel</b><span>ainda não guardaste o hotel desta estação</span></div><span class="act">Guardar</span></div>',
+  share:'<div class="ln"><div class="lt"><b>Partilhar o voo</b><span>com a família: hora, atraso e onde dormes</span></div><span class="act">Partilhar</span></div>',
+  fix:'<div class="ln"><div class="lt"><b>O calendário está errado?</b><span>as horas reais ou o dado que faltou</span></div><span class="act">Corrigir</span></div>'
+};
+// O "Ver tudo" da 1: o painel de cada secção para o dia d (dados de teste), e a fila com o nome por baixo de cada ícone.
+function panel1(sec, d){
+  var x = D[d], voo = x && x.k === 'voo', past = d < TODAY;
+  if (!x) return '<div class="ln"><div class="lt"><b>Folga</b><span>sem serviço neste dia</span></div></div>';
+  if (sec === 'legs') return voo ? '<div class="ln"><div class="lt"><b>LIS → ' + x.code + '</b><span>as pernas e as horas reais (Zulu e local)</span></div></div>' : '<div class="ln"><div class="lt"><b>Sem pernas</b><span>serviço em terra</span></div></div>';
+  if (sec === 'lim') return d === 13 ? PANELS.lim : '<div class="ln"><div class="lt"><b>' + (voo ? 'Serviço de voo (PSV)' : 'Serviço') + '</b><span>máximo 13 h 00</span></div><span class="ok"><i>✓</i>dentro</span></div><div class="ln"><div class="lt"><b>Repouso antes</b><span>mínimo 12 h 00</span></div><span class="ok"><i>✓</i>dentro</span></div>';
+  if (sec === 'eur') return d === 13 ? PANELS.eur : (voo ? '<div class="ln"><div class="lt"><b>Per diem</b><span>AE easyJet · ' + (past ? 'feito' : 'estimado') + '</span></div><span class="gain" style="background:#fff">+' + (x.ns ? '64,30' : '23,40') + ' €</span></div>' : '<div class="ln"><div class="lt"><b>' + (x.k === 'abs' ? 'Férias' : 'Serviço em terra') + '</b><span>sem prestação no AE</span></div></div>');
+  if (sec === 'hotel') return x.ns ? (d === 13 ? PANELS.hotel : '<div class="ln"><div class="lt"><b>Hotel em ' + x.code + '</b><span>guardado · direções no Maps</span></div><span class="act">Maps</span></div>') : '<div class="ln"><div class="lt"><b>Sem pernoita</b><span>dormes em casa</span></div></div>';
+  if (sec === 'share') return voo ? PANELS.share : '<div class="ln"><div class="lt"><b>Sem voo para partilhar</b><span>só os voos se partilham com a família</span></div></div>';
+  return PANELS.fix;
+}
+function defSec(d){ return d < TODAY ? 'eur' : 'lim'; }
+function verTudo1(id, d, sel){
+  sel = sel || defSec(d);
+  var x = D[d];
+  var idx = SECS.map(function(s){ return s[0]; }).indexOf(sel);
+  return '<div class="vt"><div class="vth">Ver tudo</div><div class="vt1' + (idx === 0 ? ' first' : '') + (idx === SECS.length - 1 ? ' last' : '') + '"><div class="tab1" style="transform:translateX(' + (idx * 62) + 'px)"></div><div class="icons1">' + SECS.map(function(s){
+    var badge = s[0] === 'hotel' && d === 13;   // pernoita sem hotel guardado
+    return '<span class="ib1' + (s[0] === sel ? ' on' : '') + '" data-s="' + s[0] + '" onclick="pickSec(\'' + id + '\',\'' + s[0] + '\')"><span class="cir">' + ic(s[1], 20) + (badge ? '<span class="badge"></span>' : '') + '</span><span class="nm">' + s[2] + '</span></span>';
+  }).join('') + '</div><div class="panel1" id="' + id + '-panel">' + panel1(sel, d) + '</div></div></div>';
+}
+function dayBlock1(id, d){
+  var body = D[d] ? dayCards(d) + verTudo1(id, d) : '<div class="slim" style="background:var(--neutral)"><div class="tw"><b>Folga</b><span>sem serviços neste dia</span></div></div><div class="offnote">Desliza para o lado para ver o dia seguinte.</div>';
+  return '<div class="day" data-d="' + d + '">' + dayHead(id, d) + body + '<div class="swhint">‹ desliza para mudar de dia ›</div></div>';
+}
+function verTudo(id, sel){
+  return '<div class="vt"><div class="vth">Ver tudo</div><div class="icons">' + SECS.map(function(s){
+    return '<span class="ib' + (s[0] === sel ? ' on' : '') + '" data-s="' + s[0] + '" onclick="pickSec(\'' + id + '\',\'' + s[0] + '\')" title="' + s[2] + '">' + ic(s[1], 20) + '<span class="lb">' + s[2] + '</span>' + (s[3] ? '<span class="badge">' + (s[3] === '1' ? '' : s[3]) + '</span>' : '') + '</span>';
+  }).join('') + '</div><div class="panel" id="' + id + '-panel">' + PANELS[sel] + '</div></div>';
+}
+function cell(id, d, selD){
+  var x = D[d], past = d < TODAY, cls = 'c' + (selD && weekOf(d) !== weekOf(selD) ? ' other' : '');
+  var h = '<div class="' + cls + '" data-d="' + d + '" onclick="openDay(\'' + id + '\',' + d + ')">';
+  h += '<span class="n' + (d === TODAY ? ' today' : past ? ' past' : '') + '">' + d + '</span>';
+  if (x) {
+    var bg = past && x.k !== 'abs' ? 'var(--neutral)' : COL[x.k];
+    h += '<span class="tag' + (x.k === 'abs' ? ' abs' : '') + (x.two && !past ? ' two' : '') + (x.jr ? ' jr' : '') + (x.jl ? ' jl' : '') + '" style="background:' + bg + '">' + (x.two && !past ? '<i class="edge" style="background:var(--terra)"></i>' : '')
+      + '<span class="code">' + (past && x.k !== 'abs' ? '<i class="dot" style="background:' + COL[x.k] + '"></i>' : '') + x.code + (x.ns ? MOON : '') + '</span></span>';
+  }
+  if (x && x.pend) h += '<i class="pend"></i>';
+  if (d === selD) h += '<i class="selr"></i>';
+  return h + '</div>';
+}
+function grid(id, selD){
+  var h = '<div class="wk">' + WD.map(function(w){ return '<span>' + w + '</span>'; }).join('') + '</div><div class="g">';
+  for (var i = 0; i < LEAD; i++) h += '<div class="c blank' + (selD && weekOf(1) !== weekOf(selD) ? ' other' : '') + '"></div>';
+  for (var d = 1; d <= DAYS; d++) h += cell(id, d, selD);
+  return h + '</div>';
+}
+var CHIPS = '<div class="chips"><span class="chip"><span class="sw" style="background:var(--voo)"></span>Voo</span><span class="chip"><span class="sw" style="background:var(--terra)"></span>Terra</span><span class="chip"><span class="sw" style="background:#fff;border:1.5px solid rgba(127,127,127,.4)"></span>Férias</span><span class="chip"><span class="sw" style="background:var(--voo)">' + MOON + '</span>Pernoita</span><span class="chip">2 serviços</span></div><div class="hint">Toca numa cor para ver esses dias.</div>';
+function topHtml(){
+  return '<div class="top"><div class="pills"><span class="pill">Novembro 2026 ▾</span><span class="round"></span></div><div class="what">A tua escala de novembro</div>'
+    + '<div class="hero"><div class="giant">11<br><s>serviços</s></div><div class="side"><div><b>7</b><span>pernoitas</span></div><div><b>2 008,66 €</b><span>per diem · estimado</span></div></div></div>'
+    + '<div class="mini">11 serviços <span>· 7 pernoitas · 2 008,66 €</span></div></div>';
+}
+function dayHead(id, d){ return '<div class="dhd"><div><b>' + (d === TODAY ? 'Hoje · ' : '') + WDL[new Date(2026, 10, d).getDay()] + ' ' + d + '</b><br><span>' + (D[d] && D[d].two ? '2 serviços' : D[d] ? '1 serviço' : 'sem serviços') + '</span></div><span class="xbtn" onclick="closeDay(\'' + id + '\')">✕</span></div>'; }
+function dayBlock(id, d){ return '<div class="day">' + dayHead(id, d) + dayCards(d) + verTudo(id, 'lim') + '</div>'; }
+function tabbar(id){ return '<nav class="tabbar"><div class="tcap">' + ['Início','Escala','Números','Perfil'].map(function(x, i){ return '<div class="t' + (i === 1 ? ' on' : '') + '"' + (i === 1 && id ? ' style="cursor:pointer" onclick="closeDay(\'' + id + '\')"' : '') + '>' + x + '</div>'; }).join('') + '</div><span class="fab">+</span></nav>'; }
+// cada maneira, num estado (fechado: só o mês · aberto: o dia d)
+function phone(opt, id, d){
+  var h = '<div class="ph ' + opt + (d ? ' open' : '') + '" id="' + id + '" data-opt="' + opt + '" data-d="' + (d || '') + '"><div class="status"><span>17:31</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="body"><div class="scroll">';
+  h += topHtml();
+  if (opt === 'o1') h += '<div class="sheet">' + grid(id, d) + (d ? dayBlock1(id, d) : CHIPS) + '</div>';
+  if (opt === 'o2') h += '<div class="sheet">' + grid(id, d) + CHIPS + '</div>';
+  if (opt === 'o3') h += '<div class="sheet">' + grid(id, d) + (d ? '<div class="day3" style="flex-direction:column;margin-top:12px">' + dayBlock(id, d) + '</div>' : CHIPS) + '</div>';
+  h += '</div>';
+  if (opt === 'o2') h += '<div class="dsheet"><div class="grab" onclick="pull(\'' + id + '\')"></div><div class="inner">' + (d ? dayBlock(id, d) : '') + '</div></div>';
+  h += '</div>' + tabbar(id) + '</div>';
+  return h;
+}
+var OPTS = [
+  ['o1', '1 · O mês encolhe para a semana · escolhida', true, 'Tocar num dia: <b>o mês recolhe para a linha dessa semana</b> (as outras semanas apagam-se e a semana sobe — 260 ms) e o dia ocupa o resto: os cartões e, por baixo, o "Ver tudo". Tocar noutro dia da semana troca o dia; o ✕ (ou o mês no topo) abre o mês outra vez. É o gesto do Calendário do iPhone. <b>Com os acertos (2026-11-13):</b> <b>desliza no dia</b> para o seguinte ou o anterior (as folgas também; a semana acompanha) · <b>os seis ícones com o nome por baixo</b> · a aba <b>abre no mês fechado</b> e tocar outra vez em "Escala" volta ao mês · a secção que abre: <b>Limites</b> num dia que vem, <b>Dinheiro</b> num dia feito; o Hotel leva o contador quando há pernoita sem hotel.'],
+  ['o2', '2 · O dia numa folha por cima do mês', false, 'Tocar num dia: <b>sobe uma folha</b> até meio do ecrã com o dia (280 ms); o mês continua por trás. <b>Puxar a folha para cima</b> (toca na pega) mostra o "Ver tudo" inteiro. Como nos Mapas do iPhone. É aqui que o degrau da imagem pode entrar (a fila de ícones numa aba da folha).'],
+  ['o3', '3 · O topo dá lugar', false, 'Tocar num dia: <b>o número grande do topo recolhe</b> para uma linha ("11 serviços · 7 pernoitas · 2 008,66 €") e o dia aparece <b>por baixo do mês</b> — o mês fica inteiro. A lista desliza até ao dia (300 ms).']
+];
+var html = '';
+OPTS.forEach(function(o){
+  html += '<div class="optrow"><div class="oh"><h2>' + o[1] + (o[2] ? '<span class="rec">RECOMENDO</span>' : '') + '</h2><p>' + o[3] + '</p></div>'
+    + '<div><div class="cap">O mês (fechado)</div>' + phone(o[0], o[0] + 'a', null) + '</div>'
+    + '<div><div class="cap">Hoje aberto (toca nos ícones)</div>' + phone(o[0], o[0] + 'b', 13) + '<div class="ctl"><button onclick="closeDay(\'' + o[0] + 'b\')">Voltar ao mês</button><button onclick="openDay(\'' + o[0] + 'b\',14)">Abrir o dia 14</button>' + (o[0] === 'o2' ? '<button onclick="pull(\'o2b\')">Puxar a folha</button>' : '') + (o[0] === 'o1' ? '<button onclick="stepDay(\'o1b\',-1)">‹ Dia anterior</button><button onclick="stepDay(\'o1b\',1)">Dia seguinte ›</button><button onclick="closeDay(\'o1b\')">Tocar na aba Escala</button>' : '') + '</div></div>'
+    + '<div class="notes" id="n-' + o[0] + '"></div></div>';
+});
+document.getElementById('opts').innerHTML = html;
+
+// interação: abrir um dia, voltar ao mês, trocar a secção do "Ver tudo" (com o movimento; reduzido = sem)
+var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function flip(ph, change){   // anima a mudança de lugar (FLIP): mede antes, muda, inverte com transform, solta
+  var els = [].slice.call(ph.querySelectorAll('.sheet, .g, .day, .wk'));
+  var before = els.map(function(e){ return e.getBoundingClientRect().top; });
+  change();
+  if (reduce) return;
+  els.forEach(function(e, i){ if (!e.isConnected) return; var dy = before[i] - e.getBoundingClientRect().top; if (!dy) return; e.style.transition = 'none'; e.style.transform = 'translateY(' + dy + 'px)'; requestAnimationFrame(function(){ requestAnimationFrame(function(){ e.style.transition = 'transform .26s cubic-bezier(.2,.8,.2,1)'; e.style.transform = ''; }); }); });
+  var dayEl = ph.querySelector('.day'); if (dayEl) { dayEl.style.opacity = '0'; requestAnimationFrame(function(){ requestAnimationFrame(function(){ dayEl.style.transition = 'opacity .26s ease, transform .26s cubic-bezier(.2,.8,.2,1)'; dayEl.style.opacity = '1'; }); }); }
+}
+function rebuild(id, d){
+  var ph = document.getElementById(id), opt = ph.getAttribute('data-opt');
+  var tmp = document.createElement('div'); tmp.innerHTML = phone(opt, id, d);
+  var nph = tmp.firstChild;
+  if (opt === 'o2') {   // a folha: troca só o conteúdo e anima a subida
+    ph.querySelector('.sheet').innerHTML = nph.querySelector('.sheet').innerHTML;
+    ph.querySelector('.dsheet .inner').innerHTML = d ? dayBlock(id, d) : ph.querySelector('.dsheet .inner').innerHTML;
+    ph.classList.toggle('open', !!d); if (!d) ph.classList.remove('full');
+    ph.setAttribute('data-d', d || ''); return;
+  }
+  flip(ph, function(){ ph.querySelector('.body').innerHTML = nph.querySelector('.body').innerHTML; ph.className = nph.className; ph.setAttribute('data-d', d || ''); });
+  if (opt === 'o1') bindSwipe(id);
+  if (opt === 'o3' && d) { var sc = ph.querySelector('.scroll'), dy = ph.querySelector('.day3'); setTimeout(function(){ sc.scrollTo({ top: dy.offsetTop - 60, behavior: reduce ? 'auto' : 'smooth' }); }, 30); }
+}
+function openDay(id, d){ var o1 = document.getElementById(id).getAttribute('data-opt') === 'o1'; if (!o1 && !D[d] && d !== TODAY) return; rebuild(id, d); }   // na 1 abre-se qualquer dia (a folga também)
+function closeDay(id){ rebuild(id, null); }
+function pull(id){ var ph = document.getElementById(id); if (ph.classList.contains('open')) ph.classList.toggle('full'); }
+function pickSec(id, s){
+  var ph = document.getElementById(id), p = ph.querySelector('#' + id + '-panel');
+  var d = +ph.getAttribute('data-d'), html = ph.getAttribute('data-opt') === 'o1' ? panel1(s, d) : PANELS[s];
+  ph.querySelectorAll('.ib, .ib1').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-s') === s); });
+  var vt1 = ph.querySelector('.vt1');
+  if (vt1) {   // a aba desliza até ao ícone novo e cola-se a ele
+    var i = SECS.map(function(x){ return x[0]; }).indexOf(s);
+    vt1.querySelector('.tab1').style.transform = 'translateX(' + (i * 62) + 'px)';
+    vt1.classList.toggle('first', i === 0); vt1.classList.toggle('last', i === SECS.length - 1);
+  }
+  if (reduce) { p.innerHTML = html; return; }
+  p.classList.add('swap'); setTimeout(function(){ p.innerHTML = html; p.classList.remove('swap'); }, 120);
+}
+// 1 · mudar de dia a deslizar: o dia sai para um lado e o seguinte entra do outro (200 ms); reduzido = troca logo.
+function stepDay(id, dir){
+  var ph = document.getElementById(id), d = +ph.getAttribute('data-d');
+  if (!d) return;
+  var nd = Math.min(DAYS, Math.max(1, d + dir)); if (nd === d) return;
+  var go = function(){
+    ph.querySelector('.sheet').innerHTML = grid(id, nd) + dayBlock1(id, nd);
+    ph.setAttribute('data-d', nd); bindSwipe(id);
+    if (reduce) return;
+    var el = ph.querySelector('.day'); el.style.transition = 'none'; el.style.transform = 'translateX(' + (dir * 40) + 'px)'; el.style.opacity = '0';
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){ el.style.transition = 'transform .2s cubic-bezier(.2,.8,.2,1), opacity .2s ease'; el.style.transform = ''; el.style.opacity = '1'; }); });
+  };
+  var cur = ph.querySelector('.day');
+  if (reduce || !cur) return go();
+  cur.style.transition = 'transform .16s ease, opacity .16s ease'; cur.style.transform = 'translateX(' + (-dir * 60) + 'px)'; cur.style.opacity = '0';
+  setTimeout(go, 160);
+}
+// o gesto: arrastar o dia para o lado (com o rato ou o dedo) — mais de 60 px muda de dia; menos volta ao sítio
+function bindSwipe(id){
+  var ph = document.getElementById(id), el = ph && ph.querySelector('.day'); if (!el) return;
+  var x0 = null, dx = 0;
+  el.addEventListener('pointerdown', function(e){ if (e.target.closest('.ib1, .xbtn, .act')) return; x0 = e.clientX; dx = 0; try { el.setPointerCapture(e.pointerId); } catch (_) {} el.style.transition = 'none'; });
+  el.addEventListener('pointermove', function(e){ if (x0 == null) return; dx = e.clientX - x0; el.style.transform = 'translateX(' + dx + 'px)'; el.style.opacity = String(1 - Math.min(0.5, Math.abs(dx) / 300)); });
+  var end = function(){ if (x0 == null) return; x0 = null; if (Math.abs(dx) > 60) { stepDay(id, dx < 0 ? 1 : -1); return; } el.style.transition = 'transform .18s ease, opacity .18s ease'; el.style.transform = ''; el.style.opacity = '1'; };
+  el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+}
+// medições: o que se vê sem deslizar no ecrã de 390 × 844 (sem a barra de abas)
+function check(){
+  ['o1','o2','o3'].forEach(function(o){
+    var ph = document.getElementById(o + 'b'), body = ph.querySelector('.body').getBoundingClientRect();
+    var vis = function(sel){ var e = ph.querySelector(sel); if (!e) return '—'; var r = e.getBoundingClientRect(); return r.top >= body.top - 1 && r.bottom <= body.bottom + 1 ? 'sim' : (r.top < body.bottom ? 'em parte' : 'não'); };
+    var first = o === 'o2' ? '.dsheet .big' : '.day .big';
+    var iconsSel = o === 'o1' ? '.icons1' : '.icons';
+    var n = document.getElementById('n-' + o);
+    var dayTop = ph.querySelector(o === 'o2' ? '.dsheet' : '.day');
+    var dt = dayTop ? Math.round(dayTop.getBoundingClientRect().top - body.top + 47) : 0;
+    n.innerHTML = '<h3>Medido no ecrã de 390 × 844</h3><ul class="m"><li>O dia começa a <b>' + dt + ' pt</b> do topo do ecrã.</li><li>Sem deslizar vê-se o 1.º cartão do dia: <b>' + vis(first) + '</b>.</li><li>A fila de ícones do "Ver tudo"' + (o === 'o1' ? ' (com os nomes)' : '') + ': <b>' + vis(iconsSel) + '</b>.</li><li>A semana (ou o mês) continua à vista: <b>' + (o === 'o1' ? vis('.g') : o === 'o2' ? 'em parte (por trás)' : vis('.g')) + '</b>.</li></ul>'
+      + (o === 'o1' ? '<p>Na app: <b>LayoutAnimation</b> (nativo; já se usa na Escala), 260 ms; reduzido = muda logo.</p>' : o === 'o2' ? '<p>Na app: o <b>PeleSheet</b> que já existe, a meio e inteiro; reduzido = aparece logo.</p>' : '<p>Na app: o topo recolhe com <b>LayoutAnimation</b> e a lista desliza até ao dia; reduzido = salta.</p>');
+  });
+  var cut = 0; document.querySelectorAll('.code, .n, .chip, .tt, .slim b, .ln .lt b').forEach(function(e){ if (e.scrollWidth > e.clientWidth + 1) cut++; });
+  document.getElementById('meas').textContent = 'Verificação do esboço: textos cortados ' + cut + ' · a fila de ícones cabe em 366 pt: ' + (function(){ var r = document.querySelector('#o1b .icons1'); if (!r) return '—'; var names = [].slice.call(r.querySelectorAll('.nm')).every(function(n){ return n.scrollWidth <= n.parentNode.clientWidth + 1; }); return (r.scrollWidth <= r.clientWidth + 1 ? 'sim' : 'não') + ' (nomes inteiros: ' + (names ? 'sim' : 'não') + ')'; })() + ' · movimento: abrir 260–300 ms, trocar secção 200 ms; com "reduzir movimento" sem animação.';
+}
+// a 3, aberta, desliza até ao dia (como a app faria ao abrir)
+function scroll3(){ var ph = document.getElementById('o3b'), sc = ph.querySelector('.scroll'), dy = ph.querySelector('.day3'); if (dy) sc.scrollTop = dy.offsetTop - 60; }
+scroll3(); bindSwipe('o1b'); check(); if (document.fonts) document.fonts.ready.then(function(){ scroll3(); check(); });
+</script>
+</body>
+</html>

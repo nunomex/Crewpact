@@ -197,6 +197,31 @@ referência para o layout das páginas que faltam e para o sistema de desenho. *
   filtram: tocar acende esses dias e esbate os outros (180 ms) · **L3** aberta na 1.ª vez, depois encolhe para o botão
   (320 ms). Movimento só transform/opacity, a grelha nunca salta, reduzido = sem animação (verificado no esboço). Recomendo
   **A + L2**. **À espera da escolha.**
+  **Escolhido pelo Nuno: A + L2** — a construir; feita e testada a parte de dados (`monthCells`: `past`, `twoKind`, o voo
+  manda na célula como na Lista; `monthLegend` + `cellMatches` para a legenda que filtra; golden `test:escala` 99), o ecrã em
+  pausa (por gravar). **A seguir o Nuno pensou em tirar a Lista da aba** ("se meto só a aparecer o mês… quando carregasse no
+  número, abrir e aparecer o dia como a lista, e por baixo… como se fosse o ver tudo" + uma imagem com uma fila de ícones
+  redondos que trocam o conteúdo no mesmo sítio) → esboço `design/escala-so-mes.html` (o dia A, L2, a fila de ícones com o
+  nome no escolhido e contadores laranja só quando há alguma coisa): **1** o mês encolhe para a semana · **2** o dia numa folha
+  por cima do mês · **3** o topo dá lugar. Medido (390 × 844, o número grande no tamanho do `fitGiant`): só a **1** mostra sem
+  deslizar a semana, o 1.º cartão e os ícones (o dia começa a 345 pt); na 2 os ícones ficam meio escondidos até puxar a folha;
+  na 3 a semana do dia sai de vista. Recomendo **1**. Na imagem fica de fora o degradé com vidro (A4), o avatar e os
+  contadores vermelhos. **ESCOLHIDA pelo Nuno: a 1** ("gosto da 1 — achas que faz sentido?"). A minha resposta: faz, com uma
+  perda — ler a semana de seguida (a Lista lia "sábado report 09:40, terça 08:00…" sem tocar) — e três condições, já no esboço:
+  **deslizar no dia aberto** muda para o seguinte/anterior (folgas incluídas; a semana acompanha) · **os seis ícones com o
+  nome por baixo** (a lição dos dois pontinhos; medido: cabem em 366 pt) · a aba **abre no mês fechado** e re-tocar em
+  "Escala" volta ao mês; e a secção que abre depende do dia (Limites num dia que vem, Dinheiro num dia feito; o Hotel leva o
+  contador com pernoita sem hotel). **E a aba ligada da imagem** (o Nuno: "gosto do ícone ter o seguimento da página… ao
+  carregar noutro ele cola no outro"): o ícone escolhido assenta numa aba da mesma cor do painel, com curvas para dentro onde
+  o encontra; ao tocar noutro, a aba desliza até ele (240 ms; reduzido = salta). Verificado no esboço: a aba centrada no ícone,
+  as pontas sem curva de fora, o deslizar com o rato (13 → 14 → 13), o dia 11 (feito) abre no Dinheiro. **Medido com os nomes:**
+  num dia de um serviço os ícones veem-se inteiros (sobram 135–165 pt do painel); num dia cheio (13: assistência + voo +
+  pernoita) a fila fica 29 pt abaixo do ecrã. Proposta: o cartão "Pernoita" passa para dentro do ícone Hotel (repetia-o; o
+  contador avisa que falta o hotel) — ganha ~60 pt. **APROVADA pelo Nuno ("aprovo e leva a pernoita para dentro do hotel"),
+  com as cores da foto: os seis círculos do mesmo neutro da aba e do painel; o escolhido não muda de cor — está ligado pela aba
+  e leva um anel fino de tinta.** A pernoita: sai o cartão à parte; fica a lua e "pernoita no Porto" no cartão do voo, e o
+  hotel, o repouso até ao report de volta e o contador no ícone Hotel (o Início mantém o cartão salva da pernoita). Medido: no
+  dia 13 a fila de ícones fica inteira à vista e sobram 26 pt do painel. **A construir.**
   **Ver no iPhone:** o Início (voo a céu, assistência a lilás, o aviso laranja com "!") · a Escala (barras, legenda do Mês, os
   dias feitos com o ponto azul) · o Detalhe de um serviço dentro (sem verde), incerto (pílula tracejada) e com fadiga · os
   Números (barras a tinta, laranja aos 85 %) · as Validades.
