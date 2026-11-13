@@ -412,6 +412,53 @@ referência para o layout das páginas que faltam e para o sistema de desenho. *
   passado"). "Feito" deixou de ser um sinal: saiu da legenda ("Os dias" = Hoje · Escolhido · Folga) e da guiada (o Nuno apanhou
   que a legenda ainda o mostrava). Golden escrito antes: `test:escala` 112. O VoiceOver continua a dizer "feito". Guardião sem
   dívida nova, pacote iOS gera.
+  **A seguir, o Nuno: "só não estou a gostar da legenda"** — perguntei o quê: **o aspeto** (lista técnica) e **não precisa de
+  estar sempre à vista**. → esboço `design/escala-legenda-4.html`: fica a guiada da 1.ª vez; depois a legenda guarda-se atrás de
+  uma entrada e ganha o aspeto da app (cartões neutros por grupo, como o "Ver tudo"; o sinal em grande, nome, frase, quantos
+  dias; tocar acende os dias e uma pílula preta por cima do mês diz qual): **K1** uma linha "Legenda" por baixo do mês (a linha
+  fina do Início; abre a folha) · **K2** o botão ⓘ no topo (nada por baixo do mês; o último balão diz onde fica) · **K3** a pílula
+  "Legenda ▾" que abre os cartões no sítio. Recomendei **K1**. **O Nuno: "não gosto de nenhum, faz outros 3, pesquisa".** → Mobbin
+  (Clue "Tracked on…", Slopes, Fitbit exercício) → esboço `design/escala-legenda-5.html`, três ideias que não são lista nem folha
+  de legenda, todas com a guiada da 1.ª vez: **P1** o dia explica-se (nada por baixo do mês; ao tocar num dia, os sinais desse dia
+  por extenso — "o anel em 2 fatias: um serviço cada", "lua: dormes fora da base", "a tinta: hoje" — e o anel do tipo, num disco
+  branco, à frente de cada serviço; "O que quer dizer cada sinal? Ver no meu mês") · **P2** o mês numa barra (as partes do mês numa
+  barra fina e os números por baixo; acende) · **P3** "Mostrar" em quatro botões (Tudo · Voos · Terra · Folgas, a peça de escolher
+  dos Números; "?" repete os balões). Recomendei **P1**. **ESCOLHIDA pelo Nuno: P3**, "mas podemos melhorar": (1) "dia 13 tem
+  terra, e quando filtro por terra não aparece" — no esboço "Terra" só acendia os dias SÓ de terra; erro meu: "Terra" acende todos
+  os dias com um serviço em terra, também os mistos; (2) "adicionar os filtros da pernoita e do botão laranja". Juntei, do lado do
+  tripulante: "Folgas" só entre serviços que a escala conhece (um mês que ainda não saiu não é um mês de folgas).
+  **JÁ NO CÓDIGO (2026-11-13, por ver no iPhone; por gravar):** `data/escalaDay.js` — `monthCells` ganhou `free` (sem serviço nem
+  ausência, depois do 1.º e antes do último serviço da escala inteira), `cellMatches('free')`, `monthShow` (Tudo · Voos · Terra ·
+  Folgas · Pernoitas · Por rever, com quantos dias e a frase de baixo); saiu `legendGroups` (a pequena) — golden `test:escala` 115,
+  escrito antes · `components/Segmented.js` (B11) ganhou `tone="light"` (a pílula branca do esboço), `columns` (várias linhas; a
+  pílula desliza também para baixo), `lead` (o sinal à frente) e `disabled` (sem dias: mais clara, não toca) — não era usado em
+  mais lado nenhum · `EscalaScreen`: "Mostrar" em duas linhas de três por baixo do mês, o "?" ao lado (repete a guiada) e "N dias
+  com…" por baixo; escolher outra opção esbate os outros dias (180 ms); escolher um dia volta a "Tudo". `npm test` verde (37),
+  guardião sem dívida nova, pacote iOS gera. O esboço `escala-legenda-5.html` (P3) ficou igual ao código.
+  **Ver no iPhone:** "Mostrar" (a pílula branca desliza entre as duas linhas; Terra acende os mistos; as opções a 0 apagadas;
+  "N dias com…") · o "?" · escolher um dia e voltar.
+  **Logo a seguir, o Nuno: "fazes o P1? prefiro o P1"** — a "Mostrar" saiu antes de ser gravada. **JÁ NO CÓDIGO (por ver no
+  iPhone; por gravar):** `data/escalaDay.js` · `daySigns(cell, count)` (os sinais do dia por extenso: "anel azul: voo", "o anel em
+  N fatias: um serviço cada, pela hora", "lua: dormes fora da base", "ponto laranja…", "tracejado: férias/baixa", "a tinta: hoje",
+  "só o número: folga" ou "…sem serviços na escala"); saiu `monthShow`; o último balão da guiada diz "…ver os serviços dele e o
+  que quer dizer cada sinal" — golden `test:escala` 117, escrito antes · `components/HomeCards.js` · a linha fina aceita `ring`
+  (o anel do tipo num disco branco à frente) · `EscalaScreen`: nada por baixo do mês (saiu o filtro de acender os dias); o dia
+  escolhido mostra os seus sinais em pílulas neutras por cima dos serviços, cada serviço com o anel à frente, e no fim "O que quer
+  dizer cada sinal? Ver no meu mês" (fecha o dia e repete os balões); um dia vazio fora da escala conhecida diz "Sem serviços na
+  escala — a app não sabe se é folga" (não "Folga"). `Segmented` fica com as opções novas (luz, linhas), sem uso por agora.
+  **E os tamanhos** (o Nuno: "o mês, os dias e os círculos parecem pequenos; vê se estão em sincronia com a aba Início"): o
+  círculo passa a 44 pt (os botões redondos do topo; era 38), o número do dia a 20 (TXT3.fact, os factos ao lado do número
+  grande; era 15), o destino a 12 (TXT3.dur; era 11); os dias da semana ficam a 11 (o "kind" dos cartões); o anel 4,5. Contas: a
+  375 pt o dia mede 46,7 (cabe); a 390, um mês de 6 semanas acaba ~8 pt acima da barra. `npm test` verde (37), guardião sem dívida
+  nova, pacote iOS gera. **Ver no iPhone:** os tamanhos (375 e 390), o mês de 6 semanas inteiro em repouso, os sinais do dia, o
+  anel à frente dos serviços, "Ver no meu mês".
+  **E o Nuno: "depois vê os botões das notificações, o X para fechar e o de sincronizar — não estão com o layout novo, pois não?"**
+  Visto no código: **o ✕** (`components/IconButton.js`, 31 sítios) é o da 2.0 — 36 pt, fundo `PELE.soft`, ícone `PELE.ink` (na
+  Escala passa-se o `C.round` por cima); **o sino** do Início já é o redondo de 44 do 3.0, mas **o número por ler não tinha fundo**
+  — usava `CARD.day.warn`, que deixou de existir com o mapa das cores (agora `alert`): **corrigido** (erro objetivo; guardião, pacote
+  iOS gera; por gravar) — e a lista de notificações que abre ainda é 2.0 (PELE); **o de sincronizar** da Escala é o redondo do 3.0,
+  mas a janela que abre (Calendário · Sincronizar agora · Rever · Mudar calendário · Importar PDF) é a `PeleSheet` da 2.0. **A
+  fazer depois da legenda:** o ✕ e as duas janelas no 3.0, com esboços.
   **Ver no iPhone:** o Início (voo a céu, assistência a lilás, o aviso laranja com "!") · a Escala (barras, legenda do Mês, os
   dias feitos com o ponto azul) · o Detalhe de um serviço dentro (sem verde), incerto (pílula tracejada) e com fadiga · os
   Números (barras a tinta, laranja aos 85 %) · as Validades.

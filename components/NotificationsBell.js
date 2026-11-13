@@ -92,7 +92,7 @@ export default function NotificationsBell({ variant = 'bell', night = false }) {
           accessibilityRole="button" accessibilityLanguage={AL} accessibilityLabel={`${t('home.notifsAria', lang)}${unread > 0 ? ` · ${unread} ${l('por ler', 'unread')}` : ''}`}>
           <Icon name="bell" size={20} color={(night ? CARD.night : CARD.day).ink} />
           {unread > 0 ? (
-            <View style={[s.roundBadge, { backgroundColor: (night ? CARD.night : CARD.day).warn }]}>
+            <View style={[s.roundBadge, { backgroundColor: (night ? CARD.night : CARD.day).alert }]}>
               <Text style={[TXT3.badge, { color: CARD.badgeFg }]} allowFontScaling={false}>{unread > 9 ? '9+' : unread}</Text>
             </View>
           ) : null}

@@ -231,6 +231,8 @@ function Slim({ c, C, onOpen, l }) {
   const props = c.open ? { activeOpacity: 0.85, onPress: () => onOpen(c.open), accessibilityRole: 'button', accessibilityLanguage: AL, accessibilityLabel: a11y, ...longP } : { accessible: true, accessibilityLanguage: AL, accessibilityLabel: a11y };
   return (
     <Box style={[s.slim, { backgroundColor: T.bg }]} {...props}>
+      {/* `ring` (a Escala, P1): o anel do tipo num disco branco à frente — liga a cor do dia no mês a este serviço */}
+      {c.ring ? <View style={s.ringLead}><View style={[s.ringIn, { borderColor: c.ring }]} /></View> : null}
       <View style={s.slimT}>
         <Text style={[TXT3.slimTitle, { color: T.fg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.title}</Text>
         {c.sub ? <Text style={[TXT3.slimSub, { color: T.sub }]} numberOfLines={2} maxFontSizeMultiplier={MAX_SCALE}>{c.sub}</Text> : null}
@@ -352,6 +354,8 @@ const s = StyleSheet.create({
 
   slim: { borderRadius: RADIUS.xxl, paddingVertical: SPACE.md, paddingHorizontal: SPACE.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.md, minHeight: 56 },
   slimT: { flex: 1, minWidth: 0 },
+  ringLead: { width: 30, height: 30, borderRadius: RADIUS.pill, backgroundColor: CARD.chip, alignItems: 'center', justifyContent: 'center', marginLeft: -SPACE.xs },
+  ringIn: { width: 18, height: 18, borderRadius: RADIUS.pill, borderWidth: 3.5 },
 
   lines: { gap: SPACE.sm },
   lineRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: SPACE.md },

@@ -160,6 +160,10 @@ export function monthCells({ ym, duties = {}, absences = {}, base, today = null,
   const dim = new Date(y, m, 0).getDate();
   const firstWeekday = ((new Date(y, m - 1, 1).getDay()) + 6) % 7;
   const b = typeof base === 'function' ? base(ym) : base;
+  // A FOLGA é um dia sem serviço nem ausência ENTRE serviços que a escala conhece (antes e depois, na escala inteira) — um mês que
+  // ainda não saiu não é um mês de folgas (a regra de honestidade da agenda).
+  const dutyDays = Object.keys(duties).filter((k) => valid(duties[k])).sort();
+  const firstDuty = dutyDays[0] || null, lastDuty = dutyDays[dutyDays.length - 1] || null;
   const cells = [];
   for (let day = 1; day <= dim; day++) {
     const iso = `${ym}-${String(day).padStart(2, '0')}`;
@@ -173,7 +177,8 @@ export function monthCells({ ym, duties = {}, absences = {}, base, today = null,
     const col = (firstWeekday + day - 1) % 7;
     cells.push({ iso, day, col, row: Math.floor((firstWeekday + day - 1) / 7), kind, code,
       ns: hasNightStop(d), two: !!other, twoKind: other ? (isFlightSvc(other) ? 'voo' : 'terra') : null, dirty: !!(d && d.dirty),
-      today: iso === today, sel: iso === sel, past: !!today && iso < today, joinR: false, joinL: false });
+      today: iso === today, sel: iso === sel, past: !!today && iso < today, joinR: false, joinL: false,
+      free: !kind && !!firstDuty && iso > firstDuty && iso < lastDuty });
   }
   // O bloco: a rotação (pernoita fora e serviço no dia seguinte) e as férias seguidas, dentro da mesma semana e do mês.
   for (let i = 0; i < cells.length - 1; i++) {
@@ -194,6 +199,7 @@ export const cellMatches = (c, key) => {
   if (key === 'ns') return !!c.ns;
   if (key === 'two') return !!c.two;
   if (key === 'dirty') return !!c.dirty;
+  if (key === 'free') return !!c.free;
   return false;
 };
 export function monthLegend(cells = [], lang = 'pt') {
@@ -224,25 +230,29 @@ export function legendTour(cells = [], lang = 'pt') {
   }
   if (!steps.length) return [];
   const t = cells.find((c) => c.today) || cells.find((c) => c.kind && !c.past) || cells.find((c) => c.kind);
-  const tapTxt = l('Toca num dia para ver os serviços dele; tocar num serviço abre tudo o que é dele.', 'Tap a day to see its duties; tap a duty to open everything about it.');
+  const tapTxt = l('Toca num dia para ver os serviços dele e o que quer dizer cada sinal; tocar num serviço abre tudo o que é dele.', 'Tap a day to see its duties and what each sign means; tap a duty to open everything about it.');
   if (t) steps.push({ key: 'tap', iso: t.iso, text: t.today ? `${l('A tinta: hoje.', 'Ink: today.')} ${tapTxt}` : tapTxt });
   return steps;
 }
 
-// A pequena: os quatro grupos com TODOS os sinais (os que não há no mês ficam a 0 — o Nuno: "mete todas as legendas que
-// existem"); os três primeiros contam e acendem os dias (cellMatches); "Os dias" só explicam (count null).
-const LEGEND_GROUPS = [
-  [['Serviços', 'Duties'], [['voo', 'Voo', 'Flight'], ['terra', 'Terra', 'Ground'], ['two', '2 ou mais', '2 or more']]],
-  [['Ausências', 'Absences'], [['fer', 'Férias', 'Leave'], ['doe', 'Baixa', 'Sick']]],
-  [['No dia', 'On the day'], [['ns', 'Pernoita', 'Night stop'], ['dirty', 'Por sincronizar', 'Pending sync']]],
-  [['Os dias', 'The days'], [['today', 'Hoje', 'Today'], ['sel', 'Escolhido', 'Selected'], ['free', 'Folga', 'Day off']]],   // os feitos ficam iguais aos outros: sem sinal
-];
-export function legendGroups(cells = [], lang = 'pt') {
-  const en = lang === 'en';
-  return LEGEND_GROUPS.map(([t, items], gi) => ({
-    title: en ? t[1] : t[0],
-    items: items.map(([key, pt, enL]) => ({ key, label: en ? enL : pt, count: gi === 3 ? null : cells.filter((c) => cellMatches(c, key)).length })),
-  }));
+// ── O DIA EXPLICA-SE (P1 de design/escala-legenda-5.html — o Nuno preferiu-a à P3, 2026-11-13): sem legenda por baixo do mês; ao
+// tocar num dia, os sinais DESSE dia por extenso, por cima dos serviços. count = quantos serviços tem o dia (o anel em fatias).
+// Um dia vazio só é "folga" entre serviços que a escala conhece; fora disso, "sem serviços na escala" (nunca se inventa). ──
+export function daySigns(cell, count = 0, lang = 'pt') {
+  if (!cell) return [];
+  const l = (pt, en) => (lang === 'en' ? en : pt);
+  const out = [];
+  const add = (key, text) => out.push({ key, text });
+  if (count > 1) add('two', l(`o anel em ${count} fatias: um serviço cada, pela hora`, `the ring in ${count} slices: one per duty, in time order`));
+  else if (cell.kind === 'voo') add('voo', l('anel azul: voo', 'blue ring: flight'));
+  else if (cell.kind === 'terra') add('terra', l('anel lilás: serviço em terra', 'lilac ring: ground duty'));
+  if (cell.kind === 'fer') add('abs', l('tracejado: férias', 'dashed: leave'));
+  if (cell.kind === 'doe') add('abs', l('tracejado: baixa', 'dashed: sick leave'));
+  if (cell.ns) add('ns', l('lua: dormes fora da base', 'moon: you sleep away from base'));
+  if (cell.dirty) add('dirty', l('ponto laranja: a escala mudou e falta rever', 'orange dot: the roster changed and needs a review'));
+  if (cell.today) add('today', l('a tinta: hoje', 'ink: today'));
+  if (!cell.kind) add(cell.free ? 'free' : 'none', cell.free ? l('só o número: folga', 'just the number: day off') : l('só o número: sem serviços na escala', 'just the number: no duties in the roster'));
+  return out;
 }
 
 // ── a ordem do dia: pela HORA ──

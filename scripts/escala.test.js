@@ -93,21 +93,34 @@ const T = E.legendTour(G.cells);
 eq('a guiada: os sinais do mês, num dia que vem, e o toque no fim (sobre hoje)', T.map((s) => [s.key, s.iso.slice(8)]),
   [['voo', '14'], ['terra', '30'], ['two', '19'], ['ns', '15'], ['dirty', '28'], ['tap', '13']]);
 yes('no máximo 6 balões', T.length <= 6);
-eq('o último fala de hoje e ensina a tocar', T[T.length - 1].text, 'A tinta: hoje. Toca num dia para ver os serviços dele; tocar num serviço abre tudo o que é dele.');
+eq('o último fala de hoje e ensina a tocar', T[T.length - 1].text, 'A tinta: hoje. Toca num dia para ver os serviços dele e o que quer dizer cada sinal; tocar num serviço abre tudo o que é dele.');
 eq('o primeiro: o anel azul', T[0].text, 'Um anel azul é um dia de voo. Por baixo, o destino.');
 eq('um mês sem escala não tem guiada', E.legendTour(E.monthCells({ ym: '2026-12', duties: D, base: 'LIS' }).cells), []);
 eq('só voos e hoje: o voo e o toque', E.legendTour(E.monthCells({ ym: '2026-11', duties: { '2026-11-14': D['2026-11-14'] }, base: 'LIS', today: '2026-11-13' }).cells).map((s) => s.key), ['voo', 'tap']);
 eq('sem hoje no mês, o toque vai para o 1.º dia com serviço que vem', E.legendTour(E.monthCells({ ym: '2026-11', duties: D, absences: ABS, base: 'LIS', today: '2026-10-20' }).cells).slice(-1).map((s) => [s.key, s.iso.slice(8), s.text.slice(0, 13)]), [['tap', '02', 'Toca num dia ']]);
 yes('em inglês', E.legendTour(G.cells, 'en')[0].text === 'A blue ring is a flight day. Below it, the destination.');
-// A pequena (J3): os quatro grupos, sempre todos os sinais (os que não há no mês com 0); "Os dias" só explicam.
-const LG = E.legendGroups(G.cells);
-eq('a legenda pequena: os grupos e os sinais', LG.map((g) => [g.title, g.items.map((i) => `${i.key}:${i.count == null ? '-' : i.count}`)]), [
-  ['Serviços', ['voo:10', 'terra:4', 'two:2']], ['Ausências', ['fer:3', 'doe:1']], ['No dia', ['ns:4', 'dirty:1']], ['Os dias', ['today:-', 'sel:-', 'free:-']]]);
-// Os dias que já passaram ficam iguais aos outros (o Nuno, 2026-11-13): "feito" deixou de ser um sinal — nem na legenda nem na guiada.
-eq('os nomes', LG.map((g) => g.items.map((i) => i.label)), [['Voo', 'Terra', '2 ou mais'], ['Férias', 'Baixa'], ['Pernoita', 'Por sincronizar'], ['Hoje', 'Escolhido', 'Folga']]);
+// Os dias que já passaram ficam iguais aos outros (o Nuno, 2026-11-13): "feito" deixou de ser um sinal — nem na guiada.
 yes('a guiada não fala dos dias feitos (mesmo num mês só com dias feitos)', !E.legendTour(E.monthCells({ ym: '2026-11', duties: D, absences: ABS, base: 'LIS', today: '2026-12-20' }).cells).some((s) => s.key === 'past'));
-eq('um mês vazio também leva todos os sinais (a 0)', E.legendGroups(E.monthCells({ ym: '2026-12', duties: D, base: 'LIS' }).cells)[0].items.map((i) => i.count), [0, 0, 0]);
-eq('em inglês', E.legendGroups(G.cells, 'en').map((g) => g.title), ['Duties', 'Absences', 'On the day', 'The days']);
+
+// ════════ "MOSTRAR" (P3 de design/escala-legenda-5.html, escolhida pelo Nuno a 2026-11-13): Tudo · Voos · Terra · Folgas ════════
+// "Terra" acende todos os dias com um serviço em terra, também os que têm voo (o Nuno: "dia 13 tem terra e quando filtro por terra
+// não aparece"). "Folga" só entre serviços que a escala conhece (antes E depois, na escala inteira) — um mês que ainda não saiu não
+// é um mês de folgas (a regra de honestidade da agenda); férias e baixa não são folga.
+eq('folga: só entre serviços conhecidos (o 1 não — não há nada antes; o 22 apagado sim; férias e baixa não)',
+  G.cells.filter((c) => c.free).map((c) => c.day), [5, 6, 8, 9, 10, 11, 17, 18, 20, 21, 22, 23, 29]);
+eq('"Terra" acende o dia com assistência e voo (19) e a formação com voo (12)', [E.cellMatches(C(19), 'terra'), E.cellMatches(C(12), 'terra'), E.cellMatches(C(5), 'free'), E.cellMatches(C(24), 'free')], [true, true, true, false]);
+// + a pernoita (a lua) e o ponto laranja (o Nuno: "e adicionar os filtros da pernoita e do botão laranja").
+// ════════ O DIA EXPLICA-SE (P1 de design/escala-legenda-5.html — o Nuno preferiu-a à P3, 2026-11-13) ════════
+// Ao tocar num dia, os sinais DESSE dia por extenso (sem legenda por baixo do mês). Um dia vazio só é "folga" entre serviços que
+// a escala conhece; fora disso, "sem serviços na escala".
+const sig = (d, n) => E.daySigns(C(d), n).map((x) => `${x.key}: ${x.text}`);
+eq('o 13 (hoje, um voo com pernoita)', sig(13, 1), ['voo: anel azul: voo', 'ns: lua: dormes fora da base', 'today: a tinta: hoje']);
+eq('o 19 (dois serviços)', sig(19, 2), ['two: o anel em 2 fatias: um serviço cada, pela hora']);
+eq('o 7 (assistência)', sig(7, 1), ['terra: anel lilás: serviço em terra']);
+eq('o 28 (alteração por rever)', sig(28, 1), ['voo: anel azul: voo', 'dirty: ponto laranja: a escala mudou e falta rever']);
+eq('férias e baixa', [sig(24, 0), sig(27, 0)], [['abs: tracejado: férias'], ['abs: tracejado: baixa']]);
+eq('a folga entre serviços e o dia fora da escala', [sig(5, 0), sig(1, 0)], [['free: só o número: folga'], ['none: só o número: sem serviços na escala']]);
+yes('em inglês', E.daySigns(C(13), 1, 'en')[0].text === 'blue ring: flight');
 
 // ════════ a ordem do dia: pela hora (acerto 9) ════════
 const o19 = E.orderServices(D['2026-11-19']);
