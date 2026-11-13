@@ -132,6 +132,22 @@ export default function DutyDetailScreen({ route, navigation }) {
   const gapD = isPilotD ? undefined : (ctxAll.cabinGapMin !== undefined ? ctxAll.cabinGapMin : null);
   const d = ftlForDuty(duty, { postFlightMin: ctxAll.postFlightMin || 0, isPilot: isPilotD, base: baseD, date, cabinGapMin: gapD, splitAdminMin: ctxAll.splitAdminMin, duties });
   const fat = (d && hasEnd && d.isFdp) ? fatigueFromDuty(d) : null;
+  // A assistência de antes deste voo, por palavras: a da escala, a que indicaste, e o que tira ao PSV máximo (CS FTL.1.225).
+  const sbNote = (() => {
+    const b = d && d.standbyBefore;
+    if (!b || !(b.roster || b.declared)) return null;
+    const hh = (h) => { const m = Math.round((h || 0) * 60); return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`; };
+    const clk = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+    const where = (t) => (t === 'airport' ? l('no aeroporto', 'at the airport') : l('em casa', 'at home'));
+    const cite = (t) => (t === 'airport' ? 'CS FTL.1.225(a)(2)' : 'CS FTL.1.225(b)(7)');
+    const red = b.reductionMin > 0 ? l(`tira ${hh(b.reductionMin / 60)} ao PSV máximo`, `takes ${hh(b.reductionMin / 60)} off the max FDP`) : l('não chega para reduzir o PSV máximo', 'is not enough to reduce the max FDP');
+    const r = b.roster, o = b.declared;
+    const since = (r && r.startMin != null) ? l(` desde as ${clk(r.startMin)}`, ` since ${clk(r.startMin)}`) : '';
+    if (o && r && b.mismatch) return l(`Indicaste ${hh(o.standbyH)} ${where(o.type)}; a escala tem ${hh(r.standbyH)}${since} até à apresentação. Com as tuas horas vale o máximo de cima; com as da escala, o de baixo (${cite(r.type)}).`, `You entered ${hh(o.standbyH)} ${where(o.type)}; the roster has ${hh(r.standbyH)}${since} until report. With your hours the upper maximum applies; with the roster's, the lower one (${cite(r.type)}).`);
+    if (o) return l(`Indicada por ti: ${hh(o.standbyH)} ${where(o.type)}${r ? ' (bate com a da escala)' : ''} — ${red} (${cite(o.type)}).`, `Entered by you: ${hh(o.standbyH)} ${where(o.type)}${r ? ' (matches the roster)' : ''} — it ${red} (${cite(o.type)}).`);
+    if (r.either) return l(`Da escala: assistência ${where(r.type)}${since}, que acabou antes da apresentação. Se o voo te foi atribuído durante ela, são ${hh(r.standbyH)} de assistência e ${red}; se já estava na escala, não reduz (${cite(r.type)}).`, `From the roster: standby ${where(r.type)}${since}, which ended before report. If the flight was assigned during it, that is ${hh(r.standbyH)} of standby and it ${red}; if it was already rostered, no reduction (${cite(r.type)}).`);
+    return l(`Da escala: ${hh(r.standbyH)} de assistência ${where(r.type)}${since}, até à apresentação — ${red} (${cite(r.type)}).`, `From the roster: ${hh(r.standbyH)} of standby ${where(r.type)}${since}, until report — it ${red} (${cite(r.type)}).`);
+  })();
   // Não é PSV (standby em casa, formação, escritório, standby de aeroporto com alojamento) → nunca "excede" o Quadro 2.
   const over = !(d && d.isFdp) ? false : !!(d.fdp && (d.discretion ? d.discretion.over : d.fdp.over));
   const spD = duty.special || {};
@@ -182,7 +198,7 @@ export default function DutyDetailScreen({ route, navigation }) {
   // COMPLETAR (data/dutyComplete.js): só as linhas que contam para este tripulante e este serviço; as que faltam para a lei
   // decidir (`need`, o motor disse "incerto" por esse facto) vêm primeiro e sobem a secção para logo a seguir ao FTL.
   const rows = completeRows(duty, { isPilot: isPilotD, ae, category: catD, instructorRated: !!ctxAll.instructorRated,
-    unknowns: (d && d.fdp && d.fdp.unknowns) || [], extRefused: d ? d.extRefused : null, date,
+    unknowns: (d && d.fdp && d.fdp.unknowns) || [], extRefused: d ? d.extRefused : null, date, standbyRoster: (d && d.standbyBefore && d.standbyBefore.roster) || null,
     legsBroken: d ? d.legsBroken || null : null, canSplit: !(idx > 0), postFlightMin: ctxAll.postFlightMin || 0 });
   const needRows = rows.filter((r) => r.need);
   const money = (ae && catD) ? serviceMoney(ae, catD, duty, { date, fleet: crewAt(date).fleet, daySvcs: [duty, ...(Array.isArray(duty.extra) ? duty.extra : [])], baseAt: ctxAll.homeBaseAt, duties }) : null;
@@ -462,6 +478,8 @@ export default function DutyDetailScreen({ route, navigation }) {
               // ORO.FTL.205(d): prolongamento planeado e dentro das condições; ou recusado (3.º em 7 dias / sem plano).
               (!sbAccD && d.extUsed && !over) && { k: l('Prolongamento (205(d))', 'Extension (205(d))'), v: l('planeado · repouso a seguir +2 h (ou +4 h)', 'planned · next rest +2 h (or +4 h)') },
               (!sbAccD && over && d.extRefused === '2in7') && { k: l('Prolongamento (205(d))', 'Extension (205(d))'), v: l('3.º em 7 dias — o limite é 2', '3rd in 7 days — the limit is 2'), color: PELE.red },
+              // De onde vem a redução do máximo (visto no iPhone a 2026-11-13: "PSV máx 06:00 § 205(b)" sem dizer porquê).
+              (!sbAccD && sbNote) && { k: l('Assistência antes do voo', 'Standby before the flight'), note: sbNote },
               // "A lei é que manda": entre o garantido e o possível, a lei depende de um dado que falta → incerto.
               (!sbAccD && !over && d.fdp.uncertain) && { k: l('Incerto', 'Uncertain'), note: l(`Falta ${unknownsText(d.fdp.unknowns, 'pt')}.`, `Missing: ${unknownsText(d.fdp.unknowns, 'en')}.`), color: PELE.warn },
               // … e quando EXCEDE nas duas leituras o máximo continua a ter duas pontas: diz-se porquê (visto no iPhone a

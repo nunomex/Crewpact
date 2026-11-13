@@ -129,9 +129,10 @@ que o eCrew escreveria — cada um testa um ramo do parser:
     OPO — é dos voos de teste, todos só de ida). No Detalhe do f ✅: 10:30 contra 06:00, excesso 04:30;
     com 7 h declaradas "06:00–10:00", excesso 00:30 (faltava o motivo: linha nova "Dois máximos"); com 11 h volta a 06:00.
     A linha "Dois máximos" (e a do "Incerto") passou a mostrar o
-    motivo em texto inteiro, por baixo do título — visto ✅. Por ver, no Detalhe: os números de a, b e g. Para o trabalho dos ecrãs: o Detalhe não
-    diz que o máximo foi reduzido pela assistência (cita só o 205(b)), e "Assistência antes do voo" diz "Não" com a da
-    escala já contada. O motivo do "Incerto" aparece cortado ("se o voo foi at…") e repete a palavra
+    motivo em texto inteiro, por baixo do título — visto ✅. Por ver, no Detalhe: os números de a, b e g. Corrigido a seguir (por ver no iPhone): o Detalhe ganhou a linha
+    "Assistência antes do voo" a dizer de onde vem a redução ("Da escala: 11:00 de assistência em casa desde as 07:00, até
+    à apresentação — tira 5:00 ao PSV máximo (CS FTL.1.225(b)(7))"); em Completar a linha diz "Da escala · 11:00" em vez de
+    "Não"; na folha de importação o motivo do "Incerto" aparece inteiro e sem repetir a palavra. O motivo do "Incerto" aparece cortado ("se o voo foi at…") e repete a palavra
     "incerto" — é da apresentação (grupo 2 de `docs/decisoes.md`).
     g) **Voo e assistência depois:** voo 06:00–10:00 e `HSBY` 11:00–21:00 no mesmo dia → PSV 04:00, dentro (antes: um
        "PSV" de 15:00, excede).

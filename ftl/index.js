@@ -797,6 +797,13 @@ export const ftlForDuty = (duty = {}, ctx = {}) => {
     const fdp = { ...out.fdp, uncertain: true, unknowns: Array.from(new Set([...(out.fdp.unknowns || []), 'noEndBefore'])) };
     out = { ...out, fdp, ...validateDuty({ fdp, reportMin: out.reportMin, endMin: out.endMin, sectors: out.sectors }) };
   }
+  // O que o ecrã precisa para DIZER de onde vem a redução do máximo (Detalhe, Completar): a assistência da escala que precede
+  // o voo, a declarada à mão, se as duas batem, e quanto se tirou ao máximo garantido.
+  if (out && out.fdp) {
+    const own = (duty.special && duty.special.preStandby && !duty.special.preStandby.folded) ? duty.special.preStandby : null;
+    const roster = (d0.special && d0.special.sbRoster) || null;
+    if (own || roster) out = { ...out, standbyBefore: { roster, declared: own, mismatch: !!(alt && alt.pre), reductionMin: out.fdp.stdbyReductionMin || 0 } };
+  }
   return out;
 };
 const openBeforeFlight = (duty, ctx) => {
@@ -1406,11 +1413,12 @@ const sbDayPlan = (list, opts, foldEither = true) => {
     // A assistência em casa ligada a este voo passou das 16 h (até à apresentação, se a chamada é certa; senão a da escala).
     if (l.rel.type === 'other' && (l.kind === 'certain' ? l.rel.standbyMin : l.rel.rosteredMin) > SB_MAX_OTHER_MIN) over16 = true;
     const own = (f.special && f.special.preStandby && !f.special.preStandby.folded) ? f.special.preStandby : null;
-    if (!own) { if (l.kind === 'certain' || foldEither) special.set(f, { preStandby: l.pre }); continue; }
+    // (`sbRoster` = a assistência da ESCALA que precede o voo, para o ecrã dizer de onde vem a redução — não entra nas contas.)
+    if (!own) { if (l.kind === 'certain' || foldEither) special.set(f, { preStandby: l.pre, sbRoster: l.pre }); continue; }
     if (own.type !== l.pre.type || !(own.standbyH > 0)) continue;   // é OUTRA assistência: a da escala conta por si
     const { either: _e, ...sure } = l.pre;   // quem declara diz que foi chamada
-    if (Math.abs(Math.round(own.standbyH * 60) - l.rel.standbyMin) < 60) special.set(f, { preStandby: { ...own, countedH: Math.min(own.standbyH, sure.countedH) } });
-    else special.set(f, { sbAlt: { pre: sure, asideMin: asideOf.get(l.rel.series) || 0 } });
+    if (Math.abs(Math.round(own.standbyH * 60) - l.rel.standbyMin) < 60) special.set(f, { preStandby: { ...own, countedH: Math.min(own.standbyH, sure.countedH) }, sbRoster: sure });
+    else special.set(f, { sbAlt: { pre: sure, asideMin: asideOf.get(l.rel.series) || 0 }, sbRoster: sure });
   }
   const out = [];
   for (const d of cx.today) {

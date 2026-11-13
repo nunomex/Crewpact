@@ -406,7 +406,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
                     ? (() => { const it = c.prospect.issues.find((x) => x.level === 'bad'); return it ? `⚠ ${issueText(it, lang, c.duty.duty_date)}` : null; })()
                   // O "incerto" também se diz (risco R6 do bloco 4): falta um facto que a lei precisa, ou o sítio não bate.
                   : (c.prospect && c.prospect.verdict === 'unc')
-                    ? (() => { const it = legsIssue || c.prospect.issues.find((x) => x.level === 'unc'); const fix = legsIssue ? l(' · toca para corrigir', ' · tap to fix') : ''; return it ? l(`Incerto — ${issueText(it, lang, c.duty.duty_date)}${fix}`, `Uncertain — ${issueText(it, lang, c.duty.duty_date)}${fix}`) : null; })()
+                    ? (() => { const it = legsIssue || c.prospect.issues.find((x) => x.level === 'unc'); const fix = legsIssue ? l(' · toca para corrigir', ' · tap to fix') : ''; const tx = String(issueText(it, lang, c.duty.duty_date)).replace(' — incerto: ', ': ').replace(' — uncertain: ', ': '); return it ? l(`Incerto — ${tx}${fix}`, `Uncertain — ${tx}${fix}`) : null; })()
                   : info.kind === 'info' ? l('Sem rota — não conta para per-diem', 'No route — no per-diem') : null;
                 const issueWarn = info.kind === 'fix' || !!(c.prospect && (c.prospect.verdict === 'bad' || c.prospect.verdict === 'unc'));
                 const tappable = info.kind === 'fix' || info.kind === 'removed' || !!legsIssue;
@@ -422,7 +422,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
                       </View>
                       {(c.status === 'changed' || c.status === 'conflict') && c.diff?.length
                         ? <Text style={s.cDiff} numberOfLines={2}>{(c.status === 'conflict' ? '✎ ' : '') + diffLine(c)}</Text>
-                        : issue ? <Text style={[s.cMeta, issueWarn && s.cIssue]} numberOfLines={issueWarn ? 2 : 1}>{issue}</Text>
+                        : issue ? <Text style={[s.cMeta, issueWarn && s.cIssue]} numberOfLines={issueWarn ? undefined : 1}>{issue}</Text>
                           : c.status === 'removed' ? <Text style={s.cMeta} numberOfLines={2}>{l('Deixou de aparecer — pode ser atraso do feed. Toca para apagar.', 'Stopped appearing — may be a feed delay. Tap to delete.')}</Text>
                             : metaFor(c) ? <Text style={s.cMeta} numberOfLines={1}>{metaFor(c)}</Text> : null}
                       {/* off/on de CADA setor (lido do PDF/calendário) — só leitura */}

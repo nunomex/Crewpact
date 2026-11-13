@@ -493,7 +493,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const fatigueLbl = (b) => t(`duties.fatigue${b.charAt(0).toUpperCase()}${b.slice(1)}`, lang);
   const fatigueColor = (b) => b === 'high' ? (C.bad || C.warn || C.text) : b === 'elevated' ? (C.warn || C.text) : b === 'low' ? (C.ok || C.sub) : C.text;
   // Os mesmos textos do resultado da Simulação (data/simulation.js); "Incerto —" à frente do que depende de um facto.
-  const issueLbl = (it) => { const x = issueText(it, lang, form.date); return it.level === 'unc' ? l(`Incerto — ${x}`, `Uncertain — ${x}`) : x; };
+  const issueLbl = (it) => { const x0 = issueText(it, lang, form.date); const x = it.level === 'unc' ? String(x0).replace(' — incerto: ', ': ').replace(' — uncertain: ', ': ') : x0; return it.level === 'unc' ? l(`Incerto — ${x}`, `Uncertain — ${x}`) : x; };
 
   const fmtDate = (iso) => {
     if (!iso) return '';

@@ -224,10 +224,15 @@ export const completeRows = (svc = {}, ctx = {}) => {
       valid: (v) => !v.on || isClock(v.from),
     });
     const sb = sp.preStandby || null;
+    // A assistência da ESCALA que precede este voo (ftl standbyBefore): já está contada — a linha di-lo, em vez de "Não".
+    const rsb = ctx.standbyRoster || null;
+    const rH = rsb ? (() => { const m = Math.round((rsb.standbyH || 0) * 60); return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`; })() : null;
+    const rVal = rsb ? (rsb.either ? L('Da escala · a confirmar', 'Roster · to confirm') : L(`Da escala · ${rH}`, `Roster · ${rH}`)) : null;
+    const rIntro = rsb ? L(` A escala já tem uma assistência antes deste voo (${rH} até à apresentação) e a app já a conta: só precisas de mexer aqui se as horas não estiverem certas.`, ` The roster already has a standby before this flight (${rH} until report) and the app already counts it: only change this if the hours are wrong.`) : '';
     add({
       id: 'preStandby', title: L('Assistência antes do voo', 'Standby before the flight'), cite: 'CS FTL.1.225',
-      value: sb ? L(`${sb.type === 'airport' ? 'Aeroporto' : 'Casa/hotel'} · ${sb.standbyH} h`, `${sb.type === 'airport' ? 'Airport' : 'Home/hotel'} · ${sb.standbyH} h`) : L('Não', 'No'), need: false,
-      sheet: { intro: L('Foste chamado de uma assistência para este voo? O tempo de assistência reduz o PSV máximo.', 'Were you called from standby for this flight? Standby time reduces the max FDP.'),
+      value: sb ? L(`${sb.type === 'airport' ? 'Aeroporto' : 'Casa/hotel'} · ${sb.standbyH} h`, `${sb.type === 'airport' ? 'Airport' : 'Home/hotel'} · ${sb.standbyH} h`) : (rVal || L('Não', 'No')), need: false,
+      sheet: { intro: L('Foste chamado de uma assistência para este voo? O tempo de assistência reduz o PSV máximo.', 'Were you called from standby for this flight? Standby time reduces the max FDP.') + rIntro,
         fields: [
           { key: 'type', type: 'choice', value: sb ? sb.type : 'none', options: [
             { id: 'none', label: L('Não', 'No') }, { id: 'airport', label: L('No aeroporto', 'At the airport') }, { id: 'other', label: L('Em casa ou no hotel', 'At home or the hotel') }] },
