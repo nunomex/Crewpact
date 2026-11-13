@@ -369,7 +369,7 @@ referência para o layout das páginas que faltam e para o sistema de desenho. *
   "Calendar key", Cal AI "Ring Colors Explained", Strava) · **N2** pequena por baixo do mês, sem caixas, uma linha por grupo (163 pt;
   WHOOP, Ultrahuman) · **N3** o botão ⓘ em cima da grelha que abre um cartão por cima do mês (30 pt; o mês desce 36; Stardust,
   Peerspace). Recomendei **N1**. **O Nuno: "faz tudo menos a legenda ainda; quero mais opções das legendas".**
-  **JÁ NO CÓDIGO (2026-11-13, por ver no iPhone; por gravar):** `screens/EscalaScreen.js` — **o círculo A** (react-native-svg, já
+  **JÁ NO CÓDIGO (2026-11-13, por ver no iPhone; gravado e enviado em `4ed88f5`):** `screens/EscalaScreen.js` — **o círculo A** (react-native-svg, já
   na app pelos ícones: o anel de 38 pt com uma fatia por serviço pela hora — `orderServices` —, na cor do tipo; fio de 5° entre
   fatias; feito = `CARD.rule`; férias/baixa = anel tracejado; hoje = disco a tinta por dentro; escolhido = anel de tinta por fora;
   ponto laranja no anel; o destino e a lua por baixo; a rotação já não se junta) · **a V1**: o mês fica sempre inteiro; tocar num
@@ -396,7 +396,7 @@ referência para o layout das páginas que faltam e para o sistema de desenho. *
   a guiada ensina no próprio mês, a pequena fica completa e acende com um toque; ~165 pt só com o mês em repouso). **E as guias
   para a app toda** (o Nuno: "gosto desses guias para a app toda, na 1.ª vez… mas onde faz sentido"; aprovou as regras e a
   Escala como piloto) → regras e sítios em `docs/guias.md`.
-  **JÁ NO CÓDIGO (2026-11-13, por ver no iPhone; por gravar):** `data/escalaDay.js` · `legendTour` (um balão por sinal que exista no
+  **JÁ NO CÓDIGO (2026-11-13, por ver no iPhone; gravado e enviado em `4ed88f5`):** `data/escalaDay.js` · `legendTour` (um balão por sinal que exista no
   mês, num dia que vem e nunca hoje; ordem voo · terra · 2 ou mais · pernoita · por sincronizar · férias e baixa · feito, no máximo
   5; no fim "A tinta: hoje. Toca num dia…" sobre hoje) e `legendGroups` (os 4 grupos com todos os sinais; os que não há a 0) —
   golden `test:escala` 99 → 111, escrito antes · `components/GuideBubble.js` (o balão das guias, uma peça só) · `EscalaScreen`:
