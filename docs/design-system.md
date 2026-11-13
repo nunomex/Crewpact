@@ -348,6 +348,8 @@ vermelhos da 2.0 revistos um a um, e o amarelo da marca (`BRAND.signal/marker`) 
 
 ### Peças escolhidas a 2026-11-13 (das 57 referências de `referencias/Para a app/`)
 
+**No código (2026-11-13, ainda mais tarde):** o "Ver tudo" (o corpo do Detalhe, `DutyDetailBody`) está no 3.0 — escolha B de `design/detalhe-3.html`: o cartão de cor do serviço com a perna B2 (DH marcado) e os cartões neutros (Limites com a barra B9, Completar, Horário com a régua B3, Pernoita com "Mapas ↗", Pagamento com o total em A1, Outros serviços com a linha B7). Serve a Escala e o ecrã do Detalhe.
+
 **No código (2026-11-13, mais tarde — substitui o parágrafo seguinte):** a Escala é SÓ O MÊS (o dia A de `design/escala-mes.html`, a legenda que filtra L2) e tocar num dia abre-o numa JANELA (a folha nativa do iPhone, `pageSheet`): o cabeçalho com ‹ › ✕, uma linha por serviço, e no serviço aberto o corpo inteiro do Detalhe (`DutyDetailBody` `embedded`); deslizar para o lado muda de dia na janela e de mês na grelha. A agenda descrita a seguir saiu da aba.
 
 **No código (2026-11-13, por ver no iPhone):** a Escala em AGENDA (esboços `design/escala-agenda.html` — A2 + o ano em

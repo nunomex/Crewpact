@@ -261,6 +261,28 @@ referência para o layout das páginas que faltam e para o sistema de desenho. *
   dois (tocar em cada um) · deslizar para o lado na janela (folgas incluídas; passar de novembro para dezembro) · ‹ › e ✕ ·
   puxar para baixo fecha · dentro do Detalhe: completar um dado, "o calendário está errado?", o hotel (as folhas por cima da
   janela) · VoiceOver na grelha e no cabeçalho. **O esboço que manda:** `design/escala-janela.html` (feito depois de construída, igual ao código).
+  **Gravado no ramo `calculos-repouso-2`, commit `e47557e`, sem push.**
+  **O "Ver tudo" no layout novo (o Nuno: "o ver tudo está com o layout novo?" — não, era a 2.0):** esboço `design/detalhe-3.html`,
+  o mesmo conteúdo e a mesma ordem em três desenhos 3.0, com as peças das imagens do Nuno (`referencias/Para a app/`, §14: B2 a
+  perna, B3 a régua das 24 h, B9 a barra do limite, A1 os cêntimos, A2 o ↗ só para fora, B7 a linha com o tipo, M1 a
+  continuidade pela cor) e o Mobbin (Qantas, American, Delta, Gojek, Wanderlog, Booking): **A** cartões por tema (a linha fica;
+  as pernas no cartão "Horário") · **B** o voo em destaque (o serviço tocado cresce para o cartão de cor com a perna B2; os
+  Limites primeiro, com o PSV na barra B9) · **C** lista agrupada (os Ajustes do iPhone). Recomendo **B**. Medido: o "Ver tudo"
+  de um voo ocupa 1565 / 1627 / 1134 pt (a janela mostra ~714 — desliza-se nas três). **ESCOLHIDA pelo Nuno: B. JÁ NO CÓDIGO
+  (por ver no iPhone; por gravar):** `DutyDetailBody` no 3.0 — o cartão de cor do serviço (o `dayCards` aberto: todas as pernas
+  com a faixa do voo, as duas horas grandes, ✈ e a duração, a Zulu quando difere, o tempo no solo; **DH marcado na faixa**, que o
+  cartão não marcava — `components/HomeCards.js` · `Legs`) · os cartões neutros: **Limites · FTL** (o PSV na barra B9 com o que
+  falta e as duas pontas quando a lei não fecha; o estado numa linha; calços até às, PSV máximo, repouso mínimo, fadiga, os
+  "incertos", os limites do acordo da TAP) · **Completar** (o aviso no laranja; antes do Horário quando falta um dado) ·
+  **Horário** (a régua B3 com o dia todo; apresentação, calços, fim, horas) · **Pernoita** (o hotel com "Mapas ↗" e "Ligar"; ou
+  guardá-lo) · **Pagamento** (as parcelas e o total com os cêntimos pequenos, só sem intervalos) · **Outros serviços** (a linha
+  com o tipo, B7) · "o calendário está errado?" (a linha fina neutra) · apagar (manuais) e as notas. O ecrã do Detalhe (do
+  Início) passa à folha branca com o ‹ e sem a faixa lateral PeleSide; as janelas (completar, correção, hotel) seguem a 2.0 até
+  migrarem. Na Escala, a linha tocada é substituída pelo cartão de cor (tocar nele fecha). Guardião: −5 na dívida (linha de base
+  baixada). `npm test` verde, pacote iOS gera.
+  **Ver no iPhone:** abrir um voo de duas pernas (as duas pernas, o tempo no solo) e um com DH · um incerto (a barra com as duas
+  pontas) · um que passa (a barra a vermelho) · completar um dado · guardar o hotel e "Mapas ↗" · o total do pagamento · os
+  outros serviços (troca o aberto) · o ecrã do Detalhe vindo do Início.
   **Ver no iPhone:** o Início (voo a céu, assistência a lilás, o aviso laranja com "!") · a Escala (barras, legenda do Mês, os
   dias feitos com o ponto azul) · o Detalhe de um serviço dentro (sem verde), incerto (pílula tracejada) e com fadiga · os
   Números (barras a tinta, laranja aos 85 %) · as Validades.

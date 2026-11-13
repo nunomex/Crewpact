@@ -1,11 +1,11 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { PELE, PELE_FONT, GUTTER, BRAND, TXT, SPACE, RADIUS, MONEY } from '../data/constants';
+import { PELE, PELE_FONT, GUTTER, BRAND, TXT, TXT3, SPACE, RADIUS, MONEY, CARD } from '../data/constants';
 import Icon from '../components/Icon';
 import IconButton from '../components/IconButton';
-import PeleSide from '../components/PeleSide';
-import PeleHeader from '../components/PeleHeader';
+import { HomeCards } from '../components/HomeCards';
+import DayRuler from '../components/DayRuler';
 import FactSheet from '../components/FactSheet';
 import PeleSheet from '../components/PeleSheet';
 import { completeRows, realTimesPatch, missingFields, plannedOf, isClock } from '../data/dutyComplete';
@@ -24,28 +24,31 @@ import { legZulu, legsZulu } from '../data/zulu';
 import { fdpForDuty, docFor, dayNum } from '../ae/tapLimits';
 import { plainFor, fmtDur, fmtClock } from '../data/tapLimitsText';
 import { AE_DEEPLINKS } from '../data/library';
-import FlightShareCard from '../components/FlightShareCard';
-import { shareCardFor } from '../data/shareLeg';
+import { dayCards, dayRuler, orderServices } from '../data/escalaDay';
+import { baseCityName } from '../data/countries';
 
 const minToHhmm = (min) => { if (!min) return ''; const h = Math.floor(min / 60), m = min % 60; return `${h}:${String(m).padStart(2, '0')}`; };
 const clkMin = (str) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(str || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; };
+const hm = (m) => (m == null ? '—' : `${Math.floor(m / 60)}:${String(Math.round(m) % 60).padStart(2, '0')}`);
+const addDayIso = (iso, n) => { const x = new Date(`${iso}T12:00:00`); x.setDate(x.getDate() + n); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
+const hasNs = (dd) => !!(dd && !dd.deleted && (dd.nightStop || (Array.isArray(dd.extra) && dd.extra.some((x) => x && x.nightStop))));
+const C3 = CARD.day;   // o "Ver tudo" no 3.0: de dia, como a Escala
 
 // Detalhe de um serviço — o "Ver tudo" da folha do dia. Fiel a design/detalhe-servico.html (v2, aprovado 2026-11-08):
 // herói (rota + FANTASMA=FDP + estado FTL) + Horário · Setores (vêm do calendário: SÓ SE LEEM — regra 4) · FTL/Segurança ·
 // COMPLETAR (os factos que a lei ou o acordo precisam e o calendário não traz, um de cada vez — data/dutyComplete.js) ·
 // Pernoita · Pagamento. O "Editar serviço" saiu: a saída "O calendário está errado?" leva às horas reais ou ao dado em falta.
 // Tudo derivado dos motores — a duty NÃO guarda FDP/per-diem. Apagar SÓ nos manuais (a fonte manda nos importados).
-// O CORPO (2026-11-13): separado do ecrã para viver também DENTRO da Escala — o "Ver tudo" da escolha 1 de
-// design/escala-so-mes.html (a fila de ícones com a aba ligada). Sem `section` desenha tudo (o ecrã do Detalhe, abaixo, que
-// continua para os outros caminhos); com `section` ('legs' · 'lim' · 'eur' · 'hotel' · 'share' · 'fix') só essa parte. A lógica
-// é UMA: os motores não se duplicam. Fica neste ficheiro (e não num novo) para a dívida antiga dos estilos não mudar de sítio.
-// `embedded` (a Escala, por baixo da linha do serviço): tudo, mas sem o herói — a linha do serviço já diz a rota e as horas.
-export function DutyDetailBody({ date, idx: idxIn = 0, section = null, embedded = false, editReq = null, navigation, onEdited, onDeleted, onOpenService }) {
+// O CORPO (2026-11-13): separado do ecrã para viver também DENTRO da Escala (a janela do dia, por baixo do serviço tocado) e
+// desenhado no 3.0 — escolha B de design/detalhe-3.html: o serviço no cartão de cor com a perna (B2; a continuidade pela cor do
+// cartão tocado, M1) e os cartões neutros de cada tema (Limites com o PSV na barra B9 · Completar · Horário com a régua B3 ·
+// Pernoita · Pagamento com o total em A1 · Outros serviços com a linha do tipo B7 · "o calendário está errado?"). A lógica é UMA
+// (os motores não se duplicam) e serve o ecrã do Detalhe (abaixo) e a Escala. Fica neste ficheiro para a dívida antiga dos
+// estilos não mudar de sítio. `onCollapse` (a Escala): tocar no cartão de cor fecha o serviço.
+export function DutyDetailBody({ date, idx: idxIn = 0, editReq = null, navigation, onEdited, onDeleted, onOpenService, onCollapse }) {
   const ctxAll = useContext(AppContext);
   const { lang, duties, crewAt, removeDuty, saveDuty, updateDutyService, notify } = ctxAll;
   const l = (pt, en) => (lang === 'en' ? en : pt);
-  const all = !section;                              // sem secção = o Detalhe inteiro
-  const show = (k) => all || section === k;
   const [fact, setFact] = useState(null);           // a linha do "Completar" aberta (a folha de UM dado)
   const lastFact = useRef(null);                    // a folha desce com o conteúdo (não pisca vazia ao fechar)
   if (fact) lastFact.current = fact;
@@ -56,7 +59,6 @@ export function DutyDetailBody({ date, idx: idxIn = 0, section = null, embedded 
   const [missOpen, setMissOpen] = useState(false);  // porta 2: o dado que faltou no calendário
   const [hotelOpen, setHotelOpen] = useState(false);   // folha "Hotel da pernoita" (registar/editar)
   const [prova, setProva] = useState(null);            // folha da PROVA ("a lei deste número")
-  const [shareCard, setShareCard] = useState(null);     // Partilhar o voo (o mesmo cartão do Início)
 
   // `editReq` (Início v6, tecla "Registar o sign-off"): abre logo as HORAS REAIS (o formulário inteiro saiu, 2026-11-08).
   useEffect(() => { if (editReq) setRealOpen(true); }, [editReq]);
@@ -288,12 +290,16 @@ export function DutyDetailBody({ date, idx: idxIn = 0, section = null, embedded 
       </View>
     );
   };
-  // Secção: o rótulo à esquerda e, à direita, de ONDE vêm os dados (N26: "Details" da fonte vs. o que acrescentas).
-  // `top` = o título da secção inteira: dentro da Escala é o ícone escolhido que o diz, por isso não se repete.
-  const Sec = ({ icon, children, src, top }) => (top && !all) ? null : (
-    <View style={s.sec}>
-      <Icon name={icon} size={13} color={PELE.grey} /><Text style={s.secTxt}>{children}</Text>
-      {src ? <View style={s.secSrc}><Icon name="cal" size={12} color={PELE.grey} /><Text style={s.secSrcT}>{src}</Text></View> : null}
+  // O cartão neutro de um tema (o "lines" do Início): o título dentro, em cima; à direita, de ONDE vêm os dados.
+  const Card = ({ kind, src, children }) => (
+    <View style={[s.card, { backgroundColor: C3.neutral }]}>
+      {kind ? (
+        <View style={s.cardHead}>
+          <Text style={[TXT3.kind, s.flex1, { color: C3.neutralKind }]}>{kind}</Text>
+          {src ? <Text style={[TXT3.kind, { color: C3.neutralKind }]}>{src}</Text> : null}
+        </View>
+      ) : null}
+      {children}
     </View>
   );
   const srcLbl = duty.source === 'pdf' ? l('do PDF', 'from the PDF') : duty.source === 'calendar' ? l('do calendário', 'from the calendar') : null;
@@ -315,9 +321,14 @@ export function DutyDetailBody({ date, idx: idxIn = 0, section = null, embedded 
     ) };
   };
   const missing = missingFields(duty);
+  // A régua das 24 h (B3): o dia todo (os serviços na cor do tipo, o repouso fora da base, a WOCL só quando o motor a dá).
+  const prevDay = duties[addDayIso(date, -1)];
+  const nowD = new Date();
+  const ruler = dayRuler({ iso: date, ordered: orderServices(day), prevOrdered: orderServices(prevDay), ns: hasNs(day), prevNs: hasNs(prevDay), base: baseD,
+    postFlightMin: ctxAll.postFlightMin || 0, nowMin: date === todayISO ? nowD.getHours() * 60 + nowD.getMinutes() : null, lang, locale });
   const schedule = (
-    <>
-      <Sec icon="clock" src={srcLbl} top>{l('Horário', 'Schedule')}</Sec>
+    <Card kind={l('Horário', 'Schedule')} src={srcLbl}>
+      <DayRuler ruler={ruler} C={C3} label={l('O dia em 24 horas: os serviços e o repouso', 'The day in 24 hours: duties and rest')} />
       <Panel rows={[
         timeRow(l('Apresentação', 'Report'), 'report_time', duty.report_time ? toZulu(date, duty.report_time) : null),
         timeRow(l('Calços fora', 'Off-blocks'), 'block_off', duty.block_off ? (zOf(firstLeg, 'off') || toZulu(date, duty.block_off)) : null),
@@ -326,54 +337,37 @@ export function DutyDetailBody({ date, idx: idxIn = 0, section = null, embedded 
         duty.flight_minutes && { k: l('Horas de voo', 'Flight hours'), v: minToHhmm(duty.flight_minutes) },
         (d && d.dutyPeriodStr) && { k: l('Horas de serviço', 'Duty hours'), v: d.dutyPeriodStr },
       ]} />
-      {/* Setores — off/on de cada setor (só leitura). Soma dos block = horas de voo. */}
-      {isFlight && legs.length ? (
-        <>
-          <Sec icon="plane" src={srcLbl}>{l('Setores', 'Sectors')}</Sec>
-          <Panel rows={legs.map((lg) => {
-            const zo = zOf(lg, 'off'), zn = zOf(lg, 'on');
-            return {
-              k: `${lg.dh ? 'DH · ' : ''}${lg.flightNo ? `${lg.flightNo} · ` : ''}${lg.dep || '?'}→${lg.arr || '?'}`,
-              node: (
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={s.rowV}>{`${lg.off || '—'} → ${lg.on || '—'}`}</Text>
-                  {(zo || zn) ? <Text style={s.rowVZ}>{`${zo || '—'} → ${zn || '—'}Z`}</Text> : null}
-                </View>
-              ),
-            };
-          })} />
-        </>
-      ) : null}
-    </>
+    </Card>
   );
   // COMPLETAR — uma linha por facto; a que falta (need) com o ponto e "Por indicar"; o cartão do Starling só com um "incerto".
   const completar = rows.length ? (
     <>
-      <Sec icon="edit">{l('Completar', 'Complete')}</Sec>
       {needRows.length ? (
-        <View style={s.needCard}>
-          <Icon name="alert" size={16} color={PELE.warnText} />
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={s.needT}>{needRows.length === 1 ? l('Para a lei decidir, falta 1 dado', 'For the law to decide, 1 fact is missing') : l(`Para a lei decidir, faltam ${needRows.length} dados`, `For the law to decide, ${needRows.length} facts are missing`)}</Text>
-            <Text style={s.needD}>{tx(needRows[0].sheet.intro)}</Text>
+        <View style={[s.needCard, { backgroundColor: C3.alert }]}>
+          <Icon name="alert" size={16} color={CARD.onCard} />
+          <View style={s.flex1}>
+            <Text style={[TXT3.lineVal, { color: CARD.onCard }]}>{needRows.length === 1 ? l('Para a lei decidir, falta 1 dado', 'For the law to decide, 1 fact is missing') : l(`Para a lei decidir, faltam ${needRows.length} dados`, `For the law to decide, ${needRows.length} facts are missing`)}</Text>
+            <Text style={[TXT3.cardSub, { color: CARD.onCardSub }]}>{tx(needRows[0].sheet.intro)}</Text>
           </View>
         </View>
       ) : null}
-      <View style={s.panel}>
-        {rows.map((r, i) => (
-          <TouchableOpacity key={r.id} style={[s.crow, i === 0 && s.rowFirst]} activeOpacity={0.7} onPress={() => { select(); setFact(r); }}
-            accessibilityRole="button" accessibilityLabel={`${tx(r.title)}: ${tx(r.value)}`} accessibilityHint={l('Abre para indicar', 'Opens to fill in')}>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={s.crowT}>{tx(r.title)}</Text>
-              {r.cite ? <Text style={s.crowD} numberOfLines={1}>{r.cite}</Text> : null}
-            </View>
-            {r.need ? <View style={s.needDot} /> : null}
-            <Text style={[s.crowV, r.need && s.crowVNeed]} numberOfLines={1}>{tx(r.value)}</Text>
-            <Icon name="chevron" size={14} color={r.need ? PELE.warnText : PELE.affordance} />
-          </TouchableOpacity>
-        ))}
-      </View>
-      {!needRows.length ? <Text style={s.note}>{l('Só o que a lei ou o teu acordo precisam e o calendário não traz.', 'Only what the law or your agreement needs and the calendar does not bring.')}</Text> : null}
+      <Card kind={l('Completar', 'Complete')}>
+        <View>
+          {rows.map((r, i) => (
+            <TouchableOpacity key={r.id} style={[s.crow, { borderTopColor: CARD.rule }, i === 0 && s.rowFirst]} activeOpacity={0.7} onPress={() => { select(); setFact(r); }}
+              accessibilityRole="button" accessibilityLabel={`${tx(r.title)}: ${tx(r.value)}`} accessibilityHint={l('Abre para indicar', 'Opens to fill in')}>
+              <View style={s.flex1}>
+                <Text style={[TXT3.lineVal, { color: C3.ink }]}>{tx(r.title)}</Text>
+                {r.cite ? <Text style={[TXT.caption, { color: C3.tabSub }]} numberOfLines={1}>{r.cite}</Text> : null}
+              </View>
+              {r.need ? <View style={[s.needDot, { backgroundColor: C3.alert }]} /> : null}
+              <Text style={[TXT3.line, s.crowV, { color: r.need ? PELE.warnText : C3.soft }]} numberOfLines={1}>{tx(r.value)}</Text>
+              <Icon name="chevron" size={14} color={r.need ? PELE.warnText : C3.tabSub} />
+            </TouchableOpacity>
+          ))}
+        </View>
+        {!needRows.length ? <Text style={[TXT3.cardSub, { color: C3.tabSub }]}>{l('Só o que a lei ou o teu acordo precisam e o calendário não traz.', 'Only what the law or your agreement needs and the calendar does not bring.')}</Text> : null}
+      </Card>
     </>
   ) : null;
   // As horas reais (porta 1): voo = calços fora/dentro e fim de serviço; os outros serviços = início e fim.
@@ -395,245 +389,260 @@ export function DutyDetailBody({ date, idx: idxIn = 0, section = null, embedded 
 
 
   const fatPill = fat ? (
-    <View style={[s.fatPill, { backgroundColor: fatBg(fat.band) }]}>
+    <View style={[s.fatPill, { backgroundColor: fat.band === 'high' ? PELE.warnSoft : CARD.chip }]}>
       <View style={[s.fatDot, { backgroundColor: fatDotC(fat.band) }]} />
-      <Text style={[s.fatTxt, { color: fatTxtC(fat.band) }]}>{fatLabel(fat.band)}</Text>
+      <Text style={[TXT3.dur, { color: fatTxtC(fat.band) }]}>{fatLabel(fat.band)}</Text>
     </View>
   ) : null;
 
-  // PARTILHAR (a secção do "Ver tudo" na Escala): cada perna com número de voo abre o MESMO cartão do Início (data/shareLeg.js).
-  const shareLegsD = legs.filter((lg) => lg && (lg.flightNo || lg.flight));
-  const shareBlock = shareLegsD.length ? (
-    <Panel rows={shareLegsD.map((lg) => ({ k: `${lg.flightNo || lg.flight} · ${lg.dep || '?'} → ${lg.arr || '?'}`, v: l('Partilhar', 'Share'),
-      go: () => setShareCard(shareCardFor(lg, date, { todayISO, locale })) }))} />
-  ) : (
-    <Text style={s.note}>{isFlight ? l('Este voo ainda não tem número — sem ele não há o que partilhar.', 'This flight has no number yet — nothing to share without it.') : l('Só os voos se partilham com a família.', 'Only flights are shared with family.')}</Text>
+  // ── O CARTÃO DE COR do serviço (o mesmo do Início e da Escala: data/escalaDay.js · dayCards): de onde, para onde, a perna
+  // com as duas horas grandes (B2), o report, o fim e o que rende. ──
+  const roleMoney = (() => {
+    const role = duty.role || (duty.instructor ? 'instr' : null);
+    if (!role || !ae) return null;
+    const eur = roleEurFor(ae, catD, role, duty.sectors, date);   // a tabela do mês do serviço
+    const def = (ae.ADDITIONAL_ROLES || []).find((r) => r.id === role);
+    const lbl = (def && def.label && (def.label[lang] || def.label.pt)) || role;
+    return { k: lbl, v: eur > 0 ? `+${fmtEur0(eur)}` : l('sem prestação no AE', 'no AE item'), color: eur > 0 ? MONEY.gain : null, eur: eur > 0 ? eur : 0 };
+  })();
+  const ranged = (svcEur && svcEur.max > svcEur.eur) || (posEur && posEur.max > posEur.eur);
+  const payTotal = (perDiem || 0) + (svcEur ? svcEur.eur : 0) + (posEur ? posEur.eur : 0) + (duty.nightStop && nsEur != null ? nsEur : 0) + (roleMoney ? roleMoney.eur : 0);
+  const mArr = []; mArr[idx] = money ? { total: (perDiem || 0) + (svcEur ? svcEur.eur : 0) + (posEur ? posEur.eur : 0), nightStop: nsEur || 0 } : null;
+  const kindLabelD = (k) => (k === 'flight' ? l('Voo', 'Flight') : t('duties.kind.' + k, lang));
+  const cityOfD = (code) => { const c = baseCityName(code, null, lang); return c && c !== code ? c : null; };
+  const hero = dayCards({ iso: date, ordered: [{ svc: duty, idx }], open: true, money: mArr, kindLabel: kindLabelD, cityOf: cityOfD, nightStop: null,
+    postFlightMin: ctxAll.postFlightMin || 0, lang, locale, fmtEur: fmtEur0 })[0];
+  // ── B9 · O PSV numa barra: o valor com o máximo pequeno ("3:10 /13:00"), a barra a tinta e o que falta — nunca percentagem.
+  // Quando a lei não fecha o máximo (duas pontas), dizem-se as duas; passa o limite = vermelho (o mapa: só quando passa). ──
+  const psv = (d && d.isFdp && d.fdp && !sbAccD && (aeStricter || d.fdp.maxFdpMin != null)) ? (() => {
+    const lo = aeStricter ? aeOnBlockMax : d.fdp.maxFdpMin;
+    const hi = aeStricter ? aeOnBlockMax : (d.fdp.exact === false && d.fdp.maxHiMin != null ? d.fdp.maxHiMin : lo);
+    const act = hasEnd ? d.fdp.actualFdpMin : null;
+    return { lo, hi, act, two: hi !== lo, over: !!(over || aeOver) };
+  })() : null;
+  const psvBar = psv ? (
+    <View style={[s.b9, { borderBottomColor: CARD.rule }]}>
+      <Text style={[TXT3.kind, { color: C3.neutralKind }]}>{aeStricter ? l('PSV · acordo da TAP', 'FDP · TAP agreement') : l('Serviço de voo (PSV)', 'Flight duty period (FDP)')}</Text>
+      <View style={s.b9Val}>
+        <Text style={[TXT3.cardTitle, { color: psv.over ? PELE.red : C3.ink }]} allowFontScaling={false}>
+          {psv.act != null ? hm(psv.act) : l('por calcular', 'not yet')}
+          <Text style={[TXT3.line, { color: C3.tabSub }]}>{`  /${hm(psv.lo)}${psv.two ? `–${hm(psv.hi)}` : ''}`}</Text>
+        </Text>
+        {psv.act != null ? (
+          <Text style={[TXT3.lineVal, { color: psv.over ? PELE.red : C3.ink }]}>
+            {psv.over ? l(`passa ${hm(psv.act - psv.hi)}`, `over by ${hm(psv.act - psv.hi)}`)
+              : psv.two ? l(`faltam ${hm(Math.max(0, psv.lo - psv.act))}–${hm(psv.hi - psv.act)}`, `${hm(Math.max(0, psv.lo - psv.act))}–${hm(psv.hi - psv.act)} left`)
+              : l(`faltam ${hm(psv.lo - psv.act)}`, `${hm(psv.lo - psv.act)} left`)}
+          </Text>
+        ) : null}
+      </View>
+      <View style={[s.b9Track, { backgroundColor: CARD.onCardTrack }]}>
+        <View style={[s.b9Fill, { width: `${psv.act != null && psv.hi ? Math.min(100, (psv.act / psv.hi) * 100) : 0}%`, backgroundColor: psv.over ? C3.stop : C3.ink }]} />
+      </View>
+    </View>
+  ) : null;
+  // O estado FTL numa linha (o mapa das cores: dentro sem cor; passa a vermelho com o ✕/alerta; incerto neutro tracejado).
+  const stCol = statusPill.tone === 'red' ? PELE.red : statusPill.tone === 'warn' ? PELE.warnText : C3.ink;
+  const statusRow = (
+    <View style={[s.stRow, statusPill.tone === 'unc' ? [s.stUnc, { borderColor: C3.round }] : null]}>
+      {statusPill.tone === 'ok' ? <View style={[s.stIc, { borderColor: C3.ink }]}><Icon name="check" size={11} color={C3.ink} /></View>
+        : (statusPill.tone === 'red' || statusPill.tone === 'warn') ? <Icon name="alert" size={16} color={stCol} /> : null}
+      <Text style={[TXT3.lineVal, s.flex1, { color: stCol }]}>{statusPill.txt}</Text>
+      {duty.dirty ? <View style={s.pendRow}><View style={[s.pendDot, { backgroundColor: C3.alert }]} /><Text style={[TXT3.cardSub, { color: C3.tabSub }]}>{t('duties.pending', lang)}</Text></View> : null}
+    </View>
   );
+  const limits = (
+    <Card kind={l('Limites · FTL', 'Limits · FTL')}>
+      {(!d && !duty.report_time && (duty.kind || 'flight') === 'flight') ? (
+        <Panel rows={[{ k: l('PSV', 'FDP'), v: l('não calculado — falta a hora de apresentação', 'not calculated — the report time is missing'), color: PELE.warnText, go: () => setMissOpen(true) }]} />
+      ) : null}
+      {d ? (
+        <>
+          {psvBar}
+          {statusRow}
+          <Panel rows={[
+            aeStricter
+              ? { k: l('Calços até às', 'On-blocks by'), v: `${fmtClock(aeFdp.latestOnBlock)}${aeFdp.latestOnBlock - (dayNum(date) * 1440) >= 1440 ? ' (+1)' : ''}`,
+                  node: aeTagged(`${fmtClock(aeFdp.latestOnBlock)}${aeFdp.latestOnBlock - (dayNum(date) * 1440) >= 1440 ? ' (+1)' : ''}`), prova: aePsvProva }
+              : (!sbAccD && d.latestOnBlockStr) && { k: d.fdp.exact === false ? l('Calços até às (garantido)', 'On-blocks by (guaranteed)') : l('Calços até às', 'On-blocks by'), v: `${d.latestOnBlockStr}${d.latestOnBlockNextDay ? ' (+1)' : ''}`, prova: provaFor('psvMax', provaCtx) },
+            psv && !aeStricter && { k: l('PSV máximo', 'FDP max'), v: d.fdp.exact === false ? `${d.fdp.maxFdpStr}–${d.fdp.maxHiStr}` : d.fdp.maxFdpStr, prova: provaFor('psvMax', provaCtx) },
+            aeOver && { k: l('Excesso (acordo)', 'Excess (agreement)'), v: fmtDur(aeFdp.value - aeFdp.limit), color: PELE.red },
+            aeNext && { k: l('Próxima saída de calços', 'Next off-blocks'), v: `${fmtClock(aeNext.at)}${Math.floor(aeNext.at / 1440) > dayNum(date) ? ' (+1)' : ''}`,
+              node: aeTagged(`${fmtClock(aeNext.at)}${Math.floor(aeNext.at / 1440) > dayNum(date) ? ' (+1)' : ''}`), prova: aeRestProva },
+            sbAccD && { k: l('PSV', 'FDP'), v: kind === 'standby_airport' ? l('não se aplica — standby (225)', 'not applicable — standby (225)')
+              : l('não se aplica — sem setores (ORO.FTL.105(12))', 'not applicable — no sectors (ORO.FTL.105(12))') },
+            (sbAccD && hasEnd && d.fdp && d.fdp.actualFdpStr) && { k: l('Duração', 'Duration'), v: d.fdp.actualFdpStr },
+            (spD.discretion && d.discretion) && { k: l('Discrição 205(f)', 'Discretion 205(f)'),
+              v: d.discretion.over
+                ? l(`ACIMA da margem (máx c/ discrição ${d.discretion.maxStr})`, `BEYOND the margin (max w/ discretion ${d.discretion.maxStr})`)
+                : l(`usada — dentro da margem (até ${d.discretion.maxStr}) · reportável`, `used — within the margin (up to ${d.discretion.maxStr}) · reportable`),
+              color: d.discretion.over ? PELE.red : PELE.warnText },
+            (over && d.fdp.excessStr) && { k: l('Excesso', 'Excess'), v: d.fdp.excessStr, color: PELE.red },
+            (!sbAccD && d.acclim && d.acclim.letter && d.acclim.letter !== 'in') && { k: l('Aclimatação (Quadro 1)', 'Acclimatisation (Table 1)'),
+              v: d.acclim.letter === 'X' ? l('X — desconhecida · Quadro 3', 'X — unknown · Table 3')
+                : d.acclim.letter === 'D' ? l('D — à hora local · Quadro 2', 'D — to local time · Table 2')
+                : l('B — à hora da base · Quadro 2', 'B — to home-base time · Table 2') },
+            (!sbAccD && d.extUsed && !over) && { k: l('Prolongamento (205(d))', 'Extension (205(d))'), v: l('planeado · repouso a seguir +2 h (ou +4 h)', 'planned · next rest +2 h (or +4 h)') },
+            (!sbAccD && over && d.extRefused === '2in7') && { k: l('Prolongamento (205(d))', 'Extension (205(d))'), v: l('3.º em 7 dias — o limite é 2', '3rd in 7 days — the limit is 2'), color: PELE.red },
+            (!sbAccD && sbNote) && { k: l('Assistência antes do voo', 'Standby before the flight'), note: sbNote },
+            (!sbAccD && !over && d.fdp.uncertain) && { k: l('Incerto', 'Uncertain'), note: l(`Falta ${unknownsText(d.fdp.unknowns, 'pt')}.`, `Missing: ${unknownsText(d.fdp.unknowns, 'en')}.`) },
+            (!sbAccD && over && d.fdp.exact === false && (d.fdp.unknowns || []).length > 0) && { k: l('Dois máximos', 'Two maximums'), note: l(`Falta ${unknownsText(d.fdp.unknowns, 'pt')}.`, `Missing: ${unknownsText(d.fdp.unknowns, 'en')}.`) },
+            (hasEnd && d.rest && d.rest.restStr) && { k: l('Repouso mínimo depois', 'Min rest after'), v: d.rest.restStr, prova: provaFor('repouso', provaCtx) },
+            fat && { k: l('Fadiga', 'Fatigue'), node: fatPill },
+          ]} />
+          {tapAe && aeFdp && aeFdp.limit == null ? (
+            <Text style={[TXT3.cardSub, { color: C3.soft }]}>
+              {{
+                'sem-coluna': l('O acordo da TAP não tem limite para 5 ou mais aterragens: vale a regra europeia.', 'The TAP agreement has no limit for 5 or more landings: EU rules apply.'),
+                'sem-fuso': l('Longo curso sem a hora UTC dos voos: a app não sabe a hora local de cada escala. Vale a regra europeia.', 'Long haul without the flights\' UTC times: the app does not know the local time at each station. EU rules apply.'),
+                'sem-rotacao': l('Longo curso: a escala não mostra o início da rotação, por isso a app não sabe a aclimatização. Vale a regra europeia.', 'Long haul: the roster does not show the start of the rotation, so the app cannot tell acclimatisation. EU rules apply.'),
+                'sem-banda': l('Mais de 12 h de diferença horária: fora do quadro do acordo da TAP (RUPT Cl. 23.ª, n.º 4). Vale a regra europeia.', 'More than 12 h of time difference: outside the TAP agreement table (RUPT Cl. 23, no. 4). EU rules apply.'),
+                'sem-valor': l('O quadro do acordo da TAP não tem valor para 4 aterragens a esta hora. Vale a regra europeia.', 'The TAP agreement table has no value for 4 landings at this time. EU rules apply.'),
+              }[aeFdp.reason] || l('Falta a posição de um aeroporto: a app não sabe se este voo é de médio curso. Vale a regra europeia.', 'An airport position is missing: the app cannot tell whether this flight is medium haul. EU rules apply.')}
+            </Text>
+          ) : null}
+          {aeOk ? (
+            <Text style={[TXT3.cardSub, { color: C3.soft }]}>
+              {aeStricter ? l('Vale o limite mais apertado. ', 'The tighter limit applies. ') : l('Aqui a regra europeia é a mais apertada. ', 'Here the EU rule is the tighter one. ')}
+              {l(`Acordo da TAP: ${fmtDur(aeFdp.limit)}, contado até 30 min depois dos calços (${aeFdpCl} e ${ctD === 'pilot' ? 'RUPT Cl. 6.ª, n.º 40' : 'RUPT Cl. 4.ª, n.º 25'}), ou seja ${fmtDur(aeOnBlockMax)} até aos calços.`,
+                `TAP agreement: ${fmtDur(aeFdp.limit)}, counted to 30 min after on-blocks (${aeFdpCl.replace('.ª', '')} and ${ctD === 'pilot' ? 'RUPT Cl. 6, no. 40' : 'RUPT Cl. 4, no. 25'}), i.e. ${fmtDur(aeOnBlockMax)} to on-blocks.`)}
+              {aeLc && aeFdp.limitMax ? l(` Longo curso: ${fmtDur(aeFdp.limit)} ou ${fmtDur(aeFdp.limitMax)}, conforme a aclimatização, que o acordo deixa em aberto aqui; a app mostra o mais apertado.`, ` Long haul: ${fmtDur(aeFdp.limit)} or ${fmtDur(aeFdp.limitMax)} depending on acclimatisation, which the agreement leaves open here; the app shows the tighter one.`) : ''}
+              {aeFdp.reason === 'pode-ter-reforco' ? l(' Acima disto, só com tripulação reforçada (RUPT Cl. 42.ª), que a escala não mostra.', ' Beyond this, only with an augmented crew (RUPT Cl. 42), which the roster does not show.') : ''}
+              {aeFdp.reason === 'pode-ter-ldmcr' ? l(' Acima disto, só com descanso a bordo (RUPT Cl. 24.ª, n.º 2), que a escala não mostra.', ' Beyond this, only with crew rest on board (RUPT Cl. 24, no. 2), which the roster does not show.') : ''}
+              {easaMax != null ? l(` Regra europeia: ${fmtDur(easaMax)} até aos calços (ORO.FTL.205).`, ` EU rule: ${fmtDur(easaMax)} to on-blocks (ORO.FTL.205).`) : ''}
+            </Text>
+          ) : null}
+          {aeNext ? (
+            <Text style={[TXT3.cardSub, { color: C3.soft }]}>
+              {l(`Próxima saída: ${fmtDur(aeNext.rest)} de repouso na base e ${fmtDur(aeNext.trans)} de transição (${ctD === 'pilot' ? 'RUPT Cl. 25.ª, n.º 2, Cl. 34.ª, n.º 2, e Cl. 24.ª, n.º 3' : 'RUPT Cl. 29.ª, n.os 2 e 7, e Cl. 32.ª, n.º 4'}), contadas a partir dos calços.`,
+                `Next departure: ${fmtDur(aeNext.rest)} rest at base and ${fmtDur(aeNext.trans)} transition (${ctD === 'pilot' ? 'RUPT Cl. 25, no. 2, Cl. 34, no. 2, and Cl. 24, no. 3' : 'RUPT Cl. 29, nos. 2 and 7, and Cl. 32, no. 4'}), counted from on-blocks.`)}
+            </Text>
+          ) : null}
+        </>
+      ) : null}
+    </Card>
+  );
+  // A pernoita: o hotel da estação (catálogo pessoal) — "Mapas ↗" abre fora da app (A2) e "Ligar"; sem hotel, guardá-lo.
+  const nsSt = duty.nightStop ? nightStopStation(duty, baseD) : null;
+  const nsHotel = nsSt ? (ctxAll.hotels || {})[nsSt] : null;
+  const nightStop = duty.nightStop ? (
+    <Card kind={`${l('Pernoita', 'Night stop')}${nsSt ? ` · ${cityOfD(nsSt) || nsSt}` : ''}`}>
+      {nsHotel ? (
+        <TouchableOpacity style={[s.hotel, { backgroundColor: CARD.chip }]} activeOpacity={0.85}
+          onPress={() => { select(); Linking.openURL(hotelMapsUrl(nsHotel.name, nsSt, Platform.OS)).catch(() => {}); }}
+          onLongPress={() => { select(); setHotelOpen(true); }}
+          accessibilityRole="button" accessibilityLabel={`${l('Hotel', 'Hotel')} ${nsHotel.name}`}
+          accessibilityHint={l('Toque abre os mapas · toque longo edita', 'Tap opens maps · long press edits')}>
+          <View style={[s.hotelIc, { backgroundColor: C3.neutral }]}><Icon name="bed" size={18} color={C3.ink} /></View>
+          <View style={s.flex1}>
+            <Text style={[TXT3.lineVal, { color: C3.ink }]} numberOfLines={1}>{nsHotel.name}</Text>
+            {nsHotel.note ? <Text style={[TXT3.cardSub, { color: C3.tabSub }]} numberOfLines={1}>{nsHotel.note}</Text> : null}
+          </View>
+          <View style={s.hotelActs}>
+            <View style={[s.hpill, { backgroundColor: C3.neutral }]}><Text style={[TXT3.dur, { color: C3.ink }]}>{l('Mapas ↗', 'Maps ↗')}</Text></View>
+            {nsHotel.phone ? (
+              <TouchableOpacity style={[s.hpill, { backgroundColor: C3.neutral }]} hitSlop={6}
+                onPress={() => { select(); Linking.openURL(hotelTelUrl(nsHotel.phone)).catch(() => {}); }}
+                accessibilityRole="button" accessibilityLabel={l('Ligar ao hotel', 'Call the hotel')}>
+                <Icon name="phone" size={12} color={C3.ink} /><Text style={[TXT3.dur, { color: C3.ink }]}>{l('Ligar', 'Call')}</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity style={[s.hotelAdd, { borderColor: CARD.rule }]} activeOpacity={0.8} onPress={() => { select(); setHotelOpen(true); }} accessibilityRole="button">
+          <Text style={[TXT3.lineVal, { color: C3.ink }]}>＋ {l('Guardar o hotel desta pernoita', 'Save this night stop’s hotel')}</Text>
+        </TouchableOpacity>
+      )}
+    </Card>
+  ) : null;
+  // O pagamento: as parcelas (a verde o que se ganha) e o total com os cêntimos pequenos (A1) — só quando nada é um intervalo.
+  const [payI, payC] = Number(payTotal).toFixed(2).split('.');
+  const payment = (
+    <Card kind={l('Pagamento · estimado', 'Pay · estimated')}>
+      <Panel rows={[
+        (perDiem != null) && { k: l('Per diem (AE)', 'Per diem'), v: `+${fmtEur0(perDiem)}`, color: MONEY.gain, prova: provaFor('perDiem', provaCtx) },
+        (svcEur != null) && { k: svcEur.lbl, v: svcEur.max > svcEur.eur ? `+${fmtEur0(svcEur.eur)} ${l('a', 'to')} ${fmtEur0(svcEur.max)}` : `+${fmtEur0(svcEur.eur)}`, color: MONEY.gain },
+        (posEur != null) && { k: l('Posicionamento', 'Positioning'), v: posEur.max > posEur.eur ? `+${fmtEur0(posEur.eur)} ${l('a', 'to')} ${fmtEur0(posEur.max)}` : `+${fmtEur0(posEur.eur)}`, color: MONEY.gain },
+        duty.sectors && { k: l('Setores', 'Sectors'), v: String(duty.sectors) },
+        duty.nightStop && { k: l('Paragem noturna', 'Night stop'), v: nsEur != null ? `+${fmtEur0(nsEur)}` : l('Sim', 'Yes'), color: nsEur != null ? MONEY.gain : null, prova: provaFor('pernoita', provaCtx) },
+        roleMoney,
+        duty.dayOffWorked && { k: l('Folga publicada trabalhada', 'Worked published day off'), v: String(duty.dayOffWorked).toUpperCase().replace('+', ' + ') },
+        duty.kind === 'office' && duty.officeType === 'ofc8' && { k: l('Dia de escritório', 'Office day'), v: l('Dia inteiro (OFC8) · 3 setores', 'Full day (OFC8) · 3 sectors') },
+      ]} />
+      {(payTotal > 0 && !ranged) ? (
+        <View style={[s.totRow, { borderTopColor: C3.ink }]}>
+          <Text style={[TXT3.lineVal, s.flex1, { color: C3.ink }]}>{l('Este serviço', 'This duty')}</Text>
+          <Text style={[TXT3.slimVal, { color: C3.ink }]} allowFontScaling={false}>
+            {lang === 'en' ? `€${payI.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}` : payI.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
+            <Text style={[TXT3.line, { color: C3.tabSub }]}>{lang === 'en' ? `.${payC}` : `,${payC} €`}</Text>
+          </Text>
+        </View>
+      ) : null}
+    </Card>
+  );
+  // Os outros serviços do mesmo dia (210/245): a linha com o tipo (B7) — tocar abre esse serviço.
+  const others = (idx === 0 && Array.isArray(duty.extra) && duty.extra.length) ? (
+    <Card kind={l('Outros serviços neste dia', 'Other duties this day')}>
+      {duty.extra.map((sv, i) => {
+        if (!sv) return null;
+        const rr = ftlForDuty(sv, { postFlightMin: ctxAll.postFlightMin || 0, isPilot: isPilotD, base: baseD, date, cabinGapMin: gapD, splitAdminMin: ctxAll.splitAdminMin });
+        const fl = !sv.kind || sv.kind === 'flight';
+        const lbl = fl ? (String(sv.route || '').replace(/-/g, ' → ') || l('Voo', 'Flight')) : t('duties.kind.' + sv.kind, lang);
+        const psvX = (rr && rr.isFdp && rr.fdp.actualFdpStr) ? rr.fdp.actualFdpStr : null;   // só PSV de quem tem setores
+        return (
+          <TouchableOpacity key={`x${i}`} style={s.b7} activeOpacity={0.75} accessibilityRole="button" accessibilityLabel={lbl}
+            onPress={() => { select(); if (onOpenService) onOpenService(i + 1); else navigation.push('DutyDetail', { date, idx: i + 1 }); }}>
+            <View style={[s.b7Sq, { backgroundColor: fl ? C3.flight : C3.ground }]}><Icon name={fl ? 'plane' : 'home'} size={17} color={CARD.onCard} /></View>
+            <View style={s.flex1}>
+              <Text style={[TXT3.lineVal, { color: C3.ink }]} numberOfLines={1}>{lbl}</Text>
+              <Text style={[TXT3.cardSub, { color: C3.tabSub }]} numberOfLines={1}>{`${sv.report_time || '—'} → ${sv.block_on || '—'}${psvX ? `  ·  PSV ${psvX}` : ''}`}</Text>
+            </View>
+            <Icon name="chevron" size={14} color={C3.tabSub} />
+          </TouchableOpacity>
+        );
+      })}
+      <Text style={[TXT3.cardSub, { color: C3.tabSub }]}>{l('Os serviços do dia somam nos 28 dias (210).', 'The day’s duties add up over 28 days (210).')}</Text>
+    </Card>
+  ) : null;
 
   return (
-    <>
-        {/* Herói — eyebrow + fantasma(FDP) + rota + kick + pílula de estado (só no ecrã do Detalhe: na Escala o dia já o diz) */}
-        {(all && !embedded) ? <PeleHeader
-          size="detail" rule={false}
-          eyebrow={`${isFlight ? l('Voo', 'Flight') : t('duties.kind.' + kind, lang)} · ${fmtDate(date)}${date === todayISO ? ` · ${l('hoje', 'today')}` : ''}`}
-          ghost={heroGhost || undefined}
-          word={headMain}
-          kick={kickParts.length ? kickParts.join(' · ') : undefined}
-        /> : null}
-        {(all || section === 'lim') ? <View style={s.stbar}>
-          <View style={[s.pill, statusPill.tone === 'red' ? s.pillRed : statusPill.tone === 'ok' ? s.pillOk : statusPill.tone === 'unc' ? s.pillUnc : statusPill.tone === 'warn' ? s.pillWarn : s.pillNeutral]}>
-            {statusPill.tone === 'ok' ? <Icon name="check" size={12} color={PELE.ink} /> : statusPill.tone === 'red' ? <Icon name="alert" size={12} color={PELE.red} /> : statusPill.tone === 'warn' ? <Icon name="alert" size={12} color={PELE.warnText} /> : null}
-            <Text style={[s.pillTxt, { color: statusPill.tone === 'red' ? PELE.red : (statusPill.tone === 'ok' || statusPill.tone === 'unc') ? PELE.ink : statusPill.tone === 'warn' ? PELE.warnText : PELE.grey }]}>{statusPill.txt}</Text>
-          </View>
-          {duty.dirty ? <View style={s.pendRow}><View style={s.pendDot} /><Text style={s.pendTxt}>{t('duties.pending', lang)}</Text></View> : null}
-        </View> : null}
-        {(all && !embedded) ? <View style={s.hr} /> : null}
-
-        {(all ? !needRows.length : section === 'legs') ? schedule : null}
-
-        {/* Sem hora de report → o motor devolve null e a secção FTL desaparecia em SILÊNCIO
-            (device 2026-09-03). Honestidade: dizer que o PSV não foi calculado e como corrigir. */}
-        {(show('lim') && !d && !duty.report_time && (duty.kind || 'flight') === 'flight') ? (
-          <>
-            <Sec icon="gauge" top>{l('FTL · Segurança', 'FTL · Safety')}</Sec>
-            <Panel rows={[
-              { k: l('PSV', 'FDP'), v: l('não calculado — falta a hora de apresentação', 'not calculated — the report time is missing'), color: PELE.warnText, go: () => setMissOpen(true) },
-            ]} />
-          </>
-        ) : null}
-        {(show('lim') && d) ? (
-          <>
-            <Sec icon="gauge" top>{l('FTL · Segurança', 'FTL · Safety')}</Sec>
-            <Panel rows={[
-              (hasEnd && d.fdp.actualFdpStr) && { k: sbAccD ? l('Duração', 'Duration') : l('FDP realizado', 'Actual FDP'), v: d.fdp.actualFdpStr, color: over ? PELE.red : null },
-              aeStricter
-                ? { k: l('PSV máx (FDP)', 'FDP max'), v: fmtDur(aeOnBlockMax), node: aeTagged(fmtDur(aeOnBlockMax)), prova: aePsvProva }
-                : (!sbAccD && d.fdp.maxFdpStr) && { k: l('PSV máx (FDP)', 'FDP max'), v: d.fdp.exact === false ? `${d.fdp.maxFdpStr}–${d.fdp.maxHiStr}` : d.fdp.maxFdpStr, prova: provaFor('psvMax', provaCtx) },
-              // A hora-limite de calços (2026-11-03): o número que toda a concorrência mostra primeiro —
-              // o tripulante pensa em horas do relógio. Mesma hora da apresentação; +1 = dia seguinte.
-              aeStricter
-                ? { k: l('Calços até às', 'On-blocks by'), v: `${fmtClock(aeFdp.latestOnBlock)}${aeFdp.latestOnBlock - (dayNum(date) * 1440) >= 1440 ? ' (+1)' : ''}`,
-                    node: aeTagged(`${fmtClock(aeFdp.latestOnBlock)}${aeFdp.latestOnBlock - (dayNum(date) * 1440) >= 1440 ? ' (+1)' : ''}`), prova: aePsvProva }
-                : (!sbAccD && d.latestOnBlockStr) && { k: d.fdp.exact === false ? l('Calços até às (garantido)', 'On-blocks by (guaranteed)') : l('Calços até às', 'On-blocks by'), v: `${d.latestOnBlockStr}${d.latestOnBlockNextDay ? ' (+1)' : ''}`, prova: provaFor('psvMax', provaCtx) },
-              aeOver && { k: l('Excesso (acordo)', 'Excess (agreement)'), v: fmtDur(aeFdp.value - aeFdp.limit), color: PELE.red },
-              aeNext && { k: l('Próxima saída de calços', 'Next off-blocks'), v: `${fmtClock(aeNext.at)}${Math.floor(aeNext.at / 1440) > dayNum(date) ? ' (+1)' : ''}`,
-                node: aeTagged(`${fmtClock(aeNext.at)}${Math.floor(aeNext.at / 1440) > dayNum(date) ? ' (+1)' : ''}`), prova: aeRestProva },
-              sbAccD && { k: l('PSV', 'FDP'), v: kind === 'standby_airport' ? l('não se aplica — standby (225)', 'not applicable — standby (225)')
-                : l('não se aplica — sem setores (ORO.FTL.105(12))', 'not applicable — no sectors (ORO.FTL.105(12))') },
-              (spD.discretion && d.discretion) && { k: l('Discrição 205(f)', 'Discretion 205(f)'),
-                v: d.discretion.over
-                  ? l(`ACIMA da margem (máx c/ discrição ${d.discretion.maxStr})`, `BEYOND the margin (max w/ discretion ${d.discretion.maxStr})`)
-                  : l(`usada — dentro da margem (até ${d.discretion.maxStr}) · reportável`, `used — within the margin (up to ${d.discretion.maxStr}) · reportable`),
-                color: d.discretion.over ? PELE.red : PELE.warn },
-              (over && d.fdp.excessStr) && { k: l('Excesso', 'Excess'), v: d.fdp.excessStr, color: PELE.red },
-              // ORO.FTL.105(1) + Quadro 1: fora da faixa de 2 h da base, o estado de aclimatação decide o quadro.
-              (!sbAccD && d.acclim && d.acclim.letter && d.acclim.letter !== 'in') && { k: l('Aclimatação (Quadro 1)', 'Acclimatisation (Table 1)'),
-                v: d.acclim.letter === 'X' ? l('X — desconhecida · Quadro 3', 'X — unknown · Table 3')
-                  : d.acclim.letter === 'D' ? l('D — à hora local · Quadro 2', 'D — to local time · Table 2')
-                  : l('B — à hora da base · Quadro 2', 'B — to home-base time · Table 2') },
-              // ORO.FTL.205(d): prolongamento planeado e dentro das condições; ou recusado (3.º em 7 dias / sem plano).
-              (!sbAccD && d.extUsed && !over) && { k: l('Prolongamento (205(d))', 'Extension (205(d))'), v: l('planeado · repouso a seguir +2 h (ou +4 h)', 'planned · next rest +2 h (or +4 h)') },
-              (!sbAccD && over && d.extRefused === '2in7') && { k: l('Prolongamento (205(d))', 'Extension (205(d))'), v: l('3.º em 7 dias — o limite é 2', '3rd in 7 days — the limit is 2'), color: PELE.red },
-              // De onde vem a redução do máximo (visto no iPhone a 2026-11-13: "PSV máx 06:00 § 205(b)" sem dizer porquê).
-              (!sbAccD && sbNote) && { k: l('Assistência antes do voo', 'Standby before the flight'), note: sbNote },
-              // "A lei é que manda": entre o garantido e o possível, a lei depende de um dado que falta → incerto.
-              (!sbAccD && !over && d.fdp.uncertain) && { k: l('Incerto', 'Uncertain'), note: l(`Falta ${unknownsText(d.fdp.unknowns, 'pt')}.`, `Missing: ${unknownsText(d.fdp.unknowns, 'en')}.`) },
-              // … e quando EXCEDE nas duas leituras o máximo continua a ter duas pontas: diz-se porquê (visto no iPhone a
-              // 2026-11-13: "06:00–10:00" sem explicação, com 7 h declaradas à mão contra as 11 h da escala).
-              (!sbAccD && over && d.fdp.exact === false && (d.fdp.unknowns || []).length > 0) && { k: l('Dois máximos', 'Two maximums'), note: l(`Falta ${unknownsText(d.fdp.unknowns, 'pt')}.`, `Missing: ${unknownsText(d.fdp.unknowns, 'en')}.`) },
-              (hasEnd && d.rest && d.rest.restStr) && { k: l('Repouso mínimo após', 'Min rest after'), v: d.rest.restStr, prova: provaFor('repouso', provaCtx) },
-              fat && { k: l('Fadiga', 'Fatigue'), node: fatPill },
-            ]} />
-            {tapAe && aeFdp && aeFdp.limit == null ? (
-              <Text style={s.aeWhy}>
-                {{
-                  'sem-coluna': l('O acordo da TAP não tem limite para 5 ou mais aterragens: vale a regra europeia.', 'The TAP agreement has no limit for 5 or more landings: EU rules apply.'),
-                  'sem-fuso': l('Longo curso sem a hora UTC dos voos: a app não sabe a hora local de cada escala. Vale a regra europeia.', 'Long haul without the flights\' UTC times: the app does not know the local time at each station. EU rules apply.'),
-                  'sem-rotacao': l('Longo curso: a escala não mostra o início da rotação, por isso a app não sabe a aclimatização. Vale a regra europeia.', 'Long haul: the roster does not show the start of the rotation, so the app cannot tell acclimatisation. EU rules apply.'),
-                  'sem-banda': l('Mais de 12 h de diferença horária: fora do quadro do acordo da TAP (RUPT Cl. 23.ª, n.º 4). Vale a regra europeia.', 'More than 12 h of time difference: outside the TAP agreement table (RUPT Cl. 23, no. 4). EU rules apply.'),
-                  'sem-valor': l('O quadro do acordo da TAP não tem valor para 4 aterragens a esta hora. Vale a regra europeia.', 'The TAP agreement table has no value for 4 landings at this time. EU rules apply.'),
-                }[aeFdp.reason] || l('Falta a posição de um aeroporto: a app não sabe se este voo é de médio curso. Vale a regra europeia.', 'An airport position is missing: the app cannot tell whether this flight is medium haul. EU rules apply.')}
-              </Text>
-            ) : null}
-            {aeOk ? (
-              <Text style={s.aeWhy}>
-                {aeStricter ? l('Vale o limite mais apertado. ', 'The tighter limit applies. ') : l('Aqui a regra europeia é a mais apertada. ', 'Here the EU rule is the tighter one. ')}
-                {l(`Acordo da TAP: ${fmtDur(aeFdp.limit)}, contado até 30 min depois dos calços (${aeFdpCl} e ${ctD === 'pilot' ? 'RUPT Cl. 6.ª, n.º 40' : 'RUPT Cl. 4.ª, n.º 25'}), ou seja ${fmtDur(aeOnBlockMax)} até aos calços.`,
-                  `TAP agreement: ${fmtDur(aeFdp.limit)}, counted to 30 min after on-blocks (${aeFdpCl.replace('.ª', '')} and ${ctD === 'pilot' ? 'RUPT Cl. 6, no. 40' : 'RUPT Cl. 4, no. 25'}), i.e. ${fmtDur(aeOnBlockMax)} to on-blocks.`)}
-                {aeLc && aeFdp.limitMax ? l(` Longo curso: ${fmtDur(aeFdp.limit)} ou ${fmtDur(aeFdp.limitMax)}, conforme a aclimatização, que o acordo deixa em aberto aqui; a app mostra o mais apertado.`, ` Long haul: ${fmtDur(aeFdp.limit)} or ${fmtDur(aeFdp.limitMax)} depending on acclimatisation, which the agreement leaves open here; the app shows the tighter one.`) : ''}
-                {aeFdp.reason === 'pode-ter-reforco' ? l(' Acima disto, só com tripulação reforçada (RUPT Cl. 42.ª), que a escala não mostra.', ' Beyond this, only with an augmented crew (RUPT Cl. 42), which the roster does not show.') : ''}
-                {aeFdp.reason === 'pode-ter-ldmcr' ? l(' Acima disto, só com descanso a bordo (RUPT Cl. 24.ª, n.º 2), que a escala não mostra.', ' Beyond this, only with crew rest on board (RUPT Cl. 24, no. 2), which the roster does not show.') : ''}
-                {easaMax != null ? l(` Regra europeia: ${fmtDur(easaMax)} até aos calços (ORO.FTL.205).`, ` EU rule: ${fmtDur(easaMax)} to on-blocks (ORO.FTL.205).`) : ''}
-              </Text>
-            ) : null}
-            {aeNext ? (
-              <Text style={s.aeWhy}>
-                {l(`Próxima saída: ${fmtDur(aeNext.rest)} de repouso na base e ${fmtDur(aeNext.trans)} de transição (${ctD === 'pilot' ? 'RUPT Cl. 25.ª, n.º 2, Cl. 34.ª, n.º 2, e Cl. 24.ª, n.º 3' : 'RUPT Cl. 29.ª, n.os 2 e 7, e Cl. 32.ª, n.º 4'}), contadas a partir dos calços.`,
-                  `Next departure: ${fmtDur(aeNext.rest)} rest at base and ${fmtDur(aeNext.trans)} transition (${ctD === 'pilot' ? 'RUPT Cl. 25, no. 2, Cl. 34, no. 2, and Cl. 24, no. 3' : 'RUPT Cl. 29, nos. 2 and 7, and Cl. 32, no. 4'}), counted from on-blocks.`)}
-              </Text>
-            ) : null}
-          </>
-        ) : null}
-
-        {show('lim') ? completar : null}
-        {(all && needRows.length) ? schedule : null}
-
-        {/* Pernoita — hotel da estação (catálogo pessoal, por IATA) — mapas + ligar. */}
-        {(show('hotel') && duty.nightStop) ? (() => {
-          const st = nightStopStation(duty, baseD);
-          const h = st ? (ctxAll.hotels || {})[st] : null;
-          return (
-            <>
-              <Sec icon="bed" top>{l('Pernoita', 'Night stop')}{st ? ` · ${st}` : ''}</Sec>
-              {/* Na Escala, o Hotel leva também o repouso até ao próximo serviço (a pernoita saiu do dia para aqui). */}
-              {(section === 'hotel' && hasEnd && d && d.rest && d.rest.restStr) ? (
-                <>
-                  <Panel rows={[{ k: l('Repouso mínimo após', 'Min rest after'), v: d.rest.restStr, prova: provaFor('repouso', provaCtx) }]} />
-                  <View style={{ height: SPACE.sm }} />
-                </>
-              ) : null}
-              {h ? (
-                <TouchableOpacity style={s.hotel} activeOpacity={0.85}
-                  onPress={() => { select(); Linking.openURL(hotelMapsUrl(h.name, st, Platform.OS)).catch(() => {}); }}
-                  onLongPress={() => { select(); setHotelOpen(true); }}
-                  accessibilityRole="button" accessibilityLabel={`${l('Hotel', 'Hotel')} ${h.name}`}
-                  accessibilityHint={l('Toque abre os mapas · toque longo edita', 'Tap opens maps · long press edits')}>
-                  <View style={s.hotelIc}><Icon name="bed" size={19} color={PELE.ink} /></View>
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={s.hotelName} numberOfLines={1}>{h.name}</Text>
-                    {h.note ? <Text style={s.hotelNote} numberOfLines={1}>{h.note}</Text> : null}
-                  </View>
-                  <View style={s.hotelActs}>
-                    <View style={s.hpillMap}><Icon name="pin" size={12} color="#2C6E8F" /><Text style={s.hpillMapTxt}>{l('Mapas', 'Maps')}</Text></View>
-                    {h.phone ? (
-                      <TouchableOpacity style={s.hpillCall} hitSlop={6}
-                        onPress={() => { select(); Linking.openURL(hotelTelUrl(h.phone)).catch(() => {}); }}
-                        accessibilityRole="button" accessibilityLabel={l('Ligar ao hotel', 'Call the hotel')}>
-                        <Icon name="phone" size={12} color={PELE.ink} /><Text style={s.hpillCallTxt}>{l('Ligar', 'Call')}</Text>
-                      </TouchableOpacity>
-                    ) : null}
-                  </View>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity style={s.hotelAdd} activeOpacity={0.8} onPress={() => { select(); setHotelOpen(true); }} accessibilityRole="button">
-                  <Text style={s.hotelAddTxt}>＋ {l('adicionar hotel desta pernoita', 'add this night stop’s hotel')}</Text>
-                </TouchableOpacity>
-              )}
-            </>
-          );
-        })() : null}
-        {(section === 'hotel' && !duty.nightStop) ? <Text style={s.note}>{l('Sem pernoita neste serviço — dormes em casa.', 'No night stop on this duty — you sleep at home.')}</Text> : null}
-
-        {show('eur') ? <>
-        <Sec icon="wallet" top>{l('Pagamento · detalhes', 'Pay · details')}</Sec>
-        <Panel rows={[
-          (perDiem != null) && { k: l('Per-diem (AE)', 'Per diem'), v: `+${fmtEur0(perDiem)}`, color: MONEY.gain, prova: provaFor('perDiem', provaCtx) },
-          (svcEur != null) && { k: svcEur.lbl, v: svcEur.max > svcEur.eur ? `+${fmtEur0(svcEur.eur)} ${l('a', 'to')} ${fmtEur0(svcEur.max)}` : `+${fmtEur0(svcEur.eur)}`, color: MONEY.gain },
-          (posEur != null) && { k: l('Posicionamento', 'Positioning'), v: posEur.max > posEur.eur ? `+${fmtEur0(posEur.eur)} ${l('a', 'to')} ${fmtEur0(posEur.max)}` : `+${fmtEur0(posEur.eur)}`, color: MONEY.gain },
-          duty.sectors && { k: l('Setores', 'Sectors'), v: String(duty.sectors) },
-          duty.nightStop && { k: l('Paragem nocturna', 'Night stop'), v: nsEur != null ? `+${fmtEur0(nsEur)}` : l('Sim', 'Yes'), color: nsEur != null ? MONEY.gain : null, prova: provaFor('pernoita', provaCtx) },
-          (() => {
-            const role = duty.role || (duty.instructor ? 'instr' : null);
-            if (!role || !ae) return null;
-            const eur = roleEurFor(ae, catD, role, duty.sectors, date);   // a tabela do mês do serviço
-            const def = (ae.ADDITIONAL_ROLES || []).find((r) => r.id === role);
-            const lbl = (def && def.label && (def.label[lang] || def.label.pt)) || role;
-            return { k: lbl, v: eur > 0 ? `+${fmtEur0(eur)}` : l('sem prestação no AE', 'no AE item'), color: eur > 0 ? MONEY.gain : null };
-          })(),
-          duty.dayOffWorked && { k: l('Folga publicada trabalhada', 'Worked published day off'), v: String(duty.dayOffWorked).toUpperCase().replace('+', ' + ') },
-          duty.kind === 'office' && duty.officeType === 'ofc8' && { k: l('Dia de escritório', 'Office day'), v: l('Dia inteiro (OFC8) · 3 setores', 'Full day (OFC8) · 3 sectors') },
-        ]} />
-        </> : null}
-
-        {/* Outros períodos de serviço do MESMO dia (210/245) — lista compacta. */}
-        {(show('lim') && idx === 0 && Array.isArray(duty.extra) && duty.extra.length) ? (
-          <>
-            <Sec icon="ellipsis">{l('Outros serviços neste dia', 'Other services this day')}</Sec>
-            <Panel rows={duty.extra.map((sv, i) => {
-              const rr = ftlForDuty(sv, { postFlightMin: ctxAll.postFlightMin || 0, isPilot: isPilotD, base: baseD, date, cabinGapMin: gapD, splitAdminMin: ctxAll.splitAdminMin });
-              const lbl = (!sv.kind || sv.kind === 'flight') ? (sv.route || l('Voo', 'Flight')) : t('duties.kind.' + sv.kind, lang);
-              const psv = (rr && rr.isFdp && rr.fdp.actualFdpStr) ? rr.fdp.actualFdpStr : null;   // só PSV de quem tem setores
-              return { k: `${i + 2}. ${lbl}`, v: `${sv.report_time || '—'} → ${sv.block_on || '—'}${psv ? `  ·  PSV ${psv}` : ''}`, go: () => (onOpenService ? onOpenService(i + 1) : navigation.push('DutyDetail', { date, idx: i + 1 })) };
-            })} />
-            <Text style={s.foot}>{l('Os serviços do dia somam nos 28 dias (210). Vê o repouso entre eles na folha do dia.', 'The day’s services sum over 28 days (210). See the rest between them in the day detail.')}</Text>
-          </>
-        ) : null}
-
-        {section === 'share' ? shareBlock : null}
-
-        {/* A saída discreta (Apple Wallet "Report an Issue"): as horas reais ou o dado que faltou — o resto corrige-se na fonte. */}
-        {show('fix') ? <>
-        <TouchableOpacity style={s.escape} activeOpacity={0.7} onPress={() => { select(); setFixOpen(true); }} accessibilityRole="button">
-          <Text style={s.escapeT}>{fixTitle}</Text>
-          <Icon name="chevron" size={13} color={PELE.ink} />
+    <View style={s.body}>
+      {hero ? <HomeCards cards={[{ ...hero, open: onCollapse ? hero.open : null }]} C={C3} onOpen={() => { if (onCollapse) { select(); onCollapse(); } }} l={l} /> : null}
+      {limits}
+      {needRows.length ? completar : null}
+      {schedule}
+      {!needRows.length ? completar : null}
+      {nightStop}
+      {payment}
+      {others}
+      {/* A saída discreta (Apple Wallet "Report an Issue"): as horas reais ou o dado que faltou — o resto corrige-se na fonte. */}
+      <HomeCards cards={[{ t: 'slim', id: 'fix', color: 'neutral', title: fixTitle, sub: l('as horas reais ou um dado que faltou', 'the actual times or a missing fact'), open: { to: 'fix' } }]}
+        C={C3} onOpen={() => { select(); setFixOpen(true); }} l={l} />
+      {isManual && idx === 0 ? (
+        <TouchableOpacity style={s.delBtn} activeOpacity={0.8} onPress={confirmDelete}>
+          <Icon name="trash" size={16} color={PELE.red} />
+          <Text style={[TXT3.lineVal, { color: PELE.red }]}>{l('Apagar serviço', 'Delete duty')}</Text>
         </TouchableOpacity>
-
-        {isManual && idx === 0 ? (
-          <TouchableOpacity style={s.delBtn} activeOpacity={0.8} onPress={confirmDelete}>
-            <Icon name="trash" size={16} color={PELE.red} />
-            <Text style={s.delTxt}>{l('Apagar serviço', 'Delete duty')}</Text>
-          </TouchableOpacity>
-        ) : (
-          <Text style={s.foot}>{duty.source === 'pdf'
-            ? l('Importado de um PDF — para o remover, importa na Escala o PDF atualizado da escala; os cancelados aparecem na revisão para confirmares.', 'Imported from a PDF — to remove it, import the updated roster PDF in the roster tab; cancellations show up in the review for you to confirm.')
-            : l('Importado do calendário — para o remover, corrige na fonte (eCrew) e toca Sincronizar na Escala; os cancelados aparecem na revisão para confirmares.', 'Imported from the calendar — to remove it, fix it at the source (eCrew) and tap Sync in the roster; cancellations show up in the review for you to confirm.')}</Text>
-        )}
-        </> : null}
-
-        {(all || section === 'lim') ? <Text style={s.foot}>{t('common.ftlEstimate', lang)}</Text> : null}
+      ) : (
+        <Text style={[TXT.caption, s.foot, { color: C3.tabSub }]}>{duty.source === 'pdf'
+          ? l('Importado de um PDF — para o remover, importa na Escala o PDF atualizado da escala; os cancelados aparecem na revisão para confirmares.', 'Imported from a PDF — to remove it, import the updated roster PDF in the roster tab; cancellations show up in the review for you to confirm.')
+          : l('Importado do calendário — para o remover, corrige na fonte (eCrew) e toca Sincronizar na Escala; os cancelados aparecem na revisão para confirmares.', 'Imported from the calendar — to remove it, fix it at the source (eCrew) and tap Sync in the roster; cancellations show up in the review for you to confirm.')}</Text>
+      )}
+      <Text style={[TXT.caption, s.foot, { color: C3.tabSub }]}>{t('common.ftlEstimate', lang)}</Text>
 
       {/* A folha de UM dado do Completar. */}
       <FactSheet visible={!!fact} onClose={() => setFact(null)} lang={lang}
         title={sf ? sf.title : ''} intro={sf ? sf.sheet.intro : null} cite={sf ? sf.cite : null} note={sf ? sf.sheet.note : null}
         fields={sf ? sf.sheet.fields : []} valid={sf ? sf.valid : null}
         onSave={(v) => { const r = fact; setFact(null); saveSvc(r.apply(v), l(`${tx(r.title)} · guardado`, `${tx(r.title)} · saved`)); }} />
-      {/* "O calendário está errado?" — duas portas, cada uma com o seu formulário curto. */}
+      {/* "O calendário está errado?" — duas portas, cada uma com o seu formulário curto (as janelas seguem a 2.0 até migrarem). */}
       <PeleSheet visible={fixOpen} onClose={() => setFixOpen(false)} onClosed={() => { const f = afterFix.current; afterFix.current = null; if (f) f(); }}>
         <Text style={s.fixT} accessibilityRole="header">{fixTitle}</Text>
         <Text style={s.fixD}>{isManual ? l('Há duas coisas que podes acrescentar aqui:', 'There are two things you can add here:') : l('A escala vem da fonte e a app não a muda. Há duas coisas que podes acrescentar aqui:', 'The roster comes from the source and the app does not change it. There are two things you can add here:')}</Text>
         <TouchableOpacity style={s.fixOpt} activeOpacity={0.8} onPress={() => { select(); afterFix.current = () => setRealOpen(true); setFixOpen(false); }} accessibilityRole="button">
           <View style={s.fixIc}><Icon name="clock" size={17} color={PELE.ink} /></View>
-          <View style={{ flex: 1, minWidth: 0 }}>
+          <View style={s.flex1}>
             <Text style={s.crowT}>{l('Registar as horas reais', 'Record the actual times')}</Text>
             <Text style={s.crowD}>{isFlight ? l('Calços e fim de serviço quando houve atraso — a lei conta o real', 'Blocks and sign-off when there was a delay — the law counts the actual') : l('Início e fim, se não foram os da escala', 'Start and end, if they were not the rostered ones')}</Text>
           </View>
@@ -642,7 +651,7 @@ export function DutyDetailBody({ date, idx: idxIn = 0, section = null, embedded 
         {missing.length ? (
           <TouchableOpacity style={s.fixOpt} activeOpacity={0.8} onPress={() => { select(); afterFix.current = () => setMissOpen(true); setFixOpen(false); }} accessibilityRole="button">
             <View style={s.fixIc}><Icon name="cal" size={17} color={PELE.ink} /></View>
-            <View style={{ flex: 1, minWidth: 0 }}>
+            <View style={s.flex1}>
               <Text style={s.crowT}>{l('Faltou um dado', 'Something was missing')}</Text>
               <Text style={s.crowD}>{l(`Falta: ${missing.map((f) => f.label.pt.toLowerCase()).join(', ')}`, `Missing: ${missing.map((f) => f.label.en.toLowerCase()).join(', ')}`)}</Text>
             </View>
@@ -662,10 +671,9 @@ export function DutyDetailBody({ date, idx: idxIn = 0, section = null, embedded 
         fields={missFields}
         onSave={(v) => { setMissOpen(false); saveSvc(missPatch(v), l('Guardado', 'Saved')); }} />
       {/* Hotel da pernoita — registar/editar o hotel desta estação (catálogo pessoal). */}
-      <HotelSheet visible={hotelOpen} onClose={() => setHotelOpen(false)} station={duty && duty.nightStop ? nightStopStation(duty, baseD) : null} />
+      <HotelSheet visible={hotelOpen} onClose={() => setHotelOpen(false)} station={nsSt} />
       <ProvaSheet visible={!!prova} onClose={() => setProva(null)} prova={prova} lang={lang} />
-      <FlightShareCard visible={!!shareCard} onClose={() => setShareCard(null)} {...(shareCard || {})} />
-    </>
+    </View>
   );
 }
 
@@ -686,7 +694,7 @@ export default function DutyDetailScreen({ route, navigation }) {
   };
   const BackBtn = () => (
     <View style={s.topbar}>
-      <IconButton icon="back" onPress={goBack} label={t('common.back', lang)} />
+      <IconButton icon="back" onPress={goBack} label={t('common.back', lang)} style={{ backgroundColor: C3.round }} />
     </View>
   );
   if (!duty || (day && day.deleted)) {
@@ -699,14 +707,8 @@ export default function DutyDetailScreen({ route, navigation }) {
       </SafeAreaView>
     );
   }
-  const kind = duty.kind || 'flight';
-  const isFlight = kind === 'flight';
-  const firstLeg = (Array.isArray(duty.legs) ? duty.legs : [])[0] || null;
-  const stations = String(duty.route || '').split(/[^A-Za-z]+/).map((x) => x.toUpperCase()).filter(Boolean);
-  const routeStr = stations.length > 1 ? stations.join(' → ') : (duty.route || l('Voo', 'Flight'));
   return (
-    <SafeAreaView style={s.safe} edges={['top']}>
-      <PeleSide label={(isFlight ? l('VOO', 'FLIGHT') : String(t('duties.kind.' + kind, lang) || '')).toUpperCase()} accent={((firstLeg && firstLeg.flightNo) || (isFlight ? routeStr : '')).toUpperCase()} />
+    <SafeAreaView style={[s.safe, { backgroundColor: C3.sheet }]} edges={['top']}>
       <BackBtn />
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} showsVerticalScrollIndicator={false}>
         <DutyDetailBody date={date} idx={idx} editReq={route.params?.edit} navigation={navigation} onEdited={() => setEdited(true)} />
@@ -716,89 +718,74 @@ export default function DutyDetailScreen({ route, navigation }) {
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: PELE.paper },
-  topbar: { flexDirection: 'row', paddingHorizontal: GUTTER, paddingTop: 8 },
-  scroll: { paddingHorizontal: GUTTER, paddingTop: 2 },
+  safe: { flex: 1 },
+  topbar: { flexDirection: 'row', paddingHorizontal: GUTTER, paddingTop: SPACE.sm, paddingBottom: SPACE.sm },
+  scroll: { paddingHorizontal: SPACE.md, paddingTop: SPACE.xs },
+  flex1: { flex: 1, minWidth: 0 },
+  muted: { ...TXT.body, color: PELE.grey },
 
-  stbar: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, marginTop: SPACE.xs, flexWrap: 'wrap' },
-  pill: { flexDirection: 'row', alignItems: 'center', gap: SPACE.s, paddingHorizontal: SPACE.md, paddingVertical: SPACE.s, borderRadius: RADIUS.pill },
-  pillOk: { backgroundColor: PELE.soft },
-  pillUnc: { backgroundColor: PELE.soft, borderWidth: 1, borderStyle: 'dashed', borderColor: PELE.affordance },   // incerto: neutro e tracejado (§14)
-  pillRed: { backgroundColor: PELE.redSoft },
-  pillWarn: { backgroundColor: PELE.warnSoft },
-  pillNeutral: { backgroundColor: PELE.soft },
-  pillTxt: { ...TXT.tag },
-  pendRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.s },
-  pendDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: PELE.warn },
-  pendTxt: { ...TXT.tag, color: PELE.grey },
-  hr: { height: 1.5, backgroundColor: PELE.ink, marginTop: SPACE.md },
-
-  // Secções + painéis (a escala, design-system §9)
-  sec: { flexDirection: 'row', alignItems: 'center', gap: SPACE.s, marginTop: SPACE.xl, marginBottom: SPACE.sm },
-  secTxt: { ...TXT.eyebrow, color: PELE.grey },
-  secSrc: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: SPACE.xs },
-  secSrcT: { ...TXT.caption, color: PELE.grey },
-  panel: { borderWidth: 1, borderColor: PELE.line, borderRadius: RADIUS.lg, backgroundColor: PELE.paper, paddingHorizontal: SPACE.lg },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.md, minHeight: 44, paddingVertical: SPACE.md, borderTopWidth: 1, borderTopColor: PELE.line },
+  // O "Ver tudo" no 3.0 (design/detalhe-3.html, B): os cartões neutros de cada tema, empilhados
+  body: { gap: SPACE.sm },
+  card: { borderRadius: RADIUS.xxl, padding: SPACE.lg, gap: SPACE.md },
+  cardHead: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm },
+  // as linhas de um cartão (o Panel: rótulo à esquerda · valor à direita · o § por baixo do rótulo · as notas)
+  panel: { },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.md, minHeight: 44, paddingVertical: SPACE.sm, borderTopWidth: 1, borderTopColor: CARD.rule },
   rowFirst: { borderTopWidth: 0 },
-  rowK: { ...TXT.body, flex: 1, color: PELE.grey },
+  rowK: { ...TXT3.line, flex: 1, color: C3.ink },
   rowNote: { flexDirection: 'column', alignItems: 'stretch', justifyContent: 'flex-start', gap: SPACE.xxs },
-  rowNoteT: { ...TXT.footnote, color: PELE.grey },
-  rowV: { ...TXT.bodyStrong, color: PELE.ink, fontVariant: ['tabular-nums'], textAlign: 'right' },
-  // Hora real ao lado da prevista
+  rowNoteT: { ...TXT3.cardSub, color: C3.soft },
+  rowV: { ...TXT3.lineVal, color: C3.ink, fontVariant: ['tabular-nums'], textAlign: 'right' },
+  rowLaw: { ...TXT.caption, color: C3.tabSub, marginTop: SPACE.xxs },   // § inline da PROVA (metadado; abre a folha da lei)
+  rowLawS: { color: C3.tabSub },
+  rowVZ: { ...TXT.caption, color: C3.tabSub, fontVariant: ['tabular-nums'], textAlign: 'right', marginTop: SPACE.xxs },
+  // hora real ao lado da prevista
   realLine: { flexDirection: 'row', alignItems: 'center', gap: SPACE.s },
-  realTag: { backgroundColor: PELE.soft, borderRadius: RADIUS.xs, paddingHorizontal: SPACE.s, paddingVertical: SPACE.xxs },
-  realTagT: { ...TXT.tag, color: PELE.ink },
-  // Completar
-  crow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, minHeight: 52, paddingVertical: SPACE.md, borderTopWidth: 1, borderTopColor: PELE.line },
+  realTag: { backgroundColor: CARD.chip, borderRadius: RADIUS.xs, paddingHorizontal: SPACE.s, paddingVertical: SPACE.xxs },
+  realTagT: { ...TXT.tag, color: C3.ink },
+  // B9 · a barra do limite
+  b9: { gap: SPACE.s, paddingBottom: SPACE.md, borderBottomWidth: 1 },
+  b9Val: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: SPACE.sm },
+  b9Track: { height: 8, borderRadius: RADIUS.pill, overflow: 'hidden' },
+  b9Fill: { height: 8, borderRadius: RADIUS.pill },
+  // o estado FTL numa linha
+  stRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, minHeight: 32 },
+  stUnc: { borderWidth: 1, borderStyle: 'dashed', borderRadius: RADIUS.pill, paddingHorizontal: SPACE.md },
+  stIc: { width: 20, height: 20, borderRadius: RADIUS.pill, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  pendRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.s },
+  pendDot: { width: 7, height: 7, borderRadius: RADIUS.pill },
+  fatPill: { flexDirection: 'row', alignItems: 'center', gap: SPACE.s, borderRadius: RADIUS.pill, paddingHorizontal: SPACE.sm, paddingVertical: SPACE.xs },
+  fatDot: { width: 7, height: 7, borderRadius: RADIUS.pill },
+  // a marca "AE" ao lado do valor (os limites do acordo da TAP)
+  aeVal: { flexDirection: 'row', alignItems: 'center', gap: SPACE.s },
+  aeTag: { backgroundColor: C3.ink, borderRadius: RADIUS.xs, paddingHorizontal: SPACE.s, paddingVertical: SPACE.xxs },
+  aeTagT: { ...TXT.tag, color: C3.sheet },
+  // completar
+  needCard: { flexDirection: 'row', gap: SPACE.md, borderRadius: RADIUS.xxl, padding: SPACE.lg },
+  crow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, minHeight: 52, paddingVertical: SPACE.sm, borderTopWidth: 1 },
+  crowV: { maxWidth: '45%', textAlign: 'right' },
+  needDot: { width: 8, height: 8, borderRadius: RADIUS.pill },
+  // a pernoita
+  hotel: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, borderRadius: RADIUS.lg, padding: SPACE.md },
+  hotelIc: { width: 36, height: 36, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
+  hotelActs: { flexDirection: 'row', gap: SPACE.s },
+  hpill: { flexDirection: 'row', alignItems: 'center', gap: SPACE.xs, borderRadius: RADIUS.pill, paddingHorizontal: SPACE.sm, paddingVertical: SPACE.s },
+  hotelAdd: { borderWidth: 1.5, borderStyle: 'dashed', borderRadius: RADIUS.lg, paddingVertical: SPACE.md, alignItems: 'center' },
+  // o total do pagamento (A1)
+  totRow: { flexDirection: 'row', alignItems: 'baseline', gap: SPACE.md, paddingTop: SPACE.sm, borderTopWidth: 1.5 },
+  // B7 · a linha com o tipo (outros serviços)
+  b7: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, minHeight: 48 },
+  b7Sq: { width: 34, height: 34, borderRadius: RADIUS.sm, alignItems: 'center', justifyContent: 'center' },
+  // ações e notas
+  delBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACE.s, minHeight: 44 },
+  foot: { paddingHorizontal: SPACE.xs },
+
+  // As janelas (as duas portas do "o calendário está errado?") — seguem a 2.0 até migrarem
   crowT: { ...TXT.bodyStrong, color: PELE.ink },
   crowD: { ...TXT.caption, color: PELE.grey, marginTop: SPACE.xxs },
-  crowV: { ...TXT.body, color: PELE.grey, maxWidth: '45%', textAlign: 'right' },
-  crowVNeed: { ...TXT.bodyStrong, color: PELE.warnText },
-  needDot: { width: 8, height: 8, borderRadius: RADIUS.pill, backgroundColor: PELE.warn },
-  needCard: { flexDirection: 'row', gap: SPACE.md, backgroundColor: PELE.warnSoft, borderRadius: RADIUS.lg, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, marginBottom: SPACE.sm },
-  needT: { ...TXT.bodyStrong, color: PELE.ink },
-  needD: { ...TXT.footnote, color: PELE.ink, marginTop: SPACE.xxs },
-  note: { ...TXT.caption, color: PELE.grey, marginTop: SPACE.sm, marginHorizontal: SPACE.xxs },
-  // A saída discreta e as suas duas portas
-  escape: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACE.s, minHeight: 44, marginTop: SPACE.xl },
-  escapeT: { ...TXT.bodyStrong, color: PELE.ink, textDecorationLine: 'underline', textDecorationColor: PELE.affordance },
   fixT: { ...TXT.title, color: PELE.ink },
   fixD: { ...TXT.body, color: PELE.grey, marginTop: SPACE.xs, marginBottom: SPACE.xs },
   fixOpt: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, minHeight: 56, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, borderWidth: 1, borderColor: PELE.line, borderRadius: RADIUS.lg, marginTop: SPACE.sm },
   fixIc: { width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
   fixFoot: { ...TXT.caption, color: PELE.grey, marginTop: SPACE.md, marginBottom: SPACE.sm },
-  // Limites do acordo: a marca "AE" ao lado do valor e a explicação com as duas fontes (D1).
-  aeVal: { flexDirection: 'row', alignItems: 'center', gap: SPACE.s },
-  aeTag: { backgroundColor: PELE.ink, borderRadius: RADIUS.xs, paddingHorizontal: SPACE.s, paddingVertical: SPACE.xxs },
-  aeTagT: { ...TXT.tag, color: BRAND.signal },
-  aeWhy: { ...TXT.footnote, color: PELE.grey, marginTop: SPACE.sm, marginHorizontal: SPACE.xs },
-  rowLaw: { ...TXT.caption, color: PELE.grey, marginTop: SPACE.xxs },   // § inline da PROVA (metadado)
-  rowLawS: { color: BRAND.signal },
-  rowVZ: { ...TXT.caption, color: PELE.grey, fontVariant: ['tabular-nums'], textAlign: 'right', marginTop: SPACE.xxs },
-
-  fatPill: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
-  fatDot: { width: 7, height: 7, borderRadius: 99 },
-  fatTxt: { ...TXT.tag },
-
-
-  // Hotel da pernoita
-  hotel: { flexDirection: 'row', alignItems: 'center', gap: 11, borderWidth: 1, borderColor: PELE.line, borderRadius: 16, paddingHorizontal: 13, paddingVertical: 11 },
-  hotelIc: { width: 38, height: 38, borderRadius: 11, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
-  hotelName: { fontSize: 13.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
-  hotelNote: { fontSize: 10.5, fontFamily: PELE_FONT.body, color: PELE.grey, marginTop: 1 },
-  hotelActs: { flexDirection: 'row', gap: 7, marginLeft: 'auto' },
-  hpillMap: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: PELE.info, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 },
-  hpillMapTxt: { fontSize: 10.5, fontFamily: PELE_FONT.bodyHeavy, color: '#2C6E8F' },
-  hpillCall: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: PELE.soft, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 },
-  hpillCallTxt: { fontSize: 10.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.ink },
-  hotelAdd: { borderWidth: 1.5, borderColor: PELE.line, borderStyle: 'dashed', borderRadius: 16, paddingVertical: 12, alignItems: 'center' },
-  hotelAddTxt: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.grey },
-
-  // Ações
-  delBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACE.s, minHeight: 44, marginTop: SPACE.sm },
-  delTxt: { ...TXT.bodyStrong, color: PELE.red },
-
-  muted: { ...TXT.body, color: PELE.grey },
-  foot: { ...TXT.caption, color: PELE.grey, marginTop: SPACE.md, paddingHorizontal: SPACE.xxs },
 });

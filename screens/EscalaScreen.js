@@ -43,10 +43,10 @@ const isoOf = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(
 // TOCAR NUM DIA abre-o numa JANELA que sobe até quase ao topo (a folha nativa do iPhone, com o mês a espreitar por trás;
 // pedido do Nuno a 2026-11-13: "só o mês, e ao carregar no dia abra… um modal com o que tem do dia"): o cabeçalho (o dia,
 // ‹ › e ✕), uma linha por serviço (a pernoita vai na linha do voo) e, no serviço aberto — o único do dia, ou o que se tocar —
-// TUDO o que é dele, como o antigo "Ver tudo" (pedido do Nuno, 2026-11-13): horário e setores, FTL · Segurança, completar,
-// pernoita, pagamento, outros serviços do dia, "o calendário está errado?" — o corpo do Detalhe do serviço
-// (screens/DutyDetailScreen.js · DutyDetailBody, sem o herói). Na janela, deslizar para o lado muda de dia; puxar para baixo
-// ou ✕ fecham.
+// TUDO o que é dele, como o antigo "Ver tudo" (pedido do Nuno, 2026-11-13), no 3.0 (design/detalhe-3.html, B): a linha cresce
+// para o cartão de cor com a perna e vêm os cartões dos Limites (o PSV numa barra), do horário (a régua das 24 h), do completar,
+// da pernoita, do pagamento e dos outros serviços — o corpo do Detalhe (screens/DutyDetailScreen.js · DutyDetailBody). Na
+// janela, deslizar para o lado muda de dia; puxar para baixo ou ✕ fecham.
 // A escala vem do calendário (criar à mão morreu 2026-07-10); o Detalhe só lê a escala e completa os factos que a lei precisa.
 export default function EscalaScreen({ navigation, route }) {
   const { lang, duties, dayLog, user, company, ae: aeNow, aeAt, homeBaseAt, crewAt, postFlightMin, rosterChanges, checkRosterChanges, liveSync, notify,
@@ -407,12 +407,10 @@ export default function EscalaScreen({ navigation, route }) {
   );
   const topRightW = 44 + hojeW;
 
-  // ── O SERVIÇO ABERTO: por baixo da linha dele, TUDO o que é dele — o corpo do Detalhe do serviço, como o antigo "Ver tudo"
-  // (o herói fica de fora: a linha do serviço já o diz; a pílula do estado FTL fica). ──
+  // ── O SERVIÇO ABERTO: a linha tocada cresce para o cartão de cor com a perna e, por baixo, TUDO o que é dele — o corpo do
+  // Detalhe no 3.0 (design/detalhe-3.html, B; screens/DutyDetailScreen.js · DutyDetailBody). Tocar no cartão de cor fecha-o. ──
   const renderSvcOpen = (iso, idx) => (
-    <View style={[s.verPanel, { backgroundColor: C.neutral }]}>
-      <DutyDetailBody date={iso} idx={idx} embedded navigation={navigation} onDeleted={() => setSelIso(null)} onOpenService={(i) => { layoutAnim(); setSvcIdx(i); }} />
-    </View>
+    <DutyDetailBody date={iso} idx={idx} navigation={navigation} onCollapse={() => pickSvc(idx)} onDeleted={() => setSelIso(null)} onOpenService={(i) => { layoutAnim(); setSvcIdx(i); }} />
   );
   // ── O DIA (na janela): uma linha por serviço (pela hora; a pernoita vai na linha do voo e no Hotel); o serviço aberto leva por
   // baixo tudo o que é dele. Sem serviço: a folga ou a ausência. ──
@@ -465,8 +463,8 @@ export default function EscalaScreen({ navigation, route }) {
             link: { label: l('Remover deste dia', 'Remove from this day'), open: { to: 'rmAbs', id: abs.id } } }], ctx) : null}
           {lines.map(({ c, i, sv }) => (
             <View key={c.id} style={s.svcBlock}>
-              {cardsOf([(sv && sv.nightStop && nsName) ? { ...c, sub: [c.sub, l(`pernoita em ${nsName}`, `night stop in ${nsName}`)].filter(Boolean).join(' · ') } : c], ctx)}
-              {i === svcIdx ? renderSvcOpen(iso, i) : null}
+              {i === svcIdx ? renderSvcOpen(iso, i)
+                : cardsOf([(sv && sv.nightStop && nsName) ? { ...c, sub: [c.sub, l(`pernoita em ${nsName}`, `night stop in ${nsName}`)].filter(Boolean).join(' · ') } : c], ctx)}
             </View>
           ))}
           {/* Extras PAGOS neste dia trabalhado (SNC/RDP) — compensações por cima do serviço. */}
@@ -823,7 +821,6 @@ const s = StyleSheet.create({
 
   swHint: { textAlign: 'center', marginTop: SPACE.xs },
   svcBlock: { gap: SPACE.sm },
-  verPanel: { borderRadius: RADIUS.xl, paddingHorizontal: SPACE.md, paddingBottom: SPACE.md },
 
   // A1 · o ano em meses
   yHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.md },

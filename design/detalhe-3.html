@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · Ver tudo no 3.0</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* O "Ver tudo" (o Detalhe de um serviço) na linguagem 3.0 (2026-11-13). O Nuno: "o ver tudo está com o layout novo?" — não:
+   ainda era a 2.0 (títulos cinzentos em maiúsculas fora das caixas, caixas brancas com fio, a letra da 2.0). O MESMO conteúdo e
+   a MESMA ordem do Detalhe (horário e setores, FTL · Segurança, completar, pernoita, pagamento, outros serviços do dia, "o
+   calendário está errado?"), em três desenhos 3.0, dentro da janela do dia (design/escala-janela.html). Peças do Início
+   (design/inicio-cartoes.html): o cartão de cor com as horas grandes (B2), o cartão neutro de linhas, a pílula verde do
+   dinheiro. Mapa das cores B (tom 2): dentro do limite sem cor. Referências do Mobbin no fim. Dados de teste (sexta 13,
+   LIS → OPO); os números são ilustrativos. iPhone 390 × 844. */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:26px}
+.lead{max-width:940px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,406px));gap:26px 24px;justify-content:center}
+@media (max-width:1320px){.grid3{grid-template-columns:repeat(auto-fit,minmax(min(100%,406px),406px))}}
+.opt{display:flex;flex-direction:column;gap:10px;min-width:0}
+.opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:var(--muted);min-height:96px} .opt > p b{color:var(--pfg)}
+.opt > p.m{font-size:12px;min-height:0;font-variant-numeric:tabular-nums}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:940px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card2 li{font-size:13px;line-height:1.5;color:var(--muted)} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:var(--pfg)}
+.refs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:10px}
+.refs a{display:block;background:#fff;border:1px solid #D6D4CD;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.4;color:var(--muted);text-decoration:none} .refs a b{color:var(--pfg)}
+#meas{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* o telemóvel com a janela do dia aberta (o mês recuado por trás) */
+.ph{width:406px;height:860px;border:8px solid #04060A;border-radius:52px;overflow:hidden;position:relative;background:#5b5a57;
+  --ink:#141414;--soft:#3A3A36;--sheet:#FFFFFF;--neutral:#F1EFEA;--tsub:#5E5E57;--round:rgba(127,127,127,.22);--sub:rgba(20,20,20,.82);--rule:rgba(127,127,127,.3);
+  --voo:#6DBEFA;--terra:#C3A1BE;--alert:#F0854A;--gain:#0B6E43;color:var(--ink)}
+.behind{position:absolute;left:14px;right:14px;top:44px;height:40px;border-radius:14px 14px 0 0;background:#b9b8b3}
+.win{position:absolute;left:0;right:0;bottom:0;top:58px;background:#fff;border-radius:12px 12px 0 0;display:flex;flex-direction:column}
+.grab{display:flex;justify-content:center;padding:8px 0 4px} .grab i{width:40px;height:5px;border-radius:3px;background:rgba(127,127,127,.3)}
+.dhead{display:flex;align-items:center;gap:8px;padding:2px 16px 12px}
+.dhead .tt{flex:1;min-width:0} .dhead b{display:block;font-weight:800;font-size:16px;line-height:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .dhead span{font-weight:600;font-size:12px;color:var(--tsub)}
+.ib{width:36px;height:36px;border-radius:18px;background:var(--round);display:flex;align-items:center;justify-content:center;flex:none;font-weight:700;font-size:16px}
+.dbody{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;padding:0 12px 40px;display:flex;flex-direction:column;gap:8px} .dbody::-webkit-scrollbar{display:none}
+/* as peças do Início 3.0 */
+.cd{border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:12px;color:#141414;position:relative}
+.cd.voo{background:var(--voo)} .cd.terra{background:var(--terra)} .cd.neutral{background:var(--neutral)}
+.cd .kind{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;opacity:.72}
+.cd h4{font-weight:800;font-size:22px;line-height:26px;letter-spacing:-.4px;margin-top:2px}
+.cd .sub{font-weight:500;font-size:12px;line-height:16px;opacity:.82}
+.cd.slim{padding:12px 16px;flex-direction:row;align-items:center;justify-content:space-between;gap:12px}
+.cd.slim .t{min-width:0;flex:1} .cd.slim .t b{display:block;font-weight:800;font-size:16px;line-height:20px} .cd.slim .t span{font-weight:500;font-size:12px;opacity:.82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.chev{font-weight:800;font-size:16px;opacity:.7}
+.gainChip{height:28px;padding:0 12px;border-radius:14px;background:#FFFFFF;color:var(--gain);font-weight:800;font-size:14px;display:inline-flex;align-items:center;white-space:nowrap;flex:none}
+.cdRow{display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
+.cdRow div b{display:block;font-weight:700;font-size:24px;line-height:26px;white-space:nowrap} .cdRow div span{font-weight:500;font-size:11px;opacity:.82;white-space:nowrap}
+.cdRow .r{text-align:right}
+.dur{height:28px;padding:0 12px;border-radius:14px;background:rgba(255,255,255,.85);color:#141414;display:flex;align-items:center;font-weight:700;font-size:12px;white-space:nowrap}
+.subRow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:28px}
+.lines{display:flex;flex-direction:column}
+.ln{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--rule)} .ln:first-child{border-top:0;padding-top:2px}
+.ln .k{font-weight:500;font-size:15px;line-height:19px} .ln .k small{display:block;font-weight:600;font-size:11px;line-height:14px;color:var(--tsub)}
+.ln .v{font-weight:700;font-size:15px;text-align:right;white-space:nowrap} .ln .v small{display:block;font-weight:600;font-size:11px;color:var(--tsub)}
+.ln .v.g{color:var(--gain)}
+.ln.tot{border-top:1.5px solid var(--ink)} .ln.tot .k,.ln.tot .v{font-weight:800}
+.ok{display:inline-flex;align-items:center;gap:6px;font-weight:800;font-size:14px}
+.ok i{width:20px;height:20px;border-radius:10px;border:1.5px solid var(--ink);font-style:normal;font-size:11px;display:inline-flex;align-items:center;justify-content:center}
+.fat{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:14px} .fat i{width:8px;height:8px;border-radius:4px;background:#77776F}
+.add{border:1.5px dashed var(--rule);border-radius:16px;padding:12px;text-align:center;font-weight:700;font-size:14px}
+.foot{font-weight:500;font-size:11px;line-height:15px;color:var(--tsub);padding:2px 4px}
+.leg{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--rule)} .leg:first-child{border-top:0}
+.leg b{font-weight:800;font-size:20px} .leg span{font-weight:500;font-size:11px;color:var(--tsub)} .leg .mid{flex:1;text-align:center}
+/* B2 · a perna: o voo numa faixa, as duas horas grandes, um fio com ✈ e a duração ao meio, o código e a cidade por baixo */
+.b2{display:flex;flex-direction:column;gap:6px}
+.b2 .fno{font-weight:800;font-size:11px;letter-spacing:.6px;opacity:.72}
+.b2 .rw{display:flex;align-items:flex-start;gap:8px}
+.b2 .t b{display:block;font-weight:700;font-size:26px;line-height:28px;letter-spacing:-.5px} .b2 .t span{font-weight:600;font-size:11px;opacity:.82;white-space:nowrap}
+.b2 .t.r{text-align:right}
+.b2 .mid{flex:1;display:flex;align-items:center;gap:6px;padding-top:9px;min-width:0}
+.b2 .mid i{flex:1;height:1.5px;background:currentColor;opacity:.35}
+.b2 .dur{height:24px;padding:0 9px;border-radius:12px;background:rgba(255,255,255,.85);display:inline-flex;align-items:center;gap:4px;font-weight:700;font-size:11.5px;white-space:nowrap}
+.b2 .z{font-weight:600;font-size:11px;opacity:.72}
+.neutral .b2 .dur{background:#fff}
+/* B3 · a régua das 24 h: o serviço (apresentação → fim) na cor do tipo e o repouso a seguir; a WOCL só quando o motor a dá */
+.b3{display:flex;flex-direction:column;gap:4px}
+.b3 .track{position:relative;height:12px;border-radius:6px;background:rgba(20,20,20,.08);overflow:hidden}
+.b3 .seg{position:absolute;top:0;bottom:0;border-radius:6px}
+.b3 .ticks{display:flex;justify-content:space-between;font-weight:600;font-size:10.5px;color:var(--tsub)}
+.b3 .cap{display:flex;gap:12px;font-weight:600;font-size:11px;color:var(--soft)} .b3 .cap i{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:-1px;margin-right:4px}
+/* B9 · a barra do limite: o valor com o máximo pequeno, a barra a tinta e o que falta (nunca percentagem) */
+.b9{display:flex;flex-direction:column;gap:6px;padding:4px 0 10px;border-bottom:1px solid var(--rule)}
+.b9 .eb{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub)}
+.b9 .val{display:flex;align-items:baseline;justify-content:space-between} .b9 .val b{font-weight:800;font-size:26px;letter-spacing:-.4px} .b9 .val b small{font-weight:600;font-size:14px;color:var(--tsub)} .b9 .val span{font-weight:700;font-size:13px}
+.b9 .bar{height:8px;border-radius:4px;background:rgba(20,20,20,.12);overflow:hidden} .b9 .bar i{display:block;height:100%;background:var(--ink);border-radius:4px}
+/* B7 · a linha de lista com o tipo: o quadradinho com o ícone na cor do tipo · título · motivo · valor */
+.b7{display:flex;align-items:center;gap:10px;padding:4px 0}
+.b7 .sq{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:none}
+.b7 .tw{flex:1;min-width:0} .b7 .tw b{display:block;font-weight:700;font-size:15px} .b7 .tw span{font-weight:500;font-size:12px;color:var(--tsub)}
+/* A1 · os cêntimos mais pequenos e mais claros no € grande */
+.cent{font-size:.66em;opacity:.7}
+/* V3: a lista agrupada (como os Ajustes do iPhone) */
+.grp{background:var(--neutral);border-radius:24px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.gh{font-weight:800;font-size:15px;padding:8px 6px 2px}
+.gl{background:#fff;border-radius:16px;padding:0 12px}
+.gr{display:flex;align-items:center;gap:10px;min-height:48px;padding:8px 0;border-top:1px solid var(--neutral)} .gr:first-child{border-top:0}
+.gr .ic{width:30px;height:30px;border-radius:15px;background:var(--neutral);display:flex;align-items:center;justify-content:center;flex:none}
+.gr .k{flex:1;min-width:0;font-weight:600;font-size:15px} .gr .k small{display:block;font-weight:600;font-size:11px;color:var(--tsub)}
+.gr .v{font-weight:700;font-size:15px;white-space:nowrap;text-align:right} .gr .v.g{color:var(--gain)}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>O "Ver tudo" no layout novo</h1>
+    <p>O mesmo conteúdo e a mesma ordem do Detalhe, desenhado com as peças do Início 3.0 (<b>cartões neutros com o título dentro</b>, a letra Hanken, <b>a pílula verde do dinheiro</b>) e com <b>as peças das tuas imagens</b> (<code>referencias/Para a app/</code>, design-system §14): <b>B2</b> a perna (o voo numa faixa, as duas horas grandes, o fio com ✈ e a duração, a Zulu por baixo) · <b>B3</b> a régua das 24 h (o serviço e o repouso) · <b>B9</b> a barra do limite (o PSV: "3:10 /13:00 · faltam 9:50", nunca percentagem) · <b>A1</b> os cêntimos mais pequenos · <b>A2</b> o ↗ só para o que abre fora (Maps) · <b>B7</b> a linha com o tipo (outros serviços) · <b>M1</b> a continuidade pela cor do cartão tocado. O Mobbin ajudou no resto (referências no fim). Dentro da janela de hoje, com o voo LIS → OPO tocado; desliza dentro de cada janela.</p>
+  </div>
+  <div class="grid3" id="opts"></div>
+  <p id="meas"></p>
+  <div class="card2"><h3>A minha recomendação: B · o voo em destaque</h3><ul>
+    <li><b>O serviço tocado cresce</b> para o cartão de cor com a perna B2 — o mesmo do Início — e é exatamente o <b>M1</b> das tuas imagens (a continuidade pela cor do cartão tocado). Por baixo, os cartões neutros de cada tema: os Limites primeiro, com o PSV na barra B9; o Horário com a régua B3; o dinheiro com o total em A1. Fica claro qual é o serviço aberto, e o que se procura mais vê-se primeiro e grande.</li>
+    <li>A <b>A</b> é a mais simples (a linha fina fica e as pernas vão para dentro do cartão "Horário"), mas o serviço aberto não se distingue dos outros. A <b>C</b> é a mais convencional (a lista dos Ajustes do iPhone, com ícones), mas cinzenta e longa — parece outra app.</li></ul></div>
+  <h2 style="font-size:13px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase">Referências (Mobbin)</h2>
+  <div class="refs">
+    <a href="https://mobbin.com/screens/e99a1822-026f-4314-b3f9-56a8b53dc4f8" target="_blank"><b>Qantas · voo</b> — as duas horas grandes, a duração ao meio, o estado por baixo de cada uma. (B)</a>
+    <a href="https://mobbin.com/screens/3a12aa56-7f37-41a7-b54f-8c9bce34da9a" target="_blank"><b>American Airlines · estado do voo</b> — um cartão do voo e, por baixo, cartões de linhas com ›. (B)</a>
+    <a href="https://mobbin.com/screens/a4758a65-52ba-4932-a83e-6e25585b55b5" target="_blank"><b>Fly Delta · as pernas</b> — uma perna por bloco, com as horas e a duração. (A, B)</a>
+    <a href="https://mobbin.com/screens/47394e3a-52b3-4d21-81c0-1b972709a3ba" target="_blank"><b>Gojek · pagamento</b> — o dinheiro num cartão próprio, linha a linha, com o total destacado. (A, B)</a>
+    <a href="https://mobbin.com/screens/4210b20d-2570-406f-b3ba-bca27df46114" target="_blank"><b>Wanderlog · viagem</b> — um cartão por tema, com o título dentro. (A)</a>
+    <a href="https://mobbin.com/screens/c9316ffa-e267-4ee5-983f-25e09bb40c79" target="_blank"><b>Booking.com · reserva</b> — linhas com ícone e ›, agrupadas. (C)</a>
+  </div>
+</div>
+
+<script>
+var MOON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-2px"><path d="M20 15.3A8.5 8.5 0 0 1 8.7 4a8.5 8.5 0 1 0 11.3 11.3z"/></svg>';
+var I = { clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>', plane:'<path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z" fill="currentColor" stroke="none"/>',
+  gauge:'<path d="M4 15a8 8 0 1 1 16 0"/><path d="M12 15l4-5"/><circle cx="12" cy="15" r="1.4" fill="currentColor"/>', edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/>',
+  bed:'<path d="M3 18V7"/><path d="M3 14h18v4"/><path d="M21 14v-2a3 3 0 0 0-3-3h-7v5"/><circle cx="7" cy="11" r="1.8"/>', wallet:'<rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18"/><circle cx="16.5" cy="14.5" r="1.2" fill="currentColor"/>',
+  dots:'<circle cx="6" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="18" cy="12" r="1.6" fill="currentColor"/>',
+  home:'<path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/>' };
+function ic(n, s){ return '<svg width="' + (s || 16) + '" height="' + (s || 16) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + I[n] + '</svg>'; }
+var HEAD = '<div class="grab"><i></i></div><div class="dhead"><div class="tt"><b>Sexta-feira, 13 de novembro</b><span>hoje · 2 serviços</span></div><span class="ib">‹</span><span class="ib">›</span><span class="ib">✕</span></div>';
+var SBY = '<div class="cd terra slim"><div class="t"><b>Assistência em casa</b><span>06:00–12:00</span></div><span class="chev">›</span></div>';
+var FOOT = '<div class="foot">Os limites são uma estimativa — a app nunca declara legalidade.</div>';
+// as peças das imagens do Nuno (design-system §14)
+var B2 = '<div class="b2"><span class="fno">EZY1873</span><div class="rw"><div class="t"><b>18:45</b><span>LIS · Lisboa</span></div><div class="mid"><i></i><span class="dur">' + ic('plane', 12) + '55 min</span><i></i></div><div class="t r"><b>19:40</b><span>OPO · Porto</span></div></div><span class="z">Zulu 17:45 → 18:40</span></div>';
+function B3(onColor){   // 18:00 → 20:10 (o serviço) e o repouso até ao report de volta (07:40 de sábado: até ao fim da régua)
+  var svc = onColor ? 'var(--ink)' : 'var(--voo)';
+  return '<div class="b3"><div class="track"><i class="seg" style="left:' + (18 / 24 * 100) + '%;width:' + ((2 + 10 / 60) / 24 * 100) + '%;background:' + svc + '"></i><i class="seg" style="left:' + ((20 + 10 / 60) / 24 * 100) + '%;right:0;background:#B4C2A2;border-radius:0 6px 6px 0"></i></div>'
+    + '<div class="ticks"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div><div class="cap"><span><i style="background:' + svc + '"></i>serviço 18:00–20:10</span><span><i style="background:#B4C2A2"></i>repouso no Porto</span></div></div>';
+}
+var B9 = '<div class="b9"><span class="eb">Serviço de voo (PSV) · este serviço</span><div class="val"><b>3:10 <small>/13:00</small></b><span>faltam 9:50</span></div><div class="bar"><i style="width:' + (190 / 780 * 100) + '%"></i></div></div>';
+// os cartões neutros de cada tema (A e B partilham-nos)
+function ftlCard(){ return '<div class="cd neutral"><span class="kind">Limites · FTL</span>' + B9 + '<div class="lines">'
+  + '<div class="ln"><span class="ok"><i>✓</i>Dentro do limite FTL</span></div>'
+  + '<div class="ln"><span class="k">Calços até às<small>§ ORO.FTL.205(b) ›</small></span><span class="v">07:00 <small>de sábado</small></span></div>'
+  + '<div class="ln"><span class="k">Repouso mínimo depois<small>§ ORO.FTL.235 · fora da base ›</small></span><span class="v">10:00</span></div>'
+  + '<div class="ln"><span class="k">Fadiga<small>estimativa · não é um limite da lei</small></span><span class="fat"><i></i>baixa</span></div></div></div>'; }
+function horCard(withLegs){ return '<div class="cd neutral"><span class="kind">Horário · do calendário</span>' + (withLegs ? B2 : '') + B3(false) + '<div class="lines">'
+  + '<div class="ln"><span class="k">Apresentação</span><span class="v">18:00 <small>17:00Z</small></span></div>'
+  + '<div class="ln"><span class="k">Fim de serviço</span><span class="v">20:10 <small>pós-voo 30 min</small></span></div>'
+  + '<div class="ln"><span class="k">Horas de voo · de serviço</span><span class="v">0:55 · 2:10</span></div></div></div>'; }
+function compCard(){ return '<div class="cd neutral"><span class="kind">Completar</span><div class="lines"><div class="ln"><span class="k">Assistência antes do voo<small>CS FTL.1.225</small></span><span class="v">da escala ›</span></div></div></div>'; }
+function nsCard(){ return '<div class="cd neutral"><span class="kind">Pernoita · Porto</span><div class="add">＋ Guardar o hotel desta pernoita</div><div class="foot" style="padding:0 2px">Com o hotel guardado: o nome, "Mapas ↗" (abre fora da app) e "Ligar".</div></div>'; }
+function payCard(){ return '<div class="cd neutral"><span class="kind">Pagamento · estimado</span><div class="lines">'
+  + '<div class="ln"><span class="k">Per diem<small>§ AE easyJet · 1 setor ›</small></span><span class="v g">+45,60 €</span></div>'
+  + '<div class="ln"><span class="k">Paragem noturna<small>§ AE easyJet ›</small></span><span class="v g">+51,30 €</span></div>'
+  + '<div class="ln tot"><span class="k">Este serviço</span><span class="v" style="font-size:20px">96<span class="cent">,90 €</span></span></div></div></div>'; }
+function otherCard(){ return '<div class="cd neutral"><span class="kind">Outros serviços neste dia</span><div class="b7"><span class="sq" style="background:var(--terra)">' + ic('home', 17) + '</span><div class="tw"><b>Assistência em casa</b><span>06:00–12:00 · somam nos 28 dias (210)</span></div><span class="chev">›</span></div></div>'; }
+var FIX = '<div class="cd neutral slim"><div class="t"><b>O calendário está errado?</b><span>as horas reais ou um dado que faltou</span></div><span class="chev">›</span></div>';
+// A · cartões por tema: a linha fina do voo fica; as pernas vão para o cartão "Horário"
+function bodyA(){ return SBY + '<div class="cd voo slim"><div class="t"><b>LIS → OPO ' + MOON + '</b><span>EZY1873 · 18:45–19:40 · report 18:00 · pernoita no Porto</span></div><span class="gainChip">+96,90 €</span></div>'
+  + horCard(true) + ftlCard() + compCard() + nsCard() + payCard() + otherCard() + FIX + FOOT; }
+// B · o voo em destaque: a linha tocada cresce para o cartão de cor com as horas grandes (B2); depois os cartões de cada tema
+function bodyB(){ return SBY + '<div class="cd voo"><div><span class="kind">Voo · 1 setor · pernoita</span><h4>LIS → OPO ' + MOON + '</h4></div>'
+  + B2 + '<div class="subRow"><span class="sub">report 18:00 · fim do serviço 20:10</span><span class="gainChip">+96,90 €</span></div></div>'
+  + ftlCard() + horCard(false) + compCard() + nsCard() + payCard() + otherCard() + FIX + FOOT; }
+// C · a lista agrupada (os Ajustes do iPhone): títulos por fora, linhas brancas com ícone num fundo neutro
+function gr(icn, k, sub, v, g){ return '<div class="gr"><span class="ic">' + ic(icn, 15) + '</span><span class="k">' + k + (sub ? '<small>' + sub + '</small>' : '') + '</span><span class="v' + (g ? ' g' : '') + '">' + v + '</span></div>'; }
+function bodyC(){ return SBY + '<div class="cd voo slim"><div class="t"><b>LIS → OPO ' + MOON + '</b><span>EZY1873 · 18:45–19:40 · report 18:00</span></div><span class="gainChip">+96,90 €</span></div>'
+  + '<div class="grp"><div class="gh">Horário</div><div class="gl">' + gr('clock', 'Apresentação', null, '18:00') + gr('plane', 'EZY1873 · LIS → OPO', '17:45Z → 18:40Z', '18:45 → 19:40') + gr('clock', 'Fim de serviço', null, '20:10') + '</div>'
+  + '<div class="gh">Limites · FTL</div><div class="gl">' + gr('gauge', 'Dentro do limite FTL', null, '✓') + gr('gauge', 'PSV máximo', '§ ORO.FTL.205(b)', '13:00') + gr('gauge', 'Repouso mínimo depois', '§ ORO.FTL.235', '10:00') + '</div>'
+  + '<div class="gh">Completar</div><div class="gl">' + gr('edit', 'Assistência antes do voo', 'CS FTL.1.225', 'da escala ›') + '</div>'
+  + '<div class="gh">Pernoita · Porto</div><div class="gl">' + gr('bed', 'Guardar o hotel', null, '＋') + '</div>'
+  + '<div class="gh">Pagamento</div><div class="gl">' + gr('wallet', 'Per diem', '§ AE easyJet', '+45,60 €', true) + gr('wallet', 'Paragem noturna', '§ AE easyJet', '+51,30 €', true) + gr('wallet', 'Este serviço', null, '96,90 €') + '</div>'
+  + '<div class="gh">Outros serviços</div><div class="gl">' + gr('dots', 'Assistência em casa', null, '06:00 → 12:00 ›') + '</div></div>' + FIX + FOOT; }
+var OPTS = [
+  ['A', 'A · Cartões por tema', false, 'A linha fina do voo <b>fica como está</b>; por baixo, <b>um cartão neutro por tema</b>, com o título dentro (como os cartões de linhas do Início). As pernas, com as horas grandes, vão dentro do cartão "Horário". O dinheiro num cartão com o total.', bodyA],
+  ['B', 'B · O voo em destaque', true, 'A linha tocada <b>cresce para o cartão de cor</b> com as horas grandes — <b>o mesmo do Início</b> (B2): de onde, para onde, a duração, o report e o que rende. Por baixo, os cartões neutros de cada tema, com os <b>Limites primeiro</b>.', bodyB],
+  ['C', 'C · Lista agrupada', false, 'Como os Ajustes do iPhone: <b>títulos por fora</b>, <b>linhas brancas com um ícone</b> num fundo neutro. A mais convencional e a mais fácil de percorrer; a menos parecida com o Início.', bodyC]
+];
+var html = '';
+OPTS.forEach(function(o){
+  html += '<div class="opt"><h3>' + o[1] + (o[2] ? '<span class="rec">RECOMENDO</span>' : '') + '</h3><p>' + o[3] + '</p><div class="ph" id="p' + o[0] + '"><div class="behind"></div><div class="win">' + HEAD + '<div class="dbody">' + o[4]() + '</div></div></div><p class="m" id="m' + o[0] + '"></p></div>';
+});
+document.getElementById('opts').innerHTML = html;
+function check(){
+  ['A','B','C'].forEach(function(o){
+    var ph = document.getElementById('p' + o), body = ph.querySelector('.dbody'), br = body.getBoundingClientRect();
+    var total = Math.round(body.scrollHeight), vis = Math.round(br.height);
+    var firstAfter = [].slice.call(body.children)[2]; var fr = firstAfter ? firstAfter.getBoundingClientRect() : null;
+    document.getElementById('m' + o).innerHTML = 'O "Ver tudo" deste voo ocupa <b>' + total + ' pt</b> (a janela mostra ' + vis + ' de cada vez) · sem deslizar vê-se até: <b>' + (function(){ var last = null; [].slice.call(body.children).forEach(function(c){ var r = c.getBoundingClientRect(); if (r.bottom <= br.bottom + 1) last = c; }); return last ? (last.querySelector('.kind, .gh, b') || last).textContent.slice(0, 28) : '—'; })() + '</b>.';
+  });
+  var cut = 0; document.querySelectorAll('.ln .k, .ln .v, .cd h4, .cd.slim .t b, .gr .k, .gr .v, .cdRow b, .sub').forEach(function(e){ if (e.scrollWidth > e.clientWidth + 1) cut++; });
+  document.getElementById('meas').textContent = 'Verificação do esboço: textos cortados ' + cut + '.';
+}
+setTimeout(check, 150); if (document.fonts) document.fonts.ready.then(function(){ setTimeout(check, 200); });
+</script>
+</body>
+</html>

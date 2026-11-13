@@ -180,9 +180,10 @@ function Legs({ legs, T }) {
     <View style={s.legs} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
       {legs.map((g, i) => (
         <View key={`leg${i}`}>
-          {(g.fno || g.z) ? (
+          {(g.fno || g.z || g.dh) ? (
             <View style={s.legH}>
-              {g.fno ? <View style={[s.fno, { backgroundColor: CARD.go }]}><Text style={[TXT3.kind, { color: CARD.onCard }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{g.fno}</Text></View> : <View />}
+              {/* DH = perna de posicionamento: não conta como setor (ORO.FTL.215(a)) — o Detalhe antigo marcava-a e o cartão também. */}
+              {(g.fno || g.dh) ? <View style={[s.fno, { backgroundColor: CARD.go }]}><Text style={[TXT3.kind, { color: CARD.onCard }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{[g.fno, g.dh ? 'DH' : null].filter(Boolean).join(' · ')}</Text></View> : <View />}
               {g.z ? <Text style={[TXT3.cardNumLbl, { color: T.sub }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{g.z}</Text> : null}
             </View>
           ) : null}
