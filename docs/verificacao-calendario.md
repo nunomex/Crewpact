@@ -126,7 +126,11 @@ que o eCrew escreveria — cada um testa um ramo do parser:
     **1.ª ronda, 2026-11-13 (folha de importação):** a ✅ "excede em 04:00" · b ✅ "excede em 01:30" · c ✅ "Incerto —
     repouso antes 1:00 de 10:00" · d ✅ "standby acima de 16 h" · e ✅ "Incerto — repouso antes 0:00 de 10:00" · f ✅ "excede em 04:30"
     (antes de declarar) · g sem "excede" (o cartão mostra o aviso de o voo partir de LIS com o serviço anterior acabado em
-    OPO — é dos voos de teste, todos só de ida). Por ver, no Detalhe: os números de a, b e g, e declarar 7 h e 11 h no f. O motivo do "Incerto" aparece cortado ("se o voo foi at…") e repete a palavra
+    OPO — é dos voos de teste, todos só de ida). No Detalhe do f ✅: 10:30 contra 06:00, excesso 04:30;
+    com 7 h declaradas "06:00–10:00", excesso 00:30 (faltava o motivo: linha nova "Dois máximos"); com 11 h volta a 06:00.
+    Por ver, no Detalhe: os números de a, b e g, e se a linha "Dois máximos" cabe. Para o trabalho dos ecrãs: o Detalhe não
+    diz que o máximo foi reduzido pela assistência (cita só o 205(b)), e "Assistência antes do voo" diz "Não" com a da
+    escala já contada. O motivo do "Incerto" aparece cortado ("se o voo foi at…") e repete a palavra
     "incerto" — é da apresentação (grupo 2 de `docs/decisoes.md`).
     g) **Voo e assistência depois:** voo 06:00–10:00 e `HSBY` 11:00–21:00 no mesmo dia → PSV 04:00, dentro (antes: um
        "PSV" de 15:00, excede).
