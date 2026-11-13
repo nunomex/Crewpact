@@ -806,9 +806,13 @@ export default function HomeScreen({ navigation }) {
       depStation: st[0] || null, hasReg: hasDay(iso) };
   };
   // O primeiro serviço que ainda não acabou a partir do dia `fromISO` (o seu instante de início vem junto, para a folga).
-  const nextBrief = (fromISO) => {
+  // `after` = o serviço de que o topo fala: no dia dele, "a seguir" é o que começa DEPOIS dele (visto no iPhone a 2026-11-13:
+  // em assistência às 14:55 com um voo às 18:00 do mesmo dia, o cartão "A seguir" saltava para o serviço de 2.ª-feira).
+  const nextBrief = (fromISO, after = null) => {
     for (const iso of Object.keys(duties).filter((k) => k >= fromISO).sort()) {
-      const mf = dayFlights(iso, duties[iso]).find((f) => f.endDate.getTime() >= now);
+      const mf = dayFlights(iso, duties[iso])
+        .filter((f) => f.endDate.getTime() >= now && !(after && after.svc && iso === after.dateISO && (f.svc === after.svc || +f.startDate <= +after.startDate)))
+        .sort((a, b) => +a.startDate - +b.startDate)[0];
       if (mf) { const b = brief(iso, mf.svc); if (b) return { ...b, startMs: mf.reportDate ? +mf.reportDate : +mf.startDate }; }
     }
     return null;
@@ -962,7 +966,7 @@ export default function HomeScreen({ navigation }) {
   }
 
   // ── A ENTRADA do homeCards ──
-  const nextF = ['hoje', 'disrupcao'].includes(homeState) ? (heroF ? nextBrief(isoAdd(heroF.iso, 1)) : null)
+  const nextF = ['hoje', 'disrupcao'].includes(homeState) ? (heroF ? nextBrief(heroF.iso, flight) : null)
     : ['posvoo', 'pernoita'].includes(homeState) ? nextBrief(isoAdd(todayISO, 1))
     : ['folga', 'ferias', 'doenca'].includes(homeState) ? (demoOn && flight ? { iso: flight.dateISO, kind: 'flight', stations: (flight.stations || []).map((x) => String(x).toUpperCase()), sectors: flight.sectors || null, report: flight.report, end: flight.arrTime || null, hasReg: false, startMs: flight.reportDate ? +flight.reportDate : +flight.startDate } : nextBrief(todayISO))
     : null;
