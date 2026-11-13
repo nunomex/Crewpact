@@ -120,6 +120,13 @@ que o eCrew escreveria — cada um testa um ramo do parser:
     f) **Declarada à mão:** `HSBY` 07:00–19:00 + voo às 18:00 com chegada às 04:30; no Detalhe → Completar → "Assistência
        antes do voo" → em casa, 7 h → máximo "06:00 a 10:00" e o motivo "as horas que indicaste não batem com a assistência
        que está na escala"; com 11 h → máximo 06:00, sem dúvida. O texto cabe?
+    (Nos cenários c e e o mínimo mostrado é 10:00, não 12:00, quando o último voo antes acabou fora da base — é o caso
+    se os voos de teste forem só `LIS-OPO`. Os eventos `HSBY` têm de acabar no MESMO dia: com mais de 24 h a importação
+    parte-os por dias, "sem hora de fim" / "sem hora de início".)
+    **1.ª ronda, 2026-11-13 (folha de importação):** a ✅ "excede em 04:00" · b ✅ "excede em 01:30" · c ✅ "Incerto —
+    repouso antes 1:00 de 10:00" · d ✅ "standby acima de 16 h" · e ✅ "Incerto — repouso antes 0:00 de 10:00" · f e g por
+    ver (os eventos estavam mal criados). O motivo do "Incerto" aparece cortado ("se o voo foi at…") e repete a palavra
+    "incerto" — é da apresentação (grupo 2 de `docs/decisoes.md`).
     g) **Voo e assistência depois:** voo 06:00–10:00 e `HSBY` 11:00–21:00 no mesmo dia → PSV 04:00, dentro (antes: um
        "PSV" de 15:00, excede).
 
