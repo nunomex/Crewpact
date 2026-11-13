@@ -130,7 +130,7 @@ que o eCrew escreveria — cada um testa um ramo do parser:
     com 7 h declaradas "06:00–10:00", excesso 00:30 (faltava o motivo: linha nova "Dois máximos"); com 11 h volta a 06:00.
     A linha "Dois máximos" (e a do "Incerto") passou a mostrar o
     motivo em texto inteiro, por baixo do título — visto ✅. No Detalhe, a ✅ (11:00 contra 07:00, excesso 04:00), b ✅ (10:00 contra 08:30,
-    excesso 01:30) e g ✅ (04:00 de 13:00, dentro): os sete cenários batem. Corrigido a seguir (por ver no iPhone): o Detalhe ganhou a linha
+    excesso 01:30) e g ✅ (04:00 de 13:00, dentro): os sete cenários batem. Corrigido a seguir (Detalhe ✅ e Completar ✅ vistos no iPhone; a folha de importação por ver): o Detalhe ganhou a linha
     "Assistência antes do voo" a dizer de onde vem a redução ("Da escala: 11:00 de assistência em casa desde as 07:00, até
     à apresentação — tira 5:00 ao PSV máximo (CS FTL.1.225(b)(7))"); em Completar a linha diz "Da escala · 11:00" em vez de
     "Não"; na folha de importação o motivo do "Incerto" aparece inteiro e sem repetir a palavra. O motivo do "Incerto" aparece cortado ("se o voo foi at…") e repete a palavra
