@@ -44,7 +44,7 @@ export const capabilitiesFor = ({ company = null, crewType = 'cabin', contract =
     askServiceStart: hasAe,
     // Extras do mês (contadores) — onde há motor monthExtras (piloto e cabine AE), e coberto.
     extras: !!(ae && ae.monthExtras) && hasAe,
-    // Retenção sazonal: só PPY SAZONAL e NÃO estilo de vida (Art. 66.9 / Anexo I.15(**)).
+    // Retenção sazonal: só PPY SAZONAL e NÃO estilo de vida (BTE 29/2026: Art. 69.º, n.º 8 / Anexo I.14(**); era Art. 66.º, n.º 9).
     retention: hasAe && isPilot && seasonal && !lifestyle,
     // Report offset (cabine) no FTL: 0 — o PSV começa na hora de report da escala, que
     // o utilizador insere tal como vem (sem offset sintético piloto↔cabine). Decisão Passo 5.
@@ -87,7 +87,7 @@ export const resolvePostFlight = (userMin, company) => {
 // LEI: 22 dias úteis (Art. 238.º CT); ANO DE ADMISSÃO = 2 dias por mês ou fração do
 // contrato nesse ano, máx. 20 (Art. 239.º CT — o próprio AE easyJet repete a regra,
 // Cl. 72.ª/4). AE: os módulos ae/* expõem `vacationDays` COM FONTE (easyJet pilotos
-// Art. 68.º BTE 40/2023 = 25 a tempo completo, proporcional nas restantes; cabine
+// Art. 71.º BTE 29/2026 = 27 a tempo completo no FRV144, e a coluna LVE do Art. 61.º nas restantes — 25 no BTE 40/2023; cabine
 // Cl. 72.ª BTE 8/2024 = 25, 26 com ≥5 anos a partir de abr-2025, 21/19/17 por contrato).
 // TAP/otros sem cláusula lida → caem na lei (não se inventa).
 export const lawVacationDays = (serviceStart, ref = new Date()) => {

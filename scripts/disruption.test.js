@@ -25,7 +25,7 @@ Module._extensions['.js'] = function (m, filename) {
   m._compile(transform(fs.readFileSync(filename, 'utf8'), filename), filename);
 };
 
-const { evaluateDisruption, disruptionCandidates, disruptionHtml, evaluateStability, stabilityCandidates, stabilityHtml } = require(path.resolve('data/disruption.js'));
+const { evaluateDisruption, pilotSncArt, disruptionCandidates, disruptionHtml, evaluateStability, stabilityCandidates, stabilityHtml } = require(path.resolve('data/disruption.js'));
 const snpvac = require(path.resolve('ae/easyjetSnpvac.js'));
 const spac = require(path.resolve('ae/easyjetSpac.js'));
 
@@ -68,7 +68,10 @@ eq('RDP: ganho de setores no dia', type(mk({ after: { report: '09:30', end: '17:
 // ANTECIPAR o fim ≥119 no dia também qualifica ("antes ou depois")
 eq('RDP: fim antecipado 125 min', type(mk({ after: { report: '09:30', end: '15:25', sectors: 2, kind: 'flight' } }), { isPilot: false }), 'rdp');
 // pilotos NÃO têm RDP: mesmo caso no dia → SNC (125 ≥120 no fim, dentro das 48h)
-eq('pilotos: caso RDP vira SNC (Art. 63.º)', evaluateDisruption(mk(), { isPilot: true }).clause, 'Art. 63.º');
+// O artigo do SNC dos pilotos é o do acordo em vigor na data do serviço: Art. 65.º desde 26-06-2026 (BTE 29/2026); antes Art. 63.º (BTE 40/2023).
+eq('pilotos: caso RDP vira SNC (Art. 65.º, BTE 29/2026)', evaluateDisruption(mk(), { isPilot: true }).clause, 'Art. 65.º');
+eq('pilotos: SNC de um serviço de 2025 cita o Art. 63.º (BTE 40/2023)', pilotSncArt('2025-08-10'), 'Art. 63.º');
+eq('pilotos: SNC a 25-06-2026 ainda o Art. 63.º; a 26-06-2026 já o 65.º', `${pilotSncArt('2026-06-25')} · ${pilotSncArt('2026-06-26')}`, 'Art. 63.º · Art. 65.º');
 eq('pilotos: tipo snc', type(mk(), { isPilot: true }), 'snc');
 // pilotos: só setores mudam (sem Δhoras ≥2h) → nada
 eq('pilotos: setores sem horas → nada', type(mk({ after: { report: '09:30', end: '17:30', sectors: 4, kind: 'flight' } }), { isPilot: true }), null);
@@ -178,7 +181,7 @@ check('prova: método e limitações presentes', html.includes('DETETADA pela ap
   const r1 = sncToRegister(tres, { isPilot: true });
   eq('3 mudanças no MESMO serviço → UM SNC', r1.length, 1);
   eq('… comparado com o planeado a 48 h (fim +3 h)', r1[0] && r1[0].dEndMin, 180);
-  eq('… pilotos: Art. 63.º', r1[0] && r1[0].clause, 'Art. 63.º');
+  eq('… pilotos: Art. 65.º (serviço depois de 26-06-2026)', r1[0] && r1[0].clause, 'Art. 65.º');
   eq('cabine: Cl. 66.ª', (sncToRegister(tres, { isPilot: false })[0] || {}).clause, 'Cl. 66.ª');
   eq('vai e volta (líquido +0:30) → nenhum', sncToRegister([
     ch('2026-11-09T10:00', ['08:00', '12:00'], ['08:00', '13:00']),

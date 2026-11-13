@@ -39,8 +39,11 @@ export const AE_SOURCES = [
 
 // AE ESPECÍFICO por companhia E por tipo de tripulação (deep-link direto ao documento oficial da
 // revisão global). Piloto e cabine têm sindicatos/acordos SEPARADOS. easyJet:
-//  · pilotos = SPAC → Diário da República (BTE 40/2023), válido até 31/01/2026 — VERIFICADO (texto
-//    extraído: "Easyjet ... e o SPAC - Sindicato dos Pilotos ... Revisão global"; 0× cabine).
+//  · pilotos = SPAC → BTE n.º 29, de 8 de agosto de 2026, p. 124–156 (Revisão global, válido até 31/01/2029). O link é o boletim
+//    COMPLETO no portal oficial do BTE (bte.dgcp.mtsss.gov.pt; o endereço antigo bte.gep.msess.gov.pt redireciona para lá) —
+//    VERIFICADO a 2026-11-13: o texto das p. 124–156 é igual, palavra por palavra, ao de fontes/ae-easyjet/easyjet-spac-2026.txt.
+//    A separata do Diário da República (files.diariodarepublica.pt) ainda não foi encontrada; quando houver, troca-se.
+//    O anterior (BTE 40/2023, até 31/01/2026): https://files.diariodarepublica.pt/bases_especiais/regtrab/2023/10/30/223256548.pdf
 //  · cabine = SNPVAC → Diário da República (BTE 8/2024, de 29/02/2024), válido até 31/01/2027 —
 //    VERIFICADO (texto extraído: "representados pelo SNPVAC contratados pela Easyjet ... Revisão
 //    global", até 31/01/2027; 0× piloto/SPAC). Link DRE específico (não o boletim inteiro).
@@ -53,8 +56,8 @@ export const AE_SOURCES = [
 //    vigência até 31 de dezembro de 2026").
 export const AE_DEEPLINKS = {
   easyjet: {
-    pilot: { key: 'aeSpac', label: 'AE easyJet · Pilotos (SPAC)', sub: { pt: 'Revisão global · DRE/BTE 40/2023 · até 31/01/2026 (último publicado)', en: 'Global revision · DRE/BTE 40/2023 · until 31/01/2026 (latest published)' },
-      url: 'https://files.diariodarepublica.pt/bases_especiais/regtrab/2023/10/30/223256548.pdf' },
+    pilot: { key: 'aeSpac', label: 'AE easyJet · Pilotos (SPAC)', sub: { pt: 'Revisão global · BTE 29/2026, p. 124–156 · até 31/01/2029', en: 'Global revision · BTE 29/2026, pp. 124–156 · until 31/01/2029' },
+      url: 'https://bte.dgcp.mtsss.gov.pt/completos/2026/bte29_2026.pdf' },
     cabin: { key: 'aeSnpvac', label: 'AE easyJet · Cabine (SNPVAC)', sub: { pt: 'Revisão global · DRE/BTE 8/2024 (até 31/01/2027)', en: 'Global revision · DRE/BTE 8/2024 (until 31/01/2027)' },
       url: 'https://files.diariodarepublica.pt/bases_especiais/regtrab/2024/02/29/853938512.pdf' },
   },

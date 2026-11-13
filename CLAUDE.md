@@ -18,7 +18,7 @@ fadiga (FTL — Reg. UE 83/2014 · CS-FTL.1) e a remuneração prevista pelos ac
 
 ## Onde está cada coisa
 - `screens/` 20 ecrãs · `components/` · `data/` motores puros e acesso a dados · `ftl/` motor FTL ·
-  `ae/` acordos de empresa (easyJet SPAC/SNPVAC, TAP) · `supabase/` schema, SQL, Edge Functions ·
+  `ae/` acordos de empresa (easyJet SPAC/SNPVAC, TAP; pilotos easyJet = BTE 29/2026, com o de 2023 na linha do tempo — `docs/ae-easyjet-pilotos-2026.md`) · `supabase/` schema, SQL, Edge Functions ·
   `legal/` termos e privacidade (HTML) · `design/` mockups HTML (mandam à letra) · `scripts/` testes golden.
 - **Lei interna:** `docs/CONSTITUICAO.md` (Q1–Q5 trancadas, contrato AI §6, Carta de Design §11).
 - **Canon visual:** `docs/design-system.md` + `docs/motion-design-system.md` + `docs/living-interface.md`.
@@ -26,7 +26,7 @@ fadiga (FTL — Reg. UE 83/2014 · CS-FTL.1) e a remuneração prevista pelos ac
 - **Guiões de verificação no device:** `docs/verificacao-device.md` · `docs/verificacao-calendario.md`.
 
 ## Regras do projeto (resumo; detalhe na Constituição)
-1. **Golden-first.** Nenhum número FTL/AE muda sem o teste golden mudar antes. `npm test` corre 33 suites (a 2.ª, `test:ftl-fontes`, confere cada número FTL no texto oficial de `fontes/ftl/`; a última é o guardião do design);
+1. **Golden-first.** Nenhum número FTL/AE muda sem o teste golden mudar antes. `npm test` corre 34 suites (a 2.ª, `test:ftl-fontes`, confere cada número FTL no texto oficial de `fontes/ftl/`; a última é o guardião do design);
    o `pre-push` bloqueia se falhar.
 2. **Citar a lei.** Onde é lei, o artigo; onde é convenção, dizê-lo e escolher o conservador.
 3. **Dinheiro sem arredondar.** Todo o € mostra cêntimos.

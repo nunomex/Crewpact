@@ -811,8 +811,8 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
               { id: 'ofc8', label: l('Dia inteiro (OFC8)', 'Full day (OFC8)') },
             ]} />
           <Text style={s.routeHint}>{form.officeType === 'ofc8'
-            ? l('Dia inteiro (OFC8) — 3 setores nominais (Anexo I.14; = dever ad-hoc, Art. 43).', 'Full day (OFC8) — 3 nominal sectors (App. I.14; = ad-hoc duty, Art. 43).')
-            : l('Meio-dia (OFC4) — 1,5 setores nominais (Anexo I.14).', 'Half day (OFC4) — 1.5 nominal sectors (App. I.14).')}</Text>
+            ? l('Dia inteiro (OFC8) — 3 setores nominais (Anexo I.13; = dever ad-hoc, Art. 43).', 'Full day (OFC8) — 3 nominal sectors (App. I.13; = ad-hoc duty, Art. 43).')
+            : l('Meio-dia (OFC4) — 1,5 setores nominais (Anexo I.13).', 'Half day (OFC4) — 1.5 nominal sectors (App. I.13).')}</Text>
         </View>
       ) : null}
       {form.kind === 'training' && !form.role && ae && ae.ADHOC_SECTORS ? (
@@ -889,9 +889,9 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
             const sug = into ? ae.dayOffKind(into) : null;
             const dowKey = String(form.dayOffWorked || '').split('+')[0];
             const txt = !form.dayOffWorked ? null : pilotRule
-              ? ({ ddo: l('Entrou na folga menos de 90 min (DDO, Anexo I.13) — soma ao mês.', 'Under 90 min into the day off (DDO, App. I.13) — adds to the month.'),
-                ido: l('Entrou na folga 90 min ou mais (IDO, Anexo I.13) — soma ao mês.', '90 min or more into the day off (IDO, App. I.13) — adds to the month.'),
-                wfly: l('Aceitaste um serviço num dia de folga (WFLY, Art. 62.º, n.º 2) — soma ao mês.', 'You accepted a duty on a day off (WFLY, Art. 62(2)) — adds to the month.') })[dowKey]
+              ? ({ ddo: l('Entrou na folga menos de 90 min (DDO, Anexo I.12) — soma ao mês.', 'Under 90 min into the day off (DDO, App. I.12) — adds to the month.'),
+                ido: l('Entrou na folga 90 min ou mais (IDO, Anexo I.12) — soma ao mês.', '90 min or more into the day off (IDO, App. I.12) — adds to the month.'),
+                wfly: l('Aceitaste um serviço num dia de folga (WFLY, Art. 64.º, n.º 2) — soma ao mês.', 'You accepted a duty on a day off (WFLY, Art. 64(2)) — adds to the month.') })[dowKey]
               : ({ ddo: l('O serviço passou a meia-noite e entrou num dia de descanso (DDO, Cl. 68.ª, n.º 1) — soma ao mês.', 'The duty ran past midnight into a rest day (DDO, Cl. 68(1)) — adds to the month.'),
                 ido: l('Pernoita não programada num dia de folga (IDO, Cl. 68.ª, n.º 3) — soma ao mês.', 'Unplanned night stop on a day off (IDO, Cl. 68(3)) — adds to the month.'),
                 wfly: l('Aceitaste trabalhar num dia de descanso escalado (WFLY, Cl. 69.ª) — soma ao mês.', 'You accepted work on a rostered rest day (WFLY, Cl. 69) — adds to the month.') })[dowKey];
@@ -904,7 +904,8 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       {(isFlight || form.kind === 'training') && ae && ae.additionalRolesFor ? (() => {
         // Instrutor dos pilotos easyJet: "em terra, incluindo em simulador" (Art. 42.º) → não aparece num voo (A-045, bloco 5).
         const groundOnly = new Set(ae.GROUND_ONLY_ROLES || []);
-        const roles = (ae.additionalRolesFor(crewCategory, { instructorRated }) || []).filter((r) => form.kind === 'training' || !groundOnly.has(r.id));
+        const flightOnly = new Set(ae.FLIGHT_ONLY_ROLES || []);   // LTC: treino em linha, só num voo
+        const roles = (ae.additionalRolesFor(crewCategory, { instructorRated }) || []).filter((r) => (form.kind === 'training' ? !flightOnly.has(r.id) : !groundOnly.has(r.id)));
         if (!roles.length) return null;
         return (
           <View style={{ marginTop: 16 }}>

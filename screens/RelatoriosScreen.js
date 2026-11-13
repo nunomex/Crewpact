@@ -318,7 +318,7 @@ export default function RelatoriosScreen({ navigation }) {
           <TouchableOpacity style={s.card} activeOpacity={0.85} onPress={() => { if (busy) return; select(); navigation.navigate('Disrupcao'); }}
             accessibilityRole="button" accessibilityLabel={l('Disrupção de escala — rever candidatos', 'Roster disruption — review candidates')}>
             <View style={s.cBody}>
-              <Text style={s.cK}>{isPilot ? l('AE easyJet · Art. 63.º SNC', 'easyJet CLA · Art. 63 SNC') : l('AE easyJet · Cl. 67.ª RDP · Cl. 66.ª SNC', 'easyJet CLA · Cl. 67 RDP · Cl. 66 SNC')}</Text>
+              <Text style={s.cK}>{isPilot ? l('AE easyJet · Art. 65.º SNC', 'easyJet CLA · Art. 65 SNC') : l('AE easyJet · Cl. 67.ª RDP · Cl. 66.ª SNC', 'easyJet CLA · Cl. 67 RDP · Cl. 66 SNC')}</Text>
               <Text style={s.cName} numberOfLines={1}>{l('Disrupção de escala', 'Roster disruption')}</Text>
               {disCands.length ? (
                 <Text style={[s.cLine, s.cLineHot]} numberOfLines={1}>{disCands.length} {l(disCands.length === 1 ? 'candidato' : 'candidatos', disCands.length === 1 ? 'candidate' : 'candidates')}{disEur ? ` · ${l('até', 'up to')} ${(() => { const [i, d] = disEur.toFixed(2).split('.'); return lang === 'en' ? `€${i}.${d}` : `${i},${d} €`; })()}` : ''}</Text>

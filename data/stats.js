@@ -137,7 +137,7 @@ export const yearStats = (duties = {}, { year, ae = null, aeAt = null, category 
       const ae = monthsAe[mo];   // o AE DESTE mês (sombra intencional: o resto do ciclo usa-o)
       if (!ae) continue;
       const index = ae.indexFactor ? ae.indexFactor(ym) : 1;   // por MÊS: o IPC dos pilotos easyJet conta desde 1-fev-2025 (A-041)
-      if (ae.isIndexEstimated && ae.isIndexEstimated(ym) && index > 1) estimated = true;
+      if (ae.isIndexEstimated && ae.isIndexEstimated(ym)) estimated = true;   // também com o fator a 1: pilotos easyJet desde fev-2027, à espera do IPC (BTE 29/2026)
       const { category: catM, contract: ctrM, fleet: fleetM } = resolveCrew(history, ym);   // posto DESSE mês (categoria, contrato, frota)
       if (!catM) continue;
       if (ae.hasTableFor && !ae.hasTableFor(catM, ym)) { noTable = true; continue; }   // sem tabela nesse mês: não soma (bloco 5)
@@ -304,7 +304,7 @@ export const monthStats = (duties = {}, { ym, ae = null, category = null, contra
       chefia: m.chefia || 0, perDiemMax: m.perDiemMax || null, extrasMax: m.extrasMax || null, seniority: m.seniority || null,
       prestCompl: m.prestCompl || null,   // pilotos TAP, Cl. 10.ª
       withRoute: m.withRoute, missing: m.missing,
-      estimated: !!(ae.isIndexEstimated && ae.isIndexEstimated(ymStr)) && index > 1,
+      estimated: !!(ae.isIndexEstimated && ae.isIndexEstimated(ymStr)),
       baseRange: m.baseRange || null,   // 9/3 e sazonais sem as datas de atividade: a base do mês é incerta
     };
   }

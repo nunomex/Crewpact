@@ -145,7 +145,7 @@ has('Cl. 48.ª/9 (9/3: média dos 12 meses)', CAB, 'Os subsídios de férias e d
     // a saída os restantes (3/12). Pilotos: junho 7/12 (não até dezembro), a saída nada.
     const io = { serviceStart: '2026-03-01', startExact: true, serviceEnd: '2026-10' };
     eqj('R5 cabine: entra em março, sai em setembro: junho 4/12 + saída 3/12', [eur(cab.annualItems('FA', { ym: '2026-06', ...io }), 'ferias'), eur(cab.annualItems('FA', { ym: '2026-09', ...io }), 'ferias'), item(cab.annualItems('FA', { ym: '2026-09', ...io }), 'ferias').max || null], [448.86, 336.64, null]);
-    const subC = 122000 / 14;
+    const subC = 160999.74 / 14;   // CPT em 2026: o Anexo I de 1 de fevereiro de 2026 (BTE 29/2026)
     eqj('R5 piloto: entra em março, sai em setembro: junho 7/12 e nada na saída', [eur(pil.annualItems('CPT', { ym: '2026-06', ...io }), 'ferias'), item(pil.annualItems('CPT', { ym: '2026-09', ...io }), 'ferias')], [rr(subC * 7 / 12), null]);
     // R6: entra a 1-ago e sai no fim de outubro: junho não pagou nada → a saída paga o proporcional (3/12), certo.
     const io8 = { serviceStart: '2026-08-01', startExact: true, serviceEnd: '2026-11' };
@@ -167,10 +167,10 @@ has('Art. 36.º/2 (diferença em dezembro)', PIL, 'a diferença será calculada 
   // CPT 12/12, 2026: 122 000 × 1,023 / 14 = 8 914,71 €.
   const idx = pil.indexFactor('2026-11');
   const nov = pil.annualItems('CPT', { ym: '2026-11', index: idx });
-  eq('piloto CPT nov-2026: Natal', eur(nov, 'natal'), 8914.71);
+  eq('piloto CPT nov-2026: Natal (160 999,74 ÷ 14)', eur(nov, 'natal'), 11499.98);
   eq('piloto CPT nov-2026: falta a média das variáveis (incerto)', !!item(nov, 'natal').incomplete, true);
-  eq('piloto CPT nov-2026: total do mês', monthlyAe({}, 'CPT', '12/12', pil, { ym: '2026-11', index: idx }).total, 17829.42);
-  eq('piloto CPT jun-2026: férias', eur(pil.annualItems('CPT', { ym: '2026-06', index: pil.indexFactor('2026-06') }), 'ferias'), 8914.71);
+  eq('piloto CPT nov-2026: total do mês', monthlyAe({}, 'CPT', '12/12', pil, { ym: '2026-11', index: idx }).total, 22999.96);
+  eq('piloto CPT jun-2026: férias', eur(pil.annualItems('CPT', { ym: '2026-06', index: pil.indexFactor('2026-06') }), 'ferias'), 11499.98);
   // FO 2024 (índice 1): 47 750 / 14 = 3 410,71 €. PPY 8/12: × 8/12 = 2 273,81 €.
   eq('piloto FO nov-2024: Natal', eur(pil.annualItems('FO', { ym: '2024-11' }), 'natal'), 3410.71);
   eq('piloto FO PPY 8/12 nov-2024: Natal', eur(pil.annualItems('FO', { ym: '2024-11', contract: 'PPY 8/12' }), 'natal'), 2273.81);
@@ -322,8 +322,8 @@ has('TAP pilotos Cl. 8.ª/2 (suspensão)', TAPP, 'bem como no da suspensão do m
   // 3 202,38 € no máximo (suspenso só de 1 a 30 de abril).
   const sick = days('2026-03-01', 61, 'sickDays');
   const n = item(pil.annualItems('FO', { ym: '2026-11', index: pil.indexFactor('2026-11'), events: sick }), 'natal');
-  eq('FO: Natal com suspensão (certo e máximo)', [n.eur, n.max], [2906.04, 3202.38]);
-  eq('FO: baixa de 30 dias não suspende', eur(pil.annualItems('FO', { ym: '2026-11', index: pil.indexFactor('2026-11'), events: days('2026-03-01', 30, 'sickDays') }), 'natal'), 3489.16);
+  eq('FO: Natal com suspensão (certo e máximo)', [n.eur, n.max], [4213.74, 4643.43]);   // 5 059,2571 × 304/365 e × 335/365 (antes 3 489,16 ×: BTE 40/2023)
+  eq('FO: baixa de 30 dias não suspende', eur(pil.annualItems('FO', { ym: '2026-11', index: pil.indexFactor('2026-11'), events: days('2026-03-01', 30, 'sickDays') }), 'natal'), 5059.26);
   const nc = item(cab.annualItems('FA', { ym: '2026-11', events: sick }), 'natal');
   // Cabine: "superior a 30 (trinta) dias" (Cl. 86.ª, n.º 2) → o máximo conta a suspensão desde o 31.º dia (31 dias), não o 32.º.
   // (arredonda-se uma vez, no fim: 18 852 ÷ 14 × 334 ÷ 365 = 1 232,205 → 1 232,21)
@@ -383,7 +383,7 @@ has('TAP pilotos Cl. 9.ª/1 a) i) (dead-head)', TAPP, 'quer seja em funções, q
   const mp = monthlyAe(pos, 'FO', '12/12', pil, { ym: '2024-05' });
   eq('piloto FO: posicionamento LIS-CDG', mp.positioning, 46.51);
   eq('piloto FO: total = base + posicionamento', mp.total, 3457.22);
-  eq('piloto FO 2026: posicionamento LIS-FNC', monthlyAe({ '2026-06-02': { kind: 'positioning', route: 'LIS-FNC' } }, 'FO', '12/12', pil, { ym: '2026-06', index: pil.indexFactor('2026-06') }).positioning, 47.58);
+  eq('piloto FO 2026: posicionamento LIS-FNC', monthlyAe({ '2026-06-02': { kind: 'positioning', route: 'LIS-FNC' } }, 'FO', '12/12', pil, { ym: '2026-06', index: pil.indexFactor('2026-06') }).positioning, 54.72);   // médio: 1,2 × 45,60
   // Voo com DH depois: LIS-FNC operado (per diem 46,51) + DH FNC-LIS (posicionamento 46,51).
   const dh = { '2024-05-21': { kind: 'flight', route: 'LIS-FNC-LIS', legs: [{ dep: 'LIS', arr: 'FNC' }, { dep: 'FNC', arr: 'LIS', dh: true }] } };
   const md = monthlyAe(dh, 'FO', '12/12', pil, { ym: '2024-05' });
@@ -487,8 +487,9 @@ has('Art. 66.º quadro (cabeçalho)', PIL, 'Modelo Dias de folga Férias GDO % r
 has('Art. 66.º quadro (Férias 14 · 21 · 18)', PIL, '14-14 14 21-7 trabalho» 21 12 51 % Acordo padrão até ao limite de dias livres 7-7 18');
 eq('férias 14-14', pil.vacationDays({ contract: '14-14' }), 14);
 eq('férias 21-7', pil.vacationDays({ contract: '21-7' }), 21);
-eq('férias 7-7', pil.vacationDays({ contract: '7-7' }), 18);
-eq('férias 12/12, PPY 9/12, PPY 8/12', ['12/12', 'PPY 9/12', 'PPY 8/12'].map((c) => pil.vacationDays({ contract: c })), [25, 19, 17]);
+const refOld = new Date('2026-01-15T12:00:00');   // BTE 40/2023; as do BTE 29/2026 estão em scripts/ae-easyjet-2026.test.js
+eq('férias 7-7', pil.vacationDays({ contract: '7-7', ref: refOld }), 18);
+eq('férias 12/12, PPY 9/12, PPY 8/12', ['12/12', 'PPY 9/12', 'PPY 8/12'].map((c) => pil.vacationDays({ contract: c, ref: refOld })), [25, 19, 17]);
 
 // ═══ L9 · SNC que não era detetado ═════════════════════════════════════════════════════════════════════════════════════
 has('Art. 63.º/10 a) (assistência antecipada)', PIL, 'Quando uma assistência consta na escala e, nas 48 horas seguintes à sua hora de início, esta for antecipada por qualquer periodo de tempo, será considerada como uma alteração de escala com curta antecedência');
@@ -517,9 +518,9 @@ has('Art. 63.º/1 (fim atrasado 2 h)', PIL, 'ou a hora de término do serviço s
   // CPT, novembro de 2026, LIS-LGW-LIS: 2 × 1,2 × 78,75 × 1,023 = 193,35 € · pernoita 2 × 78,75 × 1,023 = 161,12 €.
   const d = { kind: 'flight', route: 'LIS-LGW-LIS' };
   const sm = serviceMoney(pil, 'CPT', d, { date: '2026-11-05' });
-  eq('CPT nov-2026: per diem do serviço com IPC', sm.perDiem, 193.35);
+  eq('CPT nov-2026: per diem do serviço (2,4 × 85,84)', sm.perDiem, 206.02);
   eq('CPT nov-2026: o serviço = a parcela do mês', sm.perDiem, monthlyAe({ '2026-11-05': d }, 'CPT', '12/12', pil, { ym: '2026-11', index: pil.indexFactor('2026-11') }).perDiem);
-  eq('CPT nov-2026: pernoita com IPC', serviceMoney(pil, 'CPT', { ...d, route: 'LIS-LGW', nightStop: true }, { date: '2026-11-05' }).nightStop, 161.12);
+  eq('CPT nov-2026: pernoita (2 × 85,84)', serviceMoney(pil, 'CPT', { ...d, route: 'LIS-LGW', nightStop: true }, { date: '2026-11-05' }).nightStop, 171.68);
   eq('CPT jan-2025: ainda sem IPC', serviceMoney(pil, 'CPT', d, { date: '2025-01-10' }).perDiem, 189);
   eq('FA: posicionamento no serviço (mínimo e máximo)', (() => { const x = serviceMoney(cab, 'FA', { kind: 'positioning', route: 'LIS-OPO' }, { date: '2026-03-10' }); return [x.positioning, x.positioningMax]; })(), [16, 30]);
 }
@@ -533,17 +534,22 @@ has('Art. 24.º/20 c) (31 de agosto)', PIL, 'os pilotos devem ter um contrato de
 has('Art. 66.º/1 (prestação proporcional)', PIL, 'base anual, férias, dias de folga, GDO e prestação complementar anual, serão determinados de forma propor');
 {
   const A = (cat, ym, o = {}) => pil.annualItems(cat, { ym, index: pil.indexFactor(ym), serviceStart: '2016-03-01', ...o });
-  eq('CPT abril de 2026: prestação complementar 3 500,00', eur(A('CPT', '2026-04'), 'benefits'), 3500);
-  eq('FO PPY 8/12 abril: 1 000 × 8/12', eur(A('FO', '2026-04', { contract: 'PPY 8/12' }), 'benefits'), 666.67);
-  eq('FO 14-14 abril: 1 000 × 51 %', eur(A('FO', '2026-04', { contract: '14-14' }), 'benefits'), 510);
-  eq('FO 5/4 abril: inteira (o Art. 59.º reduz só a base)', eur(A('FO', '2026-04', { contract: '5/4' }), 'benefits'), 1000);
+  eq('CPT abril de 2025: prestação complementar 3 500,00 (BTE 40/2023)', eur(A('CPT', '2025-04'), 'benefits'), 3500);
+  eq('CPT abril de 2026: prestação complementar 3 729,25 (BTE 29/2026)', eur(A('CPT', '2026-04'), 'benefits'), 3729.25);
+  eq('FO PPY 8/12 abril de 2025: 1 000 × 8/12', eur(A('FO', '2025-04', { contract: 'PPY 8/12' }), 'benefits'), 666.67);
+  eq('FO PPY 8/12 abril de 2026: 1 065,50 × 8/12', eur(A('FO', '2026-04', { contract: 'PPY 8/12' }), 'benefits'), 710.33);
+  eq('FO 14-14 abril de 2025: 1 000 × 51 %', eur(A('FO', '2025-04', { contract: '14-14' }), 'benefits'), 510);
+  eq('FO 14-14 abril de 2026: 1 065,50 × 51 % (o 53 % só desde julho de 2026)', eur(A('FO', '2026-04', { contract: '14-14' }), 'benefits'), 543.4);
+  eq('FO 5/4 abril de 2025: inteira (o Art. 59.º reduz só a base)', eur(A('FO', '2025-04', { contract: '5/4' }), 'benefits'), 1000);
+  eq('FO 5/4 abril de 2026: inteira', eur(A('FO', '2026-04', { contract: '5/4' }), 'benefits'), 1065.5);
   eq('abril de 2023: sem tabela', item(A('CPT', '2023-04'), 'benefits'), null);
-  // Permanência: CPT desde março de 2016 → 10.º aniversário em março de 2026: 15 % × 122 000 × 1,023 = 18 720,90 €.
-  eq('CPT 10.º aniversário: 15 %', eur(A('CPT', '2026-03'), 'loyalty'), 18720.9);
+  // Permanência: CPT desde março de 2016 → 10.º aniversário em março de 2026: 15 % × 160 999,74 = 24 149,96 € (BTE 29/2026, base de
+  // 1 de fevereiro de 2026); o 9.º, em março de 2025: 10 % × 122 000 × 1,023 = 12 480,60 € (BTE 40/2023).
+  eq('CPT 10.º aniversário: 15 %', eur(A('CPT', '2026-03'), 'loyalty'), 24149.96);
   eq('CPT 9.º aniversário: 10 %', eur(A('CPT', '2025-03'), 'loyalty'), 12480.6);
   eq('CPT: fora do mês do aniversário nada', item(A('CPT', '2026-04'), 'loyalty'), null);
-  eq('CPT PPY 8/12 10.º aniversário: proporcional', eur(A('CPT', '2026-03', { contract: 'PPY 8/12' }), 'loyalty'), 12480.6);
-  eq('SFO 3.º aniversário: 5 %', eur(A('SFO', '2026-05', { serviceStart: '2023-05-01' }), 'loyalty'), 3529.35);
+  eq('CPT PPY 8/12 10.º aniversário: proporcional (× 8/12)', eur(A('CPT', '2026-03', { contract: 'PPY 8/12' }), 'loyalty'), 16099.97);
+  eq('SFO 3.º aniversário: 5 %', eur(A('SFO', '2026-05', { serviceStart: '2023-05-01' }), 'loyalty'), 4570.28);   // 5 % × 91 405,53
   eq('FO: sem prémio de permanência', item(A('FO', '2026-03'), 'loyalty'), null);
   // Retenção (só PPY, não estilo de vida): co-piloto 6 000,00 €, comandante 12 000,00 €, "pagos proporcionalmente para os que se
   // encontrem em regime de tempo parcial" — e o próprio acordo chama ao PPY "contrato de trabalho a tempo parcial" (Art. 25.º,
@@ -560,7 +566,7 @@ has('Art. 66.º/1 (prestação proporcional)', PIL, 'base anual, férias, dias d
   eq('FO PPY maio de 2023: ainda não havia', item(A('FO', '2023-05', { contract: 'PPY 8/12', serviceStart: '2020-01-01' }), 'retention'), null);
   eq('FO PPY entrou em out-2025: sem retenção em 2026', item(A('FO', '2026-05', { contract: 'PPY 8/12', serviceStart: '2025-10-01' }), 'retention'), null);
   // O total do mês leva-as: CPT 12/12 em abril de 2026 = base 8 914,71 + 3 500,00.
-  eq('CPT abril de 2026: total do mês', monthlyAe({}, 'CPT', '12/12', pil, { ym: '2026-04', index: pil.indexFactor('2026-04'), serviceStart: '2016-03-01' }).total, 12414.71);
+  eq('CPT abril de 2026: total do mês', monthlyAe({}, 'CPT', '12/12', pil, { ym: '2026-04', index: pil.indexFactor('2026-04'), serviceStart: '2016-03-01' }).total, 15229.23);   // 11 499,98 + 3 729,25
 }
 
 // ═══ L13 · Pernoitas: cada noite fora da base ═════════════════════════════════════════════════════════════════════════

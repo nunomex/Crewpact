@@ -30,7 +30,7 @@ const ok = (name, cond) => { if (cond) pass++; else { fail++; fails.push('  ✗ 
 
 // Domínios OFICIAIS permitidos (nada de blogs). faa.gov = a agência do modelo CARI (radiação);
 // diariodarepublica.pt = o DRE (DL 108/2018 + deep-links dos AE).
-const OFFICIAL = ['eur-lex.europa.eu', 'easa.europa.eu', 'gep.msess.gov.pt', 'gep.mtsss.gov.pt', 'gov.pt', 'diariodarepublica.pt', 'faa.gov'];
+const OFFICIAL = ['eur-lex.europa.eu', 'easa.europa.eu', 'gep.msess.gov.pt', 'gep.mtsss.gov.pt', 'dgcp.mtsss.gov.pt', 'gov.pt', 'diariodarepublica.pt', 'faa.gov'];
 const hostOf = (url) => { const m = /^https:\/\/([^/]+)/.exec(String(url)); return m ? m[1] : ''; };
 const allUrls = [...FTL_SOURCES, ...AE_SOURCES, ...RADIATION_SOURCES].map((x) => x.url);
 
@@ -52,11 +52,12 @@ ok('AE difere entre piloto e cabine (tag)', piloto[1].tag !== cabine[1].tag);
 // Deep-link do AE por COMPANHIA + TIPO: easyJet piloto = SPAC (BTE 40/2023); cabine = SNPVAC (BTE 8/2024).
 const ezPiloto = libraryFor({ companySlug: 'easyjet', companyName: 'easyJet', isPilot: true, lang: 'pt' });
 const ezCabine = libraryFor({ companySlug: 'easyjet', companyName: 'easyJet', isPilot: false, lang: 'pt' });
-ok('AE easyJet piloto: 1.º link é o SPAC (DRE)', /SPAC/.test(ezPiloto[1].items[0].label) && /diariodarepublica\.pt/.test(ezPiloto[1].items[0].url));
+// 2026-11-13: o acordo novo (BTE 29/2026) ainda só está no boletim completo do portal oficial do BTE, não em separata do DRE.
+ok('AE easyJet piloto: 1.º link é o SPAC (BTE 29/2026, portal oficial)', /SPAC/.test(ezPiloto[1].items[0].label) && /BTE 29\/2026/.test(ezPiloto[1].items[0].sub) && /^https:\/\/bte\.dgcp\.mtsss\.gov\.pt\/completos\/2026\/bte29_2026\.pdf$/.test(ezPiloto[1].items[0].url));
 ok('AE easyJet cabine: 1.º link é o SNPVAC (DRE)', /SNPVAC/.test(ezCabine[1].items[0].label) && /diariodarepublica\.pt/.test(ezCabine[1].items[0].url));
 ok('AE deep-link piloto ≠ cabine (URL)', ezPiloto[1].items[0].url !== ezCabine[1].items[0].url);
 const allDeepUrls = Object.values(AE_DEEPLINKS).flatMap((c) => [c.pilot.url, c.cabin.url]);
-ok('AE deep-links (todas as companhias) são de domínio OFICIAL (DRE ou BTE)', allDeepUrls.every((u) => /^https:\/\/(files\.diariodarepublica\.pt|bte\.gep\.m(s|t)ess\.gov\.pt)\//.test(u)));
+ok('AE deep-links (todas as companhias) são de domínio OFICIAL (DRE ou BTE)', allDeepUrls.every((u) => /^https:\/\/(files\.diariodarepublica\.pt|bte\.gep\.m(s|t)ess\.gov\.pt|bte\.dgcp\.mtsss\.gov\.pt)\//.test(u)));
 // Reconhece variações do nome da companhia (ex.: "easyJet Europe").
 const ezEurope = libraryFor({ companySlug: 'easyjet-europe', companyName: 'easyJet Europe', isPilot: true, lang: 'pt' });
 ok('AE: reconhece "easyJet Europe" → deep-link SPAC', /SPAC/.test(ezEurope[1].items[0].label));

@@ -127,10 +127,11 @@ has('Art. 24.º/14 pilotos', PIL, 'redução proporcional de todos os termos e c
   eq('doença FA 10/12 (45 % da base diária do contrato)', cab.sickDay('FA', '2026-11', '10/12'), 16.83);
   eq('WFLY cabine fica a tempo integral', cab.monthExtras('FA', { wfly: 1 }, { ym: '2026-11', contract: '10/12' }).total, 188.52);
   const i26 = pil.indexFactor('2026-03');
-  eq('DDO FO 12/12 2026', pil.ddo('FO', i26, '2026-03', '12/12'), 195.39);
-  eq('DDO FO 14-14 (51 %)', pil.ddo('FO', i26, '2026-03', '14-14'), 99.65);
-  eq('doença FO 14-14 (51 %)', pil.sickDay('FO', i26, '2026-03', '14-14'), 35.59);
-  eq('monthExtras passa o contrato', pil.monthExtras('FO', { ddo: 1 }, { index: i26, ym: '2026-03', contract: '14-14' }).total, 99.65);
+  // março de 2026: a base do Anexo I de 1-fev-2026 (FO 70 829,60), ainda com as regras do BTE 40/2023 (a base do contrato; doença a 60 %)
+  eq('DDO FO 12/12 2026 (0,4 % × 70 829,60)', pil.ddo('FO', i26, '2026-03', '12/12'), 283.32);
+  eq('DDO FO 14-14 (51 %)', pil.ddo('FO', i26, '2026-03', '14-14'), 144.49);
+  eq('doença FO 14-14 (51 %; 60 % da base diária)', pil.sickDay('FO', i26, '2026-03', '14-14'), 51.6);
+  eq('monthExtras passa o contrato', pil.monthExtras('FO', { ddo: 1 }, { index: i26, ym: '2026-03', contract: '14-14' }).total, 144.49);
 }
 
 // ═══ M11 · 9/3 e sazonais — o mês não é a média ═══

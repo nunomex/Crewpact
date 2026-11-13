@@ -6,7 +6,7 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 ---
 
-## O QUE FALTA (ler isto primeiro · lista única · atualizada 2026-11-12)
+## O QUE FALTA (ler isto primeiro · lista única · atualizada 2026-11-13)
 
 Uma linha por pendência; o pormenor está na entrada indicada entre parênteses (as entradas ficam abaixo, como histórico).
 Quando uma coisa se fizer, sai daqui. **Regra do Nuno: "a lei é que manda"** — sem um facto, "incerto" com o que falta; nunca
@@ -17,21 +17,54 @@ app como "em breve" (visíveis, sem acesso) e fazem-se depois, uma a uma. **O la
 companhias todas prontas.** Até lá, o que é só da TAP, da Hi Fly ou da Ryanair não entra na fila: fica anotado para a vez
 delas. Pormenor na entrada "Uma companhia de cada vez", abaixo.
 
-**SESSÃO SEGUINTE (combinado com o Nuno a 2026-11-13) — O NOVO ACORDO DOS PILOTOS DA EASYJET (Fable 5.2, Alto, sessão própria).**
-O Nuno tem o PDF do novo AE easyJet × SPAC e envia-o no início da sessão. O que está na app é o BTE n.º 40 de 29-10-2023,
-expirado a 31-01-2026 (`ae/easyjetSpac.js`, `fontes/ae-easyjet/easyjet-spac-2023.*`; a app diz "AE expirado"). **Enunciado:**
-- **Antes de tudo, perguntar:** é o texto publicado no BTE (número e data) ou a versão assinada ainda por publicar? Datas de
-  entrada em vigor e retroativos, se o texto não as fechar. É só o dos pilotos (o da cabine, SNPVAC 2024, não se mexe).
-- **1 · Fonte:** guardar o PDF em `fontes/ae-easyjet/` e extrair o texto (como o de 2023); tabelas conferidas na IMAGEM da página.
-- **2 · Comparar cláusula a cláusula com o de 2023** e dar ao Nuno a lista do que muda (artigo e página) ANTES de mexer no
-  código: Anexo I (vencimentos, per-diem, pernoita, setores), assistência no aeroporto, DDO/IDO/WFLY, férias, contratos
-  (12/12, PPY, 14-14, 21-7, 7-7), antiguidade, subsídios, SNC/RDP se os houver, vigência e denúncia.
-- **3 · Golden primeiro:** cada valor novo com a citação literal conferida no texto (`test:citacoes`, `test:ae`); só depois o código.
-- **4 · Acrescentar, não substituir:** entradas novas em `TABLE_VERSIONS` com a data de efeito (`tableAt(ym)`); os meses
-  passados continuam com as tabelas da altura; atualizar a vigência, `isAgreementExpired` e `AE_EXPIRY_ACK`, a Biblioteca e a Prova.
-- **5 · O que NÃO é do acordo:** os limites de fadiga (FTL) são da lei europeia e não mudam com o AE — salvo cláusulas do
-  acordo mais restritivas, que se listam à parte e não se misturam com o FTL sem o Nuno ver.
-- **6 · No fim:** revisão independente (Opus) dos números contra o PDF, `npm test`, e ver no iPhone "Quanto recebo?" e os Números.
+**O NOVO ACORDO DOS PILOTOS DA EASYJET — FEITO a 2026-11-13 (Fable 5.2, sessão própria; por gravar).** É o BTE n.º 29, de
+8 de agosto de 2026 (p. 124–156), assinado a 26 de junho de 2026, válido até 31 de janeiro de 2029. Está no motor
+(`ae/easyjetSpac.js`), com o de 2023 na linha do tempo; a app deixou de dizer "AE expirado". A lista do que muda, artigo a
+artigo, e o que o texto não fecha: `docs/ae-easyjet-pilotos-2026.md`. Pormenor na entrada de 2026-11-13, abaixo.
+**O que ficou por fazer deste acordo:**
+- **Ver no iPhone:** "Quanto recebo?" e os Números de novembro de 2026 (FO 12/12: base 5 059,26 €; setor nominal 45,60 €;
+  paragem noturna 91,20 €; em novembro o subsídio de Natal 5 059,26 €), um mês de 2025 (não pode ter mudado), o contrato
+  "Escala fixa 4-4" nas listas do Perfil e da entrada, a Biblioteca (o link abre o BTE n.º 29) e a Prova do per diem.
+- **Rubricas novas — já na soma do mês (2.ª parte da sessão, pedida pelo Nuno: "como manda a lei"):** voo doméstico (+ 1 setor
+  por aterragem, no per diem; em Portugal certo, no mesmo país estrangeiro só como máximo), turnaround planeado de 90
+  minutos ou mais (pelas horas das pernas), SOC e EXPD (evento novo, 2 setores) e LTC (papel novo no voo, 0,33 setor por
+  dia). **Ficam de fora, à espera de um dado no perfil:** o acréscimo à base de LTC / TRI / TRE (12,5 / 15 / 17,5 %), o
+  comando a 90 %, a recência de inverno (1 %) e a formação longa do 4-4 a 100 %.
+- **SNC reforçado (240 €, de abril a outubro) — a lei faz depender de um facto** (a estabilidade de escala do ano
+  financeiro encerrado, que a easyJet comunica). O motor já lê o facto (`sncEnhanced`: ativo → 240 €; não ativo → 60 €; por
+  saber → 60 € certos, até 240 €) e o detetor já conta as alterações entre 48 e 120 horas quando o regime está ativo.
+  **Falta só a pergunta no Perfil** ("O regime reforçado do SNC está ativo em 2026?": sim / não / não sei), a guardar por
+  ano e a passar aos cálculos — entra no layout do Perfil. Até lá fica "por saber".
+- **Férias:** o acordo não diz em que ano de férias os dias novos começam (27 no 12/12). Até 31 de março de 2027 a app
+  conta os do acordo de 2023 e o motor guarda os novos como máximo (`vacationRange`); desde 1 de abril de 2027 conta os
+  novos. O máximo e a nota (`VAC_NOTE`; inclui os 18 dias do contrato 8/4 antigo de Faro) ainda não aparecem em nenhum ecrã.
+- **DDO / IDO / WFLY a tempo parcial:** o motor dá o certo (a base do contrato) e o máximo (a base a tempo completo:
+  `widoMax`, e `max` nos extras do mês); nenhum ecrã mostra o máximo.
+- **Só do 4-4 e do comando, por fazer:** o dia RESF dentro da 1.ª folga paga WIDO (Art. 60.º, n.º 10); a formação de mais
+  de 4 dias paga 100 % da base (n.os 13 e 14); a promoção a comandante a 90 % (Art. 36.º, n.º 4).
+- **Fevereiro a junho de 2026:** a app põe os valores novos no próprio mês; a empresa pagou-os depois, como retroativos.
+  O detetor do dinheiro esquecido pode acusar uma falta que já foi paga.
+- **Em janeiro de 2027:** pôr o IPC de 2026 (média de 12 meses até dezembro, INE) em `IPC_2027`; até lá os meses desde
+  fevereiro de 2027 contam com os valores de 2026 e os Números dizem que falta o IPC.
+- **Quando sair a separata do Diário da República**, trocar o link da Biblioteca (hoje aponta para o boletim completo).
+- **Para o advogado:** as dúvidas do ponto 8 de `docs/ae-easyjet-pilotos-2026.md` (a 11.ª, a data legal de entrada em vigor, ficou fechada pela lei: artigos 478.º e 519.º do Código do Trabalho, agora em `fontes/pt/`). A questão antiga "DDO/IDO/WFLY:
+  a base do contrato ou a da tabela?" continua aberta: o Anexo novo diz "full time FRV", o articulado diz "proporcional".
+
+**SESSÃO SEGUINTE (pedida pelo Nuno a 2026-11-13) — AS REFERÊNCIAS DE LAYOUT E O RESTO DAS PÁGINAS (Opus 5.5, Extra, sessão
+própria; é design, não cálculo).** O Nuno pôs em `referencias/Para a app/` 57 imagens (54 JPG e 3 GIF) que escolheu como
+referência para o layout das páginas que faltam e para o sistema de desenho. **Enunciado:**
+- **1 · Ver as imagens uma a uma** (todas; não por amostra) e escrever, para cada uma: o que é (ecrã, componente, ícone,
+  animação), o que se pode aproveitar na CrewPact e onde (que página, que componente, que parte do sistema de desenho:
+  cor, letra, espaço, cartões, listas, gráficos, ícones, estados vazios, movimento), e o que não serve e porquê. Os GIF
+  são movimento: ver com a skill `animacoes`. A referência é inspiração: não se copiam imagens, textos nem marcas.
+- **2 · Um índice em `referencias/Para a app/README.md`** (o índice é versionado; as imagens não vão para o GitHub — o
+  `.gitignore` já deixa de fora `.jpg`; juntar `.gif` e conferir a maiúscula `.JPG`).
+- **3 · Propor o que entra no sistema de desenho** (`docs/design-system.md` §14, direção 3.0 "cartões de cor") e em que
+  páginas, por ordem; o Nuno escolhe. Só depois o esboço de cada página, uma de cada vez, com o "sim" antes de construir.
+- **4 · As páginas levam consigo o que falta do acordo dos pilotos** (lista de cima): no Perfil, a pergunta do SNC
+  reforçado e a qualificação de formação (LTC / TRI / TRE); nos Números, no Início e nos Extras, o "certo e máximo" (SNC,
+  DDO/IDO/WFLY a tempo parcial, voo doméstico no estrangeiro); nas férias, o intervalo e a nota; e o "Incerto" (ponto 2 abaixo).
+- **Não mexer** nos cálculos nessa sessão: o que for número novo volta ao Fable, com golden primeiro.
 
 **O que se faz a seguir (combinado com o Nuno a 2026-11-12, noite):**
 1. **Fechar o ramo dos cálculos — a função única está FEITA (2026-11-12, sessão em Fable 5.2; entrada "A série de
@@ -351,6 +384,70 @@ motor está na versão **21**. **O que falta, por ordem:**
 - Face ID real, PDF por ficheiro, voo ao vivo nativo, compras (RevenueCat), login Apple e Google, widgets, Live Activities, alarme
   (AlarmKit), hotel pelo Apple Maps, passkeys; Android; iPhone pequeno e grande; beta com 2–3 tripulantes no TestFlight;
   declaração de dados nas lojas; Supabase/Resend pagos e limites (e-mails por hora, DMARC).
+---
+
+## 2026-11-13 — O novo acordo dos pilotos da easyJet: BTE n.º 29 de 2026 (Fable 5.2, sessão própria)
+
+O enunciado combinado de manhã, feito. **Por gravar** (nada foi para o git: o Nuno não pediu).
+
+**A pergunta de "antes de tudo" respondeu-a o próprio PDF:** é o texto publicado — Boletim do Trabalho e Emprego n.º 29, de
+8 de agosto de 2026, p. 124–156, "Revisão global"; assinado em Lisboa a 26 de junho de 2026, depositado a 23 de julho
+(n.º 182/2026). É só o dos pilotos. Entra em vigor "na data da sua assinatura" e vale até 31 de janeiro de 2029 (Art. 2.º,
+n.º 1); as cláusulas "especificamente designadas" valem desde 1 de fevereiro de 2026 (n.º 2, a)).
+
+1. **Fonte.** `fontes/ae-easyjet/easyjet-spac-2026.pdf` (só neste PC; SHA-256 em `fontes/README.md`) e o `.txt` extraído
+   como o de 2023. O PDF foi conferido contra o boletim completo do portal oficial do BTE: o texto das p. 124–156 é igual,
+   palavra por palavra. As tabelas do Anexo I (BTE 152–155) e o quadro do Art. 61.º (BTE 142) foram lidos na imagem.
+2. **Comparação com 2023:** `docs/ae-easyjet-pilotos-2026.md` (vigência, Anexo I, contratos, regras de pagamento, férias,
+   a numeração nova, as cláusulas de escala que não são dinheiro, e o que o texto não fecha).
+3. **Golden primeiro:** `scripts/ae-easyjet-2026.test.js` (`npm run test:ae-2026`), 244 asserções — cada número com a
+   citação literal na página do BTE, e o motor a dá-lo no mês certo (263 depois da revisão). `npm test` passa a 34 suites.
+4. **Código — acrescentar, não substituir.** `TABLE_VERSIONS` ganhou dois degraus: 2026-02-01 (salário base, setor nominal e
+   prestação de benefícios — o que o Anexo I designa "A partir de 1 de fevereiro de 2026") e 2026-06-26 (o resto: doença a
+   80 %, o máximo de DDO/IDO/WFLY (a base a tempo completo), 14-14 a 53 %, 21-7 a 77 %, o contrato 4-4 a 83 %, o máximo do SNC, a
+   retenção em percentagem desde maio de 2027, as rubricas novas). As tabelas resolvem ao mês: as regras de 26 de junho
+   contam desde julho; de 26 a 30 de junho ficam as antigas (a menos, nunca a mais). O IPC: 2,3 % de fevereiro de 2025 a
+   janeiro de 2026; 1 desde fevereiro de 2026 (os valores novos são finais); 2027 e 2028 à espera do INE, sem mínimo nem
+   máximo. Vigência até 2029-01-31; o reconhecimento de expiração (`AE_EXPIRY_ACK`) saiu. Férias pela data: 27 / 25 / 23 /
+   19 / 14 / 21 e PPY 19 / 21, certos desde 1 de abril de 2027 (antes, o máximo). Os meses até janeiro de 2026 não mudaram: os testes antigos ficam presos
+   ao acordo de 2023 (`__pinTablesForTests`), e onde tinham cenários em meses de 2026 os valores foram refeitos à mão, com a
+   conta no próprio teste.
+5. **Citações:** a Biblioteca ("O teu AE"), a Prova, os rótulos dos Cálculos e a tradução passam à numeração nova (SNC:
+   Art. 65.º e Anexo I.11; DDO/IDO/WFLY: Anexo I.12; escritório: Anexo I.13; retenção: Anexo I.14; WFLY: Art. 64.º;
+   gravidez: Art. 49.º com o valor no 80.º, n.º 2). O detetor de alterações de escala cita o artigo do acordo em vigor na
+   data do serviço (63.º até 25 de junho de 2026, 65.º depois). O link da Biblioteca é o boletim completo no portal do BTE
+   (a separata do Diário da República não apareceu na pesquisa).
+6. **O que NÃO é do acordo:** o FTL não mudou. As cláusulas de escala mais apertadas do que a lei estão listadas à parte
+   (ponto 7 do documento) e não entraram no motor FTL.
+
+**Onde a app passou a ler diferente, por o texto novo decidir:** a retenção deixa de ter intervalo — o texto já não fala
+em pagar "proporcionalmente" a quem está a tempo parcial, e diz "calculada sobre a respetiva remuneração base a tempo
+completo".
+
+**Onde o texto não fecha e a app diz o que falta:** o SNC de abril a outubro (60 € certos, até 240 €); DDO/IDO/WFLY nos
+contratos a tempo parcial (a base do contrato certa, a base a tempo completo como máximo); o IPC de 2027; o ano de férias
+em que os dias novos começam (os de 2023 até 31 de março de 2027, os novos como máximo); a data em que o prémio de permanência passa a mensal (não antes de 26 de junho de
+2027 — até lá fica no mês do aniversário, com nota desde julho de 2027); o retroativo da retenção de fevereiro de 2026.
+
+**Revisão independente (Opus, no fim):** leu o acordo todo e as imagens das tabelas e refez à mão as contas do golden —
+nenhum número errado. Apontou 16 pontos; corrigidos no mesmo dia, com o golden primeiro: a retenção já não se paga a quem
+saiu antes de 30 de abril (era assim também na regra de 2023); um contrato 4-4 com datas anteriores ao acordo já não fica a
+100 %; DDO/IDO/WFLY e os dias de férias passaram de "o novo" a "certo e máximo", porque o texto tem duas leituras; a regra
+de 2023 da retenção cita o artigo certo no PPY 9/12. Os que ficam (rubricas do 4-4, os "(*)" sem nota do Anexo, os
+benefícios que as partes podem adiar, a data legal de entrada em vigor, os retroativos de fevereiro a junho) estão na lista
+de cima e no ponto 8 do documento. **Não conferido por ninguém:** os artigos 478.º e 519.º do Código do Trabalho (não estão
+em `fontes/pt/`); se algum ecrã calcula meses depois da saída da companhia; os ecrãs no iPhone.
+
+**2.ª parte, no mesmo dia (o Nuno: "faz como manda a lei" e "é fazermos"):** as rubricas novas entraram na soma do mês
+com o golden primeiro (308 asserções no teste do acordo novo): voo doméstico, turnaround, SOC/EXPD e LTC; o SNC passou a
+ler o facto do regime reforçado (falta a pergunta no Perfil); os artigos 478.º e 519.º do Código do Trabalho entraram em
+`fontes/pt/` e fecharam a data legal: os dias de férias novos só são possíveis depois da publicação (8 de agosto de 2026),
+o dinheiro vale desde as datas do acordo. **Esta 2.ª parte não teve revisão independente.** A separata do Diário da
+República continua por encontrar. O Nuno pediu também a análise das 57 imagens de `referencias/Para a app/` e o layout das
+páginas que faltam: é design, fica para a sessão seguinte (enunciado no topo).
+
+**Testes:** `npm test` passa (34 suites). Não foram tocados: o FTL, a cabine, a TAP.
+
 ---
 
 ## 2026-11-12 — A série de assistências num só sítio (Fable 5.2, sessão própria) e a 4.ª revisão independente

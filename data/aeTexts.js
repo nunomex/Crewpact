@@ -43,7 +43,7 @@ export const kindInfoOf = (ae, isPilot, cat, date, l, fmt) => {
     flight: l('Per-diem da rota (Art. 37.º)', 'Per diem from route (Art. 37)'),
     // Anexo I.5: não chamado — 1 setor nominal até 3h59, 2 a partir de 4 h; chamado — os setores voados, + 2 setores nominais a partir de 4 h
     standby_airport: l('Não chamado: 1 setor nominal até 3h59, 2 a partir de 4 h · chamado: os setores voados, + 2 setores nominais a partir de 4 h (Anexo I.5)', 'Not called: 1 nominal sector up to 3h59, 2 from 4 h · called: the sectors flown, + 2 nominal sectors from 4 h (App. I.5)'),
-    office: l('+1,5 setores nominais · OFC4 (Anexo I.14)', '+1.5 nominal sectors · OFC4 (App. I.14)'),
+    office: l('+1,5 setores nominais · OFC4 (Anexo I.13)', '+1.5 nominal sectors · OFC4 (App. I.13)'),
     positioning: l('Os setores pelas bandas do per diem (Art. 44.º) · pernoita à parte', 'Sectors by per diem bands (Art. 44) · night stop apart'),
     standby_home: l('Conta para FTL · sem abono AE', 'Counts for FTL · no AE allowance'),
     training: l('Formando em terra/simulador: 3 setores nominais (Art. 43.º)', 'Ground/sim trainee: 3 nominal sectors (Art. 43)'),

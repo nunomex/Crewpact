@@ -3,7 +3,7 @@
 //
 // Fontes (lidas no BTE, 2026-07-10 — nenhum número sem fonte):
 //  · AE easyJet×SNPVAC (BTE 8/2024) — Cl. 66.ª SNC · Cl. 67.ª RDP · Anexo I nº10/11
-//  · AE easyJet×SPAC   (BTE 40/2023) — Art. 63.º SNC · Anexo I nº12 (pilotos NÃO têm RDP)
+//  · AE easyJet×SPAC   (BTE 29/2026: Art. 65.º SNC · Anexo I n.º 11; BTE 40/2023: Art. 63.º · Anexo I n.º 12) — pilotos NÃO têm RDP
 //
 // Entrada do arquivo (criada ao CONFIRMAR alterações no import — deteta→confirma→grava):
 //   { id, dutyDate:'YYYY-MM-DD', detectedAt:'YYYY-MM-DDTHH:mm' (LOCAL — o momento em que a
@@ -25,7 +25,12 @@ const fmtDelta = (min) => { const a = Math.abs(min); const h = Math.floor(a / 60
 
 // Avalia UMA entrada do arquivo → { type:'rdp'|'snc', clause, dStartMin, dEndMin,
 // sectorsChanged } ou null. `isPilot` decide o regime (RDP é só cabine).
-export const evaluateDisruption = (entry, { isPilot = false } = {}) => {
+// O artigo do SNC dos pilotos pela DATA do serviço: Art. 63.º no BTE 40/2023; Art. 65.º no BTE 29/2026 (em vigor desde 26 de junho
+// de 2026). Os números (1 a 10) e o texto são os mesmos; o acordo novo acrescenta o regime reforçado (n.os 11 a 13: 240 € de abril
+// a outubro, alterações nas 120 horas antes, se a estabilidade de escala não passar de 76,7 %) — a app não sabe a estabilidade de
+// escala e este detetor continua a olhar só para as 48 horas do n.º 1.
+export const pilotSncArt = (dutyDate) => (String(dutyDate || '') >= '2026-06-26' ? 'Art. 65.º' : 'Art. 63.º');
+export const evaluateDisruption = (entry, { isPilot = false, sncEnhanced } = {}) => {
   if (!entry || !entry.before || !entry.after || !entry.dutyDate || !entry.detectedAt) return null;
   const b = entry.before, a = entry.after;
   const bStart = hm2min(b.report), aStart = hm2min(a.report);
@@ -51,7 +56,7 @@ export const evaluateDisruption = (entry, { isPilot = false } = {}) => {
     if (!within48) return null;
     const toStandby = /standby/i.test(String(a.kind || ''));
     if (aStart < bStart || (b.kind === 'standby_home' && !toStandby && aStart < bStart + 90)) {
-      return { type: 'snc', clause: 'Art. 63.º, n.º 10', dStartMin: dStart, dEndMin: dEnd, sectorsChanged };
+      return { type: 'snc', clause: `${pilotSncArt(entry.dutyDate)}, n.º 10`, dStartMin: dStart, dEndMin: dEnd, sectorsChanged };
     }
     return null;
   }
@@ -69,7 +74,17 @@ export const evaluateDisruption = (entry, { isPilot = false } = {}) => {
     const startMs = new Date(`${entry.dutyDate}T00:00:00`).getTime() + bStart * 60000;
     const within48 = det.getTime() <= startMs && startMs - det.getTime() <= 48 * 3600000;
     if (within48 && ((dStart != null && dStart <= -120) || (dEnd != null && dEnd >= 120))) {
-      return { type: 'snc', clause: isPilot ? 'Art. 63.º' : 'Cl. 66.ª', dStartMin: dStart, dEndMin: dEnd, sectorsChanged };
+      return { type: 'snc', clause: isPilot ? pilotSncArt(entry.dutyDate) : 'Cl. 66.ª', dStartMin: dStart, dEndMin: dEnd, sectorsChanged };
+    }
+    // Pilotos, BTE 29/2026, Art. 65.º, n.º 11: com o regime reforçado ATIVO (`sncEnhanced === true` — o facto é da easyJet e só o
+    // piloto o pode dizer), "entre 1 de abril e 31 de outubro (...) uma alteração de escala qualificada comunicada dentro das 120
+    // horas anteriores ao serviço" paga os 240 €. "Qualificada" lê-se pelo n.º 1: início 2 h ou mais cedo, ou fim 2 h ou mais
+    // tarde. Sem o facto, ou com o regime não ativo, entre as 48 e as 120 horas não há SNC.
+    const mo = Number(String(entry.dutyDate).slice(5, 7));
+    const within120 = det.getTime() <= startMs && startMs - det.getTime() <= 120 * 3600000;
+    if (isPilot && sncEnhanced === true && String(entry.dutyDate) >= '2026-06-26' && mo >= 4 && mo <= 10 && within120
+      && ((dStart != null && dStart <= -120) || (dEnd != null && dEnd >= 120))) {
+      return { type: 'snc', clause: 'Art. 65.º, n.º 11', enhanced: true, dStartMin: dStart, dEndMin: dEnd, sectorsChanged };
     }
   }
   return null;
@@ -257,7 +272,8 @@ export const declarationFor = (type, clause, lang = 'pt') => {
     ? 'Not called from home or airport standby (except a home-standby call-out flown 2 h after the confirmed report time, no. 3); no LATE, NSO, RCON, UNCT, DECL or RFSD on my roster (Cl. 67, no. 2).'
     : 'Não fui chamado de assistência em casa ou no aeroporto (salvo chamado de casa com o voo 2 h depois da apresentação confirmada, n.º 3) nem tinha LATE, NSO, RCON, UNCT, DECL ou RFSD na escala (Cl. 67.ª, n.º 2).';
   const pilot = /Art\./.test(String(clause || ''));
-  const ref = pilot ? (en ? 'Art. 63, nos. 4 and 5' : 'Art. 63.º, n.os 4 e 5') : (en ? 'Cl. 66, nos. 3 and 4' : 'Cl. 66.ª, n.os 3 e 4');
+  const pArt = /Art\. 65/.test(String(clause || '')) ? '65' : '63';   // o artigo do acordo em vigor na data do serviço (pilotSncArt)
+  const ref = pilot ? (en ? `Art. ${pArt}, nos. 4 and 5` : `Art. ${pArt}.º, n.os 4 e 5`) : (en ? 'Cl. 66, nos. 3 and 4' : 'Cl. 66.ª, n.os 3 e 4');
   return en
     ? `Not called from standby, and the change was not a direct consequence, within 12 h, of a disruption outside the company's control (airport inoperative for easyJet flights, or industrial action by an external agency or subcontractor) (${ref}).`
     : `Não fui chamado de assistência e a alteração não foi consequência direta, nas 12 h seguintes, de uma perturbação fora do controlo da empresa (aeroporto inoperacional para os voos da easyJet, ou ação industrial de uma agência externa ou subcontratante) (${ref}).`;

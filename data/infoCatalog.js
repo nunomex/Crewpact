@@ -1,7 +1,7 @@
 // Catálogo de REFERÊNCIA da aba INFO — a lei FTL + os AE explicados (fórmula · valor · artigo).
 // ESTÁTICO de propósito: a lei/AE não muda por utilizador — o crewType/companhia só escolhem
 // QUAL o conjunto. Valores dos módulos ae/* (CALCS), ftl/rules (janelas) e dos PDFs reais
-// (BTE 40/2023 pilotos · BTE 8/2024 cabine). Item = { v, u, name, art, f (fórmula), ex, long }.
+// (BTE 29/2026 pilotos · BTE 8/2024 cabine). Item = { v, u, name, art, f (fórmula), ex, long }.
 // `u:'·'` ou '' → valor de estilo TEXTO (fórmula, ex. "×NS"), não número.
 
 import { BRAND } from './constants';
@@ -23,36 +23,43 @@ export const FTL = { groups: [
   ] },
 ] };
 
+// Pilotos easyJet: o acordo EM VIGOR — BTE 29/2026 (assinado a 26-06-2026; Anexo I.1, I.2 e I.8 desde 1-fev-2026). Os exemplos são
+// de um FO em 2026. Os números de artigo são os do acordo novo (docs/ae-easyjet-pilotos-2026.md, ponto 6).
 export const AE_PILOT = { word: 'O teu AE', groups: [
   { name: 'Base', items: [
-    { v: '38,76', u: '€', name: 'Setor nominal · FO', art: 'Anexo I.2', f: 'A tua unidade de conta (valores de 2024): SFO 51,50 · CPT 78,75 · SO 29,36. Desde fevereiro de 2025, + IPC (2,3 %; mínimo 1 %, máximo 5 %).', ex: 'Quase tudo é múltiplo disto. Os exemplos abaixo são de 2024.', long: 'Setor nominal (FO)' },
-    { v: '÷14', u: '·', name: 'Remuneração base', art: 'Art. 36', f: 'Base anual da categoria × fator do contrato, em 14 prestações: 12 meses + subsídio de férias (junho) + de Natal (novembro), cada um 1/14 mais a média das variáveis.', long: 'Remuneração base' },
+    { v: '45,60', u: '€', name: 'Setor nominal · FO', art: 'Anexo I.2', f: 'A tua unidade de conta (desde 1 de fevereiro de 2026): SFO 56,13 · CPT 85,84 · SO 43,77. A 1 de fevereiro de 2027 e de 2028 sobe com o IPC (média de 12 meses até dezembro, INE).', ex: 'Quase tudo é múltiplo disto. Os exemplos abaixo são de 2026.', long: 'Setor nominal (FO)' },
+    { v: '÷14', u: '·', name: 'Remuneração base', art: 'Art. 36', f: 'Base anual da categoria × fator do contrato, em 14 prestações: 12 meses + subsídio de férias (junho) + de Natal (novembro), cada um 1/14 mais a média das variáveis. Desde 1 de fevereiro de 2026: CPT 160 999,74 · SFO 91 405,53 · FO 70 829,60 · SO 39 513,00.', long: 'Remuneração base' },
   ] },
   { name: 'Por voo', items: [
-    { v: '×NS', u: '·', name: 'Per diem', art: 'Art. 37', f: 'Σ setores voados × nominal. Bandas: curto 0,8 · médio 1,2 · longo 1,5 · extra 2,5.', ex: 'LIS-OPO-LIS: 2×0,8×38,76 = 62,02 €.' },
-    { v: '2', u: 'NS', name: 'Paragem nocturna', art: 'Art. 39', f: '2 setores nominais por noite fora da base, entre voos.', ex: 'FO: 77,52 €.' },
-    { v: '2', u: 'NS', name: 'Dia de férias', art: 'Art. 38', f: 'Pagamento fixo por dia de férias, além do salário.', ex: 'FO: 77,52 €/dia.' },
+    { v: '×NS', u: '·', name: 'Per diem', art: 'Art. 37', f: 'Σ setores voados × nominal. Bandas: curto 0,8 · médio 1,2 · longo 1,5 · extra 2,5.', ex: 'LIS-MAD-LIS: 2×0,8×45,60 = 72,96 €.' },
+    { v: '2', u: 'NS', name: 'Paragem nocturna', art: 'Art. 39', f: '2 setores nominais por noite fora da base, entre voos.', ex: 'FO: 91,20 €.' },
+    { v: '2', u: 'NS', name: 'Dia de férias', art: 'Art. 38', f: 'Pagamento fixo por dia de férias, além do salário.', ex: 'FO: 91,20 €/dia.' },
     { v: '0–2', u: 'NS', name: 'Serviço aeroporto (ADTY)', art: 'Anexo I.5', f: 'Não chamado: 1 setor nominal até 3h59, 2 a partir de 4h00. Chamado a voar: até 3h59 só os setores voados; a partir de 4h00, 2 setores nominais + os setores voados (Art. 40.º).' },
-    { v: '×NS', u: '·', name: 'Posicionamento', art: 'Art. 44', f: 'Os setores do posicionamento pelas bandas do per diem, por distância de grande círculo. Não na formação inicial.', ex: 'FO LIS-CDG (médio): 1,2 × 38,76 = 46,51 €.', long: 'Posicionamento por ar/terra' },
+    { v: '×NS', u: '·', name: 'Posicionamento', art: 'Art. 44', f: 'Os setores do posicionamento pelas bandas do per diem, por distância de grande círculo. Não na formação inicial.', ex: 'FO LIS-CDG (médio): 1,2 × 45,60 = 54,72 €.', long: 'Posicionamento por ar/terra' },
+  ] },
+  { name: 'Novo em 2026', items: [
+    { v: '+1', u: 'NS', name: 'Voo doméstico', art: 'Anexo I.15', f: 'Mais 1 setor nominal por aterragem planeada em voos domésticos, todo o ano (Art. 37.º, n.º 8). A app soma-o ao per diem nos voos com partida e chegada em Portugal; entre dois aeroportos do mesmo país estrangeiro o acordo não diz, e fica só como máximo.', ex: 'FO, LIS-FNC-LIS: + 2 × 45,60 = 91,20 €.' },
+    { v: '0,5–1,5', u: 'NS', name: 'Turnaround longo', art: 'Art. 37-A', f: 'Turnaround planeado de 90 a 119 min: 0,5 setor nominal; de 120 a 179 min: 1,0; 180 min ou mais: 1,5. A app conta-o pelas horas da escala, entre dois setores operados no mesmo serviço.', ex: 'FO, 125 min: 45,60 €.' },
+    { v: '2', u: 'NS', name: 'SOC / EXPD', art: 'Anexo I.16', f: '2 setores nominais por cada código SOC ou EXPD, salvo se for atribuível à conduta do piloto (Art. 37.º, n.º 9). Regista-o como evento.', ex: 'FO: 91,20 €.' },
   ] },
   { name: 'Terra & formação', items: [
-    { v: '3', u: 'NS', name: 'Dever ad-hoc / formação', art: 'Art. 43', f: 'Deveres em terra + formação em terra/simulador (e-learning = 0).', ex: 'FO: 116,28 €.' },
-    { v: '1,5', u: 'NS', name: 'Dia de escritório (OFC4)', art: 'Anexo I.14', f: 'Dia de escritório de meio-dia.', ex: 'FO: 58,14 €.' },
-    { v: '3', u: 'NS', name: 'Dia de escritório (OFC8)', art: 'Anexo I.14', f: 'Dia de escritório inteiro.', ex: 'FO: 116,28 €.' },
-    { v: '120', u: '€', name: 'Instrutor / verificador', art: 'Art. 42', f: 'Por dia a exercer funções em terra/simulador.' },
+    { v: '3', u: 'NS', name: 'Dever ad-hoc / formação', art: 'Art. 43', f: 'Deveres em terra + formação em terra/simulador (e-learning = 0).', ex: 'FO: 136,80 €.' },
+    { v: '1,5', u: 'NS', name: 'Dia de escritório (OFC4)', art: 'Anexo I.13', f: 'Dia de escritório de meio-dia.', ex: 'FO: 68,40 €.' },
+    { v: '3', u: 'NS', name: 'Dia de escritório (OFC8)', art: 'Anexo I.13', f: 'Dia de escritório inteiro.', ex: 'FO: 136,80 €.' },
+    { v: '120', u: '€', name: 'Instrutor / verificador', art: 'Art. 42', f: 'Por dia a exercer funções em terra/simulador. Treino em linha (LTC): 0,33 setor nominal por dia de formação dada (n.º 3) — marca o papel LTC no voo.' },
   ] },
   { name: 'Perturbação', items: [
-    { v: '60', u: '€', name: 'Alteração de escala (SNC)', art: 'Anexo I.12', f: 'Por evento de alteração de escala com curta antecedência.' },
-    { v: '0,4', u: '%', name: 'Entrou na folga < 90 min (DDO)', art: 'Art. 54', f: '0,4% da base anual — o serviço entrou menos de 90 min no dia de folga (Anexo I.13).', ex: 'FO: 191,00 €.' },
-    { v: '0,8', u: '%', name: 'Entrou na folga ≥ 90 min (IDO)', art: 'Art. 54', f: '0,8% da base anual — 90 min ou mais dentro do dia de folga (Anexo I.13).', ex: 'FO: 382,00 €.' },
-    { v: '1', u: '%', name: 'Voluntário em folga (WFLY)', art: 'Art. 62', f: '1% da base anual — aceitaste um serviço num dia de folga.', ex: 'FO: 477,50 €.' },
+    { v: '60', u: '€', name: 'Alteração de escala (SNC)', art: 'Anexo I.11', f: '60 € por alteração com curta antecedência (Art. 65.º). De abril a outubro pode valer 240 € (regime reforçado, alterações nas 120 horas antes), se a estabilidade de escala em Portugal não passar de 76,7 %: a app não o sabe e conta os 60 € certos.' },
+    { v: '0,4', u: '%', name: 'Entrou na folga < 90 min (DDO)', art: 'Art. 54', f: '0,4% da base anual — o serviço entrou menos de 90 min no dia de folga (Anexo I.12). Num contrato a tempo parcial o acordo tem duas leituras (a base do contrato ou a base a tempo completo): a app conta a do contrato.', ex: 'FO 12/12: 283,32 €.' },
+    { v: '0,8', u: '%', name: 'Entrou na folga ≥ 90 min (IDO)', art: 'Art. 54', f: '0,8% da base anual — 90 min ou mais dentro do dia de folga (Anexo I.12). Num contrato a tempo parcial o acordo tem duas leituras (a base do contrato ou a base a tempo completo): a app conta a do contrato.', ex: 'FO 12/12: 566,64 €.' },
+    { v: '1', u: '%', name: 'Voluntário em folga (WFLY)', art: 'Art. 64', f: '1% da base anual — aceitaste um serviço num dia de folga (Anexo I.12). Num contrato a tempo parcial o acordo tem duas leituras (a base do contrato ou a base a tempo completo): a app conta a do contrato.', ex: 'FO 12/12: 708,30 €.' },
   ] },
   { name: 'Subsídios', items: [
-    { v: '60', u: '%', name: 'Complemento de doença', art: 'Anexo I.10', f: '60% da retribuição base diária, dias 1 a 3 de cada episódio.' },
-    { v: '1000', u: '€', name: 'Prestação complementar anual', art: 'Anexo I.8', f: 'Paga em abril (Art. 45.º): FO e SO 1 000 · SFO 2 000 · CPT 3 500. Proporcional nos PPY, 14-14, 21-7 e 7-7.' },
-    { v: '35', u: '%', name: 'Complemento de gravidez', art: 'Anexo I.11', f: '35% da remuneração mensal base.' },
-    { v: '5–15', u: '%', name: 'Prémio de permanência', art: 'Anexo I.9', f: 'No mês do aniversário de serviço (Art. 47.º): SFO 5% desde o 3.º · CPT 5% (2.º-4.º), 10% (5.º-9.º), 15% (10.º e seguintes).' },
-    { v: '€/ano', u: '·', name: 'Retenção (sazonal)', art: 'Anexo I.15', f: 'Em maio, só nos PPY que não são estilo de vida: CPT 12 000 · co-pilotos 6 000.', long: 'Pagamento de retenção' },
+    { v: '80', u: '%', name: 'Complemento de doença', art: 'Anexo I.10', f: '80% da retribuição base diária, dias 1 a 3 de cada episódio (60% até junho de 2026).' },
+    { v: '1065,50', u: '€', name: 'Prestação complementar anual', art: 'Anexo I.8', f: 'Paga em abril (Art. 45.º): FO e SO 1 065,50 · SFO 2 131,00 · CPT 3 729,25. Proporcional nos PPY, 14-14, 21-7 e 7-7.' },
+    { v: '35', u: '%', name: 'Complemento de gravidez', art: 'Art. 49', f: '35% da remuneração mensal base (o valor está no Art. 80.º, n.º 2).' },
+    { v: '5–15', u: '%', name: 'Prémio de permanência', art: 'Anexo I.9', f: 'SFO 5% desde o 3.º aniversário · CPT 5% (2.º-4.º), 10% (5.º-9.º), 15% (10.º e seguintes). Hoje no mês do aniversário de serviço; o acordo de 2026 passa-o a mensal em data por anunciar, não antes de 26 de junho de 2027 (Art. 47.º).' },
+    { v: '13,33', u: '%', name: 'Retenção (sazonal)', art: 'Anexo I.14', f: 'Em maio, desde 2027, só nos PPY que não são estilo de vida: 8/12 — 13,33% da base anual a tempo completo, mínimo 8 528,00 €; 9/12 — 10%, mínimo 6 396,00 € (Art. 24.º, n.º 20; Art. 25.º, n.º 6).', long: 'Pagamento de retenção' },
     { v: '5–10', u: '%', name: 'Bónus de performance', art: 'Art. 46', f: 'Alvo (on target) em % da retribuição base anual: CPT e SFO 10 % · FO 7,5 % · SO 5 % (Art. 46.º, n.º 3). O valor pago depende do desempenho: estimativa.', long: 'Bónus anual' },
   ] },
 ] };
@@ -159,10 +166,12 @@ export function domainsFor(P, { ae = null, crewCategory = null, ym = null } = {}
   }
   if (aeId === 'easyjet-spac') {
     const cat = (ae.NOMINAL_SECTOR && ae.NOMINAL_SECTOR[crewCategory] != null) ? crewCategory : 'FO';
-    // O setor nominal EM VIGOR (com o IPC desde fevereiro de 2025) — o que o motor usa (auditoria A-049, bloco 6).
+    // O setor nominal EM VIGOR neste mês (a tabela do mês + o IPC desse degrau) — o que o motor usa (auditoria A-049, bloco 6).
     const d = new Date(); const ymNow = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     const idx = ae.indexFactor ? ae.indexFactor(ymNow) : 1;
-    return [ftl, card('EASYJET · SPAC', eur(+(ae.NOMINAL_SECTOR[cat] * idx).toFixed(2)), `setor nominal · ${cat}${idx > 1 ? ' · com o IPC' : ''}`, AE_PILOT), fontes('EUR-Lex · EASA · DRE')];
+    const tNow = ae.tableAt ? ae.tableAt(ymNow) : null;
+    const ns = ((tNow && tNow.NOMINAL_SECTOR) || ae.NOMINAL_SECTOR)[cat];
+    return [ftl, card('EASYJET · SPAC', eur(+(ns * idx).toFixed(2)), `setor nominal · ${cat}${idx > 1 ? ' · com o IPC' : ''}`, AE_PILOT), fontes('EUR-Lex · EASA · BTE')];
   }
   if (aeId === 'tap-spac') {
     const row = crewCategory === 'CTE' ? 'CTE' : 'OP';

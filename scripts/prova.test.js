@@ -27,7 +27,7 @@ const { provaFor } = require(path.resolve('data/prova.js'));
 let ok = 0, fail = 0; const fails = [];
 const check = (name, cond) => { if (cond) ok++; else { fail++; fails.push('  ✗ ' + name); } };
 
-const OFFICIAL = /^https:\/\/(eur-lex\.europa\.eu|www\.easa\.europa\.eu|files\.diariodarepublica\.pt|bte\.gep\.m(s|t)ess\.gov\.pt|www\.faa\.gov)\//;
+const OFFICIAL = /^https:\/\/(eur-lex\.europa\.eu|www\.easa\.europa\.eu|files\.diariodarepublica\.pt|bte\.gep\.m(s|t)ess\.gov\.pt|bte\.dgcp\.mtsss\.gov\.pt|www\.faa\.gov)\//;
 const full = (p) => p && p.title && p.art && p.resumo && p.resumo.length > 40 && p.lawTag && p.ref && OFFICIAL.test(p.url);
 
 const EZ_CAB = { companySlug: 'easyjet', companyName: 'easyJet', isPilot: false };

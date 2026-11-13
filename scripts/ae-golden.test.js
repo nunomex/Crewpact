@@ -34,8 +34,12 @@ Module._extensions['.js'] = function (m, filename) {
 
 const ae = require(path.resolve('ae/easyjetSpac.js'));
 const { aeStatus } = require(path.resolve('ae/index.js'));
+// 2026-11-13: há um acordo novo (BTE 29/2026 — golden próprio em scripts/ae-easyjet-2026.test.js). ESTE ficheiro continua a
+// fixar o BTE 40/2023: as chamadas sem data ficam presas a janeiro de 2025 (a tabela de 1 de fevereiro de 2024, antes do IPC), e
+// BASE_ANNUAL / NOMINAL_SECTOR são as constantes de 2024.
+ae.__pinTablesForTests('2025-01');
 const {
-  BASE_ANNUAL, NOMINAL_SECTOR, CATEGORIES, SALARY_INSTALMENTS,
+  BASE_ANNUAL_2024: BASE_ANNUAL, NOMINAL_SECTOR_2024: NOMINAL_SECTOR, CATEGORIES, SALARY_INSTALMENTS,
   sectorMult, monthlyBase, perDiem, computeAeMonth, categoryLabel,
   CONTRACTS, contractFactor, contractLabel,
 } = ae;
@@ -106,7 +110,7 @@ eq('Contrato 14-14 = 51%',  contractFactor('14-14'), 0.51);
 eq('Contrato 21-7 = 74%',   contractFactor('21-7'), 0.74);
 eq('Contrato 7-7 = 71%',    contractFactor('7-7'), 0.71);
 eq('Contrato desconhecido → 1', contractFactor('xx'), 1);
-eq('Contratos (ordem)', CONTRACTS.join(','), '12/12,PPY 9/12,PPY 8/12,5/4,14-14,21-7,7-7');
+eq('Contratos (ordem)', CONTRACTS.join(','), '12/12,PPY 9/12,PPY 8/12,5/4,4-4,14-14,21-7,7-7');   // o 4-4 é do BTE 29/2026 (Art. 60.º)
 eq('Contrato label pt', contractLabel('5/4', 'pt'), 'Escala fixa 5/4');
 eq('Contrato label en', contractLabel('5/4', 'en'), 'Fixed roster 5/4');
 // Base mensal proporcional ao contrato (€)
@@ -287,13 +291,13 @@ eq('routeDistances rota vazia', routeDistancesNM(null).length, 0);
   const r = monthlyPerDiem(duties, 'FO', ae, { ym: '2026-06' });
   eq('Per diem mês: voos com rota', r.withRoute, 2);
   eq('Per diem mês: sem rota', r.missing, 1);
-  eq('Per diem mês: total (jun)', r.total, 155.04);
+  eq('Per diem mês: total (jun-2026: 4,0 × 45,60)', r.total, 182.40);
   eq('Per diem mês: sem categoria → null', monthlyPerDiem(duties, null, ae, { ym: '2026-06' }), null);
   // POSICIONAMENTO com rota NÃO tem per-diem (Art. 37 = setor VOADO; posicionamento paga só a
   // pernoita à parte). A rota no posicionamento serve o repouso 235 (local real), não o abono.
   const dPos = { ...duties, '2026-06-20': { route: 'LIS-MAD', kind: 'positioning' } };
   const rPos = monthlyPerDiem(dPos, 'FO', ae, { ym: '2026-06' });
-  eq('Per diem mês: posicionamento c/ rota NÃO soma', rPos.total, 155.04);
+  eq('Per diem mês: posicionamento c/ rota NÃO soma', rPos.total, 182.40);
   eq('Per diem mês: posicionamento não conta como voo-com-rota', rPos.withRoute, 2);
   // O mesmo vale na TAP (per-diem por DIA de voo — um dia de posicionamento não é dia de voo).
   const rTap = monthlyPerDiem({ '2026-06-20': { route: 'LIS-MAD', kind: 'positioning' } }, 'CAB3', tapCabin, { ym: '2026-06' });
@@ -304,18 +308,18 @@ eq('routeDistances rota vazia', routeDistancesNM(null).length, 0);
 {
   const sb = (rep, on) => ({ report_time: rep, block_on: on, kind: 'standby_airport' });
   // Não-chamado ≥4h (08:00→20:00) → 2 setores nominais (FO: 77.52).
-  eq('ADTY mês: não-chamado ≥4h = 2 NS', monthlyAe({ '2026-06-10': sb('08:00', '20:00') }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 77.52);
+  eq('ADTY mês: não-chamado ≥4h = 2 NS', monthlyAe({ '2026-06-10': sb('08:00', '20:00') }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 91.20);
   // Não-chamado <4h (08:00→11:00) → 1 setor nominal (38.76) — antes pagava 2 achatados.
-  eq('ADTY mês: não-chamado <4h = 1 NS', monthlyAe({ '2026-06-10': sb('08:00', '11:00') }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 38.76);
+  eq('ADTY mês: não-chamado <4h = 1 NS', monthlyAe({ '2026-06-10': sb('08:00', '11:00') }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 45.60);
   // Sem hora de fim (auditoria A-220): não se sabe se passou das 4 h → o GARANTIDO, 1 NS (antes presumia ≥ 4 h e pagava 2).
-  eq('ADTY mês: sem hora de fim = 1 NS (o garantido)', monthlyAe({ '2026-06-10': sb('08:00', null) }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 38.76);
+  eq('ADTY mês: sem hora de fim = 1 NS (o garantido)', monthlyAe({ '2026-06-10': sb('08:00', null) }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 45.60);
   // CHAMADO <4h (standby 2h + VOO no mesmo dia) → 0 (fica só o per-diem do voo).
   const called = { '2026-06-10': { ...sb('06:00', '08:00'), extra: [{ report_time: '09:00', block_on: '13:00', kind: 'flight', route: 'LIS-OPO-LIS' }] } };
   eq('ADTY mês: chamado <4h = 0', monthlyAe(called, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 0);
-  eq('ADTY mês: chamado — per-diem do voo mantém-se', monthlyAe(called, 'FO', '12/12', ae, { ym: '2026-06' }).perDiem, 62.02);
+  eq('ADTY mês: chamado — per-diem do voo mantém-se', monthlyAe(called, 'FO', '12/12', ae, { ym: '2026-06' }).perDiem, 72.96);
   // Voo com standby de AEROPORTO prévio declarado (special 225, 5h) = chamado ≥4h → 2 NS.
   const viaSpecial = { '2026-06-11': { report_time: '12:00', block_on: '18:00', kind: 'flight', route: 'LIS-OPO-LIS', special: { preStandby: { type: 'airport', standbyH: 5 } } } };
-  eq('ADTY mês: voo c/ preStandby 5h aeroporto = 2 NS', monthlyAe(viaSpecial, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 77.52);
+  eq('ADTY mês: voo c/ preStandby 5h aeroporto = 2 NS', monthlyAe(viaSpecial, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 91.20);
   // CABINE (Art. 58): matriz em setores MÉDIOS — CM não-chamado ≥4h = 2×1,2×32,50 = 78 € (não 2 NS=65).
   eq('ADTY mês cabine: 2 setores MÉDIOS (78 €)', monthlyAe({ '2026-06-10': sb('08:00', '20:00') }, 'CM', '12/12', cabin, { ym: '2026-06' }).extras, 78);
   // TAP pilotos: "Deslocação para serviço de assistência no aeroporto" = per diem A (RRRGS Cl. 9.ª, n.º 1, a), ii); bloco 6) —
@@ -356,7 +360,7 @@ eq('routeDistances rota vazia', routeDistancesNM(null).length, 0);
   const fl = { report_time: '06:00', block_on: '13:00', kind: 'flight', route: 'LIS-OPO-LIS', instructor: true };
   const m = monthlyAe({ '2026-06-10': fl }, 'FO', '12/12', ae, { ym: '2026-06' });
   eq('Papel: instrutor num VOO → 0 € (Art. 42.º: só em terra)', m.extras, 0);
-  eq('Papel: per-diem do voo mantém-se', m.perDiem, 62.02);
+  eq('Papel: per-diem do voo mantém-se', m.perDiem, 72.96);
   const tr = { report_time: '09:00', block_on: '13:00', kind: 'training', instructor: true };
   const mt = monthlyAe({ '2026-06-10': tr }, 'FO', '12/12', ae, { ym: '2026-06' });
   eq('Papel: instructor legado em formação → +€120 nos extras (Art. 42)', mt.extras, 120);
@@ -372,26 +376,26 @@ eq('routeDistances rota vazia', routeDistancesNM(null).length, 0);
   // DDO/WFLY por CONDIÇÃO do serviço (folga publicada trabalhada) — 1×/dia, € do monthExtras.
   const ddoDay = { report_time: '08:00', block_on: '16:00', kind: 'positioning', dayOffWorked: 'ddo' };   // kind sem prestação → isola a condição
   const mD = monthlyAe({ '2026-06-12': ddoDay }, 'FO', '12/12', ae, { ym: '2026-06' });
-  eq('DDO por condição: +0,4% anual (FO 191.00)', mD.extras, 191.00);
+  eq('DDO por condição: +0,4% anual (FO, jun-2026: 283.32)', mD.extras, 283.32);
   eq('DDO por condição: contado', mD.ddoDaysAuto, 1);
-  eq('WFLY por condição: +1% anual (FO 477.50)', monthlyAe({ '2026-06-12': { ...ddoDay, dayOffWorked: 'wfly' } }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 477.50);
+  eq('WFLY por condição: +1% anual (FO, jun-2026: 708.30)', monthlyAe({ '2026-06-12': { ...ddoDay, dayOffWorked: 'wfly' } }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 708.30);
   // IDO por CONDIÇÃO do serviço (folga infringida — Cl.68, o DOBRO do DDO = 0,8% anual).
   // Antes era só evento no mini-FAB; agora é atributo do serviço trabalhado, como o DDO.
   const mI = monthlyAe({ '2026-06-12': { ...ddoDay, dayOffWorked: 'ido' } }, 'FO', '12/12', ae, { ym: '2026-06' });
-  eq('IDO por condição: +0,8% anual (FO 382.00)', mI.extras, 382.00);
+  eq('IDO por condição: +0,8% anual (FO, jun-2026: 566.64)', mI.extras, 566.64);
   eq('IDO por condição: contado', mI.idoDaysAuto, 1);
   // ACUMULA com o item do próprio serviço: escritório em folga = OFC4 (58,14) + DDO (191,00).
-  eq('DDO em dia de escritório: OFC4 + DDO = 249.14', monthlyAe({ '2026-06-12': { ...ddoDay, kind: 'office' } }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 249.14);
+  eq('DDO em dia de escritório: OFC4 + DDO = 68.40 + 283.32', monthlyAe({ '2026-06-12': { ...ddoDay, kind: 'office' } }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 351.72);
   // CABINE trabalho em terra pelo caminho do SERVIÇO (monthlyAe): Art. 70 = 3 NS. O motor usava
   // ae.OFFICE4_SECTORS (que a cabine não tem) → pagava €0; fallback p/ ae.OFFICE_SECTORS corrige.
   eq('Cabine office via monthlyAe: 3 NS = 97.50 (Art. 70)', monthlyAe({ '2026-06-12': { kind: 'office' } }, 'CM', '12/12', cabin, { ym: '2026-06' }).extras, 97.50);
   // Dia de escritório piloto — OFC4 (defeito, 1,5 NS) vs OFC8 (dia inteiro = dever ad-hoc
   // Art. 43, 3 NS). Anexo I.14. O ad-hoc deixou de ser evento do mini-FAB → é o office inteiro.
-  eq('Office OFC4 (defeito, 1,5 NS): FO = 58.14', monthlyAe({ '2026-06-12': { kind: 'office' } }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 58.14);
-  eq('Office OFC8 (dia inteiro = ad-hoc 3 NS): FO = 116.28', monthlyAe({ '2026-06-12': { kind: 'office', officeType: 'ofc8' } }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 116.28);
+  eq('Office OFC4 (defeito, 1,5 NS): FO jun-2026 = 68.40', monthlyAe({ '2026-06-12': { kind: 'office' } }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 68.40);
+  eq('Office OFC8 (dia inteiro = ad-hoc 3 NS): FO jun-2026 = 136.80', monthlyAe({ '2026-06-12': { kind: 'office', officeType: 'ofc8' } }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 136.80);
   // FORMAÇÃO (Art. 43): o FORMANDO em terra/simulador recebe 3 NS; e-learning = 0; se for
   // INSTRUTOR (role) recebe €120 (Art. 42), não os 3 NS. Cabine (Cl.70 não cobre) = 0.
-  eq('Formação formando terra/sim = 3 NS (FO 116.28)', monthlyAe({ '2026-06-12': { kind: 'training' } }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 116.28);
+  eq('Formação formando terra/sim = 3 NS (FO jun-2026: 136.80)', monthlyAe({ '2026-06-12': { kind: 'training' } }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 136.80);
   eq('Formação formando contado', monthlyAe({ '2026-06-12': { kind: 'training' } }, 'FO', '12/12', ae, { ym: '2026-06' }).trainDaysAuto, 1);
   eq('Formação e-learning = 0 (Art. 43)', monthlyAe({ '2026-06-12': { kind: 'training', eLearning: true } }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 0);
   eq('Formação instrutor (role) = €120, não 3 NS', monthlyAe({ '2026-06-12': { kind: 'training', role: 'instr' } }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 120);
@@ -461,9 +465,9 @@ eq('routeDistances rota vazia', routeDistancesNM(null).length, 0);
   eq('aeMonthTotal cabine s/ extras (abono 1×)', aeMonthTotal({}, 'CM', '12/12', cabin, { ym: '2099-01' }), 1753.66);
   eq('aeMonthTotal cabine + DDO×1', aeMonthTotal({}, 'CM', '12/12', cabin, { ym: '2099-01', extras: { ddo: 1 } }), 1868.66);  // +115
   // Piloto (sem abono): base + extras.
-  eq('aeMonthTotal piloto s/ extras', aeMonthTotal({}, 'CPT', '12/12', ae, { ym: '2099-01' }), 8714.29);
-  eq('aeMonthTotal piloto + instrutor×1', aeMonthTotal({}, 'CPT', '12/12', ae, { ym: '2099-01', extras: { instructorDays: 1 } }), 8834.29);  // +120
-  eq('aeMonthTotal sem categoria → null', aeMonthTotal({}, null, '12/12', ae, { ym: '2099-01' }), null);
+  eq('aeMonthTotal piloto s/ extras (jan-2025)', aeMonthTotal({}, 'CPT', '12/12', ae, { ym: '2025-01' }), 8714.29);
+  eq('aeMonthTotal piloto + instrutor×1 (jan-2025)', aeMonthTotal({}, 'CPT', '12/12', ae, { ym: '2025-01', extras: { instructorDays: 1 } }), 8834.29);  // +120
+  eq('aeMonthTotal sem categoria → null', aeMonthTotal({}, null, '12/12', ae, { ym: '2025-01' }), null);
 }
 
 // ── Catálogo aplicável por categoria/contrato (filtro Passo 2) ──
@@ -485,7 +489,8 @@ eq('routeDistances rota vazia', routeDistancesNM(null).length, 0);
 eq('index 2024 = 1', ae.indexFactor(2024), 1);
 // IPC = 2,3 % (média de 12 meses até nov-2024, INE via DREM — fontes/pt/ipc-2024-11.txt; A-042, bloco 5). Por mês: desde fev-2025.
 eq('index 2025 = IPC 2,3 % (INE)', ae.indexFactor(2025), 1.023);
-eq('index 2026 = mantém 2025 (sem degrau)', ae.indexFactor(2026), 1.023);
+eq('index jan-2026 = ainda o de 2025', ae.indexFactor('2026-01'), 1.023);
+eq('index 2026 = 1 (BTE 29/2026: valores finais desde 1-fev-2026)', ae.indexFactor(2026), 1);
 eq('index jan-2025 = 1 (o IPC conta a partir de 1-fev-2025)', ae.indexFactor('2025-01'), 1);
 eq('index 2025 com IPC oficial 3%', ae.indexFactor(2025, { ipc2025: 0.03 }), 1.03);
 eq('index 2025 IPC 8% → teto 5%', ae.indexFactor(2025, { ipc2025: 0.08 }), 1.05);
@@ -496,12 +501,12 @@ eq('index estimado 2025 c/ ipc:null = true (ramo estimativa)', ae.isIndexEstimat
 eq('index estimado 2025 c/ IPC = false', ae.isIndexEstimated(2025, { ipc2025: 0.03 }), false);
 eq('base CPT indexada 2025 (×1,023)', ae.monthlyBase('CPT', { index: ae.indexFactor(2025) }), 8914.71);  // 122000×1.023/14
 
-// ── Vigência do AE (BTE 40/2023): expira 31 jan 2026 → valores de 2026 são referência ──
-eq('AE vigência até jan-2026', ae.AE_VALID_UNTIL, '2026-01-31');
-eq('AE não expirado em jan-2026', ae.isAgreementExpired(new Date('2026-01-15')), false);
-eq('AE expirado em jun-2026', ae.isAgreementExpired(new Date('2026-06-23')), true);
-eq('AE pilotos expirado-RECONHECIDO (§5/§9)', !!(ae.AE_EXPIRY_ACK && ae.AE_EXPIRY_ACK.acknowledged), true);
-eq('AE ack tem data de verificação (checked)', typeof (ae.AE_EXPIRY_ACK || {}).checked, 'string');
+// ── Vigência do AE dos pilotos: BTE 29/2026, assinado a 26-06-2026, válido até 31 jan 2029 (o BTE 40/2023 acabou a 31 jan 2026) ──
+eq('AE vigência até jan-2029', ae.AE_VALID_UNTIL, '2029-01-31');
+eq('AE em vigor em nov-2026', ae.isAgreementExpired(new Date('2026-11-13')), false);
+eq('AE expirado em fev-2029', ae.isAgreementExpired(new Date('2029-02-01T12:00:00')), true);
+eq('AE pilotos: já sem reconhecimento de expiração (há acordo novo)', ae.AE_EXPIRY_ACK, null);
+eq('AE pilotos: o anterior fica na história', ae.AE_HISTORY[0].until, '2026-01-31');
 // Cabine (SNPVAC): vigência até 31 jan 2027 → ainda NÃO expirada; mecanismo de vigência presente.
 eq('Cabine vigência até jan-2027', cabin.AE_VALID_UNTIL, '2027-01-31');
 eq('Cabine não expirada em jun-2026', cabin.isAgreementExpired(new Date('2026-06-23')), false);
@@ -532,7 +537,7 @@ eq('extras doença SEM teto de mês (Art. 48 é por EPISÓDIO — o eventCounts 
 eq('extras saneia negativos/decimais', ae.monthExtras('CPT', { adhocDays: -2, ido: 1.9 }).total, 976.00); // ido×1
 eq('extras indexados (ddo×1 @1.01)', ae.monthExtras('CPT', { ddo: 1 }, { index: 1.01 }).total, 492.88);
 eq('extras instrutor universal (FO)', ae.monthExtras('FO', { instructorDays: 1 }).total, 120);  // não trancado por categoria
-eq('EXTRA_KINDS (8)', ae.EXTRA_KINDS.length, 8);
+eq('EXTRA_KINDS (9: com o SOC/EXPD do BTE 29/2026)', ae.EXTRA_KINDS.length, 9);
 eq('EXTRA_KINDS snc é auto', ae.EXTRA_KINDS.find((k) => k.id === 'snc').auto, true);
 
 // ═══════════ AE TAP × SPAC (pilotos) — BTE 29/2023, Anexo 3 ═══════════
@@ -697,10 +702,11 @@ eq('TAP cabine vigência até dez-2026', tapCabin.AE_VALID_UNTIL, '2026-12-31');
 // ao inteiro (nº 6-a). Cabine (Cl. 72.ª, BTE 8/2024): 25; 26 com ≥5 anos a partir de
 // abr-2025; contratos parciais com valores da própria convenção (= round(25×fração)).
 {
-  eq('férias piloto 12/12', ae.vacationDays({ contract: '12/12' }), 25);
-  eq('férias piloto PPY 9/12 (proporcional)', ae.vacationDays({ contract: 'PPY 9/12' }), 19);
-  eq('férias piloto PPY 8/12', ae.vacationDays({ contract: 'PPY 8/12' }), 17);
-  eq('férias piloto 5/4 (92%)', ae.vacationDays({ contract: '5/4' }), 23);
+  const refOld = new Date('2026-01-15T12:00:00');   // ainda o BTE 40/2023 (os do acordo de 2026: scripts/ae-easyjet-2026.test.js)
+  eq('férias piloto 12/12', ae.vacationDays({ contract: '12/12', ref: refOld }), 25);
+  eq('férias piloto PPY 9/12 (proporcional)', ae.vacationDays({ contract: 'PPY 9/12', ref: refOld }), 19);
+  eq('férias piloto PPY 8/12', ae.vacationDays({ contract: 'PPY 8/12', ref: refOld }), 17);
+  eq('férias piloto 5/4 (92%)', ae.vacationDays({ contract: '5/4', ref: refOld }), 23);
   eq('férias cabine 12/12', cabin.vacationDays({ contract: '12/12' }), 25);
   eq('férias cabine 5453 (tempo completo)', cabin.vacationDays({ contract: '5453' }), 25);
   eq('férias cabine 12/12 + 5 anos (após abr-2025) = 26', cabin.vacationDays({ contract: '12/12', serviceYears: 5, ref: new Date('2025-05-01T00:00:00') }), 26);
@@ -756,6 +762,7 @@ eq('TAP cabine vigência até dez-2026', tapCabin.AE_VALID_UNTIL, '2026-12-31');
     ['easyJet piloto', ae], ['easyJet cabine', cabin],
     ['TAP piloto', tapPilot], ['TAP cabine', tapCabin],
   ];
+  ae.__pinTablesForTests(null);   // aqui testa-se "sem data = a última entrada": sem a fixação ao BTE 40/2023 (reposta no fim do bloco)
   for (const [name, m] of MODULES) {
     const tv = Array.isArray(m.TABLE_VERSIONS) ? m.TABLE_VERSIONS : [];
     eq(`${name}: TABLE_VERSIONS existe (≥1)`, tv.length >= 1, true);
@@ -775,6 +782,7 @@ eq('TAP cabine vigência até dez-2026', tapCabin.AE_VALID_UNTIL, '2026-12-31');
   eq('easyJet cabine: extras de 2026-06 = os atuais', cabin.monthExtras('CM', { rdp: 1 }, { ym: '2026-06' }).total, cabin.monthExtras('CM', { rdp: 1 }).total);
   eq('TAP piloto: extras de 2026-06 = os atuais', tapPilot.monthExtras('CTE', { comandoSectors: 1 }, { ym: '2026-06' }).total, tapPilot.monthExtras('CTE', { comandoSectors: 1 }).total);
   eq('TAP cabine: extras de 2026-06 = os atuais', tapCabin.monthExtras('CAB3', { vhHours: 1 }, { ym: '2026-06' }).total, tapCabin.monthExtras('CAB3', { vhHours: 1 }).total);
+  ae.__pinTablesForTests('2025-01');
 }
 
 // ── Resumo ──

@@ -83,7 +83,7 @@ const AE_PROVAS = {
       },
     },
     pilot: {
-      tag: 'AE easyJet · Pilotos (SPAC)', vig: 'BTE 40/2023 · até 31/01/2026',
+      tag: 'AE easyJet · Pilotos (SPAC)', vig: 'BTE 29/2026 · até 31/01/2029',
       items: {
         perDiem: { art: 'Art. 37.º', title: { pt: 'Per diem', en: 'Per diem' }, resumo: {
           pt: 'Per diem por setor voado, por bandas de distância de grande círculo (milhas náuticas), em multiplicadores do setor nominal da categoria.',
@@ -92,8 +92,8 @@ const AE_PROVAS = {
           pt: 'Cada paragem nocturna paga o equivalente a 2 setores nominais da categoria.',
           en: 'Each night stop pays the equivalent of 2 nominal sectors of the category.' } },
         doenca: { art: 'Art. 48.º', title: { pt: 'Doença', en: 'Sick pay' }, resumo: {
-          pt: 'Na doença, os dias 1 a 3 do episódio pagam 60% da base diária (regime distinto do da cabine).',
-          en: 'When sick, days 1–3 of the episode pay 60% of the daily base (a different scheme from cabin crew).' } },
+          pt: 'Na doença, os dias 1 a 3 do episódio pagam 80% da base diária (60% até junho de 2026, no acordo anterior); do 4.º dia em diante só a Segurança Social.',
+          en: 'When sick, days 1–3 of the episode pay 80% of the daily base (60% until June 2026, under the previous agreement); from day 4 only Social Security.' } },
       },
     },
   },

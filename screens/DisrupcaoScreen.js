@@ -98,7 +98,9 @@ export default function DisrupcaoScreen({ navigation }) {
             lawLine: c.type === 'rdp'
               ? l('AE easyJet×SNPVAC (BTE 8/2024), Cl. 67.ª: alteração ≥119 min no dia da operação · Anexo I/11', 'easyJet×SNPVAC CLA (BTE 8/2024), Cl. 67: change ≥119 min on the day of operation · Annex I/11')
               : isPilot
-                ? l('AE easyJet×SPAC (BTE 40/2023), Art. 63.º: SNC nas 48h (início −2h / fim +2h) · Anexo I/12', 'easyJet×SPAC CLA (BTE 40/2023), Art. 63: SNC within 48h (start −2h / end +2h) · Annex I/12')
+                ? (String(c.dutyDate || '') >= '2026-06-26'
+                  ? l('AE easyJet×SPAC (BTE 29/2026), Art. 65.º: SNC nas 48h (início −2h / fim +2h) · Anexo I/11', 'easyJet×SPAC CLA (BTE 29/2026), Art. 65: SNC within 48h (start −2h / end +2h) · Annex I/11')
+                  : l('AE easyJet×SPAC (BTE 40/2023), Art. 63.º: SNC nas 48h (início −2h / fim +2h) · Anexo I/12', 'easyJet×SPAC CLA (BTE 40/2023), Art. 63: SNC within 48h (start −2h / end +2h) · Annex I/12'))
                 : l('AE easyJet×SNPVAC (BTE 8/2024), Cl. 66.ª: SNC nas 48h (início −2h / fim +2h) · Anexo I/10', 'easyJet×SNPVAC CLA (BTE 8/2024), Cl. 66: SNC within 48h (start −2h / end +2h) · Annex I/10'),
             valueLabel: v.eur != null ? `${fmtEur(v.eur, lang)}${v.label ? ` (${v.label})` : ''}` : l('ver Anexo I do AE', 'see CLA Annex I'),
             declared: true,

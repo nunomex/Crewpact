@@ -1,6 +1,6 @@
 // Per diem do AE a partir das rotas das duties. Liga as distâncias de aeroporto
 // (data/airports.js) às bandas/setores nominais do módulo AE (ae/*). Módulo PURO.
-import { sectorDistanceNM } from './airports';
+import { sectorDistanceNM, airportInfo } from './airports';
 import { eventCounts } from './aeEvents';
 import { isMediumHaul } from '../ae/tapLimits';
 import { ymShift, entryMonthBase, tenureEvents } from '../ae/tables';
@@ -37,6 +37,64 @@ export const sectorDistancesNM = (svc) => {
   return routeDistancesNM(svc && svc.route);
 };
 
+// ── VOO DOMÉSTICO e TURNAROUND LONGO (pilotos easyJet, BTE 29/2026 — em vigor desde 26 de junho de 2026) ──
+// Art. 37.º, n.º 8: "Todos os voos domésticos operados conferirão direito ao pagamento de um setor nominal adicional por aterragem
+// planeada, aplicável durante todo o ano e a todas as categorias profissionais". O acordo não define "doméstico". Partida e chegada
+// em PORTUGAL é doméstico em qualquer leitura (o acordo "aplica-se em território português", Art. 1.º, n.º 3) → certo (`pt`).
+// Partida e chegada no MESMO país estrangeiro pode sê-lo ou não → só no máximo (`other`). "Operados": um posicionamento (perna
+// `dh`) não conta. Um aeroporto que a app não conhece não conta (nunca a mais).
+const legPairs = (svc) => {
+  const legs = svc && Array.isArray(svc.legs) ? svc.legs.filter(Boolean) : [];
+  if (legs.length && legs.every((l) => l.dep && l.arr)) return legs.filter((l) => !l.dh).map((l) => [l.dep, l.arr]);
+  if (legs.some((l) => l && l.dh)) return [];   // há posicionamento e as pernas não dizem qual: não se presume
+  const c = String((svc && svc.route) || '').split('-').map((x) => x.trim().toUpperCase()).filter(Boolean);
+  return c.length >= 2 ? c.slice(1).map((x, i) => [c[i], x]) : [];
+};
+export const domesticLandings = (svc) => {
+  const out = { pt: 0, other: 0 };
+  if (!svc || (svc.kind || 'flight') !== 'flight') return out;
+  for (const [a, b] of legPairs(svc)) {
+    const ca = (airportInfo(a) || {}).cc, cb = (airportInfo(b) || {}).cc;
+    if (!ca || !cb || ca !== cb) continue;
+    if (ca === 'PT') out.pt++; else out.other++;
+  }
+  return out;
+};
+// € dos setores domésticos de um serviço: { eur (os de Portugal), max (com os do mesmo país estrangeiro) }.
+const domesticOf = (ae, category, svc, { date, index = 1 } = {}) => {
+  const zero = { eur: 0, max: 0 };
+  if (!ae || typeof ae.domesticSector !== 'function') return zero;
+  const each = ae.domesticSector(category, index, date);
+  if (each == null) return zero;
+  const n = domesticLandings(svc);
+  return { eur: +(n.pt * each).toFixed(2), max: +((n.pt + n.other) * each).toFixed(2) };
+};
+// Art. 37.º-A: "Os turnarounds planeados com duração igual ou superior a 90 minutos" pagam 0,5 / 1,0 / 1,5 setores nominais. O
+// turnaround é o tempo no chão entre a chegada de um setor e a partida do seguinte, no mesmo aeroporto, pelas horas da escala
+// (as planeadas: `off`/`on` das pernas, ou as Zulu). Só entre dois setores OPERADOS; sem as horas não se sabe (nunca a mais).
+// Devolve os minutos de cada turnaround do serviço.
+const hmOf = (x) => { const mm = /^(\d{1,2}):([0-5]\d)$/.exec(String(x || '')); return mm ? (+mm[1]) * 60 + (+mm[2]) : null; };
+export const turnaroundsOf = (svc) => {
+  const out = [];
+  if (!svc || (svc.kind || 'flight') !== 'flight' || !Array.isArray(svc.legs)) return out;
+  const legs = svc.legs.filter(Boolean);
+  for (let i = 0; i + 1 < legs.length; i++) {
+    const a = legs[i], b = legs[i + 1];
+    if (a.dh || b.dh || !a.arr || !b.dep || String(a.arr).toUpperCase() !== String(b.dep).toUpperCase()) continue;
+    const z = hmOf(a.onZ) != null && hmOf(b.offZ) != null;
+    const on = hmOf(z ? a.onZ : a.on), off = hmOf(z ? b.offZ : b.off);
+    if (on == null || off == null) continue;
+    out.push((((off - on) % 1440) + 1440) % 1440);
+  }
+  return out;
+};
+const turnaroundOf = (ae, category, svc, { date, index = 1 } = {}) => {
+  if (!ae || typeof ae.turnaround !== 'function') return 0;
+  let eur = 0;
+  for (const min of turnaroundsOf(svc)) eur += ae.turnaround(category, min, index, date) || 0;
+  return +eur.toFixed(2);
+};
+
 // Per diem estimado de um conjunto de duties para uma categoria, opcionalmente
 // filtrado por mês (ym = "YYYY-MM"). duties = mapa { date: { route, deleted? } }.
 // `ae` = módulo do Acordo de Empresa (expõe perDiem). Uma duty sem rota completa
@@ -67,6 +125,7 @@ export const monthlyPerDiem = (duties = {}, category, ae, { ym = null, index = 1
       if (!dists.length || dists.some((x) => x == null)) { missing++; continue; }
       // `fleet` (TAP: WB/NB → coluna A); `date` = tabela do AE em vigor NESSE dia (linha do tempo).
       total += ae.perDiem(category, dists, index, fleet, date) || 0;   // sem tabela nesse mês → 0
+      total += domesticOf(ae, category, s, { date, index }).eur;       // + 1 setor nominal por aterragem doméstica (Art. 37.º, n.º 8)
       withRoute++;
     }
   }
@@ -119,6 +178,7 @@ export const monthlyPerDiemByBand = (duties = {}, category, ae, { ym = null, ind
 export const roleEurFor = (ae, category, role, sectors = 0, ym) => {
   if (!ae || !role) return 0;
   if (role === 'instr' && ae.instructor) return ae.instructor(ym);
+  if (role === 'ltc' && ae.ltcDay) return ae.ltcDay(category, aeIndex(ae, ym), ym) || 0;   // pilotos easyJet, Art. 42.º, n.º 3 (BTE 29/2026)
   if (role === 'upranker' && ae.upranker) return +(ae.upranker(ym) * Math.max(0, Number(sectors) || 0)).toFixed(2);
   if (role === 'cclt' && ae.cclt) return ae.cclt(ym);
   if (role === 'cti' && ae.ctiFlexi) return ae.ctiFlexi(category, ym);
@@ -358,6 +418,8 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
   const byDay = !!ae.PER_DIEM_BY_DAY;   // TAP: ajudas de custo por dia de calendário (tapCalendarDays)
   const dailyRoles = new Set(ae.DAILY_ROLES || []);       // papéis pagos por DIA: uma vez por dia (Art. 42.º; Anexo I.16)
   const groundOnly = new Set(ae.GROUND_ONLY_ROLES || []); // instrutor dos pilotos easyJet: só em terra/simulador (Art. 42.º)
+  const flightOnly = new Set(ae.FLIGHT_ONLY_ROLES || []); // LTC dos pilotos easyJet: treino em linha, só num voo (Art. 42.º, n.º 3)
+  let domEur = 0, domMaxDelta = 0, turnEur = 0;            // voo doméstico (Art. 37.º, n.º 8) e turnaround longo (Art. 37.º-A)
   // Dia de escritório: piloto OFC4 = 1,5 NS (Anexo I.14); cabine = 3 NS (Art. 70) — só tem
   // OFFICE_SECTORS, não OFC4/8 → sem o fallback pagava €0 ao dia de terra da cabine.
   const office4 = ae.OFFICE4_SECTORS || ae.OFFICE_SECTORS || 0;
@@ -424,7 +486,7 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
         if (role) {
           // Instrutor (pilotos easyJet, Art. 42.º): "por cada dia que os pilotos com a qualificação executem tais funções em
           // terra, incluindo em simulador" → 0 num voo, e uma vez por dia (auditoria A-045/A-064/A-079).
-          const paid = !(groundOnly.has(role) && kind !== 'training') && !(dailyRoles.has(role) && rolesPaidToday.has(role));
+          const paid = !(groundOnly.has(role) && kind !== 'training') && !(flightOnly.has(role) && kind !== 'flight') && !(dailyRoles.has(role) && rolesPaidToday.has(role));
           const eur = paid ? roleEurFor(ae, category, role, s.sectors, date) : 0;
           if (eur > 0) { instrEur += eur; instructorDaysAuto++; if (dailyRoles.has(role)) rolesPaidToday.add(role); }
         } else if (kind === 'training' && !s.eLearning && ae.ADHOC_SECTORS) {
@@ -444,9 +506,11 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
         adtyDays++;
       }
       if (byDay) continue;   // TAP: os dias de calendário contam-se à parte (tapCalendarDays)
+      turnEur += turnaroundOf(ae, category, s, { date, index });
       const dists = sectorDistancesNM(s);
       if (!dists.length || dists.some((x) => x == null)) { missing++; continue; }  // rota incompleta
       flights.push(dists);
+      { const dm = domesticOf(ae, category, s, { date, index }); domEur += dm.eur; domMaxDelta += dm.max - dm.eur; }
       withRoute++;
     }
   }
@@ -617,6 +681,11 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
   // Acertos depois do motor do acordo (as parcelas continuam a somar ao total):
   const bump = (field, v) => { if (!v) return; month[field] = r2((month[field] || 0) + v); month.total = r2(month.total + v); };
   if (groundEur) { bump('perDiem', groundEur); month.variable = r2((month.variable || 0) + groundEur); }
+  // Voo doméstico: é per diem (Art. 37.º, n.º 8) → soma à parcela do per diem; o do mesmo país estrangeiro só ao máximo.
+  domEur = r2(domEur);
+  if (domEur) { bump('perDiem', domEur); month.variable = r2((month.variable || 0) + domEur); }
+  month.domestic = domEur;
+  groundMaxDelta += domMaxDelta;
   if (complEur || chefia) { bump('extras', r2(complEur + chefia)); month.variable = r2((month.variable || 0) + complEur + chefia); }
   month.chefia = chefia;
   if (prestCompl) month.prestCompl = prestCompl;
@@ -637,7 +706,9 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
   const condEur = (ddoDaysAuto || wflyDaysAuto || idoDaysAuto) && ae.monthExtras
     ? +(ae.monthExtras(category, { ddo: ddoDaysAuto, wfly: wflyDaysAuto, ido: idoDaysAuto }, { index, ym, contract, fullShare }).total).toFixed(2)
     : 0;
-  const plusEur = +(adtyEur + instrEur + condEur).toFixed(2);
+  turnEur = r2(turnEur);
+  month.turnaround = turnEur;   // turnaround planeado de 90 min ou mais (Art. 37.º-A) — entra nos extras da escala
+  const plusEur = +(adtyEur + instrEur + condEur + turnEur).toFixed(2);
   if (plusEur) {
     month.extras = +(((month.extras || 0) + plusEur)).toFixed(2);
     month.variable = +(((month.variable || 0) + plusEur)).toFixed(2);
@@ -737,7 +808,15 @@ export const serviceMoney = (ae, category, svc, { date, fleet, daySvcs = null, b
   }
   if (kind === 'flight') {
     const dists = sectorDistancesNM(svc);
-    if (dists.length && !dists.some((x) => x == null)) out.perDiem = ae.perDiem(category, dists, idx, fleet, date);
+    if (dists.length && !dists.some((x) => x == null)) {
+      out.perDiem = ae.perDiem(category, dists, idx, fleet, date);
+      // + o setor nominal de cada aterragem doméstica (Art. 37.º, n.º 8) — a mesma conta do mês
+      const dm = domesticOf(ae, category, svc, { date, index: idx });
+      if (out.perDiem != null && dm.eur) out.perDiem = r2(out.perDiem + dm.eur);
+      if (out.perDiem != null && dm.max > dm.eur) out.perDiemMax = r2(out.perDiem + dm.max - dm.eur);
+    }
+    const tr = turnaroundOf(ae, category, svc, { date, index: idx });
+    if (tr > 0) out.other = { lbl: { pt: 'Turnaround longo (Art. 37.º-A)', en: 'Long turnaround (Art. 37-A)' }, eur: tr };
   }
   if (kind === 'flight' || kind === 'positioning') {
     const po = positioningOf(ae, category, svc, { date, index: idx, fleet });

@@ -301,7 +301,8 @@ export const completeRows = (svc = {}, ctx = {}) => {
     // Papel no serviço (instrutor, CCLT, CTI, upranker…) — voo e formação.
     if ((isFlight || kind === 'training') && typeof ae.additionalRolesFor === 'function') {
       const groundOnly = new Set(ae.GROUND_ONLY_ROLES || []);
-      const roles = (ae.additionalRolesFor(category, { instructorRated }) || []).filter((r) => kind === 'training' || !groundOnly.has(r.id));
+      const flightOnly = new Set(ae.FLIGHT_ONLY_ROLES || []);   // LTC: treino em linha, só num voo
+      const roles = (ae.additionalRolesFor(category, { instructorRated }) || []).filter((r) => (kind === 'training' ? !flightOnly.has(r.id) : !groundOnly.has(r.id)));
       if (roles.length) {
         const cur = svc.role || (svc.instructor ? 'instr' : null);
         const lbl = (r) => (r && r.label ? (typeof r.label === 'string' ? L(r.label, r.label) : L(r.label.pt, r.label.en || r.label.pt)) : L('—', '—'));
@@ -342,7 +343,7 @@ export const completeRows = (svc = {}, ctx = {}) => {
     // Dia de escritório: OFC4/OFC8 (easyJet pilotos) ou ato médico (TAP).
     if (kind === 'office' && ae.OFFICE8_SECTORS) {
       add({
-        id: 'officeType', title: L('Duração do dia de escritório', 'Office day length'), cite: 'Anexo I.14',
+        id: 'officeType', title: L('Duração do dia de escritório', 'Office day length'), cite: 'Anexo I.13',
         value: svc.officeType === 'ofc8' ? L('Dia inteiro (OFC8)', 'Full day (OFC8)') : L('Meio-dia (OFC4)', 'Half day (OFC4)'), need: false,
         sheet: { intro: L('Meio-dia paga 1,5 setores nominais; dia inteiro, 3.', 'A half day pays 1.5 nominal sectors; a full day, 3.'),
           fields: [{ key: 'ot', type: 'choice', value: svc.officeType === 'ofc8' ? 'ofc8' : null, options: [{ id: null, label: L('Meio-dia (OFC4)', 'Half day (OFC4)') }, { id: 'ofc8', label: L('Dia inteiro (OFC8)', 'Full day (OFC8)') }] }] },

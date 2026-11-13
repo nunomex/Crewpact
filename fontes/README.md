@@ -10,6 +10,7 @@ existe, palavra por palavra, no texto oficial abaixo, na página indicada.
 | `ae-tap/tap-snpvac-2024.pdf` | Boletim do Trabalho e Emprego n.º 7, 22 de fevereiro de 2024 — AE TAP × SNPVAC (cabine), revisão global | BTE 271–352 | `941299648718bb2fb6d27c9fb679d72b9dc85935f066ddf71d6e9bb2edba05e6` |
 | `ae-easyjet/easyjet-snpvac-2024.pdf` | Boletim do Trabalho e Emprego n.º 8, 29 de fevereiro de 2024 — AE easyJet × SNPVAC (cabine), revisão global (até 31/01/2027) | PDF 34 p. (a Cl. 67.ª RDP está no BTE 304–305) | `ad08ac22dab5662fbe9b9c91be2a4079473a9f763ab8bc3aaa9352ec8f2c8a6f` |
 | `ae-easyjet/easyjet-spac-2023.pdf` | Boletim do Trabalho e Emprego n.º 40, 29 de outubro de 2023 — AE easyJet × SPAC (pilotos), revisão global | PDF 28 p. (Art. 63.º SNC; Anexo I n.º 12) | `646c4ab87ecb997322f1f8f340300fe41e2688ca09f828d5a845ecda7bea4e22` |
+| `ae-easyjet/easyjet-spac-2026.pdf` | Boletim do Trabalho e Emprego n.º 29, 8 de agosto de 2026 — AE easyJet × SPAC (pilotos), revisão global (assinado a 26-06-2026; até 31/01/2029). **Substitui o de 2023**, que fica para os meses até janeiro de 2026 | PDF 33 p. = BTE 124–156 (Anexo I: BTE 152–155; quadro do Art. 61.º: BTE 142) | `e3c77440c2eee3a518d0b28d80b99b9189638002969aa058624d1b6f479bdcc3` |
 | `icao/nat-doc-007-v2026-1.pdf` | ICAO, NAT Doc 007 — North Atlantic Operations and Airspace Manual, V.2026-1 (aplicável desde 19 mar 2026), preparado pelo ICAO European and North Atlantic Office | PDF p. 1 e 5 (o `.txt` só tem estas) | `56cf34068cded8888986cef0cbc3d4178769bfb2f811062ef8a9c0f364c2b88f` |
 | `ftl/reg-ue-83-2014-pt.pdf` | Regulamento (UE) n.º 83/2014 da Comissão, de 29 de janeiro de 2014 (JO L 28 de 31.1.2014) — altera o Reg. 965/2012; o Anexo III traz a subparte FTL (ORO.FTL.100–250). Versão portuguesa | 13 p. | `28738d053c40fd93c37fdd1c1a3dad341a84823a4bd586d3d084dac5918af893` |
 | `ftl/reg-ue-83-2014-en.pdf` | O mesmo regulamento, versão inglesa (os termos FDP, WOCL, standby…) | 13 p. | `1663c8e0078bb30a8b3ab1540c7f092d24f7f5206cf6a165ac00b9d9c80a47c7` |
@@ -22,6 +23,12 @@ existe, palavra por palavra, no texto oficial abaixo, na página indicada.
   - cabine: https://files.diariodarepublica.pt/bases_especiais/regtrab/2024/02/22/853385951.pdf
 
   São os mesmos endereços da Biblioteca da app (`data/library.js`). Para conferir uma cópia nova, comparar o SHA-256.
+- **AE easyJet × SPAC de 2026 (13 de novembro de 2026).** O PDF veio do Nuno (33 páginas, só o acordo). Conferido no mesmo dia
+  contra o boletim COMPLETO do portal oficial do BTE, https://bte.dgcp.mtsss.gov.pt/completos/2026/bte29_2026.pdf (o endereço
+  antigo `bte.gep.msess.gov.pt` redireciona para lá): o texto das p. 124–156, extraído com o mesmo `pdftotext -layout`, é igual
+  palavra por palavra ao de `easyjet-spac-2026.txt`. A separata do Diário da República ainda não foi encontrada; a Biblioteca
+  aponta para o boletim completo. Tabelas conferidas na imagem da página: Anexo I (BTE 152–155) e o quadro do Art. 61.º (BTE 142),
+  que o texto extraído desalinha. O teste é `scripts/ae-easyjet-2026.test.js` (`npm run test:ae-2026`).
 - **Os `.txt`** são o texto extraído dos PDF com `pdftotext -layout -enc UTF-8` (texto nativo, sem OCR), com uma
   marca `=====[PDF p.N | BTE p.M]=====` no início de cada página. São versionados para o teste correr em qualquer PC.
 - **Tabelas.** O texto extraído desalinha algumas tabelas. As do motor foram conferidas na **imagem** da página:
@@ -88,7 +95,7 @@ cada frase no texto e calcula com ela.
 
 | Ficheiro | Documento | Para quê |
 |---|---|---|
-| `pt/codigo-trabalho-2009.txt` | Código do Trabalho (Lei n.º 7/2009, DR 1.ª série n.º 30, 12-02-2009), arts. 249.º, 255.º, 263.º, 271.º e 296.º — redação original | a falta por doença "determina a perda de retribuição" (art. 255.º, n.º 2, a)): nos dias de baixa a base sai; a doença de mais de um mês suspende o contrato (296.º) e o Natal fica proporcional (263.º, n.º 2, c)) |
+| `pt/codigo-trabalho-2009.txt` | Código do Trabalho (Lei n.º 7/2009, DR 1.ª série n.º 30, 12-02-2009), arts. 249.º, 255.º, 263.º, 271.º, 296.º, 478.º e 519.º — redação original (os dois últimos juntos a 13 de novembro de 2026, do mesmo PDF: o SHA-256 bate) | a falta por doença "determina a perda de retribuição" (art. 255.º, n.º 2, a)): nos dias de baixa a base sai; a doença de mais de um mês suspende o contrato (296.º) e o Natal fica proporcional (263.º, n.º 2, c)) |
 | `pt/rmmg.txt` | DL 107/2023 (2024: € 820), DL 112/2024 (2025: € 870,00), DL 139/2025 (2026: € 920,00) | a base do tripulante de cabine do 1.º ano da easyJet ("Salário mínimo nacional (SMN)", Anexo I.1) |
 | `pt/ipc-2024-11.txt` | DREM, "Preços em foco — novembro de 2024" (11-12-2024), com o valor nacional do INE: 2,3 % | a indexação dos pilotos easyJet desde 1-fev-2025 (Anexo I.1/I.2) |
 

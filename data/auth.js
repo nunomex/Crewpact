@@ -36,7 +36,7 @@ export const mapUser = (u) => ({
   serviceStartExact: !!u.user_metadata?.serviceStartExact,   // o DIA foi dado (senão o mês da entrada fica incerto)
   largada: u.user_metadata?.largada || null,             // TAP: data da largada (AAAA-MM-DD) → anuidades e senioridade (Cl. 14.ª, n.º 3)
   base:      u.user_metadata?.base     || null,          // base do tripulante (LIS/OPO/FAO) → "fora da base"
-  lifestyle: u.user_metadata?.lifestyle || false,        // PPY como estilo de vida (Art. 66.9) → sem retenção
+  lifestyle: u.user_metadata?.lifestyle || false,        // PPY como estilo de vida (pilotos easyJet: Art. 69.º, n.º 8 do BTE 29/2026; era o Art. 66.º, n.º 9) → sem retenção
   instructorRated: u.user_metadata?.instructorRated || false,  // qualificação de instrutor (Art. 42) → opt-in p/ qualquer categoria
   // Eliminação AGENDADA (período de graça): posta pela Edge Function no app_metadata (só service_role
   // a escreve → à prova de adulteração). ISO ou null. A app deteta e oferece reativar dentro do prazo.
