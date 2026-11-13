@@ -97,8 +97,12 @@ motor está na versão **21**. **O que falta, por ordem:**
   `docs/verificacao-calendario.md` batem (importação e Detalhe). Dessa sessão saíram, já corrigidos e vistos: o motivo do
   "Incerto" e dos "Dois máximos" em texto inteiro no Detalhe; a linha "Assistência antes do voo" a dizer de onde vem a
   redução do máximo; "Da escala · hh:mm" no Completar; o motivo inteiro e sem repetir a palavra na folha de importação;
-  o "Split duty" falso entre uma assistência e um voo na folha do dia. Ficou por ver: o Início ("Tenho descanso?" e
-  "Dentro dos limites?") com estes cenários, e os Números de um mês com assistências depois do recálculo.
+  o "Split duty" falso entre uma assistência e um voo na folha do dia. **Início, visto ✅:** assistência 09:00–15:00 e voo
+  com apresentação às 18:00 no mesmo dia → "Incerto" e "limites incertos · falta se o voo te foi atribuído durante a
+  assistência…", sem "repouso cumprido" nem "curto"; corrigido e visto: o cartão "A seguir" mostra o serviço seguinte do
+  MESMO dia (saltava para outro dia) e um voo sem apresentação mostra a hora de partida. **Para o desenho do "Incerto"
+  (grupo 2):** no Início o motivo corta às duas linhas ("…assistência de ante…") e o topo diz "Incerto · PSV até" sem as
+  duas horas. Ficou por ver: os Números de um mês com assistências depois do recálculo.
 - **Sessão de 2026-11-11 — visto ✅:** Perfil "Na … desde" com a coluna do dia (os 6 pontos); Escala sem toque longo; Detalhe
   do serviço só de leitura com "do calendário", secção Completar, "Tocou numa folga?" com WFLY + DDO, "O calendário está
   errado?" → horas reais. **Retomar no bloco 3** (dinheiro): Números de um mês SEM serviços (o bloco do dinheiro com a base e, por
