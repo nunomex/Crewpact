@@ -17,7 +17,7 @@ app como "em breve" (visíveis, sem acesso) e fazem-se depois, uma a uma. **O la
 companhias todas prontas.** Até lá, o que é só da TAP, da Hi Fly ou da Ryanair não entra na fila: fica anotado para a vez
 delas. Pormenor na entrada "Uma companhia de cada vez", abaixo.
 
-**O NOVO ACORDO DOS PILOTOS DA EASYJET — FEITO a 2026-11-13 (Fable 5.2, sessão própria; por gravar).** É o BTE n.º 29, de
+**O NOVO ACORDO DOS PILOTOS DA EASYJET — FEITO a 2026-11-13 (Fable 5.2, sessão própria; gravado no ramo `calculos-repouso-2`, commit `93aea15`, sem push).** É o BTE n.º 29, de
 8 de agosto de 2026 (p. 124–156), assinado a 26 de junho de 2026, válido até 31 de janeiro de 2029. Está no motor
 (`ae/easyjetSpac.js`), com o de 2023 na linha do tempo; a app deixou de dizer "AE expirado". A lista do que muda, artigo a
 artigo, e o que o texto não fecha: `docs/ae-easyjet-pilotos-2026.md`. Pormenor na entrada de 2026-11-13, abaixo.
@@ -53,6 +53,13 @@ artigo, e o que o texto não fecha: `docs/ae-easyjet-pilotos-2026.md`. Pormenor 
 **SESSÃO SEGUINTE (pedida pelo Nuno a 2026-11-13) — AS REFERÊNCIAS DE LAYOUT E O RESTO DAS PÁGINAS (Opus 5.5, Extra, sessão
 própria; é design, não cálculo).** O Nuno pôs em `referencias/Para a app/` 57 imagens (54 JPG e 3 GIF) que escolheu como
 referência para o layout das páginas que faltam e para o sistema de desenho. **Enunciado:**
+- **Regra do Nuno (2026-11-13): uma só app.** O Início já está feito na direção 3.0 "cartões de cor" (esboço
+  `design/inicio-cartoes.html`, regras em `docs/design-system.md` §14, código em `components/HomeCards.js` e
+  `data/homeCards.js`). **Essa é a linguagem da app toda.** As imagens servem para a enriquecer e para resolver as páginas
+  que faltam DENTRO dela; não trazem um estilo novo. O que se aproveitar de uma imagem traduz-se para os tokens e os
+  componentes que já existem (`CARD`, `TXT3`, `TXT`, `SPACE`, `IconButton`, `SheetHeader`, `Porta`); o que só funcionar
+  com outro estilo fica de fora, e diz-se porquê. Teste de cada página: posta ao lado do Início, parece a mesma app?
+  Um elemento novo (um cartão, um gráfico, um ícone, um movimento) entra primeiro no sistema de desenho, e só depois nas páginas.
 - **1 · Ver as imagens uma a uma** (todas; não por amostra) e escrever, para cada uma: o que é (ecrã, componente, ícone,
   animação), o que se pode aproveitar na CrewPact e onde (que página, que componente, que parte do sistema de desenho:
   cor, letra, espaço, cartões, listas, gráficos, ícones, estados vazios, movimento), e o que não serve e porquê. Os GIF
@@ -388,7 +395,7 @@ motor está na versão **21**. **O que falta, por ordem:**
 
 ## 2026-11-13 — O novo acordo dos pilotos da easyJet: BTE n.º 29 de 2026 (Fable 5.2, sessão própria)
 
-O enunciado combinado de manhã, feito. **Por gravar** (nada foi para o git: o Nuno não pediu).
+O enunciado combinado de manhã, feito. **Gravado no ramo `calculos-repouso-2` (commit `93aea15`), sem push.**
 
 **A pergunta de "antes de tudo" respondeu-a o próprio PDF:** é o texto publicado — Boletim do Trabalho e Emprego n.º 29, de
 8 de agosto de 2026, p. 124–156, "Revisão global"; assinado em Lisboa a 26 de junho de 2026, depositado a 23 de julho
