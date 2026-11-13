@@ -139,7 +139,9 @@ export function homeCards(H = {}) {
     const sub = extraSub
       ? [withDay ? F.wd(n.iso) : null, extraSub].filter(Boolean).join(' · ')
       : [withDay ? F.wd(n.iso) : null, fl ? secTxt(n) : null, !withDay && fl && roundTrip(n) ? l('ida e volta', 'out and back') : null].filter(Boolean).join(' · ');
-    const a = n.report ? { v: n.report, l: fl ? 'report' : l('começa', 'starts') } : null;
+    // Sem apresentação (o calendário nem sempre a traz): a hora de partida, dita como tal — nunca um cartão só com o fim
+    // (visto no iPhone a 2026-11-13).
+    const a = n.report ? { v: n.report, l: fl ? 'report' : l('começa', 'starts') } : (fl && n.dep) ? { v: n.dep, l: l('partida', 'departure') } : null;
     const b = n.end ? { v: n.end, l: l('fim', 'end') } : null;
     const card = { t: 'card', id: 'next', color: colorOf(n.kind), kind: kindLbl, title: titleOf(n), sub: sub || null, gain: null,
       a, dur: n.report && n.end ? F.dur(span(n.report, n.end)) : null, b, pct: null, corner: 'chev', action: null, open: openDay(n) };
