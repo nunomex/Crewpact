@@ -24,6 +24,8 @@ import { legZulu, legsZulu } from '../data/zulu';
 import { fdpForDuty, docFor, dayNum } from '../ae/tapLimits';
 import { plainFor, fmtDur, fmtClock } from '../data/tapLimitsText';
 import { AE_DEEPLINKS } from '../data/library';
+import FlightShareCard from '../components/FlightShareCard';
+import { shareCardFor } from '../data/shareLeg';
 
 const minToHhmm = (min) => { if (!min) return ''; const h = Math.floor(min / 60), m = min % 60; return `${h}:${String(m).padStart(2, '0')}`; };
 const clkMin = (str) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(str || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; };
@@ -33,11 +35,17 @@ const clkMin = (str) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(str || ''); ret
 // COMPLETAR (os factos que a lei ou o acordo precisam e o calendário não traz, um de cada vez — data/dutyComplete.js) ·
 // Pernoita · Pagamento. O "Editar serviço" saiu: a saída "O calendário está errado?" leva às horas reais ou ao dado em falta.
 // Tudo derivado dos motores — a duty NÃO guarda FDP/per-diem. Apagar SÓ nos manuais (a fonte manda nos importados).
-export default function DutyDetailScreen({ route, navigation }) {
+// O CORPO (2026-11-13): separado do ecrã para viver também DENTRO da Escala — o "Ver tudo" da escolha 1 de
+// design/escala-so-mes.html (a fila de ícones com a aba ligada). Sem `section` desenha tudo (o ecrã do Detalhe, abaixo, que
+// continua para os outros caminhos); com `section` ('legs' · 'lim' · 'eur' · 'hotel' · 'share' · 'fix') só essa parte. A lógica
+// é UMA: os motores não se duplicam. Fica neste ficheiro (e não num novo) para a dívida antiga dos estilos não mudar de sítio.
+// `embedded` (a Escala, por baixo da linha do serviço): tudo, mas sem o herói — a linha do serviço já diz a rota e as horas.
+export function DutyDetailBody({ date, idx: idxIn = 0, section = null, embedded = false, editReq = null, navigation, onEdited, onDeleted, onOpenService }) {
   const ctxAll = useContext(AppContext);
   const { lang, duties, crewAt, removeDuty, saveDuty, updateDutyService, notify } = ctxAll;
   const l = (pt, en) => (lang === 'en' ? en : pt);
-  const tabSpace = useTabBarSpace();
+  const all = !section;                              // sem secção = o Detalhe inteiro
+  const show = (k) => all || section === k;
   const [fact, setFact] = useState(null);           // a linha do "Completar" aberta (a folha de UM dado)
   const lastFact = useRef(null);                    // a folha desce com o conteúdo (não pisca vazia ao fechar)
   if (fact) lastFact.current = fact;
@@ -46,13 +54,11 @@ export default function DutyDetailScreen({ route, navigation }) {
   const afterFix = useRef(null);                    // a folha a abrir DEPOIS de esta fechar (PeleSheet.onClosed — nunca dois Modais a cruzar-se)
   const [realOpen, setRealOpen] = useState(false);  // porta 1: as horas reais
   const [missOpen, setMissOpen] = useState(false);  // porta 2: o dado que faltou no calendário
-  const [edited, setEdited] = useState(false);
   const [hotelOpen, setHotelOpen] = useState(false);   // folha "Hotel da pernoita" (registar/editar)
   const [prova, setProva] = useState(null);            // folha da PROVA ("a lei deste número")
+  const [shareCard, setShareCard] = useState(null);     // Partilhar o voo (o mesmo cartão do Início)
 
-  const date = route.params?.date;
-  // `edit` (Início v6, tecla "Registar o sign-off"): abre logo as HORAS REAIS (o formulário inteiro saiu, 2026-11-08).
-  const editReq = route.params?.edit;
+  // `editReq` (Início v6, tecla "Registar o sign-off"): abre logo as HORAS REAIS (o formulário inteiro saiu, 2026-11-08).
   useEffect(() => { if (editReq) setRealOpen(true); }, [editReq]);
   // LINHA DO TEMPO DO CONTRATO (2026-11-03): o acordo, a companhia (a Prova cita o AE dela) e a base
   // DESTE dia — um serviço antigo noutra companhia mostra o dinheiro e a lei dessa companhia.
@@ -65,13 +71,9 @@ export default function DutyDetailScreen({ route, navigation }) {
   const baseD = date ? ctxAll.homeBaseAt(date) : ctxAll.base;
   const provaCtx = { companySlug: coD && coD.slug, companyName: coD && coD.name, isPilot: isPilotD, lang };
   // `idx` (2026-11-08): 0 = o serviço principal do dia; n = o n.º serviço extra (o "Editar" da Escala saiu — abrem aqui).
-  const idx = Math.max(0, Number(route.params?.idx) || 0);
+  const idx = Math.max(0, Number(idxIn) || 0);
   const day = date ? duties[date] : null;
   const duty = !day ? null : idx > 0 ? ((Array.isArray(day.extra) ? day.extra : [])[idx - 1] || null) : day;
-  const goBack = () => {
-    if (edited) navigation.navigate('EscalaMain', { flashDuty: date, flashTs: Date.now() });
-    else navigation.goBack();
-  };
   // DESFAZER em vez de confirmar (mockup design/desfazer.html, aprovado 2026-07-15):
   // apaga JÁ e oferece 5 s de "Desfazer" no toast — o Alert morreu. O objeto é capturado
   // ANTES; repor = saveDuty com ele (repõe deleted:false + re-deriva o FTL do dia; o sync
@@ -81,7 +83,7 @@ export default function DutyDetailScreen({ route, navigation }) {
     if (!captured) return;
     warning();
     removeDuty && removeDuty(date);
-    navigation.goBack();
+    if (onDeleted) onDeleted(); else navigation.goBack();
     const wd = (lang === 'en' ? ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'] : ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'])[new Date(`${date}T12:00:00`).getDay()];
     const what = captured.route ? String(captured.route).replace(/-/g, ' → ') : t('duties.kind.' + (captured.kind || 'flight'), lang);
     notify && notify(
@@ -90,22 +92,7 @@ export default function DutyDetailScreen({ route, navigation }) {
     );
   };
 
-  const BackBtn = () => (
-    <View style={s.topbar}>
-      <IconButton icon="back" onPress={goBack} label={t('common.back', lang)} />
-    </View>
-  );
-
-  if (!duty || (day && day.deleted)) {
-    return (
-      <SafeAreaView style={s.safe} edges={['top']}>
-        <BackBtn />
-        <View style={{ padding: GUTTER }}>
-          <Text style={s.muted}>{l('Serviço não encontrado.', 'Duty not found.')}</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  if (!duty || (day && day.deleted)) return null;   // o ecrã do Detalhe diz "Serviço não encontrado"
 
   const kind = duty.kind || 'flight';
   const isFlight = kind === 'flight';
@@ -117,7 +104,7 @@ export default function DutyDetailScreen({ route, navigation }) {
   const saveSvc = (patch, msg) => {
     if (idx > 0) updateDutyService && updateDutyService(date, idx - 1, { ...duty, ...patch });
     else saveDuty && saveDuty(date, { ...duty, ...patch });
-    success(); setEdited(true);
+    success(); onEdited && onEdited();
     notify && notify(msg || l('Guardado', 'Saved'));
   };
   const hasEnd = !!(duty.report_time && duty.block_on);
@@ -302,7 +289,8 @@ export default function DutyDetailScreen({ route, navigation }) {
     );
   };
   // Secção: o rótulo à esquerda e, à direita, de ONDE vêm os dados (N26: "Details" da fonte vs. o que acrescentas).
-  const Sec = ({ icon, children, src }) => (
+  // `top` = o título da secção inteira: dentro da Escala é o ícone escolhido que o diz, por isso não se repete.
+  const Sec = ({ icon, children, src, top }) => (top && !all) ? null : (
     <View style={s.sec}>
       <Icon name={icon} size={13} color={PELE.grey} /><Text style={s.secTxt}>{children}</Text>
       {src ? <View style={s.secSrc}><Icon name="cal" size={12} color={PELE.grey} /><Text style={s.secSrcT}>{src}</Text></View> : null}
@@ -329,7 +317,7 @@ export default function DutyDetailScreen({ route, navigation }) {
   const missing = missingFields(duty);
   const schedule = (
     <>
-      <Sec icon="clock" src={srcLbl}>{l('Horário', 'Schedule')}</Sec>
+      <Sec icon="clock" src={srcLbl} top>{l('Horário', 'Schedule')}</Sec>
       <Panel rows={[
         timeRow(l('Apresentação', 'Report'), 'report_time', duty.report_time ? toZulu(date, duty.report_time) : null),
         timeRow(l('Calços fora', 'Off-blocks'), 'block_off', duty.block_off ? (zOf(firstLeg, 'off') || toZulu(date, duty.block_off)) : null),
@@ -413,43 +401,49 @@ export default function DutyDetailScreen({ route, navigation }) {
     </View>
   ) : null;
 
+  // PARTILHAR (a secção do "Ver tudo" na Escala): cada perna com número de voo abre o MESMO cartão do Início (data/shareLeg.js).
+  const shareLegsD = legs.filter((lg) => lg && (lg.flightNo || lg.flight));
+  const shareBlock = shareLegsD.length ? (
+    <Panel rows={shareLegsD.map((lg) => ({ k: `${lg.flightNo || lg.flight} · ${lg.dep || '?'} → ${lg.arr || '?'}`, v: l('Partilhar', 'Share'),
+      go: () => setShareCard(shareCardFor(lg, date, { todayISO, locale })) }))} />
+  ) : (
+    <Text style={s.note}>{isFlight ? l('Este voo ainda não tem número — sem ele não há o que partilhar.', 'This flight has no number yet — nothing to share without it.') : l('Só os voos se partilham com a família.', 'Only flights are shared with family.')}</Text>
+  );
+
   return (
-    <SafeAreaView style={s.safe} edges={['top']}>
-      <PeleSide label={(isFlight ? l('VOO', 'FLIGHT') : String(t('duties.kind.' + kind, lang) || '')).toUpperCase()} accent={((firstLeg && firstLeg.flightNo) || (isFlight ? routeStr : '')).toUpperCase()} />
-      <BackBtn />
-      <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} showsVerticalScrollIndicator={false}>
-        {/* Herói — eyebrow + fantasma(FDP) + rota + kick + pílula de estado */}
-        <PeleHeader
+    <>
+        {/* Herói — eyebrow + fantasma(FDP) + rota + kick + pílula de estado (só no ecrã do Detalhe: na Escala o dia já o diz) */}
+        {(all && !embedded) ? <PeleHeader
           size="detail" rule={false}
           eyebrow={`${isFlight ? l('Voo', 'Flight') : t('duties.kind.' + kind, lang)} · ${fmtDate(date)}${date === todayISO ? ` · ${l('hoje', 'today')}` : ''}`}
           ghost={heroGhost || undefined}
           word={headMain}
           kick={kickParts.length ? kickParts.join(' · ') : undefined}
-        />
-        <View style={s.stbar}>
+        /> : null}
+        {(all || section === 'lim') ? <View style={s.stbar}>
           <View style={[s.pill, statusPill.tone === 'red' ? s.pillRed : statusPill.tone === 'ok' ? s.pillOk : statusPill.tone === 'unc' ? s.pillUnc : statusPill.tone === 'warn' ? s.pillWarn : s.pillNeutral]}>
             {statusPill.tone === 'ok' ? <Icon name="check" size={12} color={PELE.ink} /> : statusPill.tone === 'red' ? <Icon name="alert" size={12} color={PELE.red} /> : statusPill.tone === 'warn' ? <Icon name="alert" size={12} color={PELE.warnText} /> : null}
             <Text style={[s.pillTxt, { color: statusPill.tone === 'red' ? PELE.red : (statusPill.tone === 'ok' || statusPill.tone === 'unc') ? PELE.ink : statusPill.tone === 'warn' ? PELE.warnText : PELE.grey }]}>{statusPill.txt}</Text>
           </View>
           {duty.dirty ? <View style={s.pendRow}><View style={s.pendDot} /><Text style={s.pendTxt}>{t('duties.pending', lang)}</Text></View> : null}
-        </View>
-        <View style={s.hr} />
+        </View> : null}
+        {(all && !embedded) ? <View style={s.hr} /> : null}
 
-        {!needRows.length ? schedule : null}
+        {(all ? !needRows.length : section === 'legs') ? schedule : null}
 
         {/* Sem hora de report → o motor devolve null e a secção FTL desaparecia em SILÊNCIO
             (device 2026-09-03). Honestidade: dizer que o PSV não foi calculado e como corrigir. */}
-        {(!d && !duty.report_time && (duty.kind || 'flight') === 'flight') ? (
+        {(show('lim') && !d && !duty.report_time && (duty.kind || 'flight') === 'flight') ? (
           <>
-            <Sec icon="gauge">{l('FTL · Segurança', 'FTL · Safety')}</Sec>
+            <Sec icon="gauge" top>{l('FTL · Segurança', 'FTL · Safety')}</Sec>
             <Panel rows={[
               { k: l('PSV', 'FDP'), v: l('não calculado — falta a hora de apresentação', 'not calculated — the report time is missing'), color: PELE.warnText, go: () => setMissOpen(true) },
             ]} />
           </>
         ) : null}
-        {d ? (
+        {(show('lim') && d) ? (
           <>
-            <Sec icon="gauge">{l('FTL · Segurança', 'FTL · Safety')}</Sec>
+            <Sec icon="gauge" top>{l('FTL · Segurança', 'FTL · Safety')}</Sec>
             <Panel rows={[
               (hasEnd && d.fdp.actualFdpStr) && { k: sbAccD ? l('Duração', 'Duration') : l('FDP realizado', 'Actual FDP'), v: d.fdp.actualFdpStr, color: over ? PELE.red : null },
               aeStricter
@@ -521,16 +515,23 @@ export default function DutyDetailScreen({ route, navigation }) {
           </>
         ) : null}
 
-        {completar}
-        {needRows.length ? schedule : null}
+        {show('lim') ? completar : null}
+        {(all && needRows.length) ? schedule : null}
 
         {/* Pernoita — hotel da estação (catálogo pessoal, por IATA) — mapas + ligar. */}
-        {duty.nightStop ? (() => {
+        {(show('hotel') && duty.nightStop) ? (() => {
           const st = nightStopStation(duty, baseD);
           const h = st ? (ctxAll.hotels || {})[st] : null;
           return (
             <>
-              <Sec icon="bed">{l('Pernoita', 'Night stop')}{st ? ` · ${st}` : ''}</Sec>
+              <Sec icon="bed" top>{l('Pernoita', 'Night stop')}{st ? ` · ${st}` : ''}</Sec>
+              {/* Na Escala, o Hotel leva também o repouso até ao próximo serviço (a pernoita saiu do dia para aqui). */}
+              {(section === 'hotel' && hasEnd && d && d.rest && d.rest.restStr) ? (
+                <>
+                  <Panel rows={[{ k: l('Repouso mínimo após', 'Min rest after'), v: d.rest.restStr, prova: provaFor('repouso', provaCtx) }]} />
+                  <View style={{ height: SPACE.sm }} />
+                </>
+              ) : null}
               {h ? (
                 <TouchableOpacity style={s.hotel} activeOpacity={0.85}
                   onPress={() => { select(); Linking.openURL(hotelMapsUrl(h.name, st, Platform.OS)).catch(() => {}); }}
@@ -561,8 +562,10 @@ export default function DutyDetailScreen({ route, navigation }) {
             </>
           );
         })() : null}
+        {(section === 'hotel' && !duty.nightStop) ? <Text style={s.note}>{l('Sem pernoita neste serviço — dormes em casa.', 'No night stop on this duty — you sleep at home.')}</Text> : null}
 
-        <Sec icon="wallet">{l('Pagamento · detalhes', 'Pay · details')}</Sec>
+        {show('eur') ? <>
+        <Sec icon="wallet" top>{l('Pagamento · detalhes', 'Pay · details')}</Sec>
         <Panel rows={[
           (perDiem != null) && { k: l('Per-diem (AE)', 'Per diem'), v: `+${fmtEur0(perDiem)}`, color: MONEY.gain, prova: provaFor('perDiem', provaCtx) },
           (svcEur != null) && { k: svcEur.lbl, v: svcEur.max > svcEur.eur ? `+${fmtEur0(svcEur.eur)} ${l('a', 'to')} ${fmtEur0(svcEur.max)}` : `+${fmtEur0(svcEur.eur)}`, color: MONEY.gain },
@@ -580,22 +583,26 @@ export default function DutyDetailScreen({ route, navigation }) {
           duty.dayOffWorked && { k: l('Folga publicada trabalhada', 'Worked published day off'), v: String(duty.dayOffWorked).toUpperCase().replace('+', ' + ') },
           duty.kind === 'office' && duty.officeType === 'ofc8' && { k: l('Dia de escritório', 'Office day'), v: l('Dia inteiro (OFC8) · 3 setores', 'Full day (OFC8) · 3 sectors') },
         ]} />
+        </> : null}
 
         {/* Outros períodos de serviço do MESMO dia (210/245) — lista compacta. */}
-        {idx === 0 && Array.isArray(duty.extra) && duty.extra.length ? (
+        {(show('lim') && idx === 0 && Array.isArray(duty.extra) && duty.extra.length) ? (
           <>
             <Sec icon="ellipsis">{l('Outros serviços neste dia', 'Other services this day')}</Sec>
             <Panel rows={duty.extra.map((sv, i) => {
               const rr = ftlForDuty(sv, { postFlightMin: ctxAll.postFlightMin || 0, isPilot: isPilotD, base: baseD, date, cabinGapMin: gapD, splitAdminMin: ctxAll.splitAdminMin });
               const lbl = (!sv.kind || sv.kind === 'flight') ? (sv.route || l('Voo', 'Flight')) : t('duties.kind.' + sv.kind, lang);
               const psv = (rr && rr.isFdp && rr.fdp.actualFdpStr) ? rr.fdp.actualFdpStr : null;   // só PSV de quem tem setores
-              return { k: `${i + 2}. ${lbl}`, v: `${sv.report_time || '—'} → ${sv.block_on || '—'}${psv ? `  ·  PSV ${psv}` : ''}`, go: () => navigation.push('DutyDetail', { date, idx: i + 1 }) };
+              return { k: `${i + 2}. ${lbl}`, v: `${sv.report_time || '—'} → ${sv.block_on || '—'}${psv ? `  ·  PSV ${psv}` : ''}`, go: () => (onOpenService ? onOpenService(i + 1) : navigation.push('DutyDetail', { date, idx: i + 1 })) };
             })} />
             <Text style={s.foot}>{l('Os serviços do dia somam nos 28 dias (210). Vê o repouso entre eles na folha do dia.', 'The day’s services sum over 28 days (210). See the rest between them in the day detail.')}</Text>
           </>
         ) : null}
 
+        {section === 'share' ? shareBlock : null}
+
         {/* A saída discreta (Apple Wallet "Report an Issue"): as horas reais ou o dado que faltou — o resto corrige-se na fonte. */}
+        {show('fix') ? <>
         <TouchableOpacity style={s.escape} activeOpacity={0.7} onPress={() => { select(); setFixOpen(true); }} accessibilityRole="button">
           <Text style={s.escapeT}>{fixTitle}</Text>
           <Icon name="chevron" size={13} color={PELE.ink} />
@@ -611,9 +618,9 @@ export default function DutyDetailScreen({ route, navigation }) {
             ? l('Importado de um PDF — para o remover, importa na Escala o PDF atualizado da escala; os cancelados aparecem na revisão para confirmares.', 'Imported from a PDF — to remove it, import the updated roster PDF in the roster tab; cancellations show up in the review for you to confirm.')
             : l('Importado do calendário — para o remover, corrige na fonte (eCrew) e toca Sincronizar na Escala; os cancelados aparecem na revisão para confirmares.', 'Imported from the calendar — to remove it, fix it at the source (eCrew) and tap Sync in the roster; cancellations show up in the review for you to confirm.')}</Text>
         )}
+        </> : null}
 
-        <Text style={s.foot}>{t('common.ftlEstimate', lang)}</Text>
-      </ScrollView>
+        {(all || section === 'lim') ? <Text style={s.foot}>{t('common.ftlEstimate', lang)}</Text> : null}
 
       {/* A folha de UM dado do Completar. */}
       <FactSheet visible={!!fact} onClose={() => setFact(null)} lang={lang}
@@ -657,6 +664,53 @@ export default function DutyDetailScreen({ route, navigation }) {
       {/* Hotel da pernoita — registar/editar o hotel desta estação (catálogo pessoal). */}
       <HotelSheet visible={hotelOpen} onClose={() => setHotelOpen(false)} station={duty && duty.nightStop ? nightStopStation(duty, baseD) : null} />
       <ProvaSheet visible={!!prova} onClose={() => setProva(null)} prova={prova} lang={lang} />
+      <FlightShareCard visible={!!shareCard} onClose={() => setShareCard(null)} {...(shareCard || {})} />
+    </>
+  );
+}
+
+// O ECRÃ do Detalhe (os caminhos de fora da Escala: o Início, as notificações, os outros serviços do dia): a moldura — a faixa
+// lateral, o voltar e o deslizar — à volta do corpo inteiro.
+export default function DutyDetailScreen({ route, navigation }) {
+  const { lang, duties } = useContext(AppContext);
+  const l = (pt, en) => (lang === 'en' ? en : pt);
+  const tabSpace = useTabBarSpace();
+  const [edited, setEdited] = useState(false);
+  const date = route.params?.date;
+  const idx = Math.max(0, Number(route.params?.idx) || 0);
+  const day = date ? duties[date] : null;
+  const duty = !day ? null : idx > 0 ? ((Array.isArray(day.extra) ? day.extra : [])[idx - 1] || null) : day;
+  const goBack = () => {
+    if (edited) navigation.navigate('EscalaMain', { flashDuty: date, flashTs: Date.now() });
+    else navigation.goBack();
+  };
+  const BackBtn = () => (
+    <View style={s.topbar}>
+      <IconButton icon="back" onPress={goBack} label={t('common.back', lang)} />
+    </View>
+  );
+  if (!duty || (day && day.deleted)) {
+    return (
+      <SafeAreaView style={s.safe} edges={['top']}>
+        <BackBtn />
+        <View style={{ padding: GUTTER }}>
+          <Text style={s.muted}>{l('Serviço não encontrado.', 'Duty not found.')}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+  const kind = duty.kind || 'flight';
+  const isFlight = kind === 'flight';
+  const firstLeg = (Array.isArray(duty.legs) ? duty.legs : [])[0] || null;
+  const stations = String(duty.route || '').split(/[^A-Za-z]+/).map((x) => x.toUpperCase()).filter(Boolean);
+  const routeStr = stations.length > 1 ? stations.join(' → ') : (duty.route || l('Voo', 'Flight'));
+  return (
+    <SafeAreaView style={s.safe} edges={['top']}>
+      <PeleSide label={(isFlight ? l('VOO', 'FLIGHT') : String(t('duties.kind.' + kind, lang) || '')).toUpperCase()} accent={((firstLeg && firstLeg.flightNo) || (isFlight ? routeStr : '')).toUpperCase()} />
+      <BackBtn />
+      <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} showsVerticalScrollIndicator={false}>
+        <DutyDetailBody date={date} idx={idx} editReq={route.params?.edit} navigation={navigation} onEdited={() => setEdited(true)} />
+      </ScrollView>
     </SafeAreaView>
   );
 }

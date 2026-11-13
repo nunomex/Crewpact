@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { CARD, TXT, TXT3, SPACE, RADIUS, BRAND } from '../data/constants';
 import NotificationsBell from '../components/NotificationsBell';
 import FlightShareCard from '../components/FlightShareCard';
+import { shareCardFor } from '../data/shareLeg';
 import { HomeTop, HomeCards, pillWidth } from '../components/HomeCards';
 import { homeCards, fitGiant } from '../data/homeCards';
 import { getUpcomingFlight } from '../data/calendar';
@@ -717,20 +718,8 @@ export default function HomeScreen({ navigation }) {
   const openShareLeg = (lg, date, landed = false) => {
     if (!lg || !date) return;
     select();
-    const dep = String(lg.dep || '').toUpperCase(), arr = String(lg.arr || '').toUpperCase();
-    const fno = String(lg.flightNo || lg.flight || '').toUpperCase().replace(/\s+/g, '');
-    const toMin2 = (z) => { const m = /^(\d{1,2}):(\d{2})$/.exec(z || ''); return m ? (+m[1] * 60 + +m[2]) : null; };
-    const om = toMin2(legZulu(date, lg, 'off')), nm = toMin2(legZulu(date, lg, 'on'));
-    const blockMin = (om != null && nm != null) ? ((nm - om + 1440) % 1440) : null;
-    // Pílula de estado no cartão — SÓ do que o Início sabe de certeza.
-    const nowM = (() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); })();
-    const offM = toMin2(lg.off);
-    // Voo de outro dia (véspera): sem pílula — a do cartão diria "Hoje às" (o cartão já leva a data).
-    const status = landed ? { kind: 'landed' } : date > todayISO ? null : (offM != null && nowM < offM) ? { kind: 'today' } : { kind: 'air' };
-    setSendCard({ dep, arr, depTime: lg.off || '', arrTime: lg.on || '', flightNo: fno, date, sectors: 1, status,
-      dateLabel: new Date(`${date}T00:00:00`).toLocaleDateString(locale, { day: 'numeric', month: 'short' }),
-      duration: blockMin ? `${Math.floor(blockMin / 60)}H${String(blockMin % 60).padStart(2, '0')}` : '',
-      legs: [{ flight: fno, dep, arr }] });
+    // O cartão e a pílula de estado: data/shareLeg.js (a mesma conta do "Ver tudo" da Escala).
+    setSendCard(shareCardFor(lg, date, { todayISO, locale, landed }));
   };
   const shareLegs = sectorLegs.filter((lg) => lg && (lg.flightNo || lg.flight));
   const shareNext = () => {

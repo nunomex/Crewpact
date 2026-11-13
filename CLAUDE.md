@@ -43,8 +43,9 @@ fadiga (FTL — Reg. UE 83/2014 · CS-FTL.1) e a remuneração prevista pelos ac
    **Direção 3.0 "cartões de cor" (aprovada 2026-11-11):** esboço `design/inicio-cartoes.html`, regras em `docs/design-system.md`
    §14. **O Início e a barra de abas já estão no código** (2026-11-11, por ver no iPhone): o que vai para onde decide-o
    `data/homeCards.js` (golden `test:homecards`), o desenho é `components/HomeCards.js`, tokens `CARD`/`TXT3`. **A Escala
-   também** (2026-11-13, em agenda: esboços `design/escala-agenda.html` + `design/escala-passado.html`, por ver no iPhone):
-   `data/escalaDay.js` (golden `test:escala`), `components/DayBar.js`, "Lista | Mês" em `components/Segmented.js`; o topo é o `HomeTop` do Início. Aplica-se ecrã a ecrã; o que ainda não migrou segue o 2.0. **Uma só app:** as
+   também** (2026-11-13, por ver no iPhone): SÓ O MÊS (esboço `design/escala-janela.html`; o dia A, a legenda que filtra) e o dia numa
+   janela (`pageSheet`) com o Detalhe inteiro de cada serviço (`DutyDetailBody` em `screens/DutyDetailScreen.js`);
+   `data/escalaDay.js` (golden `test:escala`); o topo é o `HomeTop` do Início. Aplica-se ecrã a ecrã; o que ainda não migrou segue o 2.0. **Uma só app:** as
    referências de `referencias/Para a app/` traduzem-se para esta linguagem (índice no README de lá; peças em §14).
 6. **Dados de teste só.** Nunca dados reais de tripulantes durante a construção. RGPD: sem ficheiros,
    fotos nem saúde; dose de radiação nunca guardada.

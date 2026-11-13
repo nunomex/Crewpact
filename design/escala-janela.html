@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · Escala, o mês e a janela do dia</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* A Escala FINAL (2026-11-13), desenhada depois de construída para ficar como referência (o Nuno: "avança já com a janela" e
+   depois "onde está o esboço?"). Igual ao código (screens/EscalaScreen.js): só o mês (o dia A de design/escala-mes.html e a
+   legenda que filtra) — deslizar para o lado na grelha muda de mês; tocar num dia abre a JANELA nativa do iPhone (pageSheet: sobe
+   até quase ao topo, o mês espreita por trás, puxar para baixo fecha) com o cabeçalho (o dia, ‹ › e ✕), uma linha por serviço
+   (a pernoita na linha do voo) e, no serviço aberto (o único do dia, ou o que se tocar), o Detalhe inteiro desse serviço, como o
+   antigo "Ver tudo" (DutyDetailBody, sem o herói). Na janela, deslizar para o lado muda de dia. Dados de teste (novembro de
+   2026; hoje = sexta 13) — os números do Detalhe são ilustrativos. iPhone 390 × 844. */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+.lead{max-width:940px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)}
+.row{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:10px}
+.cap{font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.ctl{display:flex;gap:8px;flex-wrap:wrap;max-width:406px}
+.ctl button{border:1px solid #CFCDC6;background:#fff;border-radius:10px;padding:6px 10px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.notes{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;max-width:420px}
+.notes h3{font-size:12.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.notes li{font-size:13px;line-height:1.5;color:var(--muted)} .notes ul{padding-left:18px;display:flex;flex-direction:column;gap:5px} .notes b{color:var(--pfg)}
+#meas{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+.ph{width:406px;height:860px;border:8px solid #04060A;border-radius:52px;overflow:hidden;position:relative;display:flex;flex-direction:column;
+  --desk:#E3E1DB;--ink:#141414;--soft:#3A3A36;--sheet:#FFFFFF;--neutral:#F1EFEA;--tsub:#5E5E57;--caption:#77776F;--round:rgba(127,127,127,.22);--sub:rgba(20,20,20,.82);
+  --voo:#6DBEFA;--terra:#C3A1BE;--rest:#B4C2A2;--alert:#F0854A;--paper:#FFFFFF;--line:#ECEAE4;--grey:#77776F;background:#000;color:var(--ink)}
+.app{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--desk);transform-origin:50% 0;border-radius:0}
+@media (prefers-reduced-motion: no-preference){.app{transition:transform .32s cubic-bezier(.2,.8,.2,1),border-radius .32s ease,filter .32s ease}}
+.ph.open .app{transform:translateY(10px) scale(.93);border-radius:14px;filter:brightness(.72)}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.sc{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none} .sc::-webkit-scrollbar{display:none}
+.tabbar{height:83px;flex:none;background:var(--sheet);padding:5px 12px 22px;display:flex;gap:8px;align-items:center}
+.tcap{flex:1;height:56px;border-radius:28px;background:var(--neutral);display:flex;padding:4px;gap:2px}
+.tcap .t{flex:1;border-radius:24px;display:flex;align-items:center;justify-content:center;color:var(--tsub);font-weight:700;font-size:11px}
+.tcap .t.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(20,20,20,.14)}
+.fab{width:56px;height:56px;border-radius:28px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;flex:none;font-size:26px}
+.top{padding:0 16px}
+.pills{display:flex;align-items:center;gap:8px;padding:8px 0 14px}
+.pill{height:38px;padding:0 16px;border-radius:19px;display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px;border:1.5px solid var(--ink);white-space:nowrap}
+.round{width:44px;height:44px;border-radius:22px;background:var(--round);margin-left:auto;flex:none}
+.what{font-weight:500;font-size:15px;line-height:20px;color:var(--soft)}
+.hero{display:flex;align-items:stretch;gap:16px;margin-top:4px;padding-bottom:30px}
+.giant{font-weight:700;font-size:62px;line-height:.9;letter-spacing:-2.8px;white-space:nowrap} .giant s{text-decoration:none;color:rgba(20,20,20,.5)}
+.side{border-left:1.5px solid var(--ink);padding-left:16px;display:flex;flex-direction:column;justify-content:center;gap:12px}
+.side b{display:block;font-weight:700;font-size:20px;line-height:22px} .side span{font-weight:500;font-size:11px;color:var(--soft)}
+.sheet{background:var(--sheet);border-radius:32px 32px 0 0;margin-top:-16px;padding:12px 12px 24px;min-height:520px}
+.wk{display:flex;gap:4px;margin-bottom:4px}
+.wk span{width:48.67px;text-align:center;font-weight:800;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--tsub)}
+.g{display:flex;flex-wrap:wrap;column-gap:4px;row-gap:6px}
+.c{width:48.67px;height:52px;position:relative;display:flex;flex-direction:column;align-items:center;padding-top:3px;gap:4px;cursor:pointer}
+.c.blank{cursor:default}
+.n{font-weight:700;font-size:15px;line-height:20px;font-variant-numeric:tabular-nums}
+.n.past{color:var(--tsub)}
+.n.today{width:28px;height:28px;border-radius:14px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;margin-top:-4px}
+.tag{height:20px;align-self:stretch;margin:0 2px;border-radius:7px;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.tag.jr{margin-right:-2px;border-top-right-radius:0;border-bottom-right-radius:0} .tag.jl{margin-left:-2px;border-top-left-radius:0;border-bottom-left-radius:0}
+.tag.abs{background:#fff !important;border:1.5px solid rgba(127,127,127,.4)}
+.tag .edge{position:absolute;left:0;top:0;bottom:0;width:8px} .tag.two{padding-left:8px}
+.tag .dot{width:6px;height:6px;border-radius:3px;margin-right:2px;flex:none}
+.code{font-weight:800;font-size:11px;letter-spacing:.5px;color:#141414;line-height:1;display:inline-flex;align-items:center;gap:2px;white-space:nowrap}
+.moon{width:10px;height:10px;flex:none}
+.pend{position:absolute;top:2px;right:4px;width:7px;height:7px;border-radius:4px;background:var(--alert);box-shadow:0 0 0 1.5px #fff}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:12px 0 2px;scrollbar-width:none} .chips::-webkit-scrollbar{display:none}
+.chip{flex:none;height:32px;padding:0 12px 0 8px;border-radius:16px;background:var(--neutral);display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12px}
+.chip .sw{width:22px;height:16px;border-radius:5px;position:relative;overflow:hidden;display:inline-flex;align-items:center;justify-content:center}
+.hint{font-weight:500;font-size:11px;color:var(--tsub);padding:6px 2px 0}
+
+/* a janela (pageSheet do iOS): sobe de baixo, o mês recua por trás */
+.win{position:absolute;left:0;right:0;bottom:0;top:58px;background:#fff;border-radius:12px 12px 0 0;z-index:10;display:flex;flex-direction:column;transform:translateY(102%)}
+@media (prefers-reduced-motion: no-preference){.win{transition:transform .34s cubic-bezier(.2,.8,.2,1)}}
+.ph.open .win{transform:none}
+.grab{display:flex;justify-content:center;padding:8px 0 4px;cursor:grab} .grab i{width:40px;height:5px;border-radius:3px;background:rgba(127,127,127,.3)}
+.dhead{display:flex;align-items:center;gap:8px;padding:2px 16px 12px}
+.dhead .tt{flex:1;min-width:0} .dhead b{display:block;font-weight:800;font-size:16px;line-height:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .dhead span{font-weight:600;font-size:12px;color:var(--tsub)}
+.ib{width:36px;height:36px;border-radius:18px;background:var(--round);display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer;font-weight:700;font-size:16px}
+.dbody{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;padding:0 12px 40px} .dbody::-webkit-scrollbar{display:none}
+.day{display:flex;flex-direction:column;gap:8px;touch-action:pan-y}
+.slim{border-radius:18px;padding:11px 14px;display:flex;align-items:center;gap:10px;color:#141414;cursor:pointer}
+.slim .tw{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px} .slim b{font-weight:800;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .slim span{font-weight:500;font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gainc{background:#fff;color:#0B6E43;border-radius:12px;height:26px;padding:0 10px;display:inline-flex;align-items:center;font-weight:800;font-size:13px;white-space:nowrap}
+.chev{font-weight:800;font-size:15px;color:var(--sub)}
+.swh{text-align:center;font-weight:500;font-size:11px;color:var(--tsub);padding-top:6px}
+/* o Detalhe do serviço (2.0, como o antigo "Ver tudo"), dentro de um painel neutro */
+.det{background:var(--neutral);border-radius:22px;padding:2px 12px 14px}
+.stbar{display:flex;align-items:center;gap:10px;margin-top:10px}
+.stp{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:14px;background:#F4F2ED;font-weight:800;font-size:11px;letter-spacing:.6px;text-transform:uppercase}
+.sec{display:flex;align-items:center;gap:6px;margin:18px 2px 8px;font-weight:800;font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--grey)}
+.sec .src{margin-left:auto;font-weight:600;letter-spacing:0;text-transform:none;font-size:11px}
+.pnl{border:1px solid var(--line);border-radius:16px;background:var(--paper);padding:0 14px}
+.rw{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;padding:10px 0;border-top:1px solid var(--line)} .rw:first-child{border-top:0}
+.rw .k{font-weight:700;font-size:13px} .rw .k small{display:block;font-weight:600;font-size:11px;color:var(--grey)}
+.rw .v{font-weight:700;font-size:13px;text-align:right;white-space:nowrap} .rw .v small{display:block;font-weight:600;font-size:11px;color:var(--grey)}
+.rw .g{color:#0B6E43}
+.add{border:1.5px dashed var(--line);border-radius:16px;padding:12px;text-align:center;font-weight:700;font-size:13px}
+.esc{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;margin-top:14px;font-weight:700;font-size:13px}
+.foot{font-weight:500;font-size:11px;line-height:15px;color:var(--grey);margin-top:8px;padding:0 2px}
+.fat{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:13px;background:#F4F2ED;font-weight:800;font-size:12px} .fat i{width:8px;height:8px;border-radius:4px;background:var(--grey)}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>A Escala: o mês e a janela do dia</h1>
+    <p>Como está no código. <b>Só o mês</b> (o dia A e a legenda que filtra; deslizar para o lado em cima da grelha muda de mês). <b>Tocar num dia abre a janela</b> — a folha nativa do iPhone, que sobe até quase ao topo com o mês a recuar por trás. Na janela: o dia, <b>‹ ›</b> e <b>✕</b>; uma linha por serviço; <b>deslizar para o lado muda de dia</b>; puxar para baixo (ou ✕) volta ao mês. Num dia com <b>um serviço</b>, abre logo com tudo; com <b>dois</b>, toca-se no que se quer e abre por baixo dele <b>o Detalhe inteiro</b> desse serviço, como o antigo "Ver tudo".</p>
+    <p><b>Toca no ecrã:</b> num dia do mês; na janela, nos serviços, em ‹ ›, ou arrasta o dia para o lado; na pega ou em ✕ para fechar.</p>
+  </div>
+  <div class="row">
+    <div class="col"><div class="cap">O ecrã (toca nele)</div><div id="phone"></div>
+      <div class="ctl"><button onclick="openDay(13)">Abrir hoje (13)</button><button onclick="openDay(14)">Abrir o 14 (um serviço)</button><button onclick="step(1)">Dia seguinte ›</button><button onclick="closeWin()">Fechar a janela</button></div></div>
+    <div class="col"><div class="cap">Hoje aberto, com o voo tocado</div><div id="phone2"></div></div>
+    <div class="notes"><h3>O que está no código</h3><ul>
+      <li><b>A janela</b> é o <code>Modal</code> do iPhone em <code>pageSheet</code>: o fecho a puxar para baixo é o nativo; o mês recua por trás.</li>
+      <li><b>Deslizar na janela</b> muda de dia: o dia sai 140 ms para um lado e o seguinte entra 200 ms do outro; com "reduzir movimento", troca logo. Passa de mês na ponta.</li>
+      <li><b>O Detalhe</b> é o mesmo do ecrã "Ver tudo" (um só código): horário e setores, FTL · Segurança, completar, pernoita, pagamento, outros serviços do dia, "o calendário está errado?". Sem o herói (a linha do serviço já o diz); a pílula do estado FTL fica. As folhas que ele abre (completar, horas reais, hotel) sobem por cima da janela.</li>
+      <li><b>Um serviço</b>: abre logo. <b>Vários</b>: nenhum aberto — toca-se; tocar noutro troca; no aberto fecha.</li>
+      <li>Por ver no iPhone.</li></ul></div>
+  </div>
+  <p id="meas"></p>
+</div>
+
+<script>
+var MOON = '<svg class="moon" viewBox="0 0 24 24" fill="currentColor"><path d="M20 15.3A8.5 8.5 0 0 1 8.7 4a8.5 8.5 0 1 0 11.3 11.3z"/></svg>';
+var WD = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'], WDL = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+var TODAY = 13, LEAD = 6, DAYS = 30;
+var V = function(t, f, sub, eur, ns){ return { k:'voo', t:t, f:f, sub:sub, eur:eur, ns:ns }; }, T = function(t, sub){ return { k:'terra', t:t, sub:sub }; };
+var D = {
+  3:{ k:'voo', code:'FNC', ns:1, jr:1, s:[V('LIS → FNC','EZY8351','EZY8351 · 07:05–08:50 · report 06:20 · pernoita em Funchal','+64,30 €','Funchal')] }, 4:{ k:'voo', code:'FNC', jl:1, s:[V('FNC → LIS','EZY8352','EZY8352 · 10:15–11:55 · report 09:30','+23,40 €')] },
+  5:{ k:'voo', code:'BCN', s:[V('LIS → BCN → LIS','EZY8411','EZY8411 · 06:35–14:20 · report 05:50','+45,60 €')] }, 11:{ k:'voo', code:'FNC', s:[V('LIS → FNC → LIS','EZY8341','EZY8341 · 07:15–12:30 · report 06:30','+45,60 €')] },
+  13:{ k:'voo', code:'OPO', ns:1, two:1, jr:1, s:[T('Assistência em casa','06:00–12:00'), V('LIS → OPO','EZY1873','EZY1873 · 18:45–19:40 · report 18:00 · pernoita em Porto','+96,90 €','Porto')] },
+  14:{ k:'voo', code:'OPO', jl:1, s:[V('OPO → LIS','EZY1874','EZY1874 · 10:25–11:20 · report 09:40','+23,40 €')] },
+  16:{ k:'terra', code:'SBY', s:[T('Assistência em casa','06:00–14:00')] }, 17:{ k:'terra', code:'FRM', s:[T('Formação','08:00–17:00')] },
+  19:{ k:'voo', code:'LGW', s:[V('LIS → LGW → LIS','EZY8351','EZY8351 · 07:55–15:40 · report 07:10','+45,60 €')] }, 20:{ k:'voo', code:'OPO', ns:1, two:1, jr:1, s:[T('Assistência em casa','09:00–15:00'), V('LIS → OPO','EZY1873','EZY1873 · 18:45–19:40 · report 18:00 · pernoita em Porto','+96,90 €','Porto')] },
+  21:{ k:'voo', code:'OPO', jl:1, s:[V('OPO → LIS','EZY1874','EZY1874 · 10:25–11:20 · report 09:40','+23,40 €')] }, 24:{ k:'voo', code:'BCN', pend:1, s:[V('LIS → BCN → LIS','EZY8411','EZY8411 · 06:35–14:20 · report 05:50','+45,60 €')] },
+  25:{ k:'abs', code:'FÉR', jr:1, s:[] }, 26:{ k:'abs', code:'FÉR', jl:1, s:[] }, 27:{ k:'voo', code:'OPO', ns:1, two:1, jr:1, s:[T('Assistência em casa','09:00–15:00'), V('LIS → OPO','EZY1873','EZY1873 · 18:45–19:40 · report 18:00 · pernoita em Porto','+96,90 €','Porto')] },
+  28:{ k:'voo', code:'OPO', jl:1, s:[V('OPO → LIS','EZY1874','EZY1874 · 10:25–11:20 · report 09:40','+23,40 €')] }, 30:{ k:'terra', code:'SBY', s:[T('Assistência em casa','06:00–14:00')] }
+};
+var COL = { voo:'var(--voo)', terra:'var(--terra)', abs:'#fff' };
+function cell(pid, d){
+  var x = D[d], past = d < TODAY;
+  var h = '<div class="c" onclick="openDay(' + d + ',\'' + pid + '\')"><span class="n' + (d === TODAY ? ' today' : past ? ' past' : '') + '">' + d + '</span>';
+  if (x) {
+    var bg = past && x.k !== 'abs' ? 'var(--neutral)' : COL[x.k];
+    h += '<span class="tag' + (x.k === 'abs' ? ' abs' : '') + (x.two && !past ? ' two' : '') + (x.jr ? ' jr' : '') + (x.jl ? ' jl' : '') + '" style="background:' + bg + '">' + (x.two && !past ? '<i class="edge" style="background:var(--terra)"></i>' : '')
+      + '<span class="code">' + (past && x.k !== 'abs' ? '<i class="dot" style="background:' + COL[x.k] + '"></i>' : '') + x.code + (x.ns ? MOON : '') + '</span></span>';
+  }
+  if (x && x.pend) h += '<i class="pend"></i>';
+  return h + '</div>';
+}
+function month(pid){
+  var h = '<div class="wk">' + WD.map(function(w){ return '<span>' + w + '</span>'; }).join('') + '</div><div class="g">';
+  for (var i = 0; i < LEAD; i++) h += '<div class="c blank"></div>';
+  for (var d = 1; d <= DAYS; d++) h += cell(pid, d);
+  return h + '</div><div class="chips"><span class="chip"><span class="sw" style="background:var(--voo)"></span>Voo</span><span class="chip"><span class="sw" style="background:var(--terra)"></span>Terra</span><span class="chip"><span class="sw" style="background:#fff;border:1.5px solid rgba(127,127,127,.4)"></span>Férias</span><span class="chip"><span class="sw" style="background:var(--voo)">' + MOON + '</span>Pernoita</span><span class="chip">2 serviços</span><span class="chip">Por sincronizar</span></div><div class="hint">Toca numa cor para ver esses dias.</div>';
+}
+// o Detalhe de um serviço (o mesmo do antigo "Ver tudo"; números ilustrativos)
+function detail(sv, d){
+  var voo = sv.k === 'voo', past = d < TODAY;
+  var h = '<div class="det"><div class="stbar"><span class="stp">✓ Dentro do limite FTL</span></div>';
+  h += '<div class="sec">Horário<span class="src">do calendário</span></div><div class="pnl">'
+    + (voo ? '<div class="rw"><span class="k">Apresentação</span><span class="v">' + (sv.sub.match(/report (\d\d:\d\d)/) || [,'—'])[1] + '<small>em hora local</small></span></div><div class="rw"><span class="k">Calços fora</span><span class="v">' + sv.sub.split(' · ')[1].split('–')[0] + '</span></div><div class="rw"><span class="k">Calços dentro</span><span class="v">' + sv.sub.split(' · ')[1].split('–')[1] + '</span></div>'
+      : '<div class="rw"><span class="k">Início · fim</span><span class="v">' + sv.sub + '</span></div>') + '</div>';
+  if (voo) h += '<div class="sec">Setores<span class="src">do calendário</span></div><div class="pnl"><div class="rw"><span class="k">' + sv.f + ' · ' + sv.t.replace(/ → /g, '→') + '</span><span class="v">' + sv.sub.split(' · ')[1].replace('–', ' → ') + '<small>em Zulu no código</small></span></div></div>';
+  h += '<div class="sec">FTL · Segurança</div><div class="pnl">'
+    + (voo ? '<div class="rw"><span class="k">PSV máx (FDP)<small>§ ORO.FTL.205(b)</small></span><span class="v">13:00</span></div><div class="rw"><span class="k">Calços até às<small>§ ORO.FTL.205(b)</small></span><span class="v">07:00 (+1)</span></div>'
+      : '<div class="rw"><span class="k">PSV</span><span class="v">não se aplica — sem setores</span></div>')
+    + '<div class="rw"><span class="k">Repouso mínimo após<small>§ ORO.FTL.235</small></span><span class="v">' + (sv.ns ? '10:00' : '12:00') + '</span></div>' + (voo ? '<div class="rw"><span class="k">Fadiga</span><span class="fat"><i></i>baixa</span></div>' : '') + '</div>';
+  if (voo && d === 13) h += '<div class="sec">Completar</div><div class="pnl"><div class="rw"><span class="k">Assistência antes do voo<small>CS FTL.1.225</small></span><span class="v">da escala ›</span></div></div>';
+  if (sv.ns) h += '<div class="sec">Pernoita · ' + (sv.ns === 'Porto' ? 'OPO' : 'FNC') + '</div><div class="add">＋ adicionar hotel desta pernoita</div>';
+  h += '<div class="sec">Pagamento · detalhes</div><div class="pnl">' + (voo ? '<div class="rw"><span class="k">Per-diem (AE)<small>§ AE easyJet</small></span><span class="v g">+45,60 €</span></div>' + (sv.ns ? '<div class="rw"><span class="k">Paragem nocturna<small>§ AE easyJet</small></span><span class="v g">+51,30 €</span></div>' : '') + '<div class="rw"><span class="k">Setores</span><span class="v">1</span></div>' : '<div class="rw"><span class="k">Serviço em terra</span><span class="v">sem prestação no AE</span></div>') + '</div>';
+  var day = D[d];
+  if (day && day.s.length > 1) h += '<div class="sec">Outros serviços neste dia</div><div class="pnl">' + day.s.filter(function(x){ return x !== sv; }).map(function(o, i){ return '<div class="rw"><span class="k">' + (i + 2) + '. ' + o.t + '</span><span class="v">' + (o.k === 'terra' ? o.sub.replace('–', ' → ') : (o.sub.match(/report (\d\d:\d\d)/) || [,''])[1]) + ' ›</span></div>'; }).join('') + '</div>';
+  h += '<div class="esc">O calendário está errado? ›</div><div class="foot">Os limites são uma estimativa — a app nunca declara legalidade.</div></div>';
+  return h;
+}
+var ST = {};
+function dayBody(pid, d){
+  var x = D[d], st = ST[pid];
+  if (!x || !x.s.length) return '<div class="day"><div class="slim" style="background:var(--neutral)"><div class="tw"><b>' + (x && x.k === 'abs' ? 'Férias' : 'Folga') + '</b><span>' + (x && x.k === 'abs' ? 'marcado nos extras do mês' : 'sem serviço neste dia') + '</span></div></div><div class="swh">Desliza para o lado para ver o dia seguinte.</div></div>';
+  var h = '<div class="day">';
+  x.s.forEach(function(sv, i){
+    var past = d < TODAY;
+    h += '<div class="slim" style="background:' + COL[sv.k] + '" onclick="tapSvc(\'' + pid + '\',' + i + ')"><div class="tw"><b>' + sv.t + '</b><span>' + sv.sub + '</span></div>' + (sv.eur ? '<span class="gainc">' + sv.eur + '</span>' : '<span class="chev">›</span>') + '</div>';
+    if (st.svc === i) h += detail(sv, d);
+  });
+  return h + '</div>';
+}
+function head(pid, d){
+  var x = D[d], n = x ? x.s.length : 0, dt = new Date(2026, 10, d);
+  var sub = [d === TODAY ? 'hoje' : null, n ? n + (n === 1 ? ' serviço' : ' serviços') : (x && x.k === 'abs' ? 'Férias' : 'sem serviços')].filter(Boolean).join(' · ');
+  return '<div class="dhead"><div class="tt"><b>' + WDL[dt.getDay()] + ', ' + d + ' de novembro</b><span>' + sub + '</span></div><span class="ib" onclick="step(-1,\'' + pid + '\')">‹</span><span class="ib" onclick="step(1,\'' + pid + '\')">›</span><span class="ib" onclick="closeWin(\'' + pid + '\')">✕</span></div>';
+}
+function phone(pid){
+  return '<div class="ph" id="' + pid + '"><div class="app"><div class="status"><span>17:31</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="sc"><div class="top"><div class="pills"><span class="pill">Novembro 2026 ▾</span><span class="round"></span></div><div class="what">A tua escala de novembro</div><div class="hero"><div class="giant">11<br><s>serviços</s></div><div class="side"><div><b>7</b><span>pernoitas</span></div><div><b>2 008,66 €</b><span>per diem · estimado</span></div></div></div></div><div class="sheet">' + month(pid) + '</div></div>'
+    + '<nav class="tabbar"><div class="tcap"><div class="t">Início</div><div class="t on">Escala</div><div class="t">Números</div><div class="t">Perfil</div></div><span class="fab">+</span></nav></div>'
+    + '<div class="win"><div class="grab" onclick="closeWin(\'' + pid + '\')"><i></i></div><div id="' + pid + '-head"></div><div class="dbody" id="' + pid + '-body"></div></div></div>';
+}
+document.getElementById('phone').innerHTML = phone('p1');
+document.getElementById('phone2').innerHTML = phone('p2');
+var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function render(pid){ var st = ST[pid]; document.getElementById(pid + '-head').innerHTML = head(pid, st.day); document.getElementById(pid + '-body').innerHTML = dayBody(pid, st.day); bindSwipe(pid); }
+function openIdx(d){ var x = D[d]; return x && x.s.length === 1 ? 0 : -1; }
+function openDay(d, pid){ pid = pid || 'p1'; ST[pid] = { day: d, svc: openIdx(d) }; render(pid); document.getElementById(pid).classList.add('open'); }
+function closeWin(pid){ document.getElementById(pid || 'p1').classList.remove('open'); }
+function tapSvc(pid, i){ var st = ST[pid]; st.svc = st.svc === i ? -1 : i; render(pid); }
+function step(dir, pid){
+  pid = pid || 'p1'; var st = ST[pid]; if (!st) return;
+  var nd = Math.min(DAYS, Math.max(1, st.day + dir)); if (nd === st.day) return;
+  var body = document.getElementById(pid + '-body'), el = body.querySelector('.day');
+  var go = function(){ st.day = nd; st.svc = openIdx(nd); render(pid); if (reduce) return; var n = document.getElementById(pid + '-body').querySelector('.day'); n.style.transition = 'none'; n.style.transform = 'translateX(' + (dir * 40) + 'px)'; n.style.opacity = '0'; requestAnimationFrame(function(){ requestAnimationFrame(function(){ n.style.transition = 'transform .2s cubic-bezier(.2,.8,.2,1), opacity .2s ease'; n.style.transform = ''; n.style.opacity = '1'; }); }); };
+  if (reduce || !el) return go();
+  el.style.transition = 'transform .14s ease, opacity .14s ease'; el.style.transform = 'translateX(' + (-dir * 40) + 'px)'; el.style.opacity = '0'; setTimeout(go, 140);
+}
+function bindSwipe(pid){
+  var el = document.getElementById(pid + '-body').querySelector('.day'); if (!el) return;
+  var x0 = null, dx = 0;
+  el.addEventListener('pointerdown', function(e){ x0 = e.clientX; dx = 0; try { el.setPointerCapture(e.pointerId); } catch (_) {} el.style.transition = 'none'; });
+  el.addEventListener('pointermove', function(e){ if (x0 == null) return; dx = e.clientX - x0; if (Math.abs(dx) > 8) { el.style.transform = 'translateX(' + dx + 'px)'; el.style.opacity = String(1 - Math.min(0.5, Math.abs(dx) / 300)); } });
+  var end = function(){ if (x0 == null) return; x0 = null; if (Math.abs(dx) > 60) { step(dx < 0 ? 1 : -1, pid); return; } el.style.transition = 'transform .18s ease, opacity .18s ease'; el.style.transform = ''; el.style.opacity = '1'; };
+  el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+}
+// o 2.º telemóvel: hoje aberto, com o voo tocado
+openDay(13, 'p2'); tapSvc('p2', 1);
+function check(){
+  var cut = 0; document.querySelectorAll('.code, .slim b, .dhead b, .rw .k, .chip').forEach(function(e){ if (e.scrollWidth > e.clientWidth + 1) cut++; });
+  document.getElementById('meas').textContent = 'Verificação do esboço: textos cortados ' + cut + ' · a janela 340 ms, o dia a deslizar 140 + 200 ms; com "reduzir movimento" sem animação.';
+}
+setTimeout(check, 150); if (document.fonts) document.fonts.ready.then(function(){ setTimeout(check, 200); });
+</script>
+</body>
+</html>

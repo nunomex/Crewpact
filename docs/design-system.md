@@ -348,6 +348,8 @@ vermelhos da 2.0 revistos um a um, e o amarelo da marca (`BRAND.signal/marker`) 
 
 ### Peças escolhidas a 2026-11-13 (das 57 referências de `referencias/Para a app/`)
 
+**No código (2026-11-13, mais tarde — substitui o parágrafo seguinte):** a Escala é SÓ O MÊS (o dia A de `design/escala-mes.html`, a legenda que filtra L2) e tocar num dia abre-o numa JANELA (a folha nativa do iPhone, `pageSheet`): o cabeçalho com ‹ › ✕, uma linha por serviço, e no serviço aberto o corpo inteiro do Detalhe (`DutyDetailBody` `embedded`); deslizar para o lado muda de dia na janela e de mês na grelha. A agenda descrita a seguir saiu da aba.
+
 **No código (2026-11-13, por ver no iPhone):** a Escala em AGENDA (esboços `design/escala-agenda.html` — A2 + o ano em
 meses da A1 — e `design/escala-passado.html` — D; a página de `escala-cartoes.html` foi substituída no mesmo dia, depois de
 vista no iPhone). Peças novas: **B14 · a barra do dia** (`components/DayBar.js`: a data à esquerda, o título, a lua, a 2.ª

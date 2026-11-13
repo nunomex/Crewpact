@@ -222,6 +222,45 @@ referência para o layout das páginas que faltam e para o sistema de desenho. *
   e leva um anel fino de tinta.** A pernoita: sai o cartão à parte; fica a lua e "pernoita no Porto" no cartão do voo, e o
   hotel, o repouso até ao report de volta e o contador no ícone Hotel (o Início mantém o cartão salva da pernoita). Medido: no
   dia 13 a fila de ícones fica inteira à vista e sobram 26 pt do painel. **A construir.**
+  **Em construção (2026-11-13, por gravar, em pausa):** o corpo do Detalhe separado (`DutyDetailBody` em
+  `screens/DutyDetailScreen.js`: sem `section` = o ecrã de sempre; com `section` = só essa parte) · o "Partilhar" numa função
+  comum (`data/shareLeg.js`, também no Início) · a Escala só com o mês (desenho A, L2, a semana, o dia; **por serviço**, como o
+  Nuno pediu: "carregar em cada serviço e aparecer tudo o que é desse serviço" — a fila de ícones e o painel abrem por baixo da
+  linha do serviço tocado). Compila (pacote iOS) e os goldens passam; não visto no iPhone. **Em pausa porque o Nuno perguntou,
+  com franqueza, se o tripulante prefere o mês ou a lista** — a minha resposta: os dois no mesmo ecrã (o mês em cima como
+  mapa, a lista por baixo com as horas), não um só nem um seletor. **"sim faz"** → esboço `design/escala-mes-lista.html`:
+  o mês (A, L2) em cima e a lista por baixo; tocar num dia do mês leva a lista até ele e abre-o; tocar num serviço abre por baixo
+  dele tudo o que é desse serviço (os seis ícones com a aba ligada). Três maneiras para o mês ao deslizar — **A** fica sempre
+  (o topo numa linha; medido: ~3 dias de lista à vista, 235 pt) · **B** o mês dá lugar à semana fixa (o topo do Início e o mês
+  em repouso, só ~1 linha de lista; a deslizar, a semana do dia lido fica fixa e a lista ganha ~614 pt; os dias feitos numa
+  linha que se abre) · **C** a semana, e o mês num toque (~8 dias à vista, 519 pt). Recomendo **B** (abrir no mês; afinar no
+  iPhone se abre já em "Hoje"). **O Nuno: "podemos ir para o B, mas não achas que está muito confuso?"** — sim: três resumos
+  da mesma coisa (o número gigante, o mês, a lista), a cor em dobro, seis ícones a misturar ler com fazer, coisas que mudam
+  sozinhas e gestos a disputar o dedo. → esboço `design/escala-b-simples.html`, três níveis de corte: **S1** só o topo (o resumo
+  numa linha) · **S2** e a lista calma (linhas brancas com uma faixa da cor; a cor fica no mês) · **S3** tudo (quatro secções —
+  Horas, Limites, Dinheiro, Hotel — e "Partilhar o voo" / "Está errado?" em botões no fim do painel). Medido: a lista sobe de
+  679 para 556 pt (~205 pt à vista ao abrir, antes 82); blocos de cor em repouso 15 → 13 (a cor está no mês), a ler a lista
+  8 → 2. E nos três: deslizar para o lado muda de mês só na grelha. Recomendo **S3**.
+  **DECIDIDO pelo Nuno (2026-11-13): "quero que apareça só o mês, e ao carregar no dia abra… um modal com o que tem do dia",
+  com voltar ao mês, deslizar para o dia seguinte/anterior, e dentro do dia, com mais de um serviço, tocar e abrir o "ver
+  tudo" — que é TUDO o que cada serviço tinha no antigo "Ver tudo" (horário, FTL · Segurança, completar, outros serviços do
+  dia, pagamento, pernoita…); sem a fila de ícones nem a aba ligada. Escolhida a janela que recomendei ("avança já").**
+  **JÁ NO CÓDIGO (por ver no iPhone; por gravar):** `screens/EscalaScreen.js` — só o mês (o dia A, `monthCells`; a legenda que
+  filtra L2, `monthLegend`/`cellMatches`, 180 ms; deslizar para o lado EM CIMA DA GRELHA muda de mês) · tocar num dia abre a
+  JANELA nativa do iPhone (`Modal` `presentationStyle="pageSheet"`: sobe até quase ao topo, o mês espreita por trás, puxar para
+  baixo fecha) com o cabeçalho (o dia · "hoje" · quantos serviços; ‹ › e ✕ à direita), uma linha por serviço pela hora (a
+  pernoita vai na linha do voo) e, no serviço aberto — o único do dia, ou o que se tocar; tocar noutro troca, no aberto fecha —
+  o corpo do Detalhe inteiro desse serviço (`DutyDetailBody` com `embedded`: tudo menos o herói; a pílula FTL fica; os outros
+  serviços do dia trocam o aberto). Na janela, deslizar para o lado muda de dia (sai 140 ms · entra 200 ms; reduzido = troca
+  logo; passa de mês na ponta). "Hoje" (noutro mês) abre hoje; voltar do Detalhe depois de editar abre o dia. A agenda (Lista) e
+  o "Lista | Mês" saíram da aba (o `Segmented` fica para os Números). O ecrã do Detalhe continua para os outros caminhos
+  (Início, notificações). `data/shareLeg.js` (o "Partilhar" do Início numa função pura). `npm test` verde, guardião sem dívida
+  nova, pacote iOS gera.
+  **Ver no iPhone:** o mês (o dia A: número limpo + etiqueta; os dias feitos com o ponto; a legenda a filtrar) · deslizar na
+  grelha muda de mês · tocar num dia: a janela sobe, o mês por trás · um dia com um serviço (abre já com o Detalhe) e um com
+  dois (tocar em cada um) · deslizar para o lado na janela (folgas incluídas; passar de novembro para dezembro) · ‹ › e ✕ ·
+  puxar para baixo fecha · dentro do Detalhe: completar um dado, "o calendário está errado?", o hotel (as folhas por cima da
+  janela) · VoiceOver na grelha e no cabeçalho. **O esboço que manda:** `design/escala-janela.html` (feito depois de construída, igual ao código).
   **Ver no iPhone:** o Início (voo a céu, assistência a lilás, o aviso laranja com "!") · a Escala (barras, legenda do Mês, os
   dias feitos com o ponto azul) · o Detalhe de um serviço dentro (sem verde), incerto (pílula tracejada) e com fadiga · os
   Números (barras a tinta, laranja aos 85 %) · as Validades.
