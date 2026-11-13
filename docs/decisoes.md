@@ -407,7 +407,7 @@ referência para o layout das páginas que faltam e para o sistema de desenho. *
   iOS gera. **Ver no iPhone:** a 1.ª vez (apagar `cp_tour_escala_<uid>` para repetir) — os balões no sítio certo, a seta no dia,
   "Saltar", "Já percebi", o VoiceOver · "Rever a legenda" · a legenda pequena (acender, os 0) · o balão nas duas últimas semanas
   (por cima do dia).
-  **Depois (por gravar), o Nuno: "os dias que já passaram deixa as cores normais no mês"** e, a seguir, também o número e o
+  **Depois (gravado e enviado em `297d392`), o Nuno: "os dias que já passaram deixa as cores normais no mês"** e, a seguir, também o número e o
   destino ("sim, tira") — **os dias feitos ficam iguais aos outros** (substitui a escolha D de antes, "diferença à vista no
   passado"). "Feito" deixou de ser um sinal: saiu da legenda ("Os dias" = Hoje · Escolhido · Folga) e da guiada (o Nuno apanhou
   que a legenda ainda o mostrava). Golden escrito antes: `test:escala` 112. O VoiceOver continua a dizer "feito". Guardião sem
