@@ -248,6 +248,14 @@ export default function DutyDetailScreen({ route, navigation }) {
     return (
       <View style={s.panel}>
         {items.map((it, i) => {
+          // Uma NOTA (o motivo de um "incerto" ou de um máximo com duas pontas): o título em cima e o texto inteiro por baixo,
+          // sem cortar — visto no iPhone a 2026-11-13: numa linha só, o motivo ficava "falta quantas horas de assistência houve antes d…".
+          if (it.note) return (
+            <View key={i} style={[s.row, s.rowNote, i === 0 && s.rowFirst]}>
+              <Text style={[s.rowK, { flex: 0 }, it.color ? { color: it.color } : null]}>{it.k}</Text>
+              <Text style={s.rowNoteT}>{it.note}</Text>
+            </View>
+          );
           const inner = (
             <>
               <View style={{ flex: 1, minWidth: 0 }}>
@@ -455,10 +463,10 @@ export default function DutyDetailScreen({ route, navigation }) {
               (!sbAccD && d.extUsed && !over) && { k: l('Prolongamento (205(d))', 'Extension (205(d))'), v: l('planeado · repouso a seguir +2 h (ou +4 h)', 'planned · next rest +2 h (or +4 h)') },
               (!sbAccD && over && d.extRefused === '2in7') && { k: l('Prolongamento (205(d))', 'Extension (205(d))'), v: l('3.º em 7 dias — o limite é 2', '3rd in 7 days — the limit is 2'), color: PELE.red },
               // "A lei é que manda": entre o garantido e o possível, a lei depende de um dado que falta → incerto.
-              (!sbAccD && !over && d.fdp.uncertain) && { k: l('Incerto', 'Uncertain'), v: l(`falta ${unknownsText(d.fdp.unknowns, 'pt')}`, `missing ${unknownsText(d.fdp.unknowns, 'en')}`), color: PELE.warn },
+              (!sbAccD && !over && d.fdp.uncertain) && { k: l('Incerto', 'Uncertain'), note: l(`Falta ${unknownsText(d.fdp.unknowns, 'pt')}.`, `Missing: ${unknownsText(d.fdp.unknowns, 'en')}.`), color: PELE.warn },
               // … e quando EXCEDE nas duas leituras o máximo continua a ter duas pontas: diz-se porquê (visto no iPhone a
               // 2026-11-13: "06:00–10:00" sem explicação, com 7 h declaradas à mão contra as 11 h da escala).
-              (!sbAccD && over && d.fdp.exact === false && (d.fdp.unknowns || []).length > 0) && { k: l('Dois máximos', 'Two maximums'), v: l(`falta ${unknownsText(d.fdp.unknowns, 'pt')}`, `missing ${unknownsText(d.fdp.unknowns, 'en')}`), color: PELE.warn },
+              (!sbAccD && over && d.fdp.exact === false && (d.fdp.unknowns || []).length > 0) && { k: l('Dois máximos', 'Two maximums'), note: l(`Falta ${unknownsText(d.fdp.unknowns, 'pt')}.`, `Missing: ${unknownsText(d.fdp.unknowns, 'en')}.`), color: PELE.warn },
               (hasEnd && d.rest && d.rest.restStr) && { k: l('Repouso mínimo após', 'Min rest after'), v: d.rest.restStr, prova: provaFor('repouso', provaCtx) },
               fat && { k: l('Fadiga', 'Fatigue'), node: fatPill },
             ]} />
@@ -659,6 +667,8 @@ const s = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.md, minHeight: 44, paddingVertical: SPACE.md, borderTopWidth: 1, borderTopColor: PELE.line },
   rowFirst: { borderTopWidth: 0 },
   rowK: { ...TXT.body, flex: 1, color: PELE.grey },
+  rowNote: { flexDirection: 'column', alignItems: 'stretch', justifyContent: 'flex-start', gap: SPACE.xxs },
+  rowNoteT: { ...TXT.footnote, color: PELE.grey },
   rowV: { ...TXT.bodyStrong, color: PELE.ink, fontVariant: ['tabular-nums'], textAlign: 'right' },
   // Hora real ao lado da prevista
   realLine: { flexDirection: 'row', alignItems: 'center', gap: SPACE.s },
