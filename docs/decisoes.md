@@ -93,6 +93,13 @@ motor está na versão **21**. **O que falta, por ordem:**
 - Gravado e no `main` (2026-11-12); a versão do motor (20) recalcula o registo dos dias no telemóvel.
 
 ### 1. Ver no iPhone (conta de teste: easyJet, piloto)
+- **Números, novembro — visto ✅ a 2026-11-13:** 9 voos, 43,1 h, os períodos do ORO.FTL.210 e o "1 curto · 2 incertos"
+  batem com o motor. **Por decidir pela lei (pergunta nova, fica para o advogado / EASA):** "60 duty hours in any 7
+  consecutive days" (ORO.FTL.210(a)) — o texto não diz se os "dias" são dias locais das 00:00 (a única definição que o
+  Regulamento dá, ORO.FTL.105(15), e a que a app usa) ou quaisquer 168 horas seguidas; nenhuma FAQ da EASA o esclarece
+  (página das FAQ do ORO.FTL consultada a 2026-11-13). A diferença só aparece perto do limite: um período de 168 h a
+  começar a meio do dia pode somar mais do que qualquer período de 7 dias locais. A app conta por dias locais e mostra o
+  mais carregado dos períodos que contêm o serviço de hoje (o que acaba hoje e o que acaba amanhã, se passa a meia-noite).
 - **A série de assistências — visto ✅ a 2026-11-13 (motor v21):** os sete cenários do passo 17 de
   `docs/verificacao-calendario.md` batem (importação e Detalhe). Dessa sessão saíram, já corrigidos e vistos: o motivo do
   "Incerto" e dos "Dois máximos" em texto inteiro no Detalhe; a linha "Assistência antes do voo" a dizer de onde vem a

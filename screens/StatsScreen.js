@@ -620,7 +620,7 @@ export default function StatsScreen({ navigation }) {
             </View>
           );
         })}
-        <Text style={s.bnote}>{l('As janelas contam para trás a partir de hoje — independentes do ano civil. ', 'Windows count back from today — independent of the calendar year. ')}<Text style={{ color: PELE.red, fontFamily: PELE_FONT.bodyBold }}>{l('≥ 90 %', '≥ 90%')}</Text>{l(' assinala atenção regulatória.', ' flags regulatory attention.')}</Text>
+        <Text style={s.bnote}>{l('Os períodos de dias contam para trás a partir de hoje — ou de amanhã, quando o serviço de hoje passa a meia-noite (vale o mais carregado). O ano civil conta o ano inteiro, com o que já está na escala. ', 'Day periods count back from today — or from tomorrow when today’s duty runs past midnight (the heavier one applies). The calendar year counts the whole year, including what is already rostered. ')}<Text style={{ color: PELE.red, fontFamily: PELE_FONT.bodyBold }}>{l('≥ 90 %', '≥ 90%')}</Text>{l(' assinala atenção regulatória.', ' flags regulatory attention.')}</Text>
       </PeleSheet>
 
       {/* ── Folha · Voo ── */}
