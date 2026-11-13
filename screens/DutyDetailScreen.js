@@ -139,7 +139,8 @@ export default function DutyDetailScreen({ route, navigation }) {
     const hh = (h) => { const m = Math.round((h || 0) * 60); return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`; };
     const clk = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
     const where = (t) => (t === 'airport' ? l('no aeroporto', 'at the airport') : l('em casa', 'at home'));
-    const cite = (t) => (t === 'airport' ? 'CS FTL.1.225(a)(2)' : 'CS FTL.1.225(b)(7)');
+    // (b)(7) quando reduz; dentro das primeiras 6 h o máximo conta da apresentação, sem redução: (b)(6).
+    const cite = (t) => (t === 'airport' ? 'CS FTL.1.225(a)(2)' : (b.reductionMin > 0 || b.mismatch) ? 'CS FTL.1.225(b)(7)' : 'CS FTL.1.225(b)(6)');
     const red = b.reductionMin > 0 ? l(`tira ${hh(b.reductionMin / 60)} ao PSV máximo`, `takes ${hh(b.reductionMin / 60)} off the max FDP`) : l('não chega para reduzir o PSV máximo', 'is not enough to reduce the max FDP');
     const r = b.roster, o = b.declared;
     const since = (r && r.startMin != null) ? l(` desde as ${clk(r.startMin)}`, ` since ${clk(r.startMin)}`) : '';
