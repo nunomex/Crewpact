@@ -17,6 +17,22 @@ app como "em breve" (visíveis, sem acesso) e fazem-se depois, uma a uma. **O la
 companhias todas prontas.** Até lá, o que é só da TAP, da Hi Fly ou da Ryanair não entra na fila: fica anotado para a vez
 delas. Pormenor na entrada "Uma companhia de cada vez", abaixo.
 
+**SESSÃO SEGUINTE (combinado com o Nuno a 2026-11-13) — O NOVO ACORDO DOS PILOTOS DA EASYJET (Fable 5.2, Alto, sessão própria).**
+O Nuno tem o PDF do novo AE easyJet × SPAC e envia-o no início da sessão. O que está na app é o BTE n.º 40 de 29-10-2023,
+expirado a 31-01-2026 (`ae/easyjetSpac.js`, `fontes/ae-easyjet/easyjet-spac-2023.*`; a app diz "AE expirado"). **Enunciado:**
+- **Antes de tudo, perguntar:** é o texto publicado no BTE (número e data) ou a versão assinada ainda por publicar? Datas de
+  entrada em vigor e retroativos, se o texto não as fechar. É só o dos pilotos (o da cabine, SNPVAC 2024, não se mexe).
+- **1 · Fonte:** guardar o PDF em `fontes/ae-easyjet/` e extrair o texto (como o de 2023); tabelas conferidas na IMAGEM da página.
+- **2 · Comparar cláusula a cláusula com o de 2023** e dar ao Nuno a lista do que muda (artigo e página) ANTES de mexer no
+  código: Anexo I (vencimentos, per-diem, pernoita, setores), assistência no aeroporto, DDO/IDO/WFLY, férias, contratos
+  (12/12, PPY, 14-14, 21-7, 7-7), antiguidade, subsídios, SNC/RDP se os houver, vigência e denúncia.
+- **3 · Golden primeiro:** cada valor novo com a citação literal conferida no texto (`test:citacoes`, `test:ae`); só depois o código.
+- **4 · Acrescentar, não substituir:** entradas novas em `TABLE_VERSIONS` com a data de efeito (`tableAt(ym)`); os meses
+  passados continuam com as tabelas da altura; atualizar a vigência, `isAgreementExpired` e `AE_EXPIRY_ACK`, a Biblioteca e a Prova.
+- **5 · O que NÃO é do acordo:** os limites de fadiga (FTL) são da lei europeia e não mudam com o AE — salvo cláusulas do
+  acordo mais restritivas, que se listam à parte e não se misturam com o FTL sem o Nuno ver.
+- **6 · No fim:** revisão independente (Opus) dos números contra o PDF, `npm test`, e ver no iPhone "Quanto recebo?" e os Números.
+
 **O que se faz a seguir (combinado com o Nuno a 2026-11-12, noite):**
 1. **Fechar o ramo dos cálculos — a função única está FEITA (2026-11-12, sessão em Fable 5.2; entrada "A série de
    assistências num só sítio", abaixo).** A assistência antes de um voo lê-se de `ftl/standbySeries.js`; o PSV e o repouso
