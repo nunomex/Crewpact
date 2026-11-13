@@ -269,7 +269,8 @@ referência para o layout das páginas que faltam e para o sistema de desenho. *
   as pernas no cartão "Horário") · **B** o voo em destaque (o serviço tocado cresce para o cartão de cor com a perna B2; os
   Limites primeiro, com o PSV na barra B9) · **C** lista agrupada (os Ajustes do iPhone). Recomendo **B**. Medido: o "Ver tudo"
   de um voo ocupa 1565 / 1627 / 1134 pt (a janela mostra ~714 — desliza-se nas três). **ESCOLHIDA pelo Nuno: B. JÁ NO CÓDIGO
-  (por ver no iPhone; por gravar):** `DutyDetailBody` no 3.0 — o cartão de cor do serviço (o `dayCards` aberto: todas as pernas
+  (por ver no iPhone; gravado e ENVIADO para o GitHub no ramo `calculos-repouso-2`, commit `8b5c2df`, a 2026-11-13 — o push levou
+  os 10 commits que estavam só neste PC, incluindo o acordo dos pilotos `93aea15`):** `DutyDetailBody` no 3.0 — o cartão de cor do serviço (o `dayCards` aberto: todas as pernas
   com a faixa do voo, as duas horas grandes, ✈ e a duração, a Zulu quando difere, o tempo no solo; **DH marcado na faixa**, que o
   cartão não marcava — `components/HomeCards.js` · `Legs`) · os cartões neutros: **Limites · FTL** (o PSV na barra B9 com o que
   falta e as duas pontas quando a lei não fecha; o estado numa linha; calços até às, PSV máximo, repouso mínimo, fadiga, os
