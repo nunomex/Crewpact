@@ -299,7 +299,7 @@ referência para o layout das páginas que faltam e para o sistema de desenho. *
   pergunta (a hora do report → lista; folgas, onde dorme, como é o mês, trocas → mês); o "agora e a seguir" já está no Início,
   por isso a Escala é o mês; o que o mês perde (ler os próximos dias seguidos com as horas) vai para o "A seguir" do Início.
   Disse com franqueza que não sou tripulante e propus um teste de 5 min com 2–3 tripulantes.
-  **ESCOLHIDO pelo Nuno: "fica o mês. Q1" — JÁ NO CÓDIGO (2026-11-13, por ver no iPhone; por gravar):** `screens/EscalaScreen.js`
+  **ESCOLHIDO pelo Nuno: "fica o mês. Q1" — JÁ NO CÓDIGO (2026-11-13, por ver no iPhone; gravado e enviado no ramo `calculos-repouso-2`, commit `014afe6`):** `screens/EscalaScreen.js`
   — o dia Q1 (56 pt, `RADIUS.sm`; neutro com o número a 15 e o destino; a fita de 5 pt: a cor do tipo, dois serviços em duas
   (o outro ~31 % à esquerda, um fio entre os dois), a rotação junta as fitas por cima do espaço (os cantos de baixo do lado da
   junção ficam retos), férias e baixa a tracejado, feito = fita `C.round` e número cinzento; hoje = quadrado a tinta, o
