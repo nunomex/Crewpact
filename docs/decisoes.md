@@ -26,8 +26,8 @@ delas. Pormenor na entrada "Uma companhia de cada vez", abaixo.
    no mesmo dia, R8) fecharam-se pela regra do Nuno — "a lei é que está certa" — e estão na entrada. A **5.ª passagem**
    (só sobre o que ninguém tinha revisto) também está feita: nenhum "dentro" nem "certo" falso vindo das correções; o que
    apanhou ficou corrigido. Gravado no ramo `calculos-repouso-2` (commit `8f4bcfb`, mais o dos três pontos da lista que o
-   Nuno mandou corrigir) e **passado ao `main` a 2026-11-12** (avanço direto, sem push). **Falta:** ver no iPhone — a
-   versão 20 do motor recalcula o registo dos dias ao abrir. As correções da 5.ª passagem e as dos três pontos têm teste
+   Nuno mandou corrigir) e **passado ao `main` a 2026-11-12**, com push. **Visto no iPhone a 2026-11-13** (grupo 1,
+   1.ª linha); o motor está na versão 21. As correções da 5.ª passagem e as dos três pontos têm teste
    mas não foram, elas próprias, revistas por outro. **Quando parar de rever:** quando uma revisão já não encontrar nenhum "dentro" ou "certo" falso num
    cenário que um tripulante da easyJet possa mesmo ter; o resto fica escrito na lista.
 2. **Decidir uma vez como se mostra um "Incerto"** (sistema de desenho): onde vai o motivo, quantas linhas, se abre uma
@@ -41,7 +41,7 @@ delas. Pormenor na entrada "Uma companhia de cada vez", abaixo.
 ### 0. Repouso — o que ficou depois da verificação de 2026-11-12 (ramo `calculos-repouso-2`)
 A verificação está feita e os dois pontos maiores estão corrigidos (entradas "Verificação do repouso" e "A lei não olha
 para a data", "Como diz a lei", "Revisão independente das correções de hoje" e "2.ª revisão independente", abaixo). O
-motor está na versão **20**. **O que falta, por ordem:**
+motor está na versão **21**. **O que falta, por ordem:**
 1. **Os ecrãs** (grupo 2, 1.ª linha: nove acertos vistos no iPhone; sessão em Opus 5.5). Os que escondem informação
    primeiro: o motivo do "Incerto" cortado no Detalhe e na importação, o veredicto tapado num dia alterado, a linha verde
    "Repouso ✓" inventada na Escala.
@@ -93,8 +93,12 @@ motor está na versão **20**. **O que falta, por ordem:**
 - Gravado e no `main` (2026-11-12); a versão do motor (20) recalcula o registo dos dias no telemóvel.
 
 ### 1. Ver no iPhone (conta de teste: easyJet, piloto)
-- **A série de assistências (2026-11-12, motor v20 — nada visto no iPhone):** o passo 17 de
-  `docs/verificacao-calendario.md`, sete cenários com o calendário sintético (a a g).
+- **A série de assistências — visto ✅ a 2026-11-13 (motor v21):** os sete cenários do passo 17 de
+  `docs/verificacao-calendario.md` batem (importação e Detalhe). Dessa sessão saíram, já corrigidos e vistos: o motivo do
+  "Incerto" e dos "Dois máximos" em texto inteiro no Detalhe; a linha "Assistência antes do voo" a dizer de onde vem a
+  redução do máximo; "Da escala · hh:mm" no Completar; o motivo inteiro e sem repetir a palavra na folha de importação;
+  o "Split duty" falso entre uma assistência e um voo na folha do dia. Ficou por ver: o Início ("Tenho descanso?" e
+  "Dentro dos limites?") com estes cenários, e os Números de um mês com assistências depois do recálculo.
 - **Sessão de 2026-11-11 — visto ✅:** Perfil "Na … desde" com a coluna do dia (os 6 pontos); Escala sem toque longo; Detalhe
   do serviço só de leitura com "do calendário", secção Completar, "Tocou numa folga?" com WFLY + DDO, "O calendário está
   errado?" → horas reais. **Retomar no bloco 3** (dinheiro): Números de um mês SEM serviços (o bloco do dinheiro com a base e, por
