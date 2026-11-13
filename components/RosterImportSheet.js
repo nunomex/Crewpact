@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, ActivityIndicator, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { PELE, PELE_FONT, BRAND } from '../data/constants';
+import { PELE, PELE_FONT, BRAND, MONEY } from '../data/constants';
 import { diagnoseEvents } from '../data/calendar';
 import { importWindow, readCalendarRoster, absenceSuggestions, baseOfFor } from '../data/rosterRead';
 import { buildImportCandidates, importSaveFields, candidateKind, promoteMissing, verifyCandidates, sortCandidates, storedFacts } from '../data/rosterImport';
@@ -336,7 +336,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
             </View>
           ) : !shown.length ? (
             <View style={s.center}>
-              <Ionicons name={cands.length ? 'checkmark-circle-outline' : (source === 'paste' ? 'clipboard-outline' : 'checkmark-done-outline')} size={26} color={cands.length ? PELE.ok : PELE.grey} />
+              <Ionicons name={cands.length ? 'checkmark-circle-outline' : (source === 'paste' ? 'clipboard-outline' : 'checkmark-done-outline')} size={26} color={cands.length ? PELE.ink : PELE.grey} />
               <Text style={s.dim}>{cands.length
                 ? l('Sem alterações — a escala está igual ao guardado.', 'No changes — your roster matches what you have.')
                 : source === 'paste'
@@ -347,7 +347,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
             <>
               {/* Resumo "à prova de falha": leu X · Y prontas · Z a corrigir */}
               <View style={[s.summ, fixCount ? s.summWarn : null]}>
-                <View style={s.summIc}><Ionicons name={fixCount ? 'alert-outline' : 'checkmark-circle-outline'} size={22} color={fixCount ? PELE.warn : PELE.ok} /></View>
+                <View style={s.summIc}><Ionicons name={fixCount ? 'alert-outline' : 'checkmark-circle-outline'} size={22} color={fixCount ? PELE.warn : PELE.ink} /></View>
                 <View style={{ flex: 1 }}>
                   <Text style={s.summT}>{l(`Li ${shown.length} atividades`, `Read ${shown.length} activities`)}</Text>
                   <Text style={[s.summS, fixCount ? { color: '#B07840' } : null]}>{l(`${shown.length - fixCount} prontas`, `${shown.length - fixCount} ready`)}{fixCount ? l(` · ${fixCount} a corrigir antes de somar ao per-diem`, ` · ${fixCount} to fix before they count`) : ''}{replaceCount ? l(` · substitui ${replaceCount} teu(s) manual(is)`, ` · replaces ${replaceCount} of yours`) : ''}</Text>
@@ -389,7 +389,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
                 ) : null;
               })()}
               {infos.map(({ c, info }) => {
-                const ic = info.kind === 'ready' ? { name: 'checkmark', bg: PELE.okSoft, fg: PELE.ok }
+                const ic = info.kind === 'ready' ? { name: 'checkmark', bg: PELE.soft, fg: PELE.ink }
                   : info.kind === 'removed' ? { name: 'close', bg: PELE.redSoft, fg: PELE.red }
                   : { name: 'time-outline', bg: PELE.warnSoft, fg: PELE.warn };
                 // As horas das pernas não batem certo (ftl legsBroken): o dia ENTRA (a lei conta todo o serviço, ORO.FTL.210) e fica
@@ -523,10 +523,10 @@ const s = StyleSheet.create({
   cDiff: { fontSize: 11, color: '#B07840', fontFamily: PELE_FONT.body, marginTop: 2 },   // âmbar escuro ≥4.5:1 (warn puro dava 2.4:1)
   // "à prova de falha" — ícone de estado + per-diem + resumo
   statIc: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  cEur: { fontSize: 17, fontFamily: PELE_FONT.display, color: PELE.ok, fontVariant: ['tabular-nums'] },
+  cEur: { fontSize: 17, fontFamily: PELE_FONT.display, color: MONEY.gain, fontVariant: ['tabular-nums'] },
   cPay: { alignItems: 'flex-end', gap: 1 },
-  cNs: { fontSize: 13, fontFamily: PELE_FONT.display, color: PELE.ok, fontVariant: ['tabular-nums'] },
-  payBreak: { fontSize: 12, fontFamily: PELE_FONT.bodyMed, color: PELE.ok, textAlign: 'center', marginTop: 8 },
+  cNs: { fontSize: 13, fontFamily: PELE_FONT.display, color: MONEY.gain, fontVariant: ['tabular-nums'] },
+  payBreak: { fontSize: 12, fontFamily: PELE_FONT.bodyMed, color: MONEY.gain, textAlign: 'center', marginTop: 8 },
   cEurMuted: { fontSize: 15, fontFamily: PELE_FONT.display, color: PELE.ghost, fontVariant: ['tabular-nums'] },
   cFix: { fontSize: 13, fontFamily: PELE_FONT.bodyHeavy, color: PELE.warn },
   cIssue: { color: '#B07840', fontFamily: PELE_FONT.body },

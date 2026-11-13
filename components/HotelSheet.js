@@ -153,5 +153,5 @@ const s = StyleSheet.create({
   dBadge: { backgroundColor: P.soft, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5 },
   dBadgeTxt: { fontFamily: F.display, fontSize: 13, letterSpacing: 1, color: P.ink },
   err: { fontSize: 11.5, fontFamily: F.bodyBold, color: P.red, marginTop: 8 },
-  privacy: { fontSize: 10.5, fontFamily: F.bodyBold, color: P.ok, textAlign: 'center', marginTop: 12 },
+  privacy: { fontSize: 10.5, fontFamily: F.bodyBold, color: P.greyOnSoft, textAlign: 'center', marginTop: 12 },
 });

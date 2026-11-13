@@ -4,7 +4,7 @@ import PeleSheet from './PeleSheet';
 import { select, success, warning } from '../data/haptics';
 import { AppContext, isoDay } from '../data/appContext';
 import { datesInRange, yearCount } from '../data/aeEvents';
-import { PELE as P, PELE_FONT as F } from '../data/constants';
+import { PELE as P, PELE_FONT as F, MONEY } from '../data/constants';
 
 // "Extra do mês" — regista um EVENTO DATADO (ocorrência SEM serviço nesse dia). Tipo +
 // dia → entra no salário do mês do evento, auditável. Aberto pelo mini-FAB do speed-dial
@@ -174,7 +174,7 @@ const s = StyleSheet.create({
   dateSep: { fontSize: 18, color: P.grey, fontFamily: F.display },
   dateErr: { borderColor: P.red },
   err: { fontFamily: F.bodyBold, fontSize: 11.5, color: P.red, marginTop: 8 },
-  each: { fontFamily: F.bodyBold, fontSize: 12.5, color: P.ok, marginTop: 14 },
+  each: { fontFamily: F.bodyBold, fontSize: 12.5, color: MONEY.gain, marginTop: 14 },
   save: { backgroundColor: P.ink, borderRadius: 14, paddingVertical: 15, alignItems: 'center', marginTop: 18 },
   saveT: { fontFamily: F.bodyHeavy, fontSize: 14, color: P.onInk, letterSpacing: 0.3 },
 });

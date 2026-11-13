@@ -15,7 +15,7 @@ import Icon from './Icon';
 import { CARD, TXT, TXT3, SPACE, RADIUS } from '../data/constants';
 
 const MAX_SCALE = 1.3;
-const toneOf = (C, kind) => (kind === 'voo' ? C.sand : kind === 'terra' ? C.lilac : C.neutral);
+const toneOf = (C, kind) => (kind === 'voo' ? C.flight : kind === 'terra' ? C.ground : C.neutral);
 
 export function DayCol({ day, wd, today, C }) {
   return (

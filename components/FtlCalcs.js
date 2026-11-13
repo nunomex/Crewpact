@@ -16,7 +16,7 @@ import { reduceMotionNow } from '../hooks/useReduceMotion';
 
 // PELE-FICADO por dentro (2026-07-10), API intacta. Mapa de tokens locais → PELE:
 // os componentes referem C.* inline (herança do tema antigo); a pele não tem useTheme.
-const C = { ink: P.ink, soft: P.soft, sub: P.grey, text: P.ink, line: P.line, red: P.red, redSoft: P.redSoft, redText: P.red, warnText: P.warn, greenText: P.ok };
+const C = { ink: P.ink, soft: P.soft, sub: P.grey, text: P.ink, line: P.line, red: P.red, redSoft: P.redSoft, redText: P.red, warnText: P.warn, greenText: P.ink };   // dentro sem cor (§14)
 
 // Toda a matemática FTL vem do motor `ftl/` — os componentes só tratam de UI.
 // Transição suave ao mostrar/esconder (ex.: fim-limite, troca de estado).
@@ -512,7 +512,7 @@ const cs = StyleSheet.create({
   timeInput: { width: 84, textAlign: 'center', fontFamily: F.displayMed, fontSize: 16, backgroundColor: P.soft, borderRadius: 12, paddingVertical: 9, borderWidth: 1.5, borderColor: P.line, color: P.ink },
   timeInputErr: { borderColor: P.red, color: P.red, backgroundColor: P.redSoft },
   errNote: { fontSize: 11, fontFamily: F.bodyBold, color: P.red, marginTop: 4 },
-  okNote: { fontSize: 11, fontFamily: F.bodyBold, color: P.ok, marginTop: 4 },
+  okNote: { fontSize: 11, fontFamily: F.bodyBold, color: P.ink, marginTop: 4 },
   warnNote: { fontSize: 11, fontFamily: F.bodyBold, color: P.warn, marginTop: 4 },
   // Calculadora de atividade (DutyCalc)
   segRow: { marginTop: 8, marginBottom: 4 },

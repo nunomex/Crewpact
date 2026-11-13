@@ -1,7 +1,7 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { PELE, PELE_FONT, GUTTER, BRAND, TXT, SPACE, RADIUS } from '../data/constants';
+import { PELE, PELE_FONT, GUTTER, BRAND, TXT, SPACE, RADIUS, MONEY } from '../data/constants';
 import Icon from '../components/Icon';
 import IconButton from '../components/IconButton';
 import PeleSide from '../components/PeleSide';
@@ -246,13 +246,14 @@ export default function DutyDetailScreen({ route, navigation }) {
     : over
       ? { tone: 'red', txt: l('Excede o limite FTL', 'Exceeds FTL limit') }
     : (d && d.isFdp && d.fdp && d.fdp.uncertain)
-      ? { tone: 'warn', txt: needRows.length ? (needRows.length === 1 ? l('Incerto · falta 1 dado', 'Uncertain · 1 fact missing') : l(`Incerto · faltam ${needRows.length} dados`, `Uncertain · ${needRows.length} facts missing`)) : l('Incerto', 'Uncertain') }
+      ? { tone: 'unc', txt: needRows.length ? (needRows.length === 1 ? l('Incerto · falta 1 dado', 'Uncertain · 1 fact missing') : l(`Incerto · faltam ${needRows.length} dados`, `Uncertain · ${needRows.length} facts missing`)) : l('Incerto', 'Uncertain') }
       : { tone: 'ok', txt: l('Dentro do limite FTL', 'Within FTL limit') };
 
-  // Fadiga — cores da pele
-  const fatBg = (b) => b === 'high' ? PELE.redSoft : b === 'elevated' ? PELE.warnSoft : b === 'low' ? PELE.okSoft : PELE.soft;
-  const fatDotC = (b) => b === 'high' ? PELE.red : b === 'elevated' ? PELE.warn : b === 'low' ? PELE.ok : PELE.grey;
-  const fatTxtC = (b) => b === 'high' ? PELE.red : b === 'elevated' ? PELE.warn : b === 'low' ? PELE.ok : PELE.grey;
+  // Fadiga — o mapa das cores (§14): é um RISCO estimado, não um limite da lei → nunca vermelho. Alta = laranja forte (fundo +
+  // ponto + texto), elevada = só o ponto laranja, baixa = sem cor (cockpit escuro). A palavra diz sempre o nível.
+  const fatBg = (b) => b === 'high' ? PELE.warnSoft : PELE.soft;
+  const fatDotC = (b) => (b === 'high' || b === 'elevated') ? PELE.warn : PELE.grey;
+  const fatTxtC = (b) => b === 'high' ? PELE.warnText : PELE.ink;
   const fatLabel = (b) => t('duties.fatigue' + b.charAt(0).toUpperCase() + b.slice(1), lang);
 
   // Painel de linhas — aceita {k,v,color} ou {k,node}; ignora falsy; 1ª linha sem risca de topo.
@@ -426,9 +427,9 @@ export default function DutyDetailScreen({ route, navigation }) {
           kick={kickParts.length ? kickParts.join(' · ') : undefined}
         />
         <View style={s.stbar}>
-          <View style={[s.pill, statusPill.tone === 'red' ? s.pillRed : statusPill.tone === 'ok' ? s.pillOk : statusPill.tone === 'warn' ? s.pillWarn : s.pillNeutral]}>
-            {statusPill.tone === 'ok' ? <Icon name="check" size={12} color={PELE.okText} /> : statusPill.tone === 'red' ? <Icon name="alert" size={12} color={PELE.red} /> : statusPill.tone === 'warn' ? <Icon name="alert" size={12} color={PELE.warnText} /> : null}
-            <Text style={[s.pillTxt, { color: statusPill.tone === 'red' ? PELE.red : statusPill.tone === 'ok' ? PELE.okText : statusPill.tone === 'warn' ? PELE.warnText : PELE.grey }]}>{statusPill.txt}</Text>
+          <View style={[s.pill, statusPill.tone === 'red' ? s.pillRed : statusPill.tone === 'ok' ? s.pillOk : statusPill.tone === 'unc' ? s.pillUnc : statusPill.tone === 'warn' ? s.pillWarn : s.pillNeutral]}>
+            {statusPill.tone === 'ok' ? <Icon name="check" size={12} color={PELE.ink} /> : statusPill.tone === 'red' ? <Icon name="alert" size={12} color={PELE.red} /> : statusPill.tone === 'warn' ? <Icon name="alert" size={12} color={PELE.warnText} /> : null}
+            <Text style={[s.pillTxt, { color: statusPill.tone === 'red' ? PELE.red : (statusPill.tone === 'ok' || statusPill.tone === 'unc') ? PELE.ink : statusPill.tone === 'warn' ? PELE.warnText : PELE.grey }]}>{statusPill.txt}</Text>
           </View>
           {duty.dirty ? <View style={s.pendRow}><View style={s.pendDot} /><Text style={s.pendTxt}>{t('duties.pending', lang)}</Text></View> : null}
         </View>
@@ -482,10 +483,10 @@ export default function DutyDetailScreen({ route, navigation }) {
               // De onde vem a redução do máximo (visto no iPhone a 2026-11-13: "PSV máx 06:00 § 205(b)" sem dizer porquê).
               (!sbAccD && sbNote) && { k: l('Assistência antes do voo', 'Standby before the flight'), note: sbNote },
               // "A lei é que manda": entre o garantido e o possível, a lei depende de um dado que falta → incerto.
-              (!sbAccD && !over && d.fdp.uncertain) && { k: l('Incerto', 'Uncertain'), note: l(`Falta ${unknownsText(d.fdp.unknowns, 'pt')}.`, `Missing: ${unknownsText(d.fdp.unknowns, 'en')}.`), color: PELE.warn },
+              (!sbAccD && !over && d.fdp.uncertain) && { k: l('Incerto', 'Uncertain'), note: l(`Falta ${unknownsText(d.fdp.unknowns, 'pt')}.`, `Missing: ${unknownsText(d.fdp.unknowns, 'en')}.`) },
               // … e quando EXCEDE nas duas leituras o máximo continua a ter duas pontas: diz-se porquê (visto no iPhone a
               // 2026-11-13: "06:00–10:00" sem explicação, com 7 h declaradas à mão contra as 11 h da escala).
-              (!sbAccD && over && d.fdp.exact === false && (d.fdp.unknowns || []).length > 0) && { k: l('Dois máximos', 'Two maximums'), note: l(`Falta ${unknownsText(d.fdp.unknowns, 'pt')}.`, `Missing: ${unknownsText(d.fdp.unknowns, 'en')}.`), color: PELE.warn },
+              (!sbAccD && over && d.fdp.exact === false && (d.fdp.unknowns || []).length > 0) && { k: l('Dois máximos', 'Two maximums'), note: l(`Falta ${unknownsText(d.fdp.unknowns, 'pt')}.`, `Missing: ${unknownsText(d.fdp.unknowns, 'en')}.`) },
               (hasEnd && d.rest && d.rest.restStr) && { k: l('Repouso mínimo após', 'Min rest after'), v: d.rest.restStr, prova: provaFor('repouso', provaCtx) },
               fat && { k: l('Fadiga', 'Fatigue'), node: fatPill },
             ]} />
@@ -547,7 +548,7 @@ export default function DutyDetailScreen({ route, navigation }) {
                       <TouchableOpacity style={s.hpillCall} hitSlop={6}
                         onPress={() => { select(); Linking.openURL(hotelTelUrl(h.phone)).catch(() => {}); }}
                         accessibilityRole="button" accessibilityLabel={l('Ligar ao hotel', 'Call the hotel')}>
-                        <Icon name="phone" size={12} color={PELE.ok} /><Text style={s.hpillCallTxt}>{l('Ligar', 'Call')}</Text>
+                        <Icon name="phone" size={12} color={PELE.ink} /><Text style={s.hpillCallTxt}>{l('Ligar', 'Call')}</Text>
                       </TouchableOpacity>
                     ) : null}
                   </View>
@@ -563,20 +564,20 @@ export default function DutyDetailScreen({ route, navigation }) {
 
         <Sec icon="wallet">{l('Pagamento · detalhes', 'Pay · details')}</Sec>
         <Panel rows={[
-          (perDiem != null) && { k: l('Per-diem (AE)', 'Per diem'), v: `+${fmtEur0(perDiem)}`, color: PELE.ok, prova: provaFor('perDiem', provaCtx) },
-          (svcEur != null) && { k: svcEur.lbl, v: svcEur.max > svcEur.eur ? `+${fmtEur0(svcEur.eur)} ${l('a', 'to')} ${fmtEur0(svcEur.max)}` : `+${fmtEur0(svcEur.eur)}`, color: PELE.ok },
-          (posEur != null) && { k: l('Posicionamento', 'Positioning'), v: posEur.max > posEur.eur ? `+${fmtEur0(posEur.eur)} ${l('a', 'to')} ${fmtEur0(posEur.max)}` : `+${fmtEur0(posEur.eur)}`, color: PELE.ok },
+          (perDiem != null) && { k: l('Per-diem (AE)', 'Per diem'), v: `+${fmtEur0(perDiem)}`, color: MONEY.gain, prova: provaFor('perDiem', provaCtx) },
+          (svcEur != null) && { k: svcEur.lbl, v: svcEur.max > svcEur.eur ? `+${fmtEur0(svcEur.eur)} ${l('a', 'to')} ${fmtEur0(svcEur.max)}` : `+${fmtEur0(svcEur.eur)}`, color: MONEY.gain },
+          (posEur != null) && { k: l('Posicionamento', 'Positioning'), v: posEur.max > posEur.eur ? `+${fmtEur0(posEur.eur)} ${l('a', 'to')} ${fmtEur0(posEur.max)}` : `+${fmtEur0(posEur.eur)}`, color: MONEY.gain },
           duty.sectors && { k: l('Setores', 'Sectors'), v: String(duty.sectors) },
-          duty.nightStop && { k: l('Paragem nocturna', 'Night stop'), v: nsEur != null ? `+${fmtEur0(nsEur)}` : l('Sim', 'Yes'), color: nsEur != null ? PELE.ok : null, prova: provaFor('pernoita', provaCtx) },
+          duty.nightStop && { k: l('Paragem nocturna', 'Night stop'), v: nsEur != null ? `+${fmtEur0(nsEur)}` : l('Sim', 'Yes'), color: nsEur != null ? MONEY.gain : null, prova: provaFor('pernoita', provaCtx) },
           (() => {
             const role = duty.role || (duty.instructor ? 'instr' : null);
             if (!role || !ae) return null;
             const eur = roleEurFor(ae, catD, role, duty.sectors, date);   // a tabela do mês do serviço
             const def = (ae.ADDITIONAL_ROLES || []).find((r) => r.id === role);
             const lbl = (def && def.label && (def.label[lang] || def.label.pt)) || role;
-            return { k: lbl, v: eur > 0 ? `+${fmtEur0(eur)}` : l('sem prestação no AE', 'no AE item'), color: eur > 0 ? PELE.ok : null };
+            return { k: lbl, v: eur > 0 ? `+${fmtEur0(eur)}` : l('sem prestação no AE', 'no AE item'), color: eur > 0 ? MONEY.gain : null };
           })(),
-          duty.dayOffWorked && { k: l('Folga publicada trabalhada', 'Worked published day off'), v: String(duty.dayOffWorked).toUpperCase().replace('+', ' + '), color: PELE.warn },
+          duty.dayOffWorked && { k: l('Folga publicada trabalhada', 'Worked published day off'), v: String(duty.dayOffWorked).toUpperCase().replace('+', ' + ') },
           duty.kind === 'office' && duty.officeType === 'ofc8' && { k: l('Dia de escritório', 'Office day'), v: l('Dia inteiro (OFC8) · 3 setores', 'Full day (OFC8) · 3 sectors') },
         ]} />
 
@@ -667,7 +668,8 @@ const s = StyleSheet.create({
 
   stbar: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, marginTop: SPACE.xs, flexWrap: 'wrap' },
   pill: { flexDirection: 'row', alignItems: 'center', gap: SPACE.s, paddingHorizontal: SPACE.md, paddingVertical: SPACE.s, borderRadius: RADIUS.pill },
-  pillOk: { backgroundColor: PELE.okSoft },
+  pillOk: { backgroundColor: PELE.soft },
+  pillUnc: { backgroundColor: PELE.soft, borderWidth: 1, borderStyle: 'dashed', borderColor: PELE.affordance },   // incerto: neutro e tracejado (§14)
   pillRed: { backgroundColor: PELE.redSoft },
   pillWarn: { backgroundColor: PELE.warnSoft },
   pillNeutral: { backgroundColor: PELE.soft },
@@ -734,8 +736,8 @@ const s = StyleSheet.create({
   hotelActs: { flexDirection: 'row', gap: 7, marginLeft: 'auto' },
   hpillMap: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: PELE.info, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 },
   hpillMapTxt: { fontSize: 10.5, fontFamily: PELE_FONT.bodyHeavy, color: '#2C6E8F' },
-  hpillCall: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: PELE.okSoft, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 },
-  hpillCallTxt: { fontSize: 10.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.ok },
+  hpillCall: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: PELE.soft, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 },
+  hpillCallTxt: { fontSize: 10.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.ink },
   hotelAdd: { borderWidth: 1.5, borderColor: PELE.line, borderStyle: 'dashed', borderRadius: 16, paddingVertical: 12, alignItems: 'center' },
   hotelAddTxt: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.grey },
 

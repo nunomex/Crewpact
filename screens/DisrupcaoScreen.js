@@ -7,7 +7,7 @@ import React, { useContext, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, Alert, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '../data/secureStorage';
-import { GUTTER, PELE, PELE_FONT, BRAND } from '../data/constants';
+import { GUTTER, PELE, PELE_FONT, BRAND, MONEY } from '../data/constants';
 import PeleHeader from '../components/PeleHeader';
 import PeleSide from '../components/PeleSide';
 import PeleSheet from '../components/PeleSheet';
@@ -230,7 +230,7 @@ const s = StyleSheet.create({
   head: { paddingHorizontal: GUTTER },
   scroll: { paddingHorizontal: GUTTER },
   kick: { fontFamily: PELE_FONT.bodyBold, fontSize: 12.5, color: PELE.grey, marginTop: 6 },
-  kickOk: { color: PELE.ok, fontFamily: PELE_FONT.bodyHeavy },
+  kickOk: { color: MONEY.gain, fontFamily: PELE_FONT.bodyHeavy },
   perRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 12 },
   perBtn: { width: 30, height: 30, borderRadius: 10, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
   perLbl: { fontSize: 13, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, textTransform: 'capitalize', minWidth: 130, textAlign: 'center' },
@@ -246,7 +246,7 @@ const s = StyleSheet.create({
   cLaw: { backgroundColor: PELE.soft, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 6, marginTop: 7 },
   cLawTxt: { fontSize: 9.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, lineHeight: 15 },
   cLawSub: { fontFamily: PELE_FONT.bodyMed, color: PELE.grey },
-  cEur: { color: PELE.ok, fontFamily: PELE_FONT.bodyHeavy },
+  cEur: { color: MONEY.gain, fontFamily: PELE_FONT.bodyHeavy },
   cAsk: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 },
   tick: { width: 20, height: 20, borderRadius: 99, backgroundColor: BRAND.marker, alignItems: 'center', justifyContent: 'center' },
   tickOff: { backgroundColor: PELE.paper, borderWidth: 1.5, borderColor: PELE.line },

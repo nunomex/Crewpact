@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, RefreshControl, Linking, Platform, PanResponder, Dimensions, LayoutAnimation } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, RefreshControl, Linking, Platform, PanResponder, Dimensions, LayoutAnimation, PixelRatio } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Tip from '../components/Tip';
@@ -251,7 +251,11 @@ export default function EscalaScreen({ navigation, route }) {
   // ── O Mês (2B: "Lista | Mês"; o que cada célula mostra decide-o data/escalaDay.js · monthCells) ──
   const absTypes = {}; Object.keys(dayAbs).forEach((iso) => { absTypes[iso] = dayAbs[iso].type; });
   const G = monthCells({ ym, duties, absences: absTypes, base: homeBaseAt, today, sel: openDay, lang });
-  const cellW = gridW ? (gridW - GAP * 6) / 7 : 0;
+  // A largura do dia arredonda PARA BAIXO ao píxel do ecrã: (largura − 6 espaços) / 7 sem arredondar dá, em vírgula flutuante,
+  // uma linha uma ponta mais larga do que a grelha em vários iPhones (375, 402, 430 pt) e o domingo saltava para a linha de
+  // baixo — a coluna "D" ficava vazia (visto no iPhone pelo Nuno, 2026-11-13). Sobra no máximo um píxel por dia.
+  const PR = PixelRatio.get();
+  const cellW = gridW ? Math.floor(((gridW - GAP * 6) / 7) * PR) / PR : 0;
   // Trocar de vista ("Lista | Mês"): o Mês começa no topo; a lista volta a "Hoje" (no mês corrente).
   const changeView = (v, quiet) => {
     if (!quiet) select();
@@ -263,7 +267,7 @@ export default function EscalaScreen({ navigation, route }) {
   changeViewRef.current = changeView;
   // Tocar num dia do Mês: volta à lista com esse dia aberto, e a lista vai até ele quando a sua linha aparecer.
   const pickFromGrid = (iso) => { pendingRef.current = iso; setOpenIso(iso); changeView('list'); };
-  const toneOf = (kind) => (kind === 'voo' ? C.sand : kind === 'terra' ? C.lilac : (kind === 'fer' || kind === 'doe') ? C.neutral : null);
+  const toneOf = (kind) => (kind === 'voo' ? C.flight : kind === 'terra' ? C.ground : (kind === 'fer' || kind === 'doe') ? C.neutral : null);
   // Uma célula: cor do tipo · número (hoje = círculo de tinta) · etiqueta (código; lua) · o bloco · os dois pontos · o ponto laranja.
   const renderCell = (c) => {
     const d = duties[c.iso];
@@ -300,7 +304,7 @@ export default function EscalaScreen({ navigation, route }) {
           </View>
         ) : null}
         {c.sel ? <View style={[s.selRing, { borderColor: C.ink }, c.joinR ? s.joinR : null, c.joinL ? s.joinL : null]} pointerEvents="none" /> : null}
-        {c.dirty ? <View style={[s.pend, { backgroundColor: C.warn, borderColor: C.sheet }]} pointerEvents="none" /> : null}
+        {c.dirty ? <View style={[s.pend, { backgroundColor: C.alert, borderColor: C.sheet }]} pointerEvents="none" /> : null}
       </TouchableOpacity>
     );
   };
@@ -367,7 +371,7 @@ export default function EscalaScreen({ navigation, route }) {
       ) : null}
       <TouchableOpacity style={[s.round, { backgroundColor: C.round }]} onPress={openHub} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={calendarId ? l('Calendário e sincronizar', 'Calendar and sync') : l('Importar escala', 'Import roster')}>
         <Icon name={calendarId ? 'sync' : 'download'} size={20} color={C.ink} />
-        {(rcCounts?.total || lsCount) ? <View style={[s.hdrDot, { backgroundColor: C.warn, borderColor: C.desk }]} /> : null}
+        {(rcCounts?.total || lsCount) ? <View style={[s.hdrDot, { backgroundColor: C.alert, borderColor: C.desk }]} /> : null}
       </TouchableOpacity>
     </View>
   );
@@ -434,7 +438,7 @@ export default function EscalaScreen({ navigation, route }) {
       <Text style={[TXT.tag, { color: CARD.onCard }]} allowFontScaling={false}>{code}</Text>
       {o.moon ? <Icon name="moon" size={10} color={CARD.onCard} /> : null}
       {o.two ? <View style={s.legDots}><View style={[s.dot, { backgroundColor: CARD.onCardSub }]} /><View style={[s.dot, { backgroundColor: CARD.onCardSub }]} /></View> : null}
-      {o.pend ? <View style={[s.legPend, { backgroundColor: C.warn }]} /> : null}
+      {o.pend ? <View style={[s.legPend, { backgroundColor: C.alert }]} /> : null}
     </View>
   );
   const legItem = (sw, txt, key) => (
@@ -452,14 +456,14 @@ export default function EscalaScreen({ navigation, route }) {
         ) : null}
       </View>
       <View style={[s.legend, { backgroundColor: C.neutral }]} accessible accessibilityLabel={l('Legenda: areia, voo; lilás, serviço em terra; neutro, férias ou baixa; lua, pernoita fora; dois pontos, dois serviços no dia; dias juntos, rotação seguida; círculo, hoje; ponto laranja, por sincronizar.', 'Legend: sand, flight; lilac, ground duty; neutral, leave or sick; moon, night stop away; two dots, two duties that day; joined days, a trip; circle, today; orange dot, pending sync.')}>
-        {legItem(legCell(C.sand, 'LGW'), l('Voo · destino', 'Flight · destination'), 'voo')}
-        {legItem(legCell(C.lilac, 'SBY'), l('Serviço em terra', 'Ground duty'), 'terra')}
+        {legItem(legCell(C.flight, 'LGW'), l('Voo · destino', 'Flight · destination'), 'voo')}
+        {legItem(legCell(C.ground, 'SBY'), l('Serviço em terra', 'Ground duty'), 'terra')}
         {legItem(legCell(C.neutral, absCode('vacDays'), { border: true }), l('Férias · baixa', 'Leave · sick'), 'fer')}
-        {legItem(legCell(C.sand, 'OPO', { moon: true }), l('Pernoita fora', 'Night stop away'), 'ns')}
-        {legItem(legCell(C.sand, 'OPO', { two: true }), l('2 serviços no dia', '2 duties that day'), 'two')}
-        {legItem(<View style={s.tagRow}>{legCell(C.sand, 'FNC', { style: s.legJoinL })}{legCell(C.sand, 'FNC', { style: s.legJoinR })}</View>, l('Rotação seguida', 'Trip'), 'join')}
+        {legItem(legCell(C.flight, 'OPO', { moon: true }), l('Pernoita fora', 'Night stop away'), 'ns')}
+        {legItem(legCell(C.flight, 'OPO', { two: true }), l('2 serviços no dia', '2 duties that day'), 'two')}
+        {legItem(<View style={s.tagRow}>{legCell(C.flight, 'FNC', { style: s.legJoinL })}{legCell(C.flight, 'FNC', { style: s.legJoinR })}</View>, l('Rotação seguida', 'Trip'), 'join')}
         {legItem(<View style={[s.legToday, { backgroundColor: C.ink }]}><Text style={[TXT.tag, { color: C.sheet }]} allowFontScaling={false}>{Number(today.slice(8, 10))}</Text></View>, l('Hoje', 'Today'), 'hoje')}
-        {legItem(legCell(C.sand, 'FNC', { pend: true }), l('Por sincronizar', 'Pending sync'), 'pend')}
+        {legItem(legCell(C.flight, 'FNC', { pend: true }), l('Por sincronizar', 'Pending sync'), 'pend')}
       </View>
     </View>
   );
@@ -653,7 +657,7 @@ export default function EscalaScreen({ navigation, route }) {
             </TouchableOpacity>
           </>
         )}
-        <View style={s.hubNote}><Icon name="lock" size={13} color={PELE.ok} /><Text style={s.hubNoteTxt}>{l('Lido no telemóvel · confirmas antes de gravar', 'Read on your phone · you confirm before saving')}</Text></View>
+        <View style={s.hubNote}><Icon name="lock" size={13} color={C.ink} /><Text style={s.hubNoteTxt}>{l('Lido no telemóvel · confirmas antes de gravar', 'Read on your phone · you confirm before saving')}</Text></View>
       </PeleSheet>
       <HotelSheet visible={hotelOpen} onClose={() => setHotelOpen(false)} station={hotelStation} />
 

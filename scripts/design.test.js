@@ -115,6 +115,18 @@ for (const f of ['App.js', ...MARCA_DIRS.flatMap((d) => fs.readdirSync(d).filter
   });
 }
 
+// Regra DURA (2026-11-13, o mapa das cores — design-system §14, escolha B): o VERDE é só do dinheiro que se ganha. Os
+// verdes de estado da pele (PELE.ok/okSoft/okText…, PLATE.ok) não pintam páginas: "dentro do limite" não tem cor (cockpit
+// escuro), o que se toca é tinta, e o dinheiro usa MONEY.gain (2.0) ou CARD.gain (3.0). Exceção única: o medidor da força da
+// palavra-passe (convenção universal, antes de entrar na app).
+const VERDE_OK = new Set(['data/constants.js', 'components/StrengthBar.js']);
+for (const f of ['App.js', ...MARCA_DIRS.flatMap((d) => fs.readdirSync(d).filter((x) => x.endsWith('.js')).map((x) => `${d}/${x}`))]) {
+  if (VERDE_OK.has(f)) continue;
+  fs.readFileSync(f, 'utf8').split(/\r?\n/).forEach((line, i) => {
+    if (/\b(PELE_NIGHT|PELE|P|PLATE)\.(ok|okSoft|okText|okSoftLine|okBg)\b/.test(line) && !/^\s*\/\//.test(line)) duras.push(`${f}:${i + 1}: verde de estado — o verde é só do dinheiro (MONEY.gain / CARD.gain); dentro do limite não tem cor (§14)`);
+  });
+}
+
 const base = fs.existsSync(BASE_FILE) ? JSON.parse(fs.readFileSync(BASE_FILE, 'utf8')) : null;
 const subidas = [], descidas = [];
 if (base) {

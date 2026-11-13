@@ -1,7 +1,7 @@
 import React, { useContext, useState, useMemo, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { PELE, PELE_FONT, GUTTER, RADIUS, BRAND, SPACE } from '../data/constants';
+import { PELE, PELE_FONT, GUTTER, RADIUS, BRAND, SPACE, MONEY } from '../data/constants';
 import Icon from '../components/Icon';
 import PeleSide from '../components/PeleSide';
 import PeleSheet from '../components/PeleSheet';
@@ -29,8 +29,11 @@ import AeLimitSheet from '../components/AeLimitSheet';
 import { evaluateTapLimits } from '../ae/tapLimits';
 import AsyncStorage from '../data/secureStorage';
 
-// Cor do estado da janela FTL (≥90% vermelho · ≥70% laranja · resto verde) — pele.
-const barColor = (r) => (r >= 0.9 ? PELE.red : r >= 0.7 ? PELE.warn : PELE.ok);
+// Cor do estado da janela FTL — o mapa das cores (design-system §14): PASSA o limite (> 100 %) vermelho · PERTO (≥ 85 %, a
+// mesma regra do Início e de data/today.js) laranja · DENTRO sem cor (tinta: cockpit escuro). Antes era vermelho aos 90 %,
+// antes de passar, e verde em tudo o resto — o verde é só do dinheiro. barColor pinta barras e círculos; pctColor o texto.
+const barColor = (r) => (r > 1 ? PELE.red : r >= 0.85 ? PELE.warn : PELE.ink);
+const pctColor = (r) => (r > 1 ? PELE.red : r >= 0.85 ? PELE.warnText : PELE.ink);
 
 // Curva do arco das bolas (translateX por índice) — recria o efeito do mockup para N opções.
 const arcX = (i, n) => { const mid = (n - 1) / 2; const tt = mid ? (i - mid) / mid : 0; return -Math.round(40 * (1 - Math.cos((tt * Math.PI) / 2))); };
@@ -274,13 +277,14 @@ export default function StatsScreen({ navigation }) {
   }, [painted, user?.id]);
   // ── Radiação cósmica ESTIMADA (fase 2, mockup design/radiacao-corpo.html v2) ──
   // Motor puro data/radiation.js (golden 34+ vs CARI-7/ICRU-84): dose derivada da escala,
-  // no device, NUNCA guardada. "≈" = a língua de estimativa da casa; cor só se a dose
-  // cruzar 70/90% do limiar de categoria A (6 mSv) — informação rara, não decoração.
+  // no device, NUNCA guardada. "≈" = a língua de estimativa da casa. Cor (o mapa, §14): laranja a partir de 85 % do limiar
+  // da categoria A (6 mSv/ano — Diretiva 2013/59/Euratom, art. 40.º: é uma classificação, não um limite) · vermelho só acima do
+  // LIMITE de dose (20 mSv/ano, art. 9.º). Antes era vermelho aos 90 % dos 6 mSv, que não é limite nenhum.
   const rad = useMemo(() => yearRadiation(duties || {}, isYear ? { year: +year } : { ym: st.ym }), [duties, isYear, year, st.ym]);
   const radYear = useMemo(() => (isYear ? null : yearRadiation(duties || {}, { year: Number(String(st.ym || '').slice(0, 4)) })), [duties, isYear, st.ym]);
   const fmtMsv = (v) => (v || 0).toLocaleString(locale, { minimumFractionDigits: v < 0.095 ? 2 : 1, maximumFractionDigits: v < 0.095 ? 2 : 1 });
-  const radTone = isYear && rad.mSv >= 0.9 * RADIATION_LIMITS_MSV.categoryA ? PELE.red
-    : isYear && rad.mSv >= 0.7 * RADIATION_LIMITS_MSV.categoryA ? PELE.warn : null;
+  const radTone = isYear && rad.mSv > RADIATION_LIMITS_MSV.occupational ? PELE.red
+    : isYear && rad.mSv >= 0.85 * RADIATION_LIMITS_MSV.categoryA ? PELE.warnText : null;
   // Batismo (1×-na-vida, o padrão do batismo das cores): explica o DIREITO (a companhia é
   // obrigada a informar — 2013/59 Art. 35.º/3) e a tolerância; grava ao nascer, fica a sessão.
   const [radBaptism, setRadBaptism] = useState(false);
@@ -328,10 +332,10 @@ export default function StatsScreen({ navigation }) {
   const baptismNote = alertBaptism ? (
     <Text style={s.note}>
       <Text style={s.noteInk}>{l('Primeira vez com cor? ', 'First time seeing colour? ')}</Text>
-      <Text style={[s.noteInk, { color: PELE.warn }]}>{l('Amarelo', 'Yellow')}</Text>
-      {l(' = janela acima de 70% — atenção cedo, não é decisão. ', ' = a window above 70% — early attention, not a decision. ')}
+      <Text style={[s.noteInk, { color: PELE.warnText }]}>{l('Laranja', 'Orange')}</Text>
+      {l(' = janela acima de 85% — atenção cedo, não é decisão. ', ' = a window above 85% — early attention, not a decision. ')}
       <Text style={[s.noteInk, { color: PELE.red }]}>{l('Vermelho', 'Red')}</Text>
-      {l(' = acima de 90% — confirma com o planeamento. A cor mede a tua margem; a app estima, nunca declara legalidade.', ' = above 90% — check with crewing. Colour measures your margin; the app estimates, it never declares legality.')}
+      {l(' = a estimativa passa o limite — confirma com o planeamento. Dentro do limite não há cor. A app estima, nunca declara legalidade.', ' = the estimate goes over the limit — check with crewing. Within the limit there is no colour. The app estimates, it never declares legality.')}
     </Text>
   ) : null;
 
@@ -457,7 +461,7 @@ export default function StatsScreen({ navigation }) {
                 ) : (
                   <>
                     <Text style={s.dlab}>{selSafe ? `${selSafe.w.grp === 'voo' ? l('Voo', 'Flight') : l('Serviço', 'Duty')} · ${limLabel(selSafe.w)}` : ''}</Text>
-                    <Text style={[s.dvalS, { color: barColor(selSafe ? selSafe.r : 0) }]} allowFontScaling={false}>{Math.round((selSafe ? selSafe.r : 0) * 100)}%</Text>
+                    <Text style={[s.dvalS, { color: pctColor(selSafe ? selSafe.r : 0) }]} allowFontScaling={false}>{Math.round((selSafe ? selSafe.r : 0) * 100)}%</Text>
                     <Text style={s.dsub}>{selSafe ? `${doneTxt(selSafe.w)} / ${Math.round(selSafe.limit)} h · ` : ''}<Text style={s.dsubB}>{selSafe ? leftTxt(selSafe.w) : ''}</Text></Text>
                   </>
                 )}
@@ -481,7 +485,7 @@ export default function StatsScreen({ navigation }) {
                     <TouchableOpacity key={o.k} onPress={() => pickDial(o.k)} activeOpacity={0.8} style={[s.opt, { transform: [{ translateX: arcX(i, safetyVis.length) }] }]}>
                       <Text style={[s.onm, on && s.onmOn]}>{o.nm}</Text>
                       <View style={[s.cirS, on && { backgroundColor: col }]}>
-                        <Text style={[s.cirPcS, { color: on ? PELE.paper : col }]}>{Math.round(o.r * 100)}%</Text>
+                        <Text style={[s.cirPcS, { color: on ? PELE.paper : pctColor(o.r) }]}>{Math.round(o.r * 100)}%</Text>
                       </View>
                     </TouchableOpacity>
                   );
@@ -522,12 +526,12 @@ export default function StatsScreen({ navigation }) {
             <Animated.View style={[s.bento, seg(3)]}>
               {mode === 'money' ? (
                 <TouchableOpacity style={[s.btile, s.btileWide]} activeOpacity={0.85} onPress={() => openSheet('seg')}>
-                  <View style={[s.btIc, s.btIcAlarm]}><Icon name="gauge" size={20} color={PELE.red} /></View>
+                  <View style={[s.btIc, s.btIcAlarm]}><Icon name="gauge" size={20} color={PELE.ink} /></View>
                   <View style={s.btWt}>
                     <View style={s.btNameWideRow}><Text style={s.btIdx}>{idx.seg}</Text><Text style={s.btNameWide}>{l('Segurança', 'Safety')}</Text></View>
                     <View style={s.btCapRow}><View style={s.btDot} /><Text style={s.btCap}>{fullest ? `${fullest.w.grp === 'voo' ? l('Voo', 'Flight') : l('Serviço', 'Duty')} · ${limLabel(fullest.w)} · ${l('mais cheia', 'fullest')}` : l('sem janelas', 'no windows')}</Text></View>
                   </View>
-                  <Text style={[s.btKeyWide, { color: barColor(fullest ? fullest.r : 0) }]}>{Math.round((fullest ? fullest.r : 0) * 100)}%</Text>
+                  <Text style={[s.btKeyWide, { color: pctColor(fullest ? fullest.r : 0) }]}>{Math.round((fullest ? fullest.r : 0) * 100)}%</Text>
                 </TouchableOpacity>
               ) : null}
               {/* Batismo das cores no modo AE: a nota nasce SOB O CARD Segurança (linha própria na grelha). */}
@@ -558,7 +562,7 @@ export default function StatsScreen({ navigation }) {
             {/* Cards extra — Férias (Ano) + Partilhar (o que o mockup não cobre) */}
             {isYear && hasVac ? (
               <View style={s.card}>
-                <View style={s.aeHead}><View style={[s.aeDot, { backgroundColor: PELE.ok }]} /><Text style={s.cardTitle}>{l('Férias', 'Leave')} {year}</Text></View>
+                <View style={s.aeHead}><View style={[s.aeDot, { backgroundColor: PELE.grey }]} /><Text style={s.cardTitle}>{l('Férias', 'Leave')} {year}</Text></View>
                 <View style={s.body3}>
                   <View style={s.bcell}><Text style={s.bnum}>{vacTaken}</Text><Text style={s.blab}>{l('Gozados', 'Taken')}</Text></View>
                   <View style={[s.bcell, s.bcellB]}><Text style={s.bnum}>{vacLeft}</Text><Text style={s.blab}>{l('Por marcar', 'To mark')}</Text></View>
@@ -589,10 +593,10 @@ export default function StatsScreen({ navigation }) {
       {/* ── Folha 01 · Segurança (só no modo Ganhos) ── */}
       <PeleSheet visible={sheet === 'seg'} onClose={() => setSheet(null)}>
         <View style={s.shead}>
-          <View style={[s.shIc, s.shIcAlarm]}><Icon name="gauge" size={19} color={PELE.red} /></View>
+          <View style={[s.shIc, s.shIcAlarm]}><Icon name="gauge" size={19} color={PELE.ink} /></View>
           <View style={s.shTt}>
             <Text style={s.shName}><Text style={s.shNameX}>{idx.seg} </Text>· {l('Segurança', 'Safety')}</Text>
-            <Text style={s.shSub}>{safetyRows.length} {l('janelas FTL · a mais cheia', 'FTL windows · fullest')} <Text style={{ color: barColor(fullest ? fullest.r : 0) }}>{Math.round((fullest ? fullest.r : 0) * 100)}%</Text>
+            <Text style={s.shSub}>{safetyRows.length} {l('janelas FTL · a mais cheia', 'FTL windows · fullest')} <Text style={{ color: pctColor(fullest ? fullest.r : 0) }}>{Math.round((fullest ? fullest.r : 0) * 100)}%</Text>
               <Text style={s.shLaw} onPress={() => { select(); setProva(provaFor('limites', provaCtx)); }}>  ·  <Text style={{ color: BRAND.signal }}>§</Text> ORO.FTL.210</Text>
             </Text>
           </View>
@@ -612,7 +616,7 @@ export default function StatsScreen({ navigation }) {
                   </View>
                   <GrowBar ratio={o.r} color={barColor(o.r)} track={s.track} fill={s.fill} delay={100 + i * 40} />
                   <View style={s.winFoot}>
-                    <Text style={[s.pct, { color: barColor(o.r) }]}>{Math.round(o.r * 100)}%</Text>
+                    <Text style={[s.pct, { color: pctColor(o.r) }]}>{Math.round(o.r * 100)}%</Text>
                     <Text style={s.lft}>{leftTxt(o.w)}</Text>
                   </View>
                 </View>
@@ -768,7 +772,7 @@ const s = StyleSheet.create({
 
   // Section eyebrow (dial)
   seybRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
-  seybDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: PELE.red },
+  seybDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: PELE.ink },
   seyb: { fontSize: 10.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1, textTransform: 'uppercase', color: PELE.grey },
 
   // Dial
@@ -777,15 +781,15 @@ const s = StyleSheet.create({
   // Dado-estrela da página: maior que a palavra do topo (44) — a hierarquia manda (2026-07-10, user).
   dval: { fontFamily: PELE_FONT.display, fontSize: 58, lineHeight: 56, color: PELE.ink },
   dvalDec: { fontFamily: PELE_FONT.displaySemi, fontSize: 23, color: PELE.grey },
-  dvalGreen: { color: PELE.ok },
+  dvalGreen: { color: MONEY.gain },
   dvalS: { fontFamily: PELE_FONT.display, fontSize: 60, lineHeight: 56, marginTop: 4 },
   dlab: { fontSize: 10.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.6, textTransform: 'uppercase', color: PELE.grey },
   dsubBox: { marginTop: 10 },
   dsub: { fontSize: 12.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, lineHeight: 18 },
   dsubB: { color: PELE.ink, fontFamily: PELE_FONT.bodyHeavy },
   gline: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 7, flexWrap: 'wrap' },
-  gpill: { backgroundColor: PELE.okSoft, borderRadius: RADIUS.pill, paddingHorizontal: 9, paddingVertical: 3 },
-  gpillTxt: { color: PELE.ok, fontSize: 11.5, fontFamily: PELE_FONT.bodyHeavy },
+  gpill: { backgroundColor: MONEY.gainSoft, borderRadius: RADIUS.pill, paddingHorizontal: 9, paddingVertical: 3 },
+  gpillTxt: { color: MONEY.gain, fontSize: 11.5, fontFamily: PELE_FONT.bodyHeavy },
 
   col: { alignItems: 'flex-end', gap: 9 },
   opt: { flexDirection: 'row', alignItems: 'center', gap: 9 },
@@ -825,7 +829,7 @@ const s = StyleSheet.create({
   btWt: { flex: 1, minWidth: 0 },
   btTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 11 },
   btIc: { width: 38, height: 38, borderRadius: 11, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
-  btIcAlarm: { backgroundColor: PELE.redSoft },
+  btIcAlarm: { backgroundColor: PELE.soft },
   btIdx: { fontFamily: PELE_FONT.displaySemi, fontSize: 15, letterSpacing: 1, color: BRAND.signal },
   btName: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.grey, marginBottom: 5 },
   btNameWideRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 3 },
@@ -850,7 +854,7 @@ const s = StyleSheet.create({
   // ── Folhas de detalhe ──
   shead: { flexDirection: 'row', alignItems: 'center', gap: 11, marginBottom: 15 },
   shIc: { width: 38, height: 38, borderRadius: 11, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
-  shIcAlarm: { backgroundColor: PELE.redSoft },
+  shIcAlarm: { backgroundColor: PELE.soft },
   shTt: { flex: 1, minWidth: 0 },
   shName: { fontSize: 11, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.8, textTransform: 'uppercase', color: PELE.grey },
   shNameX: { fontFamily: PELE_FONT.displaySemi, color: BRAND.signal, fontSize: 13 },

@@ -107,18 +107,18 @@ eq('sem horas → sem régua', (({ start, end }) => [start, end])(E.svcTimes('20
 // ════════ B3 · a régua ════════
 const R13 = E.dayRuler({ iso: '2026-11-13', ordered: E.orderServices(D['2026-11-13']), prevOrdered: E.orderServices(D['2026-11-12']), ns: true, prevNs: false, base: 'LIS', postFlightMin: 30, nowMin: 490 });
 eq('dia 13: o resto do voo da véspera (00:00–00:10), o serviço 05:30–09:30, a pernoita até ao fim', R13.blocks.map((b) => [b.a, b.b, b.color, !!b.toEnd, !!b.fromStart]),
-  [[0, 10, 'sand', false, true], [330, 570, 'sand', false, false], [570, 1440, 'sage', true, false]]);
+  [[0, 10, 'flight', false, true], [330, 570, 'flight', false, false], [570, 1440, 'rest', true, false]]);
 eq('dia 13: a WOCL porque o report às 05:30 cai dentro', R13.wocl, { a: 120, b: 360, note: 'WOCL 02:00–05:59 · o report às 05:30 cai dentro' });
 eq('dia 13: o "agora" às 08:10', R13.now, 490);
 const R12 = E.dayRuler({ iso: '2026-11-12', ordered: o12, prevOrdered: [], ns: false, base: 'LIS', postFlightMin: 30 });
-eq('dia 12: formação 08–12 e voo 18:30 até ao fim (passa a meia-noite)', R12.blocks.map((b) => [b.a, b.b, b.color, !!b.toEnd]), [[480, 720, 'lilac', false], [1110, 1440, 'sand', true]]);
+eq('dia 12: formação 08–12 e voo 18:30 até ao fim (passa a meia-noite)', R12.blocks.map((b) => [b.a, b.b, b.color, !!b.toEnd]), [[480, 720, 'ground', false], [1110, 1440, 'flight', true]]);
 eq('dia 12: a linha de baixo diz a que horas acaba', R12.endNote, 'o serviço acaba às 00:10 de sexta-feira');
 eq('dia 12: sem WOCL e sem "agora" (não é hoje)', [R12.wocl, R12.now], [null, null]);
 const R14 = E.dayRuler({ iso: '2026-11-14', ordered: E.orderServices(D['2026-11-14']), prevOrdered: E.orderServices(D['2026-11-13']), ns: false, prevNs: true, base: 'LIS', postFlightMin: 30 });
-eq('dia 14 (volta de LGW): a pernoita da véspera até ao report das 07:30, depois o voo', R14.blocks.map((b) => [b.a, b.b, b.color]), [[0, 450, 'sage'], [450, 690, 'sand']]);
+eq('dia 14 (volta de LGW): a pernoita da véspera até ao report das 07:30, depois o voo', R14.blocks.map((b) => [b.a, b.b, b.color]), [[0, 450, 'rest'], [450, 690, 'flight']]);
 eq('dia 14: o voo começa fora da base → sem WOCL', R14.wocl, null);
 const R19 = E.dayRuler({ iso: '2026-11-19', ordered: o19, base: 'LIS', postFlightMin: 30 });
-eq('dia 19: a assistência e o voo, pela hora', R19.blocks.map((b) => [b.a, b.b, b.color]), [[360, 720, 'lilac'], [640, 925, 'sand']]);
+eq('dia 19: a assistência e o voo, pela hora', R19.blocks.map((b) => [b.a, b.b, b.color]), [[360, 720, 'ground'], [640, 925, 'flight']]);
 const late = { '2026-11-20': voo('LIS-FNC-LIS', '22:00', [leg('EZY1', 'LIS', '22:45', 'FNC', '00:30'), leg('EZY2', 'FNC', '01:15', 'LIS', '02:55')]) };
 const R21 = E.dayRuler({ iso: '2026-11-21', ordered: [], prevOrdered: E.orderServices(late['2026-11-20']), base: 'LIS', postFlightMin: 30 });
 eq('o voo da véspera que acaba às 03:25 abre a régua e toca na WOCL deste dia', [R21.blocks.map((b) => [b.a, b.b]), R21.wocl && R21.wocl.note], [[[0, 205]], 'WOCL 02:00–05:59 · o serviço da véspera passa por ela']);
@@ -136,13 +136,13 @@ const cityOf = (c) => ({ LIS: 'Lisboa', LGW: 'Londres Gatwick', FNC: null, MAD: 
 const M13 = { 0: { total: 41.2, nightStop: 48 } };
 const fold13 = E.dayCards({ iso: '2026-11-13', ordered: E.orderServices(D['2026-11-13']), open: false, money: M13, kindLabel, cityOf, nightStop: { station: 'LGW', hotel: 'Hotel Gatwick Norte' }, postFlightMin: 30, fmtEur });
 eq('dobrado: uma linha fina por serviço e a pernoita', fold13.map((c) => [c.t, c.color, c.title, c.sub, c.value]), [
-  ['slim', 'sand', 'LIS → LGW', 'EZY8351 · 06:15–09:00 · report 05:30', '+41,20 €'],
-  ['slim', 'sage', 'Pernoita em LGW', 'Hotel Gatwick Norte', '+48,00 €']]);
+  ['slim', 'flight', 'LIS → LGW', 'EZY8351 · 06:15–09:00 · report 05:30', '+41,20 €'],
+  ['slim', 'rest', 'Pernoita em LGW', 'Hotel Gatwick Norte', '+48,00 €']]);
 eq('a linha do serviço abre o Detalhe desse serviço; a pernoita abre o hotel (toque longo edita)', [fold13[0].open, fold13[1].open, fold13[1].longOpen], [{ to: 'detail', idx: 0 }, { to: 'hotel' }, { to: 'hotelEdit' }]);
 const noHotel = E.dayCards({ iso: '2026-11-13', ordered: E.orderServices(D['2026-11-13']), open: false, money: {}, kindLabel, cityOf, nightStop: { station: 'LGW', hotel: null }, postFlightMin: 30, fmtEur });
 eq('sem hotel: pede para o guardar, sem € inventado', [noHotel[0].value, noHotel[1].sub, noHotel[1].value, noHotel[1].longOpen], [null, 'sem hotel guardado · toca para o guardar', null, null]);
 const fold19 = E.dayCards({ iso: '2026-11-19', ordered: o19, open: false, money: { 0: { total: 23.4 } }, kindLabel, cityOf, postFlightMin: 30, fmtEur });
-eq('dobrado, dia 19: a assistência primeiro, com as horas', fold19.map((c) => [c.color, c.title, c.sub]), [['lilac', 'Assistência em casa', '06:00–12:00'], ['sand', 'LIS → MAD → LIS', 'EZY8461 · 11:25–14:55 · report 10:40']]);
+eq('dobrado, dia 19: a assistência primeiro, com as horas', fold19.map((c) => [c.color, c.title, c.sub]), [['ground', 'Assistência em casa', '06:00–12:00'], ['flight', 'LIS → MAD → LIS', 'EZY8461 · 11:25–14:55 · report 10:40']]);
 const open19 = E.dayCards({ iso: '2026-11-19', ordered: o19, open: true, money: { 0: { total: 23.4 } }, kindLabel, cityOf, postFlightMin: 30, fmtEur });
 eq('aberto, dia 19: cartão da assistência com início, duração e fim', [open19[0].t, open19[0].kind, open19[0].a, open19[0].dur, open19[0].b], ['card', 'Serviço em terra', { v: '06:00', l: 'início' }, '6 h', { v: '12:00', l: 'fim' }]);
 eq('aberto, dia 19: o voo com o report e o fim do serviço', [open19[1].kind, open19[1].sub, open19[1].gain], ['Voo · 2 setores', 'report 10:40 · fim do serviço 15:25', '+23,40 €']);

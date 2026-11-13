@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · O Mês</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* O Mês da Escala (2026-11-13). O Nuno, ao ver o "Mês" no iPhone: "não estou a gostar dos desenhos dos números, dos quadrados
+   e de como estão pintados" + "e a parte das legendas, fazer com um atalho ou de outra maneira, alguma animação". Três maneiras
+   de desenhar o dia (e o de hoje para comparar) e três de mostrar a legenda, nas cores do mapa B (tom 2). Referências do Mobbin
+   no fim. Medidas reais do iPhone de 390 pt: a folha tem 12 de margem → grelha de 366, 7 dias de 48,67 com 4 de espaço. Dados de
+   teste (novembro de 2026; hoje = sexta 13). Movimento (skill animacoes): só transform e opacity, a grelha nunca salta, e com
+   "reduzir movimento" tudo aparece logo no estado final. */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif;
+  --ink:#141414;--soft:#3A3A36;--sheet:#FFFFFF;--neutral:#F1EFEA;--desk:#E3E1DB;--tsub:#5E5E57;--caption:#77776F;--round:rgba(127,127,127,.22);
+  --voo:#6DBEFA;--terra:#C3A1BE;--warn:#F0854A}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:26px}
+.lead{max-width:920px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px}
+.lead p,p.t{font-size:14px;line-height:1.55;color:var(--muted)} .lead b,p.t b{color:var(--pfg)}
+h2.sec{font-size:13px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;margin-top:6px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,406px));gap:26px 24px;justify-content:center}
+@media (max-width:1320px){.grid3{grid-template-columns:repeat(auto-fit,minmax(min(100%,390px),406px))}}
+.opt{display:flex;flex-direction:column;gap:10px;min-width:0}
+.opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:var(--muted);min-height:100px} .opt > p b{color:var(--pfg)}
+.opt > p.m{font-size:12px;min-height:0;font-variant-numeric:tabular-nums}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.now{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+.now .opt{max-width:406px} .now .opt > p{min-height:0}
+.card{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:520px}
+.card h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card li,.card p{font-size:13px;line-height:1.5;color:var(--muted)} .card ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card b{color:var(--pfg)}
+.refs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:10px}
+.refs a{display:block;background:#fff;border:1px solid #D6D4CD;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.4;color:var(--muted);text-decoration:none} .refs a b{color:var(--pfg)}
+
+/* o ecrã (a folha do Mês à largura real de 390 pt) */
+.scr{width:390px;max-width:100%;background:var(--desk);border-radius:28px;overflow:hidden;position:relative}
+.dtop{padding:14px 16px 26px;display:flex;align-items:center;gap:8px}
+.tp{height:38px;padding:0 14px;border-radius:19px;border:1.5px solid var(--ink);display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px}
+.rnd{width:44px;height:44px;border-radius:22px;background:var(--round);margin-left:auto}
+.sheet{background:var(--sheet);border-radius:32px 32px 0 0;margin-top:-16px;padding:12px 12px 18px;position:relative}
+.seg{display:flex;background:var(--neutral);border-radius:22px;padding:4px;height:44px;margin-bottom:12px}
+.seg span{flex:1;border-radius:18px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:var(--tsub)}
+.seg span.on{background:var(--ink);color:#fff}
+.wk{display:flex;gap:4px;margin-bottom:4px;align-items:center}
+.wk span{width:48.67px;text-align:center;font-weight:800;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--tsub)}
+.g{display:flex;flex-wrap:wrap;column-gap:4px;row-gap:6px;position:relative}
+.c{width:48.67px;height:52px;position:relative;display:flex;flex-direction:column;align-items:center;transition:opacity .18s ease}
+.c.dim{opacity:.22}
+@media (prefers-reduced-motion: reduce){.c{transition:none}}
+.n{font-weight:700;font-size:15px;line-height:20px;color:var(--ink);font-variant-numeric:tabular-nums}
+.n.past{color:var(--tsub)}
+.n.today{width:28px;height:28px;border-radius:14px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1}
+.pend{position:absolute;width:7px;height:7px;border-radius:4px;background:var(--warn);box-shadow:0 0 0 1.5px #fff}
+.sel{position:absolute;inset:-1px -1px;border:2px solid var(--ink);border-radius:12px;pointer-events:none}
+.code{font-weight:800;font-size:11px;letter-spacing:.5px;color:#141414;line-height:1;display:inline-flex;align-items:center;gap:2px;white-space:nowrap}
+.moon{width:10px;height:10px;flex:none}
+
+/* A · número limpo e uma etiqueta por baixo */
+.A .c{justify-content:flex-start;padding-top:3px;gap:4px}
+.A .tag{height:20px;align-self:stretch;margin:0 2px;border-radius:7px;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.A .tag.jr{margin-right:-2px;border-top-right-radius:0;border-bottom-right-radius:0}
+.A .tag.jl{margin-left:-2px;border-top-left-radius:0;border-bottom-left-radius:0}
+.A .tag.abs{background:#fff;border:1.5px solid rgba(127,127,127,.4)}
+.A .tag .seg2{position:absolute;left:0;top:0;bottom:0;width:9px;background:var(--terra)}
+.A .tag.two{padding-left:9px}
+.A .tag .dot{width:7px;height:7px;border-radius:4px;flex:none}
+.A .pend{top:2px;right:4px}
+/* B · o dia é um círculo pintado */
+.B .c{justify-content:flex-start;gap:2px}
+.B .ci{width:34px;height:34px;border-radius:17px;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;overflow:hidden}
+.B .ci .half{position:absolute;left:0;top:0;bottom:0;width:50%;background:var(--terra)}
+.B .ci b{position:relative;font-weight:700;font-size:15px;color:#141414;font-variant-numeric:tabular-nums}
+.B .ci.today{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--ink)}
+.B .ci.todayEmpty{background:var(--ink)} .B .ci.todayEmpty b{color:#fff}
+.B .ci.abs{border:1.5px dashed rgba(127,127,127,.55)}
+.B .ci.pastc{background:var(--neutral)} .B .ci.pastc b{color:var(--tsub)}
+.B .link{position:absolute;top:7px;height:20px;z-index:0}
+.B .sub{font-weight:700;font-size:11px;letter-spacing:.4px;color:var(--tsub);line-height:14px;display:inline-flex;align-items:center;gap:2px}
+.B .pend{top:0;right:6px;z-index:2}
+.B .pdot{width:6px;height:6px;border-radius:3px;position:absolute;bottom:3px;left:50%;margin-left:-3px}
+.B .sel{inset:auto;top:-3px;left:50%;margin-left:-20px;width:40px;height:40px;border-radius:20px}
+/* C · faixas que juntam os dias seguidos (sem códigos) */
+.C .c{justify-content:center}
+.C .band{position:absolute;left:0;right:0;top:11px;height:30px;border-radius:15px}
+.C .band.jr{right:-4px;border-top-right-radius:0;border-bottom-right-radius:0}
+.C .band.jl{left:0;border-top-left-radius:0;border-bottom-left-radius:0}
+.C .band.abs{background:#fff;border:1.5px dashed rgba(127,127,127,.55)}
+.C .band .seg2{position:absolute;left:0;top:0;bottom:0;width:10px;background:var(--terra);border-radius:15px 0 0 15px}
+.C .n{position:relative;z-index:1}
+.C .n.today{box-shadow:0 0 0 2px #fff}
+.C .mn{position:absolute;right:-9px;top:20px;z-index:3;width:14px;height:14px;border-radius:7px;background:#fff;display:flex;align-items:center;justify-content:center}
+.C .pend{top:7px;right:2px;z-index:2}
+.C .pastband{background:var(--neutral) !important}
+/* como está (B1) */
+.H .c{border-radius:10px;justify-content:space-between;padding:2px 0 4px;height:46px}
+.H .c.jr{border-top-right-radius:0;border-bottom-right-radius:0}
+.H .c.jl{border-top-left-radius:0;border-bottom-left-radius:0}
+.H .dots{position:absolute;bottom:2px;display:flex;gap:4px} .H .dots i{width:4px;height:4px;border-radius:2px;background:rgba(20,20,20,.82)}
+.H .n.today{width:24px;height:24px;font-size:13px}
+.H .pend{top:3px;left:3px}
+.H .g{row-gap:4px}
+
+/* as legendas (L1 · L2 · L3) */
+.lgbtn{margin-left:auto;height:28px;padding:0 10px 0 8px;border-radius:14px;background:var(--neutral);display:inline-flex;align-items:center;gap:5px;font-weight:700;font-size:12px;color:var(--ink);border:0;font-family:inherit;cursor:pointer}
+.lgbtn i{width:16px;height:16px;border-radius:8px;border:1.5px solid var(--ink);font-style:normal;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
+.pop{position:absolute;left:12px;right:12px;bottom:62px;background:#fff;border-radius:22px;box-shadow:0 10px 34px rgba(20,20,20,.18),0 1px 3px rgba(20,20,20,.12);padding:14px;
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;opacity:0;transform:translateY(10px) scale(.97);transform-origin:92% 100%;pointer-events:none;z-index:5}
+.pop.on{opacity:1;transform:none;pointer-events:auto}
+@media (prefers-reduced-motion: no-preference){.pop{transition:opacity .2s cubic-bezier(.2,.8,.2,1),transform .2s cubic-bezier(.2,.8,.2,1)}}
+.pop .li{display:flex;align-items:center;gap:8px;font-weight:600;font-size:12px;color:var(--soft)}
+.pop .hd{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:13px}
+.pop .hd button{border:0;background:var(--ink);color:#fff;border-radius:14px;height:28px;padding:0 12px;font-family:inherit;font-weight:700;font-size:12px;cursor:pointer}
+.sw{min-width:40px;height:20px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;gap:2px;flex:none;position:relative;overflow:hidden}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:12px 0 2px;scrollbar-width:none} .chips::-webkit-scrollbar{display:none}
+.chip{flex:none;height:32px;padding:0 12px 0 8px;border-radius:16px;background:var(--neutral);display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12px;color:var(--ink);border:1.5px solid transparent;font-family:inherit;cursor:pointer}
+.chip.on{border-color:var(--ink);background:#fff}
+.chip .sw{min-width:22px;height:16px;border-radius:5px}
+.hint{font-weight:500;font-size:11px;color:var(--caption);padding:6px 2px 0}
+@media (prefers-reduced-motion: no-preference){.pop.toPill{transition:opacity .32s cubic-bezier(.4,0,.2,1),transform .32s cubic-bezier(.4,0,.2,1)}}
+.pop.toPill{opacity:0;transform:translate(0,44px) scale(.12);pointer-events:none}
+.lgrow{display:flex;justify-content:flex-end;padding-top:12px}
+.ctl{display:flex;gap:8px;flex-wrap:wrap}
+.ctl button{border:1px solid #CFCDC6;background:#fff;border-radius:10px;padding:6px 10px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer}
+#meas{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>O Mês — os dias e a legenda</h1>
+    <p>Pelos olhos do tripulante, o Mês serve para três coisas num relance: <b>onde estão os meus voos e as minhas assistências</b>, <b>que dias tenho livres</b> e <b>onde estou hoje</b>. Hoje cada dia é um quadrado pintado de cima a baixo: com a cor nova, a grelha fica um mosaico pesado, o número perde-se e o "hoje" e o dia aberto lutam com a cor. As boas apps pintam <b>menos</b>: o número fica limpo e a cor vai para uma marca (Lifesum, Structured), um círculo (Flo, MacroFactor) ou uma faixa que junta os dias (Clue).</p>
+  </div>
+
+  <h2 class="sec">1 · Os dias — como está, e três maneiras novas</h2>
+  <div class="now"><div class="opt"><h3>Como está</h3><p>O dia inteiro pintado; o número em cima, o código em baixo, os dois pontos, o ponto laranja num canto. Para comparar.</p><div id="vH"></div></div></div>
+  <div class="grid3">
+    <div class="opt"><h3>A · Número limpo + etiqueta<span class="rec">RECOMENDO</span></h3><p>O número fica a tinta, sem fundo. Por baixo, uma <b>etiqueta</b> na cor do tipo com o destino (LGW, SBY). Dois serviços: a etiqueta leva uma ponta lilás. Rotação: as etiquetas juntam-se numa barra. Os dias feitos: etiqueta neutra com o ponto da cor (como na Lista).</p><div id="vA"></div><p class="m" id="mA"></p></div>
+    <div class="opt"><h3>B · O dia é um círculo</h3><p>O número dentro de um <b>círculo</b> pintado; o destino por baixo, pequeno. Dois serviços: meio círculo lilás, meio céu. Rotação: os círculos ligam-se por uma ponte. Hoje: um anel de tinta à volta. O mais "iOS", mas o destino fica pequeno e cinzento.</p><div id="vB"></div><p class="m" id="mB"></p></div>
+    <div class="opt"><h3>C · Faixas, sem códigos</h3><p>Uma <b>faixa</b> de cor atrás do número, que corre pelos dias seguidos (a rotação lê-se como uma só peça, como no Clue). Sem códigos: o destino vê-se na Lista. A mais calma e a mais bonita de longe; perde o "para onde" num relance.</p><div id="vC"></div><p class="m" id="mC"></p></div>
+  </div>
+
+  <h2 class="sec">2 · A legenda — três maneiras (toca nelas: o movimento é o da app)</h2>
+  <p class="t">Sempre aberta debaixo da grelha, a legenda só serve nas primeiras vezes e depois ocupa espaço. As três abaixo usam o dia A (a legenda é igual com qualquer um). Regras do movimento: só posição e transparência (nunca a altura), <b>a grelha nunca salta</b>, e com "reduzir movimento" a legenda aparece logo, sem animar.</p>
+  <div class="grid3">
+    <div class="opt"><h3>L1 · Botão "Legenda"</h3><p>Um botão com nome debaixo da grelha. Tocar abre a legenda num <b>cartão por cima da grelha</b> (aparece em 200 ms: sobe 10 pt e acende); tocar fora ou em "Fechar" esconde. Simples e sempre no mesmo sítio.</p><div id="L1"></div><div class="ctl"><button onclick="toggleL1()">Tocar em "Legenda"</button></div></div>
+    <div class="opt"><h3>L2 · A legenda filtra<span class="rec">RECOMENDO</span></h3><p>A legenda é uma <b>fila de pílulas</b> debaixo da grelha, só com o que existe neste mês. Tocar numa <b>acende esses dias</b> e esbate os outros (180 ms): "onde estão as minhas assistências?". Tocar outra vez repõe. Ensina usando, e serve para alguma coisa.</p><div id="L2"></div><p class="m">Toca nas pílulas do ecrã.</p></div>
+    <div class="opt"><h3>L3 · Aberta na 1.ª vez, depois recolhe</h3><p>Na primeira vez que abres o Mês, a legenda está aberta com "Percebi". Ao tocar, <b>encolhe e voa para o botão</b> (320 ms) — fica a saber onde mora. Depois abre como na L1. O mesmo batismo da nota das cores nos Números.</p><div id="L3"></div><div class="ctl"><button onclick="resetL3()">Repetir a 1.ª vez</button></div></div>
+  </div>
+  <p id="meas"></p>
+
+  <div class="card"><h3>A minha recomendação: A + L2</h3>
+    <ul><li><b>A</b> porque o tripulante lê primeiro o número e depois "para onde": o número limpo é o mais legível dos quatro, e a etiqueta guarda o destino (o que a C perde) num tamanho que se lê (o que a B encolhe). Pinta um terço do que pinta hoje.</li>
+    <li><b>L2</b> porque a legenda passa a ser uma ferramenta: em vez de ler "lilás = terra", toca-se em "Terra" e vê-se. Só mostra o que há neste mês (nunca "Por sincronizar" se não houver), não esconde nada atrás de um botão e não empurra a grelha.</li>
+    <li>Se preferires a legenda escondida, a <b>L3</b> é a melhor das escondidas: ensina uma vez onde ela fica.</li></ul></div>
+
+  <h2 class="sec">Referências (Mobbin)</h2>
+  <div class="refs">
+    <a href="https://mobbin.com/screens/3a530be6-95f5-4a70-8eb1-155b5da7275b" target="_blank"><b>Lifesum · mês</b> — números limpos; a marca é um ponto por baixo; hoje num anel. (A)</a>
+    <a href="https://mobbin.com/screens/a5f31dc9-8707-447a-9ae4-7ec2e9a4a802" target="_blank"><b>Structured · mês</b> — número limpo e as marcas do dia por baixo, na cor de cada tipo. (A)</a>
+    <a href="https://mobbin.com/screens/c6a25c29-3cdd-4a0d-8e24-ea9d1be0c6fa" target="_blank"><b>Flo · mês</b> — o dia como círculo pintado; os outros só número. (B)</a>
+    <a href="https://mobbin.com/screens/5db9d349-84b6-43c7-80ca-cb181ab6e815" target="_blank"><b>MacroFactor · período</b> — círculos por dia; hoje com anel de cor. (B)</a>
+    <a href="https://mobbin.com/screens/e2482c25-e83f-40b8-933a-1eed143d6415" target="_blank"><b>Clue · ciclo</b> — faixas que juntam os dias seguidos, pontas redondas. (C)</a>
+    <a href="https://mobbin.com/screens/0cb37c39-9093-4636-86f7-a67aa7559e89" target="_blank"><b>Weverse · categorias</b> — a legenda é uma lista que filtra o calendário. (L2)</a>
+    <a href="https://mobbin.com/screens/33f7a108-2ad4-4e47-b775-718871d5f759" target="_blank"><b>Ultrahuman · mês</b> — a legenda numa linha curta debaixo da grelha. (L2)</a>
+  </div>
+</div>
+
+<script>
+var MOON = '<svg class="moon" viewBox="0 0 24 24" fill="currentColor"><path d="M20 15.3A8.5 8.5 0 0 1 8.7 4a8.5 8.5 0 1 0 11.3 11.3z"/></svg>';
+var WD = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+var TODAY = 13, SEL = 13, LEAD = 6, DAYS = 30;   // 1 de novembro de 2026 é domingo
+// dados de teste: o que vai em cada dia
+var D = {
+  3:{ k:'voo', code:'FNC', ns:1, jr:1 }, 4:{ k:'voo', code:'FNC', jl:1 }, 5:{ k:'voo', code:'BCN' }, 11:{ k:'voo', code:'FNC' },
+  13:{ k:'voo', code:'OPO', ns:1, two:1, jr:1 }, 14:{ k:'voo', code:'OPO', jl:1 }, 16:{ k:'terra', code:'SBY' }, 17:{ k:'terra', code:'FRM' },
+  19:{ k:'voo', code:'LGW' }, 20:{ k:'voo', code:'OPO', ns:1, two:1, jr:1 }, 21:{ k:'voo', code:'OPO', jl:1 }, 24:{ k:'voo', code:'BCN', pend:1 },
+  25:{ k:'abs', code:'FÉR', jr:1 }, 26:{ k:'abs', code:'FÉR', jl:1 }, 27:{ k:'voo', code:'OPO', ns:1, two:1, jr:1 }, 28:{ k:'voo', code:'OPO', jl:1 }, 30:{ k:'terra', code:'SBY' }
+};
+var COL = { voo:'var(--voo)', terra:'var(--terra)', abs:'#fff' };
+function kindsOf(d){ var x = D[d]; if (!x) return []; var k = [x.k]; if (x.two) k.push('terra'); if (x.ns) k.push('ns'); if (x.two) k.push('two'); if (x.pend) k.push('pend'); return k; }
+function shell(gridHtml, extraWk, below, over){
+  return '<div class="scr"><div class="dtop"><span class="tp">Novembro 2026 ▾</span><span class="rnd"></span></div><div class="sheet"><div class="seg"><span>Lista</span><span class="on">Mês</span></div>'
+    + '<div class="wk">' + WD.map(function(w){ return '<span>' + w + '</span>'; }).join('') + (extraWk || '') + '</div>' + gridHtml + (below || '') + (over || '') + '</div></div>';
+}
+function lead(){ var h = ''; for (var i = 0; i < LEAD; i++) h += '<div class="c"></div>'; return h; }
+function cellA(d){
+  var x = D[d], past = d < TODAY, h = '<div class="c" data-d="' + d + '">';
+  h += '<span class="n' + (d === TODAY ? ' today' : past ? ' past' : '') + '">' + d + '</span>';
+  if (x) {
+    var bg = past && x.k !== 'abs' ? 'var(--neutral)' : COL[x.k];
+    h += '<span class="tag' + (x.k === 'abs' ? ' abs' : '') + (x.two && !past ? ' two' : '') + (x.jr ? ' jr' : '') + (x.jl ? ' jl' : '') + '" style="background:' + bg + '">'
+      + (x.two && !past ? '<i class="seg2"></i>' : '')
+      + '<span class="code">' + (past && x.k !== 'abs' ? '<i class="dot" style="background:' + COL[x.k] + '"></i>' : '') + x.code + (x.ns ? MOON : '') + '</span></span>';
+  }
+  if (x && x.pend) h += '<i class="pend"></i>';
+  if (d === SEL) h += '<i class="sel"></i>';
+  return h + '</div>';
+}
+function cellB(d){
+  var x = D[d], past = d < TODAY, h = '<div class="c" data-d="' + d + '">';
+  if (x && x.jr) h += '<i class="link" style="left:50%;right:-4px;background:' + (past ? 'var(--neutral)' : x.k === 'abs' ? 'transparent' : COL[x.k]) + '"></i>';
+  if (x && x.jl) h += '<i class="link" style="left:0;right:50%;background:' + (past ? 'var(--neutral)' : x.k === 'abs' ? 'transparent' : COL[x.k]) + '"></i>';
+  var cls = 'ci' + (d === TODAY ? (x ? ' today' : ' todayEmpty') : '') + (x && x.k === 'abs' ? ' abs' : '') + (x && past ? ' pastc' : '');
+  var bg = x && !past ? COL[x.k] : (x ? 'var(--neutral)' : 'transparent');
+  h += '<span class="' + cls + '" style="background:' + bg + '">' + (x && x.two && !past ? '<i class="half"></i>' : '') + '<b>' + d + '</b>' + (x && past && x.k !== 'abs' ? '<i class="pdot" style="background:' + COL[x.k] + '"></i>' : '') + '</span>';
+  h += x ? '<span class="sub">' + x.code + (x.ns ? MOON : '') + '</span>' : '';
+  if (x && x.pend) h += '<i class="pend"></i>';
+  if (d === SEL) h += '<i class="sel"></i>';
+  return h + '</div>';
+}
+function cellC(d){
+  var x = D[d], past = d < TODAY, h = '<div class="c" data-d="' + d + '">';
+  if (x) h += '<i class="band' + (x.k === 'abs' ? ' abs' : '') + (x.jr ? ' jr' : '') + (x.jl ? ' jl' : '') + (past && x.k !== 'abs' ? ' pastband' : '') + '" style="background:' + COL[x.k] + '">' + (x.two && !past ? '<i class="seg2"></i>' : '') + '</i>';
+  h += '<span class="n' + (d === TODAY ? ' today' : past ? ' past' : '') + '">' + d + '</span>';
+  if (x && x.ns) h += '<span class="mn">' + MOON + '</span>';   // a lua na junção: a noite fica entre os dois dias
+  if (x && x.pend) h += '<i class="pend"></i>';
+  if (d === SEL) h += '<i class="sel"></i>';
+  return h + '</div>';
+}
+function cellH(d){
+  var x = D[d], h, bg = x ? (x.k === 'abs' ? 'var(--neutral)' : COL[x.k]) : 'transparent';
+  h = '<div class="c' + (x && x.jr ? ' jr' : '') + (x && x.jl ? ' jl' : '') + '" style="background:' + bg + '">';
+  h += '<span class="n' + (d === TODAY ? ' today' : '') + '">' + d + '</span>' + (x ? '<span class="code">' + x.code + (x.ns ? MOON : '') + '</span>' : '<span></span>');
+  if (x && x.two) h += '<span class="dots"><i></i><i></i></span>';
+  if (x && x.pend) h += '<i class="pend"></i>';
+  if (d === SEL) h += '<i class="sel" style="border-radius:10px"></i>';
+  return h + '</div>';
+}
+function grid(cell, cls){ var h = '<div class="g ' + cls + '">' + lead(); for (var d = 1; d <= DAYS; d++) h += cell(d); return h + '</div>'; }
+function wrap(cls, inner){ return '<div class="' + cls + '">' + inner + '</div>'; }
+var LEGEND_H = '<div style="background:var(--neutral);border-radius:20px;padding:10px 12px;margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;font-weight:600;font-size:12px;color:var(--soft)">'
+  + '<span>■ Voo · destino</span><span>■ Serviço em terra</span><span>□ Férias · baixa</span><span>☾ Pernoita fora</span><span>•• 2 serviços</span><span>▬ Rotação</span><span>● Hoje</span><span>• Por sincronizar</span></div>';
+document.getElementById('vH').innerHTML = wrap('H', shell(grid(cellH, ''), '', LEGEND_H));
+document.getElementById('vA').innerHTML = wrap('A', shell(grid(cellA, '')));
+document.getElementById('vB').innerHTML = wrap('B', shell(grid(cellB, '')));
+document.getElementById('vC').innerHTML = wrap('C', shell(grid(cellC, '')));
+
+// as legendas
+function sw(bg, inner, extra){ return '<span class="sw" style="background:' + bg + (extra || '') + '">' + (inner || '') + '</span>'; }
+var LEG_ITEMS = [
+  sw('var(--voo)', '<span class="code">LGW</span>') + 'Voo · destino',
+  sw('var(--terra)', '<span class="code">SBY</span>') + 'Serviço em terra',
+  sw('#fff', '<span class="code">FÉR</span>', ';border:1.5px solid rgba(127,127,127,.4)') + 'Férias · baixa',
+  sw('var(--voo)', '<span class="code">OPO' + MOON + '</span>') + 'Pernoita fora',
+  sw('var(--voo)', '<i style="position:absolute;left:0;top:0;bottom:0;width:9px;background:var(--terra)"></i><span class="code" style="position:relative">OPO</span>') + '2 serviços no dia',
+  sw('var(--voo)', '<span class="code">FNC</span>', ';border-radius:7px 0 0 7px;min-width:30px') + 'Rotação seguida',
+  '<span class="sw" style="min-width:24px;width:24px;border-radius:12px;background:var(--ink);color:#fff;font-weight:800;font-size:11px">13</span>Hoje',
+  '<span class="sw" style="background:var(--voo)"><i style="position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:4px;background:var(--warn)"></i><span class="code">BCN</span></span>Por sincronizar'
+];
+function popHtml(id, btnTxt){ return '<div class="pop" id="' + id + '"><div class="hd"><span>Legenda</span><button onclick="' + (id === 'p3' ? 'gotIt()' : 'toggleL1(false)') + '">' + btnTxt + '</button></div>' + LEG_ITEMS.map(function(x){ return '<span class="li">' + x + '</span>'; }).join('') + '</div>'; }
+// o botão "Legenda" fica debaixo da grelha, à direita: a legenda abre por cima dele e, na L3, encolhe para dentro dele
+var BTN = '<div class="lgrow"><button class="lgbtn" id="BTNID" onclick="CLICK"><i>i</i>Legenda</button></div>';
+document.getElementById('L1').innerHTML = wrap('A', shell(grid(cellA, 'gL1'), '', BTN.replace('BTNID', 'b1').replace('CLICK', 'toggleL1()'), popHtml('p1', 'Fechar')));
+document.getElementById('L3').innerHTML = wrap('A', shell(grid(cellA, 'gL3'), '', BTN.replace('BTNID', 'b3').replace('CLICK', 'openL3()'), popHtml('p3', 'Percebi')));
+var p1 = document.getElementById('p1');
+function toggleL1(force){ var on = typeof force === 'boolean' ? force : !p1.classList.contains('on'); p1.classList.toggle('on', on); }
+var p3 = document.getElementById('p3');
+function resetL3(){ p3.classList.remove('toPill'); p3.classList.add('on'); }
+function gotIt(){ p3.classList.add('toPill'); p3.classList.remove('on'); }
+function openL3(){ p3.classList.remove('toPill'); p3.classList.toggle('on'); }
+resetL3();
+// L2: as pílulas que filtram (só o que existe neste mês)
+var CH = [['voo','Voo',sw('var(--voo)')],['terra','Terra',sw('var(--terra)')],['abs','Férias',sw('#fff','',';border:1.5px solid rgba(127,127,127,.4)')],['ns','Pernoita',sw('var(--voo)','<span class="code">' + MOON + '</span>')],['two','2 serviços',sw('var(--voo)','<i style="position:absolute;left:0;top:0;bottom:0;width:7px;background:var(--terra)"></i>')],['pend','Por sincronizar',sw('var(--voo)','<i style="position:absolute;top:2px;right:2px;width:6px;height:6px;border-radius:3px;background:var(--warn)"></i>')]];
+var chips = '<div class="chips">' + CH.map(function(c){ return '<button class="chip" data-k="' + c[0] + '" onclick="filt(this)">' + c[2] + c[1] + '</button>'; }).join('') + '</div><div class="hint">Toca numa cor para ver esses dias. Desliza para ver mais.</div>';
+document.getElementById('L2').innerHTML = wrap('A', shell(grid(cellA, 'gL2'), '', chips));
+function filt(b){
+  var k = b.getAttribute('data-k'), on = !b.classList.contains('on');
+  document.querySelectorAll('#L2 .chip').forEach(function(x){ x.classList.remove('on'); });
+  if (on) b.classList.add('on');
+  document.querySelectorAll('#L2 .c[data-d]').forEach(function(c){ var d = +c.getAttribute('data-d'); c.classList.toggle('dim', on && kindsOf(d).indexOf(k) < 0); });
+}
+// medições e verificação (depois de a letra carregar)
+document.getElementById('mA').innerHTML = 'Número a tinta 17,8 (passados #5E5E57: 6,43) · código sobre céu 9,12 · sobre lilás 8,04 · hoje branco sobre tinta 17,8. Pinta 20 × 45 pt por dia (hoje: 46 × 49).';
+document.getElementById('mB').innerHTML = 'Número sobre céu 9,12 · lilás 8,04 · o destino a #5E5E57: 6,43, mas com 11 px e cinzento. Círculo de 34 pt.';
+document.getElementById('mC').innerHTML = 'Número sobre céu 9,12 · lilás 8,04 · sem destino na grelha. Faixa de 30 pt que atravessa os dias seguidos.';
+function check(){
+  var cut = 0; document.querySelectorAll('.code, .n, .sub, .chip, .pop .li').forEach(function(e){ if (e.scrollWidth > e.clientWidth + 1) cut++; });
+  var wrap7 = 0; document.querySelectorAll('.g').forEach(function(g){ var cs = g.querySelectorAll(':scope > .c'); if (cs.length > 6 && cs[6].offsetTop !== cs[0].offsetTop) wrap7++; });
+  var sheetH = [].map.call(document.querySelectorAll('.grid3 .scr'), function(s){ return s.offsetHeight; });
+  document.getElementById('meas').textContent = 'Verificação do esboço: textos cortados ' + cut + ' · grelhas com o domingo a saltar ' + wrap7 + ' · alturas dos ecrãs ' + sheetH.join(' / ') + ' pt · movimento: L1 200 ms, L2 180 ms, L3 320 ms; com "reduzir movimento" sem animação.';
+}
+check(); if (document.fonts) document.fonts.ready.then(check);
+</script>
+</body>
+</html>

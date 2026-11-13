@@ -81,9 +81,10 @@ export default function ValidadesScreen({ navigation }) {
     });
   };
 
-  const bandColor = (b) => (b === 'valid' ? PELE.ok : b === 'expiring' ? PELE.warn : b === 'expired' ? PELE.red : PELE.ghost);
-  const bandTextColor = (b) => (b === 'valid' ? PELE.ok : b === 'expiring' ? PELE.warn : b === 'expired' ? PELE.red : PELE.grey);
-  const pillBgC = (b) => (b === 'valid' ? PELE.okSoft : b === 'expiring' ? PELE.warnSoft : b === 'expired' ? PELE.redSoft : PELE.soft);
+  // O mapa das cores (§14): válido = sem cor (cockpit escuro) · a acabar = laranja · caducado = vermelho (passou a data).
+  const bandColor = (b) => (b === 'valid' ? PELE.grey : b === 'expiring' ? PELE.warn : b === 'expired' ? PELE.red : PELE.ghost);
+  const bandTextColor = (b) => (b === 'valid' ? PELE.ink : b === 'expiring' ? PELE.warnText : b === 'expired' ? PELE.red : PELE.grey);
+  const pillBgC = (b) => (b === 'valid' ? PELE.soft : b === 'expiring' ? PELE.warnSoft : b === 'expired' ? PELE.redSoft : PELE.soft);
   const statusShort = (st) =>
     st.band === 'reference' ? l('Ref.', 'Ref.') : st.band === 'none' ? l('Sem data', 'No date') :
     st.band === 'expired' ? l('Expirado', 'Expired') : st.band === 'expiring' ? l('A expirar', 'Expiring') : l('Válido', 'Valid');
@@ -587,7 +588,7 @@ const s = StyleSheet.create({
   dateErr: { fontSize: 11, fontFamily: PELE_FONT.bodyBold, color: PELE.red, marginTop: 8 },
   dateInY: { width: 86 },
   dateSep: { fontSize: 20, color: PELE.grey },
-  derived: { fontSize: 11, fontFamily: PELE_FONT.bodyHeavy, color: PELE.ok, marginTop: 8 },
+  derived: { fontSize: 11, fontFamily: PELE_FONT.bodyHeavy, color: PELE.ink, marginTop: 8 },
   hint: { fontSize: 11.5, lineHeight: 17, fontFamily: PELE_FONT.body, color: PELE.grey, marginTop: 8 },
   saveBtn: { backgroundColor: PELE.ink, borderRadius: 14, paddingVertical: 15, alignItems: 'center', marginTop: 20 },
   saveTxt: { fontSize: 14, fontFamily: PELE_FONT.bodyBold, color: PELE.paper },

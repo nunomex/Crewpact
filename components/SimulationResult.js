@@ -60,7 +60,7 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
   const limTxt = (n) => (n === 1000 ? (lang === 'en' ? '1,000' : '1 000') : String(n));
   const winLbl = (w) => (w.id === 'year' ? l('ano', 'year') : w.id === '12m' ? l('12 meses', '12 months') : `${w.days} d`);
   const fatLbl = (b) => b === 'high' ? l('Alta', 'High') : b === 'elevated' ? l('Elevada', 'Elevated') : b === 'low' ? l('Baixa', 'Low') : l('Moderada', 'Moderate');
-  const toneC = (tn) => tn === 'red' ? P.red : tn === 'warn' ? P.warn : tn === 'green' ? P.ok : P.ink;
+  const toneC = (tn) => tn === 'red' ? P.red : tn === 'warn' ? P.warn : P.ink;   // dentro sem cor (§14)
   const fatTone = (b) => b === 'high' ? 'red' : b === 'elevated' ? 'warn' : b === 'low' ? 'green' : 'warn';
 
   // ── Veredicto: dentro, excede ou incerto ("a lei é que manda": só factos em falta, nenhum limite certamente passado) ──
@@ -86,7 +86,7 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
   // Palavra-veredicto SEM "legal/ilegal" (2026-11-03): a app estima, nunca declara legalidade (termos §3)
   // e o esquema aprovado da companhia pode ser diferente. "Dentro" / "Excede" dizem o mesmo, com verdade.
   const wordTxt = verdict === 'bad' ? l('Excede', 'Over') : verdict === 'ok' ? l('Dentro', 'Within') : verdict === 'unc' ? l('Incerto', 'Uncertain') : l('E se…', 'What if…');
-  const wordColor = verdict === 'bad' ? P.red : verdict === 'ok' ? P.ok : verdict === 'unc' ? P.warn : P.grey;
+  const wordColor = verdict === 'bad' ? P.red : (verdict === 'ok' || verdict === 'unc') ? P.ink : P.grey;   // incerto não é aviso (§14)
   // As razões: primeiro as que excedem, depois as que dependem de um facto.
   const reasons = (verdict === 'bad' || verdict === 'unc')
     ? [...sim.issues.filter((i) => i.level === 'bad'), ...sim.issues.filter((i) => i.level !== 'bad')].map((i) => issueText(i, lang, duty.duty_date)).filter(Boolean)

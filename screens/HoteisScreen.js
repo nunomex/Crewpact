@@ -170,7 +170,7 @@ const s = StyleSheet.create({
   cK: { fontSize: 9, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.6, textTransform: 'uppercase', color: PELE.grey },
   cName: { fontFamily: PELE_FONT.display, fontSize: 23, letterSpacing: -0.2, color: PELE.ink, marginTop: 3 },
   cMeta: { fontSize: 10.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, marginTop: 3 },
-  cMetaOk: { fontFamily: PELE_FONT.bodyHeavy, color: PELE.ok },
+  cMetaOk: { fontFamily: PELE_FONT.bodyHeavy, color: PELE.ink },
   cBtn: { backgroundColor: PELE.ink, borderRadius: 999, paddingVertical: 9, alignItems: 'center', marginTop: 12 },
   cBtnGhost: { backgroundColor: PELE.paper, borderWidth: 1.5, borderColor: PELE.ink, paddingVertical: 8 },
   cBtnTxt: { fontSize: 11, fontFamily: PELE_FONT.bodyHeavy, color: PELE.paper },

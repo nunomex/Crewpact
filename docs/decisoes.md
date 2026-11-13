@@ -168,9 +168,38 @@ referência para o layout das páginas que faltam e para o sistema de desenho. *
   dos alertas; "cockpit escuro"). → Esboço `design/cores.html`: o mapa (base · tipo · estado — dentro sem cor, perto laranja
   + "!", passa vermelho + "✕", incerto neutro tracejado + "?" · dinheiro — verde só no que se ganha · ação — tinta; amarelo
   só no painel ao vivo) e três maneiras: **A** arrumar os sentidos (as cores dos cartões ficam) · **B** frio e quente (voo
-  céu `#8DB4DE`, terra lilás claro `#D9CDEB`, repouso salva; voo × atenção passa a ΔE 79 no pior caso; voo × terra desce a
-  14, os dois com o nome escrito) · **C** só o estado tem cor. Recomendo B. **À espera da escolha.** Os erros de significado
-  (a barra aos 90 %, "Amarelo", "Incerto" a laranja, folga trabalhada a laranja) corrigem-se em qualquer das três.
+  céu `#8DB4DE`, terra lilás claro `#D9CDEB`, repouso salva; voo × atenção passa a ΔE 68 no pior caso; voo × terra desce a
+  14, os dois com o nome escrito) · **C** só o estado tem cor. Recomendei B.
+  **ESCOLHIDA pelo Nuno: B — e "podes usar todas as cores que existem, caso seja necessário" (2026-11-13). JÁ NO CÓDIGO (por
+  ver no iPhone; por gravar):** o mapa no `docs/design-system.md` §14 (antes das páginas) · tokens com nome de tarefa em
+  `data/constants.js` (`CARD.flight/ground/rest/alert/stop` + noite; `MONEY` para as páginas 2.0) · o Início, a Escala e a
+  régua do dia na B (goldens `test:homecards` 251 e `test:escala` 87 com os nomes novos) · 22 ficheiros 2.0 com os sentidos
+  arrumados: verde só no dinheiro (o "dentro", o "Ligar", os escudos, o "Nova", o Face ID "Ligado", o "abrangido", as
+  validades válidas passam a tinta) · incerto neutro e tracejado (Detalhe, Simulação) · folga trabalhada sem laranja · fadiga
+  nunca vermelha (é risco, não limite) · Números: vermelho só acima de 100 %, perto aos 85 % (a regra do Início), a nota diz
+  "Laranja" · radiação vermelha só acima de 20 mSv (o limite; os 6 mSv são classificação → laranja) · o ícone do medidor da
+  segurança deixa de ser vermelho. **Guardião:** regra dura nova — o verde da PELE fora de `constants.js` falha (exceção: o
+  medidor da palavra-passe). `npm test` verde, pacote iOS gera.
+  **O tom (`design/cores.html` §4, procurado em milhares de tons frios e medido): ESCOLHIDO o tom 2** ("vou pelo que
+  recomendas") — céu vivo `#6DBEFA` + lilás-rosado `#C3A1BE` (noite `#58AFEC` · `#B592B0`); voo × terra 37 · 31 · 23, voo ×
+  atenção 97 · 92 · 80; mantém "lilás = terra". Já nos tokens. (Tom 1, o do esboço: 21 · 19 · 14; tom 3, petróleo: 27 · 27 · 26.)
+  **Fica para a migração de cada página:** os laranjas e vermelhos da 2.0 que sobram, revistos um a um; o amarelo da marca
+  como sinal de seleção nas páginas 2.0 (`BRAND.signal/marker`, 44 usos).
+  **Visto no iPhone pelo Nuno (2026-11-13): no Mês, a coluna do domingo estava vazia** — a largura do dia ((largura − 6
+  espaços) / 7) somava, em vírgula flutuante, uma ponta acima da grelha e o 7.º dia saltava para a linha de baixo (medido:
+  acontece em iPhones de 375, 402 e 430 pt). Corrigido: a largura arredonda para baixo ao píxel do ecrã (`EscalaScreen`
+  `cellW`); cabe em todos os tamanhos. A grelha do ano (percentagens) não tinha o problema.
+  **O Mês (2026-11-13, o Nuno: "não estou a gostar dos desenhos dos números, dos quadrados e de como estão pintados" + "a
+  parte das legendas, fazer com um atalho ou de outra maneira, alguma animação")** → esboço `design/escala-mes.html` (Mobbin:
+  Lifesum, Structured, Flo, MacroFactor, Clue, Weverse, Ultrahuman): os dias — **A** número limpo + etiqueta da cor com o
+  destino (pinta um terço do de hoje) · **B** o dia é um círculo (destino pequeno por baixo) · **C** faixas que juntam os dias
+  seguidos, sem códigos; a legenda — **L1** botão "Legenda" com cartão por cima da grelha (200 ms) · **L2** pílulas que
+  filtram: tocar acende esses dias e esbate os outros (180 ms) · **L3** aberta na 1.ª vez, depois encolhe para o botão
+  (320 ms). Movimento só transform/opacity, a grelha nunca salta, reduzido = sem animação (verificado no esboço). Recomendo
+  **A + L2**. **À espera da escolha.**
+  **Ver no iPhone:** o Início (voo a céu, assistência a lilás, o aviso laranja com "!") · a Escala (barras, legenda do Mês, os
+  dias feitos com o ponto azul) · o Detalhe de um serviço dentro (sem verde), incerto (pílula tracejada) e com fadiga · os
+  Números (barras a tinta, laranja aos 85 %) · as Validades.
   Visto de passagem (de antes): o onboarding diz "brevemente" e o Perfil "Em breve" (i18n
   `onb.soon` existe mas o `OnboardingScreen` escreve à mão) — acertar quando o Perfil e a entrada migrarem.
 

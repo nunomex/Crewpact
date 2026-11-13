@@ -121,7 +121,7 @@ export const portaTxt = StyleSheet.create({
   foot:   { ...TXT.footnote, color: PELE.grey },
   label:  { ...TXT.eyebrow, color: PELE.grey, marginBottom: SPACE.sm, marginLeft: SPACE.xs },
   err:    { ...TXT.footnote, color: PELE.red, marginTop: SPACE.sm },
-  ok:     { ...TXT.footnote, color: PELE.ok, marginTop: SPACE.sm },
+  ok:     { ...TXT.footnote, color: PELE.ink, marginTop: SPACE.sm },
   link:   { ...TXT.bodyStrong, color: PELE.ink, textDecorationLine: 'underline', textDecorationColor: BRAND.signal },
   linkMuted: { ...TXT.bodyStrong, color: PELE.grey },
   center: { textAlign: 'center' },

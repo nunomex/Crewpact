@@ -78,9 +78,9 @@ function DetailContent({ item, lang, onNav }) {
   const d = detailFor(item, lang);
   // Sem acento-cor da pele em texto (o amarelo não lê sobre papel): info = ink neutro.
   const vTone = item.status === 'bad' ? P.red : item.status === 'warn' ? P.warn
-    : item.status === 'ok' ? P.ok : P.ink;
-  const fillC = (t) => (t === 'red' ? P.red : t === 'amber' ? P.warn : P.ok);
-  const rowTone = (t) => (t === 'bad' ? P.red : t === 'warn' ? P.warn : t === 'ok' ? P.ok : P.ink);
+    : P.ink;   // dentro sem cor (§14)
+  const fillC = (t) => (t === 'red' ? P.red : t === 'amber' ? P.warn : P.ink);
+  const rowTone = (t) => (t === 'bad' ? P.red : t === 'warn' ? P.warn : P.ink);
   const dateLbl = (iso) => {
     const dt = new Date(iso + 'T00:00:00'); if (isNaN(dt)) return iso;
     const x = dt.toLocaleDateString(lang === 'en' ? 'en-GB' : 'pt-PT', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -121,7 +121,7 @@ function DetailContent({ item, lang, onNav }) {
           {d.changes.slice(0, 8).map((c, i) => (
             <View key={i} style={[s.prow, i > 0 && s.prowBorder]}>
               <Text style={s.prowK}>{dateLbl(c.date)}</Text>
-              <Text style={[s.prowV, { color: c.k === 'removed' ? P.red : c.k === 'added' ? P.ok : P.warn }]}>{c.label}</Text>
+              <Text style={[s.prowV, { color: c.k === 'removed' ? P.red : c.k === 'added' ? P.ink : P.warn }]}>{c.label}</Text>
             </View>
           ))}
         </View>

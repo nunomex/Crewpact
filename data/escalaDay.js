@@ -235,7 +235,7 @@ export function dayRuler({ iso, ordered = [], prevOrdered = [], ns = false, prev
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const prevIso = addDays(iso, -1);
   const blocks = [];
-  const colorOf = (svc) => (isFlightSvc(svc) ? 'sand' : 'lilac');
+  const colorOf = (svc) => (isFlightSvc(svc) ? 'flight' : 'ground');
   const T = ordered.map((o) => ({ o, ...svcTimes(iso, o.svc, postFlightMin) }));
   const P = prevOrdered.map((o) => ({ o, ...svcTimes(prevIso, o.svc, postFlightMin) }));
   // o resto da véspera que passou a meia-noite
@@ -243,14 +243,14 @@ export function dayRuler({ iso, ordered = [], prevOrdered = [], ns = false, prev
   P.forEach((t) => { if (t.end != null && t.end > 1440) { const b = Math.min(1440, t.end - 1440); blocks.push({ a: 0, b, color: colorOf(t.o.svc), fromStart: true }); carry = Math.max(carry, b); } });
   const timed = T.filter((t) => t.start != null);
   // o repouso fora da base que vem da véspera, até ao 1.º report
-  if (prevNs && timed.length && timed[0].start > carry) blocks.push({ a: carry, b: timed[0].start, color: 'sage', fromStart: carry === 0 });
+  if (prevNs && timed.length && timed[0].start > carry) blocks.push({ a: carry, b: timed[0].start, color: 'rest', fromStart: carry === 0 });
   timed.forEach((t) => {
     const b = t.end == null ? Math.min(1440, t.start + 30) : Math.min(1440, t.end);
     if (b > t.start) blocks.push({ a: t.start, b, color: colorOf(t.o.svc), toEnd: t.end != null && t.end > 1440, open: t.end == null });
   });
   const ends = timed.map((t) => t.end).filter((x) => x != null);
   const lastEnd = ends.length ? Math.max(...ends) : null;
-  if (ns && lastEnd != null && lastEnd < 1440) blocks.push({ a: lastEnd, b: 1440, color: 'sage', toEnd: true });
+  if (ns && lastEnd != null && lastEnd < 1440) blocks.push({ a: lastEnd, b: 1440, color: 'rest', toEnd: true });
   // a WOCL: um voo que começa na base e lhe toca (no dia ou, depois da meia-noite, no dia seguinte)
   const W = [[WOCL.start, WOCL.end], [WOCL.start + 1440, WOCL.end + 1440]];
   const B = String(base || '').toUpperCase();
@@ -313,14 +313,14 @@ export function dayCards({ iso, ordered = [], open = false, money = [], kindLabe
       const sub = flight
         ? [legs[0] && legs[0].flightNo, legs.length ? `${legs[0].off || '—'}–${legs[legs.length - 1].on || '—'}` : null, svc.report_time ? `report ${svc.report_time}` : null]
         : [kindLabel(kind) !== title ? kindLabel(kind) : null, t.start != null ? `${fmtHm(t.start)}–${t.end != null ? fmtHm(t.end) : '—'}` : null];
-      out.push({ t: 'slim', id, color: flight ? 'sand' : 'lilac', title, sub: sub.filter(Boolean).join(' · ') || null, value: gain, gain: !!gain, open: openTo });
+      out.push({ t: 'slim', id, color: flight ? 'flight' : 'ground', title, sub: sub.filter(Boolean).join(' · ') || null, value: gain, gain: !!gain, open: openTo });
       return;
     }
     const nLegs = legs.filter((lg) => !lg.dh).length;
     const kindTxt = flight
       ? [l('Voo', 'Flight'), nLegs ? `${nLegs} ${nLegs === 1 ? l('setor', 'sector') : l('setores', 'sectors')}` : null, svc.nightStop ? l('pernoita', 'night stop') : null].filter(Boolean).join(' · ')
       : l('Serviço em terra', 'Ground duty');
-    const card = { t: 'card', id, color: flight ? 'sand' : 'lilac', kind: kindTxt, title, gain, open: openTo };
+    const card = { t: 'card', id, color: flight ? 'flight' : 'ground', kind: kindTxt, title, gain, open: openTo };
     if (flight && legs.length) {
       card.sub = [svc.report_time ? `report ${svc.report_time}` : null, endTxt ? l(`fim do serviço ${endTxt}`, `duty ends ${endTxt}`) : null].filter(Boolean).join(' · ') || null;
       const Z = legsZulu(iso, legs, svc.report_time || legs[0].off || null);
@@ -344,7 +344,7 @@ export function dayCards({ iso, ordered = [], open = false, money = [], kindLabe
   });
   if (nightStop && nightStop.station) {
     const nsEur = ordered.reduce((s, o) => s + ((money[o.idx] && money[o.idx].nightStop) || 0), 0);
-    out.push({ t: 'slim', id: 'ns', color: 'sage', title: l(`Pernoita em ${nightStop.station}`, `Night stop in ${nightStop.station}`),
+    out.push({ t: 'slim', id: 'ns', color: 'rest', title: l(`Pernoita em ${nightStop.station}`, `Night stop in ${nightStop.station}`),
       sub: nightStop.hotel ? nightStop.hotel : l('sem hotel guardado · toca para o guardar', 'no hotel saved · tap to add it'),
       value: nsEur ? `+${fmtEur(nsEur)}` : null, gain: !!nsEur, open: { to: 'hotel' }, longOpen: nightStop.hotel ? { to: 'hotelEdit' } : null });
   }

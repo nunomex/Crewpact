@@ -63,7 +63,7 @@ export default function NotificationsBell({ variant = 'bell', night = false }) {
   // Detalhe por-dia do aviso de escala: data curta + rota/tipo + etiqueta de estado.
   const fmtDay = (iso) => { const d = new Date(`${iso}T00:00:00`); if (isNaN(d)) return iso; const x = d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric' }); return x.charAt(0).toUpperCase() + x.slice(1); };
   const descOf = (it) => it.route || t('duties.kind.' + (it.kind || 'flight'), lang);
-  const dayChip = (status) => status === 'added' ? { txt: l('Nova', 'New'), box: s.dchipNew, fg: { color: PELE.ok } }
+  const dayChip = (status) => status === 'added' ? { txt: l('Nova', 'New'), box: s.dchipNew, fg: { color: PELE.ink } }
     : status === 'removed' ? { txt: l('Cancelada', 'Cancelled'), box: s.dchipCx, fg: { color: PELE.red } }
     : { txt: l('Alterada', 'Changed'), box: s.dchipCh, fg: { color: PELE.warn } };
 
@@ -200,7 +200,7 @@ const s = StyleSheet.create({
   dchip: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, minWidth: 72, alignItems: 'center' },
   dchipTxt: { fontSize: 9.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.4, textTransform: 'uppercase' },
   dchipCh: { backgroundColor: PELE.warnSoft },
-  dchipNew: { backgroundColor: PELE.okSoft },
+  dchipNew: { backgroundColor: PELE.soft },
   dchipCx: { backgroundColor: PELE.redSoft },
   dtxt: { flex: 1, fontSize: 12.5, fontFamily: PELE_FONT.body, color: PELE.ink },
   dd: { fontFamily: PELE_FONT.bodyBold, color: PELE.ink },

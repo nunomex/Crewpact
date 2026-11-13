@@ -85,7 +85,7 @@ export function fmt(lang = 'pt') {
 }
 
 const isFlightKind = (k) => !k || k === 'flight' || k === 'positioning';
-const colorOf = (k) => (isFlightKind(k) ? 'sand' : 'lilac');
+const colorOf = (k) => (isFlightKind(k) ? 'flight' : 'ground');
 const chain = (st) => (Array.isArray(st) ? st.filter(Boolean).join(' → ') : '');
 
 export function homeCards(H = {}) {
@@ -121,7 +121,7 @@ export function homeCards(H = {}) {
   const top = (pill, pill2, what, giant, fx) => ({ pill, pill2: pill2 && pill2.text ? pill2 : null, what, giant, facts: fx || null });
   const giantOf = (l1, unit = null, l2 = null, l2Grey = false) => ({ l1: String(l1), unit: unit || null, l2: l2 || null, l2Grey: !!(l2 && l2Grey) });
   const psvOf = (ps) => (ps && ps.latest ? `${ps.latest}${ps.latestNextDay ? ' +1' : ''}` : null);
-  const slimWarn = (w) => ({ t: 'slim', id: w.id, color: 'warn', title: w.title, sub: w.sub || null, value: w.value || null, gain: false, open: w.open || null });
+  const slimWarn = (w) => ({ t: 'slim', id: w.id, color: 'alert', title: w.title, sub: w.sub || null, value: w.value || null, gain: false, open: w.open || null });
   const warns = (H.warns || []).filter((w) => w && w.title).slice(0, 2);
   const wFirst = warns.filter((w) => w.first).map(slimWarn);
   const wLast = warns.filter((w) => !w.first).map(slimWarn);
@@ -160,11 +160,11 @@ export function homeCards(H = {}) {
       gap = (dayIdx(n.iso) - dayIdx(d.iso) - (crossed ? 1 : 0)) * 1440 + toMin(n.report) - toMin(d.end);
       if (gap < 0) gap = null;
     }
-    const card = { t: 'card', id: 'night', color: 'sage', kind: l('A seguir', 'Next'), title,
+    const card = { t: 'card', id: 'night', color: 'rest', kind: l('A seguir', 'Next'), title,
       sub: [ns.hotel || l('sem hotel guardado', 'no hotel saved'), d.restAfterMin ? ((d.restAfterLoMin != null && d.restAfterLoMin < d.restAfterMin) ? minRange(d.restAfterLoMin, d.restAfterMin) : d.restAfterOpen ? minRange(d.restAfterMin, null) : `${l('mínimo', 'minimum')} ${F.dur(d.restAfterMin)}`) : null].filter(Boolean).join(' · '),
       gain, a: d.end ? { v: d.end, l: l('fim de serviço', 'duty ends') } : null, dur: gap != null ? F.dur(gap) : null,
       b: n && n.report ? { v: n.report, l: `report · ${F.wds(n.iso)}` } : null, pct: null, corner: 'chev', action: null, open: { to: 'hotel' } };
-    card.slim = { t: 'slim', id: 'night', color: 'sage', title, sub: [d.end ? `${l('fim de serviço', 'duty ends')} ${d.end}` : null, ns.hotel || l('sem hotel guardado', 'no hotel saved')].filter(Boolean).join(' · '),
+    card.slim = { t: 'slim', id: 'night', color: 'rest', title, sub: [d.end ? `${l('fim de serviço', 'duty ends')} ${d.end}` : null, ns.hotel || l('sem hotel guardado', 'no hotel saved')].filter(Boolean).join(' · '),
       value: gain, gain: !!gain, open: { to: 'hotel' } };
     return card;
   };
@@ -188,7 +188,7 @@ export function homeCards(H = {}) {
     const ps = d.psv || {};
     const line = live.nowPct != null;
     const kindLbl = live.legTotal > 1 ? l(`Dia de serviço · setor ${live.legIdx + 1} de ${live.legTotal}`, `Duty day · sector ${live.legIdx + 1} of ${live.legTotal}`) : l('Dia de serviço', 'Duty day');
-    return { t: 'card', id: 'day', color: 'sand', kind: kindLbl, title: titleOf(d),
+    return { t: 'card', id: 'day', color: 'flight', kind: kindLbl, title: titleOf(d),
       // A linha pequena diz QUANDO o dia continua e acaba (Nuno, iPhone 2026-11-11: a margem era até à última chegada, mas a hora
       // não aparecia): o estado do voo ao vivo · o próximo setor · a última chegada. Sem uma 2.ª fila de horas (o selo é um só).
       sub: [live.status === 'late' ? l(`atraso +${live.delayMin} min`, `delay +${live.delayMin} min`) : live.status === 'on' ? l('a horas', 'on time') : null,
@@ -224,7 +224,7 @@ export function homeCards(H = {}) {
     const r = H.rest || {};
     const u = r.unc && r.unc.lo ? r.unc : null;
     if (u) {
-      return { t: 'card', id: 'rest', color: 'sage', kind: base ? l('Repouso · na base', 'Rest · at base') : l('Repouso · fora da base', 'Rest · away from base'),
+      return { t: 'card', id: 'rest', color: 'rest', kind: base ? l('Repouso · na base', 'Rest · at base') : l('Repouso · fora da base', 'Rest · away from base'),
         title: title || (base ? l('Descansa', 'Rest') : (r.hotel || l('Sem hotel guardado', 'No hotel saved'))),
         sub: keepSub && sub ? `${l('dia acima do limite', 'day over the limit')} · ${l('repouso', 'rest')} ${u.hi ? `${u.lo}–${u.hi}` : `${l('desde', 'from')} ${u.lo}`} · ${restWhy(u)}` : restUncSub(u),
         gain: !base && r.pay != null ? F.eur(r.pay, '+') : null,
@@ -233,7 +233,7 @@ export function homeCards(H = {}) {
         b: withUntil ? (u.hi ? { v: u.hi, l: l('no máximo', 'at most') } : { v: u.lo, l: l('no mínimo', 'at least') }) : null,
         pct: r.pct != null ? Math.max(0, Math.min(100, Math.round(r.pct))) : null, corner, action, open };
     }
-    return { t: 'card', id: 'rest', color: 'sage', kind: base ? l('Repouso · na base', 'Rest · at base') : l('Repouso · fora da base', 'Rest · away from base'),
+    return { t: 'card', id: 'rest', color: 'rest', kind: base ? l('Repouso · na base', 'Rest · at base') : l('Repouso · fora da base', 'Rest · away from base'),
       title: title || (base ? l('Descansa', 'Rest') : (r.hotel || l('Sem hotel guardado', 'No hotel saved'))),
       sub: sub != null ? sub : (base ? null : l('pernoita desta noite', 'tonight’s night stop')),
       gain: !base && r.pay != null ? F.eur(r.pay, '+') : null,
@@ -277,7 +277,7 @@ export function homeCards(H = {}) {
     T = top({ text: l('Atenção', 'Attention'), live: true }, todayPill(), dc.days === 0 ? l(`${name} caduca`, `${name} expires`) : l(`${name} caduca em`, `${name} expires in`),
       dc.days === 0 ? giantOf(l('Hoje', 'Today'), null, F.dm(dc.expiryIso)) : giantOf(dc.days, dc.days === 1 ? l('dia', 'day') : l('dias', 'days'), F.dm(dc.expiryIso)),
       facts(fact(F.wdOnly(dc.expiryIso), l('último dia válido', 'last valid day')), dc.after > 0 ? fact(dc.after === 1 ? l('1 serviço', '1 duty') : l(`${dc.after} serviços`, `${dc.after} duties`), l('marcados depois', 'rostered after')) : null));
-    const docCard = { t: 'card', id: 'doc', color: 'warn', kind: l('Validades', 'Documents'), title: name,
+    const docCard = { t: 'card', id: 'doc', color: 'alert', kind: l('Validades', 'Documents'), title: name,
       sub: l('Quando renovares, regista a data nova para o aviso sair.', 'When you renew, enter the new date to clear the warning.'), gain: null, a: null, dur: null, b: null, pct: null, corner: 'chev',
       action: { id: 'validades', icon: 'edit', label: l('Registar a data nova', 'Enter the new date'), open: { to: 'validades' } }, open: { to: 'validades' } };
     const nx = next ? nextCard(next, l('Próximo serviço', 'Next duty'), { withDay: true, extraSub: next.iso <= dc.expiryIso ? l('ainda dentro da validade', 'still within validity') : l('depois da validade', 'after the expiry') }) : null;
@@ -432,7 +432,7 @@ export function homeCards(H = {}) {
       : v.verdict === 'discretion' ? (ds.commander ? l('discrição tua (205 f): até +2 h', 'your discretion (205 f): up to +2 h') : l('só com a discrição do comandante (205 f)', 'only with the commander’s discretion (205 f)'))
       : `${l('ainda dentro', 'still within')}${mx != null && rl != null ? ` · ${l('margem', 'margin')} ${F.hm(mx - rl)}` : ''}${psvOf(ps) ? ` ${l('até às', 'until')} ${psvOf(ps)}` : ''}`;
     const vTxt = vTxt0 && proj && v.verdict !== 'over' ? `${l('projeção', 'projection')}: ${vTxt0}` : vTxt0;
-    const vSlim = vTxt ? { t: 'slim', id: 'psvLive', color: 'warn', title: l('Limites com o atraso', 'Limits with the delay'), sub: vTxt, value: null, gain: false, open: { to: 'item', id: 'legal' } } : null;
+    const vSlim = vTxt ? { t: 'slim', id: 'psvLive', color: 'alert', title: l('Limites com o atraso', 'Limits with the delay'), sub: vTxt, value: null, gain: false, open: { to: 'item', id: 'legal' } } : null;
     const one = planDayCard(hero, { sub: ds.why || null, a: hero.report ? { v: hero.report, l: 'report' } : null,
       dur: v ? `PSV ${proj ? l('projetado ', 'projected ') : ''}${noLead(v.realStr)} ${l('de', 'of')} ${noLead(v.maxStr)}` : psvPlanTxt(ps), b: (ds.lastArr || hero.lastArr) ? { v: ds.lastArr || hero.lastArr, l: l('última chegada', 'last arrival') } : null });
     const second = nightCard({ ...hero, end: ds.end || hero.end }, next) || nextCard(next, l('A seguir', 'Next'), { withDay: true });
@@ -455,7 +455,7 @@ export function homeCards(H = {}) {
         T = top({ text: 'Standby', live: true }, { text: hero.kind === 'standby_airport' ? l('aeroporto', 'airport') : hero.kind === 'reserve' ? l('reserva', 'reserve') : l('em casa', 'at home'), iso: hero.iso },
           hero.end ? l('A janela fecha às', 'The window closes at') : l('Em standby', 'On standby'), giantOf(hero.end || hero.report || '—', null, stn),
           facts(hero.end ? fact(F.dur(live.remainingMin), l('falta', 'to go')) : null, live.psvUntil ? fact(`~${live.psvUntil}`, l('PSV até, se chamarem já', 'FDP until, if called now')) : null));
-        const one = { t: 'card', id: 'day', color: 'lilac', kind: l('Serviço em terra', 'Ground duty'), title: hero.kindLabel || 'Standby',
+        const one = { t: 'card', id: 'day', color: 'ground', kind: l('Serviço em terra', 'Ground duty'), title: hero.kindLabel || 'Standby',
           // Honesto: a estimativa é o PSV máximo a 1 setor desde o início do standby — não aplica a 225 (confirma na Simulação).
           sub: live.psvUntil ? l('PSV estimado a 1 setor (225) · confirma na Simulação', 'FDP estimated at 1 sector (225) · check it in the Simulation') : l('à espera de chamada', 'waiting for a call'),
           gain: null, a: hero.report ? { v: hero.report, l: l('começou', 'started') } : null,

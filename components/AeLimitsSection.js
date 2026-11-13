@@ -133,7 +133,7 @@ const s = StyleSheet.create({
   pillT: { ...TXT.tag },
   pillEx: { backgroundColor: PELE.redSoft }, pillExT: { color: PELE.red },
   pillIn: { backgroundColor: PELE.soft },    pillInT: { color: PELE.grey },
-  pillOk: { backgroundColor: PELE.okSoft },  pillOkT: { color: PELE.ok },
+  pillOk: { backgroundColor: PELE.soft },  pillOkT: { color: PELE.ink },
   list:  { borderWidth: 1.5, borderColor: PELE.line, borderRadius: RADIUS.lg, overflow: 'hidden', backgroundColor: PELE.paper },
   li:    { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, minHeight: 44, paddingHorizontal: SPACE.md, borderBottomWidth: 1, borderBottomColor: PELE.line },
   liLast: { borderBottomWidth: 0 },

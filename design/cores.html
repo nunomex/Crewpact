@@ -132,9 +132,13 @@ h2.sec{font-size:13px;font-weight:800;letter-spacing:1.4px;text-transform:upperc
   <div class="grid3" id="opts"></div>
   <p id="meas"></p>
 
+  <h2 class="sec">4 · A B escolhida — os tons (2026-11-13: "podes usar todas as cores que existem, caso seja necessário")</h2>
+  <p class="t">Com a liberdade de cor, procurei sistematicamente (milhares de tons frios, medidos contra todas as outras cores, com visão normal e com as duas formas comuns de daltonismo) os tons do voo e do serviço em terra. O lilás claro do esboço é o par mais fraco (voo × terra 14 no pior caso) e é o que menos se vê na folha branca (1,51). <b>Escolhido pelo Nuno: o tom 2</b> ("vou pelo que recomendas", 2026-11-13) — já nos tokens (<code>CARD.flight</code>, <code>CARD.ground</code>).</p>
+  <div class="grid3" id="tons"></div>
+
   <div class="cols">
     <div class="card"><h3>A minha recomendação: B</h3>
-      <p>É a que encaixa no tipo de app. O voo é a coisa que o tripulante mais vê; vestido de céu, deixa as cores quentes livres para uma só tarefa — "olha para isto". Um piloto lê isto sem legenda, porque é a gramática do cockpit. Mede melhor onde importa: voo × "pede atenção" passa de ΔE 12 para 79 no pior caso. O preço: voo × terra desce de 63 para 14 no pior caso — mas os dois têm sempre o nome escrito ("LIS → OPO", "Assistência em casa") e o ícone, por isso não se confundem.</p>
+      <p>É a que encaixa no tipo de app. O voo é a coisa que o tripulante mais vê; vestido de céu, deixa as cores quentes livres para uma só tarefa — "olha para isto". Um piloto lê isto sem legenda, porque é a gramática do cockpit. Mede melhor onde importa: voo × "pede atenção" passa de ΔE 12 para 68 no pior caso. O preço: voo × terra desce de 63 para 14 no pior caso — mas os dois têm sempre o nome escrito ("LIS → OPO", "Assistência em casa") e o ícone, por isso não se confundem.</p>
       <p>A <b>A</b> é a mais barata (as cores dos cartões ficam) e já arruma os significados — mas o voo continua na família do âmbar. A <b>C</b> é a mais calma, mas a Escala perde a leitura de relance que escolheste nas barras de cor.</p></div>
     <div class="card"><h3>Depois da escolha</h3>
       <ul><li>O mapa entra no <b>design-system §14</b> (antes de qualquer página) e em tokens com nome de tarefa (estado, dinheiro), não de cor.</li>
@@ -217,6 +221,20 @@ function screen(o){
     + '</div>';
   return s + '</div></div>';
 }
+var TONS = [
+  { id:'T1', name:'Tom 1 · como no esboço', rec:false, p:'Céu suave <b>#8DB4DE</b> · lilás claro <b>#D9CDEB</b>. O mais calmo; o lilás quase desaparece na folha branca, e voo e terra são o par mais fraco.', voo:'#8DB4DE', terra:'#D9CDEB', rep:'#B4C2A2', typed:true,
+    m:'Tinta 8,52 · 12,18 · na folha 2,16 · 1,51 · voo × terra <b>21 · 19 · 14</b> · voo × atenção 84 · 79 · 68.' },
+  { id:'T2', name:'Tom 2 · céu vivo + lilás-rosado', rec:true, chosen:true, p:'Céu <b>#6DBEFA</b> · lilás-rosado <b>#C3A1BE</b>. Continua a ser "lilás = terra" (o que já conheces do Início); é o tom do lado frio mais perto do quente, mas mede bem.', voo:'#6DBEFA', terra:'#C3A1BE', rep:'#B4C2A2', typed:true,
+    m:'Tinta 9,12 · 8,04 · na folha 2,02 · 2,29 · voo × terra <b>37 · 31 · 23</b> · voo × atenção 97 · 92 · 80.' },
+  { id:'T3', name:'Tom 3 · céu vivo + petróleo', rec:false, p:'Céu <b>#6DBEFA</b> · azul-petróleo <b>#7AB5C0</b>. O mais robusto para o daltonismo (todos os pares acima de 19), mas a terra deixa de ser lilás e fica da mesma família do voo.', voo:'#6DBEFA', terra:'#7AB5C0', rep:'#B4C2A2', typed:true,
+    m:'Tinta 9,12 · 8,07 · na folha 2,02 · 2,28 · voo × terra <b>27 · 27 · 26</b> · voo × atenção 97 · 92 · 80.' }
+];
+var tons = '';
+TONS.forEach(function(o){
+  var pal = '<span style="background:' + o.voo + '">voo</span><span style="background:' + o.terra + '">terra</span><span style="background:' + o.rep + '">repouso</span><span style="background:#F0854A">atenção</span><span style="background:#EC7A6C">passa</span>';
+  tons += '<div class="opt"><h3>' + o.name + (o.chosen ? '<span class="rec">ESCOLHIDO</span>' : o.rec ? '<span class="rec">RECOMENDO</span>' : '') + '</h3><p>' + o.p + '</p><div class="palette">' + pal + '</div>' + screen(o) + '<p class="m">' + o.m + ' Pior par de todos (fixo): repouso × passa 19.</p></div>';
+});
+document.getElementById('tons').innerHTML = tons;
 var html = '';
 OPTS.forEach(function(o){
   var pal = o.typed ? '<span style="background:' + o.voo + '">voo</span><span style="background:' + o.terra + '">terra</span><span style="background:' + o.rep + '">repouso</span>' : '<span style="background:#F1EFEA">tipos sem cor</span>';

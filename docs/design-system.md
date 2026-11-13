@@ -278,10 +278,9 @@ de opacidade (no laranja dava 4,35) e as abas inativas de #77776F para #5E5E57 (
 
 O que muda em relação à §2 ("branco · preto · amarelo, plana, hairline"):
 
-- **Cor por tipo, sempre a mesma:** areia `#E8BE6E` = voo · salva `#B4C2A2` = repouso e pernoita · lilás `#C6BADF` =
-  serviço em terra · neutro `#F1EFEA` = dinheiro e o resto · laranja `#F0854A` = pede atenção. Fundo da página `#E3E1DB`,
-  folha branca por cima. À noite: fundo `#14161B`, folha `#1F222A`, as cores dos cartões um tom abaixo. O amarelo fica só
-  no ponto do estado.
+- **Cor por tipo, sempre a mesma — substituída a 2026-11-13 pelo MAPA DAS CORES (abaixo):** era areia = voo · salva =
+  repouso e pernoita · lilás = serviço em terra · neutro = dinheiro e o resto · laranja = pede atenção. Fundo da página
+  `#E3E1DB`, folha branca por cima. À noite: fundo `#14161B`, folha `#1F222A`, as cores dos cartões um tom abaixo.
 - **A letra: Hanken Grotesk em tudo**, títulos e números incluídos (decisão do Nuno, 2026-11-11). `TXT.title`, `TXT.titleLg`,
   `TXT.num` e `TXT.numLg` passam a Hanken 700/800 **quando o ecrã migrar**; a Barlow Condensed sai de cada ecrã nessa
   altura (não se troca a família nos tokens de uma vez: a Hanken é mais larga e partia os ecrãs antigos). O número gigante
@@ -310,6 +309,43 @@ O que muda em relação à §2 ("branco · preto · amarelo, plana, hairline"):
   (3,24 para 3 pedidos em texto muito grande). Medidos na construção: o rótulo do cartão a 80 % ≥ 4,8 em todas as cores, de
   dia e de noite; as abas inativas 5,68 (à noite 5,70); o ganho à noite fora da pílula (#7BE3B0) 11,6.
 
+### O mapa das cores (escolhido pelo Nuno a 2026-11-13: B, "frio e quente" — esboço `design/cores.html`)
+
+**Porquê.** Contado no código: o verde dizia "ganhaste", "está dentro" e "toca aqui"; o laranja dizia "perto", "falta um dado",
+"incerto" e "folga trabalhada"; o vermelho aparecia aos 90 %, antes de passar o limite. Uma cor com cinco sentidos não se
+aprende. E a app vive no mundo do cockpit: na cabine de pilotagem o vermelho é aviso, o âmbar é cautela, e essas cores usadas
+para outras coisas "devem ser limitadas" (CS-25.1322); quando está tudo normal não se acende nada (o "cockpit escuro").
+
+**A regra para o tripulante, numa frase: frio é a tua escala, quente é para olhares.** Cinco famílias, uma tarefa cada:
+
+| Família | Tarefa | Tokens |
+| --- | --- | --- |
+| Base | a secretária, a folha, a tinta, os cinzentos — quase tudo | `CARD.desk/sheet/ink/neutral` |
+| Tipo (frio) | o que é: voo · serviço em terra · repouso e pernoita; só nos cartões e barras da escala, sempre com o nome escrito (A3) | `CARD.flight` céu vivo `#6DBEFA` · `CARD.ground` lilás-rosado `#C3A1BE` · `CARD.rest` salva `#B4C2A2` (noite `#58AFEC` · `#B592B0` · `#A3B490`) |
+| Estado (quente) | perto do limite, falta um dado, pede uma ação = laranja com "!" e a palavra · passa o limite = vermelho com "✕" e a palavra · **dentro = sem cor** · **incerto = neutro tracejado** com as duas pontas (não é um aviso) | `CARD.alert` `#F0854A` · `CARD.stop` `#EC7A6C` (3.0) · `PELE.warn/warnText/red` (2.0) |
+| Dinheiro | **verde só no que se ganha** (+€); totais e parcelas a tinta; nunca vermelho no dinheiro; o dinheiro esquecido é "pede atenção" | `CARD.gain` / `CARD.night.gainOut` (3.0) · `MONEY.gain/gainSoft` (2.0) |
+| Ação | o que se toca é tinta; o amarelo da marca só no "ao vivo" (o painel, o ponto da pílula); apagar e erros: vermelho só no texto | `BRAND.action` · `BRAND.signal` (ao vivo) |
+
+**Regras que vêm com o mapa:** "perto" é a mesma conta em toda a app — 85 % do limite (o Início, `data/today.js` e agora os
+Números); "passa" é acima de 100 %. A fadiga é um risco, não um limite: alta = laranja, nunca vermelho. A radiação só fica
+vermelha acima do limite de dose (20 mSv/ano, Diretiva 2013/59/Euratom art. 9.º); os 6 mSv são uma classificação (art.
+40.º) → laranja. Um documento caducado é vermelho (passou a data). **O guardião tranca o verde:** `PELE.ok*`/`PLATE.ok`
+fora de `data/constants.js` é regra dura (exceção: o medidor da palavra-passe, antes de entrar na app).
+
+**Medido (WCAG 2.1 e ΔE em Lab com a simulação de Machado para deuteranopia e protanopia; abaixo de ~15 confunde-se de
+relance):** voo × atenção 97 · 92 · 80 (com a areia era 33 · 12 · 16 — um aviso podia parecer só mais um voo) · voo × terra
+37 · 31 · 23 (os dois sempre com o nome escrito) · pior par de todos repouso × passa 19 · tinta sobre voo 9,12 · terra 8,04 ·
+repouso 9,81 · atenção 7,16 · passa 6,64 · a linha a 82 % ≥ 5,07 e o rótulo a 80 % ≥ 4,91, de dia e de noite.
+**O tom, escolhido pelo Nuno ("vou pelo que recomendas", 2026-11-13):** o tom 2 de `design/cores.html` §4 — céu vivo +
+lilás-rosado, procurado entre milhares de tons frios com a liberdade "podes usar todas as cores que existem, caso seja
+necessário". Mantém "lilás = terra". (Os outros: tom 1, o do esboço, voo × terra 21 · 19 · 14; tom 3, céu vivo + azul-petróleo,
+27 · 27 · 26 mas a terra na família do voo.)
+
+**No código desde 2026-11-13:** os tokens com nome de tarefa (`CARD.flight/ground/rest/alert/stop`, `MONEY`), o Início, a
+Escala e a régua do dia na B, e as páginas 2.0 com os sentidos arrumados (verde só no dinheiro; dentro sem cor; incerto neutro;
+os 90 % dos Números, o "Amarelo", a fadiga e a radiação). **Fica para a migração de cada página:** o resto dos laranjas e
+vermelhos da 2.0 revistos um a um, e o amarelo da marca (`BRAND.signal/marker`) como sinal de seleção nas páginas 2.0.
+
 ### Peças escolhidas a 2026-11-13 (das 57 referências de `referencias/Para a app/`)
 
 **No código (2026-11-13, por ver no iPhone):** a Escala em AGENDA (esboços `design/escala-agenda.html` — A2 + o ano em
@@ -337,9 +373,7 @@ no código quando migra a primeira página que a usa.
 - **A2 · ↗ só quer dizer "abre fora da app"** (fonte oficial, Maps, eCrew). Dentro da app abre o cartão inteiro; nas linhas
   de lista, ›.
 - **A3 · A cor é do tipo.** Nunca a escolhe o utilizador, nunca há uma cor por mês, por dia ou por posição, e nunca vai
-  sozinha: o tipo diz-se também em texto (etiqueta, legenda). Medido (WCAG 2.1, 2026-11-13): de dia, areia, salva e lilás
-  contra a folha branca dão 1,75–1,88, o neutro 1,15, e as três entre si 1,03–1,08 (só a matiz as separa); à noite,
-  contra a folha 7,2–8,0 e entre si 1,02–1,12.
+  sozinha: o tipo diz-se também em texto (etiqueta, legenda). As cores e as medições estão no mapa das cores (acima, B).
 - **A4 · Ficam sempre de fora:** vidro e desfoque, degradés, néon, fundo escuro de dia, letra fina, avatares, dados de
   saúde.
 

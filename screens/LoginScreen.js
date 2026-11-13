@@ -459,7 +459,7 @@ export default function LoginScreen() {
             <View style={[s.hair, eFocus && s.hairOn, !!eErr && s.hairErr]} />
             {eErr ? <Text style={P.err}>{eErr}</Text> : null}
             <View style={s.priv}>
-              <Icon name="shield" size={14} color={PELE.ok} />
+              <Icon name="shield" size={14} color={PELE.ink} />
               <Text style={[P.foot, s.privTxt]}>{l('Só usamos o teu e-mail para entrares e para te enviarmos os códigos.', 'We only use your email to sign you in and send you codes.')}</Text>
             </View>
             {pwLink(eEmail)}

@@ -13,7 +13,7 @@ export default function DayRuler({ ruler, C, label }) {
   const [w, setW] = useState(0);
   if (!ruler || (!ruler.blocks.length && !ruler.wocl)) return null;
   const x = (min) => (min / 1440) * w;
-  const tone = (c) => (c === 'sand' ? C.sand : c === 'lilac' ? C.lilac : c === 'sage' ? C.sage : C.neutral);
+  const tone = (c) => (c === 'flight' ? C.flight : c === 'ground' ? C.ground : c === 'rest' ? C.rest : C.neutral);
   const wl = ruler.wocl ? x(ruler.wocl.a) : 0, ww = ruler.wocl ? x(ruler.wocl.b) - wl : 0;
   return (
     <View style={s.wrap} accessible accessibilityRole="image" accessibilityLabel={label}>
@@ -29,7 +29,7 @@ export default function DayRuler({ ruler, C, label }) {
             ) : null}
             {ruler.blocks.map((b, i) => (
               <View key={`b${i}`} style={[s.block, { left: x(b.a), width: Math.max(2, x(b.b) - x(b.a)), backgroundColor: tone(b.color) },
-                b.color === 'sage' ? s.rest : null, b.toEnd ? s.toEnd : null, b.fromStart ? s.fromStart : null]} />
+                b.color === 'rest' ? s.rest : null, b.toEnd ? s.toEnd : null, b.fromStart ? s.fromStart : null]} />
             ))}
             {ruler.now != null ? <View style={[s.now, { left: x(ruler.now) - 1, backgroundColor: C.ink }]} /> : null}
           </>

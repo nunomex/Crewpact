@@ -387,7 +387,7 @@ export default function OnboardingScreen() {
           </View>
         ))}
         <View style={o.priv}>
-          <Icon name="shield" size={15} color={PELE.ok} />
+          <Icon name="shield" size={15} color={PELE.ink} />
           <Text style={[P.foot, o.flex1]}>{l('O calendário é lido no teu telemóvel. A app só vê o calendário que escolheres.', 'The calendar is read on your phone. The app only sees the calendar you pick.')}</Text>
         </View>
         {rMsg ? <Text style={P.err}>{rMsg}</Text> : null}

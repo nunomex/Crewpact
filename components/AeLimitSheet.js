@@ -180,7 +180,7 @@ const s = StyleSheet.create({
   kick:   { ...TXT.callout, color: PELE.ink, marginTop: SPACE.sm },
   det:    { ...TXT.footnote, color: PELE.grey, marginTop: SPACE.xs },
   red:    { color: PELE.red },
-  okT:    { color: PELE.ok },
+  okT:    { color: PELE.ink },
   greyT:  { color: PELE.grey },
   chart:  { height: CHART_H + SPACE.lg, marginTop: SPACE.lg, justifyContent: 'flex-end' },
   limLine: { position: 'absolute', left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-between' },

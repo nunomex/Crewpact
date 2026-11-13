@@ -97,53 +97,53 @@ const R = Object.fromEntries(Object.entries(S).map(([k, v]) => [k, homeCards(v)]
 eq('em voo · topo', R.emVoo.top, { pill: { text: 'Em voo', live: true }, pill2: { text: 'EJU7625', iso: D11 }, what: 'Aterras às',
   giant: { l1: '13:50', unit: null, l2: 'LGW', l2Grey: false }, facts: [{ v: '1 h 05', l: 'falta para aterrar', tone: null }, { v: '3:10', l: 'de margem no PSV', tone: null }] });
 eq('em voo · cartões', R.emVoo.cards.map(C), [
-  { t: 'card', color: 'sand', kind: 'Dia de serviço · setor 3 de 3', title: 'LIS → FNC → LIS → LGW', sub: 'a horas', gain: null, a: { v: '05:15', l: 'report' }, dur: 'PSV 7:30 de 11:45', b: { v: '17:00', l: 'limite' }, pct: 64, corner: 'share', action: null },
-  { t: 'slim', color: 'sage', title: 'Pernoita em LGW', sub: 'fim de serviço 14:20 · Hotel do aeroporto', gain: true, value: '+45,40 €' },
-  { t: 'slim', color: 'warn', title: 'A escala mudou', sub: '2 alterações por rever · nada entra sem ti', gain: false, value: null }]);
+  { t: 'card', color: 'flight', kind: 'Dia de serviço · setor 3 de 3', title: 'LIS → FNC → LIS → LGW', sub: 'a horas', gain: null, a: { v: '05:15', l: 'report' }, dur: 'PSV 7:30 de 11:45', b: { v: '17:00', l: 'limite' }, pct: 64, corner: 'share', action: null },
+  { t: 'slim', color: 'rest', title: 'Pernoita em LGW', sub: 'fim de serviço 14:20 · Hotel do aeroporto', gain: true, value: '+45,40 €' },
+  { t: 'slim', color: 'alert', title: 'A escala mudou', sub: '2 alterações por rever · nada entra sem ti', gain: false, value: null }]);
 
 // ═══ 2 · Antes do report — o cartão começa na partida (não repete o report); a seguir, a pernoita com o intervalo REAL ═══
 eq('antes · topo', R.antes.top, { pill: { text: 'Hoje', live: true }, pill2: { text: 'EJU7601', iso: D11 }, what: 'Report às',
   giant: { l1: '05:15', unit: null, l2: 'LIS', l2Grey: false }, facts: [{ v: '1 h 40', l: 'falta', tone: null }, { v: '17:00', l: 'PSV até', tone: null }] });
 eq('antes · cartões', R.antes.cards.map(C), [
-  { t: 'card', color: 'sand', kind: 'Dia de serviço · 3 setores', title: 'LIS → FNC → LIS → LGW', sub: 'PSV 8:35 de 11:45 · nos limites', gain: null, a: { v: '06:15', l: 'parte' }, dur: '7 h 35', b: { v: '13:50', l: 'última chegada' }, pct: null, corner: 'share', action: null },
-  { t: 'card', color: 'sage', kind: 'A seguir', title: 'Pernoita em LGW', sub: 'Hotel do aeroporto · mínimo 10 h', gain: '+45,40 €', a: { v: '14:20', l: 'fim de serviço' }, dur: '23 h 45', b: { v: '14:05', l: 'report · qui 12' }, pct: null, corner: 'chev', action: null }]);
+  { t: 'card', color: 'flight', kind: 'Dia de serviço · 3 setores', title: 'LIS → FNC → LIS → LGW', sub: 'PSV 8:35 de 11:45 · nos limites', gain: null, a: { v: '06:15', l: 'parte' }, dur: '7 h 35', b: { v: '13:50', l: 'última chegada' }, pct: null, corner: 'share', action: null },
+  { t: 'card', color: 'rest', kind: 'A seguir', title: 'Pernoita em LGW', sub: 'Hotel do aeroporto · mínimo 10 h', gain: '+45,40 €', a: { v: '14:20', l: 'fim de serviço' }, dur: '23 h 45', b: { v: '14:05', l: 'report · qui 12' }, pct: null, corner: 'chev', action: null }]);
 
 // ═══ 3 · Disrupção — a hora nova em grande, a antiga riscada; os limites com o atraso em PRIMEIRO ═══
 eq('disrupção · topo', R.disrupcao.top, { pill: { text: 'Hoje', live: true }, pill2: { text: 'EJU7601', iso: D11 }, what: 'Nova partida às',
   giant: { l1: '07:25', unit: null, l2: 'LIS', l2Grey: false }, facts: [{ v: '06:15', l: 'hora da escala', tone: 'was' }, { v: '+70 min', l: 'de atraso', tone: null }] });
 eq('disrupção · cartões', R.disrupcao.cards.map(C), [
-  { t: 'slim', color: 'warn', title: 'Limites com o atraso', sub: 'projeção: ainda dentro · margem 2:00 até às 17:00', gain: false, value: null },
-  { t: 'card', color: 'sand', kind: 'Dia de serviço · 3 setores', title: 'LIS → FNC → LIS → LGW', sub: 'o avião ainda vem a caminho (EJU7450)', gain: null, a: { v: '05:15', l: 'report' }, dur: 'PSV projetado 9:45 de 11:45', b: { v: '15:00', l: 'última chegada' }, pct: null, corner: 'share', action: null },
-  { t: 'slim', color: 'sage', title: 'Pernoita em LGW', sub: 'fim de serviço 15:30 · Hotel do aeroporto', gain: true, value: '+45,40 €' }]);
+  { t: 'slim', color: 'alert', title: 'Limites com o atraso', sub: 'projeção: ainda dentro · margem 2:00 até às 17:00', gain: false, value: null },
+  { t: 'card', color: 'flight', kind: 'Dia de serviço · 3 setores', title: 'LIS → FNC → LIS → LGW', sub: 'o avião ainda vem a caminho (EJU7450)', gain: null, a: { v: '05:15', l: 'report' }, dur: 'PSV projetado 9:45 de 11:45', b: { v: '15:00', l: 'última chegada' }, pct: null, corner: 'share', action: null },
+  { t: 'slim', color: 'rest', title: 'Pernoita em LGW', sub: 'fim de serviço 15:30 · Hotel do aeroporto', gain: true, value: '+45,40 €' }]);
 
 // ═══ 4 · Véspera — a barra ao fundo do cartão marca o lembrete; a pernoita em linha fina ═══
 eq('véspera · topo', R.vespera.top, { pill: { text: 'Amanhã', live: true }, pill2: { text: 'quinta 12', iso: D12 }, what: 'Report às',
   giant: { l1: '05:15', unit: null, l2: 'LIS', l2Grey: false }, facts: [{ v: '7 h 35', l: 'falta', tone: null }, { v: '17:00', l: 'PSV até', tone: null }] });
 eq('véspera · cartões', R.vespera.cards.map(C), [
-  { t: 'card', color: 'sand', kind: 'Dia de serviço · 3 setores', title: 'LIS → FNC → LIS → LGW', sub: 'PSV 8:35 de 11:45 · repouso cumprido', gain: null, a: { v: '06:15', l: 'parte' }, dur: '7 h 35', b: { v: '13:50', l: 'última chegada' }, pct: null, corner: 'chev', action: { id: 'wake', icon: 'bell', label: 'Lembrete 04:00', open: { to: 'wake' } } },
-  { t: 'slim', color: 'sage', title: 'Pernoita em LGW', sub: 'fim de serviço 14:20 · Hotel do aeroporto', gain: true, value: '+45,40 €' }]);
+  { t: 'card', color: 'flight', kind: 'Dia de serviço · 3 setores', title: 'LIS → FNC → LIS → LGW', sub: 'PSV 8:35 de 11:45 · repouso cumprido', gain: null, a: { v: '06:15', l: 'parte' }, dur: '7 h 35', b: { v: '13:50', l: 'última chegada' }, pct: null, corner: 'chev', action: { id: 'wake', icon: 'bell', label: 'Lembrete 04:00', open: { to: 'wake' } } },
+  { t: 'slim', color: 'rest', title: 'Pernoita em LGW', sub: 'fim de serviço 14:20 · Hotel do aeroporto', gain: true, value: '+45,40 €' }]);
 
 // ═══ 5 · Pernoita — o repouso mínimo com o ponto no que já está cumprido; o voo de amanhã numa linha, sem repetir o report ═══
 eq('pernoita · topo', R.pernoita.top, { pill: { text: 'Pernoita', live: false }, pill2: { text: 'LGW', iso: D11 }, what: 'Report amanhã às',
   giant: { l1: '14:05', unit: null, l2: 'LGW', l2Grey: false }, facts: [{ v: '16 h 25', l: 'falta', tone: null }, { v: '7°', l: 'amanhã · chuva', tone: null }] });
 eq('pernoita · cartões', R.pernoita.cards.map(C), [
-  { t: 'card', color: 'sage', kind: 'Repouso · fora da base', title: 'Hotel do aeroporto', sub: 'pernoita desta noite', gain: '+45,40 €', a: { v: '14:20', l: 'fim de serviço' }, dur: 'mínimo 10 h', b: { v: '00:20', l: 'cumprido' }, pct: 73, corner: 'chev', action: null },
-  { t: 'slim', color: 'sand', title: 'LGW → LIS', sub: 'quinta 12 · parte 15:05 · chega 17:45', gain: false, value: null }]);
+  { t: 'card', color: 'rest', kind: 'Repouso · fora da base', title: 'Hotel do aeroporto', sub: 'pernoita desta noite', gain: '+45,40 €', a: { v: '14:20', l: 'fim de serviço' }, dur: 'mínimo 10 h', b: { v: '00:20', l: 'cumprido' }, pct: 73, corner: 'chev', action: null },
+  { t: 'slim', color: 'flight', title: 'LGW → LIS', sub: 'quinta 12 · parte 15:05 · chega 17:45', gain: false, value: null }]);
 
 // ═══ 6 · Standby — lilás; o que já passou da janela e o que rende se não chamarem ═══
 eq('standby · topo', R.standby.top, { pill: { text: 'Standby', live: true }, pill2: { text: 'aeroporto', iso: D11 }, what: 'A janela fecha às',
   giant: { l1: '12:00', unit: null, l2: 'LIS', l2Grey: false }, facts: [{ v: '3 h 10', l: 'falta', tone: null }, { v: '~18:45', l: 'PSV até, se chamarem já', tone: null }] });
 eq('standby · cartões', R.standby.cards.map(C), [
-  { t: 'card', color: 'lilac', kind: 'Serviço em terra', title: 'Standby no aeroporto', sub: 'PSV estimado a 1 setor (225) · confirma na Simulação', gain: null, a: { v: '08:00', l: 'começou' }, dur: '50 min de 4 h', b: { v: '+38,76 €', l: 'se não chamarem', gain: true }, pct: 21, corner: 'chev', action: null },
-  { t: 'card', color: 'sand', kind: 'A seguir', title: 'LIS → FNC → LIS', sub: 'sábado 14 · 2 setores', gain: null, a: { v: '05:30', l: 'report' }, dur: '5 h 40', b: { v: '11:10', l: 'fim' }, pct: null, corner: 'chev', action: null }]);
+  { t: 'card', color: 'ground', kind: 'Serviço em terra', title: 'Standby no aeroporto', sub: 'PSV estimado a 1 setor (225) · confirma na Simulação', gain: null, a: { v: '08:00', l: 'começou' }, dur: '50 min de 4 h', b: { v: '+38,76 €', l: 'se não chamarem', gain: true }, pct: 21, corner: 'chev', action: null },
+  { t: 'card', color: 'flight', kind: 'A seguir', title: 'LIS → FNC → LIS', sub: 'sábado 14 · 2 setores', gain: null, a: { v: '05:30', l: 'report' }, dur: '5 h 40', b: { v: '11:10', l: 'fim' }, pct: null, corner: 'chev', action: null }]);
 
 // ═══ 7 · Folga — o número é quanto falta; o dinheiro do mês numa linha; o aviso de outra coisa em último ═══
 eq('folga · topo', R.folga.top, { pill: { text: 'Folga', live: false }, pill2: { text: 'quarta 11', iso: D11 }, what: 'Próximo serviço daqui a',
   giant: { l1: '2', unit: 'dias', l2: 'livre', l2Grey: true }, facts: [{ v: 'sexta 13', l: 'até lá', tone: null }, { v: '31 h', l: 'de 60 em 7 dias', tone: null }] });
 eq('folga · cartões', R.folga.cards.map(C), [
-  { t: 'card', color: 'sand', kind: 'Próximo serviço', title: 'LIS → FNC → LIS', sub: '2 setores · ida e volta', gain: null, a: { v: '05:30', l: 'report' }, dur: '5 h 40', b: { v: '11:10', l: 'fim' }, pct: null, corner: 'chev', action: null },
+  { t: 'card', color: 'flight', kind: 'Próximo serviço', title: 'LIS → FNC → LIS', sub: '2 setores · ida e volta', gain: null, a: { v: '05:30', l: 'report' }, dur: '5 h 40', b: { v: '11:10', l: 'fim' }, pct: null, corner: 'chev', action: null },
   { t: 'slim', color: 'neutral', title: 'Novembro', sub: 'estimado · bruto', gain: false, value: '2 431,50 €' },
-  { t: 'slim', color: 'warn', title: 'Férias 2026', sub: 'ficam 12 de 22 dias · o ano acaba daqui a 50 dias', gain: false, value: null }]);
+  { t: 'slim', color: 'alert', title: 'Férias 2026', sub: 'ficam 12 de 22 dias · o ano acaba daqui a 50 dias', gain: false, value: null }]);
 // A menos de 48 h conta em HORAS (auditoria do tripulante, 2026-11-04: "amanhã às 06:00" era "1 dia" e eram 18 h).
 eq('folga < 48 h · número em horas', R.folgaHoras.top.giant, { l1: '18', unit: 'h 30', l2: 'livre', l2Grey: true });
 eq('folga < 48 h · "amanhã até lá"', R.folgaHoras.top.facts[0], { v: 'amanhã', l: 'até lá', tone: null });
@@ -152,8 +152,8 @@ eq('folga < 48 h · "amanhã até lá"', R.folgaHoras.top.facts[0], { v: 'amanh�
 eq('pós-voo · topo', R.posvoo.top, { pill: { text: 'Dia fechado', live: false }, pill2: { text: 'sexta 13', iso: D13 }, what: 'PSV de hoje',
   giant: { l1: '8:35', unit: 'h', l2: 'fechado', l2Grey: true }, facts: [{ v: '+96,90 €', l: 'ganhos de hoje', tone: 'gain' }, { v: '31 h', l: 'de 60 em 7 dias', tone: null }] });
 eq('pós-voo · cartões', R.posvoo.cards.map(C), [
-  { t: 'card', color: 'sage', kind: 'Repouso · na base', title: 'Descansa', sub: 'o dia fechou nos limites', gain: null, a: { v: '14:20', l: 'fim de serviço' }, dur: 'mínimo 12 h', b: { v: '02:20', l: 'cumprido' }, pct: 3, corner: 'chev', action: { id: 'signoff', icon: 'edit', label: 'Registar sign-off', open: { to: 'signoff', iso: D13 } } },
-  { t: 'card', color: 'sand', kind: 'A seguir', title: 'LIS → FNC → LIS', sub: 'sábado 14 · 2 setores', gain: null, a: { v: '05:30', l: 'report' }, dur: '5 h 40', b: { v: '11:10', l: 'fim' }, pct: null, corner: 'chev', action: null }]);
+  { t: 'card', color: 'rest', kind: 'Repouso · na base', title: 'Descansa', sub: 'o dia fechou nos limites', gain: null, a: { v: '14:20', l: 'fim de serviço' }, dur: 'mínimo 12 h', b: { v: '02:20', l: 'cumprido' }, pct: 3, corner: 'chev', action: { id: 'signoff', icon: 'edit', label: 'Registar sign-off', open: { to: 'signoff', iso: D13 } } },
+  { t: 'card', color: 'flight', kind: 'A seguir', title: 'LIS → FNC → LIS', sub: 'sábado 14 · 2 setores', gain: null, a: { v: '05:30', l: 'report' }, dur: '5 h 40', b: { v: '11:10', l: 'fim' }, pct: null, corner: 'chev', action: null }]);
 eq('pós-voo com o sign-off registado · sem barra', homeCards({ ...S.posvoo, closed: { ...S.posvoo.closed, signOffDone: true } }).cards[0].action, null);
 
 // ═══ 9 · Fecho do mês — o valor inteiro com cêntimos, "estimado" por baixo; as parcelas SOMAM o número de cima ═══
@@ -168,7 +168,7 @@ const num = (s) => Number(String(s).replace(/[^\d,]/g, '').replace(',', '.'));
 yes('fecho · as parcelas somam o total', Math.abs(par.rows.reduce((a, r) => a + num(r.v), 0) - MONTH.total) < 0.005);
 yes('fecho · já feito + ainda na escala = total', Math.abs(par.foot.reduce((a, r) => a + num(r.v), 0) - MONTH.total) < 0.005);
 eq('fecho · auditoria e extra a seguir às parcelas', R.fecho.cards.slice(1).map(C), [
-  { t: 'slim', color: 'warn', title: 'Auditoria do mês', sub: '2 itens por confirmar · ≈ 45,40 € em causa', gain: false, value: null },
+  { t: 'slim', color: 'alert', title: 'Auditoria do mês', sub: '2 itens por confirmar · ≈ 45,40 € em causa', gain: false, value: null },
   { t: 'slim', color: 'neutral', title: 'Falta algum extra?', sub: 'regista antes do fecho', gain: false, value: null }]);
 
 // ═══ 10 · Férias — só o regresso e o mês ═══
@@ -190,7 +190,7 @@ eq('configuração · as três ações da app', R.setup.cards.map((c) => [c.t, c
 
 // ═══ 13 · Incerto — "Incerto" no lugar do número, o que falta na linha pequena, a barra "Completar"; o mês com as duas pontas ═══
 eq('incerto · factos', R.incerto.top.facts, [{ v: '1 h 40', l: 'falta', tone: null }, { v: 'Incerto', l: 'PSV até', tone: null }]);
-eq('incerto · cartão', C(R.incerto.cards[0]), { t: 'card', color: 'sand', kind: 'Dia de serviço · repartido', title: 'LIS → FNC → LIS', sub: 'limites incertos · falta o alojamento da pausa', gain: null,
+eq('incerto · cartão', C(R.incerto.cards[0]), { t: 'card', color: 'flight', kind: 'Dia de serviço · repartido', title: 'LIS → FNC → LIS', sub: 'limites incertos · falta o alojamento da pausa', gain: null,
   a: { v: '06:15', l: 'parte' }, dur: '12 h 25', b: { v: '18:40', l: 'última chegada' }, pct: null, corner: 'chev', action: { id: 'completar', icon: 'edit', label: 'Completar', open: { to: 'day', iso: D11 } } });
 const mi = R.mesIncerto.cards.find((c) => c.id === 'month');
 eq('mês incerto · as duas pontas, nunca um valor inventado', pick(mi, ['t', 'kind', 'rows', 'note', 'link']), { t: 'lines', kind: 'Novembro · incerto · bruto',
@@ -203,14 +203,14 @@ eq('fecho incerto · as pontas no pé das parcelas', fechoUnc.cards[0].foot, [{ 
 eq('formação · topo', R.formacao.top, { pill: { text: 'Hoje', live: true }, pill2: { text: 'formação', iso: D11 }, what: 'Começa às',
   giant: { l1: '09:00', unit: null, l2: 'LIS', l2Grey: false }, facts: [{ v: '50 min', l: 'falta', tone: null }, { v: '17:00', l: 'acaba', tone: null }] });
 eq('formação · cartões', R.formacao.cards.map((c) => pick(c, ['t', 'color', 'kind', 'title', 'sub'])), [
-  { t: 'slim', color: 'lilac', title: 'Formação', sub: '8 h de serviço em terra' }, { t: 'card', color: 'sand', kind: 'A seguir', title: 'LIS → FNC → LIS', sub: 'sábado 14 · 2 setores' }]);
+  { t: 'slim', color: 'ground', title: 'Formação', sub: '8 h de serviço em terra' }, { t: 'card', color: 'flight', kind: 'A seguir', title: 'LIS → FNC → LIS', sub: 'sábado 14 · 2 setores' }]);
 
 // ═══ 15 · Documento a caducar — a 7 dias ou menos toma o topo (só na folga) ═══
 eq('documento · topo', R.documento.top, { pill: { text: 'Atenção', live: true }, pill2: { text: 'quarta 11', iso: D11 }, what: 'Certificado médico caduca em',
   giant: { l1: '6', unit: 'dias', l2: '17 nov', l2Grey: false }, facts: [{ v: 'terça', l: 'último dia válido', tone: null }, { v: '2 serviços', l: 'marcados depois', tone: null }] });
 eq('documento · cartões', R.documento.cards.map((c) => pick(c, ['t', 'color', 'kind', 'title', 'sub'])), [
-  { t: 'card', color: 'warn', kind: 'Validades', title: 'Certificado médico', sub: 'Quando renovares, regista a data nova para o aviso sair.' },
-  { t: 'card', color: 'sand', kind: 'Próximo serviço', title: 'LIS → FNC → LIS', sub: 'sábado 14 · ainda dentro da validade' }]);
+  { t: 'card', color: 'alert', kind: 'Validades', title: 'Certificado médico', sub: 'Quando renovares, regista a data nova para o aviso sair.' },
+  { t: 'card', color: 'flight', kind: 'Próximo serviço', title: 'LIS → FNC → LIS', sub: 'sábado 14 · ainda dentro da validade' }]);
 eq('documento · a barra regista a data nova', act(R.documento.cards[0].action), { id: 'validades', icon: 'edit', label: 'Registar a data nova' });
 eq('documento a 8 dias · não toma o topo', homeCards({ ...S.documento, doc: { ...S.documento.doc, days: 8 } }).state, 'folga');
 eq('documento num dia de voo · não toma o topo', homeCards({ ...S.antes, doc: S.documento.doc }).state, 'hoje');
@@ -226,7 +226,7 @@ eq('baixa sem acordo modelado · nenhuma frase sobre pagamento', homeCards({ ...
 // (1) Posicionamento hoje: não tem fases de voo no Início → "Termina às", nunca preso em "Report às"; com a cor de voo.
 const pos = homeCards({ state: 'hoje', todayISO: D11, hero: { iso: D11, kind: 'positioning', kindLabel: 'Posicionamento', stations: ['LIS', 'OPO'], report: '06:00', end: '08:30', station: 'LIS', hasReg: true }, live: { cdMin: -90, remainingMin: 60 } });
 eq('posicionamento a decorrer · topo', [pos.top.what, pos.top.giant.l1, pos.top.facts], ['Termina às', '08:30', [{ v: '1 h', l: 'falta', tone: null }, { v: '06:00', l: 'começou', tone: null }]]);
-eq('posicionamento · linha fina areia', pick(pos.cards[0], ['t', 'color', 'title', 'sub']), { t: 'slim', color: 'sand', title: 'Posicionamento · LIS → OPO', sub: '2 h 30 de posicionamento' });
+eq('posicionamento · linha fina areia', pick(pos.cards[0], ['t', 'color', 'title', 'sub']), { t: 'slim', color: 'flight', title: 'Posicionamento · LIS → OPO', sub: '2 h 30 de posicionamento' });
 // (2) Disrupção: sem projeção (o último setor já aterrou) não diz "projeção"; com ela, di-lo também no selo.
 const disReal = homeCards({ ...S.disrupcao, dis: { ...S.disrupcao.dis, verdict: { ...S.disrupcao.dis.verdict, projected: false } } });
 eq('disrupção · facto (não projetado)', [disReal.cards[0].sub, disReal.cards[1].dur], ['ainda dentro · margem 2:00 até às 17:00', 'PSV 9:45 de 11:45']);
@@ -257,7 +257,7 @@ eq('repouso de 2 dias · o dia junto da hora', rot.cards[0].b, { v: '06:00', l: 
 const SB_CLOSED = { kindLabel: 'Standby em casa', signOffDone: true };
 const restUnc = homeCards({ ...S.posvoo, closed: SB_CLOSED, rest: { signOff: '20:00', until: '14:00', untilIso: D14, minMin: 1080, pct: 3, unc: { lo: '12:00', hi: '14:00', minLo: 960, minHi: 1080, why: 'standbyHome' } } });
 eq('repouso incerto · o cartão diz as duas pontas e o motivo', C(restUnc.cards[0]),
-  { t: 'card', color: 'sage', kind: 'Repouso · na base', title: 'Descansa', sub: 'cumprido entre 12:00 e 14:00 · a companhia fixa o repouso depois da assistência', gain: null, a: { v: '20:00', l: 'fim de serviço' }, dur: 'mín. 16 h–18 h', b: { v: '14:00', l: 'no máximo' }, pct: 3, corner: 'chev', action: null });
+  { t: 'card', color: 'rest', kind: 'Repouso · na base', title: 'Descansa', sub: 'cumprido entre 12:00 e 14:00 · a companhia fixa o repouso depois da assistência', gain: null, a: { v: '20:00', l: 'fim de serviço' }, dur: 'mín. 16 h–18 h', b: { v: '14:00', l: 'no máximo' }, pct: 3, corner: 'chev', action: null });
 const restNoRep = homeCards({ ...S.posvoo, closed: SB_CLOSED, rest: { signOff: '20:00', until: '08:00', untilIso: D14, minMin: 720, pct: 3, unc: { lo: '08:00', hi: null, minLo: 720, minHi: null, why: 'noReport', estDay: '09/11' } } });
 eq('repouso incerto sem teto (falta uma apresentação) · só o mínimo, dito', [restNoRep.cards[0].sub, restNoRep.cards[0].dur, restNoRep.cards[0].b],
   ['falta a hora de apresentação do serviço de 09/11', 'mín. 12 h ou mais', { v: '08:00', l: 'no mínimo' }]);

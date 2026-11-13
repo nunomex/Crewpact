@@ -239,15 +239,24 @@ export const TXT = {
 
 // ─── Direção 3.0 · CARTÕES DE COR (decidida 2026-11-11, design-system §14; esboço design/inicio-cartoes.html) ─────────
 // Aplica-se ecrã a ecrã: só os ecrãs migrados (o Início, a barra de abas) leem CARD/TXT3; o resto segue PELE/TXT (2.0).
-// A COR É O TIPO, sempre a mesma: areia = voo · salva = repouso e pernoita · lilás = serviço em terra · neutro = dinheiro e o
-// resto · laranja = pede atenção. O texto sobre os cartões de cor é sempre a tinta #141414 (também à noite: as cores descem um tom).
+// O MAPA DAS CORES (design-system §14, escolhido pelo Nuno a 2026-11-13: B "frio e quente"; esboço design/cores.html).
+// Cada cor tem UMA tarefa e os nomes dizem a tarefa, não a cor. FRIO = a escala (o tipo): flight = voo (céu) · ground =
+// serviço em terra (lilás-rosado) · rest = repouso e pernoita (salva) · neutral = ausências, dinheiro e o resto. QUENTE = olha
+// para isto: alert = perto do limite, falta um dado, pede uma ação (laranja, sempre com "!" e a palavra) · stop = passa o
+// limite (vermelho, sempre com "✕" e a palavra). Dentro do limite não tem cor (cockpit escuro); incerto é neutro e tracejado.
+// O verde é só do dinheiro que se ganha (CARD.gain, MONEY). O amarelo da marca é só do "ao vivo" (painel, ponto da pílula).
+// O texto sobre os cartões de cor é sempre a tinta #141414 (também à noite: as cores descem um tom).
+// O TOM (escolhido pelo Nuno a 2026-11-13, tom 2 de design/cores.html §4, procurado entre milhares de tons frios): céu vivo
+// #6DBEFA + lilás-rosado #C3A1BE. Medido (ΔE normal · deuteranopia · protanopia; < ~15 confunde-se de relance): voo × atenção
+// 97 · 92 · 80 (a areia dava 33 · 12 · 16) · voo × terra 37 · 31 · 23 · pior par de todos repouso × passa 19. Tinta sobre voo
+// 9,12 · terra 8,04 · repouso 9,81 · atenção 7,16 · passa 6,64; a linha a 82 % ≥ 5,07 e o rótulo a 80 % ≥ 4,91 (noite).
 // Contraste medido (WCAG 2.1, 2026-11-11): linha pequena (82 %) ≥ 5,09 em todas as cores, de dia e de noite · rótulo do cartão
 // a 80 % ≥ 4,8 (a 72 % do esboço o laranja dava 4,35 — corrigido) · abas inativas #5E5E57 = 5,68 sobre o neutro (o #77776F do
 // esboço dava 3,93 — corrigido) · ganho #0B6E43 na pílula branca 6,31 · à noite o ganho fora das pílulas é #7BE3B0 (11,6).
 export const CARD = {
   day: {
     desk: '#E3E1DB', ink: '#141414', soft: '#3A3A36', sheet: '#FFFFFF', neutral: '#F1EFEA',
-    sand: '#E8BE6E', sage: '#B4C2A2', lilac: '#C6BADF', warn: '#F0854A',
+    flight: '#6DBEFA', ground: '#C3A1BE', rest: '#B4C2A2', alert: '#F0854A', stop: '#EC7A6C',
     grey: 'rgba(20,20,20,0.5)',          // a 2.ª linha do número quando QUALIFICA ("estimado", "livre") — 3,24 (texto muito grande pede 3)
     gainOut: '#0B6E43',                   // ganho FORA de uma pílula branca (o facto "+96,90 €" do pós-voo) — 5,64
     tabSub: '#5E5E57', tabOn: '#FFFFFF', round: 'rgba(127,127,127,0.22)', caption: '#77776F',
@@ -256,19 +265,22 @@ export const CARD = {
   },
   night: {
     desk: '#14161B', ink: '#F4F2ED', soft: 'rgba(244,242,237,0.7)', sheet: '#1F222A', neutral: '#2A2E38',
-    sand: '#DDB25F', sage: '#A3B490', lilac: '#B7AAD4', warn: '#EE7C40',
+    flight: '#58AFEC', ground: '#B592B0', rest: '#A3B490', alert: '#EE7C40', stop: '#DC6B5E',
     grey: 'rgba(244,242,237,0.5)', gainOut: '#7BE3B0',
     tabSub: 'rgba(244,242,237,0.62)', tabOn: 'rgba(244,242,237,0.16)', round: 'rgba(127,127,127,0.22)', caption: 'rgba(244,242,237,0.62)',
     neutralSub: 'rgba(244,242,237,0.82)', neutralKind: 'rgba(244,242,237,0.8)', neutralGo: 'rgba(127,127,127,0.2)',
     darkSub: 'rgba(31,34,42,0.82)', darkGo: 'rgba(31,34,42,0.15)',       // à noite a linha "escura" inverte: tinta clara, letra da folha
   },
-  // Sobre os cartões de COR (areia · salva · lilás · laranja), de dia e de noite:
+  // Sobre os cartões de COR (voo · terra · repouso · atenção · passa), de dia e de noite:
   onCard: '#141414', onCardSub: 'rgba(20,20,20,0.82)', onCardKind: 'rgba(20,20,20,0.8)', onCardTrack: 'rgba(20,20,20,0.18)',
   chip: '#FFFFFF', gain: '#0B6E43',                     // o que um serviço RENDE: verde numa pílula branca, em qualquer cartão
   go: 'rgba(255,255,255,0.55)', act: 'rgba(255,255,255,0.62)', dur: 'rgba(255,255,255,0.85)',
   rule: 'rgba(127,127,127,0.3)',                        // o fio por cima do pé das parcelas
   badgeFg: '#141414',
 };
+// O DINHEIRO nos ecrãs que ainda seguem a 2.0 (os da 3.0 usam CARD.gain/gainOut): o verde é SÓ do que se ganha (+€),
+// nunca "está tudo bem" nem "toca aqui" — regra dura do guardião (o verde da PELE fica fora das páginas). 6,31 na folha.
+export const MONEY = { gain: '#0B6E43', gainSoft: '#E7F3EC', gainNight: '#46C98A' };
 // Texto da direção 3.0 — Hanken Grotesk em tudo (decisão do Nuno, 2026-11-11). Tamanhos da escala (§9); o número gigante (86)
 // fica fora dela, no TUNE do Início. Os TXT da 2.0 não mudam (a Hanken é mais larga e partia os ecrãs antigos).
 export const TXT3 = {

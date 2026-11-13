@@ -7,7 +7,7 @@ import PrimaryButton from './PrimaryButton';
 import Icon from './Icon';
 import IconButton from './IconButton';
 import PeleSide from './PeleSide';
-import { RADIUS, GUTTER, PELE, PELE_FONT, BRAND, SPACE } from '../data/constants';
+import { RADIUS, GUTTER, PELE, PELE_FONT, BRAND, SPACE, MONEY } from '../data/constants';
 import { isNightStop } from '../data/rosterImport';
 import { simulateDuty, issueText } from '../data/simulation';
 import { detectLeg, aggregateLegs, normFlightNo, isCompleteFlightNo } from '../data/flightDetect';
@@ -82,7 +82,7 @@ const NIGHTSTOP_KINDS = ['positioning', 'training', 'standby_airport'];
 const C = {
   text: PELE.ink, sub: PELE.grey, ink: PELE.ink, line: PELE.line, soft: PELE.soft,
   card: PELE.paper, canvas: PELE.paper, red: PELE.red, brand: '#9A8A5A',
-  green: PELE.ok, greenText: PELE.ok, ok: PELE.ok, warn: PELE.warn, warnText: PELE.warn, bad: PELE.red,
+  green: PELE.ink, greenText: PELE.ink, ok: PELE.ink,   // o mapa (§14): dentro sem cor; o verde é só do dinheiro (MONEY) warn: PELE.warn, warnText: PELE.warn, bad: PELE.red,
 };
 // Ícone da pele por tipo (índice novo-servico).
 const KIND_ICON = { flight: 'departs', standby_airport: 'gate', standby_home: 'home', reserve: 'cal', positioning: 'transfer', training: 'book', office: 'doc' };
@@ -491,7 +491,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   };
 
   const fatigueLbl = (b) => t(`duties.fatigue${b.charAt(0).toUpperCase()}${b.slice(1)}`, lang);
-  const fatigueColor = (b) => b === 'high' ? (C.bad || C.warn || C.text) : b === 'elevated' ? (C.warn || C.text) : b === 'low' ? (C.ok || C.sub) : C.text;
+  const fatigueColor = (b) => (b === 'high' || b === 'elevated') ? (C.warn || C.text) : C.text;   // risco, não limite → nunca vermelho (§14)
   // Os mesmos textos do resultado da Simulação (data/simulation.js); "Incerto —" à frente do que depende de um facto.
   const issueLbl = (it) => { const x0 = issueText(it, lang, form.date); const x = it.level === 'unc' ? String(x0).replace(' — incerto: ', ': ').replace(' — uncertain: ', ': ') : x0; return it.level === 'unc' ? l(`Incerto — ${x}`, `Uncertain — ${x}`) : x; };
 
@@ -1224,7 +1224,7 @@ const s = StyleSheet.create({
   stepLine: { position: 'absolute', left: 10.5, top: 12, bottom: 12, width: 2, backgroundColor: PELE.line },
   step: { position: 'relative', paddingBottom: 4 },
   node: { position: 'absolute', left: 0, top: 2, width: 23, height: 23, borderRadius: 12, borderWidth: 2.5, borderColor: PELE.line, backgroundColor: PELE.paper, zIndex: 1, alignItems: 'center', justifyContent: 'center' },
-  nodeDone: { borderColor: PELE.ok, backgroundColor: PELE.ok },
+  nodeDone: { borderColor: PELE.ink, backgroundColor: PELE.ink },
   nodeActive: { borderColor: PELE.ink, backgroundColor: PELE.ink },
   nodeDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: BRAND.signal },
   shead: { flexDirection: 'row', alignItems: 'baseline', gap: 10, paddingLeft: 36, paddingTop: 1, paddingBottom: 4 },
@@ -1284,15 +1284,15 @@ const s = StyleSheet.create({
   routeVis: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: PELE.soft, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11, marginTop: 11 },
   routeVisLbl: { fontSize: 10, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.6, textTransform: 'uppercase', color: PELE.grey },
   routeVisTxt: { flex: 1, fontSize: 14, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, letterSpacing: 0.5, textAlign: 'right' },
-  pdBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: PELE.okSoft, borderRadius: 11, paddingHorizontal: 13, paddingVertical: 10, marginTop: 10 },
-  pdLab: { fontSize: 11.5, color: PELE.ok, fontFamily: PELE_FONT.bodyBold },
-  pdTag: { fontSize: 14, fontFamily: PELE_FONT.display, color: PELE.ok },
+  pdBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: MONEY.gainSoft, borderRadius: 11, paddingHorizontal: 13, paddingVertical: 10, marginTop: 10 },
+  pdLab: { fontSize: 11.5, color: MONEY.gain, fontFamily: PELE_FONT.bodyBold },
+  pdTag: { fontSize: 14, fontFamily: PELE_FONT.display, color: MONEY.gain },
 
   // Pernoita
   nsCard: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: PELE.soft, borderRadius: RADIUS.md, paddingVertical: 12, paddingHorizontal: 14, borderWidth: 1, borderColor: PELE.line },
   nsCardOn: { borderColor: PELE.ink },
   nsCardT: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
-  nsEur: { fontSize: 15, fontFamily: PELE_FONT.display, color: PELE.ok, fontVariant: ['tabular-nums'], marginLeft: 8 },
+  nsEur: { fontSize: 15, fontFamily: PELE_FONT.display, color: MONEY.gain, fontVariant: ['tabular-nums'], marginLeft: 8 },
   nsRow: { flexDirection: 'row', alignItems: 'center' },
   nsHint: { fontSize: 11, color: PELE.grey, marginTop: 3, fontFamily: PELE_FONT.body },
 

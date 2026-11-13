@@ -37,6 +37,9 @@ fadiga (FTL — Reg. UE 83/2014 · CS-FTL.1) e a remuneração prevista pelos ac
    (placa de tinta + folha; nunca com barra de abas) — regras em
    `docs/design-system.md` §9–§12. O `npm run test:design` tranca-as (a dívida só pode descer). Papel permanente: designer sénior
    da Apple — "a Apple lançava isto?".
+   **Cores: o mapa B "frio e quente" (2026-11-13, `docs/design-system.md` §14, esboço `design/cores.html`)** — frio = a escala
+   (`CARD.flight/ground/rest`), quente = olhar (`alert` com "!", `stop` com "✕"), dentro sem cor, incerto neutro, verde só no
+   dinheiro (`CARD.gain`/`MONEY`; o guardião tranca o verde da PELE).
    **Direção 3.0 "cartões de cor" (aprovada 2026-11-11):** esboço `design/inicio-cartoes.html`, regras em `docs/design-system.md`
    §14. **O Início e a barra de abas já estão no código** (2026-11-11, por ver no iPhone): o que vai para onde decide-o
    `data/homeCards.js` (golden `test:homecards`), o desenho é `components/HomeCards.js`, tokens `CARD`/`TXT3`. **A Escala

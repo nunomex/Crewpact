@@ -103,7 +103,7 @@ const s = StyleSheet.create({
   chipTxt: { color: P.onInk, fontFamily: F.display, fontSize: 15, letterSpacing: 0.8 },
   chipX: { width: 18, height: 18, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
   input: { flex: 1, minWidth: 100, height: 32, fontFamily: F.body, fontSize: 14, color: P.ink, padding: 0, includeFontPadding: false, textAlignVertical: 'center' },
-  ok: { width: 36, height: 32, borderRadius: 10, backgroundColor: P.ok, alignItems: 'center', justifyContent: 'center', marginLeft: 'auto' },
+  ok: { width: 36, height: 32, borderRadius: 10, backgroundColor: P.ink, alignItems: 'center', justifyContent: 'center', marginLeft: 'auto' },
 
   drop: { marginTop: 10, borderWidth: 1, borderColor: P.line, borderRadius: 16, backgroundColor: P.paper, overflow: 'hidden' },
   dhead: { fontSize: 10.5, fontFamily: F.bodyHeavy, letterSpacing: 1.1, textTransform: 'uppercase', color: P.grey, paddingHorizontal: 14, paddingTop: 11, paddingBottom: 7 },

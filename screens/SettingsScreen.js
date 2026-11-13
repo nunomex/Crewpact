@@ -254,7 +254,7 @@ export default function SettingsScreen({ navigation }) {
           <Animated.View style={[s.pmeta, seg(0)]}>
             {serviceStart ? <Text style={s.pmetaTxt}>{l('Desde', 'Since')} <Text style={s.pmetaB}>{serviceStart.slice(0, 4)}</Text></Text> : null}
             {base ? <Text style={s.pmetaTxt}>{l('Base', 'Base')} <Text style={s.pmetaB}>{base}</Text></Text> : null}
-            {A.companyHasAe ? <Text style={s.pmetaTxt}>AE <Text style={[s.pmetaB, { color: aeCovered !== false ? PELE.ok : PELE.grey }]}>{aeCovered !== false ? l('abrangido', 'covered') : l('FTL-only', 'FTL-only')}</Text></Text> : null}
+            {A.companyHasAe ? <Text style={s.pmetaTxt}>AE <Text style={[s.pmetaB, { color: aeCovered !== false ? PELE.ink : PELE.grey }]}>{aeCovered !== false ? l('abrangido', 'covered') : l('FTL-only', 'FTL-only')}</Text></Text> : null}
           </Animated.View>
         ) : null}
 
@@ -288,7 +288,7 @@ export default function SettingsScreen({ navigation }) {
             {A.companyHasAe ? <Linha icon="doc" label={l('Vínculo', 'Employment')} value={employmentTxt} onPress={() => page('vinculo')}
               last={(employment || 'employee') !== 'employee'} /> : null}
             {A.companyHasAe && (employment || 'employee') === 'employee'
-              ? <Linha icon="shield" label={l('Abrangido pelo AE', 'Covered by the agreement')} value={aeCovered !== false ? l('Sim', 'Yes') : l('Não', 'No')} valueColor={aeCovered !== false ? PELE.ok : null} onPress={() => page('abrangido')} last />
+              ? <Linha icon="shield" label={l('Abrangido pelo AE', 'Covered by the agreement')} value={aeCovered !== false ? l('Sim', 'Yes') : l('Não', 'No')} valueColor={null} onPress={() => page('abrangido')} last />
               : null}
           </View>
         </Animated.View>
@@ -319,7 +319,7 @@ export default function SettingsScreen({ navigation }) {
             <Linha icon="mail" label={l('E-mail', 'Email')} value={user?.email || ''} onPress={openEmailChange} />
             {/* "Definir": serve quem já tem palavra-passe (mudar) e quem entrou só com código (criar). */}
             <Linha icon="lock" label={l('Palavra-passe', 'Password')} value={l('Definir', 'Set')} onPress={() => { setPwProof(PROOF0); setNewPw(''); setConfPw(''); setPwErr(''); setPwModal(true); }} />
-            <Linha icon="faceid" label={l('Bloqueio com Face ID', 'Face ID lock')} value={lockEnabled ? l('Ligado', 'On') : l('Desligado', 'Off')} valueColor={lockEnabled ? PELE.ok : null} onPress={() => page('bloqueio')} />
+            <Linha icon="faceid" label={l('Bloqueio com Face ID', 'Face ID lock')} value={lockEnabled ? l('Ligado', 'On') : l('Desligado', 'Off')} valueColor={null} onPress={() => page('bloqueio')} />
             <Linha icon="globe" label={l('Idioma', 'Language')} value={lang === 'en' ? 'English' : 'Português'} onPress={() => page('idioma')} />
             <Linha icon="bell" label={l('Lembretes', 'Reminders')} value={remindersOn ? l('Ligados', 'On') : l('Desligados', 'Off')} onPress={() => page('lembretes')} />
             <Linha icon="download" label={l('Exportar os meus dados', 'Export my data')} value="RGPD" onPress={exportData} />
