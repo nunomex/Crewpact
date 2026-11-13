@@ -1,10 +1,10 @@
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, RefreshControl, Linking, Platform, PanResponder, Dimensions, LayoutAnimation, PixelRatio, Animated, Easing, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, RefreshControl, Linking, Platform, PanResponder, Dimensions, LayoutAnimation, PixelRatio, Animated, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Tip from '../components/Tip';
 import AsyncStorage from '../data/secureStorage';   // wrapper de cifra-em-repouso (flag OFF por agora = passthrough)
-import { RADIUS, GUTTER, SPACE, TXT, TXT3, TYPE, CARD, PELE, PELE_FONT, BRAND } from '../data/constants';
+import { RADIUS, GUTTER, SPACE, TXT, TXT3, TYPE, CARD, PELE, PELE_FONT, BRAND, SHADOW } from '../data/constants';
 import Icon from '../components/Icon';
 import IconButton from '../components/IconButton';
 import PeleSheet from '../components/PeleSheet';
@@ -26,9 +26,13 @@ import CalendarPickerSheet from '../components/CalendarPickerSheet';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import useReduceMotion from '../hooks/useReduceMotion';
 
-// A grelha do mês (na folha do botão do calendário): a célula de 46 pt é um quadrado de cantos redondos com a cor do tipo —
-// número em cima, etiqueta a 11 em baixo, dois pontos quando há dois serviços no dia (escolha C do Nuno, 2026-11-13).
-const ROW_H = 46;
+// O dia do mês (Q1 de design/escala-semana.html, escolhida pelo Nuno a 2026-11-13 — "sem círculos e com a cor mais calma"):
+// um quadrado de 56 pt, neutro quando há serviço, com o número e o destino; a cor do tipo só numa FITA de 5 pt em baixo
+// (dois serviços = as duas cores; a rotação junta as fitas; férias e baixa a tracejado; feito = fita cinzenta). Hoje é o
+// quadrado a tinta; o escolhido leva um contorno.
+const ROW_H = 56;
+const STRIP_H = 5;
+const DASHES = 8;   // a fita tracejada das férias e da baixa
 const ROW_GAP = SPACE.xs;
 const GAP = SPACE.xs;
 const C = CARD.day;   // a barra de abas só escurece no Início; a Escala fica de dia como o resto (design-system §14)
@@ -40,13 +44,15 @@ const isoOf = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(
 // o número de serviços e os factos. Por baixo, numa folha branca, o MÊS no desenho A (design/escala-mes.html: o número limpo e
 // uma etiqueta na cor do tipo com o destino; o que cada célula mostra decide-o data/escalaDay.js · monthCells, golden
 // test:escala) e a legenda que filtra (L2: tocar numa cor acende esses dias). Deslizar para o lado EM CIMA DA GRELHA muda de mês.
-// TOCAR NUM DIA abre-o numa JANELA que sobe até quase ao topo (a folha nativa do iPhone, com o mês a espreitar por trás;
-// pedido do Nuno a 2026-11-13: "só o mês, e ao carregar no dia abra… um modal com o que tem do dia"): o cabeçalho (o dia,
-// ‹ › e ✕), uma linha por serviço (a pernoita vai na linha do voo) e, no serviço aberto — o único do dia, ou o que se tocar —
+// TOCAR NUM DIA (design/escala-semana.html, aprovado pelo Nuno a 2026-11-13: "subia um modal… e ficava a semana em cima"):
+// o topo grande recolhe para a fila das pílulas, o mês fica SÓ NA SEMANA desse dia, em cima, e SOBE UMA FOLHA com pega logo
+// por baixo (320 ms; reduzido = aparece). Tocar noutro dia da semana troca o dia; deslizar na semana muda de semana; a pega,
+// puxar a folha para baixo ou ✕ descem-na (300 ms) e o mês volta inteiro. Na folha: o cabeçalho (o dia, ‹ › e ✕), uma linha
+// por serviço (a pernoita vai na linha do voo) e, no serviço aberto — o único do dia, ou o que se tocar —
 // TUDO o que é dele, como o antigo "Ver tudo" (pedido do Nuno, 2026-11-13), no 3.0 (design/detalhe-3.html, B): a linha cresce
 // para o cartão de cor com a perna e vêm os cartões dos Limites (o PSV numa barra), do horário (a régua das 24 h), do completar,
 // da pernoita, do pagamento e dos outros serviços — o corpo do Detalhe (screens/DutyDetailScreen.js · DutyDetailBody). Na
-// janela, deslizar para o lado muda de dia; puxar para baixo ou ✕ fecham.
+// folha, deslizar para o lado muda de dia.
 // A escala vem do calendário (criar à mão morreu 2026-07-10); o Detalhe só lê a escala e completa os factos que a lei precisa.
 export default function EscalaScreen({ navigation, route }) {
   const { lang, duties, dayLog, user, company, ae: aeNow, aeAt, homeBaseAt, crewAt, postFlightMin, rosterChanges, checkRosterChanges, liveSync, notify,
@@ -74,6 +80,13 @@ export default function EscalaScreen({ navigation, route }) {
   const reduceMotion = useReduceMotion();
   const dayX = useRef(new Animated.Value(0)).current;   // o dia a deslizar para o lado (o seguinte entra do outro)
   const dimRef = useRef({});                            // iso → Animated.Value (1 aceso · 0,22 esbatido): a legenda que filtra
+  // A FOLHA DO DIA: o deslize vertical (0 = em cima, logo por baixo da semana; a altura dela = fora de vista, em baixo).
+  const winH = Dimensions.get('window').height;
+  const sheetHRef = useRef(0);                          // a altura da folha (medida); antes da 1.ª medida, 70 % do ecrã
+  const sheetOff = () => sheetHRef.current || Math.round(winH * 0.7);
+  const sheetY = useRef(new Animated.Value(winH)).current;
+  const closingRef = useRef(false);
+  const reduceRef = useRef(reduceMotion); reduceRef.current = reduceMotion;
   const [pickYear, setPickYear] = useState(null);
 
   const [importOpen, setImportOpen] = useState(false);
@@ -215,6 +228,20 @@ export default function EscalaScreen({ navigation, route }) {
     onPanResponderTerminationRequest: () => false,
     onPanResponderRelease: (_, g) => { const dir = swipeDir(g); if (dir) stepDayRef.current?.(dir); },
   })).current;
+  // Na SEMANA (com um dia aberto), deslizar para o lado muda de semana: o mesmo dia da semana, 7 dias depois ou antes.
+  const weekPan = useRef(PanResponder.create({
+    onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 14 && Math.abs(g.dx) > Math.abs(g.dy) * 1.4,
+    onPanResponderRelease: (_, g) => { const dir = swipeDir(g); if (dir) stepDayRef.current?.(dir, 7); },
+  })).current;
+  // Puxar a folha para baixo (pela pega ou pelo cabeçalho): segue o dedo; largada abaixo de 90 pt, ou depressa, desce e fecha;
+  // senão volta ao sítio.
+  const backUp = () => { if (reduceRef.current) { sheetY.setValue(0); return; } Animated.spring(sheetY, { toValue: 0, useNativeDriver: true, bounciness: 0, speed: 18 }).start(); };
+  const sheetPan = useRef(PanResponder.create({
+    onMoveShouldSetPanResponder: (_, g) => g.dy > 8 && Math.abs(g.dy) > Math.abs(g.dx) * 1.2,
+    onPanResponderMove: (_, g) => sheetY.setValue(Math.max(0, g.dy)),
+    onPanResponderRelease: (_, g) => { if (g.dy > 90 || g.vy > 0.8) closeDayRef.current?.(); else backUp(); },
+    onPanResponderTerminate: () => backUp(),
+  })).current;
 
   // Extras do mês PROJETADOS na grelha (SÓ-LEITURA, derivados dos aeEvents). AUSÊNCIA = férias/doença.
   const extraKinds = (ae && Array.isArray(ae.EXTRA_KINDS)) ? ae.EXTRA_KINDS : [];
@@ -274,16 +301,39 @@ export default function EscalaScreen({ navigation, route }) {
   const openIdxOf = (iso) => { const sv = svcsAt(iso); const idx = sv.map((x, i) => (x ? i : -1)).filter((i) => i >= 0); return idx.length === 1 ? idx[0] : -1; };
   const layoutAnim = () => { if (!reduceMotion) LayoutAnimation.configureNext(LayoutAnimation.create(260, LayoutAnimation.Types.easeInEaseOut, LayoutAnimation.Properties.opacity)); };
   const resetDim = () => Object.values(dimRef.current).forEach((v) => v.setValue(1));
-  // Abrir um dia: a janela, com o único serviço já aberto (com vários, nenhum — toca-se no que se quer).
-  const openDayAt = (iso) => { setSelIso(iso); setSvcIdx(openIdxOf(iso)); };
-  const closeDay = () => { select(); setSelIso(null); };
-  const pickDay = (iso) => { select(); openDayAt(iso); };
+  // Abrir um dia: a folha, com o único serviço já aberto (com vários, nenhum — toca-se no que se quer). Vinda do mês inteiro,
+  // a folha parte de baixo (fora de vista) e sobe no efeito de baixo; com um dia já aberto, só troca o dia.
+  const openDayAt = (iso) => {
+    if (!selRef.current) { closingRef.current = false; sheetY.stopAnimation(); sheetY.setValue(reduceMotion ? 0 : sheetOff()); }
+    else if (closingRef.current) { closingRef.current = false; sheetY.stopAnimation(); backUp(); }   // tocada a meio da descida
+    setSelIso(iso); setSvcIdx(openIdxOf(iso));
+  };
+  const isOpen = !!selIso;
+  useEffect(() => {
+    if (!isOpen) return;
+    if (reduceMotion) { sheetY.setValue(0); return; }
+    Animated.timing(sheetY, { toValue: 0, duration: 320, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Fechar: a folha desce (300 ms) e o mês volta inteiro; reduzido = fecha logo.
+  const closeDay = () => {
+    if (!selRef.current || closingRef.current) return;
+    select();
+    if (reduceMotion) { setSelIso(null); return; }
+    closingRef.current = true;
+    Animated.timing(sheetY, { toValue: sheetOff(), duration: 300, easing: Easing.in(Easing.cubic), useNativeDriver: true }).start(() => {
+      if (!closingRef.current) return;   // reaberta a meio
+      closingRef.current = false; setSelIso(null);
+    });
+  };
+  // Tocar num dia: abre-o; tocar no dia aberto (na semana) fecha a folha.
+  const pickDay = (iso) => { if (iso === selRef.current) { closeDay(); return; } select(); openDayAt(iso); };
   // Tocar num serviço: abre por baixo dele tudo o que é dele; tocar no aberto fecha-o.
   const pickSvc = (idx) => { select(); layoutAnim(); setSvcIdx((cur) => (cur === idx ? -1 : idx)); };
   // Deslizar no dia: o seguinte ou o anterior (as folgas também; passa de mês na ponta). Sai para um lado e entra do outro.
-  const stepDay = (dir) => {
+  // n = 7: a semana seguinte ou anterior (deslizar na semana).
+  const stepDay = (dir, n = 1) => {
     const cur = selRef.current; if (!cur) return;
-    const dt = new Date(`${cur}T12:00:00`); dt.setDate(dt.getDate() + dir);
+    const dt = new Date(`${cur}T12:00:00`); dt.setDate(dt.getDate() + dir * n);
     const nx = isoOf(dt);
     select();
     const go = () => { if (!nx.startsWith(ym)) setMonthDate(new Date(dt.getFullYear(), dt.getMonth(), 1)); openDayAt(nx); };
@@ -312,17 +362,19 @@ export default function EscalaScreen({ navigation, route }) {
     if (anims.length) Animated.parallel(anims).start();
   };
 
-  // Uma célula (A): o número limpo (hoje = círculo de tinta; feito = cinzento) e, por baixo, a etiqueta na cor do tipo com o
-  // destino — a ponta na cor do outro serviço; a rotação junta as etiquetas; feito = etiqueta neutra com o ponto da cor.
+  // Uma célula (Q1): o quadrado neutro com o número e o destino; a cor do tipo só na fita de baixo. Dois serviços = a fita
+  // em duas (o outro serviço à esquerda, um terço; o principal à direita); a rotação junta as fitas por cima do espaço entre
+  // os dias; férias e baixa a tracejado; feito = fita cinzenta e número cinzento. Hoje = o quadrado a tinta.
   const typeBg = (k) => (k === 'voo' ? C.flight : k === 'terra' ? C.ground : null);
   const renderCell = (c) => {
     const svcs = svcsAt(c.iso).filter(Boolean);
     const mi = mainIdxOf(c.iso), main = mi >= 0 ? svcsAt(c.iso)[mi] : null;
     const abs = !svcs.length ? dayAbs[c.iso] : null;
     const isAbs = c.kind === 'fer' || c.kind === 'doe';
-    const pastTag = c.past && !isAbs;
-    const tagBg = isAbs ? C.sheet : pastTag ? C.neutral : typeBg(c.kind);
-    const edge = c.two && !c.past ? (c.twoKind === c.kind ? CARD.onCardTrack : typeBg(c.twoKind)) : null;
+    const has = !!c.kind;
+    const stripColor = !has || isAbs ? null : c.past ? C.round : typeBg(c.kind);
+    const twoColor = has && !isAbs && c.two && !c.past ? typeBg(c.twoKind) : null;
+    const fg = c.today ? C.sheet : C.ink;
     const a11y = [
       `${c.day} ${monthName}`,
       c.today ? l('hoje', 'today') : null,
@@ -334,24 +386,43 @@ export default function EscalaScreen({ navigation, route }) {
     ].filter(Boolean).join(' · ');
     return (
       <Animated.View key={c.iso} style={{ width: cellW, opacity: dimOf(c.iso) }}>
-        <TouchableOpacity activeOpacity={0.7} style={s.cell} onPress={() => pickDay(c.iso)}
+        <TouchableOpacity activeOpacity={0.7} onPress={() => pickDay(c.iso)}
+          style={[s.cell, has ? { backgroundColor: C.neutral } : null, c.today ? { backgroundColor: C.ink } : null, c.joinR ? s.cellJR : null, c.joinL ? s.cellJL : null]}
           accessibilityRole="button" accessibilityLabel={a11y} accessibilityState={{ selected: c.sel }}
           accessibilityHint={c.sel ? l('Volta ao mês', 'Back to the month') : l('Abre o dia', 'Opens the day')}>
-          <View style={[s.num, c.today ? { backgroundColor: C.ink } : null]}>
-            <Text style={[TXT.bodyStrong, s.numTxt, { color: c.today ? C.sheet : c.past ? C.tabSub : C.ink }]} allowFontScaling={false}>{c.day}</Text>
-          </View>
+          <Text style={[TXT3.lineVal, s.numTxt, { color: c.today ? C.sheet : c.past ? C.tabSub : C.ink }]} allowFontScaling={false}>{c.day}</Text>
           {c.code ? (
-            <View style={[s.tag, { backgroundColor: tagBg }, isAbs ? [s.tagAbs, { borderColor: CARD.rule }] : null, edge ? s.tagTwo : null, c.joinR ? s.tagJR : null, c.joinL ? s.tagJL : null]}>
-              {edge ? <View style={[s.tagEdge, { backgroundColor: edge }]} /> : null}
-              {pastTag ? <View style={[s.tagDot, { backgroundColor: typeBg(c.kind) }]} /> : null}
-              <Text style={[TXT.tag, { color: CARD.onCard }]} numberOfLines={1} allowFontScaling={false}>{c.code}</Text>
-              {c.ns ? <Icon name="moon" size={10} color={CARD.onCard} /> : null}
+            <View style={s.code}>
+              <Text style={[TXT.tag, { color: c.today ? C.sheet : C.soft }]} numberOfLines={1} allowFontScaling={false}>{c.code}</Text>
+              {c.ns ? <Icon name="moon" size={9} color={c.today ? C.sheet : C.soft} /> : null}
             </View>
-          ) : null}
+          ) : <View />}
+          <View style={s.strip}>
+            {isAbs ? Array.from({ length: DASHES }).map((_, i) => <View key={i} style={[s.dash, { backgroundColor: CARD.rule }]} />) : null}
+            {twoColor ? <View style={[s.stripTwo, { backgroundColor: twoColor }]} /> : null}
+            {stripColor ? <View style={[s.flex, { backgroundColor: stripColor }]} /> : null}
+          </View>
           {c.dirty ? <View style={[s.pend, { backgroundColor: C.alert, borderColor: C.sheet }]} pointerEvents="none" /> : null}
-          {c.sel ? <View style={[s.selRing, { borderColor: C.ink }]} pointerEvents="none" /> : null}
+          {c.sel && !c.today ? <View style={[s.selRing, { borderColor: C.ink }, c.joinR ? s.cellJR : null, c.joinL ? s.cellJL : null]} pointerEvents="none" /> : null}
         </TouchableOpacity>
+        {/* a rotação: a fita continua por cima do espaço até ao dia seguinte */}
+        {c.joinR && stripColor ? <View style={[s.stripJoin, { backgroundColor: stripColor }]} pointerEvents="none" /> : null}
       </Animated.View>
+    );
+  };
+  // A SEMANA do dia aberto (em cima, com a folha por baixo): os sete dias da linha dele, com as mesmas células.
+  const renderWeek = () => {
+    const sel = G.cells.find((c) => c.sel);
+    if (!sel) return null;
+    const row = G.cells.filter((c) => c.row === sel.row);
+    return (
+      <View {...weekPan.panHandlers}>
+        <View style={s.wkhead}>{WD.map((w, i) => <Text key={i} style={[TXT.tag, s.wkh, { width: cellW, color: C.tabSub }]} allowFontScaling={false}>{w}</Text>)}</View>
+        <View style={s.cal} onLayout={(e) => { const w = e.nativeEvent.layout.width; setGridW((p) => (Math.abs(w - p) > 0.5 ? w : p)); }}>
+          {sel.row === 0 ? Array.from({ length: G.firstWeekday }).map((_, i) => <View key={`lead${i}`} style={[s.cellBlank, { width: cellW }]} />) : null}
+          {cellW ? row.map(renderCell) : null}
+        </View>
+      </View>
     );
   };
 
@@ -499,7 +570,7 @@ export default function EscalaScreen({ navigation, route }) {
   const legSwatch = (key) => {
     const abs = key === 'fer' || key === 'doe';
     return (
-      <View style={[s.legSw, { backgroundColor: key === 'terra' ? C.ground : abs ? C.sheet : C.flight }, abs ? [s.tagAbs, { borderColor: CARD.rule }] : null]}>
+      <View style={[s.legSw, { backgroundColor: key === 'terra' ? C.ground : abs ? C.sheet : C.flight }, abs ? [s.legSwAbs, { borderColor: CARD.rule }] : null]}>
         {key === 'ns' ? <Icon name="moon" size={9} color={CARD.onCard} /> : null}
         {key === 'two' ? <View style={[s.legSwEdge, { backgroundColor: C.ground }]} /> : null}
         {key === 'dirty' ? <View style={[s.legSwDot, { backgroundColor: C.alert }]} /> : null}
@@ -586,10 +657,28 @@ export default function EscalaScreen({ navigation, route }) {
           </>
         ) : (
           <>
-            {/* O topo do Início: "Novembro 2026 ▾" abre o ano em meses; à direita, ler a escala. */}
-            <HomeTop top={top} C={C} size={giant.size} onPill2={() => { select(); setPickYear(y); setMonthPickerOpen(true); }} right={topRight} rightW={topRightW} l={l} />
-            {/* A FOLHA: o mês (desenho A); tocar num dia encolhe-o para a semana e abre o dia por baixo. */}
+            {/* O topo do Início: "Novembro 2026 ▾" abre o ano em meses; à direita, ler a escala. Com um dia aberto, só a fila. */}
+            <HomeTop top={top} C={C} size={giant.size} compact={isOpen} onPill2={() => { select(); setPickYear(y); setMonthPickerOpen(true); }} right={topRight} rightW={topRightW} l={l} />
+            {/* A FOLHA: o mês (Q1); tocar num dia deixa só a semana dele, em cima, e a folha do dia sobe por baixo. */}
             <View style={[s.sheet, { backgroundColor: C.sheet }]}>
+              {isOpen ? (
+                <>
+                  <View style={s.weekWrap}>{renderWeek()}</View>
+                  <Animated.View style={[s.daySheet, { backgroundColor: C.sheet, transform: [{ translateY: sheetY }] }]}
+                    onLayout={(e) => { sheetHRef.current = Math.round(e.nativeEvent.layout.height); }}>
+                    <View {...sheetPan.panHandlers}>
+                      <TouchableOpacity style={s.dsGrab} onPress={closeDay} activeOpacity={0.6} hitSlop={{ top: SPACE.sm, bottom: SPACE.xs }}
+                        accessibilityRole="button" accessibilityLabel={l('Voltar ao mês', 'Back to the month')}>
+                        <View style={[s.dsGrabBar, { backgroundColor: C.round }]} />
+                      </TouchableOpacity>
+                      {renderDayHead(selIso)}
+                    </View>
+                    <ScrollView style={s.flex} contentContainerStyle={[s.dsBody, { paddingBottom: tabSpace + SPACE.xxxl }]} showsVerticalScrollIndicator={false}>
+                      {renderDay(selIso)}
+                    </ScrollView>
+                  </Animated.View>
+                </>
+              ) : (
               <ScrollView ref={scrollRef} style={s.flex} contentContainerStyle={[s.list, { paddingBottom: tabSpace + SPACE.lg }]} showsVerticalScrollIndicator={false}
                   refreshControl={<RefreshControl refreshing={refreshing} tintColor={C.caption} colors={[C.caption]}
                     onRefresh={async () => {
@@ -602,21 +691,11 @@ export default function EscalaScreen({ navigation, route }) {
                 {(!monthDutyDays.length && !monthHasAbs) ? renderEmpty() : null}
                 <Text style={[TXT.caption, s.foot, { color: C.tabSub }]}>{t('duties.syncHint', lang)}</Text>
               </ScrollView>
+              )}
             </View>
           </>
         )}
       </View>
-
-      {/* A JANELA DO DIA: a folha nativa do iPhone (sobe até quase ao topo, o mês espreita por trás; puxar para baixo fecha). */}
-      <Modal visible={!!selIso} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeDay}>
-        <View style={[s.dsRoot, { backgroundColor: C.sheet }]}>
-          <View style={s.dsGrab}><View style={[s.dsGrabBar, { backgroundColor: C.round }]} /></View>
-          {selIso ? renderDayHead(selIso) : null}
-          <ScrollView style={s.flex} contentContainerStyle={s.dsBody} showsVerticalScrollIndicator={false}>
-            {selIso ? renderDay(selIso) : null}
-          </ScrollView>
-        </View>
-      </Modal>
 
       <RosterImportSheet visible={importOpen} initialSource={importSource} onConnect={connectCalendar}
         onDone={({ saved, source }) => {
@@ -784,35 +863,36 @@ const s = StyleSheet.create({
   privTxt: { fontFamily: PELE_FONT.bodyBold },
   foot: { marginTop: SPACE.md, paddingHorizontal: SPACE.xs },
 
-  // O mês — o dia A (design/escala-mes.html): o número limpo e a etiqueta na cor do tipo
+  // O mês — o dia Q1 (design/escala-semana.html): o quadrado calmo com o número e o destino; a cor só na fita de baixo
   wkhead: { flexDirection: 'row', gap: GAP, marginBottom: SPACE.xs },
   wkh: { textAlign: 'center' },
   cal: { flexDirection: 'row', flexWrap: 'wrap', columnGap: GAP, rowGap: ROW_GAP },
   cellBlank: { height: ROW_H },
-  cell: { height: ROW_H, alignItems: 'center', paddingTop: SPACE.xxs, gap: SPACE.xs },
-  num: { width: 28, height: 28, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
+  cell: { height: ROW_H, borderRadius: RADIUS.sm, alignItems: 'center', justifyContent: 'space-between', paddingTop: SPACE.s, overflow: 'hidden' },
+  cellJR: { borderBottomRightRadius: 0 },
+  cellJL: { borderBottomLeftRadius: 0 },
   numTxt: { fontVariant: ['tabular-nums'] },
-  tag: { height: 20, alignSelf: 'stretch', marginHorizontal: SPACE.xxs, borderRadius: RADIUS.xs, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACE.xxs, overflow: 'hidden' },
-  tagAbs: { borderWidth: 1.5 },
-  tagTwo: { paddingLeft: SPACE.sm },
-  tagEdge: { position: 'absolute', left: 0, top: 0, bottom: 0, width: SPACE.sm },
-  tagDot: { width: 6, height: 6, borderRadius: RADIUS.pill },
-  tagJR: { marginRight: -SPACE.xxs, borderTopRightRadius: 0, borderBottomRightRadius: 0 },
-  tagJL: { marginLeft: -SPACE.xxs, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 },
-  selRing: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: RADIUS.md, borderWidth: 2 },
-  pend: { position: 'absolute', top: 2, right: SPACE.xs, width: 7, height: 7, borderRadius: RADIUS.pill, borderWidth: 1.5 },
+  code: { flexDirection: 'row', alignItems: 'center', gap: SPACE.xxs },
+  strip: { alignSelf: 'stretch', height: STRIP_H, flexDirection: 'row', justifyContent: 'space-between' },
+  stripTwo: { flex: 0.45, marginRight: SPACE.xxs },   // o outro serviço: um terço da fita (0,45 : 1), com um fio entre os dois
+  stripJoin: { position: 'absolute', right: -GAP, width: GAP, bottom: 0, height: STRIP_H },
+  dash: { width: SPACE.xs, height: STRIP_H },
+  selRing: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: RADIUS.sm, borderWidth: 2 },
+  pend: { position: 'absolute', top: 3, right: 3, width: 7, height: 7, borderRadius: RADIUS.pill, borderWidth: 1.5 },
   // L2 · a legenda que filtra
   chipsWrap: { marginTop: SPACE.md, marginHorizontal: -SPACE.md },
   chips: { paddingHorizontal: SPACE.md, gap: SPACE.s },
   chip: { height: 32, borderRadius: RADIUS.pill, borderWidth: 1.5, paddingLeft: SPACE.sm, paddingRight: SPACE.md, flexDirection: 'row', alignItems: 'center', gap: SPACE.s },
   legSw: { width: 22, height: 16, borderRadius: RADIUS.xs, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  legSwAbs: { borderWidth: 1.5, borderStyle: 'dashed' },   // férias e baixa: a tracejado, como a fita do dia
   legSwEdge: { position: 'absolute', left: 0, top: 0, bottom: 0, width: SPACE.s },
   legSwDot: { position: 'absolute', top: 2, right: 2, width: 6, height: 6, borderRadius: RADIUS.pill },
   chipsHint: { marginTop: SPACE.s, paddingHorizontal: SPACE.xxs },
 
-  // A janela do dia (a folha nativa) e o serviço aberto (as quatro secções com a aba ligada — design/escala-so-mes.html, S3)
-  dsRoot: { flex: 1 },
-  dsGrab: { alignItems: 'center', paddingTop: SPACE.sm, paddingBottom: SPACE.xs },
+  // A semana em cima e a folha do dia que sobe por baixo dela (design/escala-semana.html)
+  weekWrap: { paddingHorizontal: SPACE.md, paddingTop: SPACE.md, paddingBottom: SPACE.sm },
+  daySheet: { flex: 1, borderTopLeftRadius: RADIUS.sheet, borderTopRightRadius: RADIUS.sheet, ...SHADOW.sm, shadowOffset: { width: 0, height: -SPACE.sm } },
+  dsGrab: { alignItems: 'center', paddingTop: SPACE.sm, paddingBottom: SPACE.s },
   dsGrabBar: { width: 40, height: 5, borderRadius: RADIUS.pill },
   dsHead: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, paddingHorizontal: SPACE.lg, paddingBottom: SPACE.md },
   dsTitle: { minWidth: 0 },

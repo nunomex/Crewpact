@@ -284,6 +284,61 @@ referência para o layout das páginas que faltam e para o sistema de desenho. *
   **Ver no iPhone:** abrir um voo de duas pernas (as duas pernas, o tempo no solo) e um com DH · um incerto (a barra com as duas
   pontas) · um que passa (a barra a vermelho) · completar um dado · guardar o hotel e "Mapas ↗" · o total do pagamento · os
   outros serviços (troca o aberto) · o ecrã do Detalhe vindo do Início.
+  **Depois (2026-11-13, noite), o Nuno: "gostava do que tivemos — ao carregar no dia, o mês subia para a semana e apareciam os
+  serviços" (prefere-o à janela) + "não estou a gostar de como os dias do mês aparecem, em círculos e as cores; vê outros".** →
+  esboço `design/escala-semana.html` (o gesto de volta: tocar num dia encolhe o mês para a semana e o dia vem por baixo; ‹ ›,
+  deslizar, ✕; tocar num serviço abre o "Ver tudo" B) com três desenhos do dia sem círculos, das imagens 3405 · 3406 · 3462 e
+  do Mobbin (Binance, Jobber, Outlook, Google Calendar, Todoist): **Q1** quadrado neutro com o destino e uma fita fina na cor do
+  tipo (o hoje um quadrado preto; o mês 356 pt) · **Q2** quadrado cheio num tom suave (céu `#DCEFFD`, lilás `#F0E6EF`; tinta
+  ≥ 15:1, mas só 1,2:1 contra a folha) · **Q3** o dia escrito, destino + hora do report (o mês 507 pt; letra 9,5–10, abaixo do
+  mínimo de 11). Legenda em pílulas com contagem que filtra (3406). Recomendo **Q1**. **Corrigido o gesto, a seguir (o Nuno: "subia
+  um modal, ou assim… e ficava a semana em cima"):** tocar num dia recolhe o topo grande, o mês fica só na semana desse dia e
+  **sobe uma folha com pega logo por baixo** (6 pt), com o dia e os serviços; tocar noutro dia da semana troca o dia; ‹ › e
+  deslizar mudam de dia (e de semana); a pega ou o ✕ descem a folha (320/300 ms; reduzido = salta).
+  **O Nuno perguntou se o tripulante prefere a lista (a A de `escala-layouts.html`) ao mês.** A minha resposta: depende da
+  pergunta (a hora do report → lista; folgas, onde dorme, como é o mês, trocas → mês); o "agora e a seguir" já está no Início,
+  por isso a Escala é o mês; o que o mês perde (ler os próximos dias seguidos com as horas) vai para o "A seguir" do Início.
+  Disse com franqueza que não sou tripulante e propus um teste de 5 min com 2–3 tripulantes.
+  **ESCOLHIDO pelo Nuno: "fica o mês. Q1" — JÁ NO CÓDIGO (2026-11-13, por ver no iPhone; por gravar):** `screens/EscalaScreen.js`
+  — o dia Q1 (56 pt, `RADIUS.sm`; neutro com o número a 15 e o destino; a fita de 5 pt: a cor do tipo, dois serviços em duas
+  (o outro ~31 % à esquerda, um fio entre os dois), a rotação junta as fitas por cima do espaço (os cantos de baixo do lado da
+  junção ficam retos), férias e baixa a tracejado, feito = fita `C.round` e número cinzento; hoje = quadrado a tinta, o
+  escolhido um contorno). **Tocar num dia:** `HomeTop` ganhou `compact` (só a fila das pílulas), o mês fica só na semana do
+  dia, em cima, e sobe a folha do dia por baixo (`Animated` translateY, 320 ms a subir · 300 ms a descer, sem animação com
+  movimentos reduzidos; sombra `SHADOW.sm` virada para cima). Na folha: pega (toque = voltar ao mês), o cabeçalho de sempre
+  (‹ › ✕), as linhas e o "Ver tudo" B. Tocar noutro dia da semana troca o dia; tocar no dia aberto fecha; **deslizar na semana
+  muda de semana** (acrescento meu, o mesmo dia 7 dias depois/antes); **puxar a folha para baixo pela pega ou pelo cabeçalho
+  fecha** (como fazia a janela nativa; abaixo de 90 pt ou depressa); tocar num dia a meio da descida faz a folha voltar a subir.
+  Saiu a janela `pageSheet` (`Modal`). A legenda das cores (L2) mantém-se; a amostra das férias passou a tracejada. `npm test`
+  verde (37), guardião sem dívida nova, `test:escala` 99, pacote iOS gera. **Por fazer:** o botão de voltar do Android não fecha
+  a folha (a janela fechava; Android não está montado).
+  **Ver no iPhone:** o mês na Q1 (a fita, dois serviços, a rotação junta, férias a tracejado, os dias feitos, hoje a tinta) ·
+  tocar num dia (o topo recolhe, a semana em cima, a folha sobe sem saltos) · tocar noutro dia da semana · deslizar na folha
+  (dia), na semana (semana) e na grelha (mês) · puxar a folha para baixo e largar a meio (volta) ou em baixo (fecha) · a pega e
+  o ✕ · re-tocar na aba com a folha aberta · abrir um serviço e deslizar dentro dele · com movimentos reduzidos · VoiceOver.
+  **Os próximos dias no Início (pedido na mesma escolha):** esboço `design/inicio-a-seguir.html` (Mobbin: Outlook, Google
+  Calendar, Runna, Structured, Partiful, Polarsteps), dentro das regras do Início (dois cartões grandes, nada se repete, sem
+  lista de linhas), em dois estados: **A** dentro do cartão "A seguir", três dias por baixo de um fio (folgas e férias seguidas
+  juntam-se) · **B** a semana em quadrados Q1 com a hora do report · **C** cartões pequenos que deslizam. Medido (390 × 844):
+  antes do report só a A cabe (sobram 7 pt; B faltam 51, C 59); na folga cabem as três (A 97, B 53, C 46). Recomendei **A**.
+  **ESCOLHIDA pelo Nuno: C** ("na A não dá para distinguir esses dias" — os dias herdam a cor do cartão onde estão; antes do
+  report a folga, a assistência e a formação ficavam a salva, a cor do repouso: contrariava o mapa das cores). Aceite que antes
+  do report a fila fica abaixo da dobra (a folha do Início já desliza; o 1.º cartão vê-se inteiro). **JÁ NO CÓDIGO (por ver no
+  iPhone; por gravar), com os três acertos:** título "Próximos dias" (não repete o "A seguir"), cartões de 132 × ≥ 84 pt, até 7
+  dias depois de hoje. `data/homeCards.js` — entradas `ahead` (os 7 dias: serviços pela hora + ausência) e `aheadLast` (o último
+  dia da escala), saída `{ t:'days' }`: começa depois do que os cartões dizem (o serviço do topo, o seguinte e o que um cartão
+  abra), junta folgas, férias e baixa seguidas ("seg 16–17 · 2 dias"), acaba no último dia da escala (vazio depois disso não é
+  folga), o 2.º serviço por escrito ("e Standby Casa 09:00"), ida e volta ("LIS → FNC" + "ida e volta"); só com alguma coisa
+  além de folgas; não nas férias, baixa, fecho nem configuração; é o último da folha. Golden `test:homecards` 251 → 262.
+  `components/HomeCards.js` · `Days` (a fila sai das margens; folga/férias a tracejado sem cor; "Escala ›" abre a Escala).
+  `screens/HomeScreen.js` dá os dias (`brief` + `orderServices`); tocar num cartão abre o dia na Escala com a folha subida
+  (`escalaDay` → `flashDuty`). `npm test` verde, guardião sem dívida nova, pacote iOS gera.
+  **RETIRADO no mesmo dia (o Nuno: "acho que devíamos retirar isto do início"; concordei):** contrariava a regra do Início que
+  ele aprovou ("o essencial e dois ou três factos"; "a lista vive na Escala"), ficava abaixo da dobra no estado mais cheio, e a
+  Escala já o cobre (tocar num dia abre a folha; deslizar passa de dia). Saiu tudo: `homeCards` (`ahead`/`days`), os 11 casos do
+  golden (volta a 251), `Days` em `HomeCards.js` e os dias do `HomeScreen` — esses ficheiros estão iguais ao último commit; só
+  fica o `HomeTop compact` da Escala. O esboço `design/inicio-a-seguir.html` fica como registo. Perda aceite: as horas da semana
+  só na Escala (um toque por dia).
   **Ver no iPhone:** o Início (voo a céu, assistência a lilás, o aviso laranja com "!") · a Escala (barras, legenda do Mês, os
   dias feitos com o ponto azul) · o Detalhe de um serviço dentro (sem verde), incerto (pílula tracejada) e com fadiga · os
   Números (barras a tinta, laranja aos 85 %) · as Validades.

@@ -38,7 +38,8 @@ function GainChip({ text }) {
 
 // ── O TOPO ──
 // `rightW` = a largura do que está à direita (o sino, 44; ou a pílula "Exemplo · sair").
-export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l }) {
+// compact: só a fila das pílulas (a Escala com um dia aberto — a semana fica em cima e a folha do dia sobe por baixo).
+export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l, compact = false }) {
   const { width: winW } = useWindowDimensions();
   const AL = a11yLang(l);
   if (!top) return null;
@@ -58,7 +59,7 @@ export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l }) {
   const heroA11y = [top.what, `${g.l1 || ''}${g.unit ? ` ${g.unit}` : ''}`, g.l2, ...(top.facts || []).map((f) => `${f.tone === 'was' ? l('estava', 'was') + ' ' : ''}${f.v} ${f.l}`)].filter(Boolean).join('. ');
   const P2 = top.pill2 && top.pill2.iso ? TouchableOpacity : View;
   return (
-    <View style={s.top}>
+    <View style={[s.top, compact ? s.topCompact : null]}>
       <View style={s.pills}>
         {top.pill ? (
           <View style={[s.pill, { backgroundColor: C.ink, borderColor: C.ink }]} accessible accessibilityLanguage={AL} accessibilityLabel={top.pill.text}>
@@ -76,8 +77,8 @@ export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l }) {
         <View style={s.grow} />
         {right}
       </View>
-      <Text style={[TXT3.what, { color: C.soft }]} numberOfLines={1} maxFontSizeMultiplier={1.15}>{top.what}</Text>
-      <View style={s.hero} accessible accessibilityLanguage={AL} accessibilityLabel={heroA11y}>
+      {compact ? null : <Text style={[TXT3.what, { color: C.soft }]} numberOfLines={1} maxFontSizeMultiplier={1.15}>{top.what}</Text>}
+      {compact ? null : <View style={s.hero} accessible accessibilityLanguage={AL} accessibilityLabel={heroA11y}>
         <View style={{ marginTop: -Math.round(size * GIANT_LINE.trim), marginBottom: -Math.round(size * GIANT_LINE.trim) }}>
           <View style={s.l1Row}>
             <Text style={giantStyle} numberOfLines={1} allowFontScaling={false}>{g.l1}</Text>
@@ -97,7 +98,7 @@ export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l }) {
             ))}
           </View>
         ) : null}
-      </View>
+      </View>}
     </View>
   );
 }
@@ -306,6 +307,7 @@ export function HomeCards({ cards, C, onOpen, l }) {
 // Medidas do esboço (390 × 844): topo 0 20 32 · pílulas 38 · folha com raio 32 e 12 de margem · cartão raio 24, 16 de margem.
 const s = StyleSheet.create({
   top: { paddingHorizontal: SPACE.lgPlus, paddingBottom: SPACE.xxl },
+  topCompact: { paddingBottom: SPACE.lg },
   // A fila tem SEMPRE a altura do sino (44): trocar o sino pela pílula "Exemplo · sair" (38) fazia a página saltar 6 pt (iPhone, 2026-11-11).
   pills: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, paddingTop: SPACE.sm, paddingBottom: SPACE.lg, minHeight: 44 + SPACE.sm + SPACE.lg },
   pill: { height: 38, paddingHorizontal: SPACE.lg, borderRadius: RADIUS.pill, flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, borderWidth: 1.5, flexShrink: 0 },

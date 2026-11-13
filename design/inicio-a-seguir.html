@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · Início · os próximos dias</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* Início · OS PRÓXIMOS DIAS (2026-11-13). O Nuno escolheu "fica o mês" na Escala; o que o mês perde — ler os próximos dias
+   de seguida, com as horas, sem tocar — vem para o Início. Três maneiras, sem quebrar as regras do Início que ele aprovou
+   (design/inicio-cartoes.html): dois cartões grandes no máximo, nada se repete, e NÃO uma lista de linhas ("não às linhas",
+   "não ao bloco em cima, lista em baixo"). Cores do mapa B (céu = voo, lilás-rosado = terra, salva = repouso).
+   Dois estados: antes do report (sexta 13, 17:31) e uma folga (domingo 22, 12:45). Dados de teste, os mesmos da Escala
+   (design/escala-semana.html). iPhone 390 × 844. */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--frame:#04060A;--body:'Hanken','Helvetica Neue',Arial,sans-serif;--signal:#FFB800}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+.lead{max-width:900px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px} .lead h2{font-weight:800;font-size:22px;letter-spacing:-.4px;margin-top:8px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,406px));gap:26px 24px;justify-content:center}
+@media (max-width:1320px){.grid3{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),406px))}}
+.shot{display:flex;flex-direction:column;gap:8px;min-width:0}
+.shot h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase} .shot h3 .rec{margin-left:8px;padding:2px 8px;border-radius:10px;background:#141414;color:#fff;font-size:10px;letter-spacing:.8px}
+.shot p{font-size:13px;line-height:1.45;color:var(--muted);min-height:56px}
+.shot p.m{font-size:12px;min-height:0;font-variant-numeric:tabular-nums}
+.fit{width:100%;position:relative;height:860px}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:20px}
+.note{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.note h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.note ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .note li,.note p{font-size:13px;line-height:1.5;color:var(--muted)} .note b,.note a{color:var(--pfg)}
+
+.ph{width:406px;height:860px;border:8px solid var(--frame);border-radius:52px;overflow:hidden;display:flex;flex-direction:column;transform-origin:top left;
+  --desk:#E3E1DB;--ink:#141414;--soft:#3A3A36;--sheet:#FFFFFF;--neutral:#F1EFEA;--voo:#6DBEFA;--terra:#C3A1BE;--rest:#B4C2A2;--warn:#F0854A;--gain:#0B6E43;
+  --tsub:#5E5E57;--round:rgba(127,127,127,.22);--rule:rgba(20,20,20,.22);background:var(--desk);color:var(--ink)}
+.ic{display:inline-block;flex:none;fill:currentColor}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.scr{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+.tabbar{height:83px;flex:none;background:var(--sheet);padding:5px 12px 22px;display:flex;gap:8px;align-items:center}
+.cap{flex:1;height:56px;border-radius:28px;background:var(--neutral);display:flex;padding:4px;gap:2px}
+.cap .t{flex:1;border-radius:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:var(--tsub);font-weight:700;font-size:11px}
+.cap .t.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(20,20,20,.14)}
+.fab{width:56px;height:56px;border-radius:28px;background:var(--ink);color:var(--sheet);display:flex;align-items:center;justify-content:center;flex:none}
+/* em cima */
+.top{flex:none;padding:0 20px 32px}
+.pills{display:flex;align-items:center;gap:8px;padding:8px 0 16px}
+.pill{height:38px;padding:0 16px;border-radius:19px;display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;border:1.5px solid var(--ink);white-space:nowrap}
+.pill.on{background:var(--ink);color:var(--desk)} .pill.on i{width:7px;height:7px;border-radius:4px;background:var(--signal)}
+.round{margin-left:auto;width:44px;height:44px;border-radius:22px;background:var(--round);display:flex;align-items:center;justify-content:center}
+.what{font-weight:500;font-size:15px;line-height:20px;color:var(--soft)}
+.hero{display:flex;align-items:stretch;gap:16px;margin-top:4px}
+.giant{font-weight:700;font-size:86px;line-height:.9;letter-spacing:-4px;white-space:nowrap} .giant small{font-size:34px;letter-spacing:-1px;margin-left:6px} .giant s{text-decoration:none;opacity:.5}
+.side{border-left:1.5px solid var(--ink);padding-left:16px;display:flex;flex-direction:column;justify-content:center;gap:12px;min-width:0}
+.side b{display:block;font-weight:700;font-size:20px;line-height:22px;white-space:nowrap} .side span{font-weight:500;font-size:11px;color:var(--soft);white-space:nowrap}
+/* a folha e os cartões (os do Início) */
+.sheet{flex:1;min-height:0;margin-top:-16px;border-radius:32px 32px 0 0;background:var(--sheet);padding:12px;display:flex;flex-direction:column;gap:8px}
+.cd{border-radius:24px;padding:16px;flex:none;display:flex;flex-direction:column;gap:12px;color:#141414}
+.cd.voo{background:var(--voo)} .cd.rest{background:var(--rest)} .cd.terra{background:var(--terra)} .cd.neutral{background:var(--neutral)}
+.kind{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;opacity:.72}
+.cd h4{font-weight:800;font-size:22px;line-height:26px;letter-spacing:-.4px;margin-top:2px}
+.sub{font-weight:500;font-size:12px;line-height:16px;opacity:.82}
+.cdTop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.go{width:36px;height:36px;border-radius:18px;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;flex:none}
+.subRow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:-8px;min-height:28px}
+.gainChip{height:28px;padding:0 12px;border-radius:14px;background:#fff;color:var(--gain);font-weight:800;font-size:14px;display:inline-flex;align-items:center;white-space:nowrap;flex:none}
+.cdRow{display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
+.cdRow div b{display:block;font-weight:700;font-size:22px;line-height:24px;white-space:nowrap} .cdRow div span{font-weight:500;font-size:11px;opacity:.82;white-space:nowrap}
+.cdRow .r{text-align:right}
+.dur{height:28px;padding:0 12px;border-radius:14px;background:rgba(255,255,255,.85);display:flex;align-items:center;font-weight:700;font-size:12px;white-space:nowrap}
+.slim{border-radius:24px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex:none;min-height:56px}
+.slim .t b{display:block;font-weight:800;font-size:16px;line-height:20px} .slim .t span{font-weight:500;font-size:12px;opacity:.82}
+.slim .v{font-weight:800;font-size:20px;white-space:nowrap}
+
+/* A · DENTRO DO CARTÃO: "Depois" e três colunas separadas por um fio (como os factos do topo) */
+.after{border-top:1px solid var(--rule);padding-top:10px;display:flex;flex-direction:column;gap:8px}
+.cols{display:flex}
+.cols > div{flex:1;min-width:0;padding:0 10px;border-left:1.5px solid var(--rule)} .cols > div:first-child{border-left:0;padding-left:0}
+.cols .dk{font-weight:800;font-size:11px;letter-spacing:.6px;text-transform:uppercase;opacity:.72;display:block}
+.cols b{display:block;font-weight:800;font-size:15px;line-height:19px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cols span.s{display:block;font-weight:600;font-size:11px;line-height:15px;opacity:.82}
+.cols .free b{opacity:.6}
+
+/* B · A SEMANA: os sete dias seguintes com o quadrado calmo da Escala (Q1), com a hora */
+.secH{display:flex;align-items:baseline;justify-content:space-between;padding:6px 4px 0}
+.secH b{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub)} .secH a{font-weight:700;font-size:12px;color:var(--ink);text-decoration:none}
+.wk7{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;flex:none}
+.wk7 .h{text-align:center;font-weight:800;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--tsub)}
+.c7{height:76px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:6px 0 0;overflow:hidden}
+.c7.has{background:var(--neutral)}
+.c7 .n{font-weight:700;font-size:15px;line-height:20px}
+.c7 .code{font-weight:800;font-size:11px;letter-spacing:.6px;line-height:13px;color:var(--soft);display:flex;align-items:center;gap:2px}
+.c7 .tm{font-weight:700;font-size:11px;line-height:13px;color:var(--ink);font-variant-numeric:tabular-nums}
+.c7 .strip{align-self:stretch;height:5px;display:flex;gap:2px}
+.c7 .strip i{flex:1} .c7 .strip i.o{flex:.45}
+.c7 .dash{align-self:stretch;height:5px;background:repeating-linear-gradient(90deg,rgba(127,127,127,.42) 0 4px,transparent 4px 7px)}
+
+/* C · CARTÕES QUE DESLIZAM: um cartão pequeno por dia, na cor do tipo */
+.car{display:flex;gap:8px;overflow-x:auto;margin:0 -12px;padding:0 12px 2px;scrollbar-width:none;flex:none} .car::-webkit-scrollbar{display:none}
+.mc{flex:none;width:126px;min-height:100px;border-radius:20px;padding:12px;display:flex;flex-direction:column;gap:4px;color:#141414}
+.mc.voo{background:var(--voo)} .mc.terra{background:var(--terra)} .mc.free{background:#fff;border:1.5px dashed rgba(127,127,127,.4)} .mc.abs{background:#fff;border:1.5px dashed rgba(127,127,127,.6)}
+.mc .dk{font-weight:800;font-size:11px;letter-spacing:.6px;text-transform:uppercase;opacity:.72}
+.mc b{font-weight:800;font-size:16px;line-height:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mc span.s{font-weight:600;font-size:12px;line-height:16px;opacity:.82;margin-top:auto}
+.mc.free b,.mc.abs b{color:var(--tsub)}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>Início · os próximos dias</h1>
+    <p>A Escala ficou o mês. O que o mês perde — <b>ler os próximos dias de seguida, com as horas, sem tocar</b> — vem para o Início. Três maneiras, todas dentro das regras do Início que aprovaste: <b>dois cartões grandes no máximo, nada se repete e nada de lista de linhas</b> ("não às linhas"). Os dias são os mesmos da Escala (dados de teste).</p>
+    <p>Duas filas: <b>antes do report</b> (sexta 13, 17:31 — o estado mais cheio) e <b>uma folga</b> (domingo 22, 12:45). Por baixo de cada ecrã, a medida: se cabe sem deslizar.</p>
+  </div>
+  <div class="lead"><h2>Antes do report · sexta 13</h2></div>
+  <section class="grid3" id="g1"></section>
+  <div class="lead"><h2>Folga · domingo 22</h2></div>
+  <section class="grid3" id="g2"></section>
+  <section class="notes">
+    <div class="note"><h3>A minha recomendação: A</h3><ul>
+      <li><b>A · Dentro do cartão "A seguir"</b> é a única que cabe nos dois estados sem deslizar, porque não acrescenta cartão nenhum — no estado mais cheio (antes do report) sobram só 7 pt; na folga, 97. O cartão do que vem a seguir ganha, por baixo de um fio, os três dias seguintes, como os factos do topo. Responde a "e depois?" com o dia, o quê e a hora; folgas e férias seguidas juntam-se num só ("qua 25–26 · Férias"). Mostra só três dias.</li>
+      <li><b>B · A semana</b> é a mesma peça da Escala (o quadrado calmo com a fita) com a hora do report por baixo do destino: mostra 7 dias e a forma da semana (as folgas veem-se). Mas é mais um bloco: antes do report faltam 51 pt (desliza), e repete o dia que o cartão já diz (sábado 14, terça 24).</li>
+      <li><b>C · Cartões que deslizam</b> é a mais "cartões de cor" e leva a semana toda para o lado, mas o que fica fora do ecrã (2 a 4 cartões) não se lê sem deslizar; antes do report faltam 59 pt.</li>
+    </ul></div>
+    <div class="note"><h3>Em todas</h3><ul>
+      <li><b>Nada se repete</b> na A e na C: o que já está nos cartões de cima (o report de sábado na pernoita, o próximo serviço na folga) não volta a aparecer; os dias começam depois. A B mostra 7 dias seguidos a partir de amanhã, por isso repete esse dia.</li>
+      <li><b>Tocar num dia</b> abre esse dia na Escala, com a folha subida.</li>
+      <li><b>Dois serviços no dia</b> dizem o outro por escrito ("e SBY 09:00"), como decidido para a Escala (1B).</li>
+      <li>Sem € nos próximos dias: o dinheiro fica no cartão do serviço e no total do mês.</li>
+    </ul></div>
+    <div class="note"><h3>O que veio do Mobbin</h3><ul>
+      <li><b>A:</b> <a href="https://mobbin.com/screens/25ccb821-186c-4f31-bbed-f434469e987c">Outlook</a> e <a href="https://mobbin.com/screens/b40f3cc5-6b2a-4e00-b54a-15cff92545dd">Google Calendar</a> — os eventos seguintes dentro do mesmo cartão do dia.</li>
+      <li><b>B:</b> <a href="https://mobbin.com/screens/be9b0bcc-6c28-4abf-bde0-6b046df1207d">Runna</a> e <a href="https://mobbin.com/screens/26fae4e6-2163-4d93-8c47-5bd9839cb369">Structured</a> — a tira da semana com o tipo de cada dia.</li>
+      <li><b>C:</b> <a href="https://mobbin.com/screens/77c41099-7352-4aa4-8618-49569c501fdd">Partiful</a> ("Next Up") e <a href="https://mobbin.com/screens/a9f9cb42-f44f-4e01-b377-de459ffff83d">Polarsteps</a> — cartões pequenos que deslizam para o lado.</li>
+    </ul></div>
+  </section>
+</div>
+<script>
+(function(){
+  var P = { cal:'<path d="M7 2h2.6v3H7V2zm7.4 0H17v3h-2.6V2zM4 5h16v3.6H4V5zm0 5h16v10a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 20V10zm3.4 3v2.8h2.8V13H7.4zm5 0v2.8h2.8V13h-2.8z"/>',
+    home:'<path d="M12 3l9.2 8.2h-2.5V21h-4.9v-6.4h-3.6V21H5.3v-9.8H2.8L12 3z"/>', stats:'<path d="M4 12.5h3.8V20H4v-7.5zM10.1 5.5h3.8V20h-3.8V5.5zM16.2 9.5H20V20h-3.8V9.5z"/>',
+    user:'<path d="M12 3.4a3.7 3.7 0 1 1 0 7.4 3.7 3.7 0 0 1 0-7.4zM4.8 20.2c0-4 3.2-6.6 7.2-6.6s7.2 2.6 7.2 6.6a.8.8 0 0 1-.8.8H5.6a.8.8 0 0 1-.8-.8z"/>', plus:'<path d="M10.4 4h3.2v6.4H20v3.2h-6.4V20h-3.2v-6.4H4v-3.2h6.4V4z"/>',
+    chev:'<path d="M8.6 4.2 16.4 12l-7.8 7.8-1.9-1.9 5.9-5.9-5.9-5.9z"/>', bell:'<path d="M12 2.2a2.1 2.1 0 0 0-2.1 2.1v.5A6 6 0 0 0 6 10.4V15l-1.8 1.8v1.3h15.6v-1.3L18 15v-4.6a6 6 0 0 0-3.9-5.6v-.5A2.1 2.1 0 0 0 12 2.2zM9.8 19.5a2.2 2.2 0 0 0 4.4 0z"/>',
+    share:'<path d="M17 3a2.8 2.8 0 1 1-2.6 3.8L8.6 10a2.8 2.8 0 0 1 0 4l5.8 3.2A2.8 2.8 0 1 1 13.6 19l-5.8-3.3a2.8 2.8 0 1 1 0-7.4l5.8-3.2A2.8 2.8 0 0 1 17 3z"/>',
+    moon:'<path d="M20 15.3A8.5 8.5 0 0 1 8.7 4a8.5 8.5 0 1 0 11.3 11.3z"/>' };
+  function ic(n, s){ return '<svg class="ic" width="'+s+'" height="'+s+'" viewBox="0 0 24 24" aria-hidden="true">'+P[n]+'</svg>'; }
+  function tabbar(){ return '<nav class="tabbar"><div class="cap">'+[['home','Início'],['cal','Escala'],['stats','Números'],['user','Perfil']].map(function(x,i){ return '<div class="t'+(i===0?' on':'')+'">'+ic(x[0],22)+'<span>'+x[1]+'</span></div>'; }).join('')+'</div><span class="fab">'+ic('plus',22)+'</span></nav>'; }
+  function top(a, b, what, giant, f1, f2){
+    var fact = function(f){ return '<div><b>'+f[0]+'</b><span>'+f[1]+'</span></div>'; };
+    return '<div class="top"><div class="pills"><span class="pill on">'+(a[1]?'<i></i>':'')+a[0]+'</span><span class="pill">'+b+'</span><span class="round">'+ic('bell',20)+'</span></div><div class="what">'+what+'</div><div class="hero"><div class="giant">'+giant+'</div><div class="side">'+fact(f1)+fact(f2)+'</div></div></div>';
+  }
+  function card(color, kind, title, sub, a, dur, b, icon, gain, extra){
+    return '<div class="cd '+color+'"><div class="cdTop"><div><span class="kind">'+kind+'</span><h4>'+title+'</h4></div><span class="go">'+ic(icon||'chev',16)+'</span></div>'+
+      '<div class="subRow"><span class="sub">'+sub+'</span>'+(gain?'<span class="gainChip">'+gain+'</span>':'')+'</div>'+
+      '<div class="cdRow"><div><b>'+a[0]+'</b><span>'+a[1]+'</span></div><span class="dur">'+dur+'</span><div class="r"><b>'+b[0]+'</b><span>'+b[1]+'</span></div></div>'+(extra||'')+'</div>';
+  }
+  function slim(color, a, b, v){ return '<div class="slim '+color+'" style="background:var(--'+color+')"><div class="t"><b>'+a+'</b><span>'+b+'</span></div><span class="v">'+v+'</span></div>'; }
+  var M = ' '+ic('moon',11);
+
+  // ── os próximos dias de cada estado (depois do que os cartões já dizem) ──
+  // k: voo · terra · free (folga) · abs (férias) ; code e tm para a semana (B); t, s para A e C
+  var NEXT1 = [ // antes do report, sexta 13: os cartões já dizem o voo de hoje e a pernoita até ao report de sábado 14
+    { d:'sáb 14', n:14, k:'voo', code:'OPO', tm:'09:40', t:'OPO → LIS', s:'report 09:40', inCards:true },
+    { d:'dom 15', n:15, k:'free', t:'Folga', s:'' },
+    { d:'seg 16', n:16, k:'terra', code:'SBY', tm:'06:00', t:'Assistência', s:'em casa · 06:00' },
+    { d:'ter 17', n:17, k:'terra', code:'FRM', tm:'08:00', t:'Formação', s:'08:00–17:00' },
+    { d:'qua 18', n:18, k:'free', t:'Folga', s:'' },
+    { d:'qui 19', n:19, k:'voo', code:'LGW', tm:'07:10', t:'LIS → LGW', s:'report 07:10' },
+    { d:'sex 20', n:20, k:'voo', code:'OPO', tm:'18:00', ns:1, two:'terra', t:'LIS → OPO', s:'report 18:00 · e SBY 09:00' } ];
+  var NEXT2 = [ // folga, domingo 22: o cartão já diz o próximo serviço (terça 24)
+    { d:'seg 23', n:23, k:'free', t:'Folga', s:'' },
+    { d:'ter 24', n:24, k:'voo', code:'BCN', tm:'05:50', t:'LIS → BCN', s:'report 05:50', inCards:true },
+    { d:'qua 25', n:25, k:'abs', code:'FÉR', t:'Férias', s:'' },
+    { d:'qui 26', n:26, k:'abs', code:'FÉR', t:'Férias', s:'' },
+    { d:'sex 27', n:27, k:'voo', code:'OPO', tm:'18:00', ns:1, two:'terra', t:'LIS → OPO', s:'report 18:00 · e SBY 09:00' },
+    { d:'sáb 28', n:28, k:'voo', code:'OPO', tm:'09:40', t:'OPO → LIS', s:'report 09:40' },
+    { d:'dom 29', n:29, k:'free', t:'Folga', s:'' } ];
+  // os dias seguidos do mesmo tipo sem serviço (folgas, férias) juntam-se num só ("qua 25–26 · Férias")
+  function blocks(list){
+    var out = [];
+    list.filter(function(x){ return !x.inCards; }).forEach(function(x){
+      var last = out[out.length - 1];
+      if (last && (x.k === 'free' || x.k === 'abs') && last.k === x.k && last.n2 + 1 === x.n) { last.n2 = x.n; last.d = last.d.split(' ')[0] + ' ' + last.n + '–' + x.n; last.s = (last.n2 - last.n + 1) + ' dias'; return; }
+      out.push(Object.assign({ n2: x.n }, x));
+    });
+    return out;
+  }
+  // only the days AFTER what the cards already said (the cards cover up to the first inCards day)
+  function after(list){ var i = -1; list.forEach(function(x, j){ if (x.inCards) i = j; }); return list.slice(i + 1); }
+
+  // A · "Depois" dentro do cartão A seguir: três colunas
+  function depois(list){
+    var b = blocks(after(list)).slice(0, 3);
+    return '<div class="after"><div class="cols">'+b.map(function(x){
+      return '<div class="'+(x.k === 'free' || x.k === 'abs' ? 'free' : '')+'"><span class="dk">'+x.d+'</span><b>'+x.t+(x.ns ? M : '')+'</b>'+(x.s ? '<span class="s">'+x.s.replace(' · e ', '<br>e ')+'</span>' : '')+'</div>';
+    }).join('')+'</div></div>';
+  }
+  // B · a semana (os 7 dias a partir de amanhã), o quadrado calmo da Escala com a hora
+  function semana(list){
+    var col = function(k){ return k === 'voo' ? 'var(--voo)' : 'var(--terra)'; };
+    return '<div class="secH"><b>Os próximos 7 dias</b><a>Escala ›</a></div><div class="wk7">'+list.map(function(x){ return '<span class="h">'+x.d.split(' ')[0]+'</span>'; }).join('')+
+      list.map(function(x){
+        var has = x.k !== 'free';
+        var strip = x.k === 'abs' ? '<i class="dash"></i>' : has ? '<span class="strip">'+(x.two ? '<i class="o" style="background:'+col(x.two)+'"></i>' : '')+'<i style="background:'+col(x.k)+'"></i></span>' : '<span class="strip"></span>';
+        return '<div class="c7'+(has ? ' has' : '')+'"><span class="n">'+x.n+'</span>'+(x.code ? '<span class="code">'+x.code+(x.ns ? ic('moon',9) : '')+'</span>' : '<span></span>')+'<span class="tm">'+(x.tm || '')+'</span>'+(x.k === 'abs' ? '<span class="dash"></span>' : strip)+'</div>';
+      }).join('')+'</div>';
+  }
+  // C · cartões pequenos que deslizam (do dia a seguir ao que os cartões dizem)
+  function cartoes(list){
+    var b = blocks(after(list));
+    return '<div class="secH"><b>A seguir na escala</b><a>Escala ›</a></div><div class="car">'+b.map(function(x){
+      return '<div class="mc '+x.k+'"><span class="dk">'+x.d+'</span><b>'+x.t+(x.ns ? M : '')+'</b>'+(x.s ? '<span class="s">'+x.s.replace(' · e ', '<br>e ')+'</span>' : '')+'</div>';
+    }).join('')+'</div>';
+  }
+
+  // ── os dois estados ──
+  var T1 = top(['Hoje',1],'EZY1873','Report às','18:00<br>LIS',['29 min','falta'],['07:00','calços até · sáb']);
+  var DAY1 = card('voo','Dia de serviço · 1 setor · pernoita','LIS → OPO'+M,'PSV 3:10 de 13:00 · nos limites',['18:45','parte'],'55 min',['19:40','chega'],'share');
+  function NS1(extra){ return card('rest','A seguir','Pernoita no Porto','sem hotel guardado · mínimo 10 h',['20:10','fim de serviço'],'13 h 30',['09:40','report · sáb 14'],null,'+51,30 €',extra); }
+  var T2 = top(['Folga',0],'domingo 22','Próximo serviço daqui a','2<small>dias</small><br><s>livre</s>',['terça 24','até lá'],['31 h','de 60 em 7 dias']);
+  function NX2(extra){ return card('voo','Próximo serviço','LIS → BCN → LIS','terça 24 · 2 setores',['05:50','report'],'8 h 30',['14:20','chega'],null,null,extra); }
+  var MON2 = slim('neutral','Novembro','estimado · bruto','2 431,50 €');
+
+  var OPTS = [
+    ['A · Dentro do cartão "A seguir"', true, 'O cartão do que vem a seguir ganha, por baixo de um fio, <b>os três dias seguintes</b>, separados por fios como os factos do topo. Não acrescenta cartão; folgas e férias seguidas juntam-se.',
+      DAY1 + NS1(depois(NEXT1)), NX2(depois(NEXT2)) + MON2],
+    ['B · A semana', false, 'Por baixo dos cartões, <b>os próximos 7 dias</b> com o quadrado calmo da Escala (Q1) e a <b>hora do report</b> por baixo do destino. Vê-se a forma da semana; tocar num dia abre-o na Escala.',
+      DAY1 + NS1() + semana(NEXT1), NX2() + MON2 + semana(NEXT2)],
+    ['C · Cartões que deslizam', false, 'Por baixo dos cartões, <b>um cartão pequeno por dia</b>, na cor do tipo, a deslizar para o lado; folgas e férias a tracejado. Os que ficam fora do ecrã leem-se a deslizar.',
+      DAY1 + NS1() + cartoes(NEXT1), NX2() + MON2 + cartoes(NEXT2)]
+  ];
+  function phone(t, sheet, clock){ return '<div class="ph"><div class="status"><span>'+clock+'</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="scr">'+t+'<div class="sheet">'+sheet+'</div></div>'+tabbar()+'</div>'; }
+  function shot(o, sheet, t, clock){ return '<div class="shot"><h3>'+o[0]+(o[1] ? '<span class="rec">RECOMENDO</span>' : '')+'</h3><p>'+o[2]+'</p><div class="fit">'+phone(t, sheet, clock)+'</div><p class="m"></p></div>'; }
+  document.getElementById('g1').innerHTML = OPTS.map(function(o){ return shot(o, o[3], T1, '17:31'); }).join('');
+  document.getElementById('g2').innerHTML = OPTS.map(function(o){ return shot(o, o[4], T2, '12:45'); }).join('');
+
+  function run(){
+    document.querySelectorAll('.fit').forEach(function(f){ var k = Math.min(1, f.clientWidth / 406); f.firstElementChild.style.transform = 'scale('+k+')'; f.style.height = (f.firstElementChild.offsetHeight*k)+'px'; });
+    document.querySelectorAll('.ph').forEach(function(ph){
+      var scr = ph.querySelector('.scr'), sh = ph.querySelector('.sheet'), kz = ph.getBoundingClientRect().width / ph.offsetWidth, last = sh.lastElementChild, m = ph.closest('.shot').querySelector('.m');
+      var hero = ph.querySelector('.hero'), gi = ph.querySelector('.giant'), z = 86;
+      while (hero.scrollWidth > hero.clientWidth && z > 60) { z -= 2; gi.style.fontSize = z+'px'; gi.style.letterSpacing = (-z*0.046)+'px'; }
+      var over = Math.round((last.getBoundingClientRect().bottom - scr.getBoundingClientRect().bottom) / kz + 12);
+      var cut = 0; ph.querySelectorAll('.cols b, .mc b, .c7 .code, .c7 .tm, .cols span.s').forEach(function(e){ if (e.scrollWidth > e.clientWidth + 1) cut++; });
+      var hidden = [].filter.call(ph.querySelectorAll('.mc'), function(c){ return c.getBoundingClientRect().right > ph.getBoundingClientRect().right - 8 * kz; }).length;
+      m.textContent = (over > 0 ? 'NÃO CABE sem deslizar: faltam ' + over + ' pt' : 'Cabe sem deslizar · sobram ' + (-over) + ' pt') + ' · textos cortados: ' + cut + (ph.querySelector('.mc') ? ' · cartões fora do ecrã: ' + hidden : '');
+      m.style.color = over > 0 ? '#C6362B' : '#55554F';
+    });
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ setTimeout(run, 30); }); else run();
+  addEventListener('resize', run);
+})();
+</script>
+</body>
+</html>
