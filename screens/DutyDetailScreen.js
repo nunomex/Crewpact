@@ -456,6 +456,9 @@ export default function DutyDetailScreen({ route, navigation }) {
               (!sbAccD && over && d.extRefused === '2in7') && { k: l('Prolongamento (205(d))', 'Extension (205(d))'), v: l('3.º em 7 dias — o limite é 2', '3rd in 7 days — the limit is 2'), color: PELE.red },
               // "A lei é que manda": entre o garantido e o possível, a lei depende de um dado que falta → incerto.
               (!sbAccD && !over && d.fdp.uncertain) && { k: l('Incerto', 'Uncertain'), v: l(`falta ${unknownsText(d.fdp.unknowns, 'pt')}`, `missing ${unknownsText(d.fdp.unknowns, 'en')}`), color: PELE.warn },
+              // … e quando EXCEDE nas duas leituras o máximo continua a ter duas pontas: diz-se porquê (visto no iPhone a
+              // 2026-11-13: "06:00–10:00" sem explicação, com 7 h declaradas à mão contra as 11 h da escala).
+              (!sbAccD && over && d.fdp.exact === false && (d.fdp.unknowns || []).length > 0) && { k: l('Dois máximos', 'Two maximums'), v: l(`falta ${unknownsText(d.fdp.unknowns, 'pt')}`, `missing ${unknownsText(d.fdp.unknowns, 'en')}`), color: PELE.warn },
               (hasEnd && d.rest && d.rest.restStr) && { k: l('Repouso mínimo após', 'Min rest after'), v: d.rest.restStr, prova: provaFor('repouso', provaCtx) },
               fat && { k: l('Fadiga', 'Fatigue'), node: fatPill },
             ]} />
