@@ -310,4 +310,77 @@ O que muda em relação à §2 ("branco · preto · amarelo, plana, hairline"):
   (3,24 para 3 pedidos em texto muito grande). Medidos na construção: o rótulo do cartão a 80 % ≥ 4,8 em todas as cores, de
   dia e de noite; as abas inativas 5,68 (à noite 5,70); o ganho à noite fora da pílula (#7BE3B0) 11,6.
 
+### Peças escolhidas a 2026-11-13 (das 57 referências de `referencias/Para a app/`)
+
+**No código (2026-11-13, por ver no iPhone):** a Escala em AGENDA (esboços `design/escala-agenda.html` — A2 + o ano em
+meses da A1 — e `design/escala-passado.html` — D; a página de `escala-cartoes.html` foi substituída no mesmo dia, depois de
+vista no iPhone). Peças novas: **B14 · a barra do dia** (`components/DayBar.js`: a data à esquerda, o título, a lua, os dois
+pontos, a hora ou o que rendeu; hoje e o que vem na cor do tipo; **o que já passou a cinzento (neutro) com um ponto da cor do
+tipo** — escolha D, o título a 16:1 e o € a 6,3:1) · **B15 · o ano em meses** (12 mosaicos: n.º de dias com serviço; o atual
+com contorno; sem escala a tracejado) · **a linha das folgas** (tracejada; "Folga" só entre serviços, senão "Sem serviços na
+escala"). B1 (a célula, com os dois pontos — escolha C) vive na grelha do botão do calendário; B2 nas pernas do cartão grande
+de `components/HomeCards.js`; B3 (`components/DayRuler.js`) fica para o Detalhe do serviço; B4 no mês sem escala. O topo da
+Escala é o `HomeTop` do Início. Tokens: `TXT3.month`. O que vai para onde: `data/escalaDay.js`, golden `npm run test:escala`.
+
+O índice, imagem a imagem, está em `referencias/Para a app/README.md`. O Nuno escolheu A1–A4, B1–B4, B7–B12 e M1–M4, e a
+B10 com as cores da origem. Ficam para depois: **B5** (a semana em acordeão, modo novo da Escala), **B6** (o resultado de
+vários dias escolhidos na grelha — é número novo: golden primeiro) e **B13** (o ano em meses e o mês em pontos, nas
+Estatísticas). Aqui fica a anatomia; as medidas fecham-se no esboço de cada página (Mobbin primeiro), e cada peça entra
+no código quando migra a primeira página que a usa.
+
+**Regras**
+- **A1 · Dinheiro.** Em todo o € grande os cêntimos ficam visíveis, mais pequenos e mais claros (como o ",50 €" do Início
+  em `TXT3.unit`). Nunca se abrevia ("56k") nem se arredonda.
+- **A2 · ↗ só quer dizer "abre fora da app"** (fonte oficial, Maps, eCrew). Dentro da app abre o cartão inteiro; nas linhas
+  de lista, ›.
+- **A3 · A cor é do tipo.** Nunca a escolhe o utilizador, nunca há uma cor por mês, por dia ou por posição, e nunca vai
+  sozinha: o tipo diz-se também em texto (etiqueta, legenda). Medido (WCAG 2.1, 2026-11-13): de dia, areia, salva e lilás
+  contra a folha branca dão 1,75–1,88, o neutro 1,15, e as três entre si 1,03–1,08 (só a matiz as separa); à noite,
+  contra a folha 7,2–8,0 e entre si 1,02–1,12.
+- **A4 · Ficam sempre de fora:** vidro e desfoque, degradés, néon, fundo escuro de dia, letra fina, avatares, dados de
+  saúde.
+
+**Peças**
+- **B1 · A célula do mês.** Quadrado de cantos redondos com o fundo na cor do tipo e a etiqueta em `TXT.tag` (11,
+  decidido a 2026-11-03); hoje = número num círculo a tinta, escolhido = contorno a tinta, dia vazio em branco (como em
+  `design/escala-v2.html`). → Escala.
+- **B2 · A perna.** As duas horas grandes (`TXT3.cardNum`), com o código e a cidade por baixo (`TXT3.cardNumLbl`);
+  entre as duas, um fio com ✈ e a duração no selo do intervalo (`TXT3.dur`) — a peça das duas horas do cartão do Início.
+  O número do voo numa faixa por cima; a hora Zulu só quando difere da local. (Corrigido a 2026-11-13 com o esboço da
+  Escala: o Nuno aprovou as horas grandes.) → folha do dia, Detalhe do serviço, imagem de partilha.
+- **B3 · A régua das 24 h.** 00:00–24:00 com o serviço (apresentação → fim) na cor do tipo e o repouso. A faixa da WOCL só
+  se desenha quando o motor a devolve para esse serviço (depende do fuso de aclimatação, ORO.FTL.105); a régua não calcula
+  nada. Como se mostra o que passa a meia-noite decide-se no esboço. → folha do dia, Detalhe do serviço.
+- **B4 · O estado vazio.** Mosaico de contorno tracejado com uma frase e uma ação ("Sem serviços em dezembro · Ler a
+  escala"). → Escala, Números, Hotéis.
+- **B7 · A linha de lista com o tipo.** Quadradinho com o ícone na cor do tipo · título · linha de data ou motivo · valor
+  à direita. Nas listas datadas, a data grande na coluna da esquerda e o mês como eyebrow. → alterações da importação,
+  eventos dos Extras, Disrupção, parcelas dos Números.
+- **B8 · O fim da importação.** Folha com um selo redondo, uma frase com os números ("Escala lida · 23 serviços · 2
+  alterações") e um só botão (`PrimaryButton`). → importação.
+- **B9 · A barra do limite.** Eyebrow com a janela ("28 DIAS") · o valor ("62:15") com o máximo pequeno a cinzento
+  ("/100 h") · barra a tinta · "faltam 37:45" (o que falta, nunca percentagem — `referencias/limites/`, 2026-11-03). Fica
+  laranja só com o estado que o motor já devolve, nunca com um limiar escolhido no desenho. Num "Incerto", a palavra no
+  lugar do valor e as duas pontas. → Números (limites FTL acumulados), Validades.
+- **B10 · O € do mês em barra.** Barra empilhada das parcelas; cada parcela tem o valor em texto na legenda (ponto ·
+  rótulo · € com cêntimos) e há uma fenda entre parcelas. O certo vai a cheio; o que é só máximo vai em contorno (o "certo
+  e máximo" do acordo dos pilotos). Cores da origem (escolha do Nuno): per diem e setores = areia, dias em terra = lilás,
+  base e extras = neutro. **Por resolver no esboço dos Números, com 2–3 soluções medidas:** o neutro sobre a folha branca
+  dá 1,15, e a base — quase sempre a parcela maior — desaparece. → Números.
+- **B11 · O seletor com pílula deslizante.** Cápsula com a escolhida numa pílula (a mesma da barra de abas); pode abrir um
+  2.º nível dentro da escolhida. → Números (Mês | Ano; dentro de Ano: civil · 12 meses), Estatísticas.
+- **B12 · As linhas do Perfil.** Agrupadas em cartões brancos (`RADIUS.xxl`) com fios; ícone num círculo neutro
+  (`CARD.neutral`) · rótulo · valor à direita · › ou interruptor ou "Mudar"; secções com eyebrow. Leva a pergunta do SNC
+  reforçado (sim / não / não sei, por ano) e a qualificação LTC / TRI / TRE, e o cartão apagado com "EM BREVE" das
+  companhias que ainda não estão (o mesmo texto no Perfil e na entrada). → Perfil, entrada.
+
+**Movimento** (`Animated` de base, só `transform` e `opacity`, sempre com o ramo de movimentos reduzidos; durações das
+linhas do `motion-design-system.md` §3)
+- **M1** O Detalhe abre como ecrã empilhado com o cabeçalho na cor do cartão tocado: a continuidade faz-se pela cor (o
+  zoom do cartão até ao ecrã ficou para o dev build a 2026-11-03).
+- **M2** Os algarismos da contagem do Início rolam quando mudam (180–260 ms); com movimentos reduzidos, trocam.
+- **M3** Um cartão que passa a laranja muda por cruzamento de duas camadas em opacidade (260 ms), não num salto; com
+  movimentos reduzidos, troca.
+- **M4** A pílula do seletor desliza em 220 ms, out(cubic); com movimentos reduzidos, salta.
+
 O guardião (`test:design`) continua a valer: a migração de cada ecrã baixa o roquete, nunca o sobe.

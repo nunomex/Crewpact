@@ -7,6 +7,12 @@ não se copiam imagens, textos nem marcas.
   GitHub. Se faltarem noutra máquina, abrem-se pelos links abaixo.
 - Coleção no Mobbin (privada, só o Nuno vê): https://mobbin.com/collections/f3bf6d11-9a73-49d0-afee-61b3e57755b8
 
+## Para a app/ — juntas pelo Nuno a 2026-11-13 (57 imagens, sem link)
+
+Referências para o layout das páginas que faltam e para o sistema de desenho, lidas pela regra "uma só app" (a
+linguagem é a do Início 3.0). O índice, imagem a imagem, com o que se aproveita e o que fica de fora:
+[`Para a app/README.md`](Para%20a%20app/README.md).
+
 ## servico-completar/ — escolhidas a 2026-11-08
 
 **O serviço: o que vem do calendário só se lê; o que a lei precisa e o calendário não traz, completa-se** (o "Editar serviço" sai):
@@ -154,6 +160,16 @@ círculo cheio** (opção 2):
 Medição que levou a esta escolha (2026-11-03, fontes da app): "folga" nos dias vazios a 1,78:1; hoje = borda
 amarela a 1,73:1 (um indicador pede 3:1); os 5 tons pastel dos tipos a 1,05–1,31; o código a 11 pt cabe
 (25,9 px em 33,6 úteis a 375 px), "2× LGW" não (42,9 px).
+
+**Ronda 3 — direção 3.0, peças B1 · B2 · B3 (escolhidas a 2026-11-13; regras em `docs/design-system.md` §14):**
+
+| Ficheiro | App | O que se tira | Mobbin |
+|---|---|---|---|
+| `grelha-faixa-clue.webp` | Clue | célula com o fundo da cor do tipo; os dias seguidos juntam-se numa faixa (a rotação lê-se como uma peça); escolhido com contorno escuro; folha com pega por baixo | https://mobbin.com/screens/785854fd-ae8c-44a4-afce-01dded284dd0 |
+| `perna-selo-qantas.webp` | Qantas | "14:05 ── ✈ 15h 25min ── 12:30": a duração numa pílula em cima do fio (o nosso selo do intervalo); o número do voo num chip | https://mobbin.com/screens/d2f7b740-f99c-4ffb-9bba-43cbb0ab8bfa |
+| `entre-pernas-natural-ai.webp` | Natural AI | "Layover 59m" entre duas pernas: a linha entre serviços diz o intervalo que o motor deu — e, sem intervalo, não diz nada (acerto 9 do grupo 2) | https://mobbin.com/screens/edec3420-85ee-4e83-91ec-5c60aca17e4c |
+| `regua-24h-fi.webp` | Fi | faixa clara de 00 a 24 com marcas às 0 · 6 · 12 · 18 · 24 e os blocos dentro | https://mobbin.com/screens/5ab880ae-572d-446b-b136-a3a888432d93 |
+| `regua-agora-weather-channel.webp` | The Weather Channel | blocos numa régua com um ponto no "agora" (só quando o dia é hoje) | https://mobbin.com/screens/2762f9db-9add-401c-a5a9-5874e7736586 |
 
 ## limites/ — escolhidas a 2026-11-03 (limites de escala do AE, Números)
 

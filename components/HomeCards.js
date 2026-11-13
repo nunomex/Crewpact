@@ -44,7 +44,9 @@ export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l }) {
   if (!top) return null;
   // As pílulas NUNCA se cortam ("Novem…" no iPhone, 2026-11-11): se as três não cabem numa linha, sai a de contorno
   // (a secundária). Medido com as larguras da Hanken, como o número gigante.
-  const pillsW = pillWidth(top.pill.text, top.pill.live) + (top.pill2 ? SPACE.sm + pillWidth(top.pill2.text) : 0) + SPACE.sm + rightW;
+  // A Escala (2026-11-13) usa o mesmo topo sem a pílula preta e com a de contorno como botão do mês (seta ▾ e dica própria).
+  const p2W = top.pill2 ? pillWidth(top.pill2.text) + (top.pill2.chevron ? 12 + SPACE.sm : 0) : 0;
+  const pillsW = (top.pill ? pillWidth(top.pill.text, top.pill.live) + SPACE.sm : 0) + (top.pill2 ? p2W + SPACE.sm : 0) + rightW;
   const showP2 = !!top.pill2 && pillsW <= winW - 2 * SPACE.lgPlus;
   const g = top.giant || {};
   const lh = Math.round(size * GIANT_LINE.lh);
@@ -58,14 +60,17 @@ export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l }) {
   return (
     <View style={s.top}>
       <View style={s.pills}>
-        <View style={[s.pill, { backgroundColor: C.ink, borderColor: C.ink }]} accessible accessibilityLanguage={AL} accessibilityLabel={top.pill.text}>
-          {top.pill.live ? <View style={[s.pillDot, { backgroundColor: BRAND.signal }]} /> : null}
-          <Text style={[TXT3.pill, { color: C.desk }]} numberOfLines={1} allowFontScaling={false}>{top.pill.text}</Text>
-        </View>
+        {top.pill ? (
+          <View style={[s.pill, { backgroundColor: C.ink, borderColor: C.ink }]} accessible accessibilityLanguage={AL} accessibilityLabel={top.pill.text}>
+            {top.pill.live ? <View style={[s.pillDot, { backgroundColor: BRAND.signal }]} /> : null}
+            <Text style={[TXT3.pill, { color: C.desk }]} numberOfLines={1} allowFontScaling={false}>{top.pill.text}</Text>
+          </View>
+        ) : null}
         {showP2 ? (
           <P2 style={[s.pill, s.pillOut, { borderColor: C.ink }]} {...(top.pill2.iso ? { onPress: () => onPill2(top.pill2.iso), activeOpacity: 0.7, hitSlop: { top: 3, bottom: 3, left: 2, right: 2 },
-            accessibilityRole: 'button', accessibilityLanguage: AL, accessibilityLabel: top.pill2.text, accessibilityHint: l('Abre este dia na Escala', 'Opens this day in the Roster') } : { accessible: true, accessibilityLanguage: AL, accessibilityLabel: top.pill2.text })}>
+            accessibilityRole: 'button', accessibilityLanguage: AL, accessibilityLabel: top.pill2.text, accessibilityHint: top.pill2.hint || l('Abre este dia na Escala', 'Opens this day in the Roster') } : { accessible: true, accessibilityLanguage: AL, accessibilityLabel: top.pill2.text })}>
             <Text style={[TXT3.pill, { color: C.ink }]} numberOfLines={1} allowFontScaling={false}>{top.pill2.text}</Text>
+            {top.pill2.chevron ? <Icon name="chevron" rot={90} size={12} color={C.ink} /> : null}
           </P2>
         ) : null}
         <View style={s.grow} />
@@ -101,7 +106,8 @@ export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l }) {
 function BigCard({ c, C, onOpen, l }) {
   const AL = a11yLang(l);
   const T = toneOf(C, c.color);
-  const a11y = [c.kind, c.title, c.sub, c.gain, c.a && `${c.a.l} ${c.a.v}`, c.dur, c.b && `${c.b.l} ${c.b.v}`].filter(Boolean).join('. ');
+  const legsA11y = Array.isArray(c.legs) ? c.legs.map((g) => [g.fno, `${g.a.l} ${g.a.v}`, g.dur, `${g.b.l} ${g.b.v}`, g.z, g.gap].filter(Boolean).join(', ')) : [];
+  const a11y = [c.kind, c.title, c.sub, c.gain, ...legsA11y, c.a && `${c.a.l} ${c.a.v}`, c.dur, c.b && `${c.b.l} ${c.b.v}`].filter(Boolean).join('. ');
   const Main = c.open ? TouchableOpacity : View;
   const mainProps = c.open
     ? { activeOpacity: 0.85, onPress: () => onOpen(c.open), accessibilityRole: 'button', accessibilityLanguage: AL, accessibilityLabel: a11y, accessibilityHint: l('Abre o detalhe', 'Opens the detail') }
@@ -123,6 +129,7 @@ function BigCard({ c, C, onOpen, l }) {
             {c.gain ? <GainChip text={c.gain} /> : null}
           </View>
         ) : null}
+        {Array.isArray(c.legs) && c.legs.length ? <Legs legs={c.legs} T={T} /> : null}
         {(c.a || c.dur || c.b) ? (
           <View style={s.cdRow}>
             <View style={s.cdEnd}>
@@ -165,13 +172,61 @@ function BigCard({ c, C, onOpen, l }) {
   );
 }
 
+// ── B2 · AS PERNAS (dentro do cartão grande; a Escala, design-system §14) ──
+// O número do voo numa faixa (e a Zulu só quando difere) · as duas horas grandes, o código e a cidade por baixo · o fio com ✈
+// e a duração real no selo · entre pernas, o tempo no solo numa linha fina. Os textos vêm prontos de data/escalaDay.js.
+function Legs({ legs, T }) {
+  return (
+    <View style={s.legs} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+      {legs.map((g, i) => (
+        <View key={`leg${i}`}>
+          {(g.fno || g.z) ? (
+            <View style={s.legH}>
+              {g.fno ? <View style={[s.fno, { backgroundColor: CARD.go }]}><Text style={[TXT3.kind, { color: CARD.onCard }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{g.fno}</Text></View> : <View />}
+              {g.z ? <Text style={[TXT3.cardNumLbl, { color: T.sub }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{g.z}</Text> : null}
+            </View>
+          ) : null}
+          <View style={s.leg}>
+            <View style={s.cdEnd}>
+              <Text style={[TXT3.cardNum, { color: T.fg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{g.a.v}</Text>
+              <Text style={[TXT3.cardNumLbl, { color: T.sub }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{g.a.l}</Text>
+            </View>
+            <View style={s.legMid}>
+              <View style={[s.legWire, { backgroundColor: CARD.onCardTrack }]} />
+              {g.dur ? (
+                <View style={[s.dur, s.legDur]}>
+                  <Icon name="plane" size={12} color={CARD.onCard} />
+                  <Text style={[TXT3.dur, { color: CARD.onCard }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{g.dur}</Text>
+                </View>
+              ) : null}
+            </View>
+            <View style={[s.cdEnd, s.cdEndR]}>
+              <Text style={[TXT3.cardNum, { color: T.fg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{g.b.v}</Text>
+              <Text style={[TXT3.cardNumLbl, { color: T.sub }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{g.b.l}</Text>
+            </View>
+          </View>
+          {g.gap ? (
+            <View style={s.legGap}>
+              <View style={[s.legGapLine, { backgroundColor: CARD.onCardTrack }]} />
+              <Text style={[TXT3.cardNumLbl, { color: T.sub }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{g.gap}</Text>
+              <View style={[s.legGapLine, { backgroundColor: CARD.onCardTrack }]} />
+            </View>
+          ) : null}
+        </View>
+      ))}
+    </View>
+  );
+}
+
 // ── A LINHA FINA ──
 function Slim({ c, C, onOpen, l }) {
   const AL = a11yLang(l);
   const T = toneOf(C, c.dark ? 'dark' : c.color);
   const a11y = [c.title, c.sub, c.value].filter(Boolean).join('. ');
   const Box = c.open ? TouchableOpacity : View;
-  const props = c.open ? { activeOpacity: 0.85, onPress: () => onOpen(c.open), accessibilityRole: 'button', accessibilityLanguage: AL, accessibilityLabel: a11y } : { accessible: true, accessibilityLanguage: AL, accessibilityLabel: a11y };
+  // `longOpen` (a pernoita da Escala: o toque abre os mapas, o toque longo edita o hotel) — dito ao VoiceOver como ação à parte.
+  const longP = c.open && c.longOpen ? { onLongPress: () => onOpen(c.longOpen), accessibilityActions: [{ name: 'longpress', label: l('Editar', 'Edit') }], onAccessibilityAction: (e) => { if (e.nativeEvent.actionName === 'longpress') onOpen(c.longOpen); } } : {};
+  const props = c.open ? { activeOpacity: 0.85, onPress: () => onOpen(c.open), accessibilityRole: 'button', accessibilityLanguage: AL, accessibilityLabel: a11y, ...longP } : { accessible: true, accessibilityLanguage: AL, accessibilityLabel: a11y };
   return (
     <Box style={[s.slim, { backgroundColor: T.bg }]} {...props}>
       <View style={s.slimT}>
@@ -281,6 +336,16 @@ const s = StyleSheet.create({
   progFill: { position: 'absolute', left: 0, height: 4, borderRadius: RADIUS.pill },
   progKnob: { position: 'absolute', top: 0, width: 12, height: 12, marginLeft: -SPACE.s, borderRadius: RADIUS.pill, borderWidth: 2.5 },
   act: { height: 44, borderRadius: RADIUS.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACE.sm, marginTop: SPACE.xxs },
+  // B2 · as pernas
+  legs: { gap: SPACE.sm },
+  legH: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.sm, marginBottom: SPACE.s },
+  fno: { height: 22, paddingHorizontal: SPACE.sm, borderRadius: RADIUS.xs, justifyContent: 'center' },
+  leg: { flexDirection: 'row', alignItems: 'flex-end', gap: SPACE.sm },
+  legMid: { flex: 1, minWidth: 0, height: 28, marginBottom: SPACE.sm, alignItems: 'center', justifyContent: 'center' },
+  legWire: { position: 'absolute', left: 0, right: 0, height: 1.5, top: 13 },
+  legDur: { flexDirection: 'row', gap: SPACE.xs },
+  legGap: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, marginTop: SPACE.sm },
+  legGapLine: { flex: 1, height: 1 },
 
   slim: { borderRadius: RADIUS.xxl, paddingVertical: SPACE.md, paddingHorizontal: SPACE.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.md, minHeight: 56 },
   slimT: { flex: 1, minWidth: 0 },

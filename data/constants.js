@@ -291,6 +291,7 @@ export const TXT3 = {
   line:      { fontFamily: PELE_FONT.bodyMed,   fontSize: 15, lineHeight: 20 },                      // parcelas e passos
   lineVal:   { fontFamily: PELE_FONT.bodyBold,  fontSize: 15, lineHeight: 20 },
   text:      { fontFamily: PELE_FONT.bodyMed,   fontSize: 14, lineHeight: 20 },                      // cartão de texto (baixa, folga vazia)
+  month:     { fontFamily: PELE_FONT.bodyHeavy, fontSize: 26, lineHeight: 32, letterSpacing: -0.5 },  // o título do mês na Escala (esboço escala-cartoes, 2026-11-13)
   tab:       { fontFamily: PELE_FONT.bodyBold,  fontSize: 11 },
   badge:     { fontFamily: PELE_FONT.bodyHeavy, fontSize: 11 },
 };

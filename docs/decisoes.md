@@ -72,6 +72,74 @@ referência para o layout das páginas que faltam e para o sistema de desenho. *
   reforçado e a qualificação de formação (LTC / TRI / TRE); nos Números, no Início e nos Extras, o "certo e máximo" (SNC,
   DDO/IDO/WFLY a tempo parcial, voo doméstico no estrangeiro); nas férias, o intervalo e a nota; e o "Incerto" (ponto 2 abaixo).
 - **Não mexer** nos cálculos nessa sessão: o que for número novo volta ao Fable, com golden primeiro.
+- **Estado (2026-11-13, sessão de layout, Opus 5.5):** passo 1 feito e aprovado (as 57 vistas uma a uma, os GIF em
+  fotogramas); passo 2 feito: índice `referencias/Para a app/README.md` (a 3416(1) é duplicada da 3416; faltam na pasta
+  3427, 3437, 3446, 3458, 3459), ligado de `referencias/README.md`; `.gitignore` com maiúsculas e `.gif` (neste PC o
+  `.JPG` só ficava de fora pelo `core.ignorecase`). **Passo 3 escolhido pelo Nuno ("sim"):** A1–A4, B1–B4, B7–B12,
+  M1–M4 e a B10 com as cores da origem — escrito em `docs/design-system.md` §14, "Peças escolhidas a 2026-11-13"; B5, B6
+  e B13 para depois. Medido ao escrever: o neutro da B10 sobre a folha dá 1,15 (a base desaparece) — resolve-se no esboço
+  dos Números. **A Escala:** referências escolhidas (Clue, Qantas, Natural AI, Fi, Weather Channel — em
+  `referencias/escala/`, ronda 3, e na coleção do Mobbin); **esboço APROVADO pelo Nuno ("sim", 2026-11-13):**
+  `design/escala-cartoes.html` (6 estados medidos; o dia dobrado em mês — régua + uma linha por serviço — e aberto na
+  semana; o acerto 9), com as três propostas: a perna com as horas grandes (§14 B2 já corrigido); o iPhone pequeno abre
+  na semana; o bloco junta só a rotação com pernoita fora e as férias seguidas. `escala-v3` arquivado.
+  **A Escala 3.0 está no código (2026-11-13, por ver no iPhone; sem commit):** `data/escalaDay.js` (puro: as células, a
+  ordem pela hora, os intervalos do motor só no par certo, a régua, as linhas e os cartões; golden novo `npm run
+  test:escala`, 61 casos, no `npm test`) · `components/DayRuler.js` (B3) · `components/HomeCards.js` ganhou as pernas no
+  cartão grande (B2) e o toque longo na linha fina · `screens/EscalaScreen.js` refeito (a lógica ficou: importação, SNC,
+  pega, mudar de mês, folhas) · token `TXT3.month`. `npm test` verde, guardião sem dívida nova, pacote iOS gera.
+  **Acerto 9 corrigido:** os serviços pela hora; a linha entre serviços só com o intervalo do motor atribuído ao par certo
+  (o motor ordena pelo report e filtra os intervalos à volta de uma assistência — o ecrã antigo cruzava-os pela posição e
+  inventava "repouso ✓" quando faltava um). **Diferenças ao esboço, de propósito:** a Escala fica sempre de dia (a barra de
+  abas só escurece no Início; o estado 5 do esboço espera pela noite da app toda) · a pílula entre serviços só aparece com
+  o dia aberto (dobrado não cabe) · as pernas mostram-se todas (sai o "+ N setores") · apagar um serviço manual vive no
+  Detalhe (sai da folha) · a WOCL desenha-se só num voo que começa na base (o motor não guarda a WOCL no registo do dia; a
+  régua usa a constante e o relógio do report) · as janelas (ler a escala, escolher mês) seguem a 2.0 até migrarem.
+  **Ver no iPhone:** o mês com as cores e os blocos (3–4, rotações, férias) · tocar num dia e puxar a pega (dobrado →
+  aberto) · um dia com assistência e voo chamado (pela hora, sem linha) · um repartido (a pílula com o intervalo) · um
+  LIS → BCN com pernoita (a régua acaba no relógio do report; a Zulu na perna) · um voo que passa a meia-noite (o resto no
+  dia seguinte) · a WOCL num report antes das 06:00 · um mês sem escala (o estado vazio) · o iPhone pequeno abre na semana
+  · a legenda · o VoiceOver numa célula, na régua e na pernoita (toque longo = editar).
+  **1.ª foto do iPhone (2026-11-13, 17:31) — corrigido:** a folha do dia não chegava às bordas e os cartões ficavam cortados
+  dos dois lados (a zona de deslizar tinha a margem de 16 e cortava a folha; a margem passou para cada peça) · "hoje 2
+  serviços" → "hoje · 2 serviços". Bateu certo: blocos 3–4, hoje com contorno, régua (assistência 09–15, voo desde as 18:00,
+  o "agora" às 17:31, "acaba às 04:30 de sábado"), as linhas finas. **Por escolher pelo Nuno:** a marca dos dois serviços
+  no dia (a 2.ª camada parecia do dia de baixo) — três esboços em `design/escala-dois-servicos.html` (A camada agarrada, já no
+  código · B faixa de duas cores · C dois pontos — recomendo C). **Regra nova do Nuno: sempre três esboços para escolher.**
+  **O Nuno escolheu C** (dois pontos) — já no código (`cellTwo`, `dots`; a legenda tem "2 serviços no dia"). **E disse: "não
+  estou a gostar do layout da página escala. faz 3 novos"** → `design/escala-layouts.html` (Mobbin primeiro): **A · Agenda**
+  (o topo do Início com "11 serviços" e os factos; a escala em lista desde hoje; folgas numa linha; a grelha num botão) ·
+  **B · O dia em foco** (a tira da semana com as células; o dia aberto por baixo; o mês no título) · **C · O mês em
+  miniatura** (os três números, o mês pequeno só com cor, a lista dos dias com serviço). Recomendo A. **O Nuno gosta da A**
+  e mandou 9 imagens de `referencias/Para a app/` (3439, 3450–3452, 3454, 3456, 3457, 3460, 3461) → três variantes da A em
+  `design/escala-agenda.html`: **A1** o ano em meses (3439: cada mês com o n.º de serviços; o atual com contorno; sem escala a
+  tracejado) · **A2** acordeão (3450–3452: hoje aberto, os outros dias numa barra de 52 pt da cor do tipo) · **A3** o mês
+  inteiro (3457: o que passou apagado, o que não tem escala a tracejado). **ESCOLHIDO pelo Nuno: A2 (acordeão) + o ano em
+  meses da A1.** Sobre apagar os dias passados (A3): medido, a transparência de 45 % deixa o texto a 2,35 e o € a 2,07 (pede
+  4,5) e esconde o que conta para o dinheiro e os limites → três maneiras sem apagar em `design/escala-passado.html`: **A** só
+  a estrutura ("Já feito" + barras iguais, o € à direita) · **B** a data a cinzento fora da barra + ✓ (6,53) · **C** um tom mais
+  claro (passa, mas cria dois tons e um "claro" que também diria "incerto"). Recomendei A. **O Nuno quer diferença à vista
+  nos dias passados** ("isto tudo é para ser fácil para o utilizador… ver sempre na perspectiva dele") → o mesmo esboço
+  refeito com três maneiras COM diferença: **C** tom mais claro · **D** cinzento com um ponto da cor do tipo (o título
+  16,03, o € 6,31) · **E** só o contorno. **ESCOLHIDO: D.**
+  **A ESCALA EM AGENDA ESTÁ NO CÓDIGO (2026-11-13, por ver no iPhone; sem commit):** `data/escalaDay.js` ganhou
+  `agendaRows` (as linhas da agenda), `yearMonths` (o ano em meses) e `prettyRoute` (LIS-OPO → LIS → OPO) — golden
+  `test:escala` 82 casos · `components/DayBar.js` (a barra do dia, o passado em D, a linha das folgas, a coluna da data) ·
+  `components/HomeCards.js` · `HomeTop` aceita o topo sem pílula preta e a de contorno como botão (seta ▾ e dica) ·
+  `screens/EscalaScreen.js` refeito: o topo do Início ("11 serviços" + pernoitas + per diem), a agenda numa folha (o mês
+  corrente abre em "Hoje"), o ano em meses na pílula, a grelha do mês (B1, com os dois pontos) no botão do calendário. A
+  lógica ficou (importação, SNC, hotel, ler a escala, folhas). `npm test` verde, guardião sem dívida nova, pacote iOS gera.
+  **Diferenças aos esboços, de propósito:** sem pega (nada se arrasta) · os dias vazios no princípio e no fim do que o
+  calendário trouxe dizem "Sem serviços na escala", não "Folga" (a app não sabe se é folga) · no ano em meses, todos os meses
+  sem dados dizem "sem escala" (o esboço dizia "por sair" em dezembro — a app não sabe quando sai) · nas barras dos dias que
+  vêm, os voos dizem "report HH:MM" (o esboço tinha só a hora de partida) · se a fila do topo não couber, sai o "Hoje" e nunca
+  a pílula do mês · re-tocar na aba leva a "Hoje" · a régua das 24 h sai da Escala (fica para o Detalhe do serviço).
+  **Ver no iPhone:** abrir a Escala (abre em "Hoje", com o "Já feito" por cima ao deslizar para baixo) · os dias feitos a
+  cinzento com o ponto de cor e o € · tocar numa barra (abre no sítio; tocar na data fecha) · as folgas tracejadas · tocar em
+  "Novembro 2026 ▾" (o ano em meses) e noutro mês · o botão do calendário (a grelha; tocar num dia leva a agenda até ele) ·
+  "Hoje" noutro mês · puxar para ler a escala · um mês sem escala (o estado vazio) · o iPhone pequeno · o VoiceOver numa
+  barra. Visto de passagem: o onboarding diz "brevemente" e o Perfil "Em breve" (i18n
+  `onb.soon` existe mas o `OnboardingScreen` escreve à mão) — acertar quando o Perfil e a entrada migrarem.
 
 **O que se faz a seguir (combinado com o Nuno a 2026-11-12, noite):**
 1. **Fechar o ramo dos cálculos — a função única está FEITA (2026-11-12, sessão em Fable 5.2; entrada "A série de

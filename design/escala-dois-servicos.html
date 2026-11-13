@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · Escala · dois serviços no dia</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* Três maneiras de marcar um dia com DOIS serviços na grelha da Escala 3.0 (2026-11-13). Visto no iPhone: a 2.ª camada da v2
+   (um risco 1 pt abaixo da célula) ficava colada ao topo da célula de baixo e parecia ser desse dia. Regra do Nuno a partir de
+   hoje: três esboços para escolher. Dados: os da conta de teste no iPhone (novembro de 2026; dias 13, 17, 20, 24 e 27 com
+   assistência + voo). O resto do ecrã é o de design/escala-cartoes.html, já com a folha de ponta a ponta. */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--frame:#04060A;--body:'Hanken','Helvetica Neue',Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+.lead{max-width:880px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,406px));gap:26px 24px;justify-content:center}
+@media (max-width:1320px){.grid3{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),406px))}}
+.shot{display:flex;flex-direction:column;gap:8px;min-width:0}
+.shot > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.shot > p{font-size:13px;line-height:1.45;color:var(--muted);min-height:76px}
+.shot > p.m{font-size:12px;min-height:0;font-variant-numeric:tabular-nums}
+.fit{width:100%;position:relative;height:860px}
+.note{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:880px}
+.note h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.note li,.note p{font-size:13px;line-height:1.5;color:var(--muted)} .note ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .note b{color:var(--pfg)}
+
+.ph{width:406px;height:860px;border:8px solid var(--frame);border-radius:52px;overflow:hidden;display:flex;flex-direction:column;transform-origin:top left;
+  --desk:#E3E1DB;--ink:#141414;--soft:#3A3A36;--sheet:#FFFFFF;--neutral:#F1EFEA;--sand:#E8BE6E;--sage:#B4C2A2;--lilac:#C6BADF;--warn:#F0854A;
+  --tsub:#5E5E57;--grey:rgba(20,20,20,.5);--round:rgba(127,127,127,.22);--caption:#77776F;background:var(--desk);color:var(--ink)}
+.ic{display:inline-block;flex:none;fill:currentColor}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.scr{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+.tabbar{height:83px;flex:none;background:var(--sheet);padding:5px 12px 22px;display:flex;gap:8px;align-items:center}
+.cap{flex:1;height:56px;border-radius:28px;background:var(--neutral);display:flex;padding:4px;gap:2px}
+.cap .t{flex:1;border-radius:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:var(--tsub);font-weight:700;font-size:11px}
+.cap .t.on{background:#FFFFFF;color:var(--ink);box-shadow:0 1px 3px rgba(20,20,20,.14)}
+.fab{width:56px;height:56px;border-radius:28px;background:var(--ink);color:var(--sheet);display:flex;align-items:center;justify-content:center;flex:none}
+.top{flex:none;padding:0 16px}
+.hdr{display:flex;align-items:center;justify-content:space-between;height:44px;padding-top:4px}
+.kindT{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub)}
+.round{width:36px;height:36px;border-radius:18px;background:var(--round);display:flex;align-items:center;justify-content:center;flex:none}
+.mrow{display:flex;align-items:center;gap:8px;height:44px;margin-top:2px}
+.mtitle{flex:1;min-width:0;display:flex;align-items:baseline;gap:8px;white-space:nowrap;font-weight:800;font-size:26px;letter-spacing:-.5px}
+.mtitle s{text-decoration:none;color:var(--grey)}
+.sum{font-weight:500;font-size:15px;line-height:20px;color:var(--soft);margin-top:2px} .sum b{color:var(--ink);font-weight:700}
+.wk{display:grid;grid-template-columns:repeat(7,1fr);column-gap:4px;margin:12px 0 6px;text-align:center}
+.wk span{font-weight:800;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--tsub)}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);column-gap:4px;row-gap:4px}
+.cell{height:46px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:2px 0 4px;position:relative;min-width:0;color:#141414}
+.cell.voo{background:var(--sand)} .cell.terra{background:var(--lilac)}
+.cell.jr{border-top-right-radius:0;border-bottom-right-radius:0} .cell.jl{border-top-left-radius:0;border-bottom-left-radius:0}
+.cell.jr::before{content:"";position:absolute;top:0;bottom:0;right:-5px;width:6px;background:inherit}
+.n{width:24px;height:24px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-variant-numeric:tabular-nums;position:relative;z-index:1}
+.cell.today .n{background:var(--ink);color:var(--desk)}
+.cell.sel::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 2px var(--ink);z-index:2}
+.tg{font-weight:800;font-size:11px;line-height:14px;letter-spacing:.6px;text-transform:uppercase;display:flex;align-items:center;gap:2px;white-space:nowrap;position:relative;z-index:1}
+/* A · a camada agarrada à própria célula (3 pt por baixo, sem folga para cima; 1 pt até à célula de baixo) */
+.vA .cell.two .layer{position:absolute;left:6px;right:6px;bottom:-3px;height:3px;border-radius:0 0 6px 6px;background:rgba(20,20,20,.18)}
+/* B · a faixa de baixo com a cor do 2.º serviço, separada por um fio branco (o fio diz "dois" mesmo a quem não distingue cores) */
+.vB .cell.two{overflow:hidden}
+.vB .cell.two .layer{position:absolute;left:0;right:0;bottom:0;height:8px;background:var(--b2);border-top:1.5px solid #FFFFFF}
+.vB .cell.two{padding-bottom:9px}
+/* C · dois pontos no fundo da célula (como os eventos no calendário do iPhone) */
+.vC .cell.two .layer{position:absolute;left:50%;bottom:2px;transform:translateX(-50%);display:flex;gap:3px}
+.vC .cell.two .layer i{width:4px;height:4px;border-radius:2px;background:#141414;opacity:.7}
+.vC .cell.two{padding-bottom:7px}
+.sheet{flex:1;min-height:0;margin-top:12px;border-radius:32px 32px 0 0;background:var(--sheet);padding:0 12px 12px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+.grab{height:20px;flex:none;display:flex;align-items:center;justify-content:center} .grab i{width:36px;height:4px;border-radius:2px;background:var(--round)}
+.dayH{display:flex;align-items:baseline;gap:6px;padding:0 4px;flex:none} .dayH b{font-weight:800;font-size:16px} .dayH span{font-weight:500;font-size:12px;color:var(--caption)}
+.slim{border-radius:24px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex:none;color:#141414}
+.slim b{display:block;font-weight:800;font-size:16px;line-height:20px} .slim > div span{font-weight:500;font-size:12px;opacity:.82;display:block}
+.chip{height:28px;padding:0 12px;border-radius:14px;background:#fff;color:#0B6E43;font-weight:800;font-size:14px;display:flex;align-items:center;white-space:nowrap}
+.go{width:36px;height:36px;border-radius:18px;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;flex:none}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>Dois serviços no dia · três maneiras</h1>
+    <p>No iPhone, a camada por baixo da célula (a da v2) ficava colada ao dia de baixo e parecia ser dele: no dia 13, parecia do 20. Três propostas, com os dados da tua conta de teste (os dias 13, 17, 20, 24 e 27 têm assistência e voo). O resto do ecrã é o aprovado, já com a folha de ponta a ponta.</p>
+  </div>
+  <section class="grid3" id="g"></section>
+  <div class="note"><h3>A minha recomendação: C</h3><ul>
+    <li><b>C · dois pontos</b> é o que o iPhone já ensina (os eventos no calendário). Lê-se "dois" sem depender da cor (a regra A3) e não toca no dia de baixo. Custa 3 pt dentro da célula: a etiqueta sobe um pouco nesses dias.</li>
+    <li><b>A · camada agarrada</b> é a correção mais pequena (já está no código): o risco fica preso ao próprio dia, a 1 pt da célula de baixo. Continua discreto; de relance, ainda pode ler-se como sombra.</li>
+    <li><b>B · faixa de duas cores</b> é a que diz mais (o tipo do 2.º serviço), mas a areia e o lilás só se distinguem pela cor (1,05 entre si); quem não distingue cores vê só o fio branco. É a mais carregada.</li>
+  </ul></div>
+</div>
+<script>
+(function(){
+  var P = { cal:'<path d="M7 2h2.6v3H7V2zm7.4 0H17v3h-2.6V2zM4 5h16v3.6H4V5zm0 5h16v10a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 20V10zm3.4 3v2.8h2.8V13H7.4zm5 0v2.8h2.8V13h-2.8z"/>',
+    home:'<path d="M12 3l9.2 8.2h-2.5V21h-4.9v-6.4h-3.6V21H5.3v-9.8H2.8L12 3z"/>', stats:'<path d="M4 12.5h3.8V20H4v-7.5zM10.1 5.5h3.8V20h-3.8V5.5zM16.2 9.5H20V20h-3.8V9.5z"/>',
+    user:'<path d="M12 3.4a3.7 3.7 0 1 1 0 7.4 3.7 3.7 0 0 1 0-7.4zM4.8 20.2c0-4 3.2-6.6 7.2-6.6s7.2 2.6 7.2 6.6a.8.8 0 0 1-.8.8H5.6a.8.8 0 0 1-.8-.8z"/>', plus:'<path d="M10.4 4h3.2v6.4H20v3.2h-6.4V20h-3.2v-6.4H4v-3.2h6.4V4z"/>',
+    chev:'<path d="M8.6 4.2 16.4 12l-7.8 7.8-1.9-1.9 5.9-5.9-5.9-5.9z"/>', sync:'<path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z"/>',
+    moon:'<path d="M14.2 3a9.2 9.2 0 1 0 6.6 15.6A10.6 10.6 0 0 1 14.2 3z"/>' };
+  function ic(n, s, rot){ return '<svg class="ic" width="'+s+'" height="'+s+'" viewBox="0 0 24 24" aria-hidden="true"'+(rot?' style="transform:rotate('+rot+'deg)"':'')+'>'+P[n]+'</svg>'; }
+  // a conta de teste no iPhone (novembro de 2026): 1 nov = domingo
+  var DAYS = { 3:{k:'voo',c:'FNC',ns:1,j:1}, 4:{k:'voo',c:'FNC'}, 5:{k:'voo',c:'BCN',ns:1}, 11:{k:'voo',c:'FNC'},
+    13:{k:'voo',c:'OPO',ns:1,two:'terra'}, 16:{k:'terra',c:'SBY'}, 17:{k:'voo',c:'OPO',ns:1,two:'terra'}, 20:{k:'voo',c:'OPO',ns:1,two:'terra'},
+    24:{k:'voo',c:'OPO',ns:1,two:'terra'}, 27:{k:'voo',c:'OPO',ns:1,two:'terra'}, 30:{k:'terra',c:'SBY'} };
+  function grid(){
+    var h = '<div class="wk">'+['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'].map(function(w){ return '<span>'+w+'</span>'; }).join('')+'</div><div class="grid">';
+    for (var i = 0; i < 6; i++) h += '<div></div>';
+    for (var d = 1; d <= 30; d++) {
+      var x = DAYS[d], col = (6 + d - 1) % 7, prev = DAYS[d - 1];
+      var cls = 'cell '+(x ? x.k : '')+(d === 13 ? ' today sel' : '')+(x && x.two ? ' two' : '')+(x && x.j && col < 6 ? ' jr' : '')+(prev && prev.j && col > 0 ? ' jl' : '');
+      var b2 = x && x.two ? (x.two === 'terra' ? 'var(--lilac)' : 'var(--sand)') : '';
+      h += '<div class="'+cls+'"'+(b2 ? ' style="--b2:'+b2+'"' : '')+'><span class="n">'+d+'</span>'+(x ? '<span class="tg">'+x.c+(x.ns ? ic('moon',10) : '')+'</span>' : '<span></span>')+(x && x.two ? '<span class="layer"><i></i><i></i></span>' : '')+'</div>';
+    }
+    return h + '</div>';
+  }
+  function phone(v){
+    return '<div class="ph v'+v+'"><div class="status"><span>17:31</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="scr">'+
+      '<div class="top"><div class="hdr"><span class="kindT">A tua escala · easyJet</span><span class="round">'+ic('sync',18)+'</span></div>'+
+      '<div class="mrow"><div class="mtitle">Novembro<s>2026</s></div><span class="round">'+ic('chev',16,180)+'</span><span class="round">'+ic('chev',16)+'</span></div>'+
+      '<p class="sum"><b>11</b> serviços · <b>7</b> pernoitas · <b>2 008,66 €</b> per diem</p>'+grid()+'</div>'+
+      '<div class="sheet"><div class="grab"><i></i></div><div class="dayH"><b>Sexta-feira, 13 de novembro</b><span>hoje · 2 serviços</span></div>'+
+      '<div class="slim" style="background:var(--lilac)"><div><b>Standby Casa</b><span>09:00–15:00</span></div><span class="go">'+ic('chev',16)+'</span></div>'+
+      '<div class="slim" style="background:var(--sand)"><div><b>LIS-OPO</b><span>EZY1009 · 19:00–04:00 · report 18:00</span></div><span class="chip">+154,51 €</span></div></div>'+
+      '</div><nav class="tabbar"><div class="cap">'+[['home','Início'],['cal','Escala'],['stats','Números'],['user','Perfil']].map(function(x,i){ return '<div class="t'+(i===1?' on':'')+'">'+ic(x[0],22)+'<span>'+x[1]+'</span></div>'; }).join('')+'</div><span class="fab">'+ic('plus',22)+'</span></nav></div>';
+  }
+  var S = [['A · Camada agarrada à célula','A correção mais pequena, já no código: o risco de 3 pt fica preso ao próprio dia (antes estava 1 pt abaixo dele e colado ao de baixo).','A'],
+    ['B · Faixa de duas cores','Em baixo, uma faixa com a cor do 2.º serviço (aqui o lilás da assistência), separada por um fio branco. Diz o tipo do 2.º serviço.','B'],
+    ['C · Dois pontos','Dois pontos pequenos no fundo da célula, como os eventos no calendário do iPhone. Lê-se "dois" sem depender da cor.','C']];
+  document.getElementById('g').innerHTML = S.map(function(s){ return '<div class="shot"><h3>'+s[0]+'</h3><p>'+s[1]+'</p><div class="fit">'+phone(s[2])+'</div><p class="m"></p></div>'; }).join('');
+  function run(){
+    document.querySelectorAll('.fit').forEach(function(f){ var k = Math.min(1, f.clientWidth / 406); f.firstElementChild.style.transform = 'scale('+k+')'; f.style.height = (f.firstElementChild.offsetHeight*k)+'px'; });
+    document.querySelectorAll('.ph').forEach(function(ph){
+      var k = ph.getBoundingClientRect().width / ph.offsetWidth, m = ph.closest('.shot').querySelector('.m');
+      var c13 = ph.querySelector('.grid .cell.today'), all = [].slice.call(ph.querySelectorAll('.grid .cell'));
+      var below = all.filter(function(c){ return Math.abs(c.getBoundingClientRect().left - c13.getBoundingClientRect().left) < 2 && c.getBoundingClientRect().top > c13.getBoundingClientRect().bottom; })[0];
+      var layer = c13.querySelector('.layer').getBoundingClientRect(), tg = c13.querySelector('.tg').getBoundingClientRect();
+      var toBelow = (below.getBoundingClientRect().top - layer.bottom) / k, toTag = (layer.top - tg.bottom) / k;
+      m.textContent = 'Marca do dia 13: '+(toBelow >= 0 ? toBelow.toFixed(1)+' pt até ao dia 20' : 'dentro da célula')+' · '+(toTag >= 0 ? toTag.toFixed(1)+' pt abaixo da etiqueta' : 'sobrepõe a etiqueta ('+toTag.toFixed(1)+')');
+    });
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ setTimeout(run, 30); }); else run();
+  addEventListener('resize', run);
+})();
+</script>
+</body>
+</html>

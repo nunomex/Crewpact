@@ -27,6 +27,16 @@ combinações de letra e 924 espaçamentos fora da escala (medido a 2026-11-02).
 - `inicio-extremos.html` é o diagnóstico que abriu este trabalho (o estado mais cheio e o mais vazio do v6).
 - Arquivados a 2026-11-11 (recusados no caminho): `inicio-v7`, `inicio-alternativas`, `inicio-mistura`,
   `inicio-instrumento`, `inicio-uau`, `app-painel-instrumento`.
+- **`escala-cartoes.html`** (aprovado pelo Nuno a 2026-11-13; no código no mesmo dia, por ver no iPhone) é o mockup que manda na Escala nova: o mês
+  na secretária, o dia numa folha (dobrado em mês, aberto na semana; no iPhone pequeno abre na semana), as peças B1–B4
+  do §14 e o acerto 9. Seis estados medidos.
+- `escala-dois-servicos.html` (2026-11-13) — três maneiras de marcar um dia com dois serviços; o Nuno escolheu a C (dois pontos), já no código.
+- `escala-layouts.html` (2026-11-13) — três páginas novas para a Escala (A agenda · B o dia em foco · C o mês em miniatura), depois de o Nuno não gostar da página de `escala-cartoes` no iPhone. O Nuno gostou da A.
+- **`escala-agenda.html`** (2026-11-13) — três variantes da A com ideias das imagens dele: A1 o ano em meses · A2 acordeão · A3 o mês inteiro. **Escolhida: A2 + o ano em meses da A1 — é o mockup que manda na Escala** (no código, por ver no iPhone).
+- **`escala-passado.html`** (2026-11-13) — três maneiras de os dias que já passaram se distinguirem à vista, sem os apagar. **Escolhida: D** (cinzento com um ponto da cor do tipo), no código.
+- `escala-cartoes.html` foi a página aprovada e construída de manhã; substituída à tarde pela agenda (fica como história das peças B1–B4).
+- `escala-v2.html` descrevia a Escala antiga; o código já é a 3.0 — passa a `arquivo/` quando a 3.0 for vista no iPhone.
+- Arquivado a 2026-11-13: `escala-v3` (a ronda de 2026-11-03 que ficou sem escolha; a Escala seguiu a linguagem do Início).
 
 ## Referências de outras apps
 

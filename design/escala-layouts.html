@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · Escala · três páginas</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* Três páginas novas para a Escala (2026-11-13). O Nuno, depois de ver a 3.0 no iPhone: "não estou a gostar do layout da
+   página escala. faz 3 novos" (e a regra nova: sempre três esboços). Todas na linguagem do Início 3.0 (secretária + folha
+   branca, cartões de cor, Hanken, pílulas, botões redondos, a barra em cápsula) e com as peças do §14 (B1 célula · B2 perna ·
+   B3 régua · os dois pontos dos dois serviços, escolha C). Referências do Mobbin no fim. Dados da conta de teste do iPhone
+   (novembro de 2026; hoje = sexta 13, 17:31); os números que a foto não mostra são de teste. iPhone 390 × 844. */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--frame:#04060A;--body:'Hanken','Helvetica Neue',Arial,sans-serif;--signal:#FFB800}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+.lead{max-width:900px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,406px));gap:26px 24px;justify-content:center}
+@media (max-width:1320px){.grid3{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),406px))}}
+.shot{display:flex;flex-direction:column;gap:8px;min-width:0}
+.shot > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.shot > p{font-size:13px;line-height:1.45;color:var(--muted);min-height:96px}
+.shot > p.m{font-size:12px;min-height:0;font-variant-numeric:tabular-nums}
+.fit{width:100%;position:relative;height:860px}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:20px}
+.note{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.note h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.note li,.note p{font-size:13px;line-height:1.5;color:var(--muted)} .note ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .note b,.note a{color:var(--pfg)}
+
+.ph{width:406px;height:860px;border:8px solid var(--frame);border-radius:52px;overflow:hidden;display:flex;flex-direction:column;transform-origin:top left;
+  --desk:#E3E1DB;--ink:#141414;--soft:#3A3A36;--sheet:#FFFFFF;--neutral:#F1EFEA;--sand:#E8BE6E;--sage:#B4C2A2;--lilac:#C6BADF;--warn:#F0854A;
+  --tsub:#5E5E57;--grey:rgba(20,20,20,.5);--round:rgba(127,127,127,.22);--caption:#77776F;background:var(--desk);color:var(--ink)}
+.ic{display:inline-block;flex:none;fill:currentColor}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.scr{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+.tabbar{height:83px;flex:none;background:var(--sheet);padding:5px 12px 22px;display:flex;gap:8px;align-items:center}
+.cap{flex:1;height:56px;border-radius:28px;background:var(--neutral);display:flex;padding:4px;gap:2px}
+.cap .t{flex:1;border-radius:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:var(--tsub);font-weight:700;font-size:11px}
+.cap .t.on{background:#FFFFFF;color:var(--ink);box-shadow:0 1px 3px rgba(20,20,20,.14)}
+.fab{width:56px;height:56px;border-radius:28px;background:var(--ink);color:var(--sheet);display:flex;align-items:center;justify-content:center;flex:none}
+
+/* peças comuns (as do Início e do §14) */
+.top{flex:none;padding:0 16px}
+.pills{display:flex;align-items:center;gap:8px;padding:8px 0 16px;min-height:68px}
+.pill{height:38px;padding:0 16px;border-radius:19px;display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px;border:1.5px solid var(--ink);white-space:nowrap}
+.pill.on{background:var(--ink);color:var(--desk)} .pill.on i{width:7px;height:7px;border-radius:4px;background:var(--signal)}
+.grow{flex:1}
+.round{width:44px;height:44px;border-radius:22px;background:var(--round);display:flex;align-items:center;justify-content:center;flex:none}
+.round.s{width:36px;height:36px;border-radius:18px}
+.what{font-weight:500;font-size:15px;line-height:20px;color:var(--soft)}
+.hero{display:flex;align-items:stretch;gap:16px;margin-top:4px}
+.giant{font-weight:700;font-size:86px;line-height:.9;letter-spacing:-4px;white-space:nowrap}
+.giant s{text-decoration:none;color:var(--grey)}
+.side{border-left:1.5px solid var(--ink);padding-left:16px;display:flex;flex-direction:column;justify-content:center;gap:12px;min-width:0}
+.side b{display:block;font-weight:700;font-size:20px;line-height:22px;white-space:nowrap} .side span{font-weight:500;font-size:11px;color:var(--soft);white-space:nowrap}
+.mtitle{display:flex;align-items:baseline;gap:8px;white-space:nowrap;font-weight:800;font-size:26px;letter-spacing:-.5px} .mtitle s{text-decoration:none;color:var(--grey)}
+.sheet{flex:1;min-height:0;margin-top:-16px;border-radius:32px 32px 0 0;background:var(--sheet);padding:0 12px 12px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+.grab{height:20px;flex:none;display:flex;align-items:center;justify-content:center} .grab i{width:36px;height:4px;border-radius:2px;background:var(--round)}
+.cd{border-radius:24px;padding:16px;flex:none;display:flex;flex-direction:column;gap:12px;color:#141414;position:relative}
+.sand{background:var(--sand)} .lilac{background:var(--lilac)} .sage{background:var(--sage)} .neutral{background:var(--neutral)}
+.kind{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;opacity:.8}
+.cd h4{font-weight:800;font-size:22px;line-height:26px;letter-spacing:-.4px;margin-top:2px}
+.sub{font-weight:500;font-size:12px;line-height:16px;opacity:.82}
+.cdTop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.go{width:36px;height:36px;border-radius:18px;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;flex:none}
+.subRow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:-8px;min-height:28px}
+.chip{height:28px;padding:0 12px;border-radius:14px;background:#fff;color:#0B6E43;font-weight:800;font-size:14px;display:inline-flex;align-items:center;white-space:nowrap;flex:none}
+.cdRow{display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
+.cdRow div b{display:block;font-weight:700;font-size:22px;line-height:24px} .cdRow div span{font-weight:500;font-size:11px;opacity:.82}
+.cdRow .r{text-align:right}
+.dur{height:28px;padding:0 12px;border-radius:14px;background:rgba(255,255,255,.85);display:flex;align-items:center;gap:5px;font-weight:700;font-size:12px;white-space:nowrap;color:#141414}
+.slim{border-radius:24px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex:none;color:#141414;min-height:56px}
+.slim .t{min-width:0} .slim .t b{display:block;font-weight:800;font-size:16px;line-height:20px} .slim .t span{display:block;font-weight:500;font-size:12px;line-height:16px;opacity:.82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.legH{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.fno{height:22px;padding:0 8px;border-radius:8px;background:rgba(255,255,255,.55);display:inline-flex;align-items:center;font-weight:800;font-size:11px;letter-spacing:.6px}
+.leg{display:flex;align-items:flex-end;gap:8px}
+.leg .e b{display:block;font-weight:700;font-size:22px;line-height:24px} .leg .e span{display:block;font-weight:500;font-size:11px;line-height:15px;opacity:.82;white-space:nowrap}
+.leg .e.r{text-align:right}
+.leg .mid{flex:1;min-width:0;position:relative;height:28px;margin-bottom:8px;display:flex;align-items:center;justify-content:center}
+.leg .mid::before{content:"";position:absolute;left:0;right:0;top:50%;height:1.5px;background:rgba(20,20,20,.18)}
+.leg .mid .dur{position:relative}
+.rl{padding:0 4px;flex:none;display:flex;flex-direction:column;gap:4px}
+.track{height:20px;border-radius:8px;background:var(--neutral);position:relative;overflow:hidden}
+.track i{position:absolute;top:0;bottom:0;border-radius:8px} .track i.e{border-top-right-radius:0;border-bottom-right-radius:0}
+.track .now{width:2px;background:var(--ink);border-radius:0}
+.ticks{display:flex;justify-content:space-between;font-weight:500;font-size:11px;color:var(--caption);font-variant-numeric:tabular-nums}
+.note2{font-weight:500;font-size:11px;line-height:15px;color:var(--caption)}
+.dayH{display:flex;align-items:baseline;gap:6px;padding:0 4px;flex:none} .dayH b{font-weight:800;font-size:16px;line-height:20px} .dayH span{font-weight:500;font-size:12px;color:var(--caption)}
+/* B1 · a célula (com os dois pontos) */
+.wk{display:grid;grid-template-columns:repeat(7,1fr);column-gap:4px;text-align:center}
+.wk span{font-weight:800;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--tsub)}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);column-gap:4px;row-gap:4px}
+.cell{height:46px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:2px 0 4px;position:relative;min-width:0;color:#141414}
+.cell.voo{background:var(--sand)} .cell.terra{background:var(--lilac)}
+.cell.jr{border-top-right-radius:0;border-bottom-right-radius:0} .cell.jl{border-top-left-radius:0;border-bottom-left-radius:0}
+.cell.jr::before{content:"";position:absolute;top:0;bottom:0;right:-5px;width:6px;background:inherit}
+.n{width:24px;height:24px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-variant-numeric:tabular-nums;position:relative;z-index:1}
+.cell.today .n{background:var(--ink);color:var(--desk)}
+.cell.sel::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 2px var(--ink);z-index:2}
+.tg{font-weight:800;font-size:11px;line-height:14px;letter-spacing:.6px;text-transform:uppercase;display:flex;align-items:center;gap:2px;white-space:nowrap;position:relative;z-index:1}
+.cell.two{padding:0 0 8px} .dots{position:absolute;left:50%;bottom:2px;transform:translateX(-50%);display:flex;gap:4px} .dots i{width:4px;height:4px;border-radius:2px;background:rgba(20,20,20,.82)}
+
+/* A · agenda: a coluna da data + os cartões do dia */
+.agH{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub);padding:8px 4px 0}
+.ag{display:flex;gap:10px;flex:none}
+.ag .d{width:40px;flex:none;display:flex;flex-direction:column;align-items:center;padding-top:10px}
+.ag .d b{font-weight:800;font-size:22px;line-height:24px;font-variant-numeric:tabular-nums} .ag .d span{font-weight:800;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--tsub)}
+.ag .d.today b{width:34px;height:34px;border-radius:17px;background:var(--ink);color:var(--sheet);display:flex;align-items:center;justify-content:center;font-size:17px;line-height:20px}
+.ag .c{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.ag .slim .t span,.ph .row .t span{white-space:normal;overflow:visible}   /* na coluna estreita a linha pequena passa a duas linhas, não se corta */
+.off{display:flex;align-items:center;gap:10px;padding:2px 0;flex:none}
+.off .d{width:40px;flex:none;text-align:center;font-weight:800;font-size:13px;color:var(--caption);font-variant-numeric:tabular-nums}
+.off .l{flex:1;height:30px;border-radius:15px;border:1.5px dashed rgba(127,127,127,.4);display:flex;align-items:center;padding:0 14px;font-weight:500;font-size:12px;color:var(--caption)}
+/* B · a tira da semana */
+.strip{display:grid;grid-template-columns:repeat(7,1fr);column-gap:4px;margin-top:6px}
+.strip .cell{height:52px}
+/* C · o mês pequeno e a lista */
+.mini .cell{height:32px;padding:0;justify-content:center}
+.mini .cell .n{width:24px;height:24px;font-size:13px}
+.mini .cell.two{padding:0}
+.mini .cell .dots{bottom:1px} .mini .cell .dots i{width:3px;height:3px}
+.nums{display:flex;gap:0;margin:2px 0 12px}
+.nums div{flex:1;border-left:1.5px solid var(--ink);padding-left:12px} .nums div:first-child{border-left:0;padding-left:0}
+.nums b{display:block;font-weight:700;font-size:20px;line-height:24px;white-space:nowrap} .nums span{font-weight:500;font-size:11px;color:var(--soft)}
+.row{display:flex;align-items:center;gap:12px;padding:10px 4px;border-top:1px solid #ECEAE4;flex:none}
+.row:first-of-type{border-top:0}
+.row .d{width:36px;flex:none;text-align:center} .row .d b{display:block;font-weight:800;font-size:20px;line-height:22px;font-variant-numeric:tabular-nums} .row .d span{font-weight:800;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--tsub)}
+.row .d.today b{color:var(--sheet);background:var(--ink);border-radius:15px;width:30px;height:30px;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:15px}
+.row .sq{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:none;color:#141414}
+.row .t{flex:1;min-width:0} .row .t b{display:block;font-weight:800;font-size:15px;line-height:20px} .row .t span{display:block;font-weight:500;font-size:12px;line-height:16px;color:var(--tsub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .v{font-weight:800;font-size:14px;color:#0B6E43;white-space:nowrap}
+.moonS{opacity:.8}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>Escala · três páginas novas</h1>
+    <p>Três maneiras diferentes de arrumar a mesma escala, todas na linguagem do Início. A grelha de cores fica em todas (é a mesma peça); muda o que manda na página. <b>A</b> põe a escala em lista, a começar em hoje, com o número grande do Início no topo. <b>B</b> põe o dia em primeiro, aberto, com uma tira da semana por cima. <b>C</b> mostra o mês pequeno, só com cores, e a lista dos dias com serviço por baixo.</p>
+    <p>Dados da tua conta de teste (hoje, sexta 13, às 17:31). As medidas calculam-se na página.</p>
+  </div>
+  <section class="grid3" id="g"></section>
+  <section class="notes">
+    <div class="note"><h3>A minha recomendação: A</h3><ul>
+      <li><b>A · Agenda</b> é a que mais se parece com o Início (o mesmo topo: o número em duas linhas e os factos ao lado do fio) e a que mostra mais escala de uma vez: hoje e os dias seguintes, com o que rendem, sem tocar em nada. As folgas encolhem numa linha. É como o eCrew e o calendário do iPhone em lista arrumam os dias. O mês em grelha fica a um toque (o botão redondo).</li>
+      <li><b>B · O dia em foco</b> é a melhor para "o que tenho no dia X": o dia vem aberto, com a régua e as pernas, e a semana por cima. Perde a vista do mês (fica no título).</li>
+      <li><b>C · O mês em miniatura</b> guarda a vista do mês inteiro e a lista do que interessa, mas a célula pequena perde a etiqueta (o destino) — o destino passa para a lista.</li>
+    </ul></div>
+    <div class="note"><h3>O que veio do Mobbin</h3><ul>
+      <li><b>A:</b> <a href="https://mobbin.com/screens/e125665b-7826-429c-bff4-5f5c805e3730">Todoist</a> (dias em lista com o cabeçalho de cada dia), <a href="https://mobbin.com/screens/0bc1fe18-7ae2-4ab8-a67d-f394ce273687">Tiimo</a> (a data grande à esquerda e o dia ao lado), <a href="https://mobbin.com/screens/3a21d1a0-0bec-472b-9c07-8a33dddf45cf">Outlook</a> ("Hoje", "Amanhã").</li>
+      <li><b>B:</b> <a href="https://mobbin.com/screens/26fae4e6-2163-4d93-8c47-5bd9839cb369">Structured</a> (a tira da semana com o tipo de cada dia), <a href="https://mobbin.com/screens/f6a61b24-612d-4536-8ca0-375231808968">Tiimo</a> (o dia em grande por baixo da tira), <a href="https://mobbin.com/screens/5fb14339-0f69-418c-919a-1c1912925c49">Partiful</a> (o dia numa folha).</li>
+      <li><b>C:</b> <a href="https://mobbin.com/screens/58844abc-3595-41b2-b1b0-35f6f4c13c6d">Binance</a> (o mês pequeno e os dias em lista por baixo), <a href="https://mobbin.com/screens/44c2fe99-cc62-401e-a1ea-5f8941fe93f7">Hypelist</a> (células quadradas e os números por baixo).</li>
+    </ul></div>
+  </section>
+</div>
+<script>
+(function(){
+  var P = { cal:'<path d="M7 2h2.6v3H7V2zm7.4 0H17v3h-2.6V2zM4 5h16v3.6H4V5zm0 5h16v10a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 20V10zm3.4 3v2.8h2.8V13H7.4zm5 0v2.8h2.8V13h-2.8z"/>',
+    home:'<path d="M12 3l9.2 8.2h-2.5V21h-4.9v-6.4h-3.6V21H5.3v-9.8H2.8L12 3z"/>', stats:'<path d="M4 12.5h3.8V20H4v-7.5zM10.1 5.5h3.8V20h-3.8V5.5zM16.2 9.5H20V20h-3.8V9.5z"/>',
+    user:'<path d="M12 3.4a3.7 3.7 0 1 1 0 7.4 3.7 3.7 0 0 1 0-7.4zM4.8 20.2c0-4 3.2-6.6 7.2-6.6s7.2 2.6 7.2 6.6a.8.8 0 0 1-.8.8H5.6a.8.8 0 0 1-.8-.8z"/>', plus:'<path d="M10.4 4h3.2v6.4H20v3.2h-6.4V20h-3.2v-6.4H4v-3.2h6.4V4z"/>',
+    chev:'<path d="M8.6 4.2 16.4 12l-7.8 7.8-1.9-1.9 5.9-5.9-5.9-5.9z"/>', sync:'<path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z"/>',
+    moon:'<path d="M14.2 3a9.2 9.2 0 1 0 6.6 15.6A10.6 10.6 0 0 1 14.2 3z"/>', plane:'<path d="M21 15.5v-2l-8-5V3.6a1.5 1.5 0 0 0-3 0V8.5l-8 5v2l8-2.5V18l-2 1.5V21l3.5-1 3.5 1v-1.5L13 18v-5z"/>',
+    home2:'<path d="M12 4l8 7h-2.4v8.5h-4.2v-5.3h-2.8v5.3H6.4V11H4l8-7z"/>' };
+  function ic(n, s, rot){ return '<svg class="ic" width="'+s+'" height="'+s+'" viewBox="0 0 24 24" aria-hidden="true"'+(rot?' style="transform:rotate('+rot+'deg)"':'')+'>'+P[n]+'</svg>'; }
+  var WD = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'], WDS = ['dom','seg','ter','qua','qui','sex','sáb'];
+  var wdOf = function(d){ return WDS[new Date(2026, 10, d).getDay()]; };
+  // a conta de teste no iPhone (os números que a foto não mostra são de teste)
+  var SBY = function(a, b){ return { k:'terra', title:'Standby Casa', sub:a+'–'+b, a:a, b:b }; };
+  var OPO = { k:'voo', title:'LIS → OPO', sub:'EZY1009 · 19:00–04:00 · report 18:00', gain:'+154,51 €', ns:'OPO', fno:'EZY1009', off:'19:00', on:'04:00', dep:'LIS · Lisboa', arr:'OPO · Porto', dur:'1 h 00', rep:'18:00', end:'04:30 de sábado' };
+  var D = {
+    3:[{ k:'voo', title:'LIS → FNC', sub:'EZY8341 · 07:00–08:45 · report 06:00', gain:'+48,20 €', ns:'FNC' }],
+    4:[{ k:'voo', title:'FNC → LIS', sub:'EZY8342 · 10:15–11:55 · report 09:30', gain:'+41,20 €' }],
+    5:[{ k:'voo', title:'LIS → BCN', sub:'EZY8411 · 06:35–09:30 · report 05:50', gain:'+56,40 €', ns:'BCN' }],
+    11:[{ k:'voo', title:'LIS → FNC → LIS', sub:'EZY8343 · 07:15–12:40 · report 06:30', gain:'+82,40 €' }],
+    13:[SBY('09:00','15:00'), OPO], 16:[SBY('06:00','14:00')], 17:[SBY('09:00','15:00'), OPO], 20:[SBY('09:00','15:00'), OPO],
+    24:[SBY('09:00','15:00'), OPO], 27:[SBY('09:00','15:00'), OPO], 30:[SBY('06:00','14:00')] };
+  var JOIN = { 3:1 };   // a rotação 3–4 (pernoita no FNC e voo de volta no dia seguinte)
+  var kindOf = function(d){ var x = D[d]; if (!x) return null; return x.some(function(s){ return s.k === 'voo'; }) ? 'voo' : 'terra'; };
+  var codeOf = function(d){ var x = D[d]; if (!x) return ''; var v = x.filter(function(s){ return s.k === 'voo'; })[0]; return v ? (v.ns || (v.title.indexOf('FNC') >= 0 ? 'FNC' : 'LIS')) : 'SBY'; };
+  function cell(d, opts){
+    opts = opts || {};
+    var k = kindOf(d), x = D[d], col = (6 + d - 1) % 7, ns = x && x.some(function(s){ return s.ns; });
+    var cls = 'cell '+(k || '')+(d === 13 ? ' today' : '')+(opts.sel === d ? ' sel' : '')+(x && x.length > 1 ? ' two' : '')+(!opts.noJoin && JOIN[d] && col < 6 ? ' jr' : '')+(!opts.noJoin && JOIN[d - 1] && col > 0 ? ' jl' : '');
+    var tag = opts.noTag ? '' : (k ? '<span class="tg">'+codeOf(d)+(ns ? ic('moon',10) : '')+'</span>' : '<span></span>');
+    return '<div class="'+cls+'"><span class="n">'+d+'</span>'+tag+(x && x.length > 1 ? '<span class="dots"><i></i><i></i></span>' : '')+'</div>';
+  }
+  function tabbar(){ return '<nav class="tabbar"><div class="cap">'+[['home','Início'],['cal','Escala'],['stats','Números'],['user','Perfil']].map(function(x,i){ return '<div class="t'+(i===1?' on':'')+'">'+ic(x[0],22)+'<span>'+x[1]+'</span></div>'; }).join('')+'</div><span class="fab">'+ic('plus',22)+'</span></nav>'; }
+  function phone(top, sheet){ return '<div class="ph"><div class="status"><span>17:31</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="scr">'+top+'<div class="sheet"><div class="grab"><i></i></div>'+sheet+'</div></div>'+tabbar()+'</div>'; }
+  function slim(s, small){ var bg = s.k === 'voo' ? 'sand' : s.k === 'terra' ? 'lilac' : s.k; return '<div class="slim '+bg+'"><div class="t"><b>'+s.title+'</b><span>'+s.sub+'</span></div>'+(s.gain ? '<span class="chip">'+s.gain+'</span>' : '<span class="go">'+ic('chev',16)+'</span>')+'</div>'; }
+  function nsSlim(st){ return slim({ k:'sage', title:'Pernoita em '+st, sub:'sem hotel guardado · toca para o guardar' }); }
+
+  // ── A · AGENDA ──
+  function agDay(d, label){
+    var x = D[d];
+    return (label ? '<div class="agH">'+label+'</div>' : '')+'<div class="ag"><div class="d'+(d === 13 ? ' today' : '')+'"><b>'+d+'</b><span>'+wdOf(d)+'</span></div><div class="c">'+
+      x.map(function(s){ return slim(s); }).join('')+(x.some(function(s){ return s.ns; }) ? nsSlim(x.filter(function(s){ return s.ns; })[0].ns) : '')+'</div></div>';
+  }
+  function off(a, b, label){ return (label ? '<div class="agH">'+label+'</div>' : '')+'<div class="off"><span class="d">'+a+(b && b !== a ? '–'+b : '')+'</span><span class="l">Folga'+(b && b !== a ? ' · '+(b - a + 1)+' dias' : '')+'</span></div>'; }
+  var A_top = '<div class="top"><div class="pills"><span class="pill">Novembro 2026 '+ic('chev',12,90)+'</span><span class="grow"></span><span class="round">'+ic('cal',20)+'</span><span class="round">'+ic('sync',20)+'</span></div>'+
+    '<div class="what">A tua escala de novembro</div><div class="hero"><div class="giant">11<br><s>serviços</s></div><div class="side"><div><b>7</b><span>pernoitas</span></div><div><b>2 008,66 €</b><span>per diem · estimado</span></div></div></div><div style="height:32px"></div></div>';
+  var A_sheet = agDay(13, 'Hoje · sexta 13') + off(14, 16 - 1, 'A seguir') + agDay(16) + agDay(17) + off(18, 19) + agDay(20);
+  // ── B · O DIA EM FOCO ──
+  var B_top = '<div class="top"><div class="pills" style="min-height:60px;padding-bottom:8px"><div class="mtitle">Novembro<s>2026</s>'+ic('chev',12,90)+'</div><span class="grow"></span><span class="round s">'+ic('chev',16,180)+'</span><span class="round s">'+ic('chev',16)+'</span></div>'+
+    '<div class="wk">'+WD.map(function(w){ return '<span>'+w+'</span>'; }).join('')+'</div><div class="strip">'+[9,10,11,12,13,14,15].map(function(d){ return cell(d, { sel:13, noJoin:true }); }).join('')+'</div><div style="height:28px"></div></div>';
+  var B_sheet = '<div class="dayH"><b>Sexta-feira, 13 de novembro</b><span>hoje · 2 serviços</span></div>'+
+    '<div class="rl"><div class="track"><i class="lilac" style="left:37.5%;width:25%"></i><i class="sand e" style="left:75%;width:25%"></i><i class="now" style="left:72.9%"></i></div><div class="ticks"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div><span class="note2">o serviço acaba às 04:30 de sábado</span></div>'+
+    '<div class="cd lilac"><div class="cdTop"><div><span class="kind">Serviço em terra</span><h4>Standby Casa</h4></div><span class="go">'+ic('chev',16)+'</span></div><div class="cdRow"><div><b>09:00</b><span>início</span></div><span class="dur">6 h</span><div class="r"><b>15:00</b><span>fim</span></div></div></div>'+
+    '<div class="cd sand"><div class="cdTop"><div><span class="kind">Voo · 1 setor · pernoita</span><h4>LIS → OPO</h4></div><span class="go">'+ic('chev',16)+'</span></div><div class="subRow"><span class="sub">report 18:00 · fim do serviço 04:30 de sábado</span><span class="chip">+154,51 €</span></div>'+
+      '<div><div class="legH"><span class="fno">EZY1009</span></div><div class="leg"><div class="e"><b>19:00</b><span>LIS · Lisboa</span></div><div class="mid"><span class="dur">'+ic('plane',12,90)+'1 h 00</span></div><div class="e r"><b>04:00</b><span>OPO · Porto</span></div></div></div></div>'+
+    nsSlim('OPO') + slim({ k:'neutral', title:'Próximo serviço · segunda 16', sub:'Standby Casa · 06:00–14:00' });
+  // ── C · O MÊS EM MINIATURA ──
+  var monthMini = '<div class="wk">'+WD.map(function(w){ return '<span>'+w.slice(0,1)+'</span>'; }).join('')+'</div><div class="grid mini" style="margin-top:4px">'+'<div></div>'.repeat(6)+Array.from({ length:30 }, function(_, i){ return cell(i + 1, { noTag:true }); }).join('')+'</div>';
+  var C_top = '<div class="top"><div class="pills" style="min-height:60px;padding-bottom:8px"><div class="mtitle">Novembro<s>2026</s>'+ic('chev',12,90)+'</div><span class="grow"></span><span class="round s">'+ic('chev',16,180)+'</span><span class="round s">'+ic('chev',16)+'</span></div>'+
+    '<div class="nums"><div><b>11</b><span>serviços</span></div><div><b>7</b><span>pernoitas</span></div><div><b>2 008,66 €</b><span>per diem</span></div></div>'+monthMini+'<div style="height:28px"></div></div>';
+  function row(d, s, extra){
+    var bg = s.k === 'voo' ? 'var(--sand)' : 'var(--lilac)';
+    return '<div class="row">'+(extra === 'nodate' ? '<div class="d"></div>' : '<div class="d'+(d === 13 ? ' today' : '')+'"><b>'+d+'</b><span>'+wdOf(d)+'</span></div>')+'<span class="sq" style="background:'+bg+'">'+(s.k === 'voo' ? ic('plane',18,45) : ic('home2',18))+'</span>'+
+      '<div class="t"><b>'+s.title+(s.ns ? ' <span class="moonS" style="display:inline">'+ic('moon',12)+'</span>' : '')+'</b><span>'+s.sub+'</span></div>'+(s.gain ? '<span class="v">'+s.gain+'</span>' : '')+'</div>';
+  }
+  var C_list = [13,16,17,20].map(function(d){ return D[d].map(function(s, i){ return row(d, s, i ? 'nodate' : null); }).join(''); }).join('');
+  var C_sheet = '<div class="agH" style="padding-top:0">De hoje em diante</div>' + C_list;
+
+  var S = [
+    ['A · Agenda','O topo é o do Início: "11 serviços" em duas linhas e os factos ao lado do fio. Por baixo, a escala em lista, a começar em hoje: a data grande à esquerda e os cartões do dia ao lado; as folgas numa linha tracejada. A grelha do mês abre-se no botão do calendário.', phone(A_top, A_sheet)],
+    ['B · O dia em foco','Em cima, a semana com as células da grelha (desliza para a semana seguinte). Por baixo, o dia escolhido já aberto: a régua, os cartões inteiros com as pernas, a pernoita e o próximo serviço. O mês inteiro abre-se no título.', phone(B_top, B_sheet)],
+    ['C · O mês em miniatura','Em cima, os três números do mês lado a lado e o mês pequeno, só com cor e número (os dois pontos ficam). Por baixo, a lista dos dias com serviço, de hoje em diante, com o destino, as horas e o que rendem; tocar num dia do mês leva a lista até ele.', phone(C_top, C_sheet)]
+  ];
+  document.getElementById('g').innerHTML = S.map(function(s){ return '<div class="shot"><h3>'+s[0]+'</h3><p>'+s[1]+'</p><div class="fit">'+s[2]+'</div><p class="m"></p></div>'; }).join('');
+  function run(){
+    document.querySelectorAll('.fit').forEach(function(f){ var k = Math.min(1, f.clientWidth / 406); f.firstElementChild.style.transform = 'scale('+k+')'; f.style.height = (f.firstElementChild.offsetHeight*k)+'px'; });
+    document.querySelectorAll('.ph').forEach(function(ph, i){
+      var k = ph.getBoundingClientRect().width / ph.offsetWidth, scr = ph.querySelector('.scr'), sh = ph.querySelector('.sheet'), m = ph.closest('.shot').querySelector('.m');
+      var bottom = scr.getBoundingClientRect().bottom, y = function(el){ return (el.getBoundingClientRect().top - scr.getBoundingClientRect().top) / k; };
+      var whole = [].slice.call(sh.children).filter(function(c){ return c.getBoundingClientRect().bottom <= bottom + .5 && !c.classList.contains('grab'); });
+      var gi = ph.querySelector('.giant'), hero = ph.querySelector('.hero');
+      if (hero) { var z = 86; while (hero.scrollWidth > hero.clientWidth && z > 60) { z -= 2; gi.style.fontSize = z+'px'; gi.style.letterSpacing = (-z*0.046)+'px'; } }
+      var txt = 'Folha começa a '+Math.round(y(sh))+' pt de '+scr.clientHeight+' · ';
+      if (i === 0) txt += 'à vista inteiros: hoje (2 serviços + pernoita) '+(ph.querySelectorAll('.ag')[0].getBoundingClientRect().bottom <= bottom ? 'sim' : 'NÃO')+' · dias com serviço à vista: '+[].filter.call(ph.querySelectorAll('.ag'), function(a){ return a.getBoundingClientRect().top < bottom; }).length;
+      if (i === 1) txt += 'o 1.º cartão do dia '+(ph.querySelector('.cd').getBoundingClientRect().bottom <= bottom ? 'inteiro' : 'CORTADO')+' · o voo com a perna '+(ph.querySelectorAll('.cd')[1].getBoundingClientRect().bottom <= bottom ? 'inteiro' : 'cortado (desliza)');
+      if (i === 2) txt += 'mês pequeno: '+Math.round(ph.querySelector('.grid.mini').getBoundingClientRect().height / k)+' pt · linhas à vista: '+[].filter.call(ph.querySelectorAll('.row'), function(r){ return r.getBoundingClientRect().bottom <= bottom; }).length;
+      m.textContent = txt;
+    });
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ setTimeout(run, 30); }); else run();
+  addEventListener('resize', run);
+})();
+</script>
+</body>
+</html>

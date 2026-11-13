@@ -15,9 +15,12 @@ dist
 
 # Referências de design (capturas de outras apps, do Mobbin) — só neste PC, não vão para o GitHub.
 # O índice com os links (referencias/**/README.md) é versionado.
-referencias/**/*.webp
-referencias/**/*.png
-referencias/**/*.jpg
+# Maiúsculas e minúsculas escritas à parte: neste PC o Git não as distingue (core.ignorecase), noutra máquina sim.
+referencias/**/*.[wW][eE][bB][pP]
+referencias/**/*.[pP][nN][gG]
+referencias/**/*.[jJ][pP][gG]
+referencias/**/*.[jJ][pP][eE][gG]
+referencias/**/*.[gG][iI][fF]
 
 # Fontes oficiais: o PDF do BTE fica no PC (identificado por SHA-256 em fontes/README.md); o texto
 # extraído (.txt) é versionado — o teste das citações confere cada regra contra ele.
