@@ -113,7 +113,7 @@ export const VALUE_I18N = {
   // ── Catálogo AE da página Cálculos (AeCalcs) — labels + subs (piloto + cabine) ──
   // Labels (termos oficiais do CLA bilingue). 'Abono para falhas' já está acima.
   'Remuneração base': 'Basic remuneration',
-  'Paragem nocturna': 'Night stop', 'Pernoita': 'Night stop',
+  'Paragem nocturna': 'Night stop', 'Paragem noturna': 'Night stop', 'Pernoita': 'Night stop',
   'Dia de férias': 'Leave day',
   'Dever ad-hoc': 'Ad-hoc duty',
   'Alteração de escala (SNC)': 'Short-notice change (SNC)', 'Alteração curta (SNC)': 'Short-notice change (SNC)',

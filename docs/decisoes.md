@@ -580,6 +580,67 @@ referência para o layout das páginas que faltam e para o sistema de desenho. *
   ser verdade num dia de escritório) e o "de fora" só laranja com algum de fora. A contagem é `diagSummary` em
   `data/rosterImport.js` (golden primeiro: 6 casos em `test:import`, agora 167). Sem o painel cinzento. Testes todos · guardião ·
   pacote iOS gera.
+  **Enviado** (o Nuno: "envia primeiro, depois vamos às janelas"): `f6a8591..9f0a4e5`, pre-push verde.
+  **AS OUTRAS JANELAS NO PADRÃO (2026-11-14), uma a uma — a 1.ª: a PROVA** (`components/ProvaSheet.js`, usada no Detalhe, nos
+  Números e na Auditoria): "Fechar" escrito (as folhas também passam a levá-lo — §11 atualizado), folha branca, o número grande
+  com a etiqueta da lei (§ ORO.FTL.205) numa pílula neutra, o resumo a 14, o artigo e a referência, o esquema da companhia numa
+  linha (`MarkRow`), a nota consultiva e "Abrir a fonte oficial" largo no fundo. A ordem do esboço `design/prova.html` mantém-se;
+  só a ação desceu (regra C1). Guardião (dívida desceu; chão novo) · `test:prova` · pacote iOS gera. **Por ver no iPhone; por
+  gravar.** A seguir (a mesma família de folhas): Hotel · Detalhe de um facto · corrigir o serviço (Detalhe) · Auditoria · Evento
+  e Extras · a pergunta da Biblioteca · o limite do acordo; depois as páginas (Simulação, partilhas), as janelas do meio (Família,
+  Definições), o formulário de serviço e as Validades.
+  **Visto no iPhone (3 fotos, o Nuno): "tenta organizar melhor e que seja do layout novo".** O que estava mal: o resumo num bloco
+  comprido, a pílula da lei a repetir o artigo ("§ FTL · Universal (piloto e cabine)" e logo "ORO.FTL.205(b) · Reg. (UE)
+  83/2014"), o esquema da companhia a pesar tanto como o resto. → esboço `design/prova-cartoes.html`, na linguagem dos cartões do
+  Detalhe: **P1** três cartões (o número grande · a regra · a lei em linhas: artigo, texto, fonte, vale para) com o esquema numa
+  nota pequena · **P2** a regra em passos numerados · **P3** tudo num cartão de linhas, como o pagamento. Recomendo **P1**. **À
+  espera da escolha.** **Erro objetivo corrigido:** a Prova dizia "Paragem nocturna" e o Detalhe "Paragem noturna" → "noturna"
+  (`data/prova.js`; a tradução inglesa aceita as duas).
+  **O Nuno: "gosto da P1, só quero saber se está a seguir o nosso layout novo".** Medido contra o código do Início e do Detalhe: a
+  estrutura sim (cartões neutros com o rótulo em cima, linhas com o valor à direita, Hanken, mapa B, "Fechar", ação larga no
+  fundo); quatro números do esboço não — **acertados na construção:** cantos 24 e margem 16 (`RADIUS.xxl`, `SPACE.lg`; o esboço
+  tinha 22/14), o rótulo a 80 % da tinta (`neutralKind`), o dinheiro com os euros grandes e os cêntimos mais pequenos como o "Este
+  serviço" (verde `gainOut`), e a folha com os cantos de 32 (`RADIUS.sheet`; `PeleSheet bg` agora dá-os). **CONSTRUÍDO (por ver
+  no iPhone; por gravar):** `components/LineCard.js` (novo: `LineCard` + `LineRows`, as medidas dos cartões do Detalhe — para as
+  outras folhas) e a Prova em P1: "Neste serviço" com o número (`TXT3.unit` 34) · "A regra · resumo da app" · "A lei" em linhas
+  (lei, artigo, texto, fonte ou "em vigor", vale para — a pílula repetida saiu) · o esquema numa nota com a frase principal a
+  negrito · a nota informativa · "Abrir a fonte oficial" largo no fundo; a lista desliza (até 62 % do ecrã) e o botão fica.
+  **As imagens do Nuno** (`referencias/Para a app/`, lembrado por ele): 3424 (rótulo em cima, número em baixo) e 3447 (cartões
+  agrupados, `RADIUS.xxl`). Guardião · `test:prova` · pacote iOS gera. **Dívida a pagar:** o Detalhe tem o seu `Card`/`Panel`
+  local com as mesmas medidas — passar a usar o `LineCard` quando se mexer nele (uma só peça).
+  **A Prova: o Nuno "está bem".** **Regra nova (o Nuno): consultar as imagens dele em CADA janela, página e esboço** — gravada na
+  memória (`referencias-sempre`) e no `CLAUDE.md`.
+  **A 2.ª: o HOTEL DA PERNOITA** (`components/HotelSheet.js`) — o 1.º formulário da 3.0, por isso com esboço: `design/hotel-form.html`.
+  Imagens do Nuno: **3442** ("campos agrupados num cartão neutro com fios, ícone num círculo branco → formulários em folha") e
+  **3417** ("rótulo pequeno, valor grande e fio"). Mobbin: AllTrails, foodpanda, Pangea, Careem. **F1** os campos num cartão
+  (3442) · **F2** rótulo pequeno, valor grande e fio (3417) · **F3** cada campo na sua caixa. Em todas: o aeroporto em cima no
+  quadradinho da cor do repouso (vem da escala), a explicação curta, "Guardado só no teu telemóvel" e "Guardar" largo. Recomendo
+  **F1**. **O Nuno escolheu a F2, "só se mudarmos o da Prova para ficar igual a este, que achas?"** → a minha resposta: sim, com uma
+  regra — **nas FOLHAS por cima (Prova, Hotel, Evento, Validades…) os campos são à F2 (rótulo pequeno, valor grande e fio, como
+  uma ficha dos Contactos); os CARTÕES ficam nos ECRÃS (Início, Escala, Detalhe, Números)**; o custo: a Prova deixa de parecer um
+  pedaço do Detalhe de trás. → esboço `design/prova-campos.html` (o Hotel F2 ao lado; imagens 3417 e 3460): **PA** tudo em campos
+  (um por linha; a do PSV desliza) · **PB** os campos curtos da lei lado a lado (Lei e Artigo; Texto e Fonte) · **PC** os campos
+  e a regra num cartão. Recomendo **PB**. **O Nuno escolheu a PA — CONSTRUÍDO com o Hotel F2 (por ver no iPhone; por gravar):**
+  - **`components/Field.js`** (novo): `Field` (ler) e `FieldInput` (escrever) — rótulo `TXT3.kind`, valor 20 (`TXT3.fact`), fio
+    1,5 na cor dos fios, a tinta no campo onde se escreve, vermelho no que falta (a frase do erro por baixo, a tinta).
+  - **A Prova (PA):** um campo por linha — "Neste serviço" (o número grande; o dinheiro com os cêntimos mais pequenos, a verde) ·
+    "A regra · resumo da app" · Lei · Artigo · Texto · Fonte/Em vigor · Vale para — a nota do esquema e a informativa, "Abrir a
+    fonte oficial" largo no fundo; a lista desliza, o botão fica. (O `LineCard` da P1 fica para os ecrãs.)
+  - **O Hotel (F2):** "Hotel da pernoita" (ou "Outro hotel") + "Fechar"; o aeroporto no quadradinho da cor do repouso (vem da
+    escala; sem ela, o campo de procura e as sugestões no mesmo quadradinho, e "Trocar"); a explicação com a cidade ("na próxima
+    pernoita em Funchal já cá está"); Nome · Telefone · Nota em `FieldInput`; o cadeado "Guardado só no teu telemóvel" (era um
+    emoji 🔒) e "Guardar" largo no fundo. A lógica (gravar, encadear o teclado, validar) não mudou.
+  - Guardião (dívida desceu; chão novo) · `test:prova` · pacote iOS gera.
+  **A REGRA DAS FOLHAS — CONFIRMADA pelo Nuno ("para as próximas folhas igual", depois de eu explicar ecrãs vs folhas):** nas
+  folhas que sobem por cima, os dados em campos (rótulo pequeno, valor grande, fio — `Field`/`FieldInput`); nos ecrãs, os cartões.
+  Escrita no design system §11.
+  **A 3.ª e a 4.ª, na regra (sem esboço — é o padrão escolhido; imagem 3417):** o **Detalhe de um facto** (`components/FactSheet.js`
+  — o "Completar" e as horas reais / o dado em falta): folha branca, "Fechar", a introdução, as horas em `FieldInput` (HH:MM, o erro
+  por baixo), a escolha em linhas com o visto a tinta (o de "Escolher calendário"), as horas de assistência com o valor grande
+  entre − e + (botões redondos de 44), a nota e "Guardar" largo no fundo · **"O calendário está errado?"** (a folha de corrigir do
+  Detalhe): as duas portas nas linhas das janelas (`MarkRow`, relógio e calendário, com a seta) e a nota da fonte por baixo.
+  Guardião (chão novo) · testes todos · pacote iOS gera. **Por ver no iPhone (as quatro folhas: Prova, Hotel, facto, corrigir);
+  por gravar.**
   **Também gravado nesta ronda:** a centragem dos números nos círculos (`s.numTxt`, acima) e os esboços `janelas-3.html`,
   `janelas-c.html` e `botoes-escritos.html`.
   **E o Nuno: "depois vê os botões das notificações, o X para fechar e o de sincronizar — não estão com o layout novo, pois não?"**

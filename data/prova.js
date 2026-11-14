@@ -69,7 +69,7 @@ const AE_PROVAS = {
           pt: 'Por cada setor voado é devido um per diem calculado por bandas de distância de grande círculo (milhas náuticas) entre os aeroportos. A app soma o nominal de cada setor do mês.',
           en: 'Each sector flown earns a per diem set by great-circle distance bands (nautical miles) between the airports. The app adds up each sector’s nominal for the month.' } },
         pernoita: { art: 'Cl. 56.ª', title: { pt: 'Pernoita', en: 'Night stop' }, resumo: {
-          pt: 'Cada paragem nocturna fora de base paga um valor fixo por noite (além do alojamento a cargo da companhia).',
+          pt: 'Cada paragem noturna fora de base paga um valor fixo por noite (além do alojamento a cargo da companhia).',
           en: 'Each night stop away from base pays a fixed amount per night (besides company-provided accommodation).' } },
         doenca: { art: 'Cl. 61.ª', title: { pt: 'Complemento de doença', en: 'Sick pay top-up' }, resumo: {
           pt: 'Na doença, a partir do 4.º dia, é devido um complemento de 45% da base diária.',
@@ -88,8 +88,8 @@ const AE_PROVAS = {
         perDiem: { art: 'Art. 37.º', title: { pt: 'Per diem', en: 'Per diem' }, resumo: {
           pt: 'Per diem por setor voado, por bandas de distância de grande círculo (milhas náuticas), em multiplicadores do setor nominal da categoria.',
           en: 'Per diem per sector flown, by great-circle distance bands (nautical miles), as multipliers of the category’s nominal sector.' } },
-        pernoita: { art: 'Art. 39.º', title: { pt: 'Paragem nocturna', en: 'Night stop' }, resumo: {
-          pt: 'Cada paragem nocturna paga o equivalente a 2 setores nominais da categoria.',
+        pernoita: { art: 'Art. 39.º', title: { pt: 'Paragem noturna', en: 'Night stop' }, resumo: {
+          pt: 'Cada paragem noturna paga o equivalente a 2 setores nominais da categoria.',
           en: 'Each night stop pays the equivalent of 2 nominal sectors of the category.' } },
         doenca: { art: 'Art. 48.º', title: { pt: 'Doença', en: 'Sick pay' }, resumo: {
           pt: 'Na doença, os dias 1 a 3 do episódio pagam 80% da base diária (60% até junho de 2026, no acordo anterior); do 4.º dia em diante só a Segurança Social.',

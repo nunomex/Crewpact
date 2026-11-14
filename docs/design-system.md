@@ -243,7 +243,15 @@ Cada ecrã migrado vê-se no iPhone antes de fechar — passar de 12,5 para 13 m
 
 - **Folha (`PeleSheet`)** — consultar ou uma ação curta (Prova, hotel, auditoria, um evento). Sobe até
   onde o conteúdo pede, fecha com arrasto, toque fora (o fundo tem rótulo "Fechar" para o VoiceOver) ou
-  back do Android. **Sem ✕** (a pega e o fundo chegam).
+  back do Android. ~~Sem ✕ (a pega e o fundo chegam).~~ **Desde 2026-11-14 também levam o "Fechar" escrito** (C1: "Fechar" em todas
+  as janelas — a pega e tocar fora continuam a fechar). Na 3.0: `PeleSheet bg={CARD.day.sheet}` + `SheetHeader card` (a Prova, o
+  calendário da Escala).
+- **A REGRA DAS FOLHAS (o Nuno, 2026-11-14: "para as próximas folhas igual")** — nas folhas que sobem por cima de um ecrã (Prova,
+  Hotel, Evento, Validades, Auditoria…) os dados são **campos**: rótulo pequeno (`TXT3.kind`), valor grande (20) e um fio por baixo
+  (a tinta no campo onde se escreve, vermelho no que falta), como uma ficha dos Contactos — `Field` (ler) e `FieldInput`
+  (escrever), em `components/Field.js` (imagem 3417; esboços `design/hotel-form.html` F2 e `design/prova-campos.html` PA). **Os
+  cartões ficam nos ecrãs** (Início, Escala, Detalhe, Números). A folha: `PeleSheet bg={CARD.day.sheet}` + `SheetHeader card`
+  ("Fechar" escrito) + a ação larga no fundo (`WideButton`); a lista desliza e o botão fica.
 - **Página modal (`Modal` a deslizar + `SheetHeader`)** — fluxo com vários passos, formulário longo,
   lista grande ou ecrã de partilha (formulário de serviço, importar, calendário, notificações, partilhas,
   Simulação). Ocupa o ecrã, **fecha com ✕ à direita**.

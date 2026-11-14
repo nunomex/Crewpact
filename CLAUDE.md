@@ -50,6 +50,9 @@ fadiga (FTL — Reg. UE 83/2014 · CS-FTL.1) e a remuneração prevista pelos ac
    faz sentido): regras e sítios em `docs/guias.md`; a peça é `components/GuideBubble.js`; o piloto é a Escala;
    `data/escalaDay.js` (golden `test:escala`); o topo é o `HomeTop` do Início. Aplica-se ecrã a ecrã; o que ainda não migrou segue o 2.0. **Uma só app:** as
    referências de `referencias/Para a app/` traduzem-se para esta linguagem (índice no README de lá; peças em §14).
+   **Em CADA janela, página e esboço (regra do Nuno, 2026-11-14): consultar esse índice e citar as imagens que se aplicam**, ao lado do Mobbin.
+   **A regra das folhas (2026-11-14):** nas folhas que sobem por cima, campos (rótulo pequeno, valor grande, fio — `Field`/`FieldInput`);
+   nos ecrãs, os cartões (`docs/design-system.md` §11).
 6. **Dados de teste só.** Nunca dados reais de tripulantes durante a construção. RGPD: sem ficheiros,
    fotos nem saúde; dose de radiação nunca guardada.
 7. **Versões nativas = as que o `npx expo install` escolhe** (SDK 58: worklets 0.13.0, reanimated 4.7.1); nunca

@@ -8,6 +8,8 @@ import { HomeCards } from '../components/HomeCards';
 import DayRuler from '../components/DayRuler';
 import FactSheet from '../components/FactSheet';
 import PeleSheet from '../components/PeleSheet';
+import SheetHeader from '../components/SheetHeader';
+import MarkRow from '../components/MarkRow';
 import { completeRows, realTimesPatch, missingFields, plannedOf, isClock } from '../data/dutyComplete';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t } from '../data/i18n';
@@ -636,29 +638,20 @@ export function DutyDetailBody({ date, idx: idxIn = 0, editReq = null, navigatio
         title={sf ? sf.title : ''} intro={sf ? sf.sheet.intro : null} cite={sf ? sf.cite : null} note={sf ? sf.sheet.note : null}
         fields={sf ? sf.sheet.fields : []} valid={sf ? sf.valid : null}
         onSave={(v) => { const r = fact; setFact(null); saveSvc(r.apply(v), l(`${tx(r.title)} · guardado`, `${tx(r.title)} · saved`)); }} />
-      {/* "O calendário está errado?" — duas portas, cada uma com o seu formulário curto (as janelas seguem a 2.0 até migrarem). */}
-      <PeleSheet visible={fixOpen} onClose={() => setFixOpen(false)} onClosed={() => { const f = afterFix.current; afterFix.current = null; if (f) f(); }}>
-        <Text style={s.fixT} accessibilityRole="header">{fixTitle}</Text>
-        <Text style={s.fixD}>{isManual ? l('Há duas coisas que podes acrescentar aqui:', 'There are two things you can add here:') : l('A escala vem da fonte e a app não a muda. Há duas coisas que podes acrescentar aqui:', 'The roster comes from the source and the app does not change it. There are two things you can add here:')}</Text>
-        <TouchableOpacity style={s.fixOpt} activeOpacity={0.8} onPress={() => { select(); afterFix.current = () => setRealOpen(true); setFixOpen(false); }} accessibilityRole="button">
-          <View style={s.fixIc}><Icon name="clock" size={17} color={PELE.ink} /></View>
-          <View style={s.flex1}>
-            <Text style={s.crowT}>{l('Registar as horas reais', 'Record the actual times')}</Text>
-            <Text style={s.crowD}>{isFlight ? l('Calços e fim de serviço quando houve atraso — a lei conta o real', 'Blocks and sign-off when there was a delay — the law counts the actual') : l('Início e fim, se não foram os da escala', 'Start and end, if they were not the rostered ones')}</Text>
-          </View>
-          <Icon name="chevron" size={14} color={PELE.affordance} />
-        </TouchableOpacity>
+      {/* "O calendário está errado?" — duas portas, cada uma com o seu formulário curto. A REGRA DAS FOLHAS (2026-11-14): folha branca,
+          "Fechar" escrito, as portas nas linhas das janelas (`MarkRow`, como o calendário da Escala), a nota da fonte por baixo. */}
+      <PeleSheet visible={fixOpen} bg={CARD.day.sheet} onClose={() => setFixOpen(false)} onClosed={() => { const f = afterFix.current; afterFix.current = null; if (f) f(); }}>
+        <SheetHeader card title={fixTitle} onClose={() => setFixOpen(false)} closeLabel={l('Fechar', 'Close')} style={s.fixHead} />
+        <Text style={[TXT3.text, s.fixD]}>{isManual ? l('Há duas coisas que podes acrescentar aqui:', 'There are two things you can add here:') : l('A escala vem da fonte e a app não a muda. Há duas coisas que podes acrescentar aqui:', 'The roster comes from the source and the app does not change it. There are two things you can add here:')}</Text>
+        <MarkRow first mark={{ icon: 'clock' }} chevron title={l('Registar as horas reais', 'Record the actual times')}
+          sub={isFlight ? l('Calços e fim de serviço quando houve atraso — a lei conta o real', 'Blocks and sign-off when there was a delay — the law counts the actual') : l('Início e fim, se não foram os da escala', 'Start and end, if they were not the rostered ones')}
+          onPress={() => { select(); afterFix.current = () => setRealOpen(true); setFixOpen(false); }} />
         {missing.length ? (
-          <TouchableOpacity style={s.fixOpt} activeOpacity={0.8} onPress={() => { select(); afterFix.current = () => setMissOpen(true); setFixOpen(false); }} accessibilityRole="button">
-            <View style={s.fixIc}><Icon name="cal" size={17} color={PELE.ink} /></View>
-            <View style={s.flex1}>
-              <Text style={s.crowT}>{l('Faltou um dado', 'Something was missing')}</Text>
-              <Text style={s.crowD}>{l(`Falta: ${missing.map((f) => f.label.pt.toLowerCase()).join(', ')}`, `Missing: ${missing.map((f) => f.label.en.toLowerCase()).join(', ')}`)}</Text>
-            </View>
-            <Icon name="chevron" size={14} color={PELE.affordance} />
-          </TouchableOpacity>
+          <MarkRow mark={{ icon: 'cal' }} chevron title={l('Faltou um dado', 'Something was missing')}
+            sub={l(`Falta: ${missing.map((f) => f.label.pt.toLowerCase()).join(', ')}`, `Missing: ${missing.map((f) => f.label.en.toLowerCase()).join(', ')}`)}
+            onPress={() => { select(); afterFix.current = () => setMissOpen(true); setFixOpen(false); }} />
         ) : null}
-        {!isManual ? <Text style={s.fixFoot}>{duty.source === 'pdf'
+        {!isManual ? <Text style={[TXT3.cardSub, s.fixFoot]}>{duty.source === 'pdf'
           ? l('Outra coisa errada (rota, dia, serviço que não existe)? Importa na Escala o PDF atualizado: a app propõe a mudança para confirmares.', 'Something else wrong (route, day, a duty that does not exist)? Import the updated PDF in the roster: the app proposes the change for you to confirm.')
           : l('Outra coisa errada (rota, dia, serviço que não existe)? Corrige na fonte (eCrew) e toca em Sincronizar na Escala: a app propõe a mudança para confirmares.', 'Something else wrong (route, day, a duty that does not exist)? Fix it at the source (eCrew) and tap Sync in the roster: the app proposes the change for you to confirm.')}</Text> : null}
       </PeleSheet>
@@ -781,11 +774,8 @@ const s = StyleSheet.create({
   foot: { paddingHorizontal: SPACE.xs },
 
   // As janelas (as duas portas do "o calendário está errado?") — seguem a 2.0 até migrarem
-  crowT: { ...TXT.bodyStrong, color: PELE.ink },
-  crowD: { ...TXT.caption, color: PELE.grey, marginTop: SPACE.xxs },
-  fixT: { ...TXT.title, color: PELE.ink },
-  fixD: { ...TXT.body, color: PELE.grey, marginTop: SPACE.xs, marginBottom: SPACE.xs },
-  fixOpt: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, minHeight: 56, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, borderWidth: 1, borderColor: PELE.line, borderRadius: RADIUS.lg, marginTop: SPACE.sm },
-  fixIc: { width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
-  fixFoot: { ...TXT.caption, color: PELE.grey, marginTop: SPACE.md, marginBottom: SPACE.sm },
+  // "O calendário está errado?" na regra das folhas (2026-11-14)
+  fixHead: { paddingHorizontal: 0, paddingTop: 0 },
+  fixD: { color: CARD.day.soft, marginBottom: SPACE.xs },
+  fixFoot: { color: CARD.day.tabSub, marginTop: SPACE.md, marginBottom: SPACE.sm },
 });

@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · O hotel da pernoita</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* O HOTEL DA PERNOITA NO ASPETO NOVO (2026-11-14) — o 1.º formulário da 3.0 (components/HotelSheet.js: aeroporto, nome, telefone,
+   nota, Guardar). Imagens do Nuno (referencias/Para a app/README.md): 3442 "campos agrupados num cartão neutro com fios, ícone num
+   círculo branco → formulários em folha" e 3417 "formulário com rótulo pequeno, valor grande e fio". Mobbin: AllTrails (Add a
+   waypoint), foodpanda, Pangea (Add a spot), Careem (Save address). Três maneiras: F1 os campos agrupados num cartão (3442 +
+   Pangea) · F2 rótulo pequeno, valor grande e fio (3417 + AllTrails) · F3 cada campo na sua caixa (Careem, o iOS comum).
+   Dados de TESTE (inventados). */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+.lead{max-width:940px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px} .lead h2{font-weight:800;font-size:22px;margin-top:6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,406px),406px));gap:26px 24px;justify-content:center}
+.opt{display:flex;flex-direction:column;gap:10px;min-width:0}
+.opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:var(--muted);min-height:76px} .opt > p b{color:var(--pfg)}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:940px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card2 li{font-size:13px;line-height:1.5;color:var(--muted)} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:var(--pfg)}
+.refs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:10px}
+.refs div{background:#fff;border:1px solid #D6D4CD;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.4;color:var(--muted)} .refs b{color:var(--pfg)}
+
+.ph{width:406px;height:860px;border:8px solid #04060A;border-radius:52px;overflow:hidden;position:relative;background:#BDBBB5;
+  --desk:#E3E1DB;--ink:#141414;--soft:#3A3A36;--sheet:#FFFFFF;--neutral:#F1EFEA;--voo:#6DBEFA;--terra:#C3A1BE;--rest:#B4C2A2;--alert:#F0854A;--stop:#EC7A6C;--gain:#0B6E43;
+  --tsub:#5E5E57;--round:rgba(127,127,127,.22);--rule:rgba(127,127,127,.25);color:var(--ink)}
+.status{height:47px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.behind{position:absolute;left:10px;right:10px;top:47px;height:30px;border-radius:14px 14px 0 0;background:#D2D0CA}
+.sh{position:absolute;left:0;right:0;top:58px;bottom:0;background:var(--sheet);border-radius:14px 14px 0 0;display:flex;flex-direction:column}
+.grab{display:flex;justify-content:center;padding:7px 0 3px} .grab i{width:36px;height:5px;border-radius:3px;background:rgba(127,127,127,.35)}
+.body{flex:1;overflow:hidden;padding:4px 12px 20px;display:flex;flex-direction:column;gap:8px}
+.ic{display:inline-block;flex:none;fill:currentColor}
+/* os ✕ */
+.xA{width:44px;height:44px;border-radius:22px;background:var(--round);display:flex;align-items:center;justify-content:center;flex:none}
+.xB{width:30px;height:30px;border-radius:15px;background:var(--round);display:flex;align-items:center;justify-content:center;flex:none}
+.xC{height:38px;padding:0 16px;border-radius:19px;border:1.5px solid var(--ink);display:inline-flex;align-items:center;font-weight:700;font-size:13px;flex:none}
+/* cabeçalhos */
+.hA{display:flex;align-items:flex-start;gap:12px;padding:6px 16px 10px} .hA .t{flex:1} .hA .k{display:block;font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub)} .hA h4{font-weight:800;font-size:22px;line-height:26px;letter-spacing:-.4px;margin-top:2px}
+.hB{display:flex;align-items:center;justify-content:center;position:relative;padding:8px 16px 12px} .hB h4{font-weight:800;font-size:16px} .hB .xB{position:absolute;right:14px;top:4px}
+.hC{display:flex;align-items:center;gap:12px;padding:8px 16px 12px} .hC h4{flex:1;font-weight:800;font-size:26px;letter-spacing:-.5px}
+/* A · cartões neutros */
+.cA{background:var(--neutral);border-radius:22px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.cA .kk{display:flex;align-items:center;gap:6px;font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub)} .cA .kk i{width:8px;height:8px;border-radius:4px;background:var(--alert)}
+.cA b.tt{font-weight:800;font-size:16px;line-height:20px} .cA span.sb{font-weight:500;font-size:12px;line-height:16px;color:var(--soft)}
+.chg{display:flex;align-items:center;gap:8px;font-weight:600;font-size:12px} .chg s{text-decoration:line-through;color:var(--tsub)}
+.pl{height:22px;padding:0 9px;border-radius:11px;font-weight:800;font-size:11px;display:inline-flex;align-items:center;flex:none}
+.pl.new{background:#DCEFFD} .pl.chg2{background:#FCE1D2} .pl.cx{background:#FAD9D4}
+.dark{background:var(--ink);color:#fff;border-radius:18px;padding:12px 14px;display:flex;align-items:center;gap:10px} .dark .t{flex:1} .dark b{display:block;font-weight:800;font-size:15px} .dark span{font-size:12px;opacity:.75}
+.go{width:30px;height:30px;border-radius:15px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;flex:none}
+.cap{font-weight:500;font-size:12px;color:var(--tsub);text-align:center;padding:6px 0}
+.lnA{display:flex;align-items:center;gap:10px;padding:10px 2px;border-top:1px solid var(--rule)} .lnA:first-of-type{border-top:0} .lnA .t{flex:1} .lnA b{display:block;font-weight:700;font-size:15px} .lnA span{font-size:12px;color:var(--tsub)}
+/* B · linhas finas na cor do tipo */
+.sl{border-radius:22px;padding:12px 16px;display:flex;align-items:center;gap:12px;min-height:56px}
+.sl .t{flex:1;min-width:0} .sl .t b{display:block;font-weight:800;font-size:16px;line-height:20px} .sl .t span{display:block;font-weight:500;font-size:12px;line-height:16px;opacity:.82}
+.sl.alert{background:var(--alert)} .sl.voo{background:var(--voo)} .sl.neutral{background:var(--neutral)} .sl.dk{background:var(--ink);color:#fff}
+.sl .go2{width:30px;height:30px;border-radius:15px;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;flex:none} .sl.neutral .go2{background:rgba(127,127,127,.18)} .sl.dk .go2{background:rgba(255,255,255,.22)}
+.sl .tm{font-weight:700;font-size:11px;opacity:.75;white-space:nowrap}
+.secB{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub);padding:8px 4px 0}
+/* os acertos */
+.dch{display:flex;flex-direction:column;gap:6px;margin:-4px 0 4px 48px}
+.dch div{display:flex;align-items:center;gap:8px;font-weight:600;font-size:12px} .dch s{text-decoration:line-through;color:var(--tsub)}
+.big{height:54px;border-radius:18px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;font-size:16px;flex:none;margin-top:auto}
+.sec{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub);padding:10px 4px 2px}
+.lC.dkr{background:var(--ink);color:#fff;border-radius:18px;padding:12px;border-top:0;margin-bottom:6px} .lC.dkr .t span{color:rgba(255,255,255,.75)} .lC.dkr .sq{background:rgba(255,255,255,.18)!important;color:#fff}
+.lC.open{background:var(--neutral);border-radius:18px;padding:12px;border-top:0;flex-wrap:wrap}
+.lC.open .dch{flex-basis:100%;margin:8px 0 0 48px}
+.grp{background:var(--neutral);border-radius:18px;padding:0 12px;flex:none} .grp .lC{border-top-color:rgba(127,127,127,.22)}
+.cap2{font-weight:500;font-size:12px;color:var(--tsub);padding:2px 4px}
+/* C · lista com o quadradinho do ícone */
+.lC{display:flex;align-items:center;gap:12px;padding:12px 4px;border-top:1px solid var(--rule);position:relative} .lC.f{border-top:0}
+.sq{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex:none;color:#141414}
+.lC .t{flex:1;min-width:0} .lC .t b{display:block;font-weight:800;font-size:15px;line-height:19px} .lC .t span{display:block;font-weight:500;font-size:12px;line-height:16px;color:var(--tsub)}
+.lC .tm{font-weight:600;font-size:11px;color:var(--tsub);align-self:flex-start;white-space:nowrap}
+.lC .nd{position:absolute;left:-6px;top:50%;width:7px;height:7px;border-radius:4px;background:var(--alert);transform:translateY(-50%)}
+.foot{display:flex;align-items:center;justify-content:center;gap:6px;font-weight:600;font-size:12px;color:var(--tsub);padding:10px 0}
+
+/* a janela de sincronizar */
+.pl.new{background:var(--voo)} .pl.chg2{background:var(--alert)} .pl.cx{background:var(--stop)}   /* as pílulas sólidas, como as que já estão nas notificações */
+.lead2{font-weight:500;font-size:12px;line-height:16px;color:var(--tsub);padding:0 4px 4px}
+.lC .eur{font-weight:700;font-size:15px;color:var(--gain);white-space:nowrap}
+.lC .fix{font-weight:800;font-size:13px;white-space:nowrap}
+.lC .t s{display:block;font-weight:600;font-size:12px;line-height:16px;color:var(--tsub);text-decoration:line-through}
+.chk{width:24px;height:24px;border-radius:12px;border:1.5px solid var(--ink);flex:none}
+.link{font-weight:700;font-size:12px;color:var(--tsub);text-align:center;padding:6px 0;text-decoration:underline;text-underline-offset:3px}
+.foot2{display:flex;align-items:center;justify-content:center;gap:6px;font-weight:600;font-size:12px;color:var(--tsub);padding:4px 0 8px}
+/* R2 · a data grande */
+.mo{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub);padding:6px 4px 0}
+.dR{display:flex;align-items:center;gap:12px;padding:10px 4px;border-top:1px solid var(--rule)} .dR.f{border-top:0}
+.dd{width:44px;flex:none;display:flex;flex-direction:column;align-items:center} .dd b{font-weight:800;font-size:26px;line-height:28px;letter-spacing:-.5px} .dd span{font-weight:700;font-size:11px;color:var(--tsub)}
+.dR .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px} .dR .t b{font-weight:800;font-size:15px;line-height:19px} .dR .t span{font-weight:500;font-size:12px;line-height:16px;color:var(--tsub)} .dR .t s{font-weight:600;font-size:12px;color:var(--tsub)}
+.dR .eur{font-weight:700;font-size:15px;color:var(--gain);white-space:nowrap}
+.strip{background:var(--neutral);border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:10px;font-weight:700;font-size:13px}
+.strip i{width:22px;height:22px;border-radius:7px;background:var(--alert);display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:800;font-size:13px;flex:none}
+/* R3 · o resumo primeiro */
+.sum{background:var(--neutral);border-radius:22px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.nums{display:flex;gap:8px} .nums div{flex:1;display:flex;flex-direction:column} .nums b{font-weight:800;font-size:30px;line-height:32px;letter-spacing:-.8px} .nums span{font-weight:600;font-size:11px;color:var(--tsub)}
+.sum .tot{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--rule);padding-top:8px;font-weight:600;font-size:12px;color:var(--tsub)} .sum .tot b{font-weight:800;font-size:17px;color:var(--gain)}
+.cd{border:1px solid var(--rule);border-radius:18px;padding:12px 14px;display:flex;align-items:center;gap:12px}
+.cd .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px} .cd .k{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub)} .cd b{font-weight:800;font-size:16px;line-height:20px} .cd span{font-weight:500;font-size:12px;color:var(--tsub)}
+.cd .eur{font-weight:700;font-size:15px;color:var(--gain);white-space:nowrap}
+.cd.warn{border-color:var(--alert);border-width:1.5px}
+/* o calendário */
+.dotc{width:14px;height:14px;border-radius:7px}
+.tick{width:24px;height:24px;border-radius:12px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;flex:none}
+
+
+.lst{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;scrollbar-width:none} .lst::-webkit-scrollbar{display:none}
+.body .big{margin-top:0}
+.mline{font-weight:700;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--tsub);padding:4px 4px 0 4px;opacity:.8}
+.hR{display:flex;align-items:center;gap:12px;padding:10px 4px;border-top:1px solid var(--rule)} .hR.f{border-top:0}
+.hR .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px} .hR .t b{font-weight:800;font-size:15px;line-height:19px} .hR .t span{font-weight:500;font-size:12px;line-height:16px;color:var(--tsub)} .hR .t s{font-weight:600;font-size:12px;line-height:16px;color:var(--tsub);text-decoration:line-through}
+.hR .t span.warn{color:var(--ink);font-weight:600}
+.hR .eur{font-weight:700;font-size:15px;color:var(--gain);white-space:nowrap}
+.hR .fix{font-weight:800;font-size:13px;white-space:nowrap}
+.d2{width:44px;height:48px;border-radius:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;color:#141414;position:relative} .d2 b{font-weight:800;font-size:20px;line-height:21px;letter-spacing:-.4px} .d2 span{font-weight:700;font-size:10px;line-height:12px;opacity:.82}
+/* V1 · o selo no canto */
+.bdg{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:10px;border:2px solid var(--sheet);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;color:#141414}
+/* V2 · o anel */
+.ring{box-shadow:0 0 0 2px var(--sheet),0 0 0 4.5px var(--rc)}
+/* V3 · a faixa no fundo */
+.d3{width:44px;height:52px;border-radius:13px;display:flex;flex-direction:column;flex:none;color:#141414;overflow:hidden}
+.d3 .top{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center} .d3 b{font-weight:800;font-size:19px;line-height:20px;letter-spacing:-.4px} .d3 .top span{font-weight:700;font-size:10px;line-height:11px;opacity:.82}
+.d3 .band{height:15px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:10px}
+
+.ph{height:900px}
+.sh{top:62px}
+.body{padding:2px 16px 12px;gap:10px}
+.hC h4{font-size:26px}
+.card{background:var(--neutral);border-radius:22px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.kd{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub)}
+.num{font-weight:700;font-size:34px;line-height:36px;letter-spacing:-1px}
+.num.gain{color:var(--gain)}
+.nsub{font-weight:500;font-size:12px;line-height:16px;color:var(--soft)}
+.txt{font-weight:500;font-size:14px;line-height:20px;color:var(--soft)}
+.ln{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:8px 0;border-top:1px solid var(--rule)} .ln.f{border-top:0;padding-top:2px}
+.ln span{font-weight:500;font-size:15px;line-height:20px} .ln b{font-weight:700;font-size:15px;line-height:20px;text-align:right}
+.act{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--rule);padding-top:10px;font-weight:700;font-size:14px}
+.note{font-weight:500;font-size:12px;line-height:16px;color:var(--tsub);padding:0 4px}
+.note b{color:var(--ink);font-weight:700}
+.steps{display:flex;flex-direction:column;gap:10px}
+.st{display:flex;gap:10px} .st i{width:24px;height:24px;border-radius:12px;background:var(--sheet);display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:800;font-size:12px;flex:none}
+.st p{font-weight:500;font-size:14px;line-height:20px;color:var(--soft)}
+.toprow{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.big{margin-top:auto}
+
+.ph{height:860px}
+.sh{top:150px}
+.body{padding:2px 16px 14px;gap:12px}
+.hC h4{font-size:26px}
+.stn{display:flex;align-items:center;gap:12px}
+.stq{width:44px;height:44px;border-radius:14px;background:var(--rest);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;letter-spacing:.4px;flex:none}
+.stn div b{display:block;font-weight:800;font-size:16px;line-height:20px} .stn div span{display:block;font-weight:500;font-size:12px;line-height:16px;color:var(--tsub)}
+.expl{font-weight:500;font-size:12px;line-height:16px;color:var(--tsub)}
+/* F1 · agrupados */
+.grp{background:var(--neutral);border-radius:24px;padding:4px 16px}
+.fr{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--rule)} .fr.f{border-top:0}
+.fi{width:36px;height:36px;border-radius:18px;background:var(--sheet);display:flex;align-items:center;justify-content:center;flex:none}
+.fr .t{flex:1;min-width:0} .fr .t small{display:block;font-weight:700;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--tsub)} .fr .t b{display:block;font-weight:700;font-size:16px;line-height:22px} .fr .t b.ph2{color:#9A9A92;font-weight:500}
+/* F2 · rótulo pequeno, valor grande, fio */
+.lf{padding:8px 2px 10px;border-bottom:1.5px solid var(--rule)} .lf small{display:block;font-weight:700;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--tsub)} .lf b{display:block;font-weight:700;font-size:20px;line-height:28px;letter-spacing:-.3px} .lf b.ph2{color:#9A9A92;font-weight:500}
+.lf.focus{border-bottom-color:var(--ink)}
+/* F3 · caixas */
+.bx small{display:block;font-weight:700;font-size:12px;color:var(--ink);margin:0 4px 6px} .bx div{background:var(--neutral);border-radius:16px;padding:14px 14px;font-weight:600;font-size:15px} .bx div.ph2{color:#9A9A92;font-weight:500}
+.priv{display:flex;align-items:center;justify-content:center;gap:6px;font-weight:600;font-size:12px;color:var(--tsub)}
+.big{margin-top:auto}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>O hotel da pernoita</h1>
+    <p>O primeiro formulário no aspeto novo. <b>As tuas imagens:</b> a <b>3442</b> ("campos agrupados num cartão neutro com fios, ícone num círculo branco → formulários em folha") e a <b>3417</b> ("rótulo pequeno, valor grande e fio"). <b>Mobbin:</b> <a href="https://mobbin.com/screens/bb58146c-9244-4664-bdc1-50ae50929811">AllTrails</a>, <a href="https://mobbin.com/screens/ab6d33d0-0292-41ee-b8b3-23eed679f186">foodpanda</a>, <a href="https://mobbin.com/screens/28d15ec9-df7b-49fd-85b6-c0fde6a2e420">Pangea</a>, <a href="https://mobbin.com/screens/fbe79f34-f10f-48dc-b2dd-a3ab304f83dd">Careem</a>. Em todas: "Fechar" escrito, o aeroporto da pernoita em cima no quadradinho da cor do repouso (vem da escala — não se escreve), a explicação curta (o Maps procura por este nome), "Guardado só no teu telemóvel" e "Guardar" largo no fundo.</p>
+  </div>
+  <div class="grid3" id="g1"></div>
+  <div class="card2"><h3>A minha recomendação: F1</h3><ul>
+    <li><b>F1</b> é a tua imagem 3442, que o índice já dava para os formulários em folha: os três campos num só cartão neutro com fios, cada um com o ícone num círculo branco — o mesmo cartão (cantos 24) da Prova e do Perfil (3447). Lê-se como uma ficha ("à Contactos", como ficou decidido para o hotel).</li>
+    <li><b>F2</b> (3417) é a mais limpa e o valor lê-se bem (20 pt), mas sem cartão parece outra app ao lado da Prova; e um campo vazio é só um fio.</li>
+    <li><b>F3</b> é o formulário comum do iPhone (Careem): claro, mas é o que já tínhamos em cinzento, e cada campo numa caixa ocupa mais altura (com o teclado aberto, a nota sai do ecrã).</li>
+    <li>Quando o aeroporto não vem da escala, o quadradinho do topo passa a ser um campo de procura ("cidade ou sigla") com as sugestões por baixo — na mesma forma de cada opção.</li></ul></div>
+</div>
+<script>
+var P = { x:'<path d="M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12 19 17.6 17.6 19 12 13.4 6.4 19 5 17.6 10.6 12 5 6.4z"/>', chev:'<path d="M8.6 4.2 16.4 12l-7.8 7.8-1.9-1.9 5.9-5.9-5.9-5.9z"/>',
+  sync:'<path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z"/>', plane:'<path d="M21 15.5v-2l-8-5V3.6a1.5 1.5 0 0 0-3 0V8.5l-8 5v2l8-2.5V18l-2 1.5V21l3.5-1 3.5 1v-1.5L13 18v-5z"/>',
+  doc:'<path d="M6 2h8l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7 1.5V8h4.5z"/>', cal:'<path d="M7 2h2.6v3H7V2zm7.4 0H17v3h-2.6V2zM4 5h16v3.6H4V5zm0 5h16v10a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 20V10z"/>',
+  lock:'<path d="M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1zm2 0h6V7a3 3 0 0 0-6 0v3z"/>', swap:'<path d="M7 7h11l-3-3 1.4-1.4L21.8 8l-5.4 5.4L15 12l3-3H7V7zm10 10H6l3 3-1.4 1.4L2.2 16l5.4-5.4L9 12l-3 3h11v2z"/>' };
+function ic(n, s){ return '<svg class="ic" width="' + s + '" height="' + s + '" viewBox="0 0 24 24">' + P[n] + '</svg>'; }
+function phone(head, body){ return '<div class="ph"><div class="status"><span>17:31</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="behind"></div><div class="sh"><div class="grab"><i></i></div>' + head + '<div class="body">' + body + '</div></div></div>'; }
+
+
+
+
+
+P.bed = '<path d="M3 6h2v7h7V8h6a3 3 0 0 1 3 3v7h-2v-2H5v2H3V6zm5 1.5A2.5 2.5 0 1 1 8 12.5a2.5 2.5 0 0 1 0-5z"/>';
+P.phone = '<path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/>';
+P.note = '<path d="M5 3h10l4 4v14H5V3zm9 1.5V8h3.5L14 4.5zM8 12h8v1.6H8V12zm0 3.5h6v1.6H8v-1.6z"/>';
+function head(title){ return '<div class="hC"><h4>' + title + '</h4><span class="xC">Fechar</span></div>'; }
+var STN = '<div class="stn"><span class="stq">FNC</span><div><b>Funchal</b><span>o aeroporto da pernoita · vem da escala</span></div></div>';
+var EXPL = '<p class="expl">Guarda-se por aeroporto: na próxima pernoita no Funchal já cá está. O Maps procura por este nome — escreve-o como está na porta do hotel.</p>';
+var FOOT = '<div class="priv">' + ic('lock', 13) + 'Guardado só no teu telemóvel</div><div class="big">Guardar</div>';
+var F = [['bed', 'Nome do hotel', 'Hotel Girassol', false], ['phone', 'Telefone · opcional', '+351 291 …', true], ['note', 'Nota · opcional', 'a 15 min do aeroporto · pequeno-almoço às 06:00', false]];
+function F1(){
+  return head('Hotel da pernoita') + '<div class="body">' + STN + EXPL
+    + '<div class="grp">' + F.map(function(f, i){ return '<div class="fr' + (i === 0 ? ' f' : '') + '"><span class="fi">' + ic(f[0], 17) + '</span><div class="t"><small>' + f[1] + '</small><b' + (f[3] ? ' class="ph2"' : '') + '>' + f[2] + '</b></div></div>'; }).join('') + '</div>'
+    + FOOT + '</div>';
+}
+function F2(){
+  return head('Hotel da pernoita') + '<div class="body">' + STN + EXPL
+    + F.map(function(f, i){ return '<div class="lf' + (i === 0 ? ' focus' : '') + '"><small>' + f[1] + '</small><b' + (f[3] ? ' class="ph2"' : '') + '>' + f[2] + '</b></div>'; }).join('')
+    + FOOT + '</div>';
+}
+function F3(){
+  return head('Hotel da pernoita') + '<div class="body">' + STN + EXPL
+    + F.map(function(f){ return '<div class="bx"><small>' + f[1] + '</small><div' + (f[3] ? ' class="ph2"' : '') + '>' + f[2] + '</div></div>'; }).join('')
+    + FOOT + '</div>';
+}
+var O = [['F1 · Os campos num cartão', true, '<b>Os três campos num cartão neutro com fios</b>, cada um com o ícone num círculo branco e o rótulo pequeno por cima do valor (a tua 3442; Pangea).', F1],
+         ['F2 · Rótulo pequeno, valor grande e fio', false, '<b>Sem cartão:</b> o rótulo pequeno, o valor grande (20) e um fio por baixo, que fica a tinta no campo onde estás a escrever (a tua 3417; AllTrails).', F2],
+         ['F3 · Cada campo na sua caixa', false, '<b>O formulário comum do iPhone:</b> o rótulo por cima e cada campo numa caixa neutra de cantos redondos (Careem).', F3]];
+function phoneP(inner){ return '<div class="ph"><div class="status"><span>01:13</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="behind"></div><div class="sh"><div class="grab"><i></i></div>' + inner + '</div></div>'; }
+document.getElementById('g1').innerHTML = O.map(function(o){ return '<div class="opt"><h3>' + o[0] + (o[1] ? '<span class="rec">RECOMENDO</span>' : '') + '</h3><p>' + o[2] + '</p>' + phoneP(o[3]()) + '</div>'; }).join('');
+</script>
+</body>
+</html>

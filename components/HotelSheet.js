@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useContext, useMemo, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import PeleSheet from './PeleSheet';
-import PrimaryButton from './PrimaryButton';
-import { PELE as P, PELE_FONT as F } from '../data/constants';
+import SheetHeader from './SheetHeader';
+import { FieldInput } from './Field';
+import { WideButton } from './PillButton';
+import Icon from './Icon';
+import { CARD, TXT, TXT3, SPACE, RADIUS } from '../data/constants';
 import { t } from '../data/i18n';
 import { select, success, warning } from '../data/haptics';
 import { AppContext } from '../data/appContext';
@@ -14,8 +17,12 @@ import { hotelAt } from '../data/hotels';
 // Modos: `idx` (0 = o atual, n = others[n-1]) edita esse hotel; `addAlt` regista OUTRO
 // hotel na estação — e o novo entra logo como o ATUAL ("o comandante avisou que mudou").
 // Pele nova sobre PeleSheet (o teclado levanta a folha; scrim/arrasto fecham).
+// F2 (design/hotel-form.html, escolhida pelo Nuno a 2026-11-14): a regra das folhas — os campos com rótulo pequeno, valor grande e
+// fio (`FieldInput`, a imagem 3417), "Fechar" escrito, o aeroporto em cima no quadradinho da cor do repouso (vem da escala; sem ela,
+// um campo de procura com as sugestões por baixo), a explicação curta, "Guardado só no teu telemóvel" e "Guardar" largo no fundo.
 export default function HotelSheet({ visible, onClose, station = null, idx = 0, addAlt = false }) {
   const { lang, hotels, saveHotel, saveHotelAt, addHotelAlt } = useContext(AppContext);
+  const { height: winH } = useWindowDimensions();
   const l = (pt, en) => (lang === 'en' ? en : pt);
 
   const [st, setSt] = useState('');
@@ -56,102 +63,88 @@ export default function HotelSheet({ visible, onClose, station = null, idx = 0, 
     onClose && onClose();
   };
 
+  const W = CARD.day;
+  const city = (airportInfo(st) || {}).city || '';
   return (
-    <PeleSheet visible={visible} onClose={onClose}>
+    <PeleSheet visible={visible} onClose={onClose} bg={W.sheet}>
+      <SheetHeader card title={addAlt ? l('Outro hotel', 'Another hotel') : l('Hotel da pernoita', 'Night-stop hotel')} onClose={onClose}
+        closeLabel={t('common.close', lang)} style={s.head} />
       {/* keyboardShouldPersistTaps: as sugestões do aeroporto tocam-se COM o teclado aberto. */}
-      <ScrollView style={s.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <Text style={s.title} allowFontScaling={false}>{stOk ? l(`Hotel da pernoita · ${st}`, `Night-stop hotel · ${st}`) : l('Hotel da pernoita', 'Night-stop hotel')}</Text>
-        {/* O nome é a CHAVE dos Mapas (não temos coordenadas) — ensina-se aqui, uma vez. */}
-        <Text style={s.sub}>{l('Guarda-se por aeroporto — nas próximas pernoitas neste destino já cá está. O Maps procura por este nome: escreve-o como está na porta do hotel.', 'Saved per airport — it will be there for your next night stops at this destination. Maps searches by this name: write it as it reads on the hotel’s door.')}</Text>
-
-        {!station ? (
+      <ScrollView style={{ maxHeight: Math.round(winH * 0.62) }} contentContainerStyle={s.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        {stOk ? (
+          // O aeroporto da pernoita no quadradinho da cor do repouso (vem da escala; escolhido à mão, troca-se no ×).
+          <View style={s.stn}>
+            <View style={[s.stq, { backgroundColor: W.rest }]}><Text style={[TXT3.pill, { color: CARD.onCard }]} allowFontScaling={false}>{st}</Text></View>
+            <View style={s.flex}>
+              <Text style={[TXT3.slimTitle, { color: W.ink }]} numberOfLines={1}>{city || st}</Text>
+              <Text style={[TXT3.slimSub, { color: W.tabSub }]} numberOfLines={1}>{station ? l('o aeroporto da pernoita · vem da escala', 'the night-stop airport · from the roster') : l('o aeroporto da pernoita', 'the night-stop airport')}</Text>
+            </View>
+            {!station ? (
+              <TouchableOpacity onPress={clearSt} hitSlop={10} accessibilityRole="button" accessibilityLabel={l('Trocar aeroporto', 'Change airport')}>
+                <Text style={[TXT3.act, { color: W.ink }]}>{l('Trocar', 'Change')}</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        ) : (
           <>
-            <Text style={s.lbl}>{l('Aeroporto da pernoita', 'Night-stop airport')}</Text>
-            {st ? (
-              <View style={s.stRow}>
-                <View style={s.stChip}>
-                  <Text style={s.stChipTxt} allowFontScaling={false}>{st}</Text>
-                  <TouchableOpacity onPress={clearSt} hitSlop={10} style={s.stChipX}
-                    accessibilityRole="button" accessibilityLabel={l('Trocar aeroporto', 'Change airport')}>
-                    <Text style={s.stChipXTxt}>×</Text>
+            {/* Estação escolhida do CATÁLOGO real (data/airports.js, como a rota) — mata o typo ("FCN") que gravava um hotel
+                numa estação que nunca batia certo. */}
+            <FieldInput label={l('Aeroporto da pernoita', 'Night-stop airport')} value={stQuery} onChangeText={setStQuery}
+              placeholder={l('cidade ou sigla — ex. Funchal, FNC', 'city or code — e.g. Funchal, FNC')} autoCapitalize="characters" autoCorrect={false}
+              error={attempted && !stOk ? l('Escolhe o aeroporto na lista.', 'Pick the airport from the list.') : null} />
+            {sugg.length > 0 ? (
+              <View style={s.drop}>
+                {sugg.map((r, i) => (
+                  <TouchableOpacity key={r.iata} style={[s.dOpt, i > 0 && s.dOptRule]} activeOpacity={0.7} onPress={() => pickSt(r.iata)}
+                    accessibilityRole="button" accessibilityLabel={`${r.iata} · ${r.city || r.name}`}>
+                    <View style={[s.stq, s.stqSm, { backgroundColor: W.rest }]}><Text style={[TXT3.dur, { color: CARD.onCard }]} allowFontScaling={false}>{r.iata}</Text></View>
+                    <View style={s.flex}>
+                      <Text style={[TXT3.lineVal, { color: W.ink }]} numberOfLines={1}>{r.city || r.name}</Text>
+                      <Text style={[TXT3.slimSub, { color: W.tabSub }]} numberOfLines={1}>{[r.name, r.cc].filter(Boolean).join(' · ')}</Text>
+                    </View>
                   </TouchableOpacity>
-                </View>
-                <Text style={s.stCity} numberOfLines={1}>{(airportInfo(st) || {}).city || ''}</Text>
+                ))}
               </View>
-            ) : (
-              <>
-                <TextInput style={[s.input, attempted && !stOk && s.inputErr]} value={stQuery} onChangeText={setStQuery}
-                  placeholder={l('cidade ou sigla — ex. Funchal, FNC', 'city or code — e.g. Funchal, FNC')}
-                  placeholderTextColor={P.placeholder} autoCapitalize="characters" autoCorrect={false} />
-                {sugg.length > 0 ? (
-                  <View style={s.drop}>
-                    {sugg.map((r, i) => (
-                      <TouchableOpacity key={r.iata} style={[s.dOpt, i > 0 && s.dOptBorder]} activeOpacity={0.7} onPress={() => pickSt(r.iata)}
-                        accessibilityRole="button" accessibilityLabel={`${r.iata} · ${r.city || r.name}`}>
-                        <View style={{ flex: 1, minWidth: 0 }}>
-                          <Text style={s.dCity} numberOfLines={1}>{r.city || r.name}</Text>
-                          <Text style={s.dName} numberOfLines={1}>{[r.name, r.cc].filter(Boolean).join(' · ')}</Text>
-                        </View>
-                        <View style={s.dBadge}><Text style={s.dBadgeTxt} allowFontScaling={false}>{r.iata}</Text></View>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                ) : null}
-                {attempted && !stOk ? <Text style={s.err}>{l('Escolhe o aeroporto na lista.', 'Pick the airport from the list.')}</Text> : null}
-              </>
-            )}
+            ) : null}
           </>
-        ) : null}
+        )}
 
-        <Text style={s.lbl}>{l('Nome do hotel', 'Hotel name')}</Text>
-        <TextInput ref={nameRef} style={[s.input, attempted && !name.trim() && s.inputErr]} value={name} onChangeText={setName}
-          placeholder={l('ex. Hotel Girassol', 'e.g. Hotel Girassol')} placeholderTextColor={P.placeholder} autoCorrect={false} maxLength={60}
-          returnKeyType="next" blurOnSubmit={false} onSubmitEditing={() => phoneRef.current && phoneRef.current.focus()} />
-        {attempted && !name.trim() ? <Text style={s.err}>{l('Falta o nome.', 'Name missing.')}</Text> : null}
+        {/* O nome é a CHAVE dos Mapas (não temos coordenadas) — ensina-se aqui, uma vez. */}
+        <Text style={[TXT3.cardSub, s.expl]}>{city
+          ? l(`Guarda-se por aeroporto: na próxima pernoita em ${city} já cá está. O Maps procura por este nome — escreve-o como está na porta do hotel.`, `Saved per airport: it will be here for your next night stop in ${city}. Maps searches by this name — write it as it reads on the hotel’s door.`)
+          : l('Guarda-se por aeroporto: na próxima pernoita neste destino já cá está. O Maps procura por este nome — escreve-o como está na porta do hotel.', 'Saved per airport: it will be here for your next night stop there. Maps searches by this name — write it as it reads on the hotel’s door.')}</Text>
 
-        <Text style={s.lbl}>{l('Telefone · opcional', 'Phone · optional')}</Text>
+        <FieldInput ref={nameRef} label={l('Nome do hotel', 'Hotel name')} value={name} onChangeText={setName}
+          placeholder={l('ex. Hotel Girassol', 'e.g. Hotel Girassol')} autoCorrect={false} maxLength={60}
+          returnKeyType="next" blurOnSubmit={false} onSubmitEditing={() => phoneRef.current && phoneRef.current.focus()}
+          error={attempted && !name.trim() ? l('Falta o nome.', 'Name missing.') : null} />
         {/* phone-pad não tem "next" no iOS — o encadeamento vale no Android; no iOS toca-se na Nota. */}
-        <TextInput ref={phoneRef} style={s.input} value={phone} onChangeText={setPhone} placeholder="+351 …" placeholderTextColor={P.placeholder}
-          keyboardType="phone-pad" maxLength={24}
+        <FieldInput ref={phoneRef} label={l('Telefone · opcional', 'Phone · optional')} value={phone} onChangeText={setPhone}
+          placeholder="+351 …" keyboardType="phone-pad" maxLength={24}
           returnKeyType="next" blurOnSubmit={false} onSubmitEditing={() => noteRef.current && noteRef.current.focus()} />
-
-        {/* O placeholder ensina a gramática da nota — o detalhe "15 min" é conhecimento
-            do próprio, ganho na 1.ª estadia (a app não inventa minutos; o ETA vivo é do Maps). */}
-        <Text style={s.lbl}>{l('Nota · opcional', 'Note · optional')}</Text>
-        <TextInput ref={noteRef} style={s.input} value={note} onChangeText={setNote}
+        {/* O placeholder ensina a gramática da nota — o detalhe "15 min" é conhecimento do próprio, ganho na 1.ª estadia (a app
+            não inventa minutos; o ETA vivo é do Maps). */}
+        <FieldInput ref={noteRef} label={l('Nota · opcional', 'Note · optional')} value={note} onChangeText={setNote}
           placeholder={l('ex.: a 15 min do aeroporto · pequeno-almoço às 06:00', 'e.g. 15 min from the airport · breakfast at 06:00')}
-          placeholderTextColor={P.placeholder} maxLength={120}
-          returnKeyType="done" onSubmitEditing={save} />
-
-        <PrimaryButton onPress={save} label={t('common.save', lang)} style={{ marginTop: 18 }} />
-        <Text style={s.privacy}>🔒 {l('Guardado só no teu telemóvel', 'Stored only on your phone')}</Text>
+          maxLength={120} multiline returnKeyType="done" blurOnSubmit onSubmitEditing={save} />
       </ScrollView>
+      <View style={s.priv}><Icon name="lock" size={13} color={W.tabSub} /><Text style={[TXT.caption, { color: W.tabSub }]}>{l('Guardado só no teu telemóvel', 'Stored only on your phone')}</Text></View>
+      <WideButton label={t('common.save', lang)} onPress={save} />
     </PeleSheet>
   );
 }
 
+// F2 (2026-11-14): a folha branca da 3.0; os campos são o `FieldInput` (a mesma peça da Prova); texto em TXT3, espaço em SPACE.
 const s = StyleSheet.create({
-  scroll: { maxHeight: Math.round(Dimensions.get('window').height * 0.72) },
-  title: { fontFamily: F.display, fontSize: 26, letterSpacing: -0.3, color: P.ink },
-  sub: { fontFamily: F.bodyMed, fontSize: 11.5, color: P.grey, lineHeight: 16, marginTop: 4 },
-  lbl: { fontFamily: F.bodyHeavy, fontSize: 11, letterSpacing: 0.5, textTransform: 'uppercase', color: P.grey, marginTop: 16, marginBottom: 8 },
-  input: { backgroundColor: P.soft, borderRadius: 12, borderWidth: 1, borderColor: P.line, paddingHorizontal: 12, paddingVertical: 11, color: P.ink, fontSize: 13.5, fontFamily: F.bodyMed },
-  inputErr: { borderColor: P.red },
-  // Picker da estação — a MESMA gramática do formulário de rota (AirportRoute), variante
-  // de escolha única: sugestões cidade+nome·país com a sigla em badge; escolhida = chip c/ ×.
-  stRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  stChip: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, backgroundColor: P.ink, borderRadius: 11, paddingLeft: 12, paddingRight: 8 },
-  stChipTxt: { color: P.onInk, fontFamily: F.display, fontSize: 15, letterSpacing: 0.8 },
-  stChipX: { width: 18, height: 18, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
-  stChipXTxt: { color: P.onInk, fontSize: 12, lineHeight: 14, fontFamily: F.bodyBold },
-  stCity: { flex: 1, fontSize: 12, fontFamily: F.bodyMed, color: P.grey },
-  drop: { marginTop: 8, borderWidth: 1, borderColor: P.line, borderRadius: 12, backgroundColor: P.paper, overflow: 'hidden' },
-  dOpt: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 10 },
-  dOptBorder: { borderTopWidth: 1, borderTopColor: P.line },
-  dCity: { fontSize: 13.5, fontFamily: F.bodyBold, color: P.ink },
-  dName: { fontSize: 10.5, fontFamily: F.bodyMed, color: P.grey, marginTop: 1 },
-  dBadge: { backgroundColor: P.soft, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5 },
-  dBadgeTxt: { fontFamily: F.display, fontSize: 13, letterSpacing: 1, color: P.ink },
-  err: { fontSize: 11.5, fontFamily: F.bodyBold, color: P.red, marginTop: 8 },
-  privacy: { fontSize: 10.5, fontFamily: F.bodyBold, color: P.greyOnSoft, textAlign: 'center', marginTop: 12 },
+  head: { paddingHorizontal: 0, paddingTop: 0 },
+  body: { gap: SPACE.sm, paddingBottom: SPACE.sm },
+  flex: { flex: 1, minWidth: 0 },
+  stn: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md },
+  stq: { width: 44, height: 44, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },
+  stqSm: { width: 36, height: 36, borderRadius: RADIUS.sm },
+  expl: { color: CARD.day.tabSub },
+  drop: { borderRadius: RADIUS.lg, backgroundColor: CARD.day.neutral, paddingHorizontal: SPACE.md },
+  dOpt: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingVertical: SPACE.sm },
+  dOptRule: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: CARD.rule },
+  priv: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACE.s, paddingVertical: SPACE.sm },
 });

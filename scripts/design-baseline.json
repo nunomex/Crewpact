@@ -1,14 +1,14 @@
 {
  "gerado": "2026-11-14",
  "total": {
-  "tipoFora": 190,
-  "tipoMenor11": 91,
-  "espacoFora": 355,
-  "raioFora": 48,
-  "corSolta": 54,
+  "tipoFora": 178,
+  "tipoMenor11": 84,
+  "espacoFora": 343,
+  "raioFora": 44,
+  "corSolta": 53,
   "ionicons": 7,
   "iconeNavSolto": 3,
-  "amareloTexto": 4
+  "amareloTexto": 3
  },
  "ficheiros": {
   "App.js": {
@@ -251,16 +251,6 @@
    "iconeNavSolto": 0,
    "amareloTexto": 0
   },
-  "components/HotelSheet.js": {
-   "tipoFora": 6,
-   "tipoMenor11": 2,
-   "espacoFora": 7,
-   "raioFora": 3,
-   "corSolta": 0,
-   "ionicons": 0,
-   "iconeNavSolto": 0,
-   "amareloTexto": 0
-  },
   "components/Icon.js": {
    "tipoFora": 0,
    "tipoMenor11": 0,
@@ -320,16 +310,6 @@
    "ionicons": 1,
    "iconeNavSolto": 0,
    "amareloTexto": 0
-  },
-  "components/ProvaSheet.js": {
-   "tipoFora": 6,
-   "tipoMenor11": 5,
-   "espacoFora": 5,
-   "raioFora": 1,
-   "corSolta": 1,
-   "ionicons": 0,
-   "iconeNavSolto": 0,
-   "amareloTexto": 1
   },
   "components/QuestionDetailSheet.js": {
    "tipoFora": 9,
