@@ -71,6 +71,14 @@ O que fazer, cada coisa com golden primeiro e com o texto oficial aberto (`fonte
    ORO.FTL.245 dos Relatórios (o desenho da marca: 3 esboços, Opus).
 Revisão independente no fim (Opus, só com o código, o diff e `fontes/`).
 
+**O ASPETO NOVO — ONDE ESTÁ (fim da sessão de 2026-11-14; gravado e enviado até `81c2dfd`).** Feitos: o Início, a Escala, os
+Números (N1, o total sozinho no topo), o topo igual nas três abas (L1, lado a lado, 62/58; a frase com 12 de ar, E2), as janelas
+(Prova, Hotel, Auditoria, calendário, notificações, nome e número), a meteorologia no Início (M1, com o crédito do MET Norway) e o
+Perfil inteiro (W1 com a cor K1, a página "O teu trabalho", as páginas de cada definição G1). **Falta migrar:** a Biblioteca (ecrã
+e folha), a Simulação (a página e o formulário), as partilhas (voo, ano), a Família (ainda na moldura antiga `Pagina.js`), as
+Validades e as outras páginas empurradas do Perfil (Hotéis, Relatórios, Disrupção, Estabilidade). **Pendente do Perfil:** a
+pergunta do SNC reforçado (ver o acordo dos pilotos, acima). Tudo o que se fez hoje está por ver no iPhone (secção 1, abaixo).
+
 **SESSÃO SEGUINTE (pedida pelo Nuno a 2026-11-13) — AS REFERÊNCIAS DE LAYOUT E O RESTO DAS PÁGINAS (Opus 5.5, Extra, sessão
 própria; é design, não cálculo).** O Nuno pôs em `referencias/Para a app/` 57 imagens (54 JPG e 3 GIF) que escolheu como
 referência para o layout das páginas que faltam e para o sistema de desenho. **Enunciado:**
@@ -1039,6 +1047,14 @@ motor está na versão **21**. **O que falta, por ordem:**
 - Gravado e no `main` (2026-11-12); a versão do motor (20) recalcula o registo dos dias no telemóvel.
 
 ### 1. Ver no iPhone (conta de teste: easyJet, piloto)
+- **Do dia 2026-11-14 (gravado e enviado até `81c2dfd`) — tudo por ver:** os Números (o total sozinho no topo; "Acima da base" no
+  fim do "De onde vem"; com a base incerta, "O total fica entre"); o topo lado a lado igual no Início, na Escala e nos Números
+  (o número do mesmo tamanho; a frase com ar por cima); a meteorologia (na véspera e antes do report, a base à hora do report no
+  cartão do dia; a cidade da pernoita à chegada; em voo, o destino — só se veio antes de descolar; na pernoita, o facto à hora do
+  report; a linha "Meteorologia: MET Norway"); o Perfil (o avião a percorrer a carreira azul; o cartão de tripulante a tinta e o
+  "Mudar"; a validade mais perto; a folha da conta a abrir cada janela DEPOIS de fechar; o nome e o nº que vão para os documentos;
+  Face ID, lembretes e PT/EN nos mini-cartões); "O teu trabalho"; as páginas de cada definição ("A partir de" abre a roda; o
+  histórico; o pós-voo; as férias; a base com a pesquisa e o 2.º passo).
 - **Números, novembro — visto ✅ a 2026-11-13:** 9 voos, 43,1 h, os períodos do ORO.FTL.210 e o "1 curto · 2 incertos"
   batem com o motor. **Por decidir pela lei (pergunta nova, fica para o advogado / EASA):** "60 duty hours in any 7
   consecutive days" (ORO.FTL.210(a)) — o texto não diz se os "dias" são dias locais das 00:00 (a única definição que o
