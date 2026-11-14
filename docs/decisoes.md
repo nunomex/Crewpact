@@ -513,7 +513,7 @@ referência para o layout das páginas que faltam e para o sistema de desenho. *
   riscado; Rocket Money) · **R2** a data grande à esquerda, pela ordem do calendário (a imagem 3409 do Nuno) · **R3** o resumo
   primeiro (Formula 1, Deel). Em todas sai a escolha Calendário | PDF do topo (escolhe-se na janela do calendário). Recomendo
   **R1**. A "Escolher calendário" vai na C1 sem escolha (linhas com a cor de cada calendário, visto a tinta, "Usar este
-  calendário" largo). **O Nuno escolheu a R1 — CONSTRUÍDO (por ver no iPhone; por gravar):**
+  calendário" largo). **O Nuno escolheu a R1 — CONSTRUÍDO e gravado em `ec2e8d7`, sem enviar (por ver no iPhone):**
   - **`importSections`** em `data/rosterImport.js` (golden primeiro: 8 casos em `test:import`, agora 158): "A corrigir" (ganha a
     qualquer estado) · "Mudou" (alterado e editado por ti) · "Novo" (com e sem aviso) · "Deixou de aparecer" · "Relido"; os
     iguais não aparecem; dentro de cada secção, pela data.
@@ -544,7 +544,7 @@ referência para o layout das páginas que faltam e para o sistema de desenho. *
   o quadradinho fica SEMPRE na cor do tipo e o problema diz-se com **V1** um selo no canto ("!" laranja a corrigir, "✕" vermelho o
   que saiu — o sinal do número do "Notificações" e do ponto laranja da Escala; não depende só da cor) · **V2** um anel (mas o
   contorno já é "o dia escolhido" na Escala) · **V3** uma faixa com a palavra (10 pt, pequeno). Recomendo **V1**.
-  **O Nuno: "sim" (H2 + V1) — CONSTRUÍDO (por ver no iPhone; por gravar):**
+  **O Nuno: "sim" (H2 + V1) — CONSTRUÍDO e gravado em `ec2e8d7`:**
   - **A regra das linhas das janelas:** o quadradinho diz **o dia quando a linha é um dia**, o ícone quando não é. O dia fica
     SEMPRE na cor do tipo (azul voo, lilás terra) e o problema é um **selo no canto** ("!" laranja a corrigir ou com aviso; "✕"
     vermelho o que saiu/cancelado). Peça: `DayTile` em `components/MarkRow.js` (44 × 48; o pequeno 34 × 38; o número sem
@@ -572,8 +572,8 @@ referência para o layout das páginas que faltam e para o sistema de desenho. *
   está no calendário e por baixo "lido como voo · LIS → OPO"; o que ficou de fora com o selo "!" · **L2** duas colunas, calendário →
   a leitura numa pílula de cor (aperta a 375) · **L3** o resumo por tipo (9 voos · 12 standby · 1 de fora) e o que ficou de fora em
   cima (esconde o dia). Em todas: a frase do topo ("22 eventos · 1 ficou de fora") e sem o painel cinzento. Recomendo **L1**.
-  **O Nuno: "L1, com a descrição em cima — 9 voos · 12 standby · 1 de fora — que achas?" — CONSTRUÍDO (por ver no iPhone; por
-  gravar):** os três números em cima (azul voos · lilás **em terra** · laranja de fora, neutro quando é 0), uma linha com o total
+  **O Nuno: "L1, com a descrição em cima — 9 voos · 12 standby · 1 de fora — que achas?" — CONSTRUÍDO; o Nuno: "está ok";
+  gravado em `ec2e8d7`:** os três números em cima (azul voos · lilás **em terra** · laranja de fora, neutro quando é 0), uma linha com o total
   até ao fim do próximo mês (e as folgas, se as houver), e um dia por linha com o dia no quadradinho da cor do que foi lido (selo
   "!" se alguma coisa ficou de fora), o evento como está no calendário e "lido como voo · LIS → OPO" por baixo. **Dois acertos
   meus:** "em terra" em vez de "standby" (conta também escritório e formação — a palavra da legenda da Escala; "standby" deixava de
