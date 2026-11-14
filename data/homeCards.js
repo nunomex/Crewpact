@@ -35,7 +35,8 @@
 //             verdict:{ verdict, realStr, maxStr, projected }, commander, lastArr, end }
 //   vac   — { left, quota, retIso, fromIso, toIso } · sick — { day, first3, payText } · doc — { name, days, expiryIso, after }
 //   empty — { rosterOk, lastRead } · demo · wake — { hm } · longHaul · restOk (véspera: true|false|null)
-//   warns — [{ id, title, sub, value, first, open }] (já escritos pelo ecrã, por ordem de prioridade; no máx. 2)
+//   warns — [{ id, title, sub, value, first, open, tone }] (já escritos pelo ecrã, por ordem de prioridade; no máx. 2;
+//           tone 'stop' = fora do limite → vermelho com ✕, pelo mapa B; sem tone = olhar → laranja)
 //
 // SAÍDA: { state, top: { pill:{ text, live }, pill2:{ text, iso }|null, what, giant:{ l1, unit, l2, l2Grey }, facts[] },
 //          cards: [ card | slim | lines | text ], caption }
@@ -136,7 +137,7 @@ export function homeCards(H = {}) {
   const top = (pill, pill2, what, giant, fx) => ({ pill, pill2: pill2 && pill2.text ? pill2 : null, what, giant, facts: fx || null });
   const giantOf = (l1, unit = null, l2 = null, l2Grey = false) => ({ l1: String(l1), unit: unit || null, l2: l2 || null, l2Grey: !!(l2 && l2Grey) });
   const psvOf = (ps) => (ps && ps.latest ? `${ps.latest}${ps.latestNextDay ? ' +1' : ''}` : null);
-  const slimWarn = (w) => ({ t: 'slim', id: w.id, color: 'alert', title: w.title, sub: w.sub || null, value: w.value || null, gain: false, open: w.open || null });
+  const slimWarn = (w) => ({ t: 'slim', id: w.id, color: w.tone === 'stop' ? 'stop' : 'alert', ...(w.tone === 'stop' ? { mark: '✕' } : {}), title: w.title, sub: w.sub || null, value: w.value || null, gain: false, open: w.open || null });
   const warns = (H.warns || []).filter((w) => w && w.title).slice(0, 2);
   const wFirst = warns.filter((w) => w.first).map(slimWarn);
   const wLast = warns.filter((w) => !w.first).map(slimWarn);

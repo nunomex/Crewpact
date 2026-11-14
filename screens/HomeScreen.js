@@ -925,9 +925,10 @@ export default function HomeScreen({ navigation }) {
   const W = [];
   const pushW = (w) => { if (w && w.title && !W.some((x) => x.id === w.id)) W.push(w); };
   if (calErr) pushW({ id: 'cal', title: l('Calendário', 'Calendar'), sub: l('Não consegui ler. Puxa para atualizar ou vê a permissão nas Definições.', 'Couldn’t read it. Pull to refresh or check the permission in Settings.') });
-  if (bandAlerts.length) pushW({ id: 'ftl', first: true, title: bandAlerts[0].q, sub: bandAlerts[0].answer, open: { to: 'item', id: bandAlerts[0].id } });
-  else if (stateLevel === 'over') pushW({ id: 'ftl', first: true, title: l('Limites', 'Limits'), sub: `${t('home.statusOver', lang)}${stateReason ? ` · ${stateReason}` : ''}`, open: { to: 'stats' } });
-  if (docAlert) pushW({ id: 'doc', title: l('Documentos', 'Documents'), sub: docAlert.answer, open: { to: 'item', id: 'validades' } });
+  // Fora dos limites e documento expirado = parar (mapa B: vermelho com ✕); os outros avisos são de olhar (laranja).
+  if (bandAlerts.length) pushW({ id: 'ftl', first: true, tone: 'stop', title: bandAlerts[0].q, sub: bandAlerts[0].answer, open: { to: 'item', id: bandAlerts[0].id } });
+  else if (stateLevel === 'over') pushW({ id: 'ftl', first: true, tone: 'stop', title: l('Limites', 'Limits'), sub: `${t('home.statusOver', lang)}${stateReason ? ` · ${stateReason}` : ''}`, open: { to: 'stats' } });
+  if (docAlert) pushW({ id: 'doc', tone: 'stop', title: l('Documentos', 'Documents'), sub: docAlert.answer, open: { to: 'item', id: 'validades' } });
   // POSSÍVEL RDP (só cabine, só com o acordo que o tem — easyJet × SNPVAC Cl. 67.ª): candidato, nunca "vais receber".
   if (homeState === 'disrupcao' && ae && typeof ae.rdp === 'function' && crewCategory) {
     const rdpC = liveRdp({ isPilot, kind: flight && flight.kind, fromStandby: !!(flight && flight.svc && flight.svc.special && flight.svc.special.preStandby),

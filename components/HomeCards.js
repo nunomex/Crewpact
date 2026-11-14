@@ -242,6 +242,8 @@ function Slim({ c, C, onOpen, l }) {
     <Box style={[s.slim, { backgroundColor: T.bg }]} {...props}>
       {/* `ring` (a Escala, P1): o anel do tipo num disco branco à frente — liga a cor do dia no mês a este serviço */}
       {c.ring ? <View style={s.ringLead}><View style={[s.ringIn, { borderColor: c.ring }]} /></View> : null}
+      {/* `mark` (mapa B): o ✕ de um aviso fora do limite, num disco à frente — a cor não é o único sinal */}
+      {c.mark ? <View style={s.ringLead}><Text style={[TXT3.badge, { color: CARD.onCard }]} allowFontScaling={false}>{c.mark}</Text></View> : null}
       <View style={s.slimT}>
         <Text style={[TXT3.slimTitle, { color: T.fg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.title}</Text>
         {c.sub ? <Text style={[TXT3.slimSub, { color: T.sub }]} numberOfLines={2} maxFontSizeMultiplier={MAX_SCALE}>{c.sub}</Text> : null}

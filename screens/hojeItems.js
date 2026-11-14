@@ -40,6 +40,134 @@ export const hhmm = (min) => { const x = Math.max(0, Math.round(min || 0)); retu
 export const hasAnyData = (ctx) => !!(ctx && ((ctx.duties && ctx.duties.length) || (ctx.dayLog && Object.keys(ctx.dayLog).length)));
 
 // ctx = { ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, aeEvents, todayISO }
+// "Tenho descanso?" — a resposta, a dica e a linha do porquê, a partir do repouso (restStatus) e da recuperação
+// (recoveryStatus). Pura: golden em scripts/reststatus.test.js. A 1.ª palavra é a do VEREDICTO final (visto no iPhone a
+// 2026-11-14: o mínimo cumprido com a noite local falhada dizia "Sim" ao lado do ✕ vermelho): ✕ → "Não", incerto → "Incerto".
+export function restItem(rest, rec, lang) {
+  const l = (pt, en) => (lang === 'en' ? en : pt);
+  let answer, suggestion = null;
+  if (rest.status === 'neutral') {
+    answer = l('Sem dados suficientes', 'Not enough data');
+  } else if (rest.status === 'bad' && rest.nightsRequired && rest.nightsActual < rest.nightsRequired && rest.actualMin >= rest.requiredMin) {
+    // CS FTL.1.235(b)(3)(i)/(4): depois de uma rotação com fuso, contam as NOITES LOCAIS na base, não só as horas.
+    answer = `${l('Não', 'No')} · ${rest.nightsActual} ${l('de', 'of')} ${rest.nightsRequired} ${l('noites locais na base', 'local nights at home base')}`;
+    suggestion = l('Depois de uma rotação com 4 h de fuso ou mais, o repouso na base conta-se em noites locais (8 h entre 22:00 e 08:00) — CS FTL.1.235(b)(3). Confirma com a companhia.', 'After a rotation with a 4 h time difference or more, rest at home base is counted in local nights (8 h between 22:00 and 08:00) — CS FTL.1.235(b)(3). Confirm with the company.');
+  } else if (rest.kind === 'reducedRest') {
+    // Abaixo do mínimo normal, mas com as 12 h (base) / 10 h (fora) do repouso reduzido (ORO.FTL.235(c), CS FTL.1.235(c)).
+    answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} (${l('mín', 'min')} ${hhmm(rest.requiredMin)})`;
+    suggestion = l(`Abaixo do mínimo: só é legal como repouso reduzido, se a tua companhia o tiver (CS FTL.1.235(c), com gestão do risco de fadiga). Nesse caso o PSV seguinte reduz ${hhmm(rest.diffMin)}, o repouso seguinte aumenta ${hhmm(rest.diffMin)}, e só pode haver 2 entre recuperações. Confirma com a companhia.`, `Below the minimum: only legal as reduced rest, if your operator has it (CS FTL.1.235(c), under fatigue risk management). Then the next FDP is reduced by ${hhmm(rest.diffMin)}, the next rest extended by ${hhmm(rest.diffMin)}, and at most 2 are allowed between recovery rests. Confirm with the company.`);
+  } else if (rest.kind === 'reducedRestAfter') {
+    answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} (${l('mín. entre', 'min between')} ${hhmm(rest.requiredMin)} ${l('e', 'and')} ${hhmm(rest.requiredHiMin)})`;
+    suggestion = l('O repouso anterior ficou abaixo do mínimo: se foi um repouso reduzido, este aumenta pela diferença (CS FTL.1.235(c)(3)). Confirma com a companhia.', 'The previous rest was below the minimum: if it was a reduced rest, this one is extended by the difference (CS FTL.1.235(c)(3)). Confirm with the company.');
+  } else if (rest.kind === 'noReport') {
+    // Um serviço SEM hora de apresentação antes deste: o repouso conta do fim dele, mas o mínimo depende de quanto durou.
+    const dd = rest.estIso ? `${rest.estIso.slice(8, 10)}/${rest.estIso.slice(5, 7)}` : '';
+    answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} ${l('antes do report', 'before report')}`;
+    suggestion = l(`Falta a hora de apresentação do serviço de ${dd}: sem ela não se sabe quanto durou, nem o repouso mínimo a seguir (ORO.FTL.235). Põe-a no detalhe desse serviço.`, `The duty on ${dd} has no report time: without it its length is unknown, and so is the minimum rest after it (ORO.FTL.235). Add it in that duty's detail.`);
+  } else if (rest.kind === 'noEnd') {
+    // Um serviço SEM hora de fim antes da assistência ou do serviço em terra que veio a seguir: o mínimo pode depender dele.
+    const dd = rest.estIso ? `${rest.estIso.slice(8, 10)}/${rest.estIso.slice(5, 7)}` : '';
+    answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} ${l('antes do report', 'before report')}`;
+    suggestion = l(`Falta a hora de fim do serviço de ${dd}: sem ela não se sabe quanto durou, nem o repouso mínimo a seguir (ORO.FTL.235). Põe-a no detalhe desse serviço.`, `The duty on ${dd} has no end time: without it its length is unknown, and so is the minimum rest after it (ORO.FTL.235). Add it in that duty's detail.`);
+  } else if (rest.kind === 'standbyHome') {
+    // Só assistência em casa entre o último serviço e este PSV, sem um repouso com o mínimo desse serviço pelo meio.
+    answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} (${l('mín. entre', 'min between')} ${hhmm(rest.requiredMin)} ${l('e', 'and')} ${hhmm(rest.requiredHiMin)})`;
+    suggestion = l('Entre o teu último serviço e este só houve assistência em casa, e desde esse serviço não tiveste um repouso com o mínimo dele. A lei manda dar um repouso depois da assistência (CS FTL.1.225(b)(4)), mas não diz se se mede por esse serviço ou só pelo mínimo geral: quem o fixa é o esquema da tua companhia (ORO.FTL.225(f)(3)). Confirma com a companhia.', 'Between your last duty and this one there was only home standby, and since that duty you have not had a rest of its minimum length. The law requires a rest after standby (CS FTL.1.225(b)(4)) but does not say whether it is measured by that duty or only by the general minimum: your operator\'s scheme sets it (ORO.FTL.225(f)(3)). Confirm with the company.');
+  } else if (rest.kind === 'standbyCall') {
+    // Assistência em casa e este voo logo a seguir (no mesmo dia ou no seguinte), com menos do que o mínimo entre os dois: chamada ou repouso curto.
+    answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} (${l('mín', 'min')} ${hhmm(rest.requiredMin)})`;
+    suggestion = l('Entre o fim da assistência e este voo há menos do que o repouso mínimo. Se o voo te foi atribuído durante a assistência, não é preciso repouso entre os dois: a assistência acaba quando te apresentas (CS FTL.1.225(b)(5); no aeroporto, (a)(2)). Se já estava na escala, o repouso é curto. A app não sabe qual foi: confirma com a companhia.', 'Between the end of standby and this flight there is less than the minimum rest. If the flight was assigned during standby, no rest is needed between them: standby ceases when you report (CS FTL.1.225(b)(5)). If it was already rostered, the rest is short. The app cannot tell which: confirm with the company.');
+  } else if (rest.kind === 'groundBetween') {
+    // O último voo pede horas a mais (prolongamento, 14 h) e pelo meio houve um serviço em terra: a lei não diz se ainda se pedem.
+    answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} (${l('mín. entre', 'min between')} ${hhmm(rest.requiredMin)} ${l('e', 'and')} ${hhmm(rest.requiredHiMin)})`;
+    suggestion = l('O teu último voo pede horas a mais de repouso (prolongamento, fuso ou repouso a bordo) e desde então não tiveste um repouso com elas; pelo meio houve um serviço em terra. A EASA mede o repouso antes de um voo pelo serviço que vem logo antes, mas a lei não diz se essas horas a mais ainda se pedem. Confirma com a companhia.', 'Your last flight calls for extra rest (extension, time zones or in-flight rest) and you have not had a rest with it since; there was a ground duty in between. EASA measures rest before a flight by the duty right before it, but the law does not say whether those extra hours still apply. Confirm with the company.');
+  } else if (rest.kind === 'rotationNights') {
+    // As noites locais da rotação faltam, mas entre o regresso e este voo houve um serviço em terra: a lei não diz se ainda se pedem.
+    answer = `${l('Incerto', 'Uncertain')} · ${rest.nightsActual} ${l('de', 'of')} ${rest.nightsRequired} ${l('noites locais na base', 'local nights at home base')}`;
+    suggestion = l('Depois de uma rotação com 4 h de fuso ou mais, o repouso na base conta-se em noites locais (CS FTL.1.235(b)(3)). Desde o regresso ainda não as tiveste num só repouso, mas pelo meio houve uma assistência ou um serviço em terra, e a lei não diz se continuam a ser pedidas antes deste voo. Confirma com a companhia.', 'After a rotation with a 4 h time difference or more, rest at home base is counted in local nights (CS FTL.1.235(b)(3)). Since you returned you have not had them in a single rest, but there was standby or a ground duty in between, and the law does not say whether they are still required before this flight. Confirm with the company.');
+  } else if (rest.kind === 'extPreRest') {
+    // O serviço anterior foi prolongado e o mínimo do repouso ANTES dele é incerto: +2 h ou +4 h, conforme a leitura.
+    answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} (${l('mín. entre', 'min between')} ${hhmm(rest.requiredMin)} ${l('e', 'and')} ${hhmm(rest.requiredHiMin)})`;
+    suggestion = l('O teu último serviço foi prolongado: o repouso a seguir aumenta 2 h se o repouso antes dele também teve mais 2 h, senão aumenta 4 h (ORO.FTL.205(d)(1)). O mínimo desse repouso de antes é incerto, por isso não se sabe qual das duas. Confirma com a companhia.', 'Your last duty was extended: the rest after it is increased by 2 h if the rest before it also had 2 h more, otherwise by 4 h (ORO.FTL.205(d)(1)). The minimum of that earlier rest is uncertain, so it is not known which applies. Confirm with the company.');
+  } else if (rest.kind === 'extAfterStandby') {
+    // O serviço anterior foi prolongado e o repouso ANTES dele veio depois de uma assistência em casa: +2 h ou +4 h, conforme a leitura.
+    answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} (${l('mín. entre', 'min between')} ${hhmm(rest.requiredMin)} ${l('e', 'and')} ${hhmm(rest.requiredHiMin)})`;
+    suggestion = l('O teu último serviço foi prolongado: o repouso a seguir aumenta 2 h se o repouso antes dele também teve mais 2 h, senão aumenta 4 h (ORO.FTL.205(d)(1)). Esse repouso de antes veio depois de uma assistência em casa, e a lei não diz por que serviço se mede o mínimo dele: quem o fixa é o esquema da tua companhia (ORO.FTL.225(f)(3)). Confirma com a companhia.', 'Your last duty was extended: the rest after it is increased by 2 h if the rest before it also had 2 h more, otherwise by 4 h (ORO.FTL.205(d)(1)). That earlier rest followed home standby, and the law does not say which duty its minimum is measured by: your operator\'s scheme sets it (ORO.FTL.225(f)(3)). Confirm with the company.');
+  } else if (rest.kind === 'breakOrRest') {
+    // Os dois serviços anteriores têm 10 h ou mais entre eles: um PSV repartido ou dois PSV (ORO.FTL.105(6)) — o mínimo depende.
+    answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} (${l('mín. entre', 'min between')} ${hhmm(rest.requiredMin)} ${l('e', 'and')} ${hhmm(rest.requiredHiMin)})`;
+    suggestion = l('Os dois serviços anteriores têm 10 h ou mais entre eles: a lei admite lê-los como um serviço repartido ou como dois serviços com um repouso no meio, e o repouso mínimo a seguir é diferente em cada leitura. Confirma com a companhia.', 'The two previous duties are 10 h or more apart: the law allows reading them as one split duty or as two duties with a rest in between, and the minimum rest that follows differs. Confirm with the company.');
+  } else if (rest.kind === 'legTimes') {
+    // O serviço anterior tem as horas das pernas que não batem certo: o mínimo depende das horas certas (ORO.FTL.235, 205(d)(1)).
+    answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} (${l('mín. entre', 'min between')} ${hhmm(rest.requiredMin)} ${l('e', 'and')} ${hhmm(rest.requiredHiMin)})`;
+    suggestion = l('As horas das pernas do serviço anterior não batem certo: o repouso mínimo depende das horas certas. Corrige-as na importação da escala.', 'The leg times of the previous duty do not add up: the minimum rest depends on the correct times. Fix them in the roster import.');
+  } else if (rest.status === 'bad' && rest.kind === 'standbyOver16') {
+    // Fora nas duas leituras, por regras diferentes: sem chamada o repouso é curto; com chamada a assistência passou das 16 h.
+    answer = `${l('Não', 'No')} · ${hhmm(rest.actualMin)} (${l('mín', 'min')} ${hhmm(rest.requiredMin)})`;
+    suggestion = l(`Entre o fim da assistência e este voo há menos do que o repouso mínimo. Se o voo já estava na escala, o repouso é curto. Se te foi atribuído durante a assistência, não era preciso repouso, mas a assistência teria ido até à apresentação: ${hhmm(rest.standbyMin)}, acima do máximo de 16 h (CS FTL.1.225(b)(1)). Em qualquer dos casos está fora dos limites. Confirma com a companhia.`, `Between the end of standby and this flight there is less than the minimum rest. If the flight was already rostered, the rest is short. If it was assigned during standby, no rest was needed, but standby would have lasted until you reported: ${hhmm(rest.standbyMin)}, over the 16 h maximum (CS FTL.1.225(b)(1)). Either way it is outside the limits. Confirm with the company.`);
+  } else if (rest.status === 'bad') {
+    answer = `${l('Não', 'No')} · ${hhmm(rest.actualMin)} (${l('mín', 'min')} ${hhmm(rest.requiredMin)})`;
+    suggestion = l('Repouso abaixo do mínimo — deve estender e o PSV seguinte reduz. Confirma com a companhia.', 'Rest below the minimum — it must extend and the next FDP reduces. Confirm with the company.');
+  } else if (rest.kind === 'notFdp') {
+    // ORO.FTL.235(a)/(b): o mínimo é "antes de um PSV" — antes de um escritório, formação ou standby em casa não há.
+    answer = `${hhmm(rest.actualMin)} ${l('antes do report · sem mínimo (não é voo)', 'before report · no minimum (not a flight duty)')}`;
+  } else {
+    answer = `${l('Sim', 'Yes')} · ${hhmm(rest.actualMin)} ${l('antes do report', 'before report')}`;
+  }
+  let status = rest.status;
+  let rows = null;
+  // Repouso de recuperação (ORO.FTL.235(d), CS FTL.1.235(a)): o aviso mais próximo entra nesta mesma pergunta.
+  const issues = (rec && rec.issues) || [];
+  if (issues.length) {
+    // O ✕ é de uma regra CERTA: é ela que se diz (uma incerta mais cedo não fala por ela).
+    const x = (rec.status === 'bad' && issues.find((i) => !i.uncertain)) || issues[0];
+    const dd = x.date ? `${x.date.slice(8, 10)}/${x.date.slice(5, 7)}` : '';
+    const what = x.type === 'recovery168'
+      ? l(`sem recuperação de 36 h (com 2 noites) até ${dd}`, `no 36 h recovery (with 2 nights) by ${dd}`)
+      : x.type === 'recoveryDays'
+        ? l(`em ${x.month.slice(5, 7)}/${x.month.slice(0, 4)}, ${x.count} recuperação(ões) com 2 dias locais livres — a lei pede 2 por mês`, `in ${x.month.slice(5, 7)}/${x.month.slice(0, 4)}, ${x.count} recovery period(s) with 2 free local days — the law asks for 2 a month`)
+      : x.type === 'baseChange'
+        ? l(`antes do 1.º serviço na base nova (${dd}) a recuperação tem de ter 72 h com 3 noites locais`, `before the first duty at the new base (${dd}) the recovery must be 72 h with 3 local nights`)
+      : x.type === 'recovery60'
+        ? l(`a recuperação antes de ${dd} tem ${x.hours} h; depois de ${x.disruptive} serviços irregulares tinha de ter 60 h`, `the recovery before ${dd} is ${x.hours} h; after ${x.disruptive} disruptive duties it needed 60 h`)
+        : l(`falta uma noite local antes do matinal de ${dd}`, `1 local night missing before the early start on ${dd}`);
+    if (rec.status === 'bad' || status === 'ok' || status === 'neutral') status = status === 'bad' ? 'bad' : rec.status;
+    const YES = l('Sim', 'Yes'), NO = l('Não', 'No'), UNC = l('Incerto', 'Uncertain');
+    const lead = [YES, NO, UNC].find((w) => answer.startsWith(`${w} · `)) || null;
+    const body = lead ? answer.slice(lead.length + 3) : answer;
+    if (lead === NO) answer = `${answer} · ${x.uncertain ? l('incerto: ', 'uncertain: ') : ''}${what}`;   // o repouso já é curto
+    else if (status === 'bad') answer = `${NO} · ${what}${lead === UNC ? ` · ${l('repouso incerto', 'rest uncertain')}: ${body}` : ''}`;
+    else answer = lead === UNC ? `${answer} · ${what}` : `${UNC} · ${what}`;
+    const recTip = x.uncertain && x.why === 'acclim'
+      ? l('Depende do fuso a que estás aclimatado (Quadro 1): pela hora da base e pela hora local, um dos serviços é ou não irregular (ORO.FTL.105(8)). Confirma com a companhia.', 'It depends on the time zone you are acclimatised to (Table 1): by base time and by local time, one of the duties is or is not disruptive (ORO.FTL.105(8)). Confirm with the company.')
+      : x.uncertain && x.why === 'both'
+      ? l('Depende do tipo de horário irregular (matinal ou tardio) da tua companhia e do fuso a que estás aclimatado (ORO.FTL.105(8), Quadro 1). Confirma com a companhia.', 'It depends on your company\'s disruptive-schedule type (early or late) and on the time zone you are acclimatised to (ORO.FTL.105(8), Table 1). Confirm with the company.')
+      : x.uncertain
+      ? l('Depende do tipo de horário irregular (matinal ou tardio) que a autoridade deu à tua companhia (ORO.FTL.105(8)). Confirma com a companhia.', 'It depends on the disruptive-schedule type (early or late) your company was given by the authority (ORO.FTL.105(8)). Confirm with the company.')
+      // A dica é a da regra que se diz (antes era a lista de todas), com o artigo dela.
+      : x.type === 'transitionNight'
+      ? l('De um serviço tardio ou noturno para um matinal, na base, o repouso entre os dois tem de incluir uma noite local: um período de 8 horas entre as 22:00 e as 08:00 (CS FTL.1.235(a)(1); noite local, ORO.FTL.105(16)). Confirma com a companhia.', 'From a late finish or night duty to an early start at home base, the rest between the two must include a local night: a period of 8 hours between 22:00 and 08:00 (CS FTL.1.235(a)(1); local night, ORO.FTL.105(16)). Confirm with the company.')
+      : x.type === 'recovery60'
+      ? l('Com 4 ou mais serviços noturnos, matinais ou tardios entre duas recuperações, a segunda passa a 60 h (CS FTL.1.235(a)(2)). Confirma com a companhia.', 'With 4 or more night duties, early starts or late finishes between two recovery rest periods, the second is extended to 60 hours (CS FTL.1.235(a)(2)). Confirm with the company.')
+      : x.type === 'baseChange'
+      ? l('Ao mudar de base, a primeira recuperação antes de começar na base nova passa a 72 h, com 3 noites locais (CS FTL.1.200(b)). Confirma com a companhia.', 'On a change of home base, the first recovery rest before starting duty at the new base is increased to 72 hours, including 3 local nights (CS FTL.1.200(b)). Confirm with the company.')
+      : x.type === 'recoveryDays'
+      ? l('A recuperação aumenta para 2 dias locais (de 24 h, a partir das 00:00) duas vezes por mês (ORO.FTL.235(d); dia local, ORO.FTL.105(15)). Confirma com a companhia.', 'The recovery rest is increased to 2 local days (24 h from 00:00) twice every month (ORO.FTL.235(d); local day, ORO.FTL.105(15)). Confirm with the company.')
+      : l('A recuperação é de 36 h com 2 noites locais, e entre o fim de uma e o início da seguinte não podem passar mais de 168 h (ORO.FTL.235(d)). Confirma com a companhia.', 'The recovery rest is 36 hours including 2 local nights, and no more than 168 hours may pass between the end of one and the start of the next (ORO.FTL.235(d)). Confirm with the company.');
+    // A dica do repouso (quando a havia) não se perde: fica depois da da regra.
+    suggestion = [recTip, suggestion].filter(Boolean).join(' ');
+    // O porquê: a linha da regra que falhou, com o sinal do mapa B (✕ certa · ! incerta).
+    const vNo = x.uncertain ? l('incerto', 'uncertain') : null;
+    const row = x.type === 'recovery168' ? { k: l('Recuperação de 36 h (com 2 noites)', '36 h recovery (with 2 nights)'), v: vNo || l(`falta até ${dd}`, `missing by ${dd}`) }
+      : x.type === 'recoveryDays' ? { k: l(`Recuperações com 2 dias locais · ${x.month.slice(5, 7)}/${x.month.slice(0, 4)}`, `Recoveries with 2 local days · ${x.month.slice(5, 7)}/${x.month.slice(0, 4)}`), v: vNo || l(`${x.count} de 2`, `${x.count} of 2`) }
+      : x.type === 'baseChange' ? { k: l('Recuperação antes da base nova (72 h)', 'Recovery before the new base (72 h)'), v: vNo || l('falta', 'missing') }
+      : x.type === 'recovery60' ? { k: l(`Recuperação antes de ${dd}`, `Recovery before ${dd}`), v: vNo || l(`${x.hours} h de 60`, `${x.hours} h of 60`) }
+      : { k: l('Noite local antes do matinal', 'Local night before the early start'), v: vNo || l('falta', 'missing') };
+    rows = [{ ...row, tone: x.uncertain ? 'warn' : 'bad' }];
+  }
+  return { status, answer, suggestion, rows };
+}
+
 export function buildTodayItems(ctx, lang) {
   const { ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, aeEvents, validities, isPilot, todayISO } = ctx;
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -153,105 +281,12 @@ export function buildTodayItems(ctx, lang) {
     items.push({ id: 'next', q, status: 'neutral', answer, suggestion: null, raw: next });
   }
 
-  // 3b · Tenho descanso?
+  // 3b · Tenho descanso? (a resposta: restItem, em cima)
   const rest = restStatus(duties, todayISO, new Date(), { postFlightMin: ctx.postFlightMin || 0, isPilot, baseAt: ctx.baseAt || null });
   {
-    const q = l('Tenho descanso?', 'Do I have rest?');
-    let answer, suggestion = null;
-    if (rest.status === 'neutral') {
-      answer = l('Sem dados suficientes', 'Not enough data');
-    } else if (rest.status === 'bad' && rest.nightsRequired && rest.nightsActual < rest.nightsRequired && rest.actualMin >= rest.requiredMin) {
-      // CS FTL.1.235(b)(3)(i)/(4): depois de uma rotação com fuso, contam as NOITES LOCAIS na base, não só as horas.
-      answer = `${l('Não', 'No')} · ${rest.nightsActual} ${l('de', 'of')} ${rest.nightsRequired} ${l('noites locais na base', 'local nights at home base')}`;
-      suggestion = l('Depois de uma rotação com 4 h de fuso ou mais, o repouso na base conta-se em noites locais (8 h entre 22:00 e 08:00) — CS FTL.1.235(b)(3). Confirma com a companhia.', 'After a rotation with a 4 h time difference or more, rest at home base is counted in local nights (8 h between 22:00 and 08:00) — CS FTL.1.235(b)(3). Confirm with the company.');
-    } else if (rest.kind === 'reducedRest') {
-      // Abaixo do mínimo normal, mas com as 12 h (base) / 10 h (fora) do repouso reduzido (ORO.FTL.235(c), CS FTL.1.235(c)).
-      answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} (${l('mín', 'min')} ${hhmm(rest.requiredMin)})`;
-      suggestion = l(`Abaixo do mínimo: só é legal como repouso reduzido, se a tua companhia o tiver (CS FTL.1.235(c), com gestão do risco de fadiga). Nesse caso o PSV seguinte reduz ${hhmm(rest.diffMin)}, o repouso seguinte aumenta ${hhmm(rest.diffMin)}, e só pode haver 2 entre recuperações. Confirma com a companhia.`, `Below the minimum: only legal as reduced rest, if your operator has it (CS FTL.1.235(c), under fatigue risk management). Then the next FDP is reduced by ${hhmm(rest.diffMin)}, the next rest extended by ${hhmm(rest.diffMin)}, and at most 2 are allowed between recovery rests. Confirm with the company.`);
-    } else if (rest.kind === 'reducedRestAfter') {
-      answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} (${l('mín. entre', 'min between')} ${hhmm(rest.requiredMin)} ${l('e', 'and')} ${hhmm(rest.requiredHiMin)})`;
-      suggestion = l('O repouso anterior ficou abaixo do mínimo: se foi um repouso reduzido, este aumenta pela diferença (CS FTL.1.235(c)(3)). Confirma com a companhia.', 'The previous rest was below the minimum: if it was a reduced rest, this one is extended by the difference (CS FTL.1.235(c)(3)). Confirm with the company.');
-    } else if (rest.kind === 'noReport') {
-      // Um serviço SEM hora de apresentação antes deste: o repouso conta do fim dele, mas o mínimo depende de quanto durou.
-      const dd = rest.estIso ? `${rest.estIso.slice(8, 10)}/${rest.estIso.slice(5, 7)}` : '';
-      answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} ${l('antes do report', 'before report')}`;
-      suggestion = l(`Falta a hora de apresentação do serviço de ${dd}: sem ela não se sabe quanto durou, nem o repouso mínimo a seguir (ORO.FTL.235). Põe-a no detalhe desse serviço.`, `The duty on ${dd} has no report time: without it its length is unknown, and so is the minimum rest after it (ORO.FTL.235). Add it in that duty's detail.`);
-    } else if (rest.kind === 'noEnd') {
-      // Um serviço SEM hora de fim antes da assistência ou do serviço em terra que veio a seguir: o mínimo pode depender dele.
-      const dd = rest.estIso ? `${rest.estIso.slice(8, 10)}/${rest.estIso.slice(5, 7)}` : '';
-      answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} ${l('antes do report', 'before report')}`;
-      suggestion = l(`Falta a hora de fim do serviço de ${dd}: sem ela não se sabe quanto durou, nem o repouso mínimo a seguir (ORO.FTL.235). Põe-a no detalhe desse serviço.`, `The duty on ${dd} has no end time: without it its length is unknown, and so is the minimum rest after it (ORO.FTL.235). Add it in that duty's detail.`);
-    } else if (rest.kind === 'standbyHome') {
-      // Só assistência em casa entre o último serviço e este PSV, sem um repouso com o mínimo desse serviço pelo meio.
-      answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} (${l('mín. entre', 'min between')} ${hhmm(rest.requiredMin)} ${l('e', 'and')} ${hhmm(rest.requiredHiMin)})`;
-      suggestion = l('Entre o teu último serviço e este só houve assistência em casa, e desde esse serviço não tiveste um repouso com o mínimo dele. A lei manda dar um repouso depois da assistência (CS FTL.1.225(b)(4)), mas não diz se se mede por esse serviço ou só pelo mínimo geral: quem o fixa é o esquema da tua companhia (ORO.FTL.225(f)(3)). Confirma com a companhia.', 'Between your last duty and this one there was only home standby, and since that duty you have not had a rest of its minimum length. The law requires a rest after standby (CS FTL.1.225(b)(4)) but does not say whether it is measured by that duty or only by the general minimum: your operator\'s scheme sets it (ORO.FTL.225(f)(3)). Confirm with the company.');
-    } else if (rest.kind === 'standbyCall') {
-      // Assistência em casa e este voo logo a seguir (no mesmo dia ou no seguinte), com menos do que o mínimo entre os dois: chamada ou repouso curto.
-      answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} (${l('mín', 'min')} ${hhmm(rest.requiredMin)})`;
-      suggestion = l('Entre o fim da assistência e este voo há menos do que o repouso mínimo. Se o voo te foi atribuído durante a assistência, não é preciso repouso entre os dois: a assistência acaba quando te apresentas (CS FTL.1.225(b)(5); no aeroporto, (a)(2)). Se já estava na escala, o repouso é curto. A app não sabe qual foi: confirma com a companhia.', 'Between the end of standby and this flight there is less than the minimum rest. If the flight was assigned during standby, no rest is needed between them: standby ceases when you report (CS FTL.1.225(b)(5)). If it was already rostered, the rest is short. The app cannot tell which: confirm with the company.');
-    } else if (rest.kind === 'groundBetween') {
-      // O último voo pede horas a mais (prolongamento, 14 h) e pelo meio houve um serviço em terra: a lei não diz se ainda se pedem.
-      answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} (${l('mín. entre', 'min between')} ${hhmm(rest.requiredMin)} ${l('e', 'and')} ${hhmm(rest.requiredHiMin)})`;
-      suggestion = l('O teu último voo pede horas a mais de repouso (prolongamento, fuso ou repouso a bordo) e desde então não tiveste um repouso com elas; pelo meio houve um serviço em terra. A EASA mede o repouso antes de um voo pelo serviço que vem logo antes, mas a lei não diz se essas horas a mais ainda se pedem. Confirma com a companhia.', 'Your last flight calls for extra rest (extension, time zones or in-flight rest) and you have not had a rest with it since; there was a ground duty in between. EASA measures rest before a flight by the duty right before it, but the law does not say whether those extra hours still apply. Confirm with the company.');
-    } else if (rest.kind === 'rotationNights') {
-      // As noites locais da rotação faltam, mas entre o regresso e este voo houve um serviço em terra: a lei não diz se ainda se pedem.
-      answer = `${l('Incerto', 'Uncertain')} · ${rest.nightsActual} ${l('de', 'of')} ${rest.nightsRequired} ${l('noites locais na base', 'local nights at home base')}`;
-      suggestion = l('Depois de uma rotação com 4 h de fuso ou mais, o repouso na base conta-se em noites locais (CS FTL.1.235(b)(3)). Desde o regresso ainda não as tiveste num só repouso, mas pelo meio houve uma assistência ou um serviço em terra, e a lei não diz se continuam a ser pedidas antes deste voo. Confirma com a companhia.', 'After a rotation with a 4 h time difference or more, rest at home base is counted in local nights (CS FTL.1.235(b)(3)). Since you returned you have not had them in a single rest, but there was standby or a ground duty in between, and the law does not say whether they are still required before this flight. Confirm with the company.');
-    } else if (rest.kind === 'extPreRest') {
-      // O serviço anterior foi prolongado e o mínimo do repouso ANTES dele é incerto: +2 h ou +4 h, conforme a leitura.
-      answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} (${l('mín. entre', 'min between')} ${hhmm(rest.requiredMin)} ${l('e', 'and')} ${hhmm(rest.requiredHiMin)})`;
-      suggestion = l('O teu último serviço foi prolongado: o repouso a seguir aumenta 2 h se o repouso antes dele também teve mais 2 h, senão aumenta 4 h (ORO.FTL.205(d)(1)). O mínimo desse repouso de antes é incerto, por isso não se sabe qual das duas. Confirma com a companhia.', 'Your last duty was extended: the rest after it is increased by 2 h if the rest before it also had 2 h more, otherwise by 4 h (ORO.FTL.205(d)(1)). The minimum of that earlier rest is uncertain, so it is not known which applies. Confirm with the company.');
-    } else if (rest.kind === 'extAfterStandby') {
-      // O serviço anterior foi prolongado e o repouso ANTES dele veio depois de uma assistência em casa: +2 h ou +4 h, conforme a leitura.
-      answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} (${l('mín. entre', 'min between')} ${hhmm(rest.requiredMin)} ${l('e', 'and')} ${hhmm(rest.requiredHiMin)})`;
-      suggestion = l('O teu último serviço foi prolongado: o repouso a seguir aumenta 2 h se o repouso antes dele também teve mais 2 h, senão aumenta 4 h (ORO.FTL.205(d)(1)). Esse repouso de antes veio depois de uma assistência em casa, e a lei não diz por que serviço se mede o mínimo dele: quem o fixa é o esquema da tua companhia (ORO.FTL.225(f)(3)). Confirma com a companhia.', 'Your last duty was extended: the rest after it is increased by 2 h if the rest before it also had 2 h more, otherwise by 4 h (ORO.FTL.205(d)(1)). That earlier rest followed home standby, and the law does not say which duty its minimum is measured by: your operator\'s scheme sets it (ORO.FTL.225(f)(3)). Confirm with the company.');
-    } else if (rest.kind === 'breakOrRest') {
-      // Os dois serviços anteriores têm 10 h ou mais entre eles: um PSV repartido ou dois PSV (ORO.FTL.105(6)) — o mínimo depende.
-      answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} (${l('mín. entre', 'min between')} ${hhmm(rest.requiredMin)} ${l('e', 'and')} ${hhmm(rest.requiredHiMin)})`;
-      suggestion = l('Os dois serviços anteriores têm 10 h ou mais entre eles: a lei admite lê-los como um serviço repartido ou como dois serviços com um repouso no meio, e o repouso mínimo a seguir é diferente em cada leitura. Confirma com a companhia.', 'The two previous duties are 10 h or more apart: the law allows reading them as one split duty or as two duties with a rest in between, and the minimum rest that follows differs. Confirm with the company.');
-    } else if (rest.kind === 'legTimes') {
-      // O serviço anterior tem as horas das pernas que não batem certo: o mínimo depende das horas certas (ORO.FTL.235, 205(d)(1)).
-      answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} (${l('mín. entre', 'min between')} ${hhmm(rest.requiredMin)} ${l('e', 'and')} ${hhmm(rest.requiredHiMin)})`;
-      suggestion = l('As horas das pernas do serviço anterior não batem certo: o repouso mínimo depende das horas certas. Corrige-as na importação da escala.', 'The leg times of the previous duty do not add up: the minimum rest depends on the correct times. Fix them in the roster import.');
-    } else if (rest.status === 'bad' && rest.kind === 'standbyOver16') {
-      // Fora nas duas leituras, por regras diferentes: sem chamada o repouso é curto; com chamada a assistência passou das 16 h.
-      answer = `${l('Não', 'No')} · ${hhmm(rest.actualMin)} (${l('mín', 'min')} ${hhmm(rest.requiredMin)})`;
-      suggestion = l(`Entre o fim da assistência e este voo há menos do que o repouso mínimo. Se o voo já estava na escala, o repouso é curto. Se te foi atribuído durante a assistência, não era preciso repouso, mas a assistência teria ido até à apresentação: ${hhmm(rest.standbyMin)}, acima do máximo de 16 h (CS FTL.1.225(b)(1)). Em qualquer dos casos está fora dos limites. Confirma com a companhia.`, `Between the end of standby and this flight there is less than the minimum rest. If the flight was already rostered, the rest is short. If it was assigned during standby, no rest was needed, but standby would have lasted until you reported: ${hhmm(rest.standbyMin)}, over the 16 h maximum (CS FTL.1.225(b)(1)). Either way it is outside the limits. Confirm with the company.`);
-    } else if (rest.status === 'bad') {
-      answer = `${l('Não', 'No')} · ${hhmm(rest.actualMin)} (${l('mín', 'min')} ${hhmm(rest.requiredMin)})`;
-      suggestion = l('Repouso abaixo do mínimo — deve estender e o PSV seguinte reduz. Confirma com a companhia.', 'Rest below the minimum — it must extend and the next FDP reduces. Confirm with the company.');
-    } else if (rest.kind === 'notFdp') {
-      // ORO.FTL.235(a)/(b): o mínimo é "antes de um PSV" — antes de um escritório, formação ou standby em casa não há.
-      answer = `${hhmm(rest.actualMin)} ${l('antes do report · sem mínimo (não é voo)', 'before report · no minimum (not a flight duty)')}`;
-    } else {
-      answer = `${l('Sim', 'Yes')} · ${hhmm(rest.actualMin)} ${l('antes do report', 'before report')}`;
-    }
-    // Repouso de recuperação (ORO.FTL.235(d), CS FTL.1.235(a)): o aviso mais próximo entra nesta mesma pergunta.
     const rec = recoveryStatus(duties, todayISO, { postFlightMin: ctx.postFlightMin || 0, baseAt: ctx.baseAt || null, disruptiveType: ctx.disruptiveType || null });
-    let status = rest.status;
-    if (rec.issues.length) {
-      const x = rec.issues[0];
-      const dd = `${x.date.slice(8, 10)}/${x.date.slice(5, 7)}`;
-      const what = x.type === 'recovery168'
-        ? l(`sem recuperação de 36 h (com 2 noites) até ${dd} — o máximo é 168 h entre recuperações`, `no 36 h recovery (with 2 nights) by ${dd} — at most 168 h between recoveries`)
-        : x.type === 'recoveryDays'
-          ? l(`em ${x.month.slice(5, 7)}/${x.month.slice(0, 4)}, ${x.count} recuperação(ões) com 2 dias locais livres — a lei pede 2 por mês`, `in ${x.month.slice(5, 7)}/${x.month.slice(0, 4)}, ${x.count} recovery period(s) with 2 free local days — the law asks for 2 a month`)
-        : x.type === 'baseChange'
-          ? l(`antes do 1.º serviço na base nova (${dd}) a recuperação tem de ter 72 h com 3 noites locais`, `before the first duty at the new base (${dd}) the recovery must be 72 h with 3 local nights`)
-        : x.type === 'recovery60'
-          ? l(`a recuperação antes de ${dd} tem ${x.hours} h; depois de ${x.disruptive} serviços irregulares tinha de ter 60 h`, `the recovery before ${dd} is ${x.hours} h; after ${x.disruptive} disruptive duties it needed 60 h`)
-          : l(`de tardio/noturno para matinal a ${dd} sem uma noite local (8 h entre 22:00 e 08:00)`, `late/night to early start on ${dd} without a local night (8 h between 22:00 and 08:00)`);
-      answer = `${answer} · ${x.uncertain ? l('incerto: ', 'uncertain: ') : ''}${what}`;
-      suggestion = x.uncertain && x.why === 'acclim'
-        ? l('Depende do fuso a que estás aclimatado (Quadro 1): pela hora da base e pela hora local, um dos serviços é ou não irregular (ORO.FTL.105(8)). Confirma com a companhia.', 'It depends on the time zone you are acclimatised to (Table 1): by base time and by local time, one of the duties is or is not disruptive (ORO.FTL.105(8)). Confirm with the company.')
-        : x.uncertain && x.why === 'both'
-        ? l('Depende do tipo de horário irregular (matinal ou tardio) da tua companhia e do fuso a que estás aclimatado (ORO.FTL.105(8), Quadro 1). Confirma com a companhia.', 'It depends on your company\'s disruptive-schedule type (early or late) and on the time zone you are acclimatised to (ORO.FTL.105(8), Table 1). Confirm with the company.')
-        : x.uncertain
-        ? l('Depende do tipo de horário irregular (matinal ou tardio) que a autoridade deu à tua companhia (ORO.FTL.105(8)). Confirma com a companhia.', 'It depends on the disruptive-schedule type (early or late) your company was given by the authority (ORO.FTL.105(8)). Confirm with the company.')
-        : l('ORO.FTL.235(d): recuperação de 36 h com 2 noites locais, no máximo 168 h entre elas, e 2 dias locais duas vezes por mês; 60 h depois de 4 irregulares (CS FTL.1.235(a)); 72 h com 3 noites ao mudar de base (CS FTL.1.200(b)). Confirma com a companhia.', 'ORO.FTL.235(d): 36 h recovery with 2 local nights, at most 168 h apart, and 2 local days twice a month; 60 h after 4 disruptive duties (CS FTL.1.235(a)); 72 h with 3 nights on a change of base (CS FTL.1.200(b)). Confirm with the company.');
-      if (rec.status === 'bad' || status === 'ok' || status === 'neutral') status = status === 'bad' ? 'bad' : rec.status;
-    }
-    items.push({ id: 'rest', q, status, answer, suggestion, raw: { ...rest, recovery: rec } });
+    const r = restItem(rest, rec, lang);
+    items.push({ id: 'rest', q: l('Tenho descanso?', 'Do I have rest?'), status: r.status, answer: r.answer, suggestion: r.suggestion, ...(r.rows ? { rows: r.rows } : {}), raw: { ...rest, recovery: rec } });
   }
 
   // 4 · Mudou a escala?

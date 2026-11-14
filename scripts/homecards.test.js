@@ -410,6 +410,17 @@ const WXA = { c: 12, label: 'chuva', ic: 'rain', st: 'LGW' };
   eq('en · véspera', [ve.cards.find((c) => c.id === 'day').wx.txt, ve.credit], ['4 °C · fog in LIS at 05:15', 'Weather data: MET Norway']);
 }
 
+// ═══ O MAPA B NOS AVISOS (visto no iPhone a 2026-11-14): passar o limite = VERMELHO com "✕"; olhar = laranja ═══
+// O "Tenho descanso?" com ✕ aparecia laranja no Início e vermelho com ✕ na folha. Um aviso com `tone: 'stop'` (fora dos
+// limites FTL, documento expirado) é vermelho e leva o ✕; os outros ficam laranja, sem sinal.
+{
+  const STOP_W = { id: 'ftl', first: true, tone: 'stop', title: 'Tenho descanso?', sub: 'Não · falta uma noite local antes do matinal de 15/11', open: { to: 'item', id: 'rest' } };
+  const r = homeCards({ ...S.folga, warns: [STOP_W, ROSTER_W] });
+  const ftl = r.cards.find((c) => c.id === 'ftl'), ros = r.cards.find((c) => c.id === 'roster');
+  eq('aviso fora do limite · vermelho com ✕', ftl && [ftl.color, ftl.mark], ['stop', '✕']);
+  eq('aviso de olhar · laranja, sem sinal', ros && [ros.color, ros.mark || null], ['alert', null]);
+}
+
 // ═══ EM INGLÊS — os mesmos estados, nada indefinido ═══
 for (const [k, v] of Object.entries(S)) {
   const r = homeCards({ ...v, lang: 'en' });
