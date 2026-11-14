@@ -69,6 +69,15 @@ O que fazer, cada coisa com golden primeiro e com o texto oficial aberto (`fonte
 6. **Os SNC/RDP candidatos da Auditoria contam sozinhos** (ou ficam como candidatos com a regra dita) — hoje "Ver o dia".
 7. **O arquivo como prova:** a correção das horas depois do voo guarda-se como "prevista → real · corrigida a …" e entra no Registo
    ORO.FTL.245 dos Relatórios (o desenho da marca: 3 esboços, Opus).
+8. **O piso do repouso mínimo quando a escala tem um buraco de sítio** (visto no iPhone a 2026-11-14, Opus; não mexido). A app tira os
+   12 h / 10 h do sítio ONDE SE REPOUSA (`data/today.js`, `stdFloor`, os sítios dos serviços); o texto diz "before undertaking an FDP
+   starting at home base" / "away from home base" (ORO.FTL.235(a)(1)/(b), `fontes/ftl/reg-ue-83-2014-en.txt` l. 665–677) — pelo sítio
+   onde COMEÇA o PSV seguinte. Numa escala sem buracos dão o mesmo; só diferem quando o serviço anterior acaba onde o seguinte não
+   começa e não há nada no meio. O caso: 13/11 LIS→OPO com pernoita (fim 04:30 de 14/11) e 15/11 LIS→FNC — a app diz "mín 10:30"
+   (fora), o texto daria 12:00 (na base); com 25:10 o veredicto não muda. Proposta a decidir com o texto aberto: com o buraco, o
+   "Tenho descanso?" diz "Incerto" com o motivo (falta como foste de OPO para LIS: um posicionamento é serviço e muda o serviço
+   precedente e o repouso), pelo `placeGapIssues` que a importação e a Simulação já usam; e ver a regra da noite local ("planned at
+   home base", CS FTL.1.235(a)(1)) no mesmo caso.
 Revisão independente no fim (Opus, só com o código, o diff e `fontes/`).
 
 **O ASPETO NOVO — ONDE ESTÁ (fim da sessão de 2026-11-14; gravado e enviado até `81c2dfd`).** Feitos: o Início, a Escala, os
@@ -1047,6 +1056,32 @@ motor está na versão **21**. **O que falta, por ordem:**
 - Gravado e no `main` (2026-11-12); a versão do motor (20) recalcula o registo dos dias no telemóvel.
 
 ### 1. Ver no iPhone (conta de teste: easyJet, piloto)
+- **Antes de tudo: a app arranca no Expo Go?** A 2026-11-14 a Expo passou de 58.0.23 para 58.0.25, com 19 pacotes `expo-*`,
+  tudo pelo `npx expo install --fix` (regra 7). O react-native (0.88.1), o reanimated (4.7.1) e o worklets (0.13.0) não mudaram;
+  os 39 testes e o pacote iOS passam. O `npm audit` aponta 13 vulnerabilidades em dependências: não se corrigem com
+  `npm audit fix --force` (subia pacotes por cima das versões da Expo); veem-se de novo na próxima versão da Expo.
+- **"Tenho descanso?" (corrigido a 2026-11-14, por gravar):** visto no iPhone — o mínimo cumprido (25:10) com a noite local
+  falhada (tardio/noturno → matinal, CS FTL.1.235(a)(1)) dizia "Sim · …" ao lado do ✕. Agora a 1.ª palavra é a do veredicto
+  ("Não · falta uma noite local antes do matinal de 15/11"; incerto → "Incerto"; se o repouso também é incerto, a dúvida fica a
+  seguir), o "Porquê" leva a linha da regra que falhou, a dica cita essa regra (antes era a lista de todas) e, no Início, os
+  avisos fora do limite (FTL e documento expirado) são vermelhos com o ✕ (mapa B); os outros continuam laranja. A resposta é
+  `restItem` em `screens/hojeItems.js` (golden `test:reststatus`, +12); a cor, `tone: 'stop'` nos avisos (`test:homecards`, +2).
+  **Ver no iPhone:** o cartão vermelho com o ✕ e a folha. O "mín 10:30" da folha: o serviço de 13/11 era LIS→OPO com pernoita
+  (calendário de teste) — a app conta o repouso no Porto; o texto da lei mede pelo sítio do PSV seguinte (LIS) → item 8 da
+  sessão Fable, acima.
+- **"A escala mudou · 1 alteração por rever" com a "Rever" vazia (corrigido a 2026-11-14, por gravar):** o aviso lia o calendário
+  desde a meia-noite de hoje e apanhava o FIM do voo de ontem (13/11, 19:00 → 04:00) sem a assistência das 09:00 desse dia — o dia
+  lido ficava diferente do guardado e contava; a "Rever" lê 12 meses e via o dia inteiro, igual. Agora a deteção lê 3 dias para
+  trás (o contexto) e só conta os serviços de hoje em diante (`detectWindow` + `diffUpcoming` em `data/rosterDiff.js`, golden
+  `test:diff` +6, a reproduzir o erro). **Ver no iPhone:** ao reabrir a app o aviso deve sumir (se não houver outra mudança).
+  Causa deduzida do código e da foto do Detalhe ("Da escala: assistência em casa desde as 09:00"), não lida no telemóvel.
+- **A meteorologia antes do report — vista ✅ no iPhone a 2026-11-14:** "16 °C · aguaceiros fracos em OPO às 15:15" no cartão do
+  dia e "Meteorologia: MET Norway" por baixo. Falta ver: a véspera (depois das 18:00), a pernoita, em voo o destino.
+  No mesmo dia, o "+154,51 €" igual em LIS→OPO (13/11) e OPO→LIS (14/11) conferido no motor: conta de CPT, 68,67 € pela
+  distância + 85,84 € do setor nominal doméstico (BTE 29/2026, Art. 37.º, n.º 8) — a mesma distância nos dois sentidos; certo.
+- **A meteorologia não aparece na folga:** a véspera começa às 18:00 (report a ≤ 14 h, `data/crewState.js`); de dia, com o
+  serviço amanhã, o Início está em "Folga" e a M1 não mostra o tempo. Pergunta ao Nuno: mostrar já de dia no cartão
+  "Próximo serviço" quando é amanhã? (seriam 3 esboços).
 - **Do dia 2026-11-14 (gravado e enviado até `81c2dfd`) — tudo por ver:** os Números (o total sozinho no topo; "Acima da base" no
   fim do "De onde vem"; com a base incerta, "O total fica entre"); o topo lado a lado igual no Início, na Escala e nos Números
   (o número do mesmo tamanho; a frase com ar por cima); a meteorologia (na véspera e antes do report, a base à hora do report no
@@ -2384,8 +2419,8 @@ o voo de exemplo, porque a conta de teste não tem serviços nos próximos dias)
 **Falta ver no iPhone (precisa de um serviço hoje no calendário → sessão "testar o calendário", eventos sintéticos):** em
 voo · entre setores · aterrado · standby · formação · disrupção · pós-voo · pernoita · a hora Zulu (só no verão ou fora de
 Lisboa). E, em todos: letra grande, VoiceOver e iPhone pequeno.
-- Para depois: a atualização da Expo 58.0.23 → 58.0.24 (e 18 pacotes) pelo `npx expo install --check`, depois deste teste;
-  nunca `npm audit fix --force` (sobe pacotes por cima das versões da Expo).
+- ~~Para depois: a atualização da Expo 58.0.23 → 58.0.24 (e 18 pacotes)~~ — feita a 2026-11-14 (58.0.25, 19 pacotes; ver
+  "O QUE FALTA" §1). Fica a regra: nunca `npm audit fix --force` (sobe pacotes por cima das versões da Expo).
 
 ## 2026-11-11 (noite, 5) — Início 3.0 "cartões de cor" CONSTRUÍDO (Opus 5.5) — falta o iPhone
 

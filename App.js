@@ -38,7 +38,7 @@ import { migrateCrew, resolveCrew, migrateCompany, resolveCompany, migrateBase, 
 import { fetchDuties, upsertDuty, deleteDuty } from './data/duties';
 import { getDutiesInRange, getNonFlightInRange } from './data/calendar';
 import { buildIncoming } from './data/rosterImport';
-import { diffRoster } from './data/rosterDiff';
+import { detectWindow, diffUpcoming } from './data/rosterDiff';
 import { dutyToFtlDay, dayFtlFromDuties, reconcileDayLog } from './ftl';
 import { countersToEvents } from './data/aeEvents';
 import ExtrasManager from './components/ExtrasManager';   // PORT pele: gestão de extras (ver/apagar) no mini-FAB
@@ -1025,15 +1025,16 @@ export default function App() {
       // Janela da DETEÇÃO: de HOJE até ao fim do mês SEGUINTE — explícita, porque a opção
       // 'month' do rangeFromOption passou a ser o mês civil seguinte (2026-07-10) e herdá-la
       // aqui deixava a deteção CEGA para o resto do mês corrente (onde vive o RDP no-dia).
-      const start = new Date(); start.setHours(0, 0, 0, 0);
-      const end = new Date(start.getFullYear(), start.getMonth() + 2, 1);
-      const [fl, nf] = await Promise.all([getDutiesInRange(start, end, co, calendarId, { baseOf: (iso) => homeBaseAtRef.current(iso) }), getNonFlightInRange(start, end, co, calendarId)]);   // a mesma regra de agrupamento do import (ORO.FTL.235)
+      // Lê-se com uns dias para trás (o contexto: um voo de ontem que atravessa a meia-noite vem INTEIRO, com o que veio antes
+      // dele) e só contam os serviços de hoje em diante — senão o fim de ontem contava como alteração (iPhone, 2026-11-14).
+      const { readStart, start, end } = detectWindow();
+      const [fl, nf] = await Promise.all([getDutiesInRange(readStart, end, co, calendarId, { baseOf: (iso) => homeBaseAtRef.current(iso) }), getNonFlightInRange(readStart, end, co, calendarId)]);   // a mesma regra de agrupamento do import (ORO.FTL.235)
       if (!fl.ok && !nf.ok) return null;   // sem leitura válida → não marca cancelamentos
       const incoming = buildIncoming({ activities: fl.duties || [], nonflights: nf.items || [] });
       const window = { start: isoDay(start), end: isoDay(end) };
       // SÓ DETETA (não grava): expõe o diff p/ o user rever e CONFIRMAR no import (decisão do
       // user — nada entra no `duties` sem confirmação). Gravar = RosterImportSheet → saveDuty.
-      const res = diffRoster({ incoming, duties: dutiesRef.current, window });
+      const res = diffUpcoming({ incoming, duties: dutiesRef.current, window });
       setRosterChanges(res);
       return res;
     } catch { return null; /* best-effort */ }

@@ -199,6 +199,25 @@ export const diffRoster = ({ incoming = [], duties = {}, window = null } = {}) =
   return { changed, conflict, added, removed, counts };
 };
 
+// A JANELA DA DETEÇÃO automática ("A escala mudou", App.js · checkRosterChanges) — visto no iPhone a 2026-11-14: o aviso dizia
+// "1 alteração por rever" e a "Rever" não tinha nada. A leitura começava à meia-noite de hoje e o calendário devolve os eventos
+// que TOCAM na janela: vinha o fim de um voo de ontem que atravessa a meia-noite, sem o que veio antes dele nesse dia (uma
+// assistência de manhã), e o dia lido ficava diferente do guardado. A "Rever" lê 12 meses (rosterRead.importWindow) e via o dia
+// inteiro, igual. Agora lê-se com DETECT_CONTEXT_DAYS de contexto para trás e só contam os serviços de HOJE em diante (o que a
+// deteção sempre quis: de hoje até ao fim do mês seguinte). Golden: scripts/roster-diff.test.js.
+export const DETECT_CONTEXT_DAYS = 3;
+export const detectWindow = (now = new Date()) => {
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return {
+    readStart: new Date(start.getFullYear(), start.getMonth(), start.getDate() - DETECT_CONTEXT_DAYS),
+    start,
+    end: new Date(start.getFullYear(), start.getMonth() + 2, 1),
+  };
+};
+// O diff só dos serviços de hoje em diante (window.start, 'YYYY-MM-DD'); os dias de contexto servem para os ler inteiros.
+export const diffUpcoming = ({ incoming = [], duties = {}, window } = {}) =>
+  diffRoster({ incoming: (incoming || []).filter((r) => r && r.duty_date && (!window || !window.start || r.duty_date >= window.start)), duties, window });
+
 // Alterações de "ÚLTIMA HORA" — candidatas a SNC (o AE paga por alteração de escala de curto
 // prazo). Conta serviços ALTERADOS/CONFLITO/NOVOS cuja data cai em [hoje, hoje+horizonte];
 // cancelamentos ficam de fora (não há prestação clara no Anexo I). Devolve { total, byYm }

@@ -11,11 +11,37 @@ const transform = (src, filename) => babel.transformSync(src, { filename, babelr
 const origJs = Module._extensions['.js'];
 Module._extensions['.js'] = function (m, filename) { if (filename.includes('node_modules')) return origJs(m, filename); m._compile(transform(fs.readFileSync(filename, 'utf8'), filename), filename); };
 
-const { diffDuty, classify, diffRoster, shortNoticeCandidates } = require(path.resolve('data/rosterDiff.js'));
+const { diffDuty, classify, diffRoster, shortNoticeCandidates, detectWindow, diffUpcoming } = require(path.resolve('data/rosterDiff.js'));
 
 let pass = 0, fail = 0;
 const eq = (label, got, want) => { const ok = JSON.stringify(got) === JSON.stringify(want); if (ok) pass++; else { fail++; console.error(`✗ ${label}\n    esperado: ${JSON.stringify(want)}\n    obtido:   ${JSON.stringify(got)}`); } };
 const ok = (label, cond) => { if (cond) pass++; else { fail++; console.error(`✗ ${label}`); } };
+
+// ── A JANELA DA DETEÇÃO (visto no iPhone a 2026-11-14): "A escala mudou · 1 alteração por rever" e a "Rever" sem nada. ──
+// A leitura do aviso começava à meia-noite de hoje; o calendário devolve os eventos que TOCAM na janela, por isso vinha o fim do
+// voo de ontem (19:00 → 04:00) sem a assistência das 09:00 desse dia — o dia 13 lido ficava diferente do guardado e contava. A
+// "Rever" lê 12 meses e vê o dia inteiro, igual. Agora lê-se com uns dias para trás (o contexto) e só contam os serviços de hoje
+// em diante — a janela que sempre foi a da deteção.
+{
+  const fl13 = { kind: 'flight', route: 'LIS-OPO', report_time: '18:00', block_off: '19:00', block_on: '04:00', sectors: 1 };
+  const sb13 = { kind: 'standby_home', report_time: '09:00', block_on: '17:00' };
+  const fl15 = { kind: 'flight', route: 'LIS-FNC', report_time: '05:40', block_off: '06:40', block_on: '08:15', sectors: 1 };
+  const duties = {
+    '2026-11-13': { duty_date: '2026-11-13', ...fl13, extra: [sb13], source: 'calendar', snap: { ...fl13, extra: [sb13], v: 2 } },
+    '2026-11-15': { duty_date: '2026-11-15', ...fl15, source: 'calendar', snap: { ...fl15, v: 2 } },
+  };
+  const window = { start: '2026-11-14', end: '2027-01-01' };
+  const tail13 = { duty_date: '2026-11-13', ...fl13 };          // o fim de ontem, lido sem o resto do dia
+  const same15 = { duty_date: '2026-11-15', ...fl15 };
+  eq('o erro visto: o fim de ontem lido sem o resto do dia contava como alteração', diffRoster({ incoming: [tail13, same15], duties, window }).counts.total, 1);
+  eq('detecção: só os serviços de hoje em diante → nada por rever', diffUpcoming({ incoming: [tail13, same15], duties, window }).counts.total, 0);
+  eq('detecção: uma mudança a sério a 15/11 continua a contar', diffUpcoming({ incoming: [tail13, { ...same15, report_time: '06:00' }], duties, window }).changed.map((x) => x.date), ['2026-11-15']);
+  eq('detecção: um serviço novo hoje conta', diffUpcoming({ incoming: [tail13, { duty_date: '2026-11-14', kind: 'flight', route: 'OPO-LIS', report_time: '15:15' }, same15], duties, window }).added.map((x) => x.date), ['2026-11-14']);
+  eq('detecção: um cancelado de hoje em diante continua a contar', diffUpcoming({ incoming: [tail13], duties, window }).removed.map((x) => x.date), ['2026-11-15']);
+  const w = detectWindow(new Date(2026, 10, 14, 12, 31));
+  const d = (x) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+  eq('janela: lê 3 dias para trás, conta de hoje ao fim do mês seguinte', [d(w.readStart), d(w.start), d(w.end)], ['2026-11-11', '2026-11-14', '2027-01-01']);
+}
 
 // diffDuty
 eq('iguais (case/—)', diffDuty({ report_time: '10:50', route: 'LIS-OPO', sectors: 2 }, { report_time: '10:50', route: 'lis-opo', sectors: 2 }), []);
