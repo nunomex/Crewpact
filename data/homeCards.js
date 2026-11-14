@@ -184,13 +184,16 @@ export function homeCards(H = {}) {
   };
   // O limite discreto (L2): só com o PSV certo e dentro. "Dentro do limite" só quando o ecrã já verificou tudo (o PSV e os
   // acumulados, legal 'ok'); com só o PSV conhecido (véspera, próximo serviço), "PSV dentro do limite".
-  const quietOf = (d) => {
+  const quietOf = (d, { rest = false } = {}) => {
     const ps = (d && d.psv) || {};
     if (!ps.plan || !ps.max || ps.hi || uncertain(d) || (d.legal && d.legal.status === 'bad')) return null;
     const pm = toMin(ps.plan), mx = toMin(ps.max);
     if (pm == null || mx == null || pm > mx) return null;
-    return { l: d.legal && d.legal.status === 'ok' ? l('Dentro do limite', 'Within limits') : l('PSV dentro do limite', 'FDP within the limit'),
-      sub: `PSV ${F.dur(pm)} ${l('de', 'of')} ${F.dur(mx)}`, r: { k: l('margem', 'margin'), v: F.dur(mx - pm) } };
+    const sure = !!(d.legal && d.legal.status === 'ok');
+    const span = `${F.dur(pm)} ${l('de', 'of')} ${F.dur(mx)}`;
+    // Na véspera, o repouso verificado diz-se ("está verificado, dorme" — a ficha da Living Interface); o curto é o aviso por cima.
+    return { l: sure ? l('Dentro do limite', 'Within limits') : l('PSV dentro do limite', 'FDP within the limit'),
+      sub: [sure ? `PSV ${span}` : span, rest ? l('repouso cumprido', 'rest met') : null].filter(Boolean).join(' · '), r: { k: l('margem', 'margin'), v: F.dur(mx - pm) } };
   };
   // O limite incerto num cartão à parte (L2): neutro e tracejado, a margem nas duas pontas quando as há, e o que falta.
   const limUncOf = (d, kindLbl) => {
@@ -205,10 +208,10 @@ export function homeCards(H = {}) {
       value: null, gain: false, open: { to: 'item', id: 'legal' } };
   };
   // As peças E3 de um serviço de voo (o resto do cartão — tipo, cor, canto, abrir — fica com quem o monta).
-  const e3Of = (d) => {
+  const e3Of = (d, { rest = false } = {}) => {
     const gain = d.perDiem != null ? F.eur(d.perDiem, '+') : null;
     return { title: titleE3(d), cities: citiesOf(d), flightNo: d.sectors === 1 && d.flightNo ? String(d.flightNo) : null,
-      gain, gainLbl: gain ? l('per diem', 'per diem') : null, line: lineOf(d), quiet: quietOf(d), sub: null, a: null, dur: null, b: null, pct: null };
+      gain, gainLbl: gain ? l('per diem', 'per diem') : null, line: lineOf(d), quiet: quietOf(d, { rest }), sub: null, a: null, dur: null, b: null, pct: null };
   };
 
   // O serviço seguinte como cartão grande (com a linha fina alternativa para quando há um aviso).
@@ -256,11 +259,11 @@ export function homeCards(H = {}) {
   // O cartão do dia de serviço PLANEADO (antes do report · véspera · disrupção): começa na partida, para não repetir o report de cima.
   const uncertain = (d) => !!(d && d.legal && d.legal.status === 'uncertain');
   const psvPlanTxt = (ps) => (ps && ps.plan && ps.max ? `PSV ${noLead(ps.plan)} ${l('de', 'of')} ${noLead(ps.max)}${ps.hi ? `–${noLead(ps.hi)}` : ''}` : null);
-  const planDayCard = (d, { sub, a, dur, b, action = null, gain = null, chev = false, e3 = false } = {}) => {
+  const planDayCard = (d, { sub, a, dur, b, action = null, gain = null, chev = false, e3 = false, restOk = false } = {}) => {
     const fl = isFlightKind(d.kind);
     const kindLbl = fl ? [l('Dia de serviço', 'Duty day'), d.split ? l('repartido', 'split') : secTxt(d)].filter(Boolean).join(' · ') : l('Serviço em terra', 'Ground duty');
     const dep = d.dep && d.dep !== d.report ? d.dep : null;
-    if (e3 && fl) return { t: 'card', id: 'day', color: colorOf(d.kind), kind: kindLbl, ...e3Of(d), corner: (action || chev) ? 'chev' : (d.shareable ? 'share' : 'chev'), action, open: openDay(d) };
+    if (e3 && fl) return { t: 'card', id: 'day', color: colorOf(d.kind), kind: kindLbl, ...e3Of(d, { rest: restOk }), corner: (action || chev) ? 'chev' : (d.shareable ? 'share' : 'chev'), action, open: openDay(d) };
     return { t: 'card', id: 'day', color: colorOf(d.kind), kind: kindLbl, title: titleOf(d), sub: sub || null, gain,
       a: a !== undefined ? a : (dep ? { v: dep, l: l('parte', 'departs') } : null),
       dur: dur !== undefined ? dur : (dep && d.lastArr ? F.dur(span(dep, d.lastArr)) : null),
@@ -346,7 +349,7 @@ export function homeCards(H = {}) {
   let T = null, cards = [];
 
   if (state === 'setup') {
-    T = top({ text: l('Começar', 'Get started'), live: false }, null, l('Para a app saber o teu dia', 'For the app to know your day'),
+    T = top({ text: l('Bem-vindo', 'Welcome'), live: false }, null, l('Para a app saber o teu dia', 'For the app to know your day'),
       giantOf(l('Liga a', 'Link'), null, l('escala', 'roster')),
       facts(fact(l('Só leitura', 'Read-only'), l('nada é alterado', 'nothing is changed')), fact(l('Com o teu sim', 'With your yes'), l('é que se grava', 'is it saved'))));
     cards = [
@@ -384,8 +387,8 @@ export function homeCards(H = {}) {
       const inHours = u != null && u < 48 * 60;
       const days = isISO(next.iso) && isISO(today) ? dayIdx(next.iso) - dayIdx(today) : null;
       const g = inHours
-        ? giantOf(Math.floor(u / 60), u % 60 ? `h ${String(u % 60).padStart(2, '0')}` : 'h', l('livre', 'free'), true)
-        : giantOf(days != null ? days : '—', days === 1 ? l('dia', 'day') : l('dias', 'days'), l('livre', 'free'), true);
+        ? giantOf(Math.floor(u / 60), u % 60 ? `h ${String(u % 60).padStart(2, '0')}` : 'h')   // sem "livre": o título já diz "Folga"
+        : giantOf(days != null ? days : '—', days === 1 ? l('dia', 'day') : l('dias', 'days'));
       T = top({ text: l('Folga', 'Day off'), live: false }, todayPill(), l('Próximo serviço daqui a', 'Next duty in'), g,
         facts(fact(when(next.iso), l('até lá', 'until then')), weekFact(), wxTomorrow()));
       cards = assemble(nextCard(next, l('Próximo serviço', 'Next duty'), { withDay: false }), null, monthCard());
@@ -417,7 +420,8 @@ export function homeCards(H = {}) {
     if (m && m.total != null) {
       const unc = m.unc && m.unc.min != null && m.unc.max != null;
       const [ip, dp] = F.eurBare(m.total).split(lang === 'en' ? '.' : ',');
-      T = top({ text: m.name, live: false }, { text: closes, iso: null }, l('Ganhos brutos do mês', 'Gross earnings this month'),
+      // o mês diz-se na frase (o título passou a "Fecho do mês")
+      T = top({ text: l('Fecho do mês', 'Month close'), live: false }, { text: closes, iso: null }, m.name ? l(`Ganhos brutos de ${String(m.name).toLowerCase()}`, `Gross earnings, ${m.name}`) : l('Ganhos brutos do mês', 'Gross earnings this month'),
         unc ? giantOf(l('Incerto', 'Uncertain')) : giantOf(lang === 'en' ? `€${ip}` : ip, lang === 'en' ? `.${dp}` : `,${dp} €`, l('estimado', 'estimated'), true), null);
       const rows = (m.rows || []).filter((r) => r && r.k).map((r) => ({ k: r.k, v: r.max != null && r.max > r.eur ? `${F.eur(r.eur)} ${l('a', 'to')} ${F.eur(r.max)}` : (r.eur == null ? '—' : F.eur(r.eur)), open: r.open || null }));
       const lo = unc ? m.total - (m.base || 0) + m.unc.min : null, hi = unc ? m.total - (m.base || 0) + m.unc.max : null;
@@ -431,7 +435,7 @@ export function homeCards(H = {}) {
         ...wFirst, ...wLast,
       ].filter(Boolean);
     } else {
-      T = top({ text: H.monthName || l('Mês', 'Month'), live: false }, null, l('O mês fecha em', 'The month closes in'), giantOf(d != null ? d : '—', d === 1 ? l('dia', 'day') : l('dias', 'days')), null);
+      T = top({ text: l('Fecho do mês', 'Month close'), live: false }, H.monthName ? { text: H.monthName, iso: null } : null, l('O mês fecha em', 'The month closes in'), giantOf(d != null ? d : '—', d === 1 ? l('dia', 'day') : l('dias', 'days')), null);
       cards = [...wFirst, ...wLast].filter(Boolean);
     }
   } else if (state === 'posvoo') {
@@ -443,7 +447,7 @@ export function homeCards(H = {}) {
         nextCard(next, l('A seguir', 'Next'), { withDay: true }));
     } else {
       T = top({ text: l('Dia fechado', 'Day closed'), live: false }, todayPill(), c.fdp ? l('PSV de hoje', 'Today’s FDP') : (c.kindLabel || l('Serviço de hoje', 'Today’s duty')),
-        c.fdp ? giantOf(noLead(c.fdp), 'h', l('fechado', 'closed'), true) : giantOf(l('Fechado', 'Closed')), fx);
+        c.fdp ? giantOf(noLead(c.fdp), 'h') : giantOf(l('Fechado', 'Closed')), fx);   // sem "fechado": o título já diz "Dia fechado"
       const sub = c.fdp ? (c.over ? l('o dia fechou acima do limite', 'the day closed over the limit') : l('o dia fechou nos limites', 'the day closed within limits')) : null;
       // A barra "Registar sign-off" saiu (2026-11-14, regra do Nuno: o fim de serviço vem do calendário, que a companhia corrige depois).
       cards = assemble(restCard(true, { sub, action: null, open: { to: 'day', iso: today }, keepSub: !!c.over }), nextCard(next, l('A seguir', 'Next'), { withDay: true }));
@@ -473,7 +477,7 @@ export function homeCards(H = {}) {
     const fl = isFlightKind(hero.kind);
     const ps = hero.psv || {};
     const lat = psvOf(ps);
-    T = top({ text: l('Amanhã', 'Tomorrow'), live: true }, { text: F.wd(hero.iso), iso: hero.iso },
+    T = top({ text: fl ? l('Voo amanhã', 'Flight tomorrow') : `${F.cap(kindShort(hero.kind))} ${l('amanhã', 'tomorrow')}`, live: true }, { text: F.wd(hero.iso), iso: hero.iso },
       hero.report ? l('Report às', 'Report at') : (fl ? l('Partida às', 'Departure at') : l('Começa às', 'Starts at')),
       giantOf(hero.report || hero.dep || '—', null, hero.depStation || hero.station || null, false, zuluOf(hero)),
       facts(fact(F.dur(live.cdMin), l('falta', 'to go')), fl ? (lat ? fact(lat, l('PSV até', 'FDP until')) : (!hero.report ? fact(l('Sem report', 'No report'), l('PSV não calculado', 'FDP not calculated')) : null)) : (hero.end ? fact(hero.end, l('acaba', 'ends')) : null), wxReportFact()));
@@ -481,7 +485,7 @@ export function homeCards(H = {}) {
     // O "repouso cumprido/curto" saiu do cartão (E3): o repouso curto é o aviso "Tenho descanso?", por cima.
     if (fl) limCard = limUncOf(hero, l('O limite de amanhã', 'Tomorrow’s limit'));
     const one = fl
-      ? planDayCard(hero, { e3: true, action: wake })
+      ? planDayCard(hero, { e3: true, action: wake, restOk: H.restOk === true })
       : { ...planDayCard(hero, { sub: hero.report && hero.end ? `${F.dur(span(hero.report, hero.end))} ${l('de serviço em terra', 'ground duty')}` : null, a: null, dur: null, b: null, action: wake, gain: hero.pay && hero.pay.eur ? F.eur(hero.pay.eur, '+') : null }) };
     const ns = nightCard(hero, null);
     cards = assemble(one, ns ? ns.slim : null);   // na véspera a pernoita é sempre linha fina (esboço, revisão de 2026-11-11)
@@ -489,7 +493,7 @@ export function homeCards(H = {}) {
     const ds = H.dis || {};
     const legDep = live.legDep || hero.depStation || '';
     const legArr = live.legArr || '';
-    const pill = ds.mode === 'cancelled' ? l('Cancelado', 'Cancelled') : ds.mode === 'diverted' ? l('Desviado', 'Diverted') : hero.iso === today ? l('Hoje', 'Today') : l('Amanhã', 'Tomorrow');
+    const pill = ds.mode === 'cancelled' ? l('Cancelado', 'Cancelled') : ds.mode === 'diverted' ? l('Desviado', 'Diverted') : l('Atraso', 'Delay');
     let what, g, fx;
     if (ds.mode === 'cancelled') {
       what = l('Estava marcado para as', 'It was scheduled for'); g = giantOf(ds.oldHm || hero.dep || '—', null, legDep || null);
@@ -552,7 +556,7 @@ export function homeCards(H = {}) {
         cards = assemble(one, nextCard(next, l('A seguir', 'Next'), { withDay: true }));
       } else {
         const pre = live.cdMin != null && live.cdMin > 0;
-        T = top({ text: l('Hoje', 'Today'), live: true }, { text: kindShort(hero.kind), iso: hero.iso },
+        T = top({ text: F.cap(kindShort(hero.kind)), live: true }, { text: F.wd(hero.iso), iso: hero.iso },   // o tipo é o título; a pílula diz o dia
           pre ? l('Começa às', 'Starts at') : (hero.end ? l('Termina às', 'Ends at') : l('A decorrer', 'Ongoing')),
           giantOf((pre ? hero.report : hero.end || hero.report) || '—', null, stn),
           facts(pre ? fact(F.dur(live.cdMin), l('falta', 'to go')) : (hero.end ? fact(F.dur(live.remainingMin), l('falta', 'to go')) : null),
@@ -564,7 +568,7 @@ export function homeCards(H = {}) {
     } else if (H.phase === 'pre' || !H.phase) {
       const unc = uncertain(hero);
       const lat = psvOf(ps);
-      T = top({ text: l('Hoje', 'Today'), live: true }, pill2, hero.report ? l('Report às', 'Report at') : l('Partida às', 'Departure at'),
+      T = top({ text: l('Dia de voo', 'Flight day'), live: true }, pill2, hero.report ? l('Report às', 'Report at') : l('Partida às', 'Departure at'),
         giantOf(hero.report || hero.dep || '—', null, hero.depStation || null, false, zuluOf(hero)),
         facts(fact(F.dur(live.cdMin), l('falta', 'to go')),
           unc ? fact(l('Incerto', 'Uncertain'), l('PSV até', 'FDP until')) : lat ? fact(lat, l('PSV até', 'FDP until')) : (!hero.report ? fact(l('Sem report', 'No report'), l('PSV não calculado', 'FDP not calculated')) : null),
@@ -596,7 +600,7 @@ export function homeCards(H = {}) {
       }
       const f2 = unc ? fact(l('Incerto', 'Uncertain'), l('PSV até', 'FDP until'))
         : marginFact() || (!card.b && psvOf(ps) ? fact(psvOf(ps), l('PSV até', 'FDP until')) : (!hero.report ? fact(l('Sem report', 'No report'), l('PSV não calculado', 'FDP not calculated')) : null));
-      T = top({ text: ph === 'air' ? l('Em voo', 'In flight') : l('Hoje', 'Today'), live: true }, pill2, what, giantOf(big || '—', null, stn || null), facts(f1, f2, (ph === 'duty' || ph === 'air') ? wxArrivalFact() : null));
+      T = top({ text: ph === 'air' ? l('Em voo', 'In flight') : ph === 'landed' ? l('Aterrado', 'Landed') : l('Em serviço', 'On duty'), live: true }, pill2, what, giantOf(big || '—', null, stn || null), facts(f1, f2, (ph === 'duty' || ph === 'air') ? wxArrivalFact() : null));
       cards = assemble(card, nightCard(hero, next) || nextCard(next, l('A seguir', 'Next'), { withDay: true }));
     }
   } else {

@@ -329,6 +329,14 @@ O que muda em relação à §2 ("branco · preto · amarelo, plana, hairline"):
   em todos os estados com serviço (folga e pós-voo com o voo amanhã, véspera, antes do report, em serviço e em voo, pernoita).
   Os cartões não o repetem — menos a cidade da pernoita à chegada, no cartão da pernoita. Sem serviço, nada. O crédito
   "Meteorologia: MET Norway" por baixo dos cartões. O ícone e o espaço entram na largura medida (`GIANT.factIc`/`factIcGap`).
+- **O estado como título do Início** (Nuno, 2026-11-14 — S2 de `design/estados-topo.html` + as palavras e a T2 de
+  `design/estados-s2.html`): o estado deixa de ser a pílula preta e passa a título do ecrã (`TXT3.stateTitle`, 34/38; encolhe até
+  70 % nas palavras compridas), **na fila de cima, ao lado das Notificações**, com o ponto amarelo nos estados ao vivo e o papel de
+  cabeçalho no VoiceOver; a pílula do dia (ou do voo) passa para a **linha da frase**, à direita, mais pequena (30), e continua a
+  abrir o dia na Escala. `HomeTop titled` — só no Início. **As palavras:** Folga · Voo amanhã (ou "Formação amanhã") · Dia de voo ·
+  Em serviço · Em voo · Aterrado · Pernoita · Dia fechado · Standby · Formação/Escritório/Posicionamento · Atraso/Cancelado/
+  Desviado · Férias · Baixa · Fecho do mês · Atenção · Bem-vindo. O número não repete o título (saiu "livre" da folga e "fechado"
+  do dia fechado). O topo fica ~10 pt mais alto do que antes.
 - **O cartão do voo E3** (Nuno, 2026-11-14 — E3 de `design/cartoes-c2.html` + V2 de `design/cartoes-e3.html` + L2 de
   `design/cartoes-limite.html`; no Início, na véspera, antes do report e no cartão grande do próximo serviço): o tipo (com o dia e
   os setores no próximo serviço); o título de onde sais a onde acabas (4 sítios ou mais) ou a cadeia; **as cidades em pequeno**

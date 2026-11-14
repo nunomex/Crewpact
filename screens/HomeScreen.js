@@ -1065,7 +1065,7 @@ export default function HomeScreen({ navigation }) {
       {/* A barra de estado do iPhone: escura sobre o fundo claro; clara à noite. Só com o ecrã à vista. */}
       {isFocused ? <StatusBar style={night ? 'light' : 'dark'} /> : null}
       {loadingFlight ? <HomeSkeleton /> : (
-        <HomeTop top={out.top} C={C} size={giant.size} onPill2={openPill2} l={l} rightW={demoOn ? pillWidth(l('Exemplo · sair', 'Example · exit'), true) - SPACE.sm : pillWidth(l('Notificações', 'Notifications'))}
+        <HomeTop top={out.top} C={C} size={giant.size} onPill2={openPill2} l={l} titled rightW={demoOn ? pillWidth(l('Exemplo · sair', 'Example · exit'), true) - SPACE.sm : pillWidth(l('Notificações', 'Notifications'))}
           right={demoOn ? (
             <TouchableOpacity style={[s.demo, { borderColor: C.ink }]} onPress={exitDemo} hitSlop={{ top: 3, bottom: 3 }}
               accessibilityRole="button" accessibilityLabel={l('Isto é um exemplo. Sair do exemplo', 'This is an example. Exit the example')}>

@@ -284,6 +284,7 @@ export const MONEY = { gain: '#0B6E43', gainSoft: '#E7F3EC', gainNight: '#46C98A
 // Texto da direção 3.0 — Hanken Grotesk em tudo (decisão do Nuno, 2026-11-11). Tamanhos da escala (§9); o número gigante (86)
 // fica fora dela, no TUNE do Início. Os TXT da 2.0 não mudam (a Hanken é mais larga e partia os ecrãs antigos).
 export const TXT3 = {
+  stateTitle:{ fontFamily: PELE_FONT.bodyHeavy, fontSize: 34, lineHeight: 38, letterSpacing: -0.8 },  // o estado como título do Início (S2, 2026-11-14)
   what:      { fontFamily: PELE_FONT.bodyMed,   fontSize: 15, lineHeight: 20 },                      // a legenda por cima do número
   pill:      { fontFamily: PELE_FONT.bodyBold,  fontSize: 13 },                                      // pílulas do topo
   fact:      { fontFamily: PELE_FONT.bodyBold,  fontSize: 20, lineHeight: 22 },                      // os dois factos ao lado do número

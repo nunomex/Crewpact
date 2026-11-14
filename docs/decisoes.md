@@ -1107,8 +1107,21 @@ motor está na versão **21**. **O que falta, por ordem:**
   `design/cartoes-limite.html` — **L2 escolhida e construída** (ver "O cartão do voo E3", acima). As cidades: a app só tem nomes em
   português para ~30 aeroportos (`data/countries.js` CITY_PT) e os portugueses do catálogo; os outros ficam sem a linha — por fazer:
   a lista para a rede da easyJet. **Os estados mais destacados:** esboço `design/estados-topo.html` (S1 a pílula maior com ícone ·
-  S2 o estado como título grande, recomendada, +54 pt no topo · S3 a pílula na cor do tipo; o topo todo a cor continua recusado) —
-  por escolher.
+  S2 o estado como título grande · S3 a pílula na cor do tipo) — **S2 escolhida e construída** (por gravar; `HomeTop titled`, só no
+  Início; o topo cresce ~50 pt). **Ver no iPhone:** o título grande em cada estado e o ponto amarelo nos estados ao vivo. O Nuno perguntou se dava para melhorar →
+  `design/estados-s2.html` (as palavras do título + T1/T2/T3) — **o Nuno escolheu as palavras novas e a T2 — construídas** (por gravar; golden
+  homecards 301; o título na fila de cima, a pílula do dia na linha da frase; o número sem "livre"/"fechado"; "Ganhos brutos de
+  novembro" no fecho; a véspera volta a dizer "repouso cumprido"). **Ver no iPhone:** cada título (sobretudo os compridos, que
+  encolhem), a pílula pequena na linha da frase, o ponto amarelo.
+- **A Living Interface (análise de 2026-11-14, pedida pelo Nuno; `docs/living-interface.md`):** o coração cumpre (o estado muda
+  sozinho ao longo do dia, 13 estados, golden, honesto, estrutura fixa, interativo). Falta, por ordem: (1) ~~a véspera sem "repouso
+  cumprido"~~ — corrigido; (2) **a tranquilidade antes do report** ("avião a horas · aeroporto normal": a app tem os dados e só fala
+  quando há problema) — 3 esboços; (3) "A escala mudou" sem o que mudou — a 2.ª parte dos avisos; (4) **a folga chega a 4 cartões**
+  (a lei: 1 principal + 2) — 3 esboços; (5) **os números do topo não abrem o seu porquê** (a Prova existe noutros ecrãs) — 3
+  esboços; (6) ~~as repetições do título no número~~ — corrigido; (7) **o documento da LI está desatualizado** (v3: a voz manuscrita,
+  o FAB/criar à mão e os nudges morreram com o 3.0 e com "só o calendário") — e **pergunta ao Nuno: a voz volta numa forma nova?**;
+  (8) ver no iPhone se a mudança de estado anima como a lei pede (220 ms, sem saltos). Nota: com o título,
+  a 2.ª linha cinzenta do número repete o estado ("livre" na folga, "fechado" no pós-voo).
 - **Do dia 2026-11-14 (gravado e enviado até `81c2dfd`) — tudo por ver:** os Números (o total sozinho no topo; "Acima da base" no
   fim do "De onde vem"; com a base incerta, "O total fica entre"); o topo lado a lado igual no Início, na Escala e nos Números
   (o número do mesmo tamanho; a frase com ar por cima); a meteorologia (na véspera e antes do report, a base à hora do report no

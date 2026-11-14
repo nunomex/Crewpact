@@ -41,7 +41,10 @@ function GainChip({ text }) {
 // compact: só a fila das pílulas (a Escala com um dia aberto — a semana fica em cima e a folha do dia sobe por baixo).
 // O TOPO LADO A LADO E IGUAL NAS TRÊS ABAS (L1 de design/topo-lado.html, 2026-11-14): o número em duas linhas à esquerda, no
 // tamanho comum (`topGiant` de data/homeCards.js — 62 a 390, 58 a 375), e os factos à direita, com o fio a tinta.
-export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l, compact = false }) {
+// `titled` (o Início, S2 de design/estados-topo.html, 2026-11-14): o estado deixa de ser a pílula preta e passa a TÍTULO do ecrã
+// ("Em voo", "Pernoita", "Folga"), por baixo das pílulas, com o ponto amarelo nos estados ao vivo. A Escala e os Números não têm
+// estados e ficam como estavam.
+export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l, compact = false, titled = false }) {
   const { width: winW } = useWindowDimensions();
   const AL = a11yLang(l);
   if (!top) return null;
@@ -49,7 +52,7 @@ export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l, compact 
   // (a secundária). Medido com as larguras da Hanken, como o número gigante.
   // A Escala (2026-11-13) usa o mesmo topo sem a pílula preta e com a de contorno como botão do mês (seta ▾ e dica própria).
   const p2W = top.pill2 ? pillWidth(top.pill2.text) + (top.pill2.chevron ? 12 + SPACE.sm : 0) : 0;
-  const pillsW = (top.pill ? pillWidth(top.pill.text, top.pill.live) + SPACE.sm : 0) + (top.pill2 ? p2W + SPACE.sm : 0) + rightW;
+  const pillsW = (top.pill && !titled ? pillWidth(top.pill.text, top.pill.live) + SPACE.sm : 0) + (top.pill2 ? p2W + SPACE.sm : 0) + rightW;
   const showP2 = !!top.pill2 && pillsW <= winW - 2 * SPACE.lgPlus;
   const g = top.giant || {};
   const lh = Math.round(size * GIANT_LINE.lh);
@@ -60,18 +63,28 @@ export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l, compact 
   const giantStyle = { fontFamily: PELE_FONT.bodyBold, fontSize: size, lineHeight: lh, letterSpacing: size * GIANT.ls, color: C.ink, paddingRight: tail };
   const heroA11y = [top.what, `${g.l1 || ''}${g.unit ? ` ${g.unit}` : ''}`, g.l2 ? `${g.l2}${g.zulu ? `, ${g.zulu.replace(/Z$/, '')} ${l('em UTC', 'UTC')}` : ''}` : null, ...(top.facts || []).map((f) => `${f.tone === 'was' ? l('estava', 'was') + ' ' : ''}${f.v} ${f.l}`)].filter(Boolean).join('. ');
   const P2 = top.pill2 && top.pill2.iso ? TouchableOpacity : View;
+  const p2Props = top.pill2 ? (top.pill2.iso ? { onPress: () => onPill2(top.pill2.iso), activeOpacity: 0.7, hitSlop: { top: 6, bottom: 6, left: 4, right: 4 },
+    accessibilityRole: 'button', accessibilityLanguage: AL, accessibilityLabel: top.pill2.text, accessibilityHint: top.pill2.hint || l('Abre este dia na Escala', 'Opens this day in the Roster') } : { accessible: true, accessibilityLanguage: AL, accessibilityLabel: top.pill2.text }) : {};
+  // T2 (design/estados-s2.html, 2026-11-14): no Início o estado é o TÍTULO, na fila de cima ao lado das Notificações; a pílula do dia
+  // (ou do voo) passa para a linha da frase, à direita, mais pequena — continua a abrir o dia na Escala.
+  const head = titled && top.pill && !compact;
   return (
     <View style={[s.top, compact ? s.topCompact : null]}>
       <View style={s.pills}>
-        {top.pill ? (
+        {head ? (
+          <View style={s.titleWrap} accessible accessibilityRole="header" accessibilityLanguage={AL} accessibilityLabel={top.pill.live ? `${top.pill.text}, ${l('agora', 'now')}` : top.pill.text}>
+            <Text style={[TXT3.stateTitle, s.titleTxt, { color: C.ink }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} maxFontSizeMultiplier={1.15}>{top.pill.text}</Text>
+            {top.pill.live ? <View style={[s.stateDot, { backgroundColor: BRAND.signal }]} /> : null}
+          </View>
+        ) : null}
+        {top.pill && !titled ? (
           <View style={[s.pill, { backgroundColor: C.ink, borderColor: C.ink }]} accessible accessibilityLanguage={AL} accessibilityLabel={top.pill.text}>
             {top.pill.live ? <View style={[s.pillDot, { backgroundColor: BRAND.signal }]} /> : null}
             <Text style={[TXT3.pill, { color: C.desk }]} numberOfLines={1} allowFontScaling={false}>{top.pill.text}</Text>
           </View>
         ) : null}
-        {showP2 ? (
-          <P2 style={[s.pill, s.pillOut, { borderColor: C.ink }]} {...(top.pill2.iso ? { onPress: () => onPill2(top.pill2.iso), activeOpacity: 0.7, hitSlop: { top: 3, bottom: 3, left: 2, right: 2 },
-            accessibilityRole: 'button', accessibilityLanguage: AL, accessibilityLabel: top.pill2.text, accessibilityHint: top.pill2.hint || l('Abre este dia na Escala', 'Opens this day in the Roster') } : { accessible: true, accessibilityLanguage: AL, accessibilityLabel: top.pill2.text })}>
+        {showP2 && !head ? (
+          <P2 style={[s.pill, s.pillOut, { borderColor: C.ink }]} {...p2Props}>
             <Text style={[TXT3.pill, { color: C.ink }]} numberOfLines={1} allowFontScaling={false}>{top.pill2.text}</Text>
             {top.pill2.chevron ? <Icon name="chevron" rot={90} size={12} color={C.ink} /> : null}
           </P2>
@@ -79,7 +92,15 @@ export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l, compact 
         <View style={s.grow} />
         {right}
       </View>
-      {compact ? null : <Text style={[TXT3.what, { color: C.soft }]} numberOfLines={1} maxFontSizeMultiplier={1.15}>{top.what}</Text>}
+      {compact ? null : head && top.pill2 ? (
+        <View style={s.whatRow}>
+          <Text style={[TXT3.what, s.whatTxt, { color: C.soft }]} numberOfLines={1} maxFontSizeMultiplier={1.15}>{top.what}</Text>
+          <P2 style={[s.pillSm, { borderColor: C.ink }]} {...p2Props}>
+            <Text style={[TXT3.pill, { color: C.ink }]} numberOfLines={1} allowFontScaling={false}>{top.pill2.text}</Text>
+            {top.pill2.iso ? <Icon name="chevron" size={11} color={C.ink} /> : null}
+          </P2>
+        </View>
+      ) : <Text style={[TXT3.what, { color: C.soft }]} numberOfLines={1} maxFontSizeMultiplier={1.15}>{top.what}</Text>}
       {compact ? null : <View style={s.hero} accessible accessibilityLanguage={AL} accessibilityLabel={heroA11y}>
         <View style={{ marginTop: -Math.round(size * GIANT_LINE.trim), marginBottom: -Math.round(size * GIANT_LINE.trim) }}>
           <View style={s.l1Row}>
@@ -420,6 +441,12 @@ const s = StyleSheet.create({
   pill: { height: 38, paddingHorizontal: SPACE.lg, borderRadius: RADIUS.pill, flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, borderWidth: 1.5, flexShrink: 0 },
   pillOut: { backgroundColor: 'transparent' },
   pillDot: { width: 7, height: 7, borderRadius: RADIUS.pill },
+  titleWrap: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, flexShrink: 1, minWidth: 0 },
+  titleTxt: { flexShrink: 1 },
+  whatRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.sm },
+  whatTxt: { flex: 1, minWidth: 0 },
+  pillSm: { height: 30, paddingHorizontal: SPACE.md, borderRadius: RADIUS.pill, borderWidth: 1.5, flexDirection: 'row', alignItems: 'center', gap: SPACE.xs, flexShrink: 0 },
+  stateDot: { width: 10, height: 10, borderRadius: RADIUS.pill },
   grow: { flex: 1 },
   l1Row: { flexDirection: 'row', alignItems: 'baseline' },
   // o número à esquerda e os factos à direita, com o fio (16 entre eles — GIANT.gap; 16 de recuo — GIANT.sidePad). 12 por baixo da
