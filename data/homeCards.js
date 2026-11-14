@@ -28,8 +28,9 @@
 //   rest  — o repouso depois do dia de HOJE (pós-voo · pernoita): { signOff, until, minMin, pct, hotel, pay, station,
 //           unc: { lo, hi, minLo, minHi, why, estDay } } — `unc` quando o mínimo depende de uma leitura que a lei não fecha: as
 //           duas pontas (hora e duração; `hi`/`minHi` = null sem teto conhecido) e o motivo; `until`/`minMin` são então a de cima
-//   closed — pós-voo: { fdp, over, multi, signOffDone, gainToday, kindLabel }
-//   week  — { done, limit } (serviço nos últimos 7 dias, ORO.FTL.210) · wxTmw — { v, label } (tempo de amanhã)
+//   closed — pós-voo: { fdp, over, multi, signOffDone, gainToday, kindLabel, from, to, early, adj } (do ftlForDuty: o início e o fim do
+//            PSV — os calços do último setor em funções —, os minutos que começou antes do report e o acerto do tempo decorrido)
+//   week  — { done, limit, from, to } (serviço em 7 dias, ORO.FTL.210; from/to: as datas do período que o motor escolheu) · wxTmw — { v, label } (tempo de amanhã)
 //   month — { name, total, base, unc:{ min, max, why, fix }, rows:[{ k, eur, max, open }], rest } · fechoDays
 //   dis   — { mode:'delay'|'projection'|'cancelled'|'diverted', side, newHm, oldHm, delayMin, why, divertedTo,
 //             verdict:{ verdict, realStr, maxStr, projected }, commander, lastArr, end }
@@ -44,7 +45,9 @@
 //           tone 'stop' = fora do limite → vermelho com ✕, pelo mapa B; sem tone = olhar → laranja)
 //
 // SAÍDA: { state, top: { pill:{ text, live }, pill2:{ text, iso }|null, what, giant:{ l1, unit, l2, l2Grey, zulu? }, facts[] },
-//          cards: [ card | slim | lines | text | checks | hdr ], caption }
+//          cards: [ card | slim | lines | text | checks | hdr ], caption, why }
+//   why    = { facts:[{ text, strong:[…], law, prova, value, title, calc }|null] (alinhado com top.facts), giant:{…}|null } | null — o
+//            porquê de cada número do topo (Q3, design/topo-porque-2.html): a folha da Prova com a conta desenhada (calc: sum+total | bar)
 //   checks = { t:'checks', id:'calm', color:'neutral', title, seen, items:[{ k, v, ok:true|false|null }] } (W1; ok null = por ver)
 //   voice  = { t:'voice', id:'voice', bold, tail, open } (V2; na folha, sem caixa) · checks com plain:true = os sinais da folga, sem caixa
 //   changes = { t:'changes', id:'roster', color:'alert', mark:'!', kind, title, seen, rows:[{ day, wd, k, old, v, sub, struck }], more,
@@ -139,6 +142,37 @@ export function homeCards(H = {}) {
   // Na folga e no pós-voo: só com o serviço AMANHÃ, e só se o tempo é o desse report (o mesmo serviço, a mesma hora).
   const wxTomorrow = () => (next && next.iso === tomorrow && next.report && WX.report && WX.report.at === next.report ? wxReportFact() : null);
   const facts = (...xs) => { const f = xs.filter(Boolean).slice(0, 3); return f.length ? f : null; };
+  // ── Q3 · O PORQUÊ DOS NÚMEROS DO TOPO (design/topo-porque-2.html Q3, escolhida pelo Nuno a 2026-11-14 — antes a P2; o princípio 3) ──
+  // Cada facto com conta e lei regista aqui o seu porquê (o facto fica igual); no fim, a saída `why` alinha-os com os factos do topo.
+  // Tocar no número abre a folha da Prova a começar pela conta desenhada: `title` (o título da folha) e `calc` (a soma de cima a baixo,
+  // `sum` + `total`, ou a barra do limite, `bar`). A conta usa os números do próprio serviço; a lei é a chave da Prova (data/prova.js);
+  // `text` (a conta numa frase) fica para o leitor de ecrã.
+  const WHY = new Map();
+  let giantWhy = null;
+  const withWhy = (f, w) => { if (f && w) WHY.set(f, w); return f; };
+  const psvWhy = (d) => {   // "PSV até": o report mais o máximo do serviço
+    const ps = (d && d.psv) || {}; const lat = psvOf(ps); const mx = toMin(ps.max);
+    if (!lat || !d.report || mx == null) return null;
+    const mxT = F.dur(mx); const n = d.sectors;
+    const secT = n ? `${n} ${n === 1 ? l('setor', 'sector') : l('setores', 'sectors')}` : null;
+    return { text: `${lat} = report ${d.report} + ${mxT} ${l('de máximo', 'maximum')}${secT ? ` · ${secT}` : ''}`,
+      strong: [lat, mxT], law: 'ORO.FTL.205(b)', prova: 'psvMax', value: mxT, title: l(`PSV até às ${lat}`, `FDP until ${lat}`),
+      calc: { sum: [{ k: 'Report', v: d.report }, { k: `+ ${l('Máximo', 'Maximum')}${secT ? ` · ${secT}` : ''}`, v: mxT }], total: { k: `= ${l('PSV até', 'FDP until')}`, v: lat } } };
+  };
+  // as horas de serviço em 7 dias: o motor (computeDutyTime) escolhe o pior período que contém hoje e diz as datas dele (from/to);
+  // sem as datas, a conta não as inventa ("em 7 dias seguidos")
+  const rangeTxt = (a, b) => (!isISO(a) || !isISO(b) ? null : a.slice(0, 7) === b.slice(0, 7)
+    ? l(`${Number(a.slice(8, 10))} a ${F.dm(b)}`, `${Number(a.slice(8, 10))}–${F.dm(b)}`) : l(`${F.dm(a)} a ${F.dm(b)}`, `${F.dm(a)}–${F.dm(b)}`));
+  const weekWhy = () => {
+    const w = H.week; if (!w || !w.limit) return null;
+    const done = Math.round(w.done || 0); const left = w.limit - done;
+    const rg = rangeTxt(w.from, w.to);
+    return { text: `${done} h ${rg ? l(`de serviço de ${rg}`, `of duty ${rg}`) : l('de serviço em 7 dias seguidos', 'of duty in 7 consecutive days')} · ${l('o limite é', 'the limit is')} ${w.limit} h — ${left >= 0 ? l(`ficam ${left} h`, `${left} h left`) : l(`passa ${-left} h`, `${-left} h over`)}`,
+      strong: [`${done} h`, `${w.limit} h`], law: w.limit === 60 ? 'ORO.FTL.210(a)(1)' : 'ORO.FTL.210(a)', prova: 'limites', value: `${done} h ${l('de', 'of')} ${w.limit} h`,
+      title: l('Serviço em 7 dias', 'Duty in 7 days'),
+      calc: { bar: { v: `${done} h`, of: `${l('de', 'of')} ${w.limit} h`, pct: Math.max(0, Math.min(100, Math.round((done / w.limit) * 100))), left: left >= 0 ? l(`ficam ${left} h`, `${left} h left`) : l(`passa ${-left} h`, `${-left} h over`), over: left < 0,
+        ...(rg ? { when: l(`de ${rg}`, rg) } : {}) } } };
+  };
   // A HORA ZULU do report — JUNTO DO SÍTIO, na 2.ª linha do número ("LIS 04:40Z"; a) de design/meteo-topo.html, 2026-11-14). Era o
   // 3.º facto (opção A, 2026-11-11); com o tempo no topo seriam quatro e só cabem três. SÓ quando é diferente da hora local (verão
   // em Portugal, pernoitas fora, longo curso) e só quando o número grande É o report.
@@ -414,8 +448,14 @@ export function homeCards(H = {}) {
       pct: line ? Math.max(0, Math.min(100, Math.round(live.nowPct * 100))) : null,
       corner: d.shareable ? 'share' : 'chev', action: null, open: openDay(d) };
   };
+  const marginWhy = () => {
+    const mx = toMin(((hero && hero.psv) || {}).max); const m = live.marginMin;
+    if (mx == null || m == null || m < 0) return null;
+    return { text: `${F.hm(m)} = ${F.dur(mx)} ${l('de máximo', 'maximum')} − ${F.dur(mx - m)} ${l('do PSV previsto', 'of planned FDP')}`, strong: [F.hm(m), F.dur(mx)], law: 'ORO.FTL.205(b)', prova: 'psvMax', value: F.dur(mx),
+      title: l('Margem no PSV', 'FDP margin'), calc: { sum: [{ k: l('Máximo', 'Maximum'), v: F.dur(mx) }, { k: `− ${l('PSV previsto', 'Planned FDP')}`, v: F.dur(mx - m) }], total: { k: `= ${l('Margem', 'Margin')}`, v: F.hm(m) } } };
+  };
   const marginFact = () => (live.marginMin != null
-    ? (live.marginMin < 0 ? fact(F.hm(live.marginMin), l('depois do limite do PSV', 'past the FDP limit')) : fact(F.hm(live.marginMin), l('de margem no PSV', 'FDP margin')))
+    ? (live.marginMin < 0 ? fact(F.hm(live.marginMin), l('depois do limite do PSV', 'past the FDP limit')) : withWhy(fact(F.hm(live.marginMin), l('de margem no PSV', 'FDP margin')), marginWhy()))
     : null);
   // O REPOUSO INCERTO (2026-11-12, "a lei é que manda"): o motivo, numa frase curta, e o mínimo nas duas pontas.
   const restWhy = (u) => ({
@@ -467,7 +507,7 @@ export function homeCards(H = {}) {
     }
     return { t: 'slim', id: 'month', color: 'neutral', title: m.name, sub: l('estimado · bruto', 'estimated · gross'), value: F.eur(m.total), gain: false, open: { to: 'stats' } };
   };
-  const weekFact = () => (H.week && H.week.limit ? fact(`${Math.round(H.week.done || 0)} h`, l(`de ${H.week.limit} em 7 dias`, `of ${H.week.limit} in 7 days`)) : null);
+  const weekFact = () => (H.week && H.week.limit ? withWhy(fact(`${Math.round(H.week.done || 0)} h`, l(`de ${H.week.limit} em 7 dias`, `of ${H.week.limit} in 7 days`)), weekWhy()) : null);
   const todayPill = (iso = today) => ({ text: F.wd(iso), iso });
 
   let T = null, cards = [];
@@ -578,6 +618,19 @@ export function homeCards(H = {}) {
     } else {
       T = top({ text: l('Dia fechado', 'Day closed'), live: false }, todayPill(), c.fdp ? l('PSV de hoje', 'Today’s FDP') : (c.kindLabel || l('Serviço de hoje', 'Today’s duty')),
         c.fdp ? giantOf(noLead(c.fdp), 'h') : giantOf(l('Fechado', 'Closed')), fx);   // sem "fechado": o título já diz "Dia fechado"
+      // O PSV de hoje: do report aos calços do último setor em funções (o que o motor usa — ORO.FTL.105(12): um posicionamento no fim
+      // já não conta). Quando não é só "fim − report", a linha que explica a diferença: começou antes do report (CS FTL.1.205(d)(1)(ii),
+      // `early`) ou o acerto do tempo decorrido (hora de verão, fusos — `adj`, em minutos, com sinal). Vêm do ftlForDuty pelo ecrã.
+      const fdpT = c.fdp && toMin(c.fdp) != null ? F.dur(toMin(c.fdp)) : null;
+      const early = c.early > 0 ? c.early : 0; const adj = Number(c.adj) || 0;
+      giantWhy = fdpT && c.from && c.to ? {
+        text: `${fdpT} = ${l(`do report às ${c.from} aos calços às ${c.to} do último setor em funções`, `from report at ${c.from} to on-blocks at ${c.to} on the last operating sector`)}`
+          + `${early ? ` · ${l(`começou ${F.dur(early)} antes do report`, `started ${F.dur(early)} before report`)}` : ''}${adj ? ` · ${l('acerto do tempo decorrido', 'elapsed-time correction')} ${adj > 0 ? '+' : '−'}${F.dur(Math.abs(adj))}` : ''}`,
+        strong: [fdpT], law: 'ORO.FTL.105(12)', prova: 'psvDef', value: fdpT, title: l('PSV de hoje', 'Today’s FDP'),
+        calc: { sum: [{ k: 'Report', v: c.from }, { k: l('Calços do último setor em funções', 'On-blocks, last operating sector'), v: c.to },
+          ...(early ? [{ k: `+ ${l('Começou antes do report (2.ª notificação)', 'Started before report (2nd notification)')}`, v: F.dur(early) }] : []),
+          ...(adj ? [{ k: `${adj > 0 ? '+' : '−'} ${l('Acerto do tempo decorrido (hora de verão ou fusos)', 'Elapsed-time correction (DST or time zones)')}`, v: F.dur(Math.abs(adj)) }] : [])],
+          total: { k: `= ${l('PSV de hoje', 'Today’s FDP')}`, v: fdpT } } } : null;
       const sub = c.fdp ? (c.over ? l('o dia fechou acima do limite', 'the day closed over the limit') : l('o dia fechou nos limites', 'the day closed within limits')) : null;
       // A barra "Registar sign-off" saiu (2026-11-14, regra do Nuno: o fim de serviço vem do calendário, que a companhia corrige depois).
       cards = assemble(restCard(true, { sub, action: null, open: { to: 'day', iso: today }, keepSub: !!c.over }), nextCard(next, l('A seguir', 'Next'), { withDay: true }));
@@ -610,7 +663,7 @@ export function homeCards(H = {}) {
     T = top({ text: fl ? l('Voo amanhã', 'Flight tomorrow') : `${F.cap(kindShort(hero.kind))} ${l('amanhã', 'tomorrow')}`, live: true }, { text: F.wd(hero.iso), iso: hero.iso },
       hero.report ? l('Report às', 'Report at') : (fl ? l('Partida às', 'Departure at') : l('Começa às', 'Starts at')),
       giantOf(hero.report || hero.dep || '—', null, hero.depStation || hero.station || null, false, zuluOf(hero)),
-      facts(fact(F.dur(live.cdMin), l('falta', 'to go')), fl ? (lat ? fact(lat, l('PSV até', 'FDP until')) : (!hero.report ? fact(l('Sem report', 'No report'), l('PSV não calculado', 'FDP not calculated')) : null)) : (hero.end ? fact(hero.end, l('acaba', 'ends')) : null), wxReportFact()));
+      facts(fact(F.dur(live.cdMin), l('falta', 'to go')), fl ? (lat ? withWhy(fact(lat, l('PSV até', 'FDP until')), psvWhy(hero)) : (!hero.report ? fact(l('Sem report', 'No report'), l('PSV não calculado', 'FDP not calculated')) : null)) : (hero.end ? fact(hero.end, l('acaba', 'ends')) : null), wxReportFact()));
     const wake = H.wake && H.wake.hm ? { id: 'wake', icon: 'bell', label: l(`Lembrete ${H.wake.hm}`, `Reminder ${H.wake.hm}`), open: { to: 'wake' } } : null;
     // O "repouso cumprido/curto" saiu do cartão (E3): o repouso curto é o aviso "Tenho descanso?", por cima.
     if (fl) limCard = limUncOf(hero, l('O limite de amanhã', 'Tomorrow’s limit'));
@@ -702,7 +755,7 @@ export function homeCards(H = {}) {
       T = top({ text: l('Dia de voo', 'Flight day'), live: true }, pill2, hero.report ? l('Report às', 'Report at') : l('Partida às', 'Departure at'),
         giantOf(hero.report || hero.dep || '—', null, hero.depStation || null, false, zuluOf(hero)),
         facts(fact(F.dur(live.cdMin), l('falta', 'to go')),
-          unc ? fact(l('Incerto', 'Uncertain'), l('PSV até', 'FDP until')) : lat ? fact(lat, l('PSV até', 'FDP until')) : (!hero.report ? fact(l('Sem report', 'No report'), l('PSV não calculado', 'FDP not calculated')) : null),
+          unc ? fact(l('Incerto', 'Uncertain'), l('PSV até', 'FDP until')) : lat ? withWhy(fact(lat, l('PSV até', 'FDP until')), psvWhy(hero)) : (!hero.report ? fact(l('Sem report', 'No report'), l('PSV não calculado', 'FDP not calculated')) : null),
           wxReportFact()));
       limCard = limUncOf(hero, l('O limite de hoje', 'Today’s limit'));   // incerto: um cartão à parte, por cima (L2), que abre o porquê
       calmCard = calmOf(H.calm);                                          // W1: a verificação, logo a seguir ao cartão do voo
@@ -731,7 +784,7 @@ export function homeCards(H = {}) {
         if (card.b && card.b.v === hero.lastArr) card.sub = card.sub.split(' · ').filter((x) => !x.startsWith(l('última chegada', 'last arrival'))).join(' · ') || null;   // a última chegada já está na fila: nada se repete
       }
       const f2 = unc ? fact(l('Incerto', 'Uncertain'), l('PSV até', 'FDP until'))
-        : marginFact() || (!card.b && psvOf(ps) ? fact(psvOf(ps), l('PSV até', 'FDP until')) : (!hero.report ? fact(l('Sem report', 'No report'), l('PSV não calculado', 'FDP not calculated')) : null));
+        : marginFact() || (!card.b && psvOf(ps) ? withWhy(fact(psvOf(ps), l('PSV até', 'FDP until')), psvWhy(hero)) : (!hero.report ? fact(l('Sem report', 'No report'), l('PSV não calculado', 'FDP not calculated')) : null));
       T = top({ text: ph === 'air' ? l('Em voo', 'In flight') : ph === 'landed' ? l('Aterrado', 'Landed') : l('Em serviço', 'On duty'), live: true }, pill2, what, giantOf(big || '—', null, stn || null), facts(f1, f2, (ph === 'duty' || ph === 'air') ? wxArrivalFact() : null));
       cards = assembleDay(card, nightCard(hero, next), next);
     }
@@ -753,6 +806,7 @@ export function homeCards(H = {}) {
     state,
     top: T,
     cards: oneFull(cards.filter(Boolean)),
+    why: (() => { const ws = ((T && T.facts) || []).map((f) => WHY.get(f) || null); return ws.some(Boolean) || giantWhy ? { facts: ws, giant: giantWhy } : null; })(),
     credit: wxUsed ? l('Meteorologia: MET Norway', 'Weather data: MET Norway') : null,
     caption: liveState && H.longHaul ? l('O FTL automático assume aclimatizado e na base. Em longo curso, confirma na Simulação.', 'Auto FTL assumes acclimatised and in-base. On long haul, check it in the Simulation.') : null,
   };

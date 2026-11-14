@@ -18,6 +18,7 @@ Aprovado pelo Nuno a 2026-11-13: "gosto desses guias assim para a app toda, na p
 | --- | --- | --- |
 | **Escala** | os anéis, as fatias, a lua, o ponto, o tracejado; tocar num dia (e num serviço) | **no código** (2026-11-13, por ver no iPhone) — substituiu a dica "Toca num dia" |
 | **Início** | a pílula do estado, o número grande (o próximo marco), a cor dos cartões; o ＋ | proposto (3 balões) — substitui a dica do ＋ |
+| **Início · os números sublinhados** | "Toca num número sublinhado para ver de onde vem — a conta e a lei." (um balão, por baixo do 1.º número com porquê) | **no código** (2026-11-14, Q3 de `design/topo-porque-2.html`; por ver no iPhone) — depois das boas-vindas e da dica do ＋; vista ao fechar, ao tocar num número ou ao sair do Início (`cp_tour_porque_<id>`) |
 | **"Ver tudo" de um serviço** | o "§" que abre a lei de cada número; a barra do PSV; "Completar"; "o calendário está errado?" | proposto |
 | **Números** | "estimado · bruto"; a barra laranja aos 85 %; tocar num valor abre as parcelas | proposto |
 | **Simulação, Relatórios** | um balão cada | talvez |

@@ -8,11 +8,18 @@ import { isoDay } from '../utils/time';
 // contém → vê-se o pior dos dois (revisão do 8b, E1: o Início dizia "dentro" num serviço que fazia passar os 7 dias).
 export const spillsToNextDay = (dayLog, ref, key) => nextMin(dayLog[isoDay(ref)], key) > 0;
 export const nextDayOf = (ref) => { const t = new Date(ref); t.setDate(t.getDate() + 1); return t; };
+// `from`/`to` (ISO): as datas do período escolhido — o que acaba hoje ou, se o de amanhã pesar mais, o de amanhã (em empate, o de hoje).
+// O Início diz-as no porquê das horas de 7 dias (Q3 de design/topo-porque-2.html, 2026-11-14). Os números não mudam.
 export const computeDutyTime = (dayLog = {}, ref = new Date()) => {
   const spill = spillsToNextDay(dayLog, ref, 'servico');
-  return DUTY_WINDOWS.map((w) => windowResult(w, 'servico', Math.max(
-    sumWindowDaysMin(dayLog, 'servico', w.days, ref),
-    spill ? sumWindowDaysMin(dayLog, 'servico', w.days, nextDayOf(ref)) : 0)));
+  return DUTY_WINDOWS.map((w) => {
+    const today = sumWindowDaysMin(dayLog, 'servico', w.days, ref);
+    const nx = spill ? nextDayOf(ref) : null;
+    const tomorrow = nx ? sumWindowDaysMin(dayLog, 'servico', w.days, nx) : 0;
+    const end = nx && tomorrow > today ? nx : ref;
+    const start = new Date(end); start.setDate(start.getDate() - (w.days - 1));
+    return { ...windowResult(w, 'servico', Math.max(today, tomorrow)), from: isoDay(start), to: isoDay(end) };
+  });
 };
 
 export const validateLimits = (dayLog = {}, ref = new Date()) => {

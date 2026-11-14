@@ -450,6 +450,17 @@ como um aviso, faz a pernoita passar a linha fina (1 principal + 2). O que se es
 mais e sem aviso). **Na folga** (F2, abaixo): os mesmos três sinais, sem caixa, por baixo da voz — Escala · Validades · O mês. **Por
 fazer:** tocar em "Avião" para a linha da folga do avião (a W2 do esboço).
 
+### O porquê dos números do topo (Q3, 2026-11-14 — `design/topo-porque-2.html`, escolhida pelo Nuno; no código)
+
+Os números do topo com conta e lei (o "PSV até", a margem no PSV, as horas de 7 dias, o PSV do dia fechado) levam um **sublinhado
+pontilhado** (`textDecorationStyle: 'dotted'`, na tinta suave do topo) — o sinal de "isto tem explicação"; o "§" sozinho dizia "lei",
+não "toca". Tocar abre **a folha da Prova a começar pela conta desenhada**: a soma de cima a baixo (as parcelas, o fio, o total — "Report
+05:15 · + Máximo · 3 setores 11 h 45 · = PSV até 17:00") ou a barra do limite (o valor, o máximo pequeno, a barra, "ficam 29 h"; a
+imagem 3462; acima do limite, a barra vermelha e "✕ passa 3 h"); por baixo, os campos de sempre (a regra, o artigo, a fonte). Na 1.ª
+vez, o balão das guias aponta o primeiro número sublinhado (`docs/guias.md`). O que se escreve decide-o `data/homeCards.js` (a saída
+`why`: `title`, `calc`, a chave da Prova; golden `test:homecards`); a definição do PSV entrou na Prova (`psvDef`, ORO.FTL.105(12)).
+(Antes, a P2: a conta numa linha por baixo do topo — o Nuno achou que não ficava bem.)
+
 ### A folga, 1 principal + 2 (F2, 2026-11-14 — `design/folga-1-2.html`, escolhida pelo Nuno; no código)
 
 Numa folga o principal é **a calma**: a voz (V2 — uma frase na folha, sem caixa: `TXT3.voiceB` 20 a cheio e `TXT3.voiceT` 17 mais

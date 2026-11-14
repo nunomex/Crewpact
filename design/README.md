@@ -129,6 +129,17 @@ combinações de letra e 924 espaçamentos fora da escala (medido a 2026-11-02).
   cala-se. F1 o serviço em cima · F2 a calma em cima, o serviço numa linha como a B3 (recomendada) · F3 só o que pede. Em três casos:
   novembro sem avisos, a escala mudou, o mesmo dia sem as férias. Medido: F2 e F3 cabem nos três; a F1 com as alterações passa 59 pt.
   Imagens 3407/3415/3443; Mobbin Air NZ, Bevel.
+- **`topo-porque.html`** (2026-11-14, **P2 escolhida e construída — o Nuno pôs em dúvida a linha por baixo do topo** → `topo-porque-2.html`; gerado a partir do código) — tocar num número do topo para ver o seu porquê
+  (ponto 5 da análise da Living Interface; princípio 3): P1 o § e a folha da Prova (o padrão do Detalhe e dos Números) · P2 a conta
+  numa linha por baixo do topo, com "§ … · a lei ›" para a Prova (recomendada) · P3 "Como se conta" — todos os números numa folha.
+  Em três casos: o dia de voo (17:00 PSV até), o dia fechado (8:35 h), a folga (31 h de 60 em 7 dias). A lei conferida em `fontes/ftl/`:
+  ORO.FTL.205(b) tabela 2 (05:15–05:29: 12:15 com 1–2 setores, 11:45 com 3), ORO.FTL.105 n.º 12 (o PSV), ORO.FTL.210(a)(1) (60 h em 7
+  dias). Imagens 3417/3430/3424; Mobbin Spotify for Creators, Neo Financial, Crypto.com, Opendoor, FotMob, Tempo da Apple.
+- **`topo-porque-2.html`** (2026-11-14, **Q3 escolhida — no código**; gerado a partir do código) — o porquê dos números do topo sem abrir uma linha por
+  baixo do topo (o Nuno: "vê sugestões melhores"): Q1 a conta no lugar do número (o número vira-se) · Q2 o balão escuro das guias a
+  apontar para o número · Q3 a folha do número — a folha da Prova a abrir com a conta desenhada (a soma, ou a barra do limite)
+  (recomendada). Em todas, o sublinhado pontilhado nos números com porquê e a guia na 1.ª vez. Imagens 3417/3462/3408/3431; Mobbin
+  Neo Financial, Spotify for Creators, Tempo da Apple, DoorDash Dasher, Whatnot.
 - **`topo-factos-2.html`** (2026-11-14, A construída e depois **retirada com a L1** — os quadradinhos não cabem ao lado) — a F3 nos casos difíceis, a 375 (três factos com a hora UTC, a assistência, antes de ligar a escala, a Escala com 4 999,99 €, os Números com +55 512,34 €): A o quadradinho (32) só onde há tipo (recomendada) · B o quadradinho por cima do valor, em todos (o topo cresce 34) · C a cor no fio (4). Imagens 3409/3431/3412/3442/3424; Mobbin Kit, Satispay, Shopee.
 - **`botao-simulacao.html`** (2026-11-14, **T2 escolhida e construída**) — com a regra nova (à mão só na Simulação), o ＋ abre a Simulação: T1 o redondo com o ícone da Simulação · T2 o botão escrito "Simular" (recomendada; a 375 cada aba fica com 57 pt) · T3 uma aba ao centro da cápsula. Mobbin: Subway, Otter, Preply, Tubi; nenhuma imagem do Nuno para barras.
 - **`prova-campos.html`** (2026-11-14, **PA escolhida e construída**) — a Prova como o Hotel F2 (a regra proposta: nas folhas, campos à F2; nos ecrãs, cartões): PA tudo em campos · PB os curtos lado a lado (imagem 3460; recomendada) · PC campos e a regra num cartão. Com o Hotel F2 ao lado.

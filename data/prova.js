@@ -35,6 +35,15 @@ const UNIVERSAL = {
       en: 'Before the next duty, minimum rest is 12 hours at home base and 10 hours away from base, or the length of the preceding duty if greater, in both cases; away from base, with an 8-hour sleep opportunity. It rises to 14 hours (or the preceding duty) after an FDP with in-flight rest (CS FTL.1.205(c)(6)) or, away from base, with a time difference of 4 hours or more (CS FTL.1.235(b)(3)(ii)); and by 2 more hours before and after (or 4 hours after only) an extended FDP (ORO.FTL.205(d)(1)).',
     },
   },
+  // A definição do PSV — o "8 h 35" do dia fechado (P2 de design/topo-porque.html, 2026-11-14). Conferida no texto oficial
+  // (fontes/ftl/reg-ue-83-2014-pt.txt e -en.txt, ORO.FTL.105, n.º 12).
+  psvDef: {
+    art: 'ORO.FTL.105(12)', title: { pt: 'Período de serviço de voo (PSV)', en: 'Flight duty period (FDP)' },
+    resumo: {
+      pt: 'O período de serviço de voo começa quando o tripulante se deve apresentar ao serviço, inclui um setor ou uma série de setores, e acaba quando o avião fica finalmente imobilizado e com os motores desligados, no fim do último setor em que o tripulante está em funções.',
+      en: 'The flight duty period starts when the crew member is required to report for duty, includes a sector or a series of sectors, and ends when the aircraft finally comes to rest with the engines shut down at the end of the last sector on which the crew member acts as an operating crew member.',
+    },
+  },
   limites: {
     art: 'ORO.FTL.210', title: { pt: 'Limites acumulados', en: 'Cumulative limits' },
     resumo: {

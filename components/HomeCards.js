@@ -10,7 +10,9 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions, Animated, Easing } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import Icon from './Icon';
+import GuideBubble from './GuideBubble';
 import useReduceMotion from '../hooks/useReduceMotion';
+import { select } from '../data/haptics';
 import { CARD, TXT3, SPACE, RADIUS, BRAND, PELE_FONT } from '../data/constants';
 import { GIANT } from '../data/homeCards';
 import { textWidth } from '../data/fontMetrics';
@@ -48,10 +50,22 @@ function GainChip({ text }) {
 // `titled` (o Início, S2 de design/estados-topo.html, 2026-11-14): o estado deixa de ser a pílula preta e passa a TÍTULO do ecrã
 // ("Em voo", "Pernoita", "Folga"), por baixo das pílulas, com o ponto amarelo nos estados ao vivo. A Escala e os Números não têm
 // estados e ficam como estavam.
-export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l, compact = false, titled = false }) {
+// Q3 (design/topo-porque-2.html, escolhida pelo Nuno a 2026-11-14 — antes a P2): `why` (de data/homeCards.js) diz o porquê de cada
+// número do topo. Os que o têm levam um SUBLINHADO PONTILHADO (o sinal de "isto tem explicação"; o "§" sozinho dizia "lei", não
+// "toca"); tocar abre a folha da Prova a começar pela conta desenhada (`onOpen({ to: 'prova', … calc, title })`). Na 1.ª vez, o balão
+// das guias aponta o primeiro número sublinhado (`guide` — quem guarda que já foi visto é o ecrã; `onGuideDone` ao fechar).
+const GUIDE_W = 280;
+export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l, compact = false, titled = false, why = null, onOpen = null, guide = false, onGuideDone = null }) {
   const { width: winW } = useWindowDimensions();
   const AL = a11yLang(l);
+  const [lay, setLay] = React.useState({});   // as medidas do herói, da coluna dos factos e do 1.º número com porquê (para o balão)
+  const setL = (k) => (e) => { const { x, y, width, height } = e.nativeEvent.layout; setLay((p) => (p[k] && p[k].x === x && p[k].y === y && p[k].w === width && p[k].h === height ? p : { ...p, [k]: { x, y, w: width, h: height } })); };
   if (!top) return null;
+  const whyOf = (k) => (!why ? null : k === 'g' ? why.giant || null : (why.facts && why.facts[k]) || null);
+  const openWhy = (w) => { if (!w || !onOpen) return; select(); if (guide && onGuideDone) onGuideDone(); onOpen({ to: 'prova', id: w.prova, value: w.value || null, calc: w.calc || null, title: w.title || null }); };
+  const hasWhy = !!(why && (why.giant || (why.facts || []).some(Boolean)));
+  const firstFact = why && why.facts ? why.facts.findIndex(Boolean) : -1;
+  const guideOn = guide && hasWhy && !compact;
   // As pílulas NUNCA se cortam ("Novem…" no iPhone, 2026-11-11): se as três não cabem numa linha, sai a de contorno
   // (a secundária). Medido com as larguras da Hanken, como o número gigante.
   // A Escala (2026-11-13) usa o mesmo topo sem a pílula preta e com a de contorno como botão do mês (seta ▾ e dica própria).
@@ -73,7 +87,7 @@ export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l, compact 
   // (ou do voo) passa para a linha da frase, à direita, mais pequena — continua a abrir o dia na Escala.
   const head = titled && top.pill && !compact;
   return (
-    <View style={[s.top, compact ? s.topCompact : null]}>
+    <View style={[s.top, compact ? s.topCompact : null, guideOn ? s.topFront : null]}>
       <View style={s.pills}>
         {head ? (
           <View style={s.titleWrap} accessible accessibilityRole="header" accessibilityLanguage={AL} accessibilityLabel={top.pill.live ? `${top.pill.text}, ${l('agora', 'now')}` : top.pill.text}>
@@ -106,10 +120,14 @@ export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l, compact 
           </P2>
         </View>
       ) : <Text style={[TXT3.what, { color: C.soft }]} numberOfLines={1} maxFontSizeMultiplier={1.15}>{top.what}</Text>}
-      {compact ? null : <View style={s.hero} accessible accessibilityLanguage={AL} accessibilityLabel={heroA11y}>
-        <View style={{ marginTop: -Math.round(size * GIANT_LINE.trim), marginBottom: -Math.round(size * GIANT_LINE.trim) }}>
+      {compact ? null : <View style={s.hero} accessible={!hasWhy} accessibilityLanguage={AL} accessibilityLabel={heroA11y} onLayout={setL('hero')}>
+        <TouchableOpacity disabled={!whyOf('g')} activeOpacity={0.7} onPress={() => openWhy(whyOf('g'))} onLayout={setL('giant')}
+          style={{ marginTop: -Math.round(size * GIANT_LINE.trim), marginBottom: -Math.round(size * GIANT_LINE.trim) }}
+          accessible={hasWhy} accessibilityRole={whyOf('g') ? 'button' : undefined} accessibilityLanguage={AL}
+          accessibilityLabel={[top.what, `${g.l1 || ''}${g.unit ? ` ${g.unit}` : ''}`, g.l2].filter(Boolean).join('. ')}
+          accessibilityHint={whyOf('g') ? l('Mostra de onde vem', 'Shows where it comes from') : undefined}>
           <View style={s.l1Row}>
-            <Text style={giantStyle} numberOfLines={1} allowFontScaling={false}>{g.l1}</Text>
+            <Text style={[giantStyle, whyOf('g') ? [s.und, { textDecorationColor: C.soft }] : null]} numberOfLines={1} allowFontScaling={false}>{g.l1}</Text>
             {g.unit ? <Text style={[TXT3.unit, { marginLeft: GIANT.unitGap - tail, color: C.ink }]} numberOfLines={1} allowFontScaling={false}>{g.unit}</Text> : null}
           </View>
           {g.l2 && g.zulu ? (
@@ -121,11 +139,13 @@ export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l, compact 
           ) : g.l2 ? (
             <Text style={[giantStyle, { color: g.l2Grey ? C.grey : C.ink, marginTop: -Math.round(size * (GIANT_LINE.lh - GIANT_LINE.lead)) }]} numberOfLines={1} allowFontScaling={false}>{g.l2}</Text>
           ) : null}
-        </View>
+        </TouchableOpacity>
         {top.facts && top.facts.length ? (
-          <View style={[s.side, { borderLeftColor: C.ink }]}>
-            {top.facts.map((f) => (
-              <View key={`${f.v}-${f.l}`}>
+          <View style={[s.side, { borderLeftColor: C.ink }]} onLayout={setL('side')}>
+            {top.facts.map((f, i) => (
+              <TouchableOpacity key={`${f.v}-${f.l}`} disabled={!whyOf(i)} activeOpacity={0.7} onPress={() => openWhy(whyOf(i))} onLayout={i === firstFact ? setL('fact') : undefined}
+                accessible={hasWhy} accessibilityRole={whyOf(i) ? 'button' : undefined} accessibilityLanguage={AL}
+                accessibilityLabel={`${f.tone === 'was' ? `${l('estava', 'was')} ` : ''}${f.v} ${f.l}`} accessibilityHint={whyOf(i) ? l('Mostra de onde vem', 'Shows where it comes from') : undefined}>
                 {f.ic ? (
                   // o tempo: o ícone à frente do valor (GIANT.factIc + factIcGap entram na largura medida)
                   <View style={s.factIcRow}>
@@ -133,14 +153,29 @@ export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l, compact 
                     <Text style={[TXT3.fact, s.factIcV, { color: C.ink }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} allowFontScaling={false}>{f.v}</Text>
                   </View>
                 ) : (
-                <Text style={[TXT3.fact, { color: f.tone === 'gain' ? C.gainOut : C.ink }, f.tone === 'was' ? s.was : null]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} allowFontScaling={false}>{f.v}</Text>
+                <Text style={[TXT3.fact, { color: f.tone === 'gain' ? C.gainOut : C.ink }, f.tone === 'was' ? s.was : null, whyOf(i) ? [s.und, { textDecorationColor: C.soft }] : null]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} allowFontScaling={false}>{f.v}</Text>
                 )}
                 <Text style={[TXT3.factLbl, { color: C.soft }]} numberOfLines={1} allowFontScaling={false}>{f.l}</Text>
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
         ) : null}
       </View>}
+      {guideOn ? (() => {
+        // o balão por baixo do 1.º número sublinhado (o número grande, se for ele); a seta aponta-o
+        const H0 = lay.hero; if (!H0) return null;
+        const tgt = firstFact >= 0 && lay.side && lay.fact ? { x: H0.x + lay.side.x + lay.fact.x, y: H0.y + lay.side.y + lay.fact.y, w: lay.fact.w, h: lay.fact.h }
+          : lay.giant ? { x: H0.x + lay.giant.x, y: H0.y + lay.giant.y, w: lay.giant.w, h: lay.giant.h } : null;
+        if (!tgt) return null;
+        const W = Math.min(GUIDE_W, winW - 2 * SPACE.lgPlus);
+        const cx = tgt.x + Math.min(tgt.w, 80) / 2;
+        const left = Math.max(0, Math.min(winW - 2 * SPACE.lgPlus - W, cx - W / 2));
+        return (
+          <GuideBubble text={l('Toca num número sublinhado para ver de onde vem — a conta e a lei.', 'Tap an underlined number to see where it comes from — the sum and the law.')}
+            step={1} total={1} onNext={() => { select(); if (onGuideDone) onGuideDone(); }} onSkip={() => { if (onGuideDone) onGuideDone(); }}
+            width={W} arrowX={cx - left} l={l} style={{ left: SPACE.lgPlus + left, top: tgt.y + tgt.h + SPACE.sm }} />
+        );
+      })() : null}
     </View>
   );
 }
@@ -603,6 +638,7 @@ export function HomeCards({ cards, C, onOpen, l }) {
 const s = StyleSheet.create({
   top: { paddingHorizontal: SPACE.lgPlus, paddingBottom: SPACE.xxl },
   topCompact: { paddingBottom: SPACE.lg },
+  topFront: { zIndex: 5, elevation: 5 },   // com o balão da 1.ª vez à vista, o topo passa à frente da folha dos cartões
   // W1 · a verificação: o título e o "visto" numa fila; os três sinais lado a lado, o anel à esquerda do nome
   ck: { borderRadius: RADIUS.xxl, paddingVertical: SPACE.md, paddingHorizontal: SPACE.lg, gap: SPACE.sm },
   ckHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: SPACE.sm },
@@ -646,6 +682,8 @@ const s = StyleSheet.create({
   // corta por cima a linha de 1,1 em e o número sobe); com 12 ficam ~13, e por cima da frase continuam ~20 até às pílulas.
   hero: { flexDirection: 'row', alignItems: 'stretch', gap: SPACE.lg, marginTop: SPACE.md },
   side: { borderLeftWidth: 1.5, paddingLeft: SPACE.lg, justifyContent: 'center', gap: SPACE.md, flexShrink: 1, minWidth: 0 },
+  // Q3 · os números com porquê: o sublinhado pontilhado (a cor vem da tinta suave do topo, de dia e de noite)
+  und: { textDecorationLine: 'underline', textDecorationStyle: 'dotted' },
   was: { textDecorationLine: 'line-through', opacity: 0.5 },
 
   cd: { borderRadius: RADIUS.xxl, padding: SPACE.lg, gap: SPACE.md, position: 'relative' },

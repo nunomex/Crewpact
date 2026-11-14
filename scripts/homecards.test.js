@@ -666,6 +666,52 @@ const WXF = { c: 4, label: 'nevoeiro', ic: 'fog', at: '05:30', st: 'LIS' };
   eq('V2 · na folga sem serviços, não', homeCards({ ...S.vazia, voice: V }).cards.some((c) => c.t === 'voice'), false);
 }
 
+// ═══ Q3 · O PORQUÊ DOS NÚMEROS DO TOPO (design/topo-porque-2.html Q3, escolhida pelo Nuno a 2026-11-14 — antes a P2) ═══
+// Tocar num número sublinhado abre a folha da Prova a começar pela conta desenhada: `title` (o título da folha) e `calc` (a soma
+// de cima a baixo, ou a barra do limite). `text` fica para o leitor de ecrã.
+// Cada número do topo com conta e lei leva o seu porquê — numa saída à parte (`why`), alinhada com os factos, para o topo não mudar:
+// a conta numa linha (com os números do próprio serviço, as partes a cheio) e a chave da Prova (data/prova.js). Os sem conta nem lei
+// (a contagem, o tempo, o dia) ficam a null; o PSV incerto também (o cartão tracejado já diz o porquê).
+{
+  // `value`: o que a folha da Prova mostra em "Neste serviço" (o valor dessa lei: no PSV máximo, o máximo — não a hora do topo)
+  const W_PSV = { text: '17:00 = report 05:15 + 11 h 45 de máximo · 3 setores', strong: ['17:00', '11 h 45'], law: 'ORO.FTL.205(b)', prova: 'psvMax', value: '11 h 45',
+    title: 'PSV até às 17:00', calc: { sum: [{ k: 'Report', v: '05:15' }, { k: '+ Máximo · 3 setores', v: '11 h 45' }], total: { k: '= PSV até', v: '17:00' } } };
+  eq('P2 · antes do report: o "PSV até" tem a conta e a lei; a contagem não', R.antes.why, { facts: [null, W_PSV], giant: null });
+  eq('P2 · o mesmo com o tempo no topo (3 factos)', homeCards({ ...S.antes, wx: { report: { c: 4, label: 'nevoeiro', ic: 'fog', at: '05:15', st: 'LIS' } } }).why.facts, [null, W_PSV, null]);
+  eq('P2 · o PSV incerto não leva conta (o cartão tracejado diz o porquê)', R.incerto.why, null);
+  eq('P2 · a véspera: o mesmo "PSV até"', R.vespera.why, { facts: [null, W_PSV], giant: null });
+  eq('P2 · em voo: a margem — o máximo menos o PSV previsto', R.emVoo.why, { facts: [null, { text: '3:10 = 11 h 45 de máximo − 8 h 35 do PSV previsto', strong: ['3:10', '11 h 45'], law: 'ORO.FTL.205(b)', prova: 'psvMax', value: '11 h 45',
+    title: 'Margem no PSV', calc: { sum: [{ k: 'Máximo', v: '11 h 45' }, { k: '− PSV previsto', v: '8 h 35' }], total: { k: '= Margem', v: '3:10' } } }], giant: null });
+  const W_WEEK = { text: '31 h de serviço em 7 dias seguidos · o limite é 60 h — ficam 29 h', strong: ['31 h', '60 h'], law: 'ORO.FTL.210(a)(1)', prova: 'limites', value: '31 h de 60 h',
+    title: 'Serviço em 7 dias', calc: { bar: { v: '31 h', of: 'de 60 h', pct: 52, left: 'ficam 29 h', over: false } } };
+  eq('P2 · a folga: as horas de 7 dias (sem as datas do período, como antes)', R.folga.why, { facts: [null, W_WEEK], giant: null });
+  // com as datas do período escolhido pelo motor (computeDutyTime: from/to) — a conta diz quais são os 7 dias
+  const wd = homeCards({ ...S.folga, week: { done: 31, limit: 60, from: '2026-11-05', to: '2026-11-11' } }).why.facts[1];
+  eq('Q3 · as horas de 7 dias com as datas (o mesmo mês)', [wd.text, wd.calc.bar.when], ['31 h de serviço de 5 a 11 nov · o limite é 60 h — ficam 29 h', 'de 5 a 11 nov']);
+  const wx = homeCards({ ...S.folga, week: { done: 31, limit: 60, from: '2026-10-29', to: '2026-11-04' } }).why.facts[1];
+  eq('Q3 · as horas de 7 dias com as datas (dois meses)', wx.text, '31 h de serviço de 29 out a 4 nov · o limite é 60 h — ficam 29 h');
+  eq('Q3 · em inglês, com as datas', homeCards({ ...S.folga, lang: 'en', week: { done: 31, limit: 60, from: '2026-11-05', to: '2026-11-11' } }).why.facts[1].text, '31 h of duty 5–11 Nov · the limit is 60 h — 29 h left');
+  // O fim do PSV é o que o motor usa (ORO.FTL.105(12): o último setor em funções — um posicionamento no fim já não conta); quando o PSV
+  // não é só "fim − report", a conta ganha a linha que explica a diferença (começou antes; o acerto do tempo decorrido).
+  const pv = homeCards({ ...S.posvoo, closed: { ...S.posvoo.closed, from: '05:15', to: '13:50' } });
+  eq('Q3 · o dia fechado: o número grande — do report aos calços do último setor em funções; as horas de 7 dias', pv.why,
+    { facts: [null, W_WEEK], giant: { text: '8 h 35 = do report às 05:15 aos calços às 13:50 do último setor em funções', strong: ['8 h 35'], law: 'ORO.FTL.105(12)', prova: 'psvDef', value: '8 h 35',
+      title: 'PSV de hoje', calc: { sum: [{ k: 'Report', v: '05:15' }, { k: 'Calços do último setor em funções', v: '13:50' }], total: { k: '= PSV de hoje', v: '8 h 35' } } } });
+  const pvE = homeCards({ ...S.posvoo, closed: { ...S.posvoo.closed, fdp: '09:05', from: '05:15', to: '13:50', early: 30 } }).why.giant;
+  eq('Q3 · o PSV começou antes do report (2.ª notificação de um adiamento): a linha a mais', [pvE.calc.sum, pvE.calc.total, pvE.text],
+    [[{ k: 'Report', v: '05:15' }, { k: 'Calços do último setor em funções', v: '13:50' }, { k: '+ Começou antes do report (2.ª notificação)', v: '30 min' }], { k: '= PSV de hoje', v: '9 h 05' },
+      '9 h 05 = do report às 05:15 aos calços às 13:50 do último setor em funções · começou 30 min antes do report']);
+  const pvA = homeCards({ ...S.posvoo, closed: { ...S.posvoo.closed, fdp: '09:35', from: '05:15', to: '13:50', adj: 60 } }).why.giant;
+  eq('Q3 · o acerto do tempo decorrido (hora de verão, fusos): a linha a mais', [pvA.calc.sum[2], pvA.calc.total.v], [{ k: '+ Acerto do tempo decorrido (hora de verão ou fusos)', v: '1 h' }, '9 h 35']);
+  const pvM = homeCards({ ...S.posvoo, closed: { ...S.posvoo.closed, fdp: '07:35', from: '05:15', to: '13:50', adj: -60 } }).why.giant;
+  eq('Q3 · o acerto para menos', pvM.calc.sum[2], { k: '− Acerto do tempo decorrido (hora de verão ou fusos)', v: '1 h' });
+  eq('P2 · o dia fechado sem as horas do report e dos calços: o número grande sem conta', R.posvoo.why.giant, null);
+  const over = homeCards({ ...S.folga, week: { done: 63, limit: 60 } }).why.facts[1];
+  eq('P2 · acima do limite das 60 h: "passa" (a barra cheia)', [over.text, over.calc.bar], ['63 h de serviço em 7 dias seguidos · o limite é 60 h — passa 3 h', { v: '63 h', of: 'de 60 h', pct: 100, left: 'passa 3 h', over: true }]);
+  eq('P2 · sem números com conta: why null', [R.standby.why, R.formacao.why, R.ferias.why], [null, null, null]);
+  eq('P2 · em inglês', homeCards({ ...S.antes, lang: 'en' }).why.facts[1].text, '17:00 = report 05:15 + 11 h 45 maximum · 3 sectors');
+}
+
 // ═══ EM INGLÊS — os mesmos estados, nada indefinido ═══
 for (const [k, v] of Object.entries(S)) {
   const r = homeCards({ ...v, lang: 'en' });

@@ -738,6 +738,12 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   dE1[iso(10)] = { report_time: '20:00', block_on: '04:30', sectors: 1 };
   const wE1 = computeDutyTime(reconcileDayLog(dE1, {}), new Date(2026, 10, 10, 18)).find((w) => w.id === '7d');
   eqj('E1: o Início vê 61:00 e excede (dizia 56:30 "dentro")', [wE1.doneMin, wE1.over], [3660, true]);
+  // As DATAS do período escolhido (Q3 de design/topo-porque-2.html, 2026-11-14: o Início diz "31 h de serviço de 5 a 11 nov"): o que
+  // acaba hoje, ou — com o serviço de hoje a passar a meia-noite e mais carregado — o que acaba amanhã. Os números não mudam.
+  eqj('datas: sem passar a meia-noite, os 7 dias que acabam hoje (02 a 08/11)', [w7nt.from, w7nt.to], ['2026-11-02', '2026-11-08']);
+  eqj('datas: o serviço de hoje passa a meia-noite e o período de amanhã pesa mais (05 a 11/11)', [wE1.from, wE1.to], ['2026-11-05', '2026-11-11']);
+  const w28d = computeDutyTime(logNt, new Date(2026, 10, 28, 12)).find((w) => w.id === '28d');
+  eqj('datas: os 28 dias que acabam hoje (01 a 28/11)', [w28d.from, w28d.to], ['2026-11-01', '2026-11-28']);
   // Revisão do 8b, E2: a Simulação/importação do serviço noturno vê o período que começa no dia seguinte. 10/11: 22:00 → 06:00;
   // 11–15/11: 5 × 9 h; 17/11: 10 h → 11 a 17/11 = 6 + 45 + 10 = 61:00.
   const dE2 = { [iso(10)]: { report_time: '22:00', block_on: '06:00', sectors: 1 } };

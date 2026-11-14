@@ -43,6 +43,9 @@ for (const id of ['psvMax', 'repouso', 'limites', 'standby', 'radiacao']) {
   check(`universal ${id}: marcada universal`, c.universal === true && /Universal/i.test(c.lawTag));
 }
 check('limites cita ORO.FTL.210', provaFor('limites', EZ_CAB).art === 'ORO.FTL.210');
+// a definição do PSV (o "8 h 35" do dia fechado, P2 de design/topo-porque.html, 2026-11-14): ORO.FTL.105, n.º 12
+check('a definição do PSV: completa, oficial, universal e cita ORO.FTL.105(12)', full(provaFor('psvDef', EZ_CAB)) && provaFor('psvDef', EZ_CAB).universal === true && provaFor('psvDef', EZ_CAB).art === 'ORO.FTL.105(12)');
+check('a definição do PSV: igual para cabine e pilotos', JSON.stringify(provaFor('psvDef', EZ_CAB)) === JSON.stringify(provaFor('psvDef', EZ_PIL)));
 check('radiação cita 35.º/3 e vai ao EUR-Lex', /35/.test(provaFor('radiacao', EZ_CAB).art) && /eur-lex/.test(provaFor('radiacao', EZ_CAB).url));
 
 // ── easyJet: cabine ≠ pilotos (acordos separados, artigos separados) ──

@@ -75,15 +75,16 @@ const NEUTRAL = (color) => !color || color === 'neutral' || !CARD.day[color] || 
 const bgOf = (P, color) => (color === 'dark' ? P.ink : (!NEUTRAL(color) ? P[color] : P.neutral));
 const vars = (P) => `--desk:${P.desk};--ink:${P.ink};--soft:${P.soft};--sheet:${P.sheet};--neutral:${P.neutral};--grey:${P.grey};--sub:${P.neutralSub};--kind:${P.neutralKind};--caption:${P.caption};--gain:${P.gainOut};--flight:${P.flight}`;
 
-function topHTML(t) {
+// `why` (Q3): os números com porquê levam o sublinhado pontilhado, como na app
+function topHTML(t, why = null) {
   if (!t) return '';
   const g = t.giant || {};
   const p2 = t.pill2 ? `<span class="pl sm">${esc(t.pill2.text)}${t.pill2.iso ? ' ›' : ''}</span>` : '';
-  const facts = (t.facts || []).map((f) => `<div><span class="fv${f.tone === 'gain' ? ' gain' : ''}${f.tone === 'was' ? ' was' : ''}">${f.ic ? ic(f.ic, 18) : ''}${esc(f.v)}</span><span class="fl">${esc(f.l)}</span></div>`).join('');
+  const facts = (t.facts || []).map((f, i) => `<div><span class="fv${f.tone === 'gain' ? ' gain' : ''}${f.tone === 'was' ? ' was' : ''}${why && why.facts && why.facts[i] ? ' und' : ''}">${f.ic ? ic(f.ic, 18) : ''}${esc(f.v)}</span><span class="fl">${esc(f.l)}</span></div>`).join('');
   return `<div class="topA">
     <div class="ttlRow"><span class="t">${esc(t.pill ? t.pill.text : '')}${t.pill && t.pill.live ? '<i class="dot"></i>' : ''}</span><span class="pl ml">Notificações</span></div>
     ${p2 ? `<div class="what inl"><span>${esc(t.what)}</span>${p2}</div>` : `<div class="what">${esc(t.what)}</div>`}
-    <div class="hero"><div class="g"><div class="l1"><span class="big">${esc(g.l1)}</span>${g.unit ? `<small>${esc(g.unit)}</small>` : ''}</div>
+    <div class="hero"><div class="g"><div class="l1"><span class="big${why && why.giant ? ' und' : ''}">${esc(g.l1)}</span>${g.unit ? `<small>${esc(g.unit)}</small>` : ''}</div>
       ${g.l2 ? `<div class="l2${g.l2Grey ? ' grey' : ''}"><span class="big">${esc(g.l2)}</span>${g.zulu ? `<span class="z">${esc(g.zulu)}</span>` : ''}</div>` : ''}</div>
       ${facts ? `<div class="side">${facts}</div>` : ''}</div></div>`;
 }
@@ -169,7 +170,7 @@ function phoneOut(name, note, out, clock, { night, look = {} } = {}) {
     return c; });
   const cards = list.map((c) => cardHTML(c, P, look)).join('');
   return `<div class="cell"><div class="cap"><b>${esc(name)}</b>${note ? ` · ${esc(note)}` : ''}${nt ? ' · <i>tema da noite</i>' : ''}</div>
-    <div class="ph${nt ? ' night' : ''}${look.ring || P.liveRing ? ' ring' : ''}${look.moneyInk ? ' minky' : ''}" style="${vars(P)}"><div class="status"><span>${esc(clock)}</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>${topHTML(out.top)}
+    <div class="ph${nt ? ' night' : ''}${look.ring || P.liveRing ? ' ring' : ''}${look.moneyInk ? ' minky' : ''}" style="${vars(P)}"><div class="status"><span>${esc(clock)}</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>${topHTML(out.top, out.why)}
       <div class="sheetN">${cards}${out.credit ? `<div class="credit">${esc(out.credit)}</div>` : ''}</div>
       <div class="fold"><span>fim do ecrã do iPhone (por cima da barra de abas) — o resto desliza</span></div></div></div>`;
 }
@@ -214,6 +215,7 @@ body{background:#E8E7E2;color:#141414;font-family:'Hanken','Helvetica Neue',Aria
 .rcL{display:flex;flex-direction:column;background:rgba(255,255,255,.55);border-radius:16px;padding:4px 12px} .rr{display:flex;gap:12px;align-items:center;padding:6px 0} .rr + .rr{border-top:1px solid rgba(20,20,20,.18)} .rd{width:32px;flex:none;display:flex;flex-direction:column;align-items:center} .rd b{font-weight:700;font-size:20px;line-height:22px} .rd span{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8)}
 .rx{display:flex;flex-direction:column;min-width:0} .rx b{font-weight:700;font-size:15px;line-height:20px} .rx span{font-weight:500;font-size:12px;line-height:16px;color:rgba(20,20,20,.82)} .rx s{font-weight:500;opacity:.75} .rmore{font-weight:500;font-size:12px;padding:6px 0;color:rgba(20,20,20,.82)}
 .rcA{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.62);border-radius:99px;padding:12px 16px;gap:8px} .rcA b{font-weight:700;font-size:14px} .rcA span{font-weight:500;font-size:11px;color:rgba(20,20,20,.82)}
+.und{text-decoration:underline dotted;text-decoration-thickness:1.5px;text-underline-offset:2px;text-decoration-color:var(--soft)} .fv.und{display:inline-block;padding-bottom:2px}
 .dk,.dk b{color:var(--sheet)} .ph .dk .st > span:not(.k){color:var(--sheet);opacity:.82} .dk .goS{background:rgba(127,127,127,.35);color:var(--sheet)}
 .lt,.lt .ct,.lt b,.lt .dpt b{color:#F4F2ED} .lt .kd,.lt .k,.lt .cs,.lt .cities,.lt .st > span:not(.k),.lt .ab span,.lt .dpt span:not(.dot2),.lt .quiet2,.lt .pd,.lt .dlc span{color:rgba(244,242,237,.8)}
 .lt .go,.lt .goS,.lt .badge,.lt .mark{background:rgba(255,255,255,.16);color:#F4F2ED} .lt .dot2{background:#F4F2ED} .lt .dot2.o{border-color:#F4F2ED;background:transparent} .lt .dls{background:#F4F2ED} .lt .dlt{background:rgba(244,242,237,.25)}

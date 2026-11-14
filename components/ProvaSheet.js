@@ -9,12 +9,12 @@
 // pequenos, a verde) · porquê (a regra, resumo da app) · onde está escrito (lei, artigo, texto, fonte ou "em vigor", vale para) · o
 // esquema da companhia e a nota informativa · "Abrir a fonte oficial" largo no fundo. A lista desliza; o botão fica.
 import React from 'react';
-import { Text, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import PeleSheet from './PeleSheet';
 import SheetHeader from './SheetHeader';
 import { Field } from './Field';
 import { WideButton } from './PillButton';
-import { CARD, TXT3, SPACE } from '../data/constants';
+import { CARD, TXT3, SPACE, RADIUS } from '../data/constants';
 import { openLibraryLink } from '../data/library';
 import { select } from '../data/haptics';
 
@@ -39,9 +39,39 @@ export default function ProvaSheet({ visible, onClose, prova, lang = 'pt' }) {
   const numColor = gain ? W.gainOut : W.ink;
   return (
     <PeleSheet visible={visible} onClose={onClose} bg={W.sheet}>
-      <SheetHeader card title={prova.title} onClose={onClose} closeLabel={l('Fechar', 'Close')} style={s.head} />
+      <SheetHeader card title={prova.sheetTitle || prova.title} onClose={onClose} closeLabel={l('Fechar', 'Close')} style={s.head} />
       <ScrollView style={{ maxHeight: Math.round(winH * 0.62) }} contentContainerStyle={s.body} showsVerticalScrollIndicator={false} bounces={false}>
-        {val ? (
+        {/* Q3 (design/topo-porque-2.html, 2026-11-14): aberta por um número do topo, a folha começa pela CONTA DESENHADA — a soma de cima
+            a baixo (as parcelas e o total, com o fio), ou a barra do limite (o valor, o máximo pequeno, a barra, o que fica; a imagem 3462).
+            Os textos vêm prontos de data/homeCards.js (why.calc); com a conta, o campo "Neste serviço" não se repete. */}
+        {prova.calc && prova.calc.sum ? (
+          <View style={[s.calc, { backgroundColor: W.neutral }]} accessible accessibilityLabel={[...prova.calc.sum, prova.calc.total].filter(Boolean).map((r) => `${r.k} ${r.v}`).join(', ')}>
+            {prova.calc.sum.map((r, i) => (
+              <View key={`${r.k}-${i}`} style={s.calcRow}>
+                <Text style={[TXT3.what, s.calcK, { color: W.ink }]} numberOfLines={2}>{r.k}</Text>
+                <Text style={[TXT3.fact, { color: W.ink }]} numberOfLines={1}>{r.v}</Text>
+              </View>
+            ))}
+            {prova.calc.total ? (
+              <View style={[s.calcRow, s.calcTot, { borderTopColor: W.ink }]}>
+                <Text style={[TXT3.lineVal, s.calcK, { color: W.ink }]} numberOfLines={1}>{prova.calc.total.k}</Text>
+                <Text style={[TXT3.cardNum, { color: W.ink }]} numberOfLines={1}>{prova.calc.total.v}</Text>
+              </View>
+            ) : null}
+          </View>
+        ) : prova.calc && prova.calc.bar ? (
+          <View style={[s.calc, s.calcBar, { backgroundColor: W.neutral }]} accessible accessibilityLabel={`${prova.calc.bar.v} ${prova.calc.bar.of}, ${prova.calc.bar.left}`}>
+            <View style={s.barV}>
+              <Text style={[TXT3.cardNum, { color: W.ink }]} numberOfLines={1}>{prova.calc.bar.v}</Text>
+              <Text style={[TXT3.what, { color: W.tabSub }]} numberOfLines={1}>{prova.calc.bar.of}</Text>
+            </View>
+            <View style={[s.barTrack, { backgroundColor: W.round }]}>
+              <View style={[s.barFill, { width: `${prova.calc.bar.pct}%`, backgroundColor: prova.calc.bar.over ? W.stop : W.ink }]} />
+            </View>
+            <Text style={[TXT3.dur, { color: W.ink }]} numberOfLines={1}>{`${prova.calc.bar.over ? '✕ ' : ''}${prova.calc.bar.left}${prova.calc.bar.when ? ` · ${prova.calc.bar.when}` : ''}`}</Text>
+          </View>
+        ) : null}
+        {val && !prova.calc ? (
           <Field label={l('Neste serviço', 'In this duty')} value={val}>
             <Text style={[TXT3.unit, { color: numColor }]} allowFontScaling={false} accessibilityLabel={val}>
               {money ? money[1] : val}
@@ -80,4 +110,13 @@ const s = StyleSheet.create({
   body: { gap: SPACE.xs, paddingBottom: SPACE.sm },
   note: { color: W.tabSub, marginTop: SPACE.sm },
   btn: { marginTop: SPACE.sm },
+  // Q3 · a conta desenhada: uma caixa neutra; a soma em filas (o nome à esquerda, o número à direita) e o total por baixo de um fio
+  calc: { borderRadius: RADIUS.lg, paddingHorizontal: SPACE.md, paddingVertical: SPACE.xs, marginBottom: SPACE.xs },
+  calcRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: SPACE.md, paddingVertical: SPACE.sm },
+  calcK: { flex: 1, minWidth: 0 },
+  calcTot: { borderTopWidth: 1.5 },
+  calcBar: { paddingVertical: SPACE.md, gap: SPACE.sm },
+  barV: { flexDirection: 'row', alignItems: 'baseline', gap: SPACE.s },
+  barTrack: { height: 8, borderRadius: RADIUS.pill, overflow: 'hidden' },
+  barFill: { height: '100%', borderRadius: RADIUS.pill },
 });

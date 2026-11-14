@@ -34,6 +34,8 @@ import { dutyLine } from '../data/dutyLine';
 import { crewState } from '../data/crewState';
 import { monthAudit } from '../data/audit';
 import AuditSheet from '../components/AuditSheet';
+import ProvaSheet from '../components/ProvaSheet';
+import { provaFor } from '../data/prova';
 import { yearCount, eventCounts } from '../data/aeEvents';
 import { liveRdp } from '../data/disruption';
 import { fetchFlightStatus, fetchAircraftStatus, fetchAirportStats, hasDeviation, worstDelay, arrDelayMin, recordBehindLive, settledArrZ, schedArrZ, inboundGap, airportDisruption, airportCalm, activeLegIndex, legNo } from '../data/flightStatus';
@@ -292,6 +294,7 @@ export default function HomeScreen({ navigation }) {
   // DEPOIS da folha (nunca as duas juntas). Morre a qualquer toque. Flags por utilizador.
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   const [plusTip, setPlusTip] = useState(false);
+  const [whyGuide, setWhyGuide] = useState(false);   // a guia dos números sublinhados (Q3), na 1.ª vez
   const welcomeThisVisit = useRef(false);
   const plusTipTimer = useRef(null);
   const focusedRef = useRef(false);
@@ -330,6 +333,7 @@ export default function HomeScreen({ navigation }) {
       on = false; focusedRef.current = false; welcomeThisVisit.current = false;
       if (plusTipTimer.current) { clearTimeout(plusTipTimer.current); plusTipTimer.current = null; }
       setPlusTip((p) => { if (p && user?.id) AsyncStorage.setItem(`cp_tip_plus_${user.id}`, '1').catch(() => {}); return false; });
+      setWhyGuide((p) => { if (p && user?.id) AsyncStorage.setItem(`cp_tour_porque_${user.id}`, '1').catch(() => {}); return false; });
     };
   }, [user?.id]));
   const dismissPlusTip = () => {
@@ -1047,8 +1051,15 @@ export default function HomeScreen({ navigation }) {
     untilMin: nextF && nextF.startMs != null ? Math.max(0, Math.floor((nextF.startMs - now) / 60000)) : null,
     rest: restF,
     closed: homeState === 'posvoo' && todayEnded ? { fdp: closeD && closeD.fdp ? closeD.fdp.actualFdpStr : null, over: !!(closeD && closeD.fdp && closeD.fdp.over),
+      // Q3: o início e o fim do PSV que o motor usou (os calços do último setor em funções — um posicionamento no fim já não conta,
+      // ORO.FTL.105(12)), os minutos que começou antes do report e o acerto do tempo decorrido: a conta do número grande fecha sempre.
+      ...(() => { const r = closeD; const act = r && r.fdp ? r.fdp.actualFdpMin : null;
+        if (!r || r.reportMin == null || r.endMin == null || act == null) return {};
+        const hm2 = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+        const early = r.startEarlierMin || 0; const span = (r.endMin - r.reportMin + 1440) % 1440;
+        return { from: hm2(r.reportMin), to: hm2(r.endMin), early, adj: act - span - early }; })(),
       multi: closeMulti ? 1 + todayEnded.extra.length : null, signOffDone: !!todayEnded.signOff, gainToday: pdToday, kindLabel: todayEnded.kind ? t('duties.kind.' + todayEnded.kind, lang) : null } : null,
-    week: hasLimitData && d7 && d7.limit ? { done: d7.done, limit: d7.limit } : null,
+    week: hasLimitData && d7 && d7.limit ? { done: d7.done, limit: d7.limit, from: d7.from || null, to: d7.to || null } : null,   // from/to: o período do motor (Q3)
     // O tempo à hora que conta (wxAt na série hora a hora), com o rótulo na língua e o ícone da casa; o homeCards põe-no no cartão
     // do sítio e o crédito do MET Norway por baixo (golden test:homecards, "a meteorologia").
     wx: (() => {
@@ -1069,6 +1080,20 @@ export default function HomeScreen({ navigation }) {
     warns: W,
   };
   const out = homeCards(H);
+  // ── Q3 · A GUIA DOS NÚMEROS SUBLINHADOS (design/topo-porque-2.html, 2026-11-14): na 1.ª vez que o topo tem um número com porquê, o
+  // balão das guias aponta-o (docs/guias.md: uma guia de cada vez — depois das boas-vindas e da dica do ＋). Conta como vista ao
+  // fechar, ao tocar num número sublinhado ou ao sair do Início.
+  const whyGuideKey = user?.id ? `cp_tour_porque_${user.id}` : null;
+  const hasWhyOut = !!out.why;
+  useEffect(() => {
+    let on = true;
+    if (!whyGuideKey || !hasWhyOut || plusTip || welcomeOpen || !isFocused) return () => { on = false; };
+    Promise.all([AsyncStorage.getItem(`cp_welcome_${user.id}`), AsyncStorage.getItem(`cp_tip_plus_${user.id}`), AsyncStorage.getItem(whyGuideKey)])
+      .then(([w, tp, seen]) => { if (on && w === 'seen' && tp && !seen && !homeBusyRef.current) setWhyGuide(true); })
+      .catch(() => {});
+    return () => { on = false; };
+  }, [whyGuideKey, hasWhyOut, plusTip, welcomeOpen, isFocused]); // eslint-disable-line react-hooks/exhaustive-deps
+  const doneWhyGuide = () => { setWhyGuide(false); if (whyGuideKey) AsyncStorage.setItem(whyGuideKey, '1').catch(() => {}); };
   const giant = topGiant(out.top, winW - SPACE.lgPlus * 2);   // o tamanho comum das três abas, lado a lado (L1, design/topo-lado.html)
 
   // ── O QUE CADA TOQUE FAZ ──
@@ -1087,9 +1112,12 @@ export default function HomeScreen({ navigation }) {
   };
   // A pílula de contorno abre ESSE dia na Escala (salta para o mês, escolhe o dia e acende-o).
   const openPill2 = (iso) => { select(); navigation.navigate('Escala', { screen: 'EscalaMain', params: { flashDuty: iso, flashTs: Date.now() } }); };
+  // a folha da Prova ("a lei deste número") — aberta pelos números sublinhados do topo, com a conta desenhada (Q3, design/topo-porque-2.html)
+  const [provaOpen, setProvaOpen] = useState(null);
   const onOpen = (o) => {
     if (!o) return;
     switch (o.to) {
+      case 'prova': { select(); const p = provaFor(o.id, { companySlug: company && company.slug, companyName: company && company.name, isPilot, lang }); if (p) setProvaOpen({ ...p, value: o.value || null, calc: o.calc || null, sheetTitle: o.title || null }); break; }
       case 'day': openDayDetail(o.iso); break;
       case 'stats': goStats(); break;
       case 'review': openReview(); break;
@@ -1118,7 +1146,7 @@ export default function HomeScreen({ navigation }) {
       {/* A barra de estado do iPhone: escura sobre o fundo claro; clara à noite. Só com o ecrã à vista. */}
       {isFocused ? <StatusBar style={night ? 'light' : 'dark'} /> : null}
       {loadingFlight ? <HomeSkeleton /> : (
-        <HomeTop top={out.top} C={C} size={giant.size} onPill2={openPill2} l={l} titled rightW={demoOn ? pillWidth(l('Exemplo · sair', 'Example · exit'), true) - SPACE.sm : pillWidth(l('Notificações', 'Notifications'))}
+        <HomeTop top={out.top} why={out.why} onOpen={onOpen} guide={whyGuide} onGuideDone={doneWhyGuide} C={C} size={giant.size} onPill2={openPill2} l={l} titled rightW={demoOn ? pillWidth(l('Exemplo · sair', 'Example · exit'), true) - SPACE.sm : pillWidth(l('Notificações', 'Notifications'))}
           right={demoOn ? (
             <TouchableOpacity style={[s.demo, { borderColor: C.ink }]} onPress={exitDemo} hitSlop={{ top: 3, bottom: 3 }}
               accessibilityRole="button" accessibilityLabel={l('Isto é um exemplo. Sair do exemplo', 'This is an example. Exit the example')}>
@@ -1175,6 +1203,7 @@ export default function HomeScreen({ navigation }) {
       <WelcomeSheet visible={welcomeOpen} onDone={closeWelcome} lang={lang} />
 
       {/* Auditoria do mês — a folha do radar (estado fecho). */}
+      <ProvaSheet visible={!!provaOpen} onClose={() => setProvaOpen(null)} prova={provaOpen} lang={lang} />
       <AuditSheet visible={auditOpen} onClose={() => setAuditOpen(false)} audit={audit} monthName={monthName}
         lang={lang} provaCtx={{ companySlug: company && company.slug, companyName: company && company.name, isPilot, lang }}
         onOpenDay={(iso) => openDayDetail(iso)} />

@@ -1207,6 +1207,35 @@ motor está na versão **21**. **O que falta, por ordem:**
   comportamento:** a auditoria do mês corre também na folga e o aviso dela aparece lá (o sinal "O mês" só é verdade assim). **Ver no
   iPhone:** a folga com a frase e os três sinais; o próximo serviço numa linha; com uma alteração na escala, o cartão âmbar em cima
   e a frase calada; as férias e a baixa com a frase por cima.
+  **O porquê dos números do topo (ponto 5 da LI):** esboço `design/topo-porque.html` — P1 o § e a folha da Prova · **P2 a conta numa
+  linha por baixo do topo** (recomendada: "17:00 = report 05:15 + 11 h 45 de máximo · 3 setores, aclimatado" e "§ ORO.FTL.205(b) · a
+  lei ›" para a Prova) · P3 "Como se conta", todos numa folha. A lei conferida no texto oficial (`fontes/ftl/`): a tabela 2 do
+  ORO.FTL.205(b) (o texto inglês extraído está desalinhado uma linha — vale o português e a ordem das linhas), ORO.FTL.105 n.º 12,
+  ORO.FTL.210(a)(1). **O Nuno escolheu a P2 — construída (por gravar):** golden primeiro (`test:homecards` 476: a saída `why` alinhada
+  com os factos — o "PSV até", a margem, as horas de 7 dias sem datas, o número grande do dia fechado só quando o report e os calços
+  somam o PSV; `test:prova`: a entrada nova `psvDef`, ORO.FTL.105(12)); `components/HomeCards.js` (o § no rótulo, o número tocado
+  realçado, a linha por baixo do topo com a LayoutAnimation — reduce = aparece —, "§ artigo · a lei ›" abre a Prova com o valor
+  dessa lei); `screens/HomeScreen.js` (a folha da Prova no Início; o report e os calços do dia fechado). **Pergunta aberta do Nuno:**
+  "o utilizador percebe que é para carregar lá?" — a análise: o § sozinho não chega (diz "lei", não "toca"; os números do topo
+  não parecem botões). **Depois, o Nuno pôs em dúvida a própria linha por baixo do topo** ("vê sugestões melhores") → esboço
+  `design/topo-porque-2.html`: Q1 a conta no lugar do número · Q2 o balão das guias · **Q3 a folha do número** (recomendada: a folha da
+  Prova a abrir com a conta desenhada — a soma, ou a barra do limite —, o porquê e onde está escrito); em todas, o sublinhado
+  pontilhado e a guia na 1.ª vez. **O Nuno escolheu a Q3 — construída (por gravar):** golden primeiro (a `why` ganha `title` e `calc`
+  — a soma ou a barra do limite, acima do limite a barra cheia e "passa"; `test:homecards` 476); `components/HomeCards.js` (a linha da
+  P2 saiu; o sublinhado pontilhado nos números com porquê; tocar abre a folha; o balão das guias na 1.ª vez, por cima da folha dos
+  cartões); `components/ProvaSheet.js` (o título da conta e a conta desenhada em cima; com ela, o "Neste serviço" não se repete);
+  `screens/HomeScreen.js` (a folha da Prova no Início; a guia `cp_tour_porque_<id>`, depois das boas-vindas e da dica do ＋);
+  `docs/guias.md`. **Ver no iPhone:** o 17:00 sublinhado antes do report → a folha com a soma; as 31 h na folga → a barra; o 8:35 do dia
+  fechado; a margem em voo; o balão na 1.ª vez; a folha à noite (véspera, pernoita).
+  **Os dois cuidados, corrigidos a pedido do Nuno (por gravar):** (1) **o PSV do dia fechado fecha sempre** — o início e o fim vêm do
+  motor (`ftlForDuty`: `reportMin`/`endMin`, os calços do último setor em funções — no modelo da app, um posicionamento no fim vai
+  para o `signOff`, e o motor já o deixava fora: 8 h 35 de PSV, 9 h 30 de serviço, conferido com um serviço de teste); a diferença
+  entre "fim − report" e o PSV passa a ser uma linha da conta — "começou antes do report (2.ª notificação)" (`startEarlierMin`) e
+  "acerto do tempo decorrido (hora de verão ou fusos)". O meu aviso antigo ("o posicionamento no fim esconde a conta") estava errado:
+  o caso real eram estes acertos. (2) **as horas de 7 dias com as datas**: `computeDutyTime` (motor FTL) devolve o `from`/`to` do
+  período escolhido (o que acaba hoje, ou o de amanhã se o serviço de hoje passar a meia-noite e pesar mais) — golden primeiro
+  (`test:ftl` 1013, nenhum número mudou); a conta diz "31 h de serviço de 5 a 11 nov" e a barra da folha "ficam 29 h · de 5 a 11
+  nov" (`test:homecards` 482).
 - **Do dia 2026-11-14 (gravado e enviado até `81c2dfd`) — tudo por ver:** os Números (o total sozinho no topo; "Acima da base" no
   fim do "De onde vem"; com a base incerta, "O total fica entre"); o topo lado a lado igual no Início, na Escala e nos Números
   (o número do mesmo tamanho; a frase com ar por cima); a meteorologia (na véspera e antes do report, a base à hora do report no
