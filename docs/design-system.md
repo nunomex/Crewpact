@@ -324,8 +324,24 @@ O que muda em relação à §2 ("branco · preto · amarelo, plana, hairline"):
   mínimo", e o selo "mín. 12 h ou mais"); a linha pequena diz "cumprido entre 12:00 e 14:00 · " e o motivo em menos de 50
   letras. No topo da pernoita, "Repouso até" leva "Incerto" no número e as duas pontas como factos ("no mínimo" · "no
   máximo"), como o dinheiro incerto. Nada de anatomia nova: tudo cabe nas peças do cartão.
-- **A hora Zulu do report** (Nuno, 2026-11-11, opção A): um 3.º facto na coluna ao lado do número ("04:15Z · report em UTC"),
-  só quando é diferente da hora local e só quando o número grande é o report. Não encolhe o número nem acrescenta altura.
+- **O tempo no topo** (Nuno, 2026-11-14 — D3 de `design/meteo-amanha.html` + a) de `design/meteo-topo.html`; era a M1, uma linha
+  no cartão do sítio): o ÚLTIMO facto do topo, com o ícone à frente ("☂ 12 °C · chuva às 05:40"; em voo "… em FNC à chegada"),
+  em todos os estados com serviço (folga e pós-voo com o voo amanhã, véspera, antes do report, em serviço e em voo, pernoita).
+  Os cartões não o repetem — menos a cidade da pernoita à chegada, no cartão da pernoita. Sem serviço, nada. O crédito
+  "Meteorologia: MET Norway" por baixo dos cartões. O ícone e o espaço entram na largura medida (`GIANT.factIc`/`factIcGap`).
+- **O cartão do voo E3** (Nuno, 2026-11-14 — E3 de `design/cartoes-c2.html` + V2 de `design/cartoes-e3.html` + L2 de
+  `design/cartoes-limite.html`; no Início, na véspera, antes do report e no cartão grande do próximo serviço): o tipo (com o dia e
+  os setores no próximo serviço); o título de onde sais a onde acabas (4 sítios ou mais) ou a cadeia; **as cidades em pequeno**
+  por baixo (só com o nome em português — `data/countries.js` ou aeroporto português; senão, nenhuma linha); o nº do voo num selo
+  (1 setor) e o per diem com o nome ("per diem +154,51 €"); **a linha do dia** pela ordem em que acontece (report → parte → chega
+  → fim, em 0 · 25 · 75 · 100 %; a parte preta é o voo; com 3 sítios ou mais, um traço por voo e os aeroportos por cima); **o
+  limite numa linha discreta** quando está dentro ("Dentro do limite · PSV 1 h 35 de 12 h · margem 10 h 25"; "PSV dentro do
+  limite" quando só o PSV está verificado). Incerto → um cartão à parte, por cima, neutro e tracejado (`dashed`), com as duas
+  pontas e o que falta; acima → o aviso vermelho com ✕ e o tema por cima ("O limite de hoje · Acima do limite · 45 min a mais").
+  Sem o selo do meio. O cartão em voo e o da disrupção ficam como estavam (por desenhar). Golden `test:homecards`.
+- **A hora Zulu do report — junto do sítio** (a) de `design/meteo-topo.html`, 2026-11-14; era o 3.º facto, opção A de
+  2026-11-11): na 2.ª linha do número, ao lado do sítio, na letra dos factos ("LIS 04:15Z"), só quando é diferente da hora local
+  e só quando o número grande é o report. Medido no golden: com os três factos o número fica a 62 / 58.
 - **Toque:** a pílula preta do estado não se toca; a de contorno abre esse dia na Escala (38 à vista, 44 de toque); o
   cartão inteiro abre o detalhe; partilhar é o ícone do canto (36 à vista, 44 de toque).
 - **iPhone pequeno (375 × 667):** a folha desliza; o topo e a barra ficam. O primeiro cartão vê-se sempre inteiro (medido).

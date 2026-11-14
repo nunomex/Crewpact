@@ -563,13 +563,16 @@ export default function HomeScreen({ navigation }) {
   const legDep = String((activeSector && activeSector.leg.dep) || (flight && flight.depAirport) || '').toUpperCase();
   const legArr = String((activeSector && activeSector.leg.arr) || (flight && flight.arrAirport) || '').toUpperCase();
 
-  // ── O TEMPO (M1 de design/meteo-inicio.html, 2026-11-14): no cartão do sítio a que se refere, À HORA que conta. No máximo três
-  // pedidos, cada um à cache de 45 min da Edge (por estação): a partida à hora do report (véspera e antes do report de um dia de
-  // voo; na pernoita, o report de amanhã), o destino do setor à chegada (pede-se em terra, antes de descolar — no ar o telemóvel voa
-  // em modo de voo e fica o que já veio) e a cidade da pernoita à chegada. Nas folgas, férias, baixa e standby não se pede.
+  // ── O TEMPO NO TOPO (D3 + a), design/meteo-amanha.html e meteo-topo.html, 2026-11-14; era a M1, no cartão do sítio): o último
+  // facto do topo, À HORA que conta. No máximo três pedidos, cada um à cache de 45 min da Edge (por estação): a partida à hora do
+  // report (a folga e o pós-voo com o voo AMANHÃ, a véspera e antes do report de um dia de voo; na pernoita, o report de amanhã), o
+  // destino do setor à chegada (pede-se em terra, antes de descolar — no ar o telemóvel voa em modo de voo e fica o que já veio) e a
+  // cidade da pernoita à chegada (essa fica no cartão da pernoita). Sem serviço (férias, baixa, standby, folga longa) não se pede.
   const iata3 = (x) => (/^[A-Z]{3}$/.test(String(x || '').toUpperCase()) ? String(x).toUpperCase() : null);
   const flightDay = !!(flight && !isNonFlight);
-  const wxRepStation = ((homeState === 'vespera' && flightDay) || (homeState === 'hoje' && phase === 'pre') || (homeState === 'pernoita' && flight && flight.report)) ? iata3(flight && flight.depAirport) : null;
+  const flightTomorrow = !!(flightDay && flight.report && flight.dateISO === isoAdd(todayISO, 1));
+  const wxRepStation = ((homeState === 'vespera' && flightDay) || (homeState === 'hoje' && phase === 'pre') || (homeState === 'pernoita' && flight && flight.report)
+    || (['folga', 'posvoo'].includes(homeState) && flightTomorrow)) ? iata3(flight && flight.depAirport) : null;
   const wxArrStation = (homeState === 'hoje' && (phase === 'duty' || phase === 'air')) ? iata3(legArr) : null;
   const wxNsStation = ((homeState === 'vespera' && flightDay) || (homeState === 'hoje' && phase && phase !== 'landed')) && flight && flight.nightStop ? iata3(nsHotelStation) : null;
   const wxRep = useStationWx(wxRepStation);
@@ -926,7 +929,18 @@ export default function HomeScreen({ navigation }) {
   const pushW = (w) => { if (w && w.title && !W.some((x) => x.id === w.id)) W.push(w); };
   if (calErr) pushW({ id: 'cal', title: l('Calendário', 'Calendar'), sub: l('Não consegui ler. Puxa para atualizar ou vê a permissão nas Definições.', 'Couldn’t read it. Pull to refresh or check the permission in Settings.') });
   // Fora dos limites e documento expirado = parar (mapa B: vermelho com ✕); os outros avisos são de olhar (laranja).
-  if (bandAlerts.length) pushW({ id: 'ftl', first: true, tone: 'stop', title: bandAlerts[0].q, sub: bandAlerts[0].answer, open: { to: 'item', id: bandAlerts[0].id } });
+  // O limite excedido (L2 de design/cartoes-limite.html): a resposta em grande, com o tema por cima ("O limite de hoje"); os outros
+  // avisos (o repouso) ficam com a pergunta e a resposta.
+  const overW = (it) => {
+    const r = it.raw || {};
+    const hm = (x) => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(x || '')); return m ? (+m[1]) * 60 + (+m[2]) : null; };
+    const ex = r.kind === 'psvOver' ? hm(r.excess) : null;
+    const res = r.psv ? hm(r.psv.result) : null, mx = r.psv ? hm(r.psv.max) : null;
+    return { kind: l('O limite de hoje', 'Today’s limit'), title: `${l('Acima do limite', 'Over the limit')}${ex ? ` · ${durTxt(ex)} ${l('a mais', 'over')}` : ''}`,
+      sub: r.kind === 'psvOver' && res != null && mx != null ? `PSV ${durTxt(res)} ${l('de', 'of')} ${durTxt(mx)} · ${l('confirma com a companhia', 'confirm with the company')}`
+        : String(it.answer || '').replace(/^(Não|No)\s*—\s*/, '') };
+  };
+  if (bandAlerts.length) pushW({ id: 'ftl', first: true, tone: 'stop', ...(bandAlerts[0].id === 'legal' ? overW(bandAlerts[0]) : { title: bandAlerts[0].q, sub: bandAlerts[0].answer }), open: { to: 'item', id: bandAlerts[0].id } });
   else if (stateLevel === 'over') pushW({ id: 'ftl', first: true, tone: 'stop', title: l('Limites', 'Limits'), sub: `${t('home.statusOver', lang)}${stateReason ? ` · ${stateReason}` : ''}`, open: { to: 'stats' } });
   if (docAlert) pushW({ id: 'doc', tone: 'stop', title: l('Documentos', 'Documents'), sub: docAlert.answer, open: { to: 'item', id: 'validades' } });
   // POSSÍVEL RDP (só cabine, só com o acordo que o tem — easyJet × SNPVAC Cl. 67.ª): candidato, nunca "vais receber".
@@ -965,10 +979,14 @@ export default function HomeScreen({ navigation }) {
   }
 
   // ── A ENTRADA do homeCards ──
-  const nextF = ['hoje', 'disrupcao'].includes(homeState) ? (heroF ? nextBrief(heroF.iso, flight) : null)
+  const nextF0 = ['hoje', 'disrupcao'].includes(homeState) ? (heroF ? nextBrief(heroF.iso, flight) : null)
     : ['posvoo', 'pernoita'].includes(homeState) ? nextBrief(isoAdd(todayISO, 1))
     : ['folga', 'ferias', 'doenca'].includes(homeState) ? (demoOn && flight ? { iso: flight.dateISO, kind: 'flight', stations: (flight.stations || []).map((x) => String(x).toUpperCase()), sectors: flight.sectors || null, report: flight.report, end: flight.arrTime || null, hasReg: false, startMs: flight.reportDate ? +flight.reportDate : +flight.startDate } : nextBrief(todayISO))
     : null;
+  // O cartão do voo E3 do próximo serviço: o nº do voo, o per diem e o PSV vêm do voo de que o topo fala (heroF), SÓ quando é o
+  // mesmo serviço (o mesmo dia e o mesmo report) — nunca os de outro voo.
+  const nextF = nextF0 && heroF && nextF0.iso === heroF.iso && (nextF0.report || null) === (heroF.report || null) && heroF.kind === nextF0.kind
+    ? { ...nextF0, flightNo: heroF.flightNo || null, perDiem: heroF.perDiem != null ? heroF.perDiem : null, psv: heroF.psv || null } : nextF0;
   const H = {
     lang, state: homeState, todayISO, phase,
     hero: ['hoje', 'disrupcao', 'vespera'].includes(homeState) || (homeState === 'pernoita' && flight && flight.report) ? heroF : null,

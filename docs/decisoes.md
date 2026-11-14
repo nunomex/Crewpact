@@ -1075,13 +1075,40 @@ motor está na versão **21**. **O que falta, por ordem:**
   trás (o contexto) e só conta os serviços de hoje em diante (`detectWindow` + `diffUpcoming` em `data/rosterDiff.js`, golden
   `test:diff` +6, a reproduzir o erro). **Ver no iPhone:** ao reabrir a app o aviso deve sumir (se não houver outra mudança).
   Causa deduzida do código e da foto do Detalhe ("Da escala: assistência em casa desde as 09:00"), não lida no telemóvel.
+- **O cartão do voo E3 (construído a 2026-11-14, por gravar; E3 + V2 + cidades + L2):** na véspera, antes do report e no cartão grande
+  do próximo serviço (folga, "A seguir", "No regresso"): a linha do dia (report → parte → chega → fim), as escalas por cima nos dias
+  de vários setores, as cidades em pequeno, o nº do voo e o per diem com o nome, e o limite numa linha discreta; o limite incerto
+  num cartão à parte (tracejado, por cima) e o acima no aviso vermelho com "O limite de hoje". O "Próximo serviço" diz o dia. Golden
+  `test:homecards` (293). **Ver no iPhone:** a linha do dia (os pontos e os textos não se tocam, sobretudo a 375 e com letra
+  grande), as cidades ("Porto → Lisboa"), o selo EZY1010 e "per diem", a linha discreta, e um dia de vários setores. O cartão em voo
+  e o da disrupção ficam como estavam. **A seguir (2.ª parte):** os avisos com a resposta em grande ("Tenho descanso?", "A escala
+  mudou" com o quê e quando); a lista das cidades em português para a rede da easyJet.
+- **O tempo no topo (construído a 2026-11-14, por gravar; D3 + a)):** o tempo é o último dos três factos ao lado do número, com o
+  ícone, em todos os estados com serviço (folga e pós-voo com o voo amanhã, véspera, antes do report, em serviço e em voo,
+  pernoita); os cartões já não o repetem (a M1 saiu), menos a cidade da pernoita à chegada; a hora UTC do report passou de 3.º
+  facto para junto do sítio, por baixo da hora ("LIS 04:15Z"). Golden `test:homecards` (290; o número fica a 62/58 com o tempo e a
+  hora UTC). **Ver no iPhone:** a folga de hoje com o voo de amanhã (o 3.º facto "… às 05:40"), a véspera às 18:00, o ícone ao
+  lado do valor, e a hora UTC só no verão ou fora de Lisboa (no inverno em Lisboa não aparece).
 - **A meteorologia antes do report — vista ✅ no iPhone a 2026-11-14:** "16 °C · aguaceiros fracos em OPO às 15:15" no cartão do
   dia e "Meteorologia: MET Norway" por baixo. Falta ver: a véspera (depois das 18:00), a pernoita, em voo o destino.
   No mesmo dia, o "+154,51 €" igual em LIS→OPO (13/11) e OPO→LIS (14/11) conferido no motor: conta de CPT, 68,67 € pela
   distância + 85,84 € do setor nominal doméstico (BTE 29/2026, Art. 37.º, n.º 8) — a mesma distância nos dois sentidos; certo.
 - **A meteorologia não aparece na folga:** a véspera começa às 18:00 (report a ≤ 14 h, `data/crewState.js`); de dia, com o
-  serviço amanhã, o Início está em "Folga" e a M1 não mostra o tempo. Pergunta ao Nuno: mostrar já de dia no cartão
-  "Próximo serviço" quando é amanhã? (seriam 3 esboços).
+  serviço amanhã, o Início está em "Folga" e a M1 não mostra o tempo. Esboço `design/meteo-amanha.html`: **o Nuno escolheu a D3**
+  (um facto do topo) e quer o tempo **no topo em todos os estados** — por esboçar: os estados sem serviço (sem sítio nem hora), o
+  conflito com o facto da hora UTC (no máximo 3 factos), o que sai dos cartões (a M1) e o tamanho comum do número (62/58).
+  Esboço `design/meteo-topo.html`: **o Nuno escolheu a a)** (a hora UTC junto do sítio, por baixo da hora do report).
+  Depois: os 3 esboços do conteúdo dos cartões (C1 arrumar · C2 a resposta em grande · C3 o cartão do dia com menos camadas). **O
+  Nuno: gosta do cartão do voo do Detalhe ("quando vemos tudo"), mais preenchido do que o do Início** — o rumo dos esboços.
+  **Esboço feito: `design/cartoes-conteudo.html`** (C1 arrumar · C2 o cartão do Detalhe · C3 com a barra do PSV) — **o Nuno gostou da
+  C2** e pediu melhor/combinações → `design/cartoes-c2.html` (E1 a C2 afinada · E2 com a barra do limite · E3 pela ordem do dia,
+  recomendada) — **o Nuno escolheu a E3** → `design/cartoes-e3.html` — **V2 escolhida (cada voo um traço na linha) e a linha pequena
+  com as cidades (só com o nome em português; senão, o código)**. Depois perguntou se o limite vai num cartão à parte →
+  `design/cartoes-limite.html` — **L2 escolhida e construída** (ver "O cartão do voo E3", acima). As cidades: a app só tem nomes em
+  português para ~30 aeroportos (`data/countries.js` CITY_PT) e os portugueses do catálogo; os outros ficam sem a linha — por fazer:
+  a lista para a rede da easyJet. **Os estados mais destacados:** esboço `design/estados-topo.html` (S1 a pílula maior com ícone ·
+  S2 o estado como título grande, recomendada, +54 pt no topo · S3 a pílula na cor do tipo; o topo todo a cor continua recusado) —
+  por escolher.
 - **Do dia 2026-11-14 (gravado e enviado até `81c2dfd`) — tudo por ver:** os Números (o total sozinho no topo; "Acima da base" no
   fim do "De onde vem"; com a base incerta, "O total fica entre"); o topo lado a lado igual no Início, na Escala e nos Números
   (o número do mesmo tamanho; a frase com ar por cima); a meteorologia (na véspera e antes do report, a base à hora do report no

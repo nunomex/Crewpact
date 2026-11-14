@@ -38,7 +38,7 @@
 //   warns — [{ id, title, sub, value, first, open, tone }] (já escritos pelo ecrã, por ordem de prioridade; no máx. 2;
 //           tone 'stop' = fora do limite → vermelho com ✕, pelo mapa B; sem tone = olhar → laranja)
 //
-// SAÍDA: { state, top: { pill:{ text, live }, pill2:{ text, iso }|null, what, giant:{ l1, unit, l2, l2Grey }, facts[] },
+// SAÍDA: { state, top: { pill:{ text, live }, pill2:{ text, iso }|null, what, giant:{ l1, unit, l2, l2Grey, zulu? }, facts[] },
 //          cards: [ card | slim | lines | text ], caption }
 //   card  = { t:'card', id, color, kind, title, sub, gain, a:{v,l}, dur, b:{v,l,gain}, pct, corner:'share'|'chev', action, open }
 //   slim  = { t:'slim', id, color, title, sub, value, gain, dark, open }
@@ -49,6 +49,8 @@
 // ════════════════════════════════════════════════════════════════════════════
 
 import { textWidth } from './fontMetrics';
+import { baseCityName } from './countries';
+import { airportInfo } from './airports';
 
 const WD = { pt: ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'], en: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] };
 const WDS = { pt: ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] };
@@ -109,43 +111,104 @@ export function homeCards(H = {}) {
   const state = docOn ? 'documento' : noHero ? 'folga' : (H.state || 'folga');
 
   // ── peças ──
-  const fact = (v, lbl, tone = null) => (v != null && v !== '' ? { v: String(v), l: lbl, tone } : null);
-  // A METEOROLOGIA (M1 de design/meteo-inicio.html, 2026-11-14): no cartão do sítio a que se refere, À HORA que conta, com "°C"
-  // — a base à hora do report (o caminho para o aeroporto), a cidade da pernoita (o que levar), o destino do setor à chegada; na
-  // pernoita, o facto do topo à hora do report. Só nos dias de voo, na véspera e na pernoita (nas folgas, férias, baixa e standby a
-  // app do tempo do telemóvel já o faz). Sempre que há tempo, o crédito do MET Norway (CC BY 4.0 — docs.api.met.no/doc/License).
+  const fact = (v, lbl, tone = null, ic = null) => (v != null && v !== '' ? { v: String(v), l: lbl, tone, ...(ic ? { ic } : {}) } : null);
+  // A METEOROLOGIA NO TOPO (D3 de design/meteo-amanha.html + a) de design/meteo-topo.html, escolhidas pelo Nuno a 2026-11-14; antes
+  // era a M1, no cartão do sítio). O tempo é o ÚLTIMO FACTO DO TOPO, com o ícone, À HORA que conta e com "°C", em todos os estados
+  // com serviço — um sítio e uma hora: a folga e o pós-voo com o serviço AMANHÃ, a véspera e antes do report (a base à hora do
+  // report), em serviço e em voo (o destino do setor à chegada), a pernoita (à hora do report). Os cartões não o repetem — menos a
+  // cidade da pernoita à chegada, no cartão da pernoita (outro sítio, outra hora). Sem serviço não há tempo (a app não usa a
+  // localização). Sempre que há tempo, o crédito do MET Norway (CC BY 4.0 — docs.api.met.no/doc/License).
   const WX = H.wx || {};
   let wxUsed = false;
   const wxOk = (w) => !!(w && w.c != null && Number.isFinite(+w.c));
   const deg = (w) => `${Math.round(+w.c)} °C`;
-  const wxReportLine = () => { const w = WX.report; if (!wxOk(w) || !w.st || !w.at) return null; wxUsed = true;
-    return { ic: w.ic || null, txt: `${deg(w)}${w.label ? ` · ${w.label}` : ''} ${l('em', 'in')} ${w.st} ${l('às', 'at')} ${w.at}` }; };
-  const wxArrivalLine = () => { const w = WX.arrival; if (!wxOk(w) || !w.st) return null; wxUsed = true;
-    return { ic: w.ic || null, txt: `${deg(w)}${w.label ? ` · ${w.label}` : ''} ${l('em', 'in')} ${w.st} ${l('à chegada', 'on arrival')}` }; };
   const wxNightTail = () => { const w = WX.night; if (!wxOk(w)) return null; wxUsed = true; return `${deg(w)}${w.label ? `, ${w.label}` : ''} ${l('à chegada', 'on arrival')}`; };
   const wxReportFact = () => { const w = WX.report; if (!wxOk(w) || !w.at) return null; wxUsed = true;
-    return fact(deg(w), `${l('às', 'at')} ${w.at}${w.label ? ` · ${w.label}` : ''}`); };
+    return fact(deg(w), `${w.label ? `${w.label} ` : ''}${l('às', 'at')} ${w.at}`, null, w.ic || null); };
+  const wxArrivalFact = () => { const w = WX.arrival; if (!wxOk(w) || !w.st) return null; wxUsed = true;
+    return fact(deg(w), `${w.label ? `${w.label} ` : ''}${l('em', 'in')} ${w.st} ${l('à chegada', 'on arrival')}`, null, w.ic || null); };
+  // Na folga e no pós-voo: só com o serviço AMANHÃ, e só se o tempo é o desse report (o mesmo serviço, a mesma hora).
+  const wxTomorrow = () => (next && next.iso === tomorrow && next.report && WX.report && WX.report.at === next.report ? wxReportFact() : null);
   const facts = (...xs) => { const f = xs.filter(Boolean).slice(0, 3); return f.length ? f : null; };
-  // A HORA ZULU do report (Nuno, 2026-11-11, opção A): um 3.º facto na coluna ao lado do número, SÓ quando é diferente da
-  // hora local (verão em Portugal, pernoitas fora, longo curso) e só quando o número grande É o report. Medido: não encolhe o
-  // número nem acrescenta altura (3 factos = 135 pt ao lado de um número de 155).
-  const zuluFact = (d) => (d && d.report && d.reportZ && toMin(d.reportZ) != null && toMin(d.reportZ) !== toMin(d.report) ? fact(`${d.reportZ}Z`, l('report em UTC', 'report in UTC')) : null);
+  // A HORA ZULU do report — JUNTO DO SÍTIO, na 2.ª linha do número ("LIS 04:40Z"; a) de design/meteo-topo.html, 2026-11-14). Era o
+  // 3.º facto (opção A, 2026-11-11); com o tempo no topo seriam quatro e só cabem três. SÓ quando é diferente da hora local (verão
+  // em Portugal, pernoitas fora, longo curso) e só quando o número grande É o report.
+  const zuluOf = (d) => (d && d.report && d.reportZ && toMin(d.reportZ) != null && toMin(d.reportZ) !== toMin(d.report) ? `${d.reportZ}Z` : null);
   const secTxt = (d) => (d && d.sectors ? (d.sectors === 1 ? l('1 setor', '1 sector') : l(`${d.sectors} setores`, `${d.sectors} sectors`)) : null);
   const roundTrip = (d) => !!(d && Array.isArray(d.stations) && d.stations.length === 3 && d.stations[0] === d.stations[2]);
   const titleOf = (d) => (isFlightKind(d.kind) && Array.isArray(d.stations) && d.stations.length > 1 ? chain(d.stations) : (d.kindLabel || l('Serviço', 'Duty')));
   const openDay = (d) => (d && d.iso && d.hasReg !== false ? { to: 'day', iso: d.iso } : null);
   const top = (pill, pill2, what, giant, fx) => ({ pill, pill2: pill2 && pill2.text ? pill2 : null, what, giant, facts: fx || null });
-  const giantOf = (l1, unit = null, l2 = null, l2Grey = false) => ({ l1: String(l1), unit: unit || null, l2: l2 || null, l2Grey: !!(l2 && l2Grey) });
+  const giantOf = (l1, unit = null, l2 = null, l2Grey = false, zulu = null) => ({ l1: String(l1), unit: unit || null, l2: l2 || null, l2Grey: !!(l2 && l2Grey), ...(zulu && l2 ? { zulu } : {}) });
   const psvOf = (ps) => (ps && ps.latest ? `${ps.latest}${ps.latestNextDay ? ' +1' : ''}` : null);
-  const slimWarn = (w) => ({ t: 'slim', id: w.id, color: w.tone === 'stop' ? 'stop' : 'alert', ...(w.tone === 'stop' ? { mark: '✕' } : {}), title: w.title, sub: w.sub || null, value: w.value || null, gain: false, open: w.open || null });
+  const slimWarn = (w) => ({ t: 'slim', id: w.id, color: w.tone === 'stop' ? 'stop' : 'alert', ...(w.tone === 'stop' ? { mark: '✕' } : {}), ...(w.kind ? { kind: w.kind } : {}), title: w.title, sub: w.sub || null, value: w.value || null, gain: false, open: w.open || null });
   const warns = (H.warns || []).filter((w) => w && w.title).slice(0, 2);
   const wFirst = warns.filter((w) => w.first).map(slimWarn);
   const wLast = warns.filter((w) => !w.first).map(slimWarn);
   // Montagem com a regra dos dois cartões: [avisos deste serviço] · o do momento · o que vem a seguir (linha fina se houver
   // aviso) · [linhas finas próprias do estado] · [avisos de outra coisa].
+  let limCard = null;   // o limite incerto num cartão à parte (L2) — posto pelo estado antes de montar
   const assemble = (one, two, ...slims) => {
-    const second = two && two.t === 'card' && warns.length ? (two.slim || null) : two;
-    return [...wFirst, one, second, ...slims, ...wLast].filter(Boolean).map((c) => { if (c && c.slim) { const { slim, ...rest } = c; return rest; } return c; });
+    const second = two && two.t === 'card' && (warns.length || limCard) ? (two.slim || null) : two;
+    return [limCard, ...wFirst, one, second, ...slims, ...wLast].filter(Boolean).map((c) => { if (c && c.slim) { const { slim, ...rest } = c; return rest; } return c; });
+  };
+
+  // ── O CARTÃO DO VOO E3 (design/cartoes-c2.html E3 + cartoes-e3.html V2 + cartoes-limite.html L2, escolhidos pelo Nuno a 2026-11-14) ──
+  // Pela ordem do dia: report → parte → chega → fim numa linha (sem o selo do meio); com 3 sítios ou mais, as escalas por cima (V2);
+  // as cidades numa linha pequena por baixo do título; o nº do voo (1 setor) e o per diem com o nome; o limite numa linha discreta
+  // quando está dentro — o incerto vai num cartão à parte (por cima) e o acima é o aviso vermelho do ecrã.
+  // As cidades: em português só quando a app tem o nome (data/countries.js) ou o aeroporto é português (o catálogo já o diz em
+  // português: Porto, Funchal, Ponta Delgada); senão, nenhuma linha (nunca uma cidade em inglês num ecrã em português).
+  const cityName = (code) => {
+    const k = String(code || '').trim().toUpperCase(); if (!k) return null;
+    const a = airportInfo(k);
+    if (lang === 'en') return (a && a.city) || null;
+    const pt = baseCityName(k, null, 'pt'); if (pt && pt !== k) return pt;
+    return a && a.cc === 'PT' && a.city ? a.city : null;
+  };
+  const citiesOf = (d) => {
+    const st = Array.isArray(d && d.stations) ? d.stations : []; if (st.length < 2) return null;
+    const pick2 = st.length <= 3 ? st : [st[0], st[st.length - 1]];
+    const names = pick2.map(cityName);
+    return names.every(Boolean) ? names.join(' → ') : null;
+  };
+  const titleE3 = (d) => (Array.isArray(d.stations) && d.stations.length >= 4 ? chain([d.stations[0], d.stations[d.stations.length - 1]]) : titleOf(d));
+  const lineOf = (d) => {
+    const pts = [];
+    if (d.report) pts.push({ v: d.report, l: 'report', end: true });
+    if (d.dep && d.dep !== d.report) pts.push({ v: d.dep, l: l('parte', 'departs'), end: false });
+    if (d.lastArr) pts.push({ v: d.lastArr, l: l('chega', 'arrives'), end: false });
+    if (d.end) pts.push({ v: d.end, l: l('fim', 'end'), end: true });
+    const st = Array.isArray(d.stations) ? d.stations : [];
+    return pts.length >= 2 ? { pts, stops: st.length >= 3 ? st : null } : null;
+  };
+  // O limite discreto (L2): só com o PSV certo e dentro. "Dentro do limite" só quando o ecrã já verificou tudo (o PSV e os
+  // acumulados, legal 'ok'); com só o PSV conhecido (véspera, próximo serviço), "PSV dentro do limite".
+  const quietOf = (d) => {
+    const ps = (d && d.psv) || {};
+    if (!ps.plan || !ps.max || ps.hi || uncertain(d) || (d.legal && d.legal.status === 'bad')) return null;
+    const pm = toMin(ps.plan), mx = toMin(ps.max);
+    if (pm == null || mx == null || pm > mx) return null;
+    return { l: d.legal && d.legal.status === 'ok' ? l('Dentro do limite', 'Within limits') : l('PSV dentro do limite', 'FDP within the limit'),
+      sub: `PSV ${F.dur(pm)} ${l('de', 'of')} ${F.dur(mx)}`, r: { k: l('margem', 'margin'), v: F.dur(mx - pm) } };
+  };
+  // O limite incerto num cartão à parte (L2): neutro e tracejado, a margem nas duas pontas quando as há, e o que falta.
+  const limUncOf = (d, kindLbl) => {
+    const ps = (d && d.psv) || {};
+    if (!d || !(uncertain(d) || ps.hi)) return null;
+    const pm = toMin(ps.plan), lo = toMin(ps.max), hi = toMin(ps.hi);
+    const both = pm != null && lo != null && hi != null && pm <= lo;
+    return { t: 'slim', id: 'limit', color: 'neutral', dashed: true, kind: kindLbl,
+      title: both ? `${l('Incerto', 'Uncertain')} · ${l('margem', 'margin')} ${F.dur(lo - pm)} ${l('a', 'to')} ${F.dur(hi - pm)}` : l('Limite incerto', 'Uncertain limit'),
+      sub: [pm != null ? `PSV ${F.dur(pm)}${lo != null && hi != null ? ` ${l('de', 'of')} ${F.dur(lo)} ${l('a', 'to')} ${F.dur(hi)}` : ''}` : null,
+        d.legal && d.legal.missing ? `${l('falta', 'missing')} ${d.legal.missing}` : null].filter(Boolean).join(' · ') || null,
+      value: null, gain: false, open: { to: 'item', id: 'legal' } };
+  };
+  // As peças E3 de um serviço de voo (o resto do cartão — tipo, cor, canto, abrir — fica com quem o monta).
+  const e3Of = (d) => {
+    const gain = d.perDiem != null ? F.eur(d.perDiem, '+') : null;
+    return { title: titleE3(d), cities: citiesOf(d), flightNo: d.sectors === 1 && d.flightNo ? String(d.flightNo) : null,
+      gain, gainLbl: gain ? l('per diem', 'per diem') : null, line: lineOf(d), quiet: quietOf(d), sub: null, a: null, dur: null, b: null, pct: null };
   };
 
   // O serviço seguinte como cartão grande (com a linha fina alternativa para quando há um aviso).
@@ -159,8 +222,12 @@ export function homeCards(H = {}) {
     // (visto no iPhone a 2026-11-13).
     const a = n.report ? { v: n.report, l: fl ? 'report' : l('começa', 'starts') } : (fl && n.dep) ? { v: n.dep, l: l('partida', 'departure') } : null;
     const b = n.end ? { v: n.end, l: l('fim', 'end') } : null;
-    const card = { t: 'card', id: 'next', color: colorOf(n.kind), kind: kindLbl, title: titleOf(n), sub: sub || null, gain: null,
-      a, dur: n.report && n.end ? F.dur(span(n.report, n.end)) : null, b, pct: null, corner: 'chev', action: null, open: openDay(n) };
+    const card = fl
+      // E3: o dia e os setores no tipo (o "Próximo serviço" diz sempre o dia — a análise de 2026-11-14); a linha do dia; o limite discreto
+      ? { t: 'card', id: 'next', color: colorOf(n.kind), kind: [kindLbl, F.wd(n.iso), secTxt(n)].filter(Boolean).join(' · '), ...e3Of(n), sub: extraSub || null,
+        corner: 'chev', action: null, open: openDay(n) }
+      : { t: 'card', id: 'next', color: colorOf(n.kind), kind: kindLbl, title: titleOf(n), sub: sub || null, gain: null,
+        a, dur: n.report && n.end ? F.dur(span(n.report, n.end)) : null, b, pct: null, corner: 'chev', action: null, open: openDay(n) };
     card.slim = { t: 'slim', id: 'next', color: colorOf(n.kind), title: titleOf(n), sub: [F.wd(n.iso), n.report ? `report ${n.report}` : null].filter(Boolean).join(' · ') || null, value: null, gain: false, open: openDay(n) };
     return card;
   };
@@ -187,18 +254,18 @@ export function homeCards(H = {}) {
     return card;
   };
   // O cartão do dia de serviço PLANEADO (antes do report · véspera · disrupção): começa na partida, para não repetir o report de cima.
-  const legalTail = (d) => (d.legal && d.legal.status === 'ok' ? l(' · nos limites', ' · within limits') : d.legal && d.legal.status === 'bad' ? l(' · acima do limite', ' · over the limit') : '');
   const uncertain = (d) => !!(d && d.legal && d.legal.status === 'uncertain');
   const psvPlanTxt = (ps) => (ps && ps.plan && ps.max ? `PSV ${noLead(ps.plan)} ${l('de', 'of')} ${noLead(ps.max)}${ps.hi ? `–${noLead(ps.hi)}` : ''}` : null);
-  const planDayCard = (d, { sub, a, dur, b, action = null, gain = null, chev = false, wx = null } = {}) => {
+  const planDayCard = (d, { sub, a, dur, b, action = null, gain = null, chev = false, e3 = false } = {}) => {
     const fl = isFlightKind(d.kind);
     const kindLbl = fl ? [l('Dia de serviço', 'Duty day'), d.split ? l('repartido', 'split') : secTxt(d)].filter(Boolean).join(' · ') : l('Serviço em terra', 'Ground duty');
     const dep = d.dep && d.dep !== d.report ? d.dep : null;
+    if (e3 && fl) return { t: 'card', id: 'day', color: colorOf(d.kind), kind: kindLbl, ...e3Of(d), corner: (action || chev) ? 'chev' : (d.shareable ? 'share' : 'chev'), action, open: openDay(d) };
     return { t: 'card', id: 'day', color: colorOf(d.kind), kind: kindLbl, title: titleOf(d), sub: sub || null, gain,
       a: a !== undefined ? a : (dep ? { v: dep, l: l('parte', 'departs') } : null),
       dur: dur !== undefined ? dur : (dep && d.lastArr ? F.dur(span(dep, d.lastArr)) : null),
       b: b !== undefined ? b : (d.lastArr ? { v: d.lastArr, l: l('última chegada', 'last arrival') } : null),
-      pct: null, corner: (action || chev) ? 'chev' : (d.shareable ? 'share' : 'chev'), action, open: openDay(d), wx: wx || null };
+      pct: null, corner: (action || chev) ? 'chev' : (d.shareable ? 'share' : 'chev'), action, open: openDay(d) };
   };
   // A barra "Completar" do cartão de serviço SAIU (2026-11-14, regra do Nuno: a app só lê o calendário e calcula — golden
   // scripts/homecards.test.js). O cartão incerto diz o que falta e abre o dia pela seta do canto.
@@ -217,10 +284,7 @@ export function homeCards(H = {}) {
       dur: ps.running ? `PSV ${noLead(ps.running)}${ps.max ? ` ${l('de', 'of')} ${noLead(ps.max)}` : ''}` : null,
       b: line && ps.latest ? { v: ps.latest, l: ps.latestNextDay ? l('limite · amanhã', 'limit · tomorrow') : l('limite', 'limit') } : null,   // o limite depois da meia-noite diz-se (iPhone, 2026-11-11)
       pct: line ? Math.max(0, Math.min(100, Math.round(live.nowPct * 100))) : null,
-      corner: d.shareable ? 'share' : 'chev', action: null, open: openDay(d),
-      // o tempo do destino do setor à chegada — em terra antes de descolar e no ar (o pedido faz-se em terra; no ar o telemóvel voa
-      // em modo de voo e fica o que já veio)
-      wx: (H.phase === 'duty' || H.phase === 'air') ? wxArrivalLine() : null };
+      corner: d.shareable ? 'share' : 'chev', action: null, open: openDay(d) };
   };
   const marginFact = () => (live.marginMin != null
     ? (live.marginMin < 0 ? fact(F.hm(live.marginMin), l('depois do limite do PSV', 'past the FDP limit')) : fact(F.hm(live.marginMin), l('de margem no PSV', 'FDP margin')))
@@ -323,7 +387,7 @@ export function homeCards(H = {}) {
         ? giantOf(Math.floor(u / 60), u % 60 ? `h ${String(u % 60).padStart(2, '0')}` : 'h', l('livre', 'free'), true)
         : giantOf(days != null ? days : '—', days === 1 ? l('dia', 'day') : l('dias', 'days'), l('livre', 'free'), true);
       T = top({ text: l('Folga', 'Day off'), live: false }, todayPill(), l('Próximo serviço daqui a', 'Next duty in'), g,
-        facts(fact(when(next.iso), l('até lá', 'until then')), weekFact()));
+        facts(fact(when(next.iso), l('até lá', 'until then')), weekFact(), wxTomorrow()));
       cards = assemble(nextCard(next, l('Próximo serviço', 'Next duty'), { withDay: false }), null, monthCard());
     }
   } else if (state === 'ferias') {
@@ -372,7 +436,7 @@ export function homeCards(H = {}) {
     }
   } else if (state === 'posvoo') {
     const c = H.closed || {};
-    const fx = facts(c.gainToday != null ? fact(F.eur(c.gainToday, '+'), l('ganhos de hoje', 'earned today'), 'gain') : null, weekFact());
+    const fx = facts(c.gainToday != null ? fact(F.eur(c.gainToday, '+'), l('ganhos de hoje', 'earned today'), 'gain') : null, weekFact(), wxTomorrow());
     if (c.multi) {
       T = top({ text: l('Dia fechado', 'Day closed'), live: false }, todayPill(), l('Dia fechado', 'Day closed'), giantOf(c.multi, l('serviços', 'duties')), fx);
       cards = assemble({ t: 'text', id: 'multi', color: 'neutral', kind: l('Vários serviços no mesmo dia', 'Several duties in one day'), text: l('O PSV combinado está no detalhe do dia.', 'The combined FDP is in the day detail.'), open: { to: 'day', iso: today } },
@@ -389,8 +453,8 @@ export function homeCards(H = {}) {
     const stn = r.station || (hero && hero.depStation) || '';
     if (hero && hero.report) {
       const whenTxt = hero.iso === tomorrow ? l('Report amanhã às', 'Report tomorrow at') : l(`Report ${F.wd(hero.iso)} às`, `Report ${F.wd(hero.iso)} at`);
-      T = top({ text: l('Pernoita', 'Night stop'), live: false }, { text: stn, iso: today }, whenTxt, giantOf(hero.report, null, hero.depStation || stn),
-        facts(fact(F.dur(live.cdMin), l('falta', 'to go')), wxReportFact(), zuluFact(hero)));
+      T = top({ text: l('Pernoita', 'Night stop'), live: false }, { text: stn, iso: today }, whenTxt, giantOf(hero.report, null, hero.depStation || stn, false, zuluOf(hero)),
+        facts(fact(F.dur(live.cdMin), l('falta', 'to go')), wxReportFact()));
       const nx = { t: 'slim', id: 'next', color: colorOf(hero.kind), title: titleOf(hero),
         sub: [F.wd(hero.iso), hero.dep && hero.dep !== hero.report ? `${l('parte', 'departs')} ${hero.dep}` : null, hero.lastArr ? `${l('chega', 'arrives')} ${hero.lastArr}` : null].filter(Boolean).join(' · '),
         value: null, gain: false, open: openDay(hero) };
@@ -411,13 +475,13 @@ export function homeCards(H = {}) {
     const lat = psvOf(ps);
     T = top({ text: l('Amanhã', 'Tomorrow'), live: true }, { text: F.wd(hero.iso), iso: hero.iso },
       hero.report ? l('Report às', 'Report at') : (fl ? l('Partida às', 'Departure at') : l('Começa às', 'Starts at')),
-      giantOf(hero.report || hero.dep || '—', null, hero.depStation || hero.station || null),
-      facts(fact(F.dur(live.cdMin), l('falta', 'to go')), fl ? (lat ? fact(lat, l('PSV até', 'FDP until')) : (!hero.report ? fact(l('Sem report', 'No report'), l('PSV não calculado', 'FDP not calculated')) : null)) : (hero.end ? fact(hero.end, l('acaba', 'ends')) : null), zuluFact(hero)));
+      giantOf(hero.report || hero.dep || '—', null, hero.depStation || hero.station || null, false, zuluOf(hero)),
+      facts(fact(F.dur(live.cdMin), l('falta', 'to go')), fl ? (lat ? fact(lat, l('PSV até', 'FDP until')) : (!hero.report ? fact(l('Sem report', 'No report'), l('PSV não calculado', 'FDP not calculated')) : null)) : (hero.end ? fact(hero.end, l('acaba', 'ends')) : null), wxReportFact()));
     const wake = H.wake && H.wake.hm ? { id: 'wake', icon: 'bell', label: l(`Lembrete ${H.wake.hm}`, `Reminder ${H.wake.hm}`), open: { to: 'wake' } } : null;
-    const restTail = H.restOk === true ? l(' · repouso cumprido', ' · rest met') : H.restOk === false ? l(' · repouso curto', ' · short rest') : '';
-    const plan = psvPlanTxt(ps);
+    // O "repouso cumprido/curto" saiu do cartão (E3): o repouso curto é o aviso "Tenho descanso?", por cima.
+    if (fl) limCard = limUncOf(hero, l('O limite de amanhã', 'Tomorrow’s limit'));
     const one = fl
-      ? planDayCard(hero, { sub: plan ? `${plan}${restTail}` : (restTail ? restTail.replace(/^ · /, '') : null), action: wake, gain: hero.perDiem != null ? F.eur(hero.perDiem, '+') : null, wx: wxReportLine() })
+      ? planDayCard(hero, { e3: true, action: wake })
       : { ...planDayCard(hero, { sub: hero.report && hero.end ? `${F.dur(span(hero.report, hero.end))} ${l('de serviço em terra', 'ground duty')}` : null, a: null, dur: null, b: null, action: wake, gain: hero.pay && hero.pay.eur ? F.eur(hero.pay.eur, '+') : null }) };
     const ns = nightCard(hero, null);
     cards = assemble(one, ns ? ns.slim : null);   // na véspera a pernoita é sempre linha fina (esboço, revisão de 2026-11-11)
@@ -501,13 +565,12 @@ export function homeCards(H = {}) {
       const unc = uncertain(hero);
       const lat = psvOf(ps);
       T = top({ text: l('Hoje', 'Today'), live: true }, pill2, hero.report ? l('Report às', 'Report at') : l('Partida às', 'Departure at'),
-        giantOf(hero.report || hero.dep || '—', null, hero.depStation || null),
+        giantOf(hero.report || hero.dep || '—', null, hero.depStation || null, false, zuluOf(hero)),
         facts(fact(F.dur(live.cdMin), l('falta', 'to go')),
           unc ? fact(l('Incerto', 'Uncertain'), l('PSV até', 'FDP until')) : lat ? fact(lat, l('PSV até', 'FDP until')) : (!hero.report ? fact(l('Sem report', 'No report'), l('PSV não calculado', 'FDP not calculated')) : null),
-          zuluFact(hero)));
-      const plan = psvPlanTxt(ps);
-      const sub = unc ? l(`limites incertos · falta ${hero.legal.missing || 'um dado'}`, `uncertain limits · missing ${hero.legal.missing || 'a fact'}`) : (plan ? `${plan}${legalTail(hero)}` : null);
-      const one = planDayCard(hero, { sub, chev: unc, gain: hero.perDiem != null ? F.eur(hero.perDiem, '+') : null, wx: wxReportLine() });   // incerto: a seta (abre o dia, onde se explica o que falta)
+          wxReportFact()));
+      limCard = limUncOf(hero, l('O limite de hoje', 'Today’s limit'));   // incerto: um cartão à parte, por cima (L2), que abre o porquê
+      const one = planDayCard(hero, { e3: true });
       cards = assemble(one, nightCard(hero, next) || nextCard(next, l('A seguir', 'Next'), { withDay: true }));
     } else {
       // A decorrer: depois do report (em terra · no ar · aterrado). O topo é o próximo marco do SETOR; o cartão é o dia todo.
@@ -533,7 +596,7 @@ export function homeCards(H = {}) {
       }
       const f2 = unc ? fact(l('Incerto', 'Uncertain'), l('PSV até', 'FDP until'))
         : marginFact() || (!card.b && psvOf(ps) ? fact(psvOf(ps), l('PSV até', 'FDP until')) : (!hero.report ? fact(l('Sem report', 'No report'), l('PSV não calculado', 'FDP not calculated')) : null));
-      T = top({ text: ph === 'air' ? l('Em voo', 'In flight') : l('Hoje', 'Today'), live: true }, pill2, what, giantOf(big || '—', null, stn || null), facts(f1, f2));
+      T = top({ text: ph === 'air' ? l('Em voo', 'In flight') : l('Hoje', 'Today'), live: true }, pill2, what, giantOf(big || '—', null, stn || null), facts(f1, f2, (ph === 'duty' || ph === 'air') ? wxArrivalFact() : null));
       cards = assemble(card, nightCard(hero, next) || nextCard(next, l('A seguir', 'Next'), { withDay: true }));
     }
   } else {
@@ -564,7 +627,7 @@ export function homeCards(H = {}) {
 // não deixa factos ao lado). 62 a 390, 58 a 375. Antes: H1 (os factos por baixo, a 82 — o Nuno não gostou) e, antes disso, cada
 // aba no seu tamanho (86 · 62 · 86 — a queixa: "o header tem tamanhos diferentes"). Medido com as larguras da Hanken lidas do
 // .ttf (data/fontMetrics.js). Golden: test:homecards ("o topo lado a lado e igual nas três abas").
-export const GIANT = { max: 86, min: 40, step: 2, ls: -0.046, unitSize: 34, unitLs: -1, unitGap: 6, gap: 16, sidePad: 16, sideRule: 1.5, factSize: 20, factLblSize: 11 };
+export const GIANT = { max: 86, min: 40, step: 2, ls: -0.046, unitSize: 34, unitLs: -1, unitGap: 6, gap: 16, sidePad: 16, sideRule: 1.5, factSize: 20, factLblSize: 11, factIc: 18, factIcGap: 4, zuluGap: 8 };
 // Os topos mais compridos de cada aba (as referências do tamanho comum).
 export const GIANT_REFS = [
   { giant: { l1: '31', l2: 'serviços' }, facts: [{ v: '15', l: 'pernoitas' }, { v: '4 999,99 €', l: 'per diem · estimado' }] },
@@ -574,7 +637,7 @@ export const GIANT_REFS = [
 ];
 export function factsWidth(fx) {
   if (!fx || !fx.length) return 0;
-  const w = Math.max(...fx.map((f) => Math.max(textWidth(f.v, GIANT.factSize, 'b'), textWidth(f.l, GIANT.factLblSize, 'm'))));
+  const w = Math.max(...fx.map((f) => Math.max(textWidth(f.v, GIANT.factSize, 'b') + (f.ic ? GIANT.factIc + GIANT.factIcGap : 0), textWidth(f.l, GIANT.factLblSize, 'm'))));
   return Math.ceil(w + GIANT.sidePad + GIANT.sideRule);
 }
 export function giantWidth(g, z) {
@@ -582,7 +645,8 @@ export function giantWidth(g, z) {
   const ls = z * GIANT.ls;
   // + o aperto devolvido depois da última letra (o iOS cortava o último algarismo — components/HomeCards.js, `tail`).
   const w1 = textWidth(g.l1, z, 'b', ls) + (g.unit ? GIANT.unitGap + textWidth(g.unit, GIANT.unitSize, 'b', GIANT.unitLs) : -ls);
-  const w2 = g.l2 ? textWidth(g.l2, z, 'b', ls) - ls : 0;
+  // A hora UTC ao lado do sítio (a letra dos factos), como a unidade na 1.ª linha.
+  const w2 = g.l2 ? textWidth(g.l2, z, 'b', ls) + (g.zulu ? GIANT.zuluGap + textWidth(g.zulu, GIANT.factSize, 'b') : -ls) : 0;
   return Math.ceil(Math.max(w1, w2));
 }
 // O maior tamanho em que ESTE número e os seus factos cabem lado a lado. availW = largura do ecrã − as margens do topo (20 + 20).

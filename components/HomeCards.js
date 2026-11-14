@@ -58,7 +58,7 @@ export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l, compact 
   // à direita (e tira-se ao espaço antes da unidade, para a distância à vista não mudar).
   const tail = Math.ceil(-size * GIANT.ls);
   const giantStyle = { fontFamily: PELE_FONT.bodyBold, fontSize: size, lineHeight: lh, letterSpacing: size * GIANT.ls, color: C.ink, paddingRight: tail };
-  const heroA11y = [top.what, `${g.l1 || ''}${g.unit ? ` ${g.unit}` : ''}`, g.l2, ...(top.facts || []).map((f) => `${f.tone === 'was' ? l('estava', 'was') + ' ' : ''}${f.v} ${f.l}`)].filter(Boolean).join('. ');
+  const heroA11y = [top.what, `${g.l1 || ''}${g.unit ? ` ${g.unit}` : ''}`, g.l2 ? `${g.l2}${g.zulu ? `, ${g.zulu.replace(/Z$/, '')} ${l('em UTC', 'UTC')}` : ''}` : null, ...(top.facts || []).map((f) => `${f.tone === 'was' ? l('estava', 'was') + ' ' : ''}${f.v} ${f.l}`)].filter(Boolean).join('. ');
   const P2 = top.pill2 && top.pill2.iso ? TouchableOpacity : View;
   return (
     <View style={[s.top, compact ? s.topCompact : null]}>
@@ -86,7 +86,13 @@ export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l, compact 
             <Text style={giantStyle} numberOfLines={1} allowFontScaling={false}>{g.l1}</Text>
             {g.unit ? <Text style={[TXT3.unit, { marginLeft: GIANT.unitGap - tail, color: C.ink }]} numberOfLines={1} allowFontScaling={false}>{g.unit}</Text> : null}
           </View>
-          {g.l2 ? (
+          {g.l2 && g.zulu ? (
+            // A hora UTC do report ao lado do sítio, na letra dos factos (a) de design/meteo-topo.html) — como a unidade na 1.ª linha.
+            <View style={[s.l1Row, { marginTop: -Math.round(size * (GIANT_LINE.lh - GIANT_LINE.lead)) }]}>
+              <Text style={[giantStyle, { color: g.l2Grey ? C.grey : C.ink }]} numberOfLines={1} allowFontScaling={false}>{g.l2}</Text>
+              <Text style={[TXT3.fact, { marginLeft: GIANT.zuluGap - tail, color: C.ink }]} numberOfLines={1} allowFontScaling={false}>{g.zulu}</Text>
+            </View>
+          ) : g.l2 ? (
             <Text style={[giantStyle, { color: g.l2Grey ? C.grey : C.ink, marginTop: -Math.round(size * (GIANT_LINE.lh - GIANT_LINE.lead)) }]} numberOfLines={1} allowFontScaling={false}>{g.l2}</Text>
           ) : null}
         </View>
@@ -94,7 +100,15 @@ export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l, compact 
           <View style={[s.side, { borderLeftColor: C.ink }]}>
             {top.facts.map((f) => (
               <View key={`${f.v}-${f.l}`}>
+                {f.ic ? (
+                  // o tempo: o ícone à frente do valor (GIANT.factIc + factIcGap entram na largura medida)
+                  <View style={s.factIcRow}>
+                    <Icon name={f.ic} size={GIANT.factIc} color={C.ink} />
+                    <Text style={[TXT3.fact, s.factIcV, { color: C.ink }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} allowFontScaling={false}>{f.v}</Text>
+                  </View>
+                ) : (
                 <Text style={[TXT3.fact, { color: f.tone === 'gain' ? C.gainOut : C.ink }, f.tone === 'was' ? s.was : null]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} allowFontScaling={false}>{f.v}</Text>
+                )}
                 <Text style={[TXT3.factLbl, { color: C.soft }]} numberOfLines={1} allowFontScaling={false}>{f.l}</Text>
               </View>
             ))}
@@ -110,7 +124,8 @@ function BigCard({ c, C, onOpen, l }) {
   const AL = a11yLang(l);
   const T = toneOf(C, c.color);
   const legsA11y = Array.isArray(c.legs) ? c.legs.map((g) => [g.fno, `${g.a.l} ${g.a.v}`, g.dur, `${g.b.l} ${g.b.v}`, g.z, g.gap].filter(Boolean).join(', ')) : [];
-  const a11y = [c.kind, c.title, c.sub, c.gain, c.wx && c.wx.txt, ...legsA11y, c.a && `${c.a.l} ${c.a.v}`, c.dur, c.b && `${c.b.l} ${c.b.v}`].filter(Boolean).join('. ');
+  const lineA11y = c.line ? [c.line.stops ? c.line.stops.join(', ') : null, ...c.line.pts.map((x) => `${x.l} ${x.v}`)].filter(Boolean).join(', ') : null;
+  const a11y = [c.kind, c.title, c.cities, c.flightNo, c.sub, c.gain && `${c.gainLbl || ''} ${c.gain}`.trim(), lineA11y, c.quiet && `${c.quiet.l}, ${c.quiet.sub}, ${c.quiet.r.k} ${c.quiet.r.v}`, ...legsA11y, c.a && `${c.a.l} ${c.a.v}`, c.dur, c.b && `${c.b.l} ${c.b.v}`].filter(Boolean).join('. ');
   const Main = c.open ? TouchableOpacity : View;
   const mainProps = c.open
     ? { activeOpacity: 0.85, onPress: () => onOpen(c.open), accessibilityRole: 'button', accessibilityLanguage: AL, accessibilityLabel: a11y, accessibilityHint: l('Abre o detalhe', 'Opens the detail') }
@@ -123,20 +138,47 @@ function BigCard({ c, C, onOpen, l }) {
           <View style={s.cdHead}>
             <Text style={[TXT3.kind, { color: T.kind }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.kind}</Text>
             <Text style={[TXT3.cardTitle, s.cdTitle, { color: T.fg }]} numberOfLines={2} maxFontSizeMultiplier={MAX_SCALE}>{c.title}</Text>
+            {c.cities ? <Text style={[TXT3.cardSub, { color: T.sub }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.cities}</Text> : null}
           </View>
           <View style={s.goSpace} />
         </View>
-        {(c.sub || c.gain) ? (
+        {c.line ? (
+          // O CARTÃO DO VOO E3 (design/cartoes-c2.html E3 + cartoes-e3.html V2 + cartoes-limite.html L2): o nº do voo e o per diem com o
+          // nome · o dia pela ordem em que acontece · o limite numa linha discreta (quando está dentro).
+          <>
+            {c.sub ? <Text style={[TXT3.cardSub, { color: T.sub }]} numberOfLines={2} maxFontSizeMultiplier={MAX_SCALE}>{c.sub}</Text> : null}
+            {(c.flightNo || c.gain) ? (
+              <View style={s.e3Badges}>
+                {c.flightNo ? (
+                  <View style={[s.fno, { backgroundColor: T.go }]}>
+                    <Icon name="plane" size={12} color={T.fg} />
+                    <Text style={[TXT3.badge, { color: T.fg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.flightNo}</Text>
+                  </View>
+                ) : <View />}
+                {c.gain ? (
+                  <View style={s.e3Gain}>
+                    {c.gainLbl ? <Text style={[TXT3.cardNumLbl, { color: T.sub }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.gainLbl}</Text> : null}
+                    <GainChip text={c.gain} />
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
+            <DayLine line={c.line} T={T} />
+            {c.quiet ? (
+              <View style={[s.quiet, { borderTopColor: CARD.rule }]}>
+                <Text style={[TXT3.cardSub, s.quietL, { color: T.sub }]} numberOfLines={2} maxFontSizeMultiplier={MAX_SCALE}>
+                  <Text style={[TXT3.dur, { color: T.fg }]}>{c.quiet.l}</Text>{` · ${c.quiet.sub}`}
+                </Text>
+                <Text style={[TXT3.cardSub, { color: T.sub }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>
+                  {`${c.quiet.r.k} `}<Text style={[TXT3.lineVal, { color: T.fg }]}>{c.quiet.r.v}</Text>
+                </Text>
+              </View>
+            ) : null}
+          </>
+        ) : (c.sub || c.gain) ? (
           <View style={s.subRow}>
             <Text style={[TXT3.cardSub, s.subTxt, { color: T.sub }]} numberOfLines={2} maxFontSizeMultiplier={MAX_SCALE}>{c.sub || ''}</Text>
             {c.gain ? <GainChip text={c.gain} /> : null}
-          </View>
-        ) : null}
-        {/* o tempo do sítio, à hora que conta (M1 de design/meteo-inicio.html) */}
-        {c.wx ? (
-          <View style={s.wxRow}>
-            {c.wx.ic ? <Icon name={c.wx.ic} size={16} color={T.fg} /> : null}
-            <Text style={[TXT3.cardSub, s.subTxt, { color: T.fg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.wx.txt}</Text>
           </View>
         ) : null}
         {Array.isArray(c.legs) && c.legs.length ? <Legs legs={c.legs} T={T} /> : null}
@@ -178,6 +220,57 @@ function BigCard({ c, C, onOpen, l }) {
           <Text style={[TXT3.act, { color: CARD.onCard }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.action.label}</Text>
         </TouchableOpacity>
       ) : null}
+    </View>
+  );
+}
+
+// ── A LINHA DO DIA (o cartão do voo E3) ──
+// Os pontos em posições fixas — 4: 0 · 25 · 75 · 100 % (report · parte · chega · fim; a metade do meio é dos voos); 3: 0 · 50 · 100;
+// 2: as pontas. A parte preta é o voo (da partida à última chegada). Com 3 sítios ou mais (V2), um traço por voo, com uma folga em
+// cada escala, e os aeroportos por cima. Os números não crescem com a letra (como os do topo): a linha tem de caber.
+const LINE_POS = { 2: [0, 100], 3: [0, 50, 100], 4: [0, 25, 75, 100] };
+const LINE_BOX = 76;   // a caixa centrada de cada ponto do meio (largura; o texto centra-se nela)
+function DayLine({ line, T }) {
+  const pts = line.pts || [];
+  const pos = LINE_POS[pts.length] || pts.map((_, i) => (pts.length > 1 ? (100 * i) / (pts.length - 1) : 0));
+  const mids = pts.map((x, i) => (!x.end ? i : -1)).filter((i) => i >= 0);
+  const a = mids.length ? pos[mids[0]] : (line.stops ? 25 : null);
+  const b = mids.length ? pos[mids[mids.length - 1]] : (line.stops ? 75 : null);
+  const stops = line.stops || null;
+  const k = stops ? stops.length - 1 : 1;
+  const at = (i) => a + ((b - a) * i) / k;
+  const segs = a == null || b == null || b <= a ? [] : (stops ? Array.from({ length: k }, (_, i) => [at(i), at(i + 1), i > 0, i < k - 1]) : [[a, b, false, false]]);
+  return (
+    <View style={s.dl} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+      {stops ? (
+        <View style={s.dlCodes}>
+          {stops.map((c, i) => (
+            <View key={`${c}-${i}`} style={[s.dlBox, { left: `${at(i)}%`, transform: [{ translateX: -LINE_BOX / 2 }] }]}>
+              <Text style={[TXT3.kind, { color: T.kind }]} numberOfLines={1} allowFontScaling={false}>{c}</Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+      <View style={s.dlPts}>
+        {/* a linha e os voos atrás dos pontos (centrados no ponto de 14: a linha a 6, os voos a 5) */}
+        <View style={[s.dlTrack, { backgroundColor: CARD.onCardTrack }]} />
+        {segs.map(([x0, x1, gl, gr], i) => (
+          <View key={i} style={[s.dlSegBox, { left: `${x0}%`, width: `${x1 - x0}%` }]}>
+            <View style={[s.dlSeg, gl ? s.dlGapL : null, gr ? s.dlGapR : null, { backgroundColor: CARD.onCard }]} />
+          </View>
+        ))}
+        {pts.map((x, i) => {
+          const first = i === 0, last = i === pts.length - 1;
+          const place = first ? s.dlFirst : last ? s.dlLast : [s.dlBox, { left: `${pos[i]}%`, transform: [{ translateX: -LINE_BOX / 2 }] }];
+          return (
+            <View key={`${x.l}-${i}`} style={[s.dlPt, place]}>
+              <View style={[s.dlDot, x.end ? { backgroundColor: T.bg, borderColor: CARD.onCard } : { backgroundColor: CARD.onCard, borderColor: T.bg }]} />
+              <Text style={[TXT3.fact, { color: T.fg }]} numberOfLines={1} allowFontScaling={false}>{x.v}</Text>
+              <Text style={[TXT3.cardNumLbl, { color: T.sub }]} numberOfLines={1} allowFontScaling={false}>{x.l}</Text>
+            </View>
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -233,19 +326,20 @@ function Legs({ legs, T }) {
 function Slim({ c, C, onOpen, l }) {
   const AL = a11yLang(l);
   const T = toneOf(C, c.dark ? 'dark' : c.color);
-  const a11y = [c.title, c.sub, c.value].filter(Boolean).join('. ');
+  const a11y = [c.kind, c.title, c.sub, c.value].filter(Boolean).join('. ');
   const Box = c.open ? TouchableOpacity : View;
   // `longOpen` (a pernoita da Escala: o toque abre os mapas, o toque longo edita o hotel) — dito ao VoiceOver como ação à parte.
   const longP = c.open && c.longOpen ? { onLongPress: () => onOpen(c.longOpen), accessibilityActions: [{ name: 'longpress', label: l('Editar', 'Edit') }], onAccessibilityAction: (e) => { if (e.nativeEvent.actionName === 'longpress') onOpen(c.longOpen); } } : {};
   const props = c.open ? { activeOpacity: 0.85, onPress: () => onOpen(c.open), accessibilityRole: 'button', accessibilityLanguage: AL, accessibilityLabel: a11y, ...longP } : { accessible: true, accessibilityLanguage: AL, accessibilityLabel: a11y };
   return (
-    <Box style={[s.slim, { backgroundColor: T.bg }]} {...props}>
+    <Box style={[s.slim, { backgroundColor: T.bg }, c.dashed ? [s.slimDashed, { borderColor: C.neutralKind }] : null]} {...props}>
       {/* `ring` (a Escala, P1): o anel do tipo num disco branco à frente — liga a cor do dia no mês a este serviço */}
       {c.ring ? <View style={s.ringLead}><View style={[s.ringIn, { borderColor: c.ring }]} /></View> : null}
       {/* `mark` (mapa B): o ✕ de um aviso fora do limite, num disco à frente — a cor não é o único sinal */}
       {c.mark ? <View style={s.ringLead}><Text style={[TXT3.badge, { color: CARD.onCard }]} allowFontScaling={false}>{c.mark}</Text></View> : null}
       <View style={s.slimT}>
-        <Text style={[TXT3.slimTitle, { color: T.fg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.title}</Text>
+        {c.kind ? <Text style={[TXT3.kind, { color: T.kind }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.kind}</Text> : null}
+        <Text style={[TXT3.slimTitle, { color: T.fg }]} numberOfLines={c.kind ? 2 : 1} maxFontSizeMultiplier={MAX_SCALE}>{c.title}</Text>
         {c.sub ? <Text style={[TXT3.slimSub, { color: T.sub }]} numberOfLines={2} maxFontSizeMultiplier={MAX_SCALE}>{c.sub}</Text> : null}
       </View>
       {c.value ? (c.gain ? <GainChip text={c.value} /> : <Text style={[TXT3.slimVal, { color: T.fg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.value}</Text>)
@@ -345,7 +439,28 @@ const s = StyleSheet.create({
   goStatic: { position: 'relative', top: 0, right: 0 },
   subRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.md, marginTop: -SPACE.sm, minHeight: 28 },
   subTxt: { flex: 1, minWidth: 0 },
-  wxRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.s, marginTop: -SPACE.xs },
+  factIcRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.xs },   // = GIANT.factIcGap
+  // o cartão do voo E3
+  e3Badges: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.md, marginTop: -SPACE.xs },
+  fno: { flexDirection: 'row', alignItems: 'center', gap: SPACE.xs, paddingHorizontal: SPACE.sm, paddingVertical: SPACE.xxs, borderRadius: RADIUS.sm },
+  e3Gain: { flexDirection: 'row', alignItems: 'center', gap: SPACE.s },
+  quiet: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: SPACE.sm, borderTopWidth: 1, paddingTop: SPACE.sm },
+  quietL: { flex: 1, minWidth: 0 },
+  dl: { marginTop: SPACE.xxs },
+  dlCodes: { height: 16, marginBottom: SPACE.xxs },
+  dlBox: { position: 'absolute', top: 0, width: LINE_BOX, alignItems: 'center' },
+  dlTrack: { position: 'absolute', left: 7, right: 7, top: 6, height: 2 },
+  dlSegBox: { position: 'absolute', top: 5, height: 4 },
+  dlSeg: { flex: 1, borderRadius: 2 },
+  dlGapL: { marginLeft: SPACE.xs },
+  dlGapR: { marginRight: SPACE.xs },
+  dlPts: { height: 54 },
+  dlPt: { position: 'absolute', top: 0, gap: SPACE.xxs },
+  dlFirst: { left: 0, alignItems: 'flex-start' },
+  dlLast: { right: 0, alignItems: 'flex-end' },
+  dlDot: { width: 14, height: 14, borderRadius: RADIUS.pill, borderWidth: 3 },
+  slimDashed: { borderWidth: 1.5, borderStyle: 'dashed' },
+  factIcV: { flexShrink: 1 },
   chip: { height: 28, paddingHorizontal: SPACE.md, borderRadius: RADIUS.pill, backgroundColor: CARD.chip, flexDirection: 'row', alignItems: 'center', flexShrink: 0 },
   cdRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: SPACE.sm },
   cdEnd: { flexShrink: 1, minWidth: 0 },
