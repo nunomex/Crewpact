@@ -146,6 +146,12 @@ combinações de letra e 924 espaçamentos fora da escala (medido a 2026-11-02).
   passa (o fundo, a folha e o cartão principal em 260 ms). Em duas passagens: Dia de voo → Em serviço (o report) e Aterrado →
   Pernoita (o dia fecha fora da base). Visto com e sem movimentos reduzidos. A imagem GIF 7EEA, o splash "painel de partidas", a
   transição de números da Apple; Mobbin Air NZ, American Airlines.
+- **`duracoes.html`** (2026-11-14, **D1 escolhida pelo Nuno — no código, na app toda** (`data/duration.js`); gerado a partir do código) — uma escrita só para as durações (no iPhone, o mesmo
+  ecrã tinha "1:35 h" no topo e "2 h 35 de 12 h 30" no cartão; a app usa as duas — com dois pontos no número grande, no PSV a correr,
+  no facto "PSV de hoje" e no da margem em voo; com "h" no resto): **D1 "1 h 35" em todo o lado** — os dois pontos só para as horas do
+  relógio; no número grande o "h" pequeno ao meio (recomendada) · D2 "1:35" em todo o lado (o diário de bordo; a WHOOP) · D3 "1 h 35
+  min" (por extenso). Em três estados: Dia fechado, Em voo, Voo amanhã. Imagens 3422 (a duração entre as duas horas), 3444 (o selo
+  "30 Min"), 3419 (a unidade pequena); Mobbin Skyscanner, Delta, Qantas, Air NZ, American, Oura, The Outsiders, WHOOP.
 - **`topo-factos-2.html`** (2026-11-14, A construída e depois **retirada com a L1** — os quadradinhos não cabem ao lado) — a F3 nos casos difíceis, a 375 (três factos com a hora UTC, a assistência, antes de ligar a escala, a Escala com 4 999,99 €, os Números com +55 512,34 €): A o quadradinho (32) só onde há tipo (recomendada) · B o quadradinho por cima do valor, em todos (o topo cresce 34) · C a cor no fio (4). Imagens 3409/3431/3412/3442/3424; Mobbin Kit, Satispay, Shopee.
 - **`botao-simulacao.html`** (2026-11-14, **T2 escolhida e construída**) — com a regra nova (à mão só na Simulação), o ＋ abre a Simulação: T1 o redondo com o ícone da Simulação · T2 o botão escrito "Simular" (recomendada; a 375 cada aba fica com 57 pt) · T3 uma aba ao centro da cápsula. Mobbin: Subway, Otter, Preply, Tubi; nenhuma imagem do Nuno para barras.
 - **`prova-campos.html`** (2026-11-14, **PA escolhida e construída**) — a Prova como o Hotel F2 (a regra proposta: nas folhas, campos à F2; nos ecrãs, cartões): PA tudo em campos · PB os curtos lado a lado (imagem 3460; recomendada) · PC campos e a regra num cartão. Com o Hotel F2 ao lado.

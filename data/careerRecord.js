@@ -11,6 +11,7 @@ import { dayFtlFromDuties } from '../ftl';
 import { esc } from './ftlRecord';
 
 import { BRAND } from './constants';
+import { durHM } from './duration';
 // ── Modelo ──────────────────────────────────────────────────────────────────
 // `baseAt(cat, ym)` (opcional) = base mensal da categoria à data, vinda do AE. É o que
 // PROVA uma promoção: a ordem dos arrays CATEGORIES não é fiável (a TAP cabine ordena
@@ -198,8 +199,9 @@ const LBL = {
 // Inteiros com separador de milhar (PT espaço fino de grupo, EN vírgula) — números
 // tabulares de documento, não de € (o dinheiro não entra neste documento).
 const fmtInt = (n, lang) => String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ');
-// Horas grandes "2 140:00" — minToHhmm não separa milhares; um logbook de carreira separa.
-const fmtH = (min, lang) => `${fmtInt(Math.floor((Number(min) || 0) / 60), lang)}:${String((Number(min) || 0) % 60).padStart(2, '0')}`;
+// Horas grandes "2 140 h 05" — com os milhares separados, como uma caderneta; escritas como toda a app (D1, data/duration.js: as
+// durações com "h"; o Nuno, 2026-11-14: "esses três sítios, mudamos também").
+const fmtH = (min, lang) => (Number(min) > 0 ? durHM(Number(min), { group: (h) => fmtInt(h, lang) }) : '0 h');
 const fmtDate = (iso, lang) => {
   const s = String(iso || '').slice(0, 10);
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);

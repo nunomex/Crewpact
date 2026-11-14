@@ -169,7 +169,7 @@ eq('diffRoster multi: dia ganhou serviço → changed=1', diffRoster({
   // Sem as horas das pernas de um dos lados não se comparam pernas: compara-se o tempo de voo (o que entra no ORO.FTL.210).
   const bare = { report_time: '05:40', block_off: '06:40', block_on: '16:40', route: 'LIS-FNC-LIS', sectors: 2, kind: 'flight', flight_minutes: 195 };
   eq('sem pernas de um lado, o mesmo tempo de voo → nada', diffDuty(bare, pub), []);
-  eq('sem pernas de um lado, tempo de voo diferente → deteta', diffDuty(bare, mid).map((f) => [f.key, f.before, f.after]), [['flight_minutes', '3:15', '6:15']]);
+  eq('sem pernas de um lado, tempo de voo diferente → deteta', diffDuty(bare, mid).map((f) => [f.key, f.before, f.after]), [['flight_minutes', '3 h 15', '6 h 15']]);
   eq('sem tempo de voo de um dos lados → nada (não se sabe)', diffDuty({ ...bare, flight_minutes: undefined }, mid), []);
 
   // O snap novo leva as pernas e o tempo de voo publicados (a base das 3 vias).

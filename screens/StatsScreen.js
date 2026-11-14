@@ -33,6 +33,7 @@ import AeLimitsSection from '../components/AeLimitsSection';
 import AeLimitSheet from '../components/AeLimitSheet';
 import { evaluateTapLimits } from '../ae/tapLimits';
 import AsyncStorage from '../data/secureStorage';
+import { durHM } from '../data/duration';
 
 // Cor do estado da janela FTL — o mapa das cores (design-system §14): PASSA o limite (> 100 %) vermelho · PERTO (≥ 85 %, a
 // mesma regra do Início e de data/today.js) laranja · DENTRO sem cor (tinta: cockpit escuro). Antes era vermelho aos 90 %,
@@ -149,8 +150,8 @@ export default function StatsScreen({ navigation }) {
     return { rows: [...flight.map((w) => ({ ...w, grp: 'voo' })), ...duty.map((w) => ({ ...w, grp: 'serv' }))], has };
   }, [dayLog]);
   // Limites do ORO.FTL.210 em minutos inteiros (auditoria A-172/A-262): a folga nunca se arredonda para cima, e um
-  // excesso de minutos não pode aparecer como "60 / 60 h" — mostra-se em h:mm.
-  const hmS = (m) => `${Math.floor(Math.max(0, m) / 60)}:${String(Math.max(0, m) % 60).padStart(2, '0')}`;
+  // excesso de minutos não pode aparecer como "60 / 60 h" — mostra-se com os minutos ("60 h 10"; D1, data/duration.js: as durações com "h"; os dois pontos só nas horas do relógio).
+  const hmS = (m) => durHM(Math.max(0, m));
   const doneTxt = (w) => (w.over && Math.round(w.done) <= w.limit) ? hmS(w.doneMin) : String(Math.round(w.done));
   const leftTxt = (w) => (w.over
     ? `${l('excede', 'over by')} ${hmS(w.overMin)}`

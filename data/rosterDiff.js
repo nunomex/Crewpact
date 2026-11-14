@@ -12,6 +12,7 @@
 //                calendário (manuais/PDF nunca entram aqui)
 //   • same     — igual / só a tua edição (sem mudança do calendário)→ nada a fazer
 
+import { durHM } from './duration';
 export const DIFF_FIELDS = [
   { key: 'kind',        label: { pt: 'Tipo', en: 'Type' } },
   { key: 'route',       label: { pt: 'Rota', en: 'Route' } },
@@ -67,7 +68,7 @@ const legRows = (s) => {
   if (!legs.some((l) => l.off || l.on)) return null;
   return legs.map((l) => `${l.dh ? 'DH ' : ''}${clockOf(l.off)}-${clockOf(l.on)}`);
 };
-const hmOf = (min) => `${Math.floor(min / 60)}:${String(min % 60).padStart(2, '0')}`;
+const hmOf = (min) => durHM(min);   // (D1, data/duration.js: as durações com "h"; os dois pontos só nas horas do relógio)
 const legDiffs = (b, a, tag) => {
   const rb = legRows(b), ra = legRows(a);
   if (rb && ra) {

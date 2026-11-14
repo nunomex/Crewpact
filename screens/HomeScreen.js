@@ -10,6 +10,7 @@ import { shareCardFor } from '../data/shareLeg';
 import { HomeTop, HomeCards, ShiftView, pillWidth } from '../components/HomeCards';
 import useReduceMotion from '../hooks/useReduceMotion';
 import useStateShift, { useColorPass } from '../hooks/useStateShift';
+import { durHM } from '../data/duration';
 import { homeCards, topGiant } from '../data/homeCards';
 import { stateVoice } from '../data/stateVoice';
 import { getUpcomingFlight } from '../data/calendar';
@@ -607,7 +608,7 @@ export default function HomeScreen({ navigation }) {
   const restVoice = (() => {
     const rI = (todayItems || []).find((it) => it.id === 'rest');
     const r = rI && rI.raw; if (!r || r.status === 'neutral') return { restOk: null };
-    const hm = (m) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
+    const hm = (m) => durHM(m);   // D1, data/duration.js: as durações com "h"; os dois pontos só nas horas do relógio
     // "Verificado" só com a pergunta inteira a verde — também a recuperação (ORO.FTL.235(d)).
     // Incerto (as pernas do serviço anterior não batem certo, 'legTimes'; ou dois serviços que podem ser um PSV repartido ou dois,
     // 'breakOrRest'): nem "verificado" nem "curto" — sem saber.

@@ -22,6 +22,7 @@ import { PELE, PELE_FONT, TXT, SPACE, RADIUS } from '../data/constants';
 
 // As iniciais do círculo ("Mãe" → M, "João Carlos" → JC): uma só regra, em data/profileCards.js (o Perfil usa a mesma).
 import { familyInitials } from '../data/profileCards';
+import { durHM } from '../data/duration';
 
 export default function FamiliaScreen({ navigation }) {
   const { user, duties, lang } = useContext(AppContext);
@@ -57,7 +58,7 @@ export default function FamiliaScreen({ navigation }) {
     const toMin = (z) => { const m = /^(\d{1,2}):(\d{2})$/.exec(z || ''); return m ? (+m[1] * 60 + +m[2]) : null; };
     const om = toMin(legZulu(date, lg, 'off')), nm = toMin(legZulu(date, lg, 'on'));
     const blockMin = (om != null && nm != null) ? ((nm - om + 1440) % 1440) : null;
-    const duration = blockMin ? `${Math.floor(blockMin / 60)}H${String(blockMin % 60).padStart(2, '0')}` : '';
+    const duration = blockMin ? durHM(blockMin) : '';   // D1, data/duration.js: as durações com "h"; os dois pontos só nas horas do relógio
     setFamView(null); setFamPick(false);
     setTimeout(() => setSendCard({
       personId: person.id, personLabel: person.label,

@@ -2,9 +2,10 @@
 // HTML para PDF assinável. Módulo PURO (sem expo) — testável por golden. A geração
 // do PDF em si vive em data/pdf.js (expo-print). O operador continua obrigado aos
 // seus próprios registos: este documento é um apoio individual ao tripulante.
-import { ftlForDuty, restAfterDuty, computeDutyTime, computeFlightTime, minToHhmm } from '../ftl';
+import { ftlForDuty, restAfterDuty, computeDutyTime, computeFlightTime } from '../ftl';
 
 import { BRAND } from './constants';
+import { durHM, durText } from './duration';
 // Escape de HTML — toda a entrada dinâmica passa por aqui (nome, ID, operador…).
 export const esc = (v) => String(v == null ? '' : v)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -80,7 +81,7 @@ export const buildRecordModel = ({
     const i = tl.findIndex((x) => x.sv === sv);
     if (i < 0 || !tl[i].end || !tl[i + 1]) return '—';
     const m = Math.round((+tl[i + 1].start - +tl[i].end) / 60000);
-    return m >= 0 ? hm(m) : '—';
+    return m >= 0 ? durHM(m) : '—';   // (D1, data/duration.js: as durações com "h"; os dois pontos só nas horas do relógio)
   };
   const svcRow = (date, d, idx, nSvc) => {
     const r = d.report_time ? ftlForDuty(d, { postFlightMin, isPilot, base: baseOf(date), date, cabinGapMin, splitAdminMin, duties: allDuties || duties }) : null;
@@ -91,8 +92,8 @@ export const buildRecordModel = ({
       date: nSvc > 1 ? `${date} (${idx + 1}/${nSvc})` : date,
       report: d.report_time || '—', off: d.block_off || '—', on: d.block_on || '—',
       sectors: d.sectors || 0, flightMin: d.flight_minutes || 0,
-      fdp: fdpOk ? (r.fdp.actualFdpStr || '—') : '—',
-      duty: (r && d.block_on && r.dutyPeriodStr) || '—',
+      fdp: fdpOk ? (durText(r.fdp.actualFdpStr) || '—') : '—',
+      duty: (r && d.block_on && durText(r.dutyPeriodStr)) || '—',
       rest: restAfter(d),
       over, uncertain,
     };
@@ -169,7 +170,7 @@ export const recordHtml = (model, lang = 'pt', fontsCss = '') => {
       <td class="d">${esc(dt.main)}${dt.sfx ? `<span class="sfx"> · ${esc(dt.sfx.replace(/[()]/g, ''))}</span>` : ''}</td>
       <td class="n g">${esc(r.report)}</td>
       <td class="n g">${esc(r.off)}–${esc(r.on)}</td>
-      <td class="n">${esc(r.sectors)}</td><td class="n">${minToHhmm(r.flightMin)}</td>
+      <td class="n">${esc(r.sectors)}</td><td class="n">${r.flightMin ? durHM(r.flightMin) : ''}</td>
       <td class="n">${esc(r.fdp)}</td><td class="n">${esc(r.duty)}</td><td class="n g">${esc(r.rest)}</td>
     </tr>`;
   }).join('') : `<tr><td colspan="8" class="empty">${esc(L.noData)}</td></tr>`;
@@ -251,7 +252,7 @@ export const recordHtml = (model, lang = 'pt', fontsCss = '') => {
   <div class="sum">
     <div class="si"><span class="sv">${esc(totals.duties)}</span><div class="sl">${lang === 'en' ? 'duty periods' : 'períodos de serviço'}</div></div>
     <div class="si"><span class="sv">${esc(totals.sectors)}</span><div class="sl">${esc(L.sectors)}</div></div>
-    <div class="si"><span class="sv">${minToHhmm(totals.flightMin) || '0:00'}</span><div class="sl">${lang === 'en' ? 'flight hours' : 'horas de voo'}</div></div>
+    <div class="si"><span class="sv">${totals.flightMin ? durHM(totals.flightMin) : '0 h'}</span><div class="sl">${lang === 'en' ? 'flight hours' : 'horas de voo'}</div></div>
   </div>
 
   <table>

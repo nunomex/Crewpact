@@ -3,6 +3,7 @@
 // A pílula de estado diz SÓ o que se sabe de certeza: um voo de um dia que já passou aterrou; um voo de outro dia (véspera)
 // não leva pílula (o cartão já leva a data); hoje, antes da hora de saída = "hoje", depois = "no ar".
 import { legZulu } from './zulu';
+import { durHM } from './duration';
 
 const toMin = (z) => { const m = /^(\d{1,2}):(\d{2})$/.exec(z || ''); return m ? (+m[1] * 60 + +m[2]) : null; };
 
@@ -20,7 +21,7 @@ export function shareCardFor(lg, date, { todayISO, locale = 'pt-PT', landed = fa
   return {
     dep, arr, depTime: lg.off || '', arrTime: lg.on || '', flightNo: fno, date, sectors: 1, status,
     dateLabel: new Date(`${date}T00:00:00`).toLocaleDateString(locale, { day: 'numeric', month: 'short' }),
-    duration: blockMin ? `${Math.floor(blockMin / 60)}H${String(blockMin % 60).padStart(2, '0')}` : '',
+    duration: blockMin ? durHM(blockMin) : '',   // (D1, data/duration.js: as durações com "h"; os dois pontos só nas horas do relógio)
     legs: [{ flight: fno, dep, arr }],
   };
 }

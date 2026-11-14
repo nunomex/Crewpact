@@ -23,6 +23,7 @@ import { select, success, warning } from '../data/haptics';
 import { confirmDiscard } from '../data/confirmDiscard';
 import { AppContext, isoDay } from '../data/appContext';
 import useReduceMotion from '../hooks/useReduceMotion';
+import { durHM, durText, parseDur, maskDur } from '../data/duration';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -33,7 +34,8 @@ const maskClock = (v) => { const d = (v || '').replace(/[^0-9]/g, '').slice(0, 4
 const isClock = (s) => /^([01]?\d|2[0-3]):[0-5]\d$/.test(s || '');
 const okOrEmpty = (s) => !s || isClock(s);
 const hhmmToMin = (s) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(s || ''); return m ? (+m[1]) * 60 + (+m[2]) : 0; };
-const minToHhmm = (min) => { if (!min) return ''; const h = Math.floor(min / 60), m = min % 60; return `${h}:${String(m).padStart(2, '0')}`; };
+// As durações com "h" (D1, data/duration.js: os dois pontos só nas horas do relógio). O nome fica (é usado em vários sítios).
+const minToHhmm = (min) => (min ? durHM(min) : '');
 const clkMin = (s) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(s || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; };   // null se inválido/vazio
 const diffMin = (a, b) => { const x = clkMin(a), y = clkMin(b); if (x == null || y == null) return null; return y >= x ? y - x : y + 1440 - x; };   // b − a, volta-a-meia-noite
 const legBlockMin = (lg) => diffMin(lg && lg.off, lg && lg.on);   // block de um setor (on − off)
@@ -111,6 +113,19 @@ function ClockField({ label, value, onChange, C, s, flex, error, errText }) {
   );
 }
 
+// Campo de DURAÇÃO (D1, data/duration.js) — como o das horas, só algarismos (o teclado numérico nos 2 SO), mas a máscara escreve
+// "1 h 35" (os 2 últimos algarismos são os minutos a partir do 3.º); 1–2 algarismos são horas. Lê-se com `parseDur`.
+function DurField({ label, value, onChange, C, s, flex, error, errText }) {
+  return (
+    <View style={flex ? { flex: 1 } : null}>
+      <Text style={s.lbl}>{label}</Text>
+      <TextInput value={value} onChangeText={(v) => onChange(maskDur(v))} placeholder="0 h 00" placeholderTextColor={C.sub}
+        keyboardType="number-pad" maxLength={8} style={[s.input, error && s.inputErr]} />
+      {error ? <Text style={s.errTxt}>{errText}</Text> : null}
+    </View>
+  );
+}
+
 // Segmented control compacto (casos especiais): opções [{id,label}], uma ativa.
 function SegRow({ options, value, onChange, s }) {
   return (
@@ -177,7 +192,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     setAugFcClass(sp.augmented?.fcRestClass || null);
     setFcRep(sp.fcReport || '');
     const cr = sp.augmented?.cabinRestMin;
-    setAugRest(cr != null ? `${Math.floor(cr / 60)}:${String(cr % 60).padStart(2, '0')}` : '');
+    setAugRest(cr != null ? durHM(cr) : '');
     setDelOn(sp.delayedFrom != null); setDelFrom(sp.delayedFrom || ''); setDel1(sp.delayed1 || ''); setNotice2(sp.notice2 || '');
     setSbOn(!!sp.preStandby); setSbType(sp.preStandby?.type || 'airport'); setSbH(sp.preStandby?.standbyH || 6);
     setDiscOn(!!sp.discretion);
@@ -399,7 +414,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     report: isClock(form.report),
     sectors: sectorsFilled,
     // Cabine com repouso a bordo: a lei (ORO.FTL.205(e), CS 205(c)) precisa dos três factos — sem valor por omissão.
-    augData: !!augFcClass && isClock(augRest),
+    augData: !!augFcClass && parseDur(augRest) != null,
   };
   const requiredKeys = isFlight ? ['report', 'sectors', ...((augOn && !isPilot) ? ['augData'] : [])] : [];
   const missing = requiredKeys.filter((k) => !fieldOk[k]);
@@ -421,7 +436,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   // de pilotos só conta para piloto). Alimenta a projeção FTL e o save.
   const special = useMemo(() => {
     if (!isFlight) return null;
-    const restM = isClock(augRest) ? (() => { const [h, m] = augRest.split(':').map(Number); return h * 60 + m; })() : null;
+    const restM = parseDur(augRest);   // "2 h 30" (D1) — também lê "2:30"
     const aug = !augOn ? null : isPilot
       ? { restClass: augClass, additionalCrew: Number(augCrew) }
       : { restClass: augClass, additionalCrew: Number(augCrew), fcRestClass: augFcClass, cabinRestMin: restM };
@@ -459,7 +474,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   // O período mais apertado de cada limite do 210 que contém o dia (como no resultado da Simulação).
   const projLimits = useMemo(() => {
     if (!prospect) return '';
-    const hm = (min) => { const x = Math.max(0, Math.round(min || 0)); return `${Math.floor(x / 60)}:${String(x % 60).padStart(2, '0')}`; };
+    const hm = (min) => durHM(Math.max(0, Math.round(min || 0)));
     const lim = (n) => (n === 1000 ? (lang === 'en' ? '1,000' : '1 000') : String(n));
     const lbl = (w) => (w.id === 'year' ? l('ano', 'year') : w.id === '12m' ? l('12 meses', '12 months') : `${w.days} d`);
     const tS = prospect.tightest && prospect.tightest.servico, tV = prospect.tightest && prospect.tightest.voo;
@@ -961,7 +976,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                         { id: 'c3', label: l('Classe 3', 'Class 3') },
                       ]} />
                       <View style={{ marginTop: SPACE.md }}>
-                        <ClockField C={C} s={s} label={l('O teu repouso a bordo (h:mm)', 'Your in-flight rest (h:mm)')} value={augRest} onChange={setAugRest} />
+                        <DurField C={C} s={s} label={l('O teu repouso a bordo', 'Your in-flight rest')} value={augRest} onChange={setAugRest} />
                       </View>
                       <Text style={[s.advHint, (attemptedSave && !fieldOk.augData) && { color: C.bad || PELE.red }]}>{(attemptedSave && !fieldOk.augData)
                         ? l('Em falta: a classe dos pilotos e o teu repouso a bordo. A lei precisa dos dois para dar o teu PSV máximo.', 'Missing: the pilots\' class and your in-flight rest. The law needs both to give your max FDP.')
@@ -1073,10 +1088,10 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                 <View style={s.advPreview}>
                   <Text style={s.advPreviewLbl}>{l('PSV máx', 'Max FDP')}</Text>
                   <Text style={s.advPreviewVal}>
-                    {psvPreview.base}<Text style={s.advPreviewArrow}>{'   →   '}</Text>
+                    {durText(psvPreview.base)}<Text style={s.advPreviewArrow}>{'   →   '}</Text>
                     {psvPreview.notAllowed
                       ? <Text style={{ color: C.red }}>{l('não permitido', 'not allowed')}</Text>
-                      : <Text style={{ color: C.greenText }}>{psvPreview.eff}</Text>}
+                      : <Text style={{ color: C.greenText }}>{durText(psvPreview.eff)}</Text>}
                   </Text>
                 </View>
               ) : null}

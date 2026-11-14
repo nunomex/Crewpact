@@ -9,6 +9,7 @@ import Icon from './Icon';
 import { CARD, TXT, TXT3, SPACE, RADIUS } from '../data/constants';
 import { validityLabel } from '../data/validities';
 import { wdShort } from '../data/escalaDay';
+import { durHM, durText } from '../data/duration';
 
 // Folha "porquê" das perguntas do Início — a JUSTIFICAÇÃO detalhada (os números por trás da
 // resposta), em mini-barras estilo Oura/Health + conselho. NÃO inventa nada: formata o `raw`
@@ -22,7 +23,7 @@ import { wdShort } from '../data/escalaDay';
 // quadradinho (H2, 3409/3435); o caminho ("Rever na Escala", "Gerir validades") largo no fundo.
 
 const pMin = (s) => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(s || '')); return m ? (+m[1]) * 60 + (+m[2]) : null; };
-const fmtMin = (min) => { const x = Math.max(0, Math.round(min || 0)); return `${Math.floor(x / 60)}:${String(x % 60).padStart(2, '0')}`; };
+const fmtMin = (min) => durHM(Math.max(0, Math.round(min || 0)));   // D1, data/duration.js: as durações com "h"; os dois pontos só nas horas do relógio
 const r0 = (n) => Math.round(Number(n) || 0);
 const ratioTone = (ratio) => (ratio >= 1 ? 'red' : ratio >= 0.85 ? 'amber' : 'green');
 
@@ -34,8 +35,8 @@ function detailFor(it, lang) {
   // Genérico (2026-11-04, "o que está dentro dos Extras"): quem abre a folha pode trazer as suas linhas e o destino.
   if (Array.isArray(it.rows)) out.rows.push(...it.rows);
   if (it.navTo) out.navTo = it.navTo;
-  // Minutos inteiros (auditoria A-172): o excesso mostra-se em h:mm — "+0 h" escondia 10 min acima do limite.
-  const hmQ = (m) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
+  // Minutos inteiros (auditoria A-172): o excesso mostra-se com os minutos ("+10 min") — "+0 h" escondia 10 min acima do limite.
+  const hmQ = (m) => durHM(m);
   const winBar = (w) => {
     const ratio = w.limit ? w.done / w.limit : 0;
     const over = w.over != null ? w.over : ratio > 1;
@@ -49,9 +50,9 @@ function detailFor(it, lang) {
   if (it.id === 'legal' || it.id === 'headroom') {
     if (it.id === 'legal' && raw.psv && raw.psv.result && raw.psv.max) {
       const act = pMin(raw.psv.result), max = pMin(raw.psv.max), ratio = max ? act / max : 0;
-      out.bars.push({ k: l('PSV (FDP)', 'FDP'), label: `${raw.psv.result} / ${raw.psv.max}`,
+      out.bars.push({ k: l('PSV (FDP)', 'FDP'), label: `${durText(raw.psv.result)} / ${durText(raw.psv.max)}`,
         tone: raw.psv.over ? 'red' : ratioTone(ratio), fill: Math.min(100, ratio * 100),
-        tag: raw.psv.over ? (raw.psv.excess ? `+${raw.psv.excess}` : l('excede', 'over')) : null,
+        tag: raw.psv.over ? (raw.psv.excess ? `+${durText(raw.psv.excess)}` : l('excede', 'over')) : null,
         left: !raw.psv.over && act != null && max != null ? l(`faltam ${fmtMin(max - act)}`, `${fmtMin(max - act)} left`) : null });
     }
     const wins = raw.windows || [];

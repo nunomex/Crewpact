@@ -8,7 +8,7 @@
 // é calculada pelas métricas da fonte); os cartões crescem e a folha desliza.
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions, Animated, Easing } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Circle, Path, Line } from 'react-native-svg';
 import Icon from './Icon';
 import GuideBubble from './GuideBubble';
 import useReduceMotion from '../hooks/useReduceMotion';
@@ -34,6 +34,26 @@ function toneOf(C, color) {
   if (color === 'dark') return { bg: C.ink, fg: C.sheet, sub: C.darkSub, kind: C.darkSub, go: C.darkGo, line: C.sheet, track: C.darkGo };
   if (color === 'neutral' || !C[color]) return { bg: C.neutral, fg: C.ink, sub: C.neutralSub, kind: C.neutralKind, go: C.neutralGo, line: C.ink, track: C.round };
   return { bg: C[color], fg: CARD.onCard, sub: CARD.onCardSub, kind: CARD.onCardKind, go: CARD.go, line: CARD.onCard, track: CARD.onCardTrack };
+}
+
+// ── Q3 · O SUBLINHADO PONTILHADO dos números com porquê, DESENHADO ──
+// O do iOS (textDecoration) cresce com a letra: no número grande dava "contas" de 5 × 3,7 pt a 16 pt do número, e nos factos passava
+// 16 pt para lá do texto, com 0,67 pt (medido no iPhone a 2026-11-14). As medidas são as do esboço design/topo-porque-2.html (Q3),
+// medidas no navegador: no número, pontos de 3 com passo de 6,5, a 8 do pé dos algarismos; nos factos, pontos de 1,5 com passo de 4,
+// a 1 do pé; a tinta a 50 %. O pé (a linha de base) fica a `lineHeight − 0,303 em` do topo da caixa: o iOS corta a linha de 1,1 em
+// por cima e a descendente da Hanken é 0,303 em (data/fontMetrics.js) — conferido no iPhone, onde o sublinhado do iOS caía no fundo
+// da caixa, 0,303 em abaixo do pé, no número e nos factos.
+const HANKEN_DESC = 0.303;
+const DOTS = { big: { d: 3, pitch: 6.5, below: 8 }, fact: { d: 1.5, pitch: 4, below: 1 } };
+const dotsTop = (lineHeight, fontSize, below) => lineHeight - HANKEN_DESC * fontSize + below;
+function DotRule({ color, d, pitch, style }) {
+  return (
+    <View pointerEvents="none" style={[s.dotRule, { height: d }, style]}>
+      <Svg width="100%" height={d}>
+        <Line x1={d / 2} y1={d / 2} x2="100%" y2={d / 2} stroke={color} strokeOpacity={0.5} strokeWidth={d} strokeLinecap="round" strokeDasharray={`0.01 ${pitch}`} />
+      </Svg>
+    </View>
+  );
 }
 
 // ── M2 · A MUDANÇA DE ESTADO (design/mudanca-estado.html, escolhida pelo Nuno a 2026-11-14, com a cor da M3 quando a cor muda) ──
@@ -72,11 +92,10 @@ const giantAt = (size) => ({ fontFamily: PELE_FONT.bodyBold, fontSize: size, lin
 // algarismos que mudam ficam transparentes nela e um igual por cima, posto pela largura das letras (data/fontMetrics: os dígitos são
 // tabulares), entra de baixo; o antigo, no sítio onde estava, sobe e desvanece. Os iguais ficam quietos. `all`: a tinta mudou (o dia
 // passou a noite) — rolam todos (com o tamanho mudado também). `children`: o que vai ao lado na mesma linha (a unidade, a hora UTC).
-function GiantLine({ text, from, go, all, size, fromSize, base, deco, color, fromColor, rowStyle, children }) {
-  const t = String(text == null ? '' : text);
-  const f = go && from != null ? String(from) : null;
-  const fs = fromSize || size;
-  const every = all || fs !== size;
+// `dots` (Q3): a cor dos pontos por baixo da linha quando o número tem porquê (a largura é a das letras, como a caixa do esboço).
+// Um segmento grande da linha (os algarismos antes da unidade, ou os de depois — D1): o texto com os que mudam transparentes e as
+// cópias que rolam, postas a partir de `x0` (o novo) e `fx0` (o antigo). `k0`: quantos já rolaram antes (o escalonamento continua).
+function rollSeg({ t, f, every, x0, fx0, size, fs, base, fBase, color, fromColor, go, k0, kp, mL = 0 }) {
   const diff = [];
   if (f != null && (every || f !== t)) {
     for (let i = 0; i < Math.max(f.length, t.length); i += 1) if (every || f[i] !== t[i]) diff.push(i);
@@ -88,21 +107,46 @@ function GiantLine({ text, from, go, all, size, fromSize, base, deco, color, fro
     t.split('').forEach((ch, i) => { if (!hide.has(i)) { run += ch; return; } if (run) segs.push(run); run = ''; segs.push(<Text key={i} style={s.rollHide}>{ch}</Text>); });
     if (run) segs.push(run);
   }
-  const fBase = fs === size ? base : { ...base, ...giantAt(fs) };
   const at = (str, i, z) => textWidth(str.slice(0, i), z, 'b', z * GIANT.ls);
+  const text = t ? <Text key={`${kp}t`} style={[base, mL ? { marginLeft: mL } : null, { color }]} numberOfLines={1} allowFontScaling={false}>{hide.size ? segs : t}</Text> : null;
+  const overlays = diff.map((i, k) => {
+    const d = Math.min(k0 + k, SHIFT.staggerMax) * SHIFT.stagger;
+    return (
+      <React.Fragment key={`${kp}${i}`}>
+        {i < t.length ? <ShiftText go={go} dy={Math.round(size * SHIFT.rollEm)} delay={SHIFT.delayIn + d} dur={SHIFT.roll} style={[base, s.rollAt, { left: x0 + at(t, i, size), color }]} numberOfLines={1} allowFontScaling={false}>{t[i]}</ShiftText> : null}
+        {f != null && i < f.length ? <ShiftText go={go} out dy={Math.round(fs * SHIFT.rollEm)} delay={d} dur={SHIFT.roll} style={[fBase, s.rollAt, { left: fx0 + at(f, i, fs), color: fromColor }]} numberOfLines={1} allowFontScaling={false}>{f[i]}</ShiftText> : null}
+      </React.Fragment>
+    );
+  });
+  return { text, overlays, n: diff.length };
+}
+// onde começam os algarismos de depois da unidade (D1, "8 h 35"): a 1.ª parte, o espaço, a unidade (a letra dela), o mesmo espaço
+const afterX = (l1, unit, z) => textWidth(l1, z, 'b', z * GIANT.ls) + GIANT.unitGap + textWidth(unit, GIANT.unitSize, 'b', GIANT.unitLs) + GIANT.unitGap;
+// `after`/`fromAfter` (D1): os algarismos grandes depois da unidade — os minutos de uma duração ("8 h 35"); `unit`/`fromUnit` só
+// para saber onde começam (a unidade desenha-se em `children`, entre os dois).
+function GiantLine({ text, from, after = null, fromAfter = null, unit = null, fromUnit = null, go, all, size, fromSize, base, dots = null, color, fromColor, rowStyle, children }) {
+  const t = String(text == null ? '' : text);
+  const f = go && from != null ? String(from) : null;
+  const fs = fromSize || size;
+  const every = all || fs !== size;
+  const fBase = fs === size ? base : { ...base, ...giantAt(fs) };
+  const common = { every, size, fs, base, fBase, color, fromColor, go };
+  const A = rollSeg({ ...common, t, f, x0: 0, fx0: 0, k0: 0, kp: 'a' });
+  // a 2.ª parte: a de agora e, numa passagem, a de antes (se só uma delas existe, a outra conta como vazia)
+  const tB = after != null && unit ? String(after) : '';
+  const fB = go && fromAfter != null && fromUnit ? String(fromAfter) : (f != null ? '' : null);
+  const xB = tB ? afterX(t, unit, size) : null;
+  const fxB = fB ? afterX(f || '', fromUnit, fs) : null;
+  const B = tB || fB ? rollSeg({ ...common, t: tB, f: fB, x0: xB || 0, fx0: fxB || 0, k0: A.n, kp: 'b', mL: GIANT.unitGap }) : null;
+  const dotsW = tB ? xB + textWidth(tB, size, 'b', size * GIANT.ls) : textWidth(t, size, 'b', size * GIANT.ls);
   return (
     <View style={rowStyle}>
-      <Text style={[base, deco, { color }]} numberOfLines={1} allowFontScaling={false}>{hide.size ? segs : t}</Text>
+      {A.text}
       {children}
-      {diff.map((i, k) => {
-        const d = Math.min(k, SHIFT.staggerMax) * SHIFT.stagger;
-        return (
-          <React.Fragment key={i}>
-            {i < t.length ? <ShiftText go={go} dy={Math.round(size * SHIFT.rollEm)} delay={SHIFT.delayIn + d} dur={SHIFT.roll} style={[base, s.rollAt, { left: at(t, i, size), color }]} numberOfLines={1} allowFontScaling={false}>{t[i]}</ShiftText> : null}
-            {i < f.length ? <ShiftText go={go} out dy={Math.round(fs * SHIFT.rollEm)} delay={d} dur={SHIFT.roll} style={[fBase, s.rollAt, { left: at(f, i, fs), color: fromColor }]} numberOfLines={1} allowFontScaling={false}>{f[i]}</ShiftText> : null}
-          </React.Fragment>
-        );
-      })}
+      {B ? B.text : null}
+      {dots ? <DotRule color={dots} d={DOTS.big.d} pitch={DOTS.big.pitch} style={{ left: 0, width: dotsW, top: dotsTop(base.lineHeight, size, DOTS.big.below) }} /> : null}
+      {A.overlays}
+      {B ? B.overlays : null}
     </View>
   );
 }
@@ -151,7 +195,8 @@ export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l, compact 
   // à direita (e tira-se ao espaço antes da unidade, para a distância à vista não mudar).
   const tail = Math.ceil(-size * GIANT.ls);
   const giantStyle = { fontFamily: PELE_FONT.bodyBold, fontSize: size, lineHeight: lh, letterSpacing: size * GIANT.ls, color: C.ink, paddingRight: tail };
-  const heroA11y = [top.what, `${g.l1 || ''}${g.unit ? ` ${g.unit}` : ''}`, g.l2 ? `${g.l2}${g.zulu ? `, ${g.zulu.replace(/Z$/, '')} ${l('em UTC', 'UTC')}` : ''}` : null, ...(top.facts || []).map((f) => `${f.tone === 'was' ? l('estava', 'was') + ' ' : ''}${f.v} ${f.l}`)].filter(Boolean).join('. ');
+  const giantA11y = `${g.l1 || ''}${g.unit ? ` ${g.unit}` : ''}${g.unit && g.l1b ? ` ${g.l1b}` : ''}`;   // D1: "8 h 35"
+  const heroA11y = [top.what, giantA11y, g.l2 ? `${g.l2}${g.zulu ? `, ${g.zulu.replace(/Z$/, '')} ${l('em UTC', 'UTC')}` : ''}` : null, ...(top.facts || []).map((f) => `${f.tone === 'was' ? l('estava', 'was') + ' ' : ''}${f.v} ${f.l}`)].filter(Boolean).join('. ');
   const P2 = top.pill2 && top.pill2.iso ? TouchableOpacity : View;
   const p2Props = top.pill2 ? (top.pill2.iso ? { onPress: () => onPill2(top.pill2.iso), activeOpacity: 0.7, hitSlop: { top: 6, bottom: 6, left: 4, right: 4 },
     accessibilityRole: 'button', accessibilityLanguage: AL, accessibilityLabel: top.pill2.text, accessibilityHint: top.pill2.hint || l('Abre este dia na Escala', 'Opens this day in the Roster') } : { accessible: true, accessibilityLanguage: AL, accessibilityLabel: top.pill2.text }) : {};
@@ -212,10 +257,10 @@ export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l, compact 
         <TouchableOpacity disabled={!whyOf('g')} activeOpacity={0.7} onPress={() => openWhy(whyOf('g'))} onLayout={setL('giant')}
           style={{ marginTop: -Math.round(size * GIANT_LINE.trim), marginBottom: -Math.round(size * GIANT_LINE.trim) }}
           accessible={hasWhy} accessibilityRole={whyOf('g') ? 'button' : undefined} accessibilityLanguage={AL}
-          accessibilityLabel={[top.what, `${g.l1 || ''}${g.unit ? ` ${g.unit}` : ''}`, g.l2].filter(Boolean).join('. ')}
+          accessibilityLabel={[top.what, giantA11y, g.l2].filter(Boolean).join('. ')}
           accessibilityHint={whyOf('g') ? l('Mostra de onde vem', 'Shows where it comes from') : undefined}>
-          <GiantLine text={g.l1} from={fg.l1} go={go} all={inkFlip} size={size} fromSize={fSize} base={giantStyle}
-            deco={whyOf('g') ? [s.und, { textDecorationColor: C.soft }] : null} color={C.ink} fromColor={fC.ink} rowStyle={s.l1Row}>
+          <GiantLine text={g.l1} from={fg.l1} after={g.l1b} fromAfter={fg.l1b} unit={g.unit} fromUnit={fg.unit} go={go} all={inkFlip} size={size} fromSize={fSize} base={giantStyle}
+            dots={whyOf('g') ? C.ink : null} color={C.ink} fromColor={fC.ink} rowStyle={s.l1Row}>
             {g.unit ? <ShiftText go={goIf(fg.unit !== g.unit)} style={[TXT3.unit, { marginLeft: GIANT.unitGap - tail, color: C.ink }]} numberOfLines={1} allowFontScaling={false}>{g.unit}</ShiftText> : null}
           </GiantLine>
           {g.l2 ? (
@@ -239,8 +284,14 @@ export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l, compact 
                     <Icon name={f.ic} size={GIANT.factIc} color={C.ink} />
                     <Text style={[TXT3.fact, s.factIcV, { color: C.ink }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} allowFontScaling={false}>{f.v}</Text>
                   </View>
+                ) : whyOf(i) ? (
+                  // Q3 · o número com porquê: a caixa abraça o texto e os pontos ficam por baixo, com a largura dele
+                  <View style={s.undBox}>
+                    <Text style={[TXT3.fact, { color: f.tone === 'gain' ? C.gainOut : C.ink }, f.tone === 'was' ? s.was : null]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} allowFontScaling={false}>{f.v}</Text>
+                    <DotRule color={C.ink} d={DOTS.fact.d} pitch={DOTS.fact.pitch} style={{ left: 0, right: 0, top: dotsTop(TXT3.fact.lineHeight, TXT3.fact.fontSize, DOTS.fact.below) }} />
+                  </View>
                 ) : (
-                <Text style={[TXT3.fact, { color: f.tone === 'gain' ? C.gainOut : C.ink }, f.tone === 'was' ? s.was : null, whyOf(i) ? [s.und, { textDecorationColor: C.soft }] : null]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} allowFontScaling={false}>{f.v}</Text>
+                <Text style={[TXT3.fact, { color: f.tone === 'gain' ? C.gainOut : C.ink }, f.tone === 'was' ? s.was : null]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} allowFontScaling={false}>{f.v}</Text>
                 )}
                 <Text style={[TXT3.factLbl, { color: C.soft }]} numberOfLines={1} allowFontScaling={false}>{f.l}</Text>
               </TouchableOpacity>
@@ -778,8 +829,9 @@ const s = StyleSheet.create({
   titleOld: { position: 'absolute', left: 0, top: 0 },
   rollAt: { position: 'absolute', top: 0 },
   rollHide: { color: 'transparent' },
-  // Q3 · os números com porquê: o sublinhado pontilhado (a cor vem da tinta suave do topo, de dia e de noite)
-  und: { textDecorationLine: 'underline', textDecorationStyle: 'dotted' },
+  // Q3 · os números com porquê: os pontos desenhados por baixo (DotRule); a caixa do facto abraça o texto
+  dotRule: { position: 'absolute' },
+  undBox: { alignSelf: 'flex-start' },
   was: { textDecorationLine: 'line-through', opacity: 0.5 },
 
   cd: { borderRadius: RADIUS.xxl, padding: SPACE.lg, gap: SPACE.md, position: 'relative' },

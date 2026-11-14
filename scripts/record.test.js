@@ -64,13 +64,13 @@ eq('245: extra sem horas é ignorado → 1 linha, data limpa', [m3.rows.length, 
     '2026-06-22': { report_time: '17:00', block_on: '05:00', sectors: 0, kind: 'standby_home' },
   };
   const m = buildRecordModel({ duties: ds, dayLog: {}, postFlightMin: 30 });
-  eq('A-168: PSV = apresentação → calços (09:00)', m.rows[0].fdp, '09:00');
-  eq('A-168: Serviço = até ao sign-off (09:45)', m.rows[0].duty, '09:45');
-  eq('A-168: Repouso = o que houve até ao report seguinte (14:45)', m.rows[0].rest, '14:45');
-  eq('A-168: sem sign-off, serviço com o pós-voo do perfil (06:00)', m.rows[1].duty, '06:00');
+  eq('A-168: PSV = apresentação → calços (9 h)', m.rows[0].fdp, '9 h');
+  eq('A-168: Serviço = até ao sign-off (9 h 45)', m.rows[0].duty, '9 h 45');
+  eq('A-168: Repouso = o que houve até ao report seguinte (14 h 45)', m.rows[0].rest, '14 h 45');
+  eq('A-168: sem sign-off, serviço com o pós-voo do perfil (6 h)', m.rows[1].duty, '6 h');
   eq('A-168: standby em casa não tem PSV', m.rows[2].fdp, '—');
   eq('A-168: standby em casa nunca a vermelho', m.rows[2].over, false);
-  eq('A-168: standby em casa — duração 12:00', m.rows[2].duty, '12:00');
+  eq('A-168: standby em casa — duração 12 h', m.rows[2].duty, '12 h');
   eq('A-168: o último serviço sem seguinte → repouso por saber', m.rows[2].rest, '—');
   // Voo sem hora de report: a linha existe (o voo conta), sem PSV nem serviço inventados.
   const mn = buildRecordModel({ duties: { '2026-06-23': { report_time: null, block_off: '07:00', block_on: '09:00', sectors: 1, flight_minutes: 120 } }, dayLog: {} });

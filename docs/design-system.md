@@ -453,8 +453,11 @@ fazer:** tocar em "Avião" para a linha da folga do avião (a W2 do esboço).
 ### O porquê dos números do topo (Q3, 2026-11-14 — `design/topo-porque-2.html`, escolhida pelo Nuno; no código)
 
 Os números do topo com conta e lei (o "PSV até", a margem no PSV, as horas de 7 dias, o PSV do dia fechado) levam um **sublinhado
-pontilhado** (`textDecorationStyle: 'dotted'`, na tinta suave do topo) — o sinal de "isto tem explicação"; o "§" sozinho dizia "lei",
-não "toca". Tocar abre **a folha da Prova a começar pela conta desenhada**: a soma de cima a baixo (as parcelas, o fio, o total — "Report
+pontilhado** — o sinal de "isto tem explicação"; o "§" sozinho dizia "lei", não "toca". **Os pontos são desenhados** (`DotRule` em
+`components/HomeCards.js`), não o sublinhado do iOS, que cresce com a letra (no iPhone, 2026-11-14: no número grande, traços de 5 ×
+3,7 pt a 16 pt do número; nos factos, 0,67 pt e 16 pt para lá do texto). As medidas são as do esboço, medidas no navegador: no número,
+pontos de 3 pt com passo de 6,5, a 8 pt do pé dos algarismos, com a largura das letras; nos factos, pontos de 1,5 com passo de 4, a 1 pt
+do pé, com a largura do texto; a tinta a 50 %, de dia e de noite. Tocar abre **a folha da Prova a começar pela conta desenhada**: a soma de cima a baixo (as parcelas, o fio, o total — "Report
 05:15 · + Máximo · 3 setores 11 h 45 · = PSV até 17:00") ou a barra do limite (o valor, o máximo pequeno, a barra, "ficam 29 h"; a
 imagem 3462; acima do limite, a barra vermelha e "✕ passa 3 h"); por baixo, os campos de sempre (a regra, o artigo, a fonte). Na 1.ª
 vez, o balão das guias aponta o primeiro número sublinhado (`docs/guias.md`). O que se escreve decide-o `data/homeCards.js` (a saída
@@ -495,6 +498,21 @@ com os movimentos reduzidos a troca é imediata. A linha do número não muda de
 posta pelas larguras da Hanken (`data/fontMetrics.js`, os dígitos são tabulares), e o da linha fica transparente até ao fim. Peças:
 `hooks/useStateShift.js` (quando há passagem e a fotografia do estado anterior; `useColorPass`) e, em `components/HomeCards.js`,
 `ShiftView`/`ShiftText`/`GiantLine` (tempos em `SHIFT`). O movimento está no inventário (`docs/motion-design-system.md` §7).
+
+### As durações (D1, 2026-11-14 — `design/duracoes.html`, escolhida pelo Nuno; no código do Início)
+
+**Os dois pontos são só das horas do relógio; uma duração escreve-se sempre com "h"**: "8 h 35", "12 h", "45 min" (o `F.dur` de
+`data/homeCards.js`). No cartão do voo estão as duas lado a lado (report 05:40, parte 06:40 · PSV 2 h 35 de 12 h 30): com dois pontos,
+"de 12:30" lia-se como uma hora. É a regra das companhias no Mobbin (Skyscanner "7h 6m", Delta "6h 27m", Qantas "17h 38min").
+No número grande, o "h" pequeno ao meio, como a unidade (34 pt, o mesmo espaço dos dois lados): **8 h 35** — o motor dá
+`{ l1: '8', unit: 'h', l1b: '35' }` (`giantDur`); menos de 1 h, "45 min"; horas certas, "9 h". Os dados continuam a chegar ao motor
+como "h:mm" (`durOf` escreve-os com "h"). Golden `test:homecards` (o selo do cartão nunca leva dois pontos).
+**Na app toda (o Nuno, 2026-11-14: "para ficar tudo igual")**: uma só função, `data/duration.js` — `durHM` (minutos → "8 h 35"),
+`durText` (o "h:mm" que os motores devolvem → "8 h 35"), e, nos campos onde se escreve uma duração, `maskDur` + `parseDur` (o mesmo
+teclado de algarismos das horas; "135" → "1 h 35"; também lê "1:35"; placeholder "0 h 00"). Os motores (FTL, AE, Simulação) continuam a
+guardar e a trocar "h:mm" como dados — muda só o que se escreve. Golden `test:duration`. **Duração nova escreve-se com `durHM`/
+`durText`, nunca com um `${h}:${mm}` à mão.** A Escala já escrevia assim (`escalaDay.fmtDur`); o Início usa o `F.dur` (o mesmo, e
+"N dias" acima de 48 h).
 
 ### Peças escolhidas a 2026-11-13 (das 57 referências de `referencias/Para a app/`)
 

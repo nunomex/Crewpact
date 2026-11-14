@@ -25,10 +25,12 @@ import { plainFor, fmtDur, fmtClock } from '../data/tapLimitsText';
 import { AE_DEEPLINKS } from '../data/library';
 import { dayCards, dayRuler, orderServices } from '../data/escalaDay';
 import { baseCityName } from '../data/countries';
+import { durHM, durText } from '../data/duration';
 
-const minToHhmm = (min) => { if (!min) return ''; const h = Math.floor(min / 60), m = min % 60; return `${h}:${String(m).padStart(2, '0')}`; };
+// As durações com "h" (D1, data/duration.js: os dois pontos só nas horas do relógio — "8 h 35", "12 h", "45 min").
+const minToHhmm = (min) => (min ? durHM(min) : '');
 const clkMin = (str) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(str || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; };
-const hm = (m) => (m == null ? '—' : `${Math.floor(m / 60)}:${String(Math.round(m) % 60).padStart(2, '0')}`);
+const hm = (m) => (m == null ? '—' : durHM(m));
 const addDayIso = (iso, n) => { const x = new Date(`${iso}T12:00:00`); x.setDate(x.getDate() + n); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
 const hasNs = (dd) => !!(dd && !dd.deleted && (dd.nightStop || (Array.isArray(dd.extra) && dd.extra.some((x) => x && x.nightStop))));
 const C3 = CARD.day;   // o "Ver tudo" no 3.0: de dia, como a Escala
@@ -108,7 +110,7 @@ export function DutyDetailBody({ date, idx: idxIn = 0, editReq = null, navigatio
   const sbNote = (() => {
     const b = d && d.standbyBefore;
     if (!b || !(b.roster || b.declared)) return null;
-    const hh = (h) => { const m = Math.round((h || 0) * 60); return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`; };
+    const hh = (h) => durHM(Math.round((h || 0) * 60));
     const clk = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
     const where = (t) => (t === 'airport' ? l('no aeroporto', 'at the airport') : l('em casa', 'at home'));
     // (b)(7) quando reduz; dentro das primeiras 6 h o máximo conta da apresentação, sem redução: (b)(6).
@@ -201,7 +203,7 @@ export function DutyDetailBody({ date, idx: idxIn = 0, editReq = null, navigatio
     : (duty.block_on && duty.block_on !== duty.report_time ? `${duty.report_time} – ${duty.block_on}` : (duty.report_time || '—'));
 
   // ── Herói (mockup): fantasma = FDP realizado (ou duty hours); kick = nº de voo · setores · pernoita ──
-  const heroGhost = (d && hasEnd && d.fdp && d.fdp.actualFdpStr) || (d && d.dutyPeriodStr) || '';
+  const heroGhost = durText((d && hasEnd && d.fdp && d.fdp.actualFdpStr) || (d && d.dutyPeriodStr) || '');
   const nSec = (legs.some((lg) => lg && lg.dh) ? legs.filter((lg) => lg && !lg.dh).length : legs.length) || (duty.sectors || 0);   // o DH não é setor (215(a))
   const secLbl = nSec ? `${nSec} ${nSec === 1 ? l('setor', 'sector') : l('setores', 'sectors')}` : null;
   const kickParts = [
@@ -316,7 +318,7 @@ export function DutyDetailBody({ date, idx: idxIn = 0, editReq = null, navigatio
         timeRow(l('Calços dentro', 'On-blocks'), 'block_on', duty.block_on ? (zOf(lastLeg, 'on') || toZulu(date, duty.block_on)) : null),
         timeRow(l('Fim de serviço', 'Sign-off'), 'signOff', duty.signOff ? toZulu(date, duty.signOff) : null),
         duty.flight_minutes && { k: l('Horas de voo', 'Flight hours'), v: minToHhmm(duty.flight_minutes) },
-        (d && d.dutyPeriodStr) && { k: l('Horas de serviço', 'Duty hours'), v: d.dutyPeriodStr },
+        (d && d.dutyPeriodStr) && { k: l('Horas de serviço', 'Duty hours'), v: durText(d.dutyPeriodStr) },
       ]} />
     </Card>
   );
@@ -412,19 +414,19 @@ export function DutyDetailBody({ date, idx: idxIn = 0, editReq = null, navigatio
               ? { k: l('Calços até às', 'On-blocks by'), v: `${fmtClock(aeFdp.latestOnBlock)}${aeFdp.latestOnBlock - (dayNum(date) * 1440) >= 1440 ? ' (+1)' : ''}`,
                   node: aeTagged(`${fmtClock(aeFdp.latestOnBlock)}${aeFdp.latestOnBlock - (dayNum(date) * 1440) >= 1440 ? ' (+1)' : ''}`), prova: aePsvProva }
               : (!sbAccD && d.latestOnBlockStr) && { k: d.fdp.exact === false ? l('Calços até às (garantido)', 'On-blocks by (guaranteed)') : l('Calços até às', 'On-blocks by'), v: `${d.latestOnBlockStr}${d.latestOnBlockNextDay ? ' (+1)' : ''}`, prova: provaFor('psvMax', provaCtx) },
-            psv && !aeStricter && { k: l('PSV máximo', 'FDP max'), v: d.fdp.exact === false ? `${d.fdp.maxFdpStr}–${d.fdp.maxHiStr}` : d.fdp.maxFdpStr, prova: provaFor('psvMax', provaCtx) },
+            psv && !aeStricter && { k: l('PSV máximo', 'FDP max'), v: d.fdp.exact === false ? `${durText(d.fdp.maxFdpStr)}–${durText(d.fdp.maxHiStr)}` : durText(d.fdp.maxFdpStr), prova: provaFor('psvMax', provaCtx) },
             aeOver && { k: l('Excesso (acordo)', 'Excess (agreement)'), v: fmtDur(aeFdp.value - aeFdp.limit), color: PELE.red },
             aeNext && { k: l('Próxima saída de calços', 'Next off-blocks'), v: `${fmtClock(aeNext.at)}${Math.floor(aeNext.at / 1440) > dayNum(date) ? ' (+1)' : ''}`,
               node: aeTagged(`${fmtClock(aeNext.at)}${Math.floor(aeNext.at / 1440) > dayNum(date) ? ' (+1)' : ''}`), prova: aeRestProva },
             sbAccD && { k: l('PSV', 'FDP'), v: kind === 'standby_airport' ? l('não se aplica — standby (225)', 'not applicable — standby (225)')
               : l('não se aplica — sem setores (ORO.FTL.105(12))', 'not applicable — no sectors (ORO.FTL.105(12))') },
-            (sbAccD && hasEnd && d.fdp && d.fdp.actualFdpStr) && { k: l('Duração', 'Duration'), v: d.fdp.actualFdpStr },
+            (sbAccD && hasEnd && d.fdp && d.fdp.actualFdpStr) && { k: l('Duração', 'Duration'), v: durText(d.fdp.actualFdpStr) },
             (spD.discretion && d.discretion) && { k: l('Discrição 205(f)', 'Discretion 205(f)'),
               v: d.discretion.over
-                ? l(`ACIMA da margem (máx c/ discrição ${d.discretion.maxStr})`, `BEYOND the margin (max w/ discretion ${d.discretion.maxStr})`)
-                : l(`usada — dentro da margem (até ${d.discretion.maxStr}) · reportável`, `used — within the margin (up to ${d.discretion.maxStr}) · reportable`),
+                ? l(`ACIMA da margem (máx c/ discrição ${durText(d.discretion.maxStr)})`, `BEYOND the margin (max w/ discretion ${durText(d.discretion.maxStr)})`)
+                : l(`usada — dentro da margem (até ${durText(d.discretion.maxStr)}) · reportável`, `used — within the margin (up to ${durText(d.discretion.maxStr)}) · reportable`),
               color: d.discretion.over ? PELE.red : PELE.warnText },
-            (over && d.fdp.excessStr) && { k: l('Excesso', 'Excess'), v: d.fdp.excessStr, color: PELE.red },
+            (over && d.fdp.excessStr) && { k: l('Excesso', 'Excess'), v: durText(d.fdp.excessStr), color: PELE.red },
             (!sbAccD && d.acclim && d.acclim.letter && d.acclim.letter !== 'in') && { k: l('Aclimatação (Quadro 1)', 'Acclimatisation (Table 1)'),
               v: d.acclim.letter === 'X' ? l('X — desconhecida · Quadro 3', 'X — unknown · Table 3')
                 : d.acclim.letter === 'D' ? l('D — à hora local · Quadro 2', 'D — to local time · Table 2')
@@ -434,7 +436,7 @@ export function DutyDetailBody({ date, idx: idxIn = 0, editReq = null, navigatio
             (!sbAccD && sbNote) && { k: l('Assistência antes do voo', 'Standby before the flight'), note: sbNote },
             (!sbAccD && !over && d.fdp.uncertain) && { k: l('Incerto', 'Uncertain'), note: l(`Falta ${unknownsText(d.fdp.unknowns, 'pt')}.`, `Missing: ${unknownsText(d.fdp.unknowns, 'en')}.`) },
             (!sbAccD && over && d.fdp.exact === false && (d.fdp.unknowns || []).length > 0) && { k: l('Dois máximos', 'Two maximums'), note: l(`Falta ${unknownsText(d.fdp.unknowns, 'pt')}.`, `Missing: ${unknownsText(d.fdp.unknowns, 'en')}.`) },
-            (hasEnd && d.rest && d.rest.restStr) && { k: l('Repouso mínimo depois', 'Min rest after'), v: d.rest.restStr, prova: provaFor('repouso', provaCtx) },
+            (hasEnd && d.rest && d.rest.restStr) && { k: l('Repouso mínimo depois', 'Min rest after'), v: durText(d.rest.restStr), prova: provaFor('repouso', provaCtx) },
             fat && { k: l('Fadiga', 'Fatigue'), node: fatPill },
           ]} />
           {tapAe && aeFdp && aeFdp.limit == null ? (
@@ -536,7 +538,7 @@ export function DutyDetailBody({ date, idx: idxIn = 0, editReq = null, navigatio
         const rr = ftlForDuty(sv, { postFlightMin: ctxAll.postFlightMin || 0, isPilot: isPilotD, base: baseD, date, cabinGapMin: gapD, splitAdminMin: ctxAll.splitAdminMin });
         const fl = !sv.kind || sv.kind === 'flight';
         const lbl = fl ? (String(sv.route || '').replace(/-/g, ' → ') || l('Voo', 'Flight')) : t('duties.kind.' + sv.kind, lang);
-        const psvX = (rr && rr.isFdp && rr.fdp.actualFdpStr) ? rr.fdp.actualFdpStr : null;   // só PSV de quem tem setores
+        const psvX = (rr && rr.isFdp && rr.fdp.actualFdpStr) ? durText(rr.fdp.actualFdpStr) : null;   // só PSV de quem tem setores
         return (
           <TouchableOpacity key={`x${i}`} style={s.b7} activeOpacity={0.75} accessibilityRole="button" accessibilityLabel={lbl}
             onPress={() => { select(); if (onOpenService) onOpenService(i + 1); else navigation.push('DutyDetail', { date, idx: i + 1 }); }}>

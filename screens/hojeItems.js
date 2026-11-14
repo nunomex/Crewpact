@@ -6,6 +6,7 @@ import { t } from '../data/i18n';
 import { legalStatus, headroomStatus, nextDutyStatus, restStatus, recoveryStatus, rosterStatus, payStatus } from '../data/today';
 import { unknownsText } from '../data/ftlUnknowns';
 import { validityLabel, sortValidities, validitySummary } from '../data/validities';
+import { durHM, durText } from '../data/duration';
 
 // Rótulo de uma janela cumulativa a partir do seu id/days.
 export const winLbl = (id, days, lang) =>
@@ -32,8 +33,8 @@ export const fmtEur0 = (n, lang) => {
   return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`;
 };
 
-// Minutos → "H:MM" (clampa a 0; aguenta > 24 h, ex.: repouso longo).
-export const hhmm = (min) => { const x = Math.max(0, Math.round(min || 0)); return `${Math.floor(x / 60)}:${String(x % 60).padStart(2, '0')}`; };
+// Minutos → "10 h 30" (clampa a 0; aguenta > 24 h, ex.: repouso longo) — D1, data/duration.js: as durações com "h"; os dois pontos só nas horas do relógio.
+export const hhmm = (min) => durHM(Math.max(0, Math.round(min || 0)));
 
 // Há dados de escala/FTL? Decide o empty-state de 1º uso do Briefing. `duties` é a fonte;
 // `dayLog` é reconciliado dela — basta um ter conteúdo.
@@ -197,11 +198,11 @@ export function buildTodayItems(ctx, lang) {
     let answer, suggestion = null;
     if (legal.kind === 'aeOver') {
       const x = Math.max(0, Math.round(legal.aeExcess || 0));
-      answer = l('Não — excede o limite do acordo', 'No — over the agreement limit') + (x ? ` (+${Math.floor(x / 60)}:${String(x % 60).padStart(2, '0')})` : '');
+      answer = l('Não — excede o limite do acordo', 'No — over the agreement limit') + (x ? ` (+${hhmm(x)})` : '');
       suggestion = l('O acordo da TAP conta o serviço de voo até 30 min depois dos calços. Vê o detalhe do serviço e confirma com a companhia.',
         'The TAP agreement counts flight duty to 30 min after on-blocks. See the duty detail and confirm with the company.');
     } else if (legal.kind === 'psvOver') {
-      answer = l('Não — PSV excede o máximo', 'No — FDP over the max') + (legal.excess ? ` (+${legal.excess})` : '');
+      answer = l('Não — PSV excede o máximo', 'No — FDP over the max') + (legal.excess ? ` (+${durText(legal.excess)})` : '');
       suggestion = (legal.psv && legal.psv.extRefused === '2in7')
         ? l('Seria o 3.º prolongamento em 7 dias: o ORO.FTL.205(d)(1) só permite 2. Confirma com a companhia.',
           'It would be the 3rd extension in 7 days: ORO.FTL.205(d)(1) allows only 2. Confirm with the company.')
@@ -209,7 +210,7 @@ export function buildTodayItems(ctx, lang) {
           'Shorten the duty or, if applicable, use an extension (max 2 in 7 days). Always confirm with the company.');
     } else if (legal.kind === 'psvUncertain') {
       answer = l('Incerto — depende de um dado que falta', 'Uncertain — it depends on a missing fact')
-        + (legal.psv && legal.psv.max && legal.psv.maxHi ? ` · PSV ${legal.psv.result} (${legal.psv.max}–${legal.psv.maxHi})` : '');
+        + (legal.psv && legal.psv.max && legal.psv.maxHi ? ` · PSV ${durText(legal.psv.result)} (${durText(legal.psv.max)}–${durText(legal.psv.maxHi)})` : '');
       suggestion = l(`Para a lei decidir, falta: ${unknownsText(legal.unknowns, 'pt')}. Indica-o no serviço.`,
         `For the law to decide, missing: ${unknownsText(legal.unknowns, 'en')}. Add it to the duty.`);
     } else if (legal.kind === 'nightOver') {
@@ -237,7 +238,7 @@ export function buildTodayItems(ctx, lang) {
       // A hora-limite de calços primeiro (é como o tripulante pensa: "tenho até às 19:00").
       const lat = legal.psv && legal.psv.latest
         ? ` · ${l('calços até às', 'on-blocks by')} ${legal.psv.latest}${legal.psv.latestNextDay ? ` (+1)` : ''}${legal.psv.source === 'AE' ? l(' (acordo)', ' (agreement)') : ''}` : '';
-      answer = l('Sim, dentro dos limites', 'Yes, within limits') + (lat || (legal.psv && legal.psv.result ? ` · PSV ${legal.psv.result}/${legal.psv.max}` : ''))
+      answer = l('Sim, dentro dos limites', 'Yes, within limits') + (lat || (legal.psv && legal.psv.result ? ` · PSV ${durText(legal.psv.result)} ${l('de', 'of')} ${durText(legal.psv.max)}` : ''))
         + (legal.psv && legal.psv.extended ? l(' · com prolongamento (ORO.FTL.205(d))', ' · with extension (ORO.FTL.205(d))') : '');
       if (legal.psv && legal.psv.extended) suggestion = l('Prolongamento planeado: o repouso a seguir sobe 2 h (ou 4 h, se o de antes não teve as 2 h a mais).', 'Planned extension: the next rest goes up by 2 h (or 4 h, if the one before did not have the extra 2 h).');
     }
@@ -359,8 +360,8 @@ export function buildTodayItems(ctx, lang) {
     switch (it.id) {
       case 'legal':     return r.psv && r.psv.latest && r.kind === 'legal'
         ? { topic: l('Calços até', 'On-blocks by'), short: `${r.psv.latest}${r.psv.latestNextDay ? '+1' : ''}` }
-        : { topic: l('Limites', 'Limits'), short: r.kind === 'psvOver' ? (r.excess ? `+${r.excess}` : l('Excede', 'Over')) : (r.kind === 'limitOver' || r.kind === 'standbyOver' || r.kind === 'nightOver') ? l('Excede', 'Over') : (r.kind === 'psvUncertain' || r.kind === 'nightUncertain') ? l('Incerto', 'Uncertain') : r.kind === 'noData' ? '—' : l('Dentro', 'Within') };
-      case 'headroom':  return { topic: l('Margem', 'Margin'), short: r.kind === 'noData' ? '—' : it.status === 'bad' ? l('Excede', 'Over') : (r.headroomMin >= 60 ? `${Math.floor(r.headroomMin / 60)}h` : hhmm(r.headroomMin)) };
+        : { topic: l('Limites', 'Limits'), short: r.kind === 'psvOver' ? (r.excess ? `+${durText(r.excess)}` : l('Excede', 'Over')) : (r.kind === 'limitOver' || r.kind === 'standbyOver' || r.kind === 'nightOver') ? l('Excede', 'Over') : (r.kind === 'psvUncertain' || r.kind === 'nightUncertain') ? l('Incerto', 'Uncertain') : r.kind === 'noData' ? '—' : l('Dentro', 'Within') };
+      case 'headroom':  return { topic: l('Margem', 'Margin'), short: r.kind === 'noData' ? '—' : it.status === 'bad' ? l('Excede', 'Over') : (r.headroomMin >= 60 ? durHM(Math.floor(r.headroomMin / 60) * 60) : hhmm(r.headroomMin)) };
       case 'next':      return { topic: l('Próximo', 'Next'), short: r.none ? '—' : dateLbl(r.iso, todayISO, lang) };
       case 'rest':      return { topic: l('Descanso', 'Rest'), short: it.status === 'neutral' ? '—' : hhmm(r.actualMin) };
       case 'roster':    return { topic: l('Escala', 'Roster'), short: r.kind === 'none' ? l('Em dia', 'Up to date') : `${r.counts ? r.counts.total : 0} ${l('mud.', 'chg')}` };

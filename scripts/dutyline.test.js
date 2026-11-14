@@ -68,10 +68,10 @@ eq('depois do limite → agora no fim', dutyLine({ reportMs: ms('22:00'), limitM
 eq('sem setores → sem margem', dutyLine({ reportMs: ms('22:00'), limitMs: ms('09:00', 1), sectors: [], now: ms('23:00') }).marginMin, null);
 eq('setor inválido ignorado', dutyLine({ reportMs: ms('22:00'), limitMs: ms('09:00', 1), sectors: [{ startMs: ms('23:00'), endMs: ms('22:50') }], now: ms('23:00') }).sectors.length, 0);
 
-// ── fmtMargin: minutos → H:MM (sem sinal; o sinal diz-se por palavras) ──
-eq('510 → 8:30', fmtMargin(510), '8:30');
-eq('−30 → 0:30', fmtMargin(-30), '0:30');
-eq('5 → 0:05', fmtMargin(5), '0:05');
+// ── fmtMargin: minutos → "8 h 30" (sem sinal; o sinal diz-se por palavras) — D1, data/duration.js ──
+eq('510 → 8 h 30', fmtMargin(510), '8 h 30');
+eq('−30 → 30 min', fmtMargin(-30), '30 min');
+eq('5 → 5 min', fmtMargin(5), '5 min');
 
 console.log(`\ndutyLine — ${ok} passou, ${fail} falhou (${ok + fail} asserções)`);
 if (fail) process.exit(1);

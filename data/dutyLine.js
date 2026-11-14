@@ -12,6 +12,7 @@
 // Saída: null (sem limite válido) ou
 //   { nowPct, limitPct, sectors: [{ a, b, done }], landMs, marginMin, over }   — frações 0..1 da linha
 
+import { durHM } from './duration';
 export function dutyLine({ reportMs, limitMs, sectors = [], now } = {}) {
   if (reportMs == null || limitMs == null || !(limitMs > reportMs)) return null;
   const secs = (sectors || []).filter((s) => s && s.startMs != null && s.endMs != null && s.endMs > s.startMs);
@@ -34,8 +35,5 @@ export function dutyLine({ reportMs, limitMs, sectors = [], now } = {}) {
   };
 }
 
-// Minutos → "H:MM" sem sinal (o sinal diz-se por palavras: "de margem" / "depois do limite").
-export const fmtMargin = (min) => {
-  const m = Math.abs(Math.round(min));
-  return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
-};
+// Minutos → "8 h 30" sem sinal (o sinal diz-se por palavras: "de margem" / "depois do limite") (D1, data/duration.js: as durações com "h"; os dois pontos só nas horas do relógio).
+export const fmtMargin = (min) => durHM(min);

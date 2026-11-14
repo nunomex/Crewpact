@@ -550,7 +550,7 @@ const EWRLIS = (rep, off, on) => FZ(rep, [['EWR', 'LIS', off, on]]);
   eq('frase: 84 h formata sem casas', T.fmtHours(5040, 'pt'), '84 h');
   eq('frase: 84,1 h em pt e 84.1 h em en', [T.fmtHours(5046, 'pt'), T.fmtHours(5046, 'en')], ['84,1 h', '84.1 h']);
   // Auditoria A-136: 90:01 de voo em 28 dias com o estado Excede não pode ler-se "90 h (máx. 90 h)".
-  eq('frase: excesso de 1 min mostra h:mm', T.describe('P25', { status: 'excede', value: 5401, limit: 5400, window: '28d' }, 'pt').say.includes('90:01'), true);
+  eq('frase: excesso de 1 min mostra os minutos (90 h 01 — D1)', T.describe('P25', { status: 'excede', value: 5401, limit: 5400, window: '28d' }, 'pt').say.includes('90 h 01'), true);
   eq('frase: sem excesso fica em horas', T.describe('P25', { status: 'dentro', value: 5040, limit: 5400, window: '28d' }, 'pt').say.includes('84 h'), true);
   eq('frase: dia da semana', T.fmtDay('2026-11-02', 'pt'), 'seg 2 nov');
   eq('frase: trimestre', T.windowLabel({ window: 'trimestre', period: '2026-T4' }, 'pt'), 'Trimestre (out–dez)');
@@ -586,7 +586,7 @@ const EWRLIS = (rep, off, on) => FZ(rep, [['EWR', 'LIS', off, on]]);
   const glh = T.groupRules(lh, '2026-01-01');
   eq('longo curso com UTC: nada em "Ainda não avaliado"', glh.pendente.semFuso, 0);
   const p32 = glh.excede.find((x) => x.id === 'P32');
-  eq('frase do P32 (narrow-body, 12h15 > 11h30)', p32 && T.describe('P32', p32.lead, 'pt'), { say: 'Serviço de voo de seg 12 jan: 12:15 (o AE permite 11:30)', det: 'Longo curso, aclimatizado. Calços até às 09:00.' });
+  eq('frase do P32 (narrow-body, 12h15 > 11h30)', p32 && T.describe('P32', p32.lead, 'pt'), { say: 'Serviço de voo de seg 12 jan: 12 h 15 (o AE permite 11 h 30)', det: 'Longo curso, aclimatizado. Calços até às 09:00.' });
   const wb = T.groupRules(run('pilot', { '2026-01-12': LISGRU() }, { fleetAt: () => 'WB', today: '2026-01-01' }), '2026-01-01').incerto.find((x) => x.id === 'P32');
   eq('frase do P32 com possível reforço', wb && T.describe('P32', wb.lead, 'pt').det, 'Só cabe com tripulação reforçada (Cl. 42.ª), que a escala não mostra.');
   const c15 = T.groupRules(run('cabin', { '2026-01-12': LISGRU(), '2026-01-14': GRULIS(), '2026-01-18': F('20:00', '21:00', '23:00', 2, 'LIS-OPO-LIS') }, { today: '2026-01-01' }), '2026-01-01').excede.find((x) => x.id === 'C15');
@@ -627,7 +627,7 @@ const fdpOn = (res, id, date) => rule(res, id).findings.find((f) => f.date === d
   const avg = rule(rot, 'C23').findings.find((f) => f.reason === 'media-rotacao');
   eq('A-131 PSV 12:00 + 12:00 + 12:01 = 36:01 em 3 → média acima de 12 h → excede', avg && [avg.sum, avg.n, avg.status], [2161, 3, 'excede']);
   const T = require(path.resolve('data/tapLimitsText.js'));
-  eq('A-131 a frase não diz "12:00" num excesso', avg && T.describe('C23', avg, 'pt').say, 'Rotação com média acima de 12:00 por serviço de voo (36:01 em 3)');
+  eq('A-131 a frase não diz "12:00" num excesso', avg && T.describe('C23', avg, 'pt').say, 'Rotação com média acima de 12 h por serviço de voo (36 h 01 em 3)');
 }
 
 // A-130 — C14: a folga de 48 h que atravessa a mudança de trimestre conta (o AE não diz em qual: as duas leituras).

@@ -14,6 +14,7 @@ import Icon from './Icon';
 import SheetHeader from './SheetHeader';
 import PillButton, { WideButton } from './PillButton';
 import MarkRow, { MARK_INDENT, DayTile } from './MarkRow';
+import { durHM } from '../data/duration';
 
 // Sino do cabeçalho + central de notificações em PÁGINA INTEIRA (Modal slide-up, no
 // estilo das páginas de duty/import). Partilhado pelo cabeçalho da pele (PeleHeader).
@@ -50,7 +51,7 @@ export default function NotificationsBell({ variant = 'bell', night = false }) {
       for (const svc of [day, ...(Array.isArray(day.extra) ? day.extra : [])]) flightMin += (svc && svc.flight_minutes) || 0;
     }
     if (!flightMin) return null;   // mês sem voo (ex.: conta nova) → sem resumo
-    const flightHm = `${Math.floor(flightMin / 60)}:${String(flightMin % 60).padStart(2, '0')}`;
+    const flightHm = durHM(flightMin);   // D1, data/duration.js: as durações com "h"; os dois pontos só nas horas do relógio
     let totalEur = null;
     const aeM = aeAt ? aeAt(ym) : ae;   // o acordo da companhia desse mês (linha do tempo do contrato)
     if (aeM && crewAt) {

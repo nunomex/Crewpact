@@ -84,7 +84,7 @@ function topHTML(t, why = null) {
   return `<div class="topA">
     <div class="ttlRow"><span class="t">${esc(t.pill ? t.pill.text : '')}${t.pill && t.pill.live ? '<i class="dot"></i>' : ''}</span><span class="pl ml">Notificações</span></div>
     ${p2 ? `<div class="what inl"><span>${esc(t.what)}</span>${p2}</div>` : `<div class="what">${esc(t.what)}</div>`}
-    <div class="hero"><div class="g"><div class="l1"><span class="big${why && why.giant ? ' und' : ''}">${esc(g.l1)}</span>${g.unit ? `<small>${esc(g.unit)}</small>` : ''}</div>
+    <div class="hero"><div class="g"><div class="l1"><span class="big${why && why.giant ? ' und' : ''}">${esc(g.l1)}</span>${g.unit ? `<small>${esc(g.unit)}</small>` : ''}${g.unit && g.l1b ? `<span class="big b2${why && why.giant ? ' und' : ''}">${esc(g.l1b)}</span>` : ''}</div>
       ${g.l2 ? `<div class="l2${g.l2Grey ? ' grey' : ''}"><span class="big">${esc(g.l2)}</span>${g.zulu ? `<span class="z">${esc(g.zulu)}</span>` : ''}</div>` : ''}</div>
       ${facts ? `<div class="side">${facts}</div>` : ''}</div></div>`;
 }
@@ -199,7 +199,7 @@ body{background:#E8E7E2;color:#141414;font-family:'Hanken','Helvetica Neue',Aria
 .what{font-weight:500;font-size:15px;line-height:20px;color:var(--soft)} .what.inl{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .hero{display:flex;align-items:stretch;gap:16px;margin-top:12px}
 .g{font-weight:700;white-space:nowrap;flex:none} .g .l1,.g .l2{display:flex;align-items:baseline}
-.g .big{font-size:62px;line-height:62px;letter-spacing:-2.85px} .g small{font-size:34px;letter-spacing:-1px;margin-left:6px} .g .z{font-size:20px;margin-left:8px}
+.g .big{font-size:62px;line-height:62px;letter-spacing:-2.85px} .g small{font-size:34px;letter-spacing:-1px;margin-left:6px} .g .b2{margin-left:6px} .g .z{font-size:20px;margin-left:8px}
 .grey{color:var(--grey)}
 .side{border-left:1.5px solid var(--ink);padding-left:16px;display:flex;flex-direction:column;justify-content:center;gap:12px;min-width:0}
 .fv{display:flex;align-items:center;gap:4px;font-weight:700;font-size:20px;line-height:22px;white-space:nowrap} .fv.gain{color:var(--gain)} .fv.was{text-decoration:line-through;opacity:.5}

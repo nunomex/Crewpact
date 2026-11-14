@@ -1259,7 +1259,42 @@ motor está na versão **21**. **O que falta, por ordem:**
   propósito: o ecrã muda à frente de quem olha); com os movimentos reduzidos ligados (troca seca); que nada salta nem fica cortado
   no fim (a linha do número volta a ser uma só sem mexer). Para provocar sem esperar (na Expo Go, com o Início aberto): mudar a
   constante `FORCE_HOME_STATE` em `screens/HomeScreen.js` (por exemplo `'vespera'` → `'pernoita'`) e gravar — o Fast Refresh guarda
-  o estado anterior e a passagem corre à frente; voltar a `null` no fim.
+  o estado anterior e a passagem corre à frente; voltar a `null` no fim. **Gravado e enviado (`65aa118`).**
+  **Visto no iPhone às 22:07 ("Dia fechado") — três acertos (por gravar):**
+  (1) **os sublinhados pontilhados, medidos:** o do número grande eram traços de 5 × 3,7 pt a 16 pt do número (o do iOS cresce com a
+  letra) e o das "19 h" tinha 0,67 pt e passava 16 pt para lá do texto. Os pontos passam a ser desenhados (`DotRule` em
+  `components/HomeCards.js`) com as medidas do esboço Q3, medidas no navegador: no número, 3 pt com passo de 6,5 a 8 pt do pé dos
+  algarismos; nos factos, 1,5 pt com passo de 4 a 1 pt do pé, com a largura do texto; a tinta a 50 %. O pé fica a `lineHeight −
+  0,303 em` do topo da caixa (conferido nas duas medições do iPhone: o sublinhado do iOS caía no fundo da caixa).
+  (2) **os textos, escolhidos pelo Nuno** (golden primeiro, `test:homecards` 486): "o dia fechou **dentro dos** limites" ("nos
+  limites" soava a "no limite", à justa) e o repouso **"cumpre-se"** enquanto não chega à hora — "cumprido" só depois (a barra a
+  100 %); a mesma regra na frase do repouso incerto ("cumpre-se entre 12:00 e 14:00"). Fica um caso igual por decidir: **"repouso
+  cumprido" no cartão da véspera** (às 21:40 o repouso ainda está a correr).
+  (3) **as durações com duas escritas** ("1:35 h" no topo, "2 h 35" no cartão): esboço `design/duracoes.html` — **D1 "1 h 35" em
+  todo o lado** (recomendada: os dois pontos só para as horas do relógio; no número grande o "h" pequeno ao meio) · D2 "1:35" em todo
+  o lado · D3 "1 h 35 min". Achado ao fazer o esboço: o facto da margem em voo também usa dois pontos ("3:10 de margem no PSV",
+  `F.hm`). **O Nuno escolheu a D1 — construída no Início (por gravar):** golden primeiro (`test:homecards` 491: o número grande
+  `{ l1: '8', unit: 'h', l1b: '35' }`, menos de 1 h em "min", horas certas sem minutos; o PSV previsto, a correr, projetado e acima
+  do limite com "h"; a margem em voo — o facto, o porquê e "ainda dentro" —; o selo dos cartões nunca com dois pontos);
+  `data/homeCards.js` (`giantDur`, `durOf`; a largura do número conta os minutos depois da unidade); `components/HomeCards.js`
+  (`GiantLine` com a 2.ª parte grande depois da unidade — os pontos do porquê e os algarismos que rolam na mudança de estado
+  contam com ela; o VoiceOver lê "8 h 35"); `scripts/render-estados.js` (os esboços gerados). Os dados continuam "h:mm".
+  **Depois, na app toda (o Nuno: "devia mudar na app toda para ficar tudo igual"; e os três sítios que eu deixava de fora —
+  "mudamos também") — feito (por gravar):** uma só função, `data/duration.js` (`durHM`, `durText`, `parseDur`, `maskDur`; golden
+  novo `test:duration`, 31 casos — 40 suites). Passaram para ela: o Detalhe do serviço (o topo "PSV 7 h 30 /11 h 45", as horas de
+  voo e de serviço, o PSV máximo, a discrição, o excesso, o repouso mínimo, a assistência antes do voo); os Números (as janelas do
+  210: "60 h 10", "excede 10 min"); as perguntas do dia e a folha delas (o repouso "10 h 30 (mín 12 h)", o PSV, o excesso, o chip da
+  margem); a Simulação (os textos do motor e o resultado; o cartão de cálculos FTL — os quatro campos de duração com a máscara nova,
+  as saídas com "h"); o formulário (o repouso a bordo num campo de duração — `DurField`; as horas de bloco e de serviço; o teto do
+  PSV); o "completar"; as alterações da escala ("Tempo de voo 3 h 15 → 6 h 15"); o sino (as horas de voo do mês); a voz ("10 h 30
+  de 12 h — fala com a escala"); o PDF dos 245 (PSV, serviço, repouso, horas de voo); **o PDF do processo de carreira** ("2 140 h 05",
+  com os milhares); **a imagem de partilha** e a da família ("2 h 35"); os limites TAP (só a escrita da duração e "média acima de
+  12 h"). Os motores continuam a guardar "h:mm" (o golden FTL não mexe). Os testes que fixavam o formato antigo mudaram só na escrita
+  (conferido caso a caso — nenhum número): dutyLine 3, alterações 1, registo 245 5, carreira 1, TAP 3, restStatus 3. **Para a vez da
+  TAP:** os resumos das cláusulas escrevem as horas do relógio à portuguesa ("18h00", "TSV acima de 10h15") — passam a "18:00" e
+  "10 h 15". 40 suites e o pacote iOS passam. **Ver no iPhone:** o número do dia fechado "1 h 35" (o "h" pequeno ao
+  meio, o mesmo espaço dos dois lados) com os pontos finos por baixo do grupo todo; os pontos das "19 h" (só debaixo do texto); a
+  folga "18 h 30"; em voo, "PSV 7 h 30 de 11 h 45" e "3 h 10 de margem"; "dentro dos limites"; "05:20 cumpre-se".
 - **Do dia 2026-11-14 (gravado e enviado até `81c2dfd`) — tudo por ver:** os Números (o total sozinho no topo; "Acima da base" no
   fim do "De onde vem"; com a base incerta, "O total fica entre"); o topo lado a lado igual no Início, na Escala e nos Números
   (o número do mesmo tamanho; a frase com ar por cima); a meteorologia (na véspera e antes do report, a base à hora do report no

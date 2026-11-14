@@ -185,7 +185,7 @@ ok('fronteira dos pilotos dita (FCL.050)', html.includes('FCL.050'));
 ok('rótulo da categoria aplicado (Cabin Manager)', html.includes('Cabin Manager'));
 ok('ano parcial marcado na tabela ("desde MAR")', html.includes('desde MAR'));
 ok('o € NÃO entra no documento', !html.includes('€'));
-ok('voo total no formato h:mm (14:10)', html.includes('14:10'));
+ok('voo total com "h" (14 h 10 — D1, como toda a app)', html.includes('14 h 10') && !html.includes('14:10'));
 
 // Vazio — o documento continua a nascer (sem anos, sem cobertura, sem NaN).
 const mE = buildCareerModel({ duties: {}, now: NOW });

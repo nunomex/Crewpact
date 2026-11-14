@@ -8,11 +8,12 @@
 
 import { serviceRealMin } from './zulu';
 import { legsBroken, legsRestCut } from '../ftl';
+import { durHM, parseDur } from './duration';
 
 const L = (pt, en) => ({ pt, en });
 const clk = (s) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(s || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; };
 export const isClock = (s) => clk(s) != null && /^([01]?\d|2[0-3]):[0-5]\d$/.test(s);
-const hhmm = (min) => `${Math.floor(min / 60)}:${String(min % 60).padStart(2, '0')}`;
+const hhmm = (min) => durHM(min);   // (D1, data/duration.js: as durações com "h"; os dois pontos só nas horas do relógio)
 
 // O `special` (casos FTL) com um campo mudado; null quando fica tudo vazio (como o formulário).
 const SPECIAL_KEYS = ['augmented', 'delayedFrom', 'delayed1', 'notice2', 'preStandby', 'discretion', 'fcReport', 'plannedExt'];
@@ -226,7 +227,7 @@ export const completeRows = (svc = {}, ctx = {}) => {
     const sb = sp.preStandby || null;
     // A assistência da ESCALA que precede este voo (ftl standbyBefore): já está contada — a linha di-lo, em vez de "Não".
     const rsb = ctx.standbyRoster || null;
-    const rH = rsb ? (() => { const m = Math.round((rsb.standbyH || 0) * 60); return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`; })() : null;
+    const rH = rsb ? durHM(Math.round((rsb.standbyH || 0) * 60)) : null;
     const rVal = rsb ? (rsb.either ? L('Da escala · a confirmar', 'Roster · to confirm') : L(`Da escala · ${rH}`, `Roster · ${rH}`)) : null;
     const rIntro = rsb ? L(` A escala já tem uma assistência antes deste voo (${rH} até à apresentação) e a app já a conta: só precisas de mexer aqui se as horas não estiverem certas.`, ` The roster already has a standby before this flight (${rH} until report) and the app already counts it: only change this if the hours are wrong.`) : '';
     add({
@@ -251,7 +252,7 @@ export const completeRows = (svc = {}, ctx = {}) => {
       if (!isPilot) {
         fields.push({ key: 'fcCls', type: 'choice', label: L('Classe do repouso dos pilotos', 'Pilots\' rest class'), value: aug ? aug.fcRestClass || null : null, showIf: (v) => !!v.on,
           options: [{ id: 'c1', label: L('Classe 1', 'Class 1') }, { id: 'c2', label: L('Classe 2', 'Class 2') }, { id: 'c3', label: L('Classe 3', 'Class 3') }] });
-        fields.push({ key: 'rest', type: 'time', label: L('O teu repouso a bordo (h:mm)', 'Your in-flight rest (h:mm)'), value: aug && aug.cabinRestMin != null ? hhmm(aug.cabinRestMin) : '', showIf: (v) => !!v.on, optional: true });
+        fields.push({ key: 'rest', type: 'time', label: L('O teu repouso a bordo', 'Your in-flight rest'), value: aug && aug.cabinRestMin != null ? hhmm(aug.cabinRestMin) : '', showIf: (v) => !!v.on, optional: true });
       }
       add({
         id: 'augmented', title: L('Tripulação reforçada', 'Augmented crew'), cite: 'CS FTL.1.205(c)',
@@ -260,7 +261,7 @@ export const completeRows = (svc = {}, ctx = {}) => {
         sheet: { intro: L('Com pilotos extra e repouso a bordo, o PSV máximo sobe (até 3 setores).', 'With additional pilots and in-flight rest, the max FDP goes up (up to 3 sectors).'), fields },
         apply: (v) => {
           if (!v.on) return { special: withSpecial(sp, { augmented: null }) };
-          const restMin = clk(v.rest);
+          const restMin = parseDur(v.rest);   // "2 h 30" (ou "2:30", do teclado)
           const a = isPilot ? { restClass: v.cls || 'c1', additionalCrew: Number(v.crew) || 1 }
             : { restClass: v.cls || 'c1', additionalCrew: Number(v.crew) || 1, fcRestClass: v.fcCls || null, cabinRestMin: restMin };
           return { special: withSpecial(sp, { augmented: a }) };

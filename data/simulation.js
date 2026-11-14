@@ -20,6 +20,7 @@ import { fdpForDuty, evaluateTapLimits } from '../ae/tapLimits';
 import { isProblem, fmtClock, clauseShort, ruleTitle } from './tapLimitsText';
 import { unknownsText } from './ftlUnknowns';
 import { NONFLIGHT_KINDS } from './calendarParse';
+import { durHM, durText } from './duration';
 
 // A regra de cada aviso (o artigo; onde é o acordo, a cláusula vai no próprio aviso).
 export const SIM_RULES = {
@@ -405,7 +406,7 @@ export const simulateDuty = (sim, ctx = {}) => {
 };
 
 // ── Textos curtos de cada aviso (o herói da Simulação e a projeção do formulário usam os mesmos) ──
-const hm = (min) => { const x = Math.max(0, Math.round(min || 0)); return `${Math.floor(x / 60)}:${String(x % 60).padStart(2, '0')}`; };
+const hm = (min) => durHM(Math.max(0, Math.round(min || 0)));   // as durações dos textos (D1, data/duration.js: as durações com "h"; os dois pontos só nas horas do relógio)
 const ddmm = (iso) => { const m = /^\d{4}-(\d{2})-(\d{2})/.exec(String(iso || '')); return m ? `${+m[2]}/${+m[1]}` : ''; };
 const MONTHS = { pt: ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'], en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] };
 const LIMIT_TXT = {
@@ -417,7 +418,7 @@ export const issueText = (it, lang = 'pt', simDate = null) => {
   const en = lang === 'en';
   const l = (pt, e) => (en ? e : pt);
   switch (it && it.type) {
-    case 'fdp': return it.excess ? l(`PSV excede o máximo em ${it.excess}`, `FDP over the max by ${it.excess}`) : l('PSV excede o máximo', 'FDP over the max');
+    case 'fdp': return it.excess ? l(`PSV excede o máximo em ${durText(it.excess)}`, `FDP over the max by ${durText(it.excess)}`) : l('PSV excede o máximo', 'FDP over the max');
     case 'fdpOther': return it.date === simDate ? l('o outro serviço do dia excede o PSV', 'the other duty that day is over the FDP') : l(`o PSV de ${ddmm(it.date)} passa a exceder`, `the FDP on ${ddmm(it.date)} goes over`);
     case 'fdpUncertain': return l(`falta saber ${unknownsText(it.unknowns, 'pt')}`, `missing ${unknownsText(it.unknowns, 'en')}`);
     case 'noReport': return l('falta a hora de apresentação: o PSV não se calcula', 'missing the report time: the FDP cannot be computed');

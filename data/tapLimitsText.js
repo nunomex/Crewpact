@@ -3,6 +3,7 @@
 // o que se passa. Os números vêm todos do motor; aqui só se formata. O "o que o AE pede" é o RESUMO da
 // app (como na Prova) — a lei é a citação literal, que a folha mostra a seguir.
 import { TAP_RULES, ruleById, isoOf, dayNum } from '../ae/tapLimits';
+import { durHM } from './duration';
 
 const DAY = 1440;
 const L = (lang) => (pt, en) => (lang === 'en' ? en : pt);
@@ -34,7 +35,7 @@ export const fmtHours = (min, lang = 'pt') => {
   const s = Number.isInteger(h) ? String(h) : (lang === 'en' ? h.toFixed(1) : h.toFixed(1).replace('.', ','));
   return `${s} h`;
 };
-export const fmtDur = (min) => { const x = Math.max(0, Math.round(min || 0)); return `${Math.floor(x / 60)}:${String(x % 60).padStart(2, '0')}`; };
+export const fmtDur = (min) => durHM(Math.max(0, Math.round(min || 0)));   // D1 (data/duration.js): as durações com "h"
 export const fmtClock = (abs) => { const c = ((Math.round(abs) % DAY) + DAY) % DAY; return `${String(Math.floor(c / 60)).padStart(2, '0')}:${String(c % 60).padStart(2, '0')}`; };
 const WD = { pt: ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] };
 const MO = { pt: ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'], en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] };
@@ -171,7 +172,7 @@ export const describe = (id, f, lang = 'pt', crewType = 'pilot') => {
       if (f.reason === 'media-rotacao') {
         // A média compara-se pela soma (A-131): num excesso nunca se escreve "12:00".
         const span = l(`De ${day(f.from)} a ${day(f.to)}.`, `From ${day(f.from)} to ${day(f.to)}.`);
-        if (f.status === 'excede' && f.sum != null) return { say: l(`Rotação com média acima de 12:00 por serviço de voo (${fmtDur(f.sum)} em ${f.n})`, `Rotation averaging above 12:00 per flight duty (${fmtDur(f.sum)} over ${f.n})`), det: span };
+        if (f.status === 'excede' && f.sum != null) return { say: l(`Rotação com média acima de 12 h por serviço de voo (${fmtDur(f.sum)} em ${f.n})`, `Rotation averaging above 12 h per flight duty (${fmtDur(f.sum)} over ${f.n})`), det: span };
         return { say: l(`Rotação com média de ${fmtDur(Math.floor(f.value))} por serviço de voo (máx. 12:00)`, `Rotation averaging ${fmtDur(Math.floor(f.value))} per flight duty (max. 12:00)`), det: span };
       }
       if (f.status === 'incerto' && MC_DOUBT[f.reason]) {

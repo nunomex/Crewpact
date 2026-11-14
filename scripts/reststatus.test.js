@@ -208,7 +208,7 @@ eq('Repouso até: sem saber o repouso antes → +4 h (17:30)', restUntilAfter({
 eq('sem próximo → neutro', restStatus({ '2026-11-03': { report_time: '06:00', block_on: '14:00' } }, T, at(T, '20:00')).kind, 'noNext');
 
 // ── A RESPOSTA do "Tenho descanso?" (screens/hojeItems.js · restItem), visto no iPhone a 2026-11-14: o repouso mínimo
-// cumprido (25:10 contra 10:30) e a regra da noite local falhada davam "Sim · 25:10 antes do report · de tardio/noturno
+// cumprido (25:10 contra 10:30) e a regra da noite local falhada davam "Sim · 25 h 10 antes do report · de tardio/noturno
 // para matinal…" com o ✕ vermelho na folha. A 1.ª palavra é a do VEREDICTO: ✕ → "Não", incerto → "Incerto". O porquê
 // leva a linha da regra que falhou e a dica cita essa regra (CS FTL.1.235(a)(1); noite local = ORO.FTL.105(16)). ──
 {
@@ -243,12 +243,12 @@ eq('sem próximo → neutro', restStatus({ '2026-11-03': { report_time: '06:00',
   eq('… e a dica é a dela', /ORO\.FTL\.235\(d\)/.test(ib.suggestion) && !/235\(a\)\(1\)/.test(ib.suggestion), true);
   // O repouso já curto: fica como estava, com a regra a seguir.
   const bb = restItem({ status: 'bad', actualMin: 480, requiredMin: 720 }, { status: 'bad', issues: [tn(false)] }, 'pt');
-  eq('repouso ✕ + regra ✕ → "Não" do repouso, a regra a seguir', bb.answer, 'Não · 8:00 (mín 12:00) · falta uma noite local antes do matinal de 15/11');
+  eq('repouso ✕ + regra ✕ → "Não" do repouso, a regra a seguir', bb.answer, 'Não · 8 h (mín 12 h) · falta uma noite local antes do matinal de 15/11');
   // O repouso incerto e a regra certa: "Não" pela regra, e a dúvida do repouso não se perde.
   const ub = restItem({ status: 'unc', kind: 'noReport', actualMin: 900, estIso: '2026-11-12' }, { status: 'bad', issues: [tn(false)] }, 'pt');
-  eq('repouso incerto + regra ✕ → "Não", com o repouso incerto a seguir', [ub.status, ub.answer], ['bad', 'Não · falta uma noite local antes do matinal de 15/11 · repouso incerto: 15:00 antes do report']);
+  eq('repouso incerto + regra ✕ → "Não", com o repouso incerto a seguir', [ub.status, ub.answer], ['bad', 'Não · falta uma noite local antes do matinal de 15/11 · repouso incerto: 15 h antes do report']);
   // Sem nada da recuperação: como antes.
-  eq('só o repouso ✓ → "Sim"', restItem(rOk, { status: 'ok', issues: [] }, 'pt').answer, 'Sim · 25:10 antes do report');
+  eq('só o repouso ✓ → "Sim"', restItem(rOk, { status: 'ok', issues: [] }, 'pt').answer, 'Sim · 25 h 10 antes do report');
 }
 
 console.log(`\nrestStatus — ${ok} passou, ${fail} falhou (${ok + fail} asserções)`);

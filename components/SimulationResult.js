@@ -13,6 +13,7 @@ import { serviceMoney } from '../data/perdiem';
 import { validityLabel, refOfDay, validitySummary } from '../data/validities';
 import { AppContext } from '../data/appContext';
 import { DutyCalc, InflightRestCalc, StandbyCalc, PositioningCalc, DelayedReportingCalc } from './FtlCalcs';
+import { durHM, durText } from '../data/duration';
 
 // Resultado da SIMULAÇÃO (não grava nada). Calcula, para o serviço hipotético, as mesmas
 // perguntas do Briefing/Início — FTL universal (PSV · repouso antes e depois · recuperação · noites seguidas · todos os
@@ -56,7 +57,7 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
 
   // ── helpers ──
   const fmtEur = (n) => { if (n == null) return '—'; const [i, dd] = Number(n).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${dd}` : `${g},${dd} €`; };
-  const hm = (min) => { const x = Math.max(0, Math.round(min || 0)); return `${Math.floor(x / 60)}:${String(x % 60).padStart(2, '0')}`; };
+  const hm = (min) => durHM(Math.max(0, Math.round(min || 0)));   // D1, data/duration.js: as durações com "h"; os dois pontos só nas horas do relógio
   const limTxt = (n) => (n === 1000 ? (lang === 'en' ? '1,000' : '1 000') : String(n));
   const winLbl = (w) => (w.id === 'year' ? l('ano', 'year') : w.id === '12m' ? l('12 meses', '12 months') : `${w.days} d`);
   const fatLbl = (b) => b === 'high' ? l('Alta', 'High') : b === 'elevated' ? l('Elevada', 'Elevated') : b === 'low' ? l('Baixa', 'Low') : l('Moderada', 'Moderate');
@@ -94,7 +95,7 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
   // Só um PSV (com setores) tem rácio e hora-limite de calços (ORO.FTL.105(12); auditoria A-247) — do MESMO resultado do
   // veredicto (A-248); a hora-limite é a mais apertada entre a EASA e o acordo (A-258).
   const ps = sim.psv;
-  const psvRatio = (ps && ps.fdp && ps.result && ps.max) ? `${ps.result} / ${ps.max}` : null;
+  const psvRatio = (ps && ps.fdp && ps.result && ps.max) ? `${durText(ps.result)} / ${durText(ps.max)}` : null;   // D1: com "h"
   const latest = ps && ps.fdp && ps.latest ? `${ps.latest}${ps.latestNextDay ? ' (+1)' : ''}` : null;
   // Kick em texto plano (para o VoiceOver ler o herói como UMA frase). Com "Dentro", a frase completa-o.
   const kickPlain = verdict === 'bad' ? reasons.join(' · ')

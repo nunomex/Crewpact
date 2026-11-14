@@ -99,7 +99,7 @@ Dois andares fixos: **o topo** (sobre a secretária) e **a folha** (branca, sobe
   "Notificações"; nos estados ao vivo leva **o ponto amarelo** (de dia com um aro de tinta — S2 das cores).
 - **A frase** ("Report às", "Aterras às", "Próximo serviço daqui a") e, à direita dela, **a pílula do dia ou do voo**
   ("EJU7601 ›", "quarta 11 ›"), que abre esse dia na Escala.
-- **O número em duas linhas** — o próximo marco ("05:15 / LIS", "2 dias", "8:35 h"), no tamanho comum às três abas. A hora UTC
+- **O número em duas linhas** — o próximo marco ("05:15 / LIS", "2 dias", "8 h 35" — as durações sempre com "h", D1), no tamanho comum às três abas. A hora UTC
   do report vai ao lado do sítio, só quando é diferente da local.
 - **Até três factos** ao lado de um fio. **O tempo é o último facto** (o ícone, a temperatura, a hora que conta: o report, ou a
   chegada) — só com serviço (a app não usa a localização).
@@ -190,7 +190,7 @@ a barra da janela e o que rende se não chamarem), o próximo serviço com o cab
 **Pernoita** (`pernoita`, noturno) — "Report amanhã às · 14:05 LGW" · quanto falta, o tempo à hora do report · o repouso fora da base
 (o hotel, o mínimo, a barra do repouso), o voo de amanhã numa linha.
 
-**Dia fechado** (`posvoo`) — "PSV de hoje · 8:35 h" (sublinhado) · os ganhos de hoje, as horas de 7 dias, o tempo de amanhã · o repouso
+**Dia fechado** (`posvoo`) — "PSV de hoje · 8 h 35" (sublinhado) · os ganhos de hoje, as horas de 7 dias, o tempo de amanhã · o repouso
 na base ("Descansa", o mínimo, a barra), o próximo serviço ("Próximo serviço · amanhã").
 
 **Fecho do mês** (`fecho`) — "Ganhos brutos de novembro · 2 431,50 € / estimado" (com a base incerta, as duas pontas) · as parcelas que

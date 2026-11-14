@@ -182,7 +182,18 @@ export function homeCards(H = {}) {
   const titleOf = (d) => (isFlightKind(d.kind) && Array.isArray(d.stations) && d.stations.length > 1 ? chain(d.stations) : (d.kindLabel || l('Serviço', 'Duty')));
   const openDay = (d) => (d && d.iso && d.hasReg !== false ? { to: 'day', iso: d.iso } : null);
   const top = (pill, pill2, what, giant, fx) => ({ pill, pill2: pill2 && pill2.text ? pill2 : null, what, giant, facts: fx || null });
-  const giantOf = (l1, unit = null, l2 = null, l2Grey = false, zulu = null) => ({ l1: String(l1), unit: unit || null, l2: l2 || null, l2Grey: !!(l2 && l2Grey), ...(zulu && l2 ? { zulu } : {}) });
+  const giantOf = (l1, unit = null, l2 = null, l2Grey = false, zulu = null, l1b = null) => ({ l1: String(l1), unit: unit || null, ...(l1b != null && unit ? { l1b: String(l1b) } : {}), l2: l2 || null, l2Grey: !!(l2 && l2Grey), ...(zulu && l2 ? { zulu } : {}) });
+  // D1 (design/duracoes.html, escolhida pelo Nuno a 2026-11-14): as durações escrevem-se SEMPRE com "h" ("8 h 35", "45 min"); os dois
+  // pontos ficam só para as horas do relógio (no cartão do voo estão as duas lado a lado — "de 12:30" lia-se como uma hora).
+  // No número grande, o "h" pequeno ao meio: { l1: '8', unit: 'h', l1b: '35' }; menos de 1 h, "45 min"; horas certas, "9 h".
+  const giantDur = (min) => {
+    const m0 = Math.max(0, Math.round(min));
+    if (m0 < 60) return giantOf(m0, 'min');
+    const h = Math.floor(m0 / 60), m = m0 % 60;
+    return giantOf(h, 'h', null, false, null, m ? String(m).padStart(2, '0') : null);
+  };
+  // uma duração que chega do ecrã como "h:mm" (o PSV, o máximo) escrita com "h"; sem conta possível, fica como veio
+  const durOf = (s) => { const m = toMin(s); return m != null ? F.dur(m) : noLead(s); };
   const psvOf = (ps) => (ps && ps.latest ? `${ps.latest}${ps.latestNextDay ? ' +1' : ''}` : null);
   // A cor dos avisos (o capítulo "Cor" do design system, 2026-11-14): fora do limite = vermelho com "✕"; olhar (cuidado, falta um
   // dado, pede uma ação) = laranja com "!"; informação = neutro, sem sinal (o laranja não se gasta no que não é cuidado — a lógica
@@ -417,7 +428,7 @@ export function homeCards(H = {}) {
   };
   // O cartão do dia de serviço PLANEADO (antes do report · véspera · disrupção): começa na partida, para não repetir o report de cima.
   const uncertain = (d) => !!(d && d.legal && d.legal.status === 'uncertain');
-  const psvPlanTxt = (ps) => (ps && ps.plan && ps.max ? `PSV ${noLead(ps.plan)} ${l('de', 'of')} ${noLead(ps.max)}${ps.hi ? `–${noLead(ps.hi)}` : ''}` : null);
+  const psvPlanTxt = (ps) => (ps && ps.plan && ps.max ? `PSV ${durOf(ps.plan)} ${l('de', 'of')} ${durOf(ps.max)}${ps.hi ? `–${durOf(ps.hi)}` : ''}` : null);
   const planDayCard = (d, { sub, a, dur, b, action = null, gain = null, chev = false, e3 = false, restOk = false } = {}) => {
     const fl = isFlightKind(d.kind);
     const kindLbl = fl ? [l('Dia de serviço', 'Duty day'), d.split ? l('repartido', 'split') : secTxt(d)].filter(Boolean).join(' · ') : l('Serviço em terra', 'Ground duty');
@@ -443,7 +454,7 @@ export function homeCards(H = {}) {
         live.nextDep ? l(`próximo setor às ${live.nextDep}`, `next sector at ${live.nextDep}`) : null,
         d.lastArr && d.lastArr !== (H.phase === 'duty' ? live.depHm : live.arrHm) ? l(`última chegada ${d.lastArr}`, `last arrival ${d.lastArr}`) : null].filter(Boolean).join(' · ') || null,
       gain: null, a: d.report ? { v: d.report, l: 'report' } : null,
-      dur: ps.running ? `PSV ${noLead(ps.running)}${ps.max ? ` ${l('de', 'of')} ${noLead(ps.max)}` : ''}` : null,
+      dur: ps.running ? `PSV ${durOf(ps.running)}${ps.max ? ` ${l('de', 'of')} ${durOf(ps.max)}` : ''}` : null,
       b: line && ps.latest ? { v: ps.latest, l: ps.latestNextDay ? l('limite · amanhã', 'limit · tomorrow') : l('limite', 'limit') } : null,   // o limite depois da meia-noite diz-se (iPhone, 2026-11-11)
       pct: line ? Math.max(0, Math.min(100, Math.round(live.nowPct * 100))) : null,
       corner: d.shareable ? 'share' : 'chev', action: null, open: openDay(d) };
@@ -451,11 +462,12 @@ export function homeCards(H = {}) {
   const marginWhy = () => {
     const mx = toMin(((hero && hero.psv) || {}).max); const m = live.marginMin;
     if (mx == null || m == null || m < 0) return null;
-    return { text: `${F.hm(m)} = ${F.dur(mx)} ${l('de máximo', 'maximum')} − ${F.dur(mx - m)} ${l('do PSV previsto', 'of planned FDP')}`, strong: [F.hm(m), F.dur(mx)], law: 'ORO.FTL.205(b)', prova: 'psvMax', value: F.dur(mx),
-      title: l('Margem no PSV', 'FDP margin'), calc: { sum: [{ k: l('Máximo', 'Maximum'), v: F.dur(mx) }, { k: `− ${l('PSV previsto', 'Planned FDP')}`, v: F.dur(mx - m) }], total: { k: `= ${l('Margem', 'Margin')}`, v: F.hm(m) } } };
+    const mT = F.dur(Math.abs(m));
+    return { text: `${mT} = ${F.dur(mx)} ${l('de máximo', 'maximum')} − ${F.dur(mx - m)} ${l('do PSV previsto', 'of planned FDP')}`, strong: [mT, F.dur(mx)], law: 'ORO.FTL.205(b)', prova: 'psvMax', value: F.dur(mx),
+      title: l('Margem no PSV', 'FDP margin'), calc: { sum: [{ k: l('Máximo', 'Maximum'), v: F.dur(mx) }, { k: `− ${l('PSV previsto', 'Planned FDP')}`, v: F.dur(mx - m) }], total: { k: `= ${l('Margem', 'Margin')}`, v: mT } } };
   };
   const marginFact = () => (live.marginMin != null
-    ? (live.marginMin < 0 ? fact(F.hm(live.marginMin), l('depois do limite do PSV', 'past the FDP limit')) : withWhy(fact(F.hm(live.marginMin), l('de margem no PSV', 'FDP margin')), marginWhy()))
+    ? (live.marginMin < 0 ? fact(F.dur(Math.abs(live.marginMin)), l('depois do limite do PSV', 'past the FDP limit')) : withWhy(fact(F.dur(live.marginMin), l('de margem no PSV', 'FDP margin')), marginWhy()))
     : null);
   // O REPOUSO INCERTO (2026-11-12, "a lei é que manda"): o motivo, numa frase curta, e o mínimo nas duas pontas.
   const restWhy = (u) => ({
@@ -472,7 +484,11 @@ export function homeCards(H = {}) {
   }[u.why] || l('falta um dado', 'a fact is missing'));
   const minRange = (lo, hi) => (hi != null && hi !== lo ? `${l('mínimo', 'minimum')} ${F.dur(lo)} ${l('a', 'to')} ${F.dur(hi)}` : `${l('mínimo', 'minimum')} ${F.dur(lo)} ${l('ou mais', 'or more')}`);
   const minChip = (lo, hi) => (hi != null && hi !== lo ? `${l('mín.', 'min')} ${F.dur(lo)}–${F.dur(hi)}` : `${l('mín.', 'min')} ${F.dur(lo)} ${l('ou mais', 'or more')}`);
-  const restUncSub = (u) => (u.hi ? `${l('cumprido entre', 'met between')} ${u.lo} ${l('e', 'and')} ${u.hi} · ${restWhy(u)}` : restWhy(u));
+  // "cumpre-se" enquanto o repouso não chega à hora; "cumprido" quando chega (a barra a 100 %) — às 22:07, "05:20 cumprido" lia-se
+  // como já feito (iPhone, 2026-11-14). Sem a barra, não se sabe se já chegou: diz-se o que vem ("cumpre-se").
+  const restMet = (r) => r.pct != null && r.pct >= 100;
+  const metWord = (r) => (restMet(r) ? l('cumprido', 'met') : l('cumpre-se', 'will be met'));
+  const restUncSub = (u, r) => (u.hi ? `${restMet(r) ? l('cumprido entre', 'met between') : l('cumpre-se entre', 'is met between')} ${u.lo} ${l('e', 'and')} ${u.hi} · ${restWhy(u)}` : restWhy(u));
   // O repouso depois do dia de hoje (pós-voo na base · pernoita fora).
   const restCard = (base, { sub = null, action = null, title = null, corner = 'chev', open = null, withUntil = true, keepSub = false } = {}) => {
     const r = H.rest || {};
@@ -480,7 +496,7 @@ export function homeCards(H = {}) {
     if (u) {
       return { t: 'card', id: 'rest', color: 'rest', kind: base ? l('Repouso · na base', 'Rest · at base') : l('Repouso · fora da base', 'Rest · away from base'),
         title: title || (base ? l('Descansa', 'Rest') : (r.hotel || l('Sem hotel guardado', 'No hotel saved'))),
-        sub: keepSub && sub ? `${l('dia acima do limite', 'day over the limit')} · ${l('repouso', 'rest')} ${u.hi ? `${u.lo}–${u.hi}` : `${l('desde', 'from')} ${u.lo}`} · ${restWhy(u)}` : restUncSub(u),
+        sub: keepSub && sub ? `${l('dia acima do limite', 'day over the limit')} · ${l('repouso', 'rest')} ${u.hi ? `${u.lo}–${u.hi}` : `${l('desde', 'from')} ${u.lo}`} · ${restWhy(u)}` : restUncSub(u, r),
         gain: !base && r.pay != null ? F.eur(r.pay, '+') : null,
         a: r.signOff ? { v: r.signOff, l: l('fim de serviço', 'duty ends') } : null,
         dur: minChip(u.minLo, u.minHi),
@@ -493,7 +509,7 @@ export function homeCards(H = {}) {
       gain: !base && r.pay != null ? F.eur(r.pay, '+') : null,
       a: r.signOff ? { v: r.signOff, l: l('fim de serviço', 'duty ends') } : null,
       dur: r.minMin ? `${l('mínimo', 'minimum')} ${F.dur(r.minMin)}` : null,
-      b: withUntil && r.until ? { v: r.until, l: r.untilIso && isISO(today) && dayIdx(r.untilIso) - dayIdx(today) >= 2 ? `${l('cumprido', 'met')} · ${F.wds(r.untilIso)}` : l('cumprido', 'met') } : null,
+      b: withUntil && r.until ? { v: r.until, l: r.untilIso && isISO(today) && dayIdx(r.untilIso) - dayIdx(today) >= 2 ? `${metWord(r)} · ${F.wds(r.untilIso)}` : metWord(r) } : null,
       pct: r.pct != null ? Math.max(0, Math.min(100, Math.round(r.pct))) : null, corner, action, open };
   };
   // O dinheiro do mês: linha fina neutra; incerto → as duas pontas (nunca um valor inventado).
@@ -551,7 +567,7 @@ export function homeCards(H = {}) {
       const inHours = u != null && u < 48 * 60;
       const days = isISO(next.iso) && isISO(today) ? dayIdx(next.iso) - dayIdx(today) : null;
       const g = inHours
-        ? giantOf(Math.floor(u / 60), u % 60 ? `h ${String(u % 60).padStart(2, '0')}` : 'h')   // sem "livre": o título já diz "Folga"
+        ? giantDur(u)   // sem "livre": o título já diz "Folga" (D1: "18 h 30", com o "h" pequeno ao meio)
         : giantOf(days != null ? days : '—', days === 1 ? l('dia', 'day') : l('dias', 'days'));
       T = top({ text: l('Folga', 'Day off'), live: false }, todayPill(), l('Próximo serviço daqui a', 'Next duty in'), g,
         facts(fact(when(next.iso), l('até lá', 'until then')), weekFact(), wxTomorrow()));
@@ -617,7 +633,7 @@ export function homeCards(H = {}) {
         nextCard(next, l('A seguir', 'Next'), { withDay: true }));
     } else {
       T = top({ text: l('Dia fechado', 'Day closed'), live: false }, todayPill(), c.fdp ? l('PSV de hoje', 'Today’s FDP') : (c.kindLabel || l('Serviço de hoje', 'Today’s duty')),
-        c.fdp ? giantOf(noLead(c.fdp), 'h') : giantOf(l('Fechado', 'Closed')), fx);   // sem "fechado": o título já diz "Dia fechado"
+        c.fdp ? (toMin(c.fdp) != null ? giantDur(toMin(c.fdp)) : giantOf(noLead(c.fdp), 'h')) : giantOf(l('Fechado', 'Closed')), fx);   // sem "fechado": o título já diz "Dia fechado"
       // O PSV de hoje: do report aos calços do último setor em funções (o que o motor usa — ORO.FTL.105(12): um posicionamento no fim
       // já não conta). Quando não é só "fim − report", a linha que explica a diferença: começou antes do report (CS FTL.1.205(d)(1)(ii),
       // `early`) ou o acerto do tempo decorrido (hora de verão, fusos — `adj`, em minutos, com sinal). Vêm do ftlForDuty pelo ecrã.
@@ -631,7 +647,7 @@ export function homeCards(H = {}) {
           ...(early ? [{ k: `+ ${l('Começou antes do report (2.ª notificação)', 'Started before report (2nd notification)')}`, v: F.dur(early) }] : []),
           ...(adj ? [{ k: `${adj > 0 ? '+' : '−'} ${l('Acerto do tempo decorrido (hora de verão ou fusos)', 'Elapsed-time correction (DST or time zones)')}`, v: F.dur(Math.abs(adj)) }] : [])],
           total: { k: `= ${l('PSV de hoje', 'Today’s FDP')}`, v: fdpT } } } : null;
-      const sub = c.fdp ? (c.over ? l('o dia fechou acima do limite', 'the day closed over the limit') : l('o dia fechou nos limites', 'the day closed within limits')) : null;
+      const sub = c.fdp ? (c.over ? l('o dia fechou acima do limite', 'the day closed over the limit') : l('o dia fechou dentro dos limites', 'the day closed within limits')) : null;
       // A barra "Registar sign-off" saiu (2026-11-14, regra do Nuno: o fim de serviço vem do calendário, que a companhia corrige depois).
       cards = assemble(restCard(true, { sub, action: null, open: { to: 'day', iso: today }, keepSub: !!c.over }), nextCard(next, l('A seguir', 'Next'), { withDay: true }));
     }
@@ -701,14 +717,14 @@ export function homeCards(H = {}) {
     const mx = v ? toMin(v.maxStr) : null, rl = v ? toMin(v.realStr) : null;
     const proj = !!(v && v.projected);
     const vTxt0 = !v ? null
-      : v.verdict === 'over' ? l(`acima do limite · PSV ${v.projected ? 'projetado ' : ''}${noLead(v.realStr)} de ${noLead(v.maxStr)}`, `over the limit · ${v.projected ? 'projected ' : ''}FDP ${noLead(v.realStr)} of ${noLead(v.maxStr)}`)
+      : v.verdict === 'over' ? l(`acima do limite · PSV ${v.projected ? 'projetado ' : ''}${durOf(v.realStr)} de ${durOf(v.maxStr)}`, `over the limit · ${v.projected ? 'projected ' : ''}FDP ${durOf(v.realStr)} of ${durOf(v.maxStr)}`)
       : v.verdict === 'uncertain' ? l('incerto — falta um dado no serviço', 'uncertain — a fact is missing in the duty')
       : v.verdict === 'discretion' ? (ds.commander ? l('discrição tua (205 f): até +2 h', 'your discretion (205 f): up to +2 h') : l('só com a discrição do comandante (205 f)', 'only with the commander’s discretion (205 f)'))
-      : `${l('ainda dentro', 'still within')}${mx != null && rl != null ? ` · ${l('margem', 'margin')} ${F.hm(mx - rl)}` : ''}${psvOf(ps) ? ` ${l('até às', 'until')} ${psvOf(ps)}` : ''}`;
+      : `${l('ainda dentro', 'still within')}${mx != null && rl != null ? ` · ${l('margem', 'margin')} ${F.dur(mx - rl)}` : ''}${psvOf(ps) ? ` ${l('até às', 'until')} ${psvOf(ps)}` : ''}`;
     const vTxt = vTxt0 && proj && v.verdict !== 'over' ? `${l('projeção', 'projection')}: ${vTxt0}` : vTxt0;
     const vSlim = vTxt ? { t: 'slim', id: 'psvLive', color: 'alert', title: l('Limites com o atraso', 'Limits with the delay'), sub: vTxt, value: null, gain: false, open: { to: 'item', id: 'legal' } } : null;
     const one = planDayCard(hero, { sub: ds.why || null, a: hero.report ? { v: hero.report, l: 'report' } : null,
-      dur: v ? `PSV ${proj ? l('projetado ', 'projected ') : ''}${noLead(v.realStr)} ${l('de', 'of')} ${noLead(v.maxStr)}` : psvPlanTxt(ps), b: (ds.lastArr || hero.lastArr) ? { v: ds.lastArr || hero.lastArr, l: l('última chegada', 'last arrival') } : null });
+      dur: v ? `PSV ${proj ? l('projetado ', 'projected ') : ''}${durOf(v.realStr)} ${l('de', 'of')} ${durOf(v.maxStr)}` : psvPlanTxt(ps), b: (ds.lastArr || hero.lastArr) ? { v: ds.lastArr || hero.lastArr, l: l('última chegada', 'last arrival') } : null });
     const night = nightCard({ ...hero, end: ds.end || hero.end }, next);
     const sameDay = !night && next && next.iso === today ? nextCard(next, l('A seguir', 'Next'), { withDay: true }) : null;
     // Com o aviso dos limites (é sobre ESTE serviço, vai em primeiro), o 2.º passa a linha fina — a regra dos dois cartões.
@@ -769,7 +785,7 @@ export function homeCards(H = {}) {
       const stn = ph === 'duty' ? live.legDep : live.legArr;
       const unc = uncertain(hero);
       const f1 = ph === 'air' ? fact(F.dur(live.minsToArr), l('falta para aterrar', 'to landing')) : ph === 'duty' ? fact(F.dur(live.minsToDep), l('falta', 'to go'))
-        : (ps.running ? fact(noLead(ps.running), l('PSV de hoje', 'today’s FDP')) : null);
+        : (ps.running ? fact(durOf(ps.running), l('PSV de hoje', 'today’s FDP')) : null);
       const card = liveDayCard(hero);
       if (unc) {   // "a lei é que manda": sem o facto que falta, o limite não é certo — nem antes nem depois do report
         card.sub = l(`limites incertos · falta ${hero.legal.missing || 'um dado'}`, `uncertain limits · missing ${hero.legal.missing || 'a fact'}`);
@@ -849,7 +865,9 @@ export function giantWidth(g, z) {
   if (!g) return 0;
   const ls = z * GIANT.ls;
   // + o aperto devolvido depois da última letra (o iOS cortava o último algarismo — components/HomeCards.js, `tail`).
-  const w1 = textWidth(g.l1, z, 'b', ls) + (g.unit ? GIANT.unitGap + textWidth(g.unit, GIANT.unitSize, 'b', GIANT.unitLs) : -ls);
+  // D1: com `l1b` (os minutos de uma duração), mais o mesmo espaço depois da unidade e os algarismos grandes (com o aperto devolvido).
+  const w1 = textWidth(g.l1, z, 'b', ls) + (g.unit ? GIANT.unitGap + textWidth(g.unit, GIANT.unitSize, 'b', GIANT.unitLs) : -ls)
+    + (g.unit && g.l1b ? GIANT.unitGap + textWidth(g.l1b, z, 'b', ls) - ls : 0);
   // A hora UTC ao lado do sítio (a letra dos factos), como a unidade na 1.ª linha.
   const w2 = g.l2 ? textWidth(g.l2, z, 'b', ls) + (g.zulu ? GIANT.zuluGap + textWidth(g.zulu, GIANT.factSize, 'b') : -ls) : 0;
   return Math.ceil(Math.max(w1, w2));
