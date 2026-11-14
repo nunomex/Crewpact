@@ -6,7 +6,7 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 ---
 
-## O QUE FALTA (ler isto primeiro · lista única · atualizada 2026-11-13)
+## O QUE FALTA (ler isto primeiro · lista única · atualizada 2026-11-14)
 
 Uma linha por pendência; o pormenor está na entrada indicada entre parênteses (as entradas ficam abaixo, como histórico).
 Quando uma coisa se fizer, sai daqui. **Regra do Nuno: "a lei é que manda"** — sem um facto, "incerto" com o que falta; nunca
@@ -49,6 +49,27 @@ artigo, e o que o texto não fecha: `docs/ae-easyjet-pilotos-2026.md`. Pormenor 
 - **Quando sair a separata do Diário da República**, trocar o link da Biblioteca (hoje aponta para o boletim completo).
 - **Para o advogado:** as dúvidas do ponto 8 de `docs/ae-easyjet-pilotos-2026.md` (a 11.ª, a data legal de entrada em vigor, ficou fechada pela lei: artigos 478.º e 519.º do Código do Trabalho, agora em `fontes/pt/`). A questão antiga "DDO/IDO/WFLY:
   a base do contrato ou a da tabela?" continua aberta: o Anexo novo diz "full time FRV", o articulado diz "proporcional".
+
+**SESSÃO FABLE 5.2 (Alto, sessão própria) — AS CONTAS DA REGRA "SÓ O CALENDÁRIO" (registada a pedido do Nuno a 2026-11-14).**
+Começa quando chegarem **os códigos todos da easyJet** (o Nuno pediu-os a um colega). A regra: a app só lê o calendário (e o arquivo
+das mudanças que ela própria guarda) e calcula — nada à mão, exceto na Simulação (pormenor na entrada "A REGRA NOVA DO NUNO", abaixo).
+O que fazer, cada coisa com golden primeiro e com o texto oficial aberto (`fontes/`):
+1. **Os códigos novos em `data/rosterCodes.js`** (WFLY, SOC, EXPD, LTC, e o que o colega mandar) → os extras passam a contar sozinhos:
+   SOC/EXPD "por cada código na escala" (BTE 29/2026, Art. 37.º n.º 9) · "dia WFLY" (Art. 61.º) · formação dada por LTC, 0,33 setor
+   por dia (Art. 42.º) · ad-hoc = escritório, formação em terra, simulador (Art. 43.º).
+2. **DDO / IDO calculados** pelo tempo do serviço no dia de folga (Art. 54.º; Anexo I.12: < 90 min = DDO, ≥ 90 min = IDO), com as
+   horas reais que a companhia corrige no calendário.
+3. **Os dias "a corrigir" da importação entram como "incerto"**, sem nunca perder um dia (aeroporto que a app não conhece, hora de fim
+   ou de início em falta) — mexe nos acumulados do ORO.FTL.210 e no golden do bloco 4 (A-220: hoje "sem fim, fica a corrigir — fora dos
+   210"). **Só depois disto sai o botão "Corrigir ›" da "Rever a escala"** (o Nuno: "regista isso sim, para a sessão Fable").
+4. **O RDP da cabine (Cl. 67.ª) e a correção das horas reais no mesmo dia** — se uma correção depois do voo, vista no dia da
+   operação, conta ou não como RDP (um atraso real pode ser RDP); o SNC já só conta mudanças vistas antes do início (verificado).
+5. **A assistência antes do voo e o adiamento da apresentação tirados do calendário** (o evento HSBY/ADTY anterior; a hora original
+   no arquivo das mudanças) — em vez de se perguntarem (o "Completar" saiu).
+6. **Os SNC/RDP candidatos da Auditoria contam sozinhos** (ou ficam como candidatos com a regra dita) — hoje "Ver o dia".
+7. **O arquivo como prova:** a correção das horas depois do voo guarda-se como "prevista → real · corrigida a …" e entra no Registo
+   ORO.FTL.245 dos Relatórios (o desenho da marca: 3 esboços, Opus).
+Revisão independente no fim (Opus, só com o código, o diff e `fontes/`).
 
 **SESSÃO SEGUINTE (pedida pelo Nuno a 2026-11-13) — AS REFERÊNCIAS DE LAYOUT E O RESTO DAS PÁGINAS (Opus 5.5, Extra, sessão
 própria; é design, não cálculo).** O Nuno pôs em `referencias/Para a app/` 57 imagens (54 JPG e 3 GIF) que escolheu como
@@ -692,6 +713,28 @@ simulação é que podemos inserir para simular"). Parei a migração do "Extra 
   pacote iOS gera. **Por ver no iPhone; por gravar.**
 - **O Nuno: "tenho que mudar o agente para o Fable 5.2 agora?"** → não: o que se faz agora (tirar o que é à mão, desenho) é Opus 5.5.
   O Fable 5.2 entra numa SESSÃO NOVA (esforço Alto), quando os códigos do colega chegarem, para as contas novas (lista acima).
+- **Gravado em `3abbd50`** (o botão "Simular", os extras, a Auditoria).
+- **Passo 3 — o "Completar" e as horas à mão saíram:** golden primeiro (`test:homecards`: o cartão incerto sem a barra "Completar" — fica
+  a seta, que abre o dia; o "Completar" do MÊS fica, leva ao Perfil — a data de entrada na companhia é do Perfil, à mão; o pós-voo SEM a
+  barra "Registar sign-off" — o fim de serviço vem do calendário). **No Detalhe:** sai o cartão "Completar" (preencher); fica o aviso,
+  só informação: "Para a lei decidir, falta 1 dado — <facto> — tem de vir do calendário"; saem as duas portas do "O calendário está
+  errado?" (horas reais, dado em falta) e o atalho `editReq`; fica uma nota: "A escala vem do calendário. Se algo estiver errado,
+  corrige-se no eCrew e a app atualiza ao sincronizar" (ou "importa o PDF atualizado"). `components/FactSheet.js` APAGADO (só servia
+  isto). `data/dutyComplete.js` fica (o `completeRows` diz o que falta; `test:completar`).
+- **Passo 4 — os aeroportos:** o catálogo passa de 5 458 (comerciais) a **9 057** (todos os com IATA, exceto os fechados;
+  `scripts/build-airports.js`). **Cuidado encontrado:** o OurAirports é editado pela comunidade e a versão de hoje trazia mudanças por
+  confirmar (o PBI com outro nome e o código DJT; o VTZ passado para um aeroporto novo) → o script passa a **nunca perder nem mudar** um
+  aeroporto que já existia (0 perdidos, 0 mudados; só se acrescentam os novos). **46 dos novos** davam o fuso do país vizinho (perto de
+  fronteiras) → `data/tzOverride.js` com o fuso certo de cada um, conferido contra a IANA pelo `test:zulu` (47/47). Regenerados
+  também os catálogos das Edge Functions (`supabase/functions/flight-status` e `share-day/airports-coords.ts`) — **ENVIADOS pela CLI
+  a 2026-11-14 com o "sim" do Nuno** (`npx supabase functions deploy flight-status --project-ref xfclgmfafkcfylgrogza --yes` e o
+  `share-day` com `--no-verify-jwt --yes`; o CLI novo pede `--yes` em modo agente, e só com o consentimento do Nuno). O `share-day`
+  levou também as mudanças de julho que talvez não tivessem ido (a página de erro dos links na pele, 04f559b; e b47377e). **Verificado
+  por pedidos de teste:** share-day com link inventado → 200 `{"ok":true,"found":false}` (a página pública abre sem login) ·
+  flight-status OPTIONS 200 · sem sessão 401. **O "Corrigir ›" da "Rever a escala" FICA, por agora:** sem ele, um dia "a corrigir" (aeroporto desconhecido, hora de
+  fim em falta) ficava FORA da escala sem ninguém saber — a importação guarda-os de fora até corrigidos, e o golden do bloco 4 (A-220)
+  tranca isso ("sem fim, fica a corrigir — fora dos 210"). A solução certa (importá-los como "incerto", sem perder um dia) mexe nos
+  acumulados do ORO.FTL.210 → **para a sessão Fable.** Testes todos · guardião · pacote iOS gera. **Por ver no iPhone; por gravar.**
   **Também gravado nesta ronda:** a centragem dos números nos círculos (`s.numTxt`, acima) e os esboços `janelas-3.html`,
   `janelas-c.html` e `botoes-escritos.html`.
   **E o Nuno: "depois vê os botões das notificações, o X para fechar e o de sincronizar — não estão com o layout novo, pois não?"**

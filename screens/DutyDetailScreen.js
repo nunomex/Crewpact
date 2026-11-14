@@ -6,11 +6,8 @@ import Icon from '../components/Icon';
 import IconButton from '../components/IconButton';
 import { HomeCards } from '../components/HomeCards';
 import DayRuler from '../components/DayRuler';
-import FactSheet from '../components/FactSheet';
 import PeleSheet from '../components/PeleSheet';
-import SheetHeader from '../components/SheetHeader';
-import MarkRow from '../components/MarkRow';
-import { completeRows, realTimesPatch, missingFields, plannedOf, isClock } from '../data/dutyComplete';
+import { completeRows, plannedOf } from '../data/dutyComplete';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t } from '../data/i18n';
 import { select, warning, success } from '../data/haptics';
@@ -51,19 +48,11 @@ export function DutyDetailBody({ date, idx: idxIn = 0, editReq = null, navigatio
   const ctxAll = useContext(AppContext);
   const { lang, duties, crewAt, removeDuty, saveDuty, updateDutyService, notify } = ctxAll;
   const l = (pt, en) => (lang === 'en' ? en : pt);
-  const [fact, setFact] = useState(null);           // a linha do "Completar" aberta (a folha de UM dado)
-  const lastFact = useRef(null);                    // a folha desce com o conteúdo (não pisca vazia ao fechar)
-  if (fact) lastFact.current = fact;
-  const sf = fact || lastFact.current;
-  const [fixOpen, setFixOpen] = useState(false);    // "O calendário está errado?" — as duas portas
-  const afterFix = useRef(null);                    // a folha a abrir DEPOIS de esta fechar (PeleSheet.onClosed — nunca dois Modais a cruzar-se)
-  const [realOpen, setRealOpen] = useState(false);  // porta 1: as horas reais
-  const [missOpen, setMissOpen] = useState(false);  // porta 2: o dado que faltou no calendário
   const [hotelOpen, setHotelOpen] = useState(false);   // folha "Hotel da pernoita" (registar/editar)
   const [prova, setProva] = useState(null);            // folha da PROVA ("a lei deste número")
 
-  // `editReq` (Início v6, tecla "Registar o sign-off"): abre logo as HORAS REAIS (o formulário inteiro saiu, 2026-11-08).
-  useEffect(() => { if (editReq) setRealOpen(true); }, [editReq]);
+  // (`editReq` abria as HORAS REAIS a partir da barra "Registar sign-off" do Início — saiu a 2026-11-14 com a regra do Nuno: a escala
+  // só se lê; as horas reais vêm do calendário, que a companhia corrige depois.)
   // LINHA DO TEMPO DO CONTRATO (2026-11-03): o acordo, a companhia (a Prova cita o AE dela) e a base
   // DESTE dia — um serviço antigo noutra companhia mostra o dinheiro e a lei dessa companhia.
   const ae = date ? ctxAll.aeAt(date) : ctxAll.ae;
@@ -103,14 +92,6 @@ export function DutyDetailBody({ date, idx: idxIn = 0, editReq = null, navigatio
   const isManual = !duty.source || duty.source === 'manual';
   const todayISO = isoDay();
   const tx = (v) => (v == null ? '' : typeof v === 'string' ? v : (lang === 'en' ? v.en : v.pt) || v.pt || '');
-  // Grava UM facto: o serviço inteiro com só esse campo mudado (o saveDuty pede o serviço todo; a origem, a escala publicada
-  // e as pernas ficam). Os extra gravam-se no seu lugar.
-  const saveSvc = (patch, msg) => {
-    if (idx > 0) updateDutyService && updateDutyService(date, idx - 1, { ...duty, ...patch });
-    else saveDuty && saveDuty(date, { ...duty, ...patch });
-    success(); onEdited && onEdited();
-    notify && notify(msg || l('Guardado', 'Saved'));
-  };
   const hasEnd = !!(duty.report_time && duty.block_on);
 
   // ── Motor FTL (só com report; realizados só com block-on) — débrief SÓ em voo (ORO.FTL.235c). ──
@@ -218,7 +199,6 @@ export function DutyDetailBody({ date, idx: idxIn = 0, editReq = null, navigatio
   const headMain = isFlight
     ? routeStr
     : (duty.block_on && duty.block_on !== duty.report_time ? `${duty.report_time} – ${duty.block_on}` : (duty.report_time || '—'));
-  const fixTitle = isManual ? l('As horas estão erradas?', 'Are the times wrong?') : duty.source === 'pdf' ? l('O PDF está errado?', 'Is the PDF wrong?') : l('O calendário está errado?', 'Is the calendar wrong?');
 
   // ── Herói (mockup): fantasma = FDP realizado (ou duty hours); kick = nº de voo · setores · pernoita ──
   const heroGhost = (d && hasEnd && d.fdp && d.fdp.actualFdpStr) || (d && d.dutyPeriodStr) || '';
@@ -322,7 +302,6 @@ export function DutyDetailBody({ date, idx: idxIn = 0, editReq = null, navigatio
       </View>
     ) };
   };
-  const missing = missingFields(duty);
   // A régua das 24 h (B3): o dia todo (os serviços na cor do tipo, o repouso fora da base, a WOCL só quando o motor a dá).
   const prevDay = duties[addDayIso(date, -1)];
   const nowD = new Date();
@@ -341,53 +320,19 @@ export function DutyDetailBody({ date, idx: idxIn = 0, editReq = null, navigatio
       ]} />
     </Card>
   );
-  // COMPLETAR — uma linha por facto; a que falta (need) com o ponto e "Por indicar"; o cartão do Starling só com um "incerto".
-  const completar = rows.length ? (
-    <>
-      {needRows.length ? (
-        <View style={[s.needCard, { backgroundColor: C3.alert }]}>
-          <Icon name="alert" size={16} color={CARD.onCard} />
-          <View style={s.flex1}>
-            <Text style={[TXT3.lineVal, { color: CARD.onCard }]}>{needRows.length === 1 ? l('Para a lei decidir, falta 1 dado', 'For the law to decide, 1 fact is missing') : l(`Para a lei decidir, faltam ${needRows.length} dados`, `For the law to decide, ${needRows.length} facts are missing`)}</Text>
-            <Text style={[TXT3.cardSub, { color: CARD.onCardSub }]}>{tx(needRows[0].sheet.intro)}</Text>
-          </View>
-        </View>
-      ) : null}
-      <Card kind={l('Completar', 'Complete')}>
-        <View>
-          {rows.map((r, i) => (
-            <TouchableOpacity key={r.id} style={[s.crow, { borderTopColor: CARD.rule }, i === 0 && s.rowFirst]} activeOpacity={0.7} onPress={() => { select(); setFact(r); }}
-              accessibilityRole="button" accessibilityLabel={`${tx(r.title)}: ${tx(r.value)}`} accessibilityHint={l('Abre para indicar', 'Opens to fill in')}>
-              <View style={s.flex1}>
-                <Text style={[TXT3.lineVal, { color: C3.ink }]}>{tx(r.title)}</Text>
-                {r.cite ? <Text style={[TXT.caption, { color: C3.tabSub }]} numberOfLines={1}>{r.cite}</Text> : null}
-              </View>
-              {r.need ? <View style={[s.needDot, { backgroundColor: C3.alert }]} /> : null}
-              <Text style={[TXT3.line, s.crowV, { color: r.need ? PELE.warnText : C3.soft }]} numberOfLines={1}>{tx(r.value)}</Text>
-              <Icon name="chevron" size={14} color={r.need ? PELE.warnText : C3.tabSub} />
-            </TouchableOpacity>
-          ))}
-        </View>
-        {!needRows.length ? <Text style={[TXT3.cardSub, { color: C3.tabSub }]}>{l('Só o que a lei ou o teu acordo precisam e o calendário não traz.', 'Only what the law or your agreement needs and the calendar does not bring.')}</Text> : null}
-      </Card>
-    </>
+  // O QUE FALTA PARA A LEI DECIDIR (2026-11-14, regra do Nuno: a app só lê o calendário e calcula — o cartão "Completar", onde se
+  // preenchia à mão, SAIU). Fica o aviso, só informação: que factos faltam; têm de vir do calendário. Sem eles, o número é "incerto"
+  // com as duas pontas (a lei é que manda).
+  const completar = needRows.length ? (
+    <View style={[s.needCard, { backgroundColor: C3.alert }]} accessible
+      accessibilityLabel={`${needRows.length === 1 ? l('Para a lei decidir, falta 1 dado', 'For the law to decide, 1 fact is missing') : l(`Para a lei decidir, faltam ${needRows.length} dados`, `For the law to decide, ${needRows.length} facts are missing`)}: ${needRows.map((r) => tx(r.title)).join(', ')}`}>
+      <Icon name="alert" size={16} color={CARD.onCard} />
+      <View style={s.flex1}>
+        <Text style={[TXT3.lineVal, { color: CARD.onCard }]}>{needRows.length === 1 ? l('Para a lei decidir, falta 1 dado', 'For the law to decide, 1 fact is missing') : l(`Para a lei decidir, faltam ${needRows.length} dados`, `For the law to decide, ${needRows.length} facts are missing`)}</Text>
+        <Text style={[TXT3.cardSub, { color: CARD.onCardSub }]}>{l(`${needRows.map((r) => tx(r.title)).join(' · ')} — tem de vir do calendário.`, `${needRows.map((r) => tx(r.title)).join(' · ')} — it has to come from the calendar.`)}</Text>
+      </View>
+    </View>
   ) : null;
-  // As horas reais (porta 1): voo = calços fora/dentro e fim de serviço; os outros serviços = início e fim.
-  const snapV = (f) => (duty.snap && duty.snap[f]) || null;
-  const planHint = (f) => (snapV(f) ? { pt: `Na escala: ${snapV(f)}`, en: `Rostered: ${snapV(f)}` } : null);
-  const realFields = isFlight ? [
-    { key: 'off', type: 'time', label: { pt: 'Calços fora', en: 'Off-blocks' }, value: duty.block_off || '', optional: true, hint: planHint('block_off') },
-    { key: 'on', type: 'time', label: { pt: 'Calços dentro', en: 'On-blocks' }, value: duty.block_on || '', optional: true, hint: planHint('block_on') },
-    { key: 'signOff', type: 'time', label: { pt: 'Fim de serviço (sign-off)', en: 'Sign-off' }, value: duty.signOff || '', optional: true, hint: { pt: 'Depois do débrief. Vazio = calços dentro + o pós-voo do teu perfil.', en: 'After the debrief. Empty = on-blocks + your profile\'s post-flight time.' } },
-  ] : [
-    { key: 'start', type: 'time', label: { pt: 'Início', en: 'Start' }, value: duty.report_time || '', hint: planHint('report_time') },
-    { key: 'end', type: 'time', label: { pt: 'Fim', en: 'End' }, value: duty.block_on || '', optional: true, hint: planHint('block_on') },
-  ];
-  const realPatch = (v) => (isFlight
-    ? realTimesPatch(duty, { off: v.off && v.off !== duty.block_off ? v.off : null, on: v.on && v.on !== duty.block_on ? v.on : null, signOff: v.signOff || null }, { date })
-    : { report_time: isClock(v.start) ? v.start : duty.report_time, block_on: isClock(v.end) ? v.end : (duty.block_on || null) });
-  const missFields = missing.map((f) => ({ key: f.key, type: 'time', label: f.label, value: '' }));
-  const missPatch = (v) => Object.fromEntries(missing.filter((f) => isClock(v[f.key])).map((f) => [f.key, v[f.key]]));
 
 
   const fatPill = fat ? (
@@ -456,7 +401,7 @@ export function DutyDetailBody({ date, idx: idxIn = 0, editReq = null, navigatio
   const limits = (
     <Card kind={l('Limites · FTL', 'Limits · FTL')}>
       {(!d && !duty.report_time && (duty.kind || 'flight') === 'flight') ? (
-        <Panel rows={[{ k: l('PSV', 'FDP'), v: l('não calculado — falta a hora de apresentação', 'not calculated — the report time is missing'), color: PELE.warnText, go: () => setMissOpen(true) }]} />
+        <Panel rows={[{ k: l('PSV', 'FDP'), v: l('não calculado — falta a hora de apresentação', 'not calculated — the report time is missing'), color: PELE.warnText }]} />
       ) : null}
       {d ? (
         <>
@@ -612,15 +557,16 @@ export function DutyDetailBody({ date, idx: idxIn = 0, editReq = null, navigatio
     <View style={s.body}>
       {hero ? <HomeCards cards={[{ ...hero, open: onCollapse ? hero.open : null }]} C={C3} onOpen={() => { if (onCollapse) { select(); onCollapse(); } }} l={l} /> : null}
       {limits}
-      {needRows.length ? completar : null}
+      {completar}
       {schedule}
-      {!needRows.length ? completar : null}
       {nightStop}
       {payment}
       {others}
-      {/* A saída discreta (Apple Wallet "Report an Issue"): as horas reais ou o dado que faltou — o resto corrige-se na fonte. */}
-      <HomeCards cards={[{ t: 'slim', id: 'fix', color: 'neutral', title: fixTitle, sub: l('as horas reais ou um dado que faltou', 'the actual times or a missing fact'), open: { to: 'fix' } }]}
-        C={C3} onOpen={() => { select(); setFixOpen(true); }} l={l} />
+      {/* A escala vem do calendário e só se lê (regra do Nuno, 2026-11-14: "o calendário vem sempre correto e sincronizado; se não
+          estiver, é corrigido no calendário"). Saíram as portas das horas reais e do dado em falta. */}
+      <Text style={[TXT3.cardSub, s.srcNote]}>{duty.source === 'pdf'
+        ? l('A escala vem do PDF. Se algo estiver errado, importa o PDF atualizado: a app mostra a mudança para confirmares.', 'The roster comes from the PDF. If something is wrong, import the updated PDF: the app shows the change for you to confirm.')
+        : l('A escala vem do calendário. Se algo estiver errado, corrige-se no eCrew e a app atualiza ao sincronizar.', 'The roster comes from the calendar. If something is wrong, it is fixed in eCrew and the app updates when you sync.')}</Text>
       {isManual && idx === 0 ? (
         <TouchableOpacity style={s.delBtn} activeOpacity={0.8} onPress={confirmDelete}>
           <Icon name="trash" size={16} color={PELE.red} />
@@ -633,36 +579,6 @@ export function DutyDetailBody({ date, idx: idxIn = 0, editReq = null, navigatio
       )}
       <Text style={[TXT.caption, s.foot, { color: C3.tabSub }]}>{t('common.ftlEstimate', lang)}</Text>
 
-      {/* A folha de UM dado do Completar. */}
-      <FactSheet visible={!!fact} onClose={() => setFact(null)} lang={lang}
-        title={sf ? sf.title : ''} intro={sf ? sf.sheet.intro : null} cite={sf ? sf.cite : null} note={sf ? sf.sheet.note : null}
-        fields={sf ? sf.sheet.fields : []} valid={sf ? sf.valid : null}
-        onSave={(v) => { const r = fact; setFact(null); saveSvc(r.apply(v), l(`${tx(r.title)} · guardado`, `${tx(r.title)} · saved`)); }} />
-      {/* "O calendário está errado?" — duas portas, cada uma com o seu formulário curto. A REGRA DAS FOLHAS (2026-11-14): folha branca,
-          "Fechar" escrito, as portas nas linhas das janelas (`MarkRow`, como o calendário da Escala), a nota da fonte por baixo. */}
-      <PeleSheet visible={fixOpen} bg={CARD.day.sheet} onClose={() => setFixOpen(false)} onClosed={() => { const f = afterFix.current; afterFix.current = null; if (f) f(); }}>
-        <SheetHeader card title={fixTitle} onClose={() => setFixOpen(false)} closeLabel={l('Fechar', 'Close')} style={s.fixHead} />
-        <Text style={[TXT3.text, s.fixD]}>{isManual ? l('Há duas coisas que podes acrescentar aqui:', 'There are two things you can add here:') : l('A escala vem da fonte e a app não a muda. Há duas coisas que podes acrescentar aqui:', 'The roster comes from the source and the app does not change it. There are two things you can add here:')}</Text>
-        <MarkRow first mark={{ icon: 'clock' }} chevron title={l('Registar as horas reais', 'Record the actual times')}
-          sub={isFlight ? l('Calços e fim de serviço quando houve atraso — a lei conta o real', 'Blocks and sign-off when there was a delay — the law counts the actual') : l('Início e fim, se não foram os da escala', 'Start and end, if they were not the rostered ones')}
-          onPress={() => { select(); afterFix.current = () => setRealOpen(true); setFixOpen(false); }} />
-        {missing.length ? (
-          <MarkRow mark={{ icon: 'cal' }} chevron title={l('Faltou um dado', 'Something was missing')}
-            sub={l(`Falta: ${missing.map((f) => f.label.pt.toLowerCase()).join(', ')}`, `Missing: ${missing.map((f) => f.label.en.toLowerCase()).join(', ')}`)}
-            onPress={() => { select(); afterFix.current = () => setMissOpen(true); setFixOpen(false); }} />
-        ) : null}
-        {!isManual ? <Text style={[TXT3.cardSub, s.fixFoot]}>{duty.source === 'pdf'
-          ? l('Outra coisa errada (rota, dia, serviço que não existe)? Importa na Escala o PDF atualizado: a app propõe a mudança para confirmares.', 'Something else wrong (route, day, a duty that does not exist)? Import the updated PDF in the roster: the app proposes the change for you to confirm.')
-          : l('Outra coisa errada (rota, dia, serviço que não existe)? Corrige na fonte (eCrew) e toca em Sincronizar na Escala: a app propõe a mudança para confirmares.', 'Something else wrong (route, day, a duty that does not exist)? Fix it at the source (eCrew) and tap Sync in the roster: the app proposes the change for you to confirm.')}</Text> : null}
-      </PeleSheet>
-      <FactSheet visible={realOpen} onClose={() => setRealOpen(false)} lang={lang}
-        title={{ pt: 'Horas reais', en: 'Actual times' }} intro={{ pt: 'O que aconteceu de facto. A escala publicada fica guardada ao lado, como prevista.', en: 'What actually happened. The published roster stays alongside, as planned.' }}
-        cite="ORO.FTL.105(12)" fields={realFields}
-        onSave={(v) => { setRealOpen(false); saveSvc(realPatch(v), l('Horas reais guardadas', 'Actual times saved')); }} />
-      <FactSheet visible={missOpen} onClose={() => setMissOpen(false)} lang={lang}
-        title={{ pt: 'Faltou um dado', en: 'Something was missing' }} intro={{ pt: 'O calendário não trouxe isto. Sem ele, a app não consegue calcular o PSV.', en: 'The calendar did not bring this. Without it, the app cannot calculate the FDP.' }}
-        fields={missFields}
-        onSave={(v) => { setMissOpen(false); saveSvc(missPatch(v), l('Guardado', 'Saved')); }} />
       {/* Hotel da pernoita — registar/editar o hotel desta estação (catálogo pessoal). */}
       <HotelSheet visible={hotelOpen} onClose={() => setHotelOpen(false)} station={nsSt} />
       <ProvaSheet visible={!!prova} onClose={() => setProva(null)} prova={prova} lang={lang} />
@@ -773,9 +689,6 @@ const s = StyleSheet.create({
   delBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACE.s, minHeight: 44 },
   foot: { paddingHorizontal: SPACE.xs },
 
-  // As janelas (as duas portas do "o calendário está errado?") — seguem a 2.0 até migrarem
-  // "O calendário está errado?" na regra das folhas (2026-11-14)
-  fixHead: { paddingHorizontal: 0, paddingTop: 0 },
-  fixD: { color: CARD.day.soft, marginBottom: SPACE.xs },
-  fixFoot: { color: CARD.day.tabSub, marginTop: SPACE.md, marginBottom: SPACE.sm },
+  // A nota da fonte no fim (2026-11-14: a escala só se lê; corrige-se no calendário)
+  srcNote: { color: CARD.day.tabSub, marginTop: SPACE.sm },
 });

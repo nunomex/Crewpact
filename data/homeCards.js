@@ -12,7 +12,7 @@
 //     que dura em "1 h 40";
 //   · o que um serviço RENDE vai a verde numa pílula branca ("+45,40 €"); o total do mês a tinta, "estimado · bruto";
 //     todo o € com cêntimos;
-//   · "Incerto" no lugar do número quando falta um facto, com o que falta e a barra "Completar";
+//   · "Incerto" no lugar do número quando falta um facto, com o que falta (a barra "Completar" saiu a 2026-11-14);
 //   · a 2.ª linha do número é a tinta quando é o SÍTIO (LGW) e a cinzento quando QUALIFICA (estimado, livre, de 22).
 //
 // ENTRADA (H) — tudo opcional; o que falta não aparece (nunca se inventa):
@@ -172,7 +172,7 @@ export function homeCards(H = {}) {
   const legalTail = (d) => (d.legal && d.legal.status === 'ok' ? l(' · nos limites', ' · within limits') : d.legal && d.legal.status === 'bad' ? l(' · acima do limite', ' · over the limit') : '');
   const uncertain = (d) => !!(d && d.legal && d.legal.status === 'uncertain');
   const psvPlanTxt = (ps) => (ps && ps.plan && ps.max ? `PSV ${noLead(ps.plan)} ${l('de', 'of')} ${noLead(ps.max)}${ps.hi ? `–${noLead(ps.hi)}` : ''}` : null);
-  const planDayCard = (d, { sub, a, dur, b, action = null, gain = null } = {}) => {
+  const planDayCard = (d, { sub, a, dur, b, action = null, gain = null, chev = false } = {}) => {
     const fl = isFlightKind(d.kind);
     const kindLbl = fl ? [l('Dia de serviço', 'Duty day'), d.split ? l('repartido', 'split') : secTxt(d)].filter(Boolean).join(' · ') : l('Serviço em terra', 'Ground duty');
     const dep = d.dep && d.dep !== d.report ? d.dep : null;
@@ -180,9 +180,10 @@ export function homeCards(H = {}) {
       a: a !== undefined ? a : (dep ? { v: dep, l: l('parte', 'departs') } : null),
       dur: dur !== undefined ? dur : (dep && d.lastArr ? F.dur(span(dep, d.lastArr)) : null),
       b: b !== undefined ? b : (d.lastArr ? { v: d.lastArr, l: l('última chegada', 'last arrival') } : null),
-      pct: null, corner: action ? 'chev' : (d.shareable ? 'share' : 'chev'), action, open: openDay(d) };
+      pct: null, corner: (action || chev) ? 'chev' : (d.shareable ? 'share' : 'chev'), action, open: openDay(d) };
   };
-  const completar = (d) => ({ id: 'completar', icon: 'edit', label: l('Completar', 'Complete'), open: openDay(d) || { to: 'day', iso: d.iso } });
+  // A barra "Completar" do cartão de serviço SAIU (2026-11-14, regra do Nuno: a app só lê o calendário e calcula — golden
+  // scripts/homecards.test.js). O cartão incerto diz o que falta e abre o dia pela seta do canto.
   // O dia de serviço A DECORRER (depois do report): do report ao limite do PSV, com o ponto onde vais (dutyLine).
   const liveDayCard = (d) => {
     const ps = d.psv || {};
@@ -359,8 +360,8 @@ export function homeCards(H = {}) {
       T = top({ text: l('Dia fechado', 'Day closed'), live: false }, todayPill(), c.fdp ? l('PSV de hoje', 'Today’s FDP') : (c.kindLabel || l('Serviço de hoje', 'Today’s duty')),
         c.fdp ? giantOf(noLead(c.fdp), 'h', l('fechado', 'closed'), true) : giantOf(l('Fechado', 'Closed')), fx);
       const sub = c.fdp ? (c.over ? l('o dia fechou acima do limite', 'the day closed over the limit') : l('o dia fechou nos limites', 'the day closed within limits')) : null;
-      const act = c.signOffDone ? null : { id: 'signoff', icon: 'edit', label: l('Registar sign-off', 'Log sign-off'), open: { to: 'signoff', iso: today } };
-      cards = assemble(restCard(true, { sub, action: act, open: { to: 'day', iso: today }, keepSub: !!c.over }), nextCard(next, l('A seguir', 'Next'), { withDay: true }));
+      // A barra "Registar sign-off" saiu (2026-11-14, regra do Nuno: o fim de serviço vem do calendário, que a companhia corrige depois).
+      cards = assemble(restCard(true, { sub, action: null, open: { to: 'day', iso: today }, keepSub: !!c.over }), nextCard(next, l('A seguir', 'Next'), { withDay: true }));
     }
   } else if (state === 'pernoita') {
     const r = H.rest || {};
@@ -485,7 +486,7 @@ export function homeCards(H = {}) {
           zuluFact(hero)));
       const plan = psvPlanTxt(ps);
       const sub = unc ? l(`limites incertos · falta ${hero.legal.missing || 'um dado'}`, `uncertain limits · missing ${hero.legal.missing || 'a fact'}`) : (plan ? `${plan}${legalTail(hero)}` : null);
-      const one = planDayCard(hero, { sub, action: unc ? completar(hero) : null, gain: hero.perDiem != null ? F.eur(hero.perDiem, '+') : null });
+      const one = planDayCard(hero, { sub, chev: unc, gain: hero.perDiem != null ? F.eur(hero.perDiem, '+') : null });   // incerto: a seta (abre o dia, onde se explica o que falta)
       cards = assemble(one, nightCard(hero, next) || nextCard(next, l('A seguir', 'Next'), { withDay: true }));
     } else {
       // A decorrer: depois do report (em terra · no ar · aterrado). O topo é o próximo marco do SETOR; o cartão é o dia todo.
@@ -500,7 +501,7 @@ export function homeCards(H = {}) {
       if (unc) {   // "a lei é que manda": sem o facto que falta, o limite não é certo — nem antes nem depois do report
         card.sub = l(`limites incertos · falta ${hero.legal.missing || 'um dado'}`, `uncertain limits · missing ${hero.legal.missing || 'a fact'}`);
         if (card.b) card.b = { ...card.b, l: l('limite · incerto', 'limit · uncertain') };
-        card.corner = 'chev'; card.action = completar(hero);
+        card.corner = 'chev'; card.action = null;
       } else if (!hero.report) {
         card.sub = [card.sub, l('sem hora de report — PSV não calculado', 'no report time — FDP not calculated')].filter(Boolean).join(' · ');
         // Sem report não há linha do PSV, mas o dia tem partida e última chegada (iPhone, 2026-11-11: o cartão ficava só com o título).

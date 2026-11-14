@@ -4,7 +4,7 @@
  * piloto, base Lisboa; hoje = quarta 11 de novembro de 2026), e as REGRAS do esboço trancadas:
  *   nada se repete entre o topo e os cartões · nunca mais de dois cartões grandes · com um aviso o 2.º passa a linha fina ·
  *   o selo entre duas horas é o intervalo entre elas · todo o € com cêntimos · o total do mês "estimado · bruto" ·
- *   "Incerto" com o que falta e "Completar" · o número gigante e os dois factos cabem lado a lado a 390 e a 375.
+ *   "Incerto" com o que falta (sem "Completar" no cartão de serviço — 2026-11-14) · o número gigante e os dois factos cabem lado a lado a 390 e a 375.
  * Diferenças ao esboço, de propósito (escritas em docs/decisoes.md): a folga a menos de 48 h conta em HORAS (regra da
  * auditoria do tripulante, 2026-11-04) · "Certificado médico caduca em" sem artigo (o artigo muda com o documento) ·
  * o standby diz que o PSV é uma estimativa a 1 setor (225) em vez de "não chamado até agora".
@@ -148,13 +148,15 @@ eq('folga · cartões', R.folga.cards.map(C), [
 eq('folga < 48 h · número em horas', R.folgaHoras.top.giant, { l1: '18', unit: 'h 30', l2: 'livre', l2Grey: true });
 eq('folga < 48 h · "amanhã até lá"', R.folgaHoras.top.facts[0], { v: 'amanhã', l: 'até lá', tone: null });
 
-// ═══ 8 · Pós-voo — o número é o PSV de hoje (duração, sem zero à esquerda); a barra regista o sign-off ═══
+// ═══ 8 · Pós-voo — o número é o PSV de hoje (duração, sem zero à esquerda) ═══
+// A barra "Registar sign-off" SAIU (2026-11-14, regra do Nuno: a app só lê o calendário e calcula; o fim de serviço vem do calendário,
+// que a companhia corrige depois). O cartão abre o dia pela seta.
 eq('pós-voo · topo', R.posvoo.top, { pill: { text: 'Dia fechado', live: false }, pill2: { text: 'sexta 13', iso: D13 }, what: 'PSV de hoje',
   giant: { l1: '8:35', unit: 'h', l2: 'fechado', l2Grey: true }, facts: [{ v: '+96,90 €', l: 'ganhos de hoje', tone: 'gain' }, { v: '31 h', l: 'de 60 em 7 dias', tone: null }] });
 eq('pós-voo · cartões', R.posvoo.cards.map(C), [
-  { t: 'card', color: 'rest', kind: 'Repouso · na base', title: 'Descansa', sub: 'o dia fechou nos limites', gain: null, a: { v: '14:20', l: 'fim de serviço' }, dur: 'mínimo 12 h', b: { v: '02:20', l: 'cumprido' }, pct: 3, corner: 'chev', action: { id: 'signoff', icon: 'edit', label: 'Registar sign-off', open: { to: 'signoff', iso: D13 } } },
+  { t: 'card', color: 'rest', kind: 'Repouso · na base', title: 'Descansa', sub: 'o dia fechou nos limites', gain: null, a: { v: '14:20', l: 'fim de serviço' }, dur: 'mínimo 12 h', b: { v: '02:20', l: 'cumprido' }, pct: 3, corner: 'chev', action: null },
   { t: 'card', color: 'flight', kind: 'A seguir', title: 'LIS → FNC → LIS', sub: 'sábado 14 · 2 setores', gain: null, a: { v: '05:30', l: 'report' }, dur: '5 h 40', b: { v: '11:10', l: 'fim' }, pct: null, corner: 'chev', action: null }]);
-eq('pós-voo com o sign-off registado · sem barra', homeCards({ ...S.posvoo, closed: { ...S.posvoo.closed, signOffDone: true } }).cards[0].action, null);
+eq('pós-voo, com ou sem sign-off · nunca a barra de registar', [R.posvoo.cards[0].action, homeCards({ ...S.posvoo, closed: { ...S.posvoo.closed, signOffDone: true } }).cards[0].action], [null, null]);
 
 // ═══ 9 · Fecho do mês — o valor inteiro com cêntimos, "estimado" por baixo; as parcelas SOMAM o número de cima ═══
 eq('fecho · topo', R.fecho.top, { pill: { text: 'Novembro', live: false }, pill2: { text: 'fecha em 3 dias', iso: null }, what: 'Ganhos brutos do mês',
@@ -189,10 +191,12 @@ eq('configuração · topo', R.setup.top, { pill: { text: 'Começar', live: fals
 eq('configuração · as três ações da app', R.setup.cards.map((c) => [c.t, c.title || c.kind, c.open && c.open.to]),
   [['lines', 'Três passos', 'privacy'], ['slim', 'Ligar o calendário', 'connect'], ['slim', 'Importar o PDF', 'pdf'], ['slim', 'Ver um exemplo', 'demo']]);
 
-// ═══ 13 · Incerto — "Incerto" no lugar do número, o que falta na linha pequena, a barra "Completar"; o mês com as duas pontas ═══
+// ═══ 13 · Incerto — "Incerto" no lugar do número, o que falta na linha pequena; o mês com as duas pontas ═══
+// Regra do Nuno (2026-11-14): a app só lê o calendário e calcula — a barra "Completar" do cartão de serviço SAIU (o cartão inteiro
+// abre o dia, pela seta do canto). O "Completar" do mês fica: leva ao Perfil (a data de entrada na companhia é do Perfil, à mão).
 eq('incerto · factos', R.incerto.top.facts, [{ v: '1 h 40', l: 'falta', tone: null }, { v: 'Incerto', l: 'PSV até', tone: null }]);
 eq('incerto · cartão', C(R.incerto.cards[0]), { t: 'card', color: 'flight', kind: 'Dia de serviço · repartido', title: 'LIS → FNC → LIS', sub: 'limites incertos · falta o alojamento da pausa', gain: null,
-  a: { v: '06:15', l: 'parte' }, dur: '12 h 25', b: { v: '18:40', l: 'última chegada' }, pct: null, corner: 'chev', action: { id: 'completar', icon: 'edit', label: 'Completar', open: { to: 'day', iso: D11 } } });
+  a: { v: '06:15', l: 'parte' }, dur: '12 h 25', b: { v: '18:40', l: 'última chegada' }, pct: null, corner: 'chev', action: null });
 const mi = R.mesIncerto.cards.find((c) => c.id === 'month');
 eq('mês incerto · as duas pontas, nunca um valor inventado', pick(mi, ['t', 'kind', 'rows', 'note', 'link']), { t: 'lines', kind: 'Novembro · incerto · bruto',
   rows: [{ k: 'No mínimo', v: '2 180,00 €' }, { k: 'No máximo', v: '2 431,50 €' }], note: 'Falta o dia em que entraste na companhia.', link: { label: 'Completar', open: { to: 'profile' } } });
@@ -240,7 +244,7 @@ eq('pernoita sem a hora do fim · o hotel e o €', pick(per2.cards[0], ['title'
 // (4) Incerto depois do report: continua incerto (nada de "margem" sobre um limite que não é certo).
 const vooInc = homeCards({ ...S.emVoo, warns: [], hero: { ...S.emVoo.hero, legal: { status: 'uncertain', missing: 'o alojamento da pausa' } } });
 eq('em voo incerto · facto', vooInc.top.facts[1], { v: 'Incerto', l: 'PSV até', tone: null });
-eq('em voo incerto · cartão', [vooInc.cards[0].sub, vooInc.cards[0].b, act(vooInc.cards[0].action)], ['limites incertos · falta o alojamento da pausa', { v: '17:00', l: 'limite · incerto' }, { id: 'completar', icon: 'edit', label: 'Completar' }]);
+eq('em voo incerto · cartão', [vooInc.cards[0].sub, vooInc.cards[0].b, act(vooInc.cards[0].action)], ['limites incertos · falta o alojamento da pausa', { v: '17:00', l: 'limite · incerto' }, null]);
 // (6) Aterrado: o PSV de hoje (fechou nos calços), não "até agora".
 const ater = homeCards({ ...S.emVoo, warns: [], phase: 'landed', hero: { ...S.emVoo.hero, psv: { ...S.emVoo.hero.psv, running: '08:35' } } });
 eq('aterrado · topo', [ater.top.what, ater.top.facts[0]], ['Aterraste às', { v: '8:35', l: 'PSV de hoje', tone: null }]);

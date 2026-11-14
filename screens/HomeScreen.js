@@ -1001,7 +1001,6 @@ export default function HomeScreen({ navigation }) {
     if (!o) return;
     switch (o.to) {
       case 'day': openDayDetail(o.iso); break;
-      case 'signoff': openDayDetail(o.iso || todayISO, !(todayEnded && todayEnded.signOff)); break;
       case 'stats': goStats(); break;
       case 'review': openReview(); break;
       case 'audit': select(); setAuditOpen(true); break;

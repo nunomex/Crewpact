@@ -3,8 +3,9 @@
  *   1) Descarregar:  curl -sL https://davidmegginson.github.io/ourairports-data/airports.csv -o /c/tmp/ourairports.csv
  *   2) Gerar:        node scripts/build-airports.js [caminho-do-csv]
  *
- * Mantém só aeroportos COMERCIAIS com código IATA (large/medium OU com serviço
- * regular). Saída compacta: { "IATA": [lat, lon, "ICAO", "Nome", "Cidade", "CC"] }
+ * Mantém TODOS os aeroportos com código IATA, exceto os fechados (2026-11-14, o Nuno: "a app tem que reconhecer todos os
+ * aeroportos; o calendário vem sempre correto" — antes só os comerciais: large/medium ou com serviço regular). Um código
+ * repetido (um ativo e um antigo) fica com o de maior peso: grande > médio > com serviço regular > pequeno > o resto. Saída compacta: { "IATA": [lat, lon, "ICAO", "Nome", "Cidade", "CC"] }
  * (lat/lon a 4 casas; nome/cidade/país para a pesquisa por nome no formulário).
  * Fonte: https://ourairports.com/data/ (domínio público).
  *
@@ -48,15 +49,18 @@ const shortName = (s) => (s || '').trim()
   .replace(/\s+Airfield$/i, '')
   .trim();
 
-const KEEP = new Set(['large_airport', 'medium_airport']);
+const RANK = { large_airport: 5, medium_airport: 4, small_airport: 2, seaplane_base: 1, heliport: 1, balloonport: 0 };
+const weight = (f) => (RANK[f[iType]] ?? 0) + (f[iSched] === 'yes' ? 2.5 : 0);
 const out = {};
-let n = 0;
+const won = {};   // o peso da linha que ficou com cada código
 for (let r = 1; r < lines.length; r++) {
   if (!lines[r]) continue;
   const f = parseLine(lines[r]);
   const iata = (f[iIata] || '').trim().toUpperCase();
   if (iata.length !== 3) continue;                              // só códigos IATA válidos
-  if (!KEEP.has(f[iType]) && f[iSched] !== 'yes') continue;     // só comerciais
+  if (f[iType] === 'closed') continue;                          // os fechados não
+  const w = weight(f);
+  if (won[iata] != null && won[iata] >= w) continue;            // um código repetido: fica o de maior peso
   const lat = parseFloat(f[iLat]), lon = parseFloat(f[iLon]);
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
   const icao = ((f[iIcao] || f[iIdent]) || '').trim().toUpperCase() || null;
@@ -64,8 +68,17 @@ for (let r = 1; r < lines.length; r++) {
   const city = (f[iMuni] || '').trim() || name;                 // cidade (fallback p/ nome)
   const cc = (f[iCountry] || '').trim().toUpperCase();
   out[iata] = [Math.round(lat * 1e4) / 1e4, Math.round(lon * 1e4) / 1e4, icao, name, city, cc];
-  n++;
+  won[iata] = w;
 }
+// NUNCA perder nem mudar de sítio um aeroporto que a app já conhecia (2026-11-14): o OurAirports é editado pela comunidade e a
+// versão de novembro de 2026 trazia mudanças por confirmar (o PBI com outro nome e o código DJT; o VTZ passado para um aeroporto
+// novo). Os que já estavam ficam como estavam; só se ACRESCENTAM os novos. Mudar um que já existe faz-se à mão, com a fonte oficial.
+const prev = fs.existsSync(OUT) ? JSON.parse(fs.readFileSync(OUT, 'utf8')) : {};
+let added = 0;
+for (const k of Object.keys(out)) if (!prev[k]) added++;
+for (const k of Object.keys(prev)) out[k] = prev[k];
+const n = Object.keys(out).length;
+console.log(`já conhecidos: ${Object.keys(prev).length} (ficam como estavam) · novos: ${added}`);
 
 fs.writeFileSync(OUT, JSON.stringify(out));
 console.log(`aeroportos: ${n} → ${OUT} (${(fs.statSync(OUT).size / 1024).toFixed(0)} KB)`);
