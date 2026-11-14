@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · A S2, afinada</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* A S2, AFINADA (2026-11-14). O Nuno escolheu a S2 de design/estados-topo.html (o estado como título do Início; já construída) e
+   perguntou se dava para melhorar. (1) As palavras: o estado era uma etiqueta ao lado da pílula do dia; como título, "Hoje" (quatro
+   situações), "Amanhã", "Novembro" e "Começar" não chegam sozinhas — proposta de palavras novas. (2) A altura: o título por baixo
+   das pílulas faz o topo crescer 54 pt. T1 como está · T2 o título na fila de cima e a pílula do dia na linha da frase
+   (recomendada) · T3 o título e a pílula na mesma fila (a pílula sai com títulos compridos). Alturas medidas no esboço.
+   Dados de TESTE (os do iPhone do Nuno). Imagens do Nuno: 3444, 3407, 3424. Mobbin: American Airlines, Oura. */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1760px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+.lead{max-width:940px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)} .lead a{color:var(--pfg)}
+.opt{display:flex;flex-direction:column;gap:10px}
+.opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:var(--muted);max-width:900px} .opt > p b{color:var(--pfg)}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.row{display:flex;flex-wrap:wrap;gap:16px}
+.cap{font-size:12px;font-weight:700;color:var(--muted);margin:0 0 6px 6px}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:940px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card2 li{font-size:13px;line-height:1.5;color:var(--muted)} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:var(--pfg)}
+.ph{display:flex;flex-direction:column;width:406px;height:400px;border:8px solid #04060A;border-radius:52px 52px 0 0;border-bottom:0;overflow:hidden;position:relative;background:#E3E1DB;color:#141414;max-width:100%}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.topA{padding:0 20px 24px;flex:none}
+.pills{display:flex;align-items:center;gap:8px;min-height:68px;padding:8px 0 16px}
+.pl{height:38px;padding:0 16px;border-radius:19px;border:1.5px solid #141414;display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:13px;white-space:nowrap}
+.pl.ink{background:#141414;color:#E3E1DB} .pl i.dot{width:7px;height:7px;border-radius:4px;background:#F0C24A;display:block}
+.ml{margin-left:auto}
+/* S1 */
+.pl.big{height:44px;padding:0 18px 0 14px;border-radius:22px;font-size:16px;gap:8px}
+/* S2 */
+.ttl{display:flex;flex-direction:column;gap:2px;padding:6px 0 10px}
+.ttl .k{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:#3A3A36;display:flex;align-items:center;gap:6px}
+.ttl .t{font-weight:800;font-size:34px;line-height:38px;letter-spacing:-.8px;display:flex;align-items:center;gap:10px}
+.ttl .t i.dot{width:10px;height:10px;border-radius:5px;background:#F0C24A;display:block}
+.what{font-weight:500;font-size:15px;line-height:20px;color:#3A3A36}
+.hero{display:flex;align-items:stretch;gap:16px;margin-top:12px}
+.g{font-weight:700;white-space:nowrap;flex:none}
+.g .l1,.g .l2{display:flex;align-items:baseline}
+.g small{font-size:34px;letter-spacing:-1px;margin-left:6px}
+.grey{color:rgba(20,20,20,.5)}
+.side{border-left:1.5px solid #141414;padding-left:16px;display:flex;flex-direction:column;justify-content:center;gap:12px;min-width:0}
+.fv{display:flex;align-items:center;gap:4px;font-weight:700;font-size:20px;line-height:22px;white-space:nowrap}
+.fl{display:block;font-weight:500;font-size:11px;line-height:15px;color:#3A3A36;white-space:nowrap}
+.ic{display:block;fill:currentColor;flex:none}
+.sheetN{flex:1;background:#fff;border-radius:32px 32px 0 0}
+.hh{font-size:11px;font-weight:800;color:#8A887F;padding:4px 6px 0}
+/* extra */
+.tbl{border-collapse:collapse;background:#fff;border:1px solid #D6D4CD;border-radius:16px;overflow:hidden;max-width:940px;font-size:13px}
+.tbl th,.tbl td{text-align:left;padding:9px 14px;border-bottom:1px solid #ECEAE4;vertical-align:top}
+.tbl th{font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);background:#F7F6F2}
+.tbl td.o{color:#8A887F;text-decoration:line-through} .tbl td.n{font-weight:800} .tbl td.w{color:var(--muted)}
+.inl{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.pl.sm{height:30px;padding:0 12px;border-radius:15px;font-size:12px}
+.ttlRow{display:flex;align-items:center;gap:10px;min-height:68px;padding:8px 0 10px}
+.ttlRow .t{font-weight:800;font-size:34px;line-height:38px;letter-spacing:-.8px;display:flex;align-items:center;gap:10px;white-space:nowrap}
+.ttlRow .t i.dot{width:10px;height:10px;border-radius:5px;background:#F0C24A;display:block}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>A S2, afinada</h1>
+    <p>A S2 já está construída. Duas coisas a melhorar. <b>1) As palavras.</b> O estado era uma etiqueta pequena ao lado da pílula do dia; agora é o título do ecrã, e algumas palavras não chegam sozinhas: "Hoje" aparece em quatro situações diferentes (antes do report, em serviço, depois de aterrar, num dia de formação), "Amanhã" não diz o quê, "Novembro" no fecho do mês e "Começar" (que é um botão, não um estado). <b>2) A altura.</b> O título por baixo das pílulas faz o topo crescer 54 pontos, e os cartões começam mais abaixo. Três sítios para o título, lado a lado, nos estados mais curto e mais comprido.</p>
+    <p><b>As tuas imagens:</b> 3444 e 3407 (a data gigante com o resto pequeno), 3424 (o chip de estado). <b>Mobbin:</b> <a href="https://mobbin.com/screens/2b1345e3-e957-41bc-94e8-0032c1276a39">American Airlines</a> (o título grande na fila de cima), <a href="https://mobbin.com/screens/31d2964f-6f51-40f4-9b56-773e284abed4">Oura</a> (o estado como frase).</p>
+  </div>
+  <div class="opt"><h3>1 · As palavras do título</h3><p>As que já funcionam ficam; as outras passam a dizer onde estás no teu dia.</p>
+    <table class="tbl"><tr><th>Quando</th><th>Hoje</th><th>Proposta</th><th>Porquê</th></tr>
+      <tr><td>Dia de voo, antes do report</td><td class="o">Hoje</td><td class="n">Dia de voo</td><td class="w">"Hoje" não diz o quê</td></tr>
+      <tr><td>Depois do report, ainda em terra</td><td class="o">Hoje</td><td class="n">Em serviço</td><td class="w">já estás a contar o PSV</td></tr>
+      <tr><td>No ar</td><td>Em voo</td><td class="n">Em voo</td><td class="w">fica</td></tr>
+      <tr><td>Depois de aterrar (o dia continua)</td><td class="o">Hoje</td><td class="n">Aterrado</td><td class="w">o que aconteceu agora</td></tr>
+      <tr><td>Formação, escritório, posicionamento</td><td class="o">Hoje</td><td class="n">Formação · Escritório · Posicionamento</td><td class="w">o tipo do serviço</td></tr>
+      <tr><td>Véspera de um voo</td><td class="o">Amanhã</td><td class="n">Voo amanhã</td><td class="w">"Amanhã" sozinho não diz o quê</td></tr>
+      <tr><td>Disrupção</td><td class="o">Hoje · Amanhã</td><td class="n">Atraso · Cancelado · Desviado</td><td class="w">o que mudou (os dois últimos já existem)</td></tr>
+      <tr><td>Últimos dias do mês</td><td class="o">Novembro</td><td class="n">Fecho do mês</td><td class="w">o mês já está na pílula ("fecha em 3 dias")</td></tr>
+      <tr><td>Sem calendário ligado</td><td class="o">Começar</td><td class="n">Bem-vindo</td><td class="w">"Começar" é um botão, não um estado</td></tr>
+      <tr><td>Folga · Pernoita · Dia fechado · Férias · Baixa · Standby · Atenção</td><td colspan="3" class="w">ficam como estão</td></tr>
+    </table>
+  </div>
+  <div id="opts" style="display:flex;flex-direction:column;gap:36px"></div>
+  <div class="card2"><h3>A minha recomendação: as palavras novas + T2</h3><ul>
+    <li><b>As palavras novas:</b> o título diz sempre onde estás no teu dia, sem precisar da pílula ao lado.</li>
+    <li><b>T2</b> põe o título <b>na fila de cima</b>, com as Notificações à direita, e a pílula do dia (ou do voo) passa para a <b>linha da frase</b>, à direita ("Aterras às · EZY7841 ›"). O estado continua a ser a primeira coisa que se lê, e o topo <b>fica quase com a altura de antes</b> (medido por baixo de cada telemóvel). A pílula continua a abrir o dia na Escala.</li>
+    <li><b>T1</b> é a S2 como está: o título por baixo das pílulas. Lê-se bem, mas é a mais alta.</li>
+    <li><b>T3</b> põe o título e a pílula do dia na mesma fila de cima. É a mais baixa, mas com títulos compridos ("Dia fechado", "Posicionamento") a pílula do dia não cabe e desaparece (a regra das pílulas que nunca se cortam).</li></ul></div>
+</div>
+<script>
+var P = {
+  rain:'<path d="M7 15a5 5 0 0 1-.6-10A6 6 0 0 1 18 7a4 4 0 0 1-.5 8H7zm1 2 1.6 1-1.4 3-1.6-1zm4.5 0 1.6 1-1.4 3-1.6-1zm4.5 0 1.6 1-1.4 3-1.6-1z"/>',
+  sun:'<path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm-1-6h2v3h-2zm0 19h2v3h-2zM1 11h3v2H1zm19 0h3v2h-3zM3.5 5l1.4-1.4 2.2 2.1-1.4 1.4zm13.4 13.4 1.4-1.4 2.1 2.2-1.4 1.4zM3.5 19l2.2-2.1 1.4 1.4L4.9 20.4zM16.9 5.6l2.1-2.1 1.4 1.4-2.1 2.2z"/>' };
+function ic(n, s){ return '<svg class="ic" width="' + s + '" height="' + s + '" viewBox="0 0 24 24">' + P[n] + '</svg>'; }
+var Z = 62, ST = 'font-size:' + Z + 'px;line-height:' + Z + 'px;letter-spacing:' + (Z * -0.046).toFixed(2) + 'px';
+function giant(l1, unit, l2, grey){ return '<div class="g"><div class="l1"><span style="' + ST + '">' + l1 + '</span>' + (unit ? '<small>' + unit + '</small>' : '') + '</div><div class="l2 ' + (grey ? 'grey' : '') + '"><span style="' + ST + '">' + l2 + '</span></div></div>'; }
+function side(fx){ return '<div class="side">' + fx.map(function(f){ return '<div><span class="fv">' + (f[2] ? ic(f[2], 18) : '') + f[0] + '</span><span class="fl">' + f[1] + '</span></div>'; }).join('') + '</div>'; }
+var STS = [
+  { cap: 'Em voo', name: 'Em voo', live: true, p2: 'EZY7841', what: 'Aterras às', g: giant('08:15', '', 'FNC', false), fx: [['1 h 05', 'falta para aterrar'], ['9 h 55', 'de margem no PSV'], ['21 °C', 'sol em FNC à chegada', 'sun']], clock: '07:10' },
+  { cap: 'Dia fechado (o título mais comprido)', name: 'Dia fechado', live: false, p2: 'sábado 14', what: 'PSV de hoje', g: giant('1:35', 'h', 'fechado', true), fx: [['+154,51 €', 'ganhos de hoje'], ['19 h', 'de 60 em 7 dias'], ['12 °C', 'chuva às 05:40', 'rain']], clock: '19:20' }];
+function body(st, inlineP2){ return (inlineP2 ? '<div class="what inl"><span>' + st.what + '</span><span class="pl sm">' + st.p2 + ' ›</span></div>' : '<div class="what">' + st.what + '</div>') + '<div class="hero">' + st.g + side(st.fx) + '</div>'; }
+function phone(st, inner){ return '<div><div class="cap">' + st.cap + '</div><div class="ph"><div class="status"><span>' + st.clock + '</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="topA">' + inner + '</div><div class="sheetN"></div></div><div class="hh"></div></div>'; }
+var DOT = function(st){ return st.live ? '<i class="dot"></i>' : ''; };
+// T1 · como está: as pílulas em cima, o título por baixo
+function T1(st){ return phone(st, '<div class="pills" style="padding-bottom:4px"><span class="pl">' + st.p2 + '</span><span class="pl ml">Notificações</span></div><div class="ttl"><span class="t">' + st.name + DOT(st) + '</span></div>' + body(st)); }
+// T2 · o título na fila de cima; a pílula do dia na linha da frase
+function T2(st){ return phone(st, '<div class="ttlRow"><span class="t">' + st.name + DOT(st) + '</span><span class="pl ml">Notificações</span></div>' + body(st, true)); }
+// T3 · o título e a pílula do dia na mesma fila (a pílula sai se não couber)
+function T3(st){ var fits = st.name.length <= 8; return phone(st, '<div class="ttlRow"><span class="t">' + st.name + DOT(st) + '</span>' + (fits ? '<span class="pl">' + st.p2 + '</span>' : '') + '<span class="pl ml">Notificações</span></div>' + body(st) + (fits ? '' : '')); }
+var O = [
+  ['2 · Onde fica o título · T1 como está (por baixo das pílulas)', '', T1],
+  ['T2 · O título na fila de cima, a pílula do dia na linha da frase', 'rec', T2],
+  ['T3 · O título e a pílula do dia na mesma fila', '', T3]];
+document.getElementById('opts').innerHTML = O.map(function(o){
+  return '<div class="opt"><h3>' + o[0] + (o[1] ? '<span class="rec">RECOMENDO</span>' : '') + '</h3><div class="row">' + STS.map(o[2]).join('') + '</div></div>';
+}).join('');
+document.fonts.ready.then(function(){ document.querySelectorAll('.ph').forEach(function(ph){ var t = ph.querySelector('.topA'); var over = [].slice.call(ph.querySelectorAll('.topA *')).some(function(e){ return e.getBoundingClientRect().right > ph.getBoundingClientRect().right - 10; }); ph.parentNode.querySelector('.hh').textContent = 'o topo mede ' + Math.round(t.getBoundingClientRect().height) + ' pt (antes da S2: 259)' + (over ? ' · NÃO CABE' : ''); }); });
+</script>
+</body>
+</html>

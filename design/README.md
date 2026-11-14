@@ -73,10 +73,14 @@ combinações de letra e 924 espaçamentos fora da escala (medido a 2026-11-02).
 - **`cartoes-limite.html`** (2026-11-14, **L2 escolhida e construída**) — o limite num cartão à parte? (o Nuno) L1 sempre à parte · L2 à parte só
   quando pede atenção, dentro = uma linha discreta no cartão do voo (recomendada) · L3 igual, dentro = um selo. O cartão à parte É o
   aviso que já existe ('ftl'), escrito com a resposta em grande — sem o "acima" duas vezes. Alturas medidas: L2 dentro 341 pt, L1 394.
-- **`estados-topo.html`** (2026-11-14, por escolher) — o estado em destaque no Início (o Nuno: "deviam estar mais destacados"):
+- **`estados-topo.html`** (2026-11-14, **S2 escolhida e construída**) — o estado em destaque no Início (o Nuno: "deviam estar mais destacados"):
   S1 a pílula maior com ícone · S2 o estado como título grande (34 pt; recomendada; o topo cresce 54 pt, de 259 para 313) · S3 a
   pílula na cor do tipo (mapa B; folga/férias/baixa a preto). O topo todo a cor continua recusado. Imagens 3424, 3406, 3444, 3407;
   Mobbin Oura, American Airlines, Slack.
+- **`estados-s2.html`** (2026-11-14, **as palavras novas + T2 escolhidas e construídas**) — a S2 afinada: as palavras do título ("Hoje" em quatro situações → Dia de voo ·
+  Em serviço · Aterrado · o tipo; "Amanhã" → Voo amanhã; "Novembro" → Fecho do mês; "Começar" → Bem-vindo) e onde fica o título:
+  T1 como está (313 pt) · T2 na fila de cima, a pílula do dia na linha da frase (269 pt, recomendada) · T3 título e pílula na mesma
+  fila (259 pt, mas a pílula sai com títulos compridos). Alturas medidas.
 - **`topo-factos-2.html`** (2026-11-14, A construída e depois **retirada com a L1** — os quadradinhos não cabem ao lado) — a F3 nos casos difíceis, a 375 (três factos com a hora UTC, a assistência, antes de ligar a escala, a Escala com 4 999,99 €, os Números com +55 512,34 €): A o quadradinho (32) só onde há tipo (recomendada) · B o quadradinho por cima do valor, em todos (o topo cresce 34) · C a cor no fio (4). Imagens 3409/3431/3412/3442/3424; Mobbin Kit, Satispay, Shopee.
 - **`botao-simulacao.html`** (2026-11-14, **T2 escolhida e construída**) — com a regra nova (à mão só na Simulação), o ＋ abre a Simulação: T1 o redondo com o ícone da Simulação · T2 o botão escrito "Simular" (recomendada; a 375 cada aba fica com 57 pt) · T3 uma aba ao centro da cápsula. Mobbin: Subway, Otter, Preply, Tubi; nenhuma imagem do Nuno para barras.
 - **`prova-campos.html`** (2026-11-14, **PA escolhida e construída**) — a Prova como o Hotel F2 (a regra proposta: nas folhas, campos à F2; nos ecrãs, cartões): PA tudo em campos · PB os curtos lado a lado (imagem 3460; recomendada) · PC campos e a regra num cartão. Com o Hotel F2 ao lado.
