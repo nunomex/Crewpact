@@ -141,7 +141,14 @@ export function homeCards(H = {}) {
   const top = (pill, pill2, what, giant, fx) => ({ pill, pill2: pill2 && pill2.text ? pill2 : null, what, giant, facts: fx || null });
   const giantOf = (l1, unit = null, l2 = null, l2Grey = false, zulu = null) => ({ l1: String(l1), unit: unit || null, l2: l2 || null, l2Grey: !!(l2 && l2Grey), ...(zulu && l2 ? { zulu } : {}) });
   const psvOf = (ps) => (ps && ps.latest ? `${ps.latest}${ps.latestNextDay ? ' +1' : ''}` : null);
-  const slimWarn = (w) => ({ t: 'slim', id: w.id, color: w.tone === 'stop' ? 'stop' : 'alert', ...(w.tone === 'stop' ? { mark: '✕' } : {}), ...(w.kind ? { kind: w.kind } : {}), title: w.title, sub: w.sub || null, value: w.value || null, gain: false, open: w.open || null });
+  // A cor dos avisos (o capítulo "Cor" do design system, 2026-11-14): fora do limite = vermelho com "✕"; olhar (cuidado, falta um
+  // dado, pede uma ação) = laranja com "!"; informação = neutro, sem sinal (o laranja não se gasta no que não é cuidado — a lógica
+  // dos alertas do cockpit, 14 CFR 25.1322). As férias por gozar são informação.
+  const INFO_WARNS = ['vac'];
+  const warnTone = (w) => (w.tone === 'stop' ? 'stop' : w.tone === 'info' || INFO_WARNS.includes(w.id) ? 'info' : 'alert');
+  const slimWarn = (w) => { const tn = warnTone(w);
+    return { t: 'slim', id: w.id, color: tn === 'stop' ? 'stop' : tn === 'info' ? 'neutral' : 'alert', ...(tn === 'stop' ? { mark: '✕' } : tn === 'alert' ? { mark: '!' } : {}),
+      ...(w.kind ? { kind: w.kind } : {}), title: w.title, sub: w.sub || null, value: w.value || null, gain: false, open: w.open || null }; };
   const warns = (H.warns || []).filter((w) => w && w.title).slice(0, 2);
   const wFirst = warns.filter((w) => w.first).map(slimWarn);
   const wLast = warns.filter((w) => !w.first).map(slimWarn);
@@ -215,10 +222,33 @@ export function homeCards(H = {}) {
       gain, gainLbl: gain ? l('per diem', 'per diem') : null, line: lineOf(d), quiet: quietOf(d, { rest }), sub: null, a: null, dur: null, b: null, pct: null };
   };
 
+  // O dia como se diz: "hoje", "amanhã", e daí em diante o dia da semana ("segunda 16").
+  const dayWord = (iso) => (iso === today ? l('hoje', 'today') : iso === tomorrow ? l('amanhã', 'tomorrow') : F.wd(iso));
+  // O PRÓXIMO SERVIÇO NOUTRO DIA, num dia de serviço (B3 afinada de design/a-seguir-b3.html, escolhida pelo Nuno a 2026-11-14): um
+  // cabeçalho com o dia ("Amanhã · quinta 12"; "Sábado 14 · daqui a 3 dias") e uma linha fina com a hora do report à direita — avisa
+  // da noite sem competir com o serviço de hoje (a ficha do "antes do report": as próximas duties não ocupam o ecrã).
+  const laterOf = (n) => {
+    if (!n) return [];
+    const days = isISO(n.iso) && isISO(today) ? dayIdx(n.iso) - dayIdx(today) : null;
+    const text = days === 1 ? `${l('Amanhã', 'Tomorrow')} · ${F.wd(n.iso)}`
+      : `${F.cap(F.wd(n.iso))}${days != null && days > 1 ? ` · ${l(`daqui a ${days} dias`, `in ${days} days`)}` : ''}`;
+    const fl = isFlightKind(n.kind);
+    const v = n.report || (fl ? n.dep : null) || null;
+    return [{ t: 'hdr', id: 'nextHdr', text },
+      { t: 'slim', id: 'next', color: colorOf(n.kind), title: titleOf(n), sub: [fl ? citiesOf(n) : null, fl ? secTxt(n) : null].filter(Boolean).join(' · ') || null,
+        value: v, valueLbl: v ? (n.report ? (fl ? 'report' : l('começa', 'starts')) : l('partida', 'departure')) : null, gain: false, open: openDay(n) }];
+  };
+  // O 2.º lugar num dia de serviço: a pernoita a seguir ao serviço de hoje; senão, o próximo serviço se for HOJE ("A seguir · hoje",
+  // o cartão grande); noutro dia, o cabeçalho e a linha.
+  const assembleDay = (one, night, n) => (night ? assemble(one, night)
+    : n && n.iso === today ? assemble(one, nextCard(n, l('A seguir', 'Next'), { withDay: true }))
+    : assemble(one, null, ...laterOf(n)));
   // O serviço seguinte como cartão grande (com a linha fina alternativa para quando há um aviso).
-  const nextCard = (n, kindLbl, { withDay = true, extraSub = null } = {}) => {
+  const nextCard = (n, kindLbl0, { withDay = true, extraSub = null } = {}) => {
     if (!n) return null;
     const fl = isFlightKind(n.kind);
+    // "A seguir" só no mesmo dia; noutro dia é o "Próximo serviço" (B3 afinada de design/a-seguir-b3.html, 2026-11-14)
+    const kindLbl = kindLbl0 === l('A seguir', 'Next') && n.iso !== today ? l('Próximo serviço', 'Next duty') : kindLbl0;
     const sub = extraSub
       ? [withDay ? F.wd(n.iso) : null, extraSub].filter(Boolean).join(' · ')
       : [withDay ? F.wd(n.iso) : null, fl ? secTxt(n) : null, !withDay && fl && roundTrip(n) ? l('ida e volta', 'out and back') : null].filter(Boolean).join(' · ');
@@ -228,11 +258,11 @@ export function homeCards(H = {}) {
     const b = n.end ? { v: n.end, l: l('fim', 'end') } : null;
     const card = fl
       // E3: o dia e os setores no tipo (o "Próximo serviço" diz sempre o dia — a análise de 2026-11-14); a linha do dia; o limite discreto
-      ? { t: 'card', id: 'next', color: colorOf(n.kind), kind: [kindLbl, F.wd(n.iso), secTxt(n)].filter(Boolean).join(' · '), ...e3Of(n), sub: extraSub || null,
+      ? { t: 'card', id: 'next', color: colorOf(n.kind), kind: [kindLbl, dayWord(n.iso), secTxt(n)].filter(Boolean).join(' · '), ...e3Of(n), sub: extraSub || null,
         corner: 'chev', action: null, open: openDay(n) }
       : { t: 'card', id: 'next', color: colorOf(n.kind), kind: kindLbl, title: titleOf(n), sub: sub || null, gain: null,
         a, dur: n.report && n.end ? F.dur(span(n.report, n.end)) : null, b, pct: null, corner: 'chev', action: null, open: openDay(n) };
-    card.slim = { t: 'slim', id: 'next', color: colorOf(n.kind), title: titleOf(n), sub: [F.wd(n.iso), n.report ? `report ${n.report}` : null].filter(Boolean).join(' · ') || null, value: null, gain: false, open: openDay(n) };
+    card.slim = { t: 'slim', id: 'next', color: colorOf(n.kind), title: titleOf(n), sub: [dayWord(n.iso), n.report ? `report ${n.report}` : null].filter(Boolean).join(' · ') || null, value: null, gain: false, open: openDay(n) };
     return card;
   };
   // A pernoita que vem a seguir ao serviço do hero (fim de serviço → report seguinte = o intervalo REAL; o mínimo na linha pequena).
@@ -527,11 +557,12 @@ export function homeCards(H = {}) {
     const vSlim = vTxt ? { t: 'slim', id: 'psvLive', color: 'alert', title: l('Limites com o atraso', 'Limits with the delay'), sub: vTxt, value: null, gain: false, open: { to: 'item', id: 'legal' } } : null;
     const one = planDayCard(hero, { sub: ds.why || null, a: hero.report ? { v: hero.report, l: 'report' } : null,
       dur: v ? `PSV ${proj ? l('projetado ', 'projected ') : ''}${noLead(v.realStr)} ${l('de', 'of')} ${noLead(v.maxStr)}` : psvPlanTxt(ps), b: (ds.lastArr || hero.lastArr) ? { v: ds.lastArr || hero.lastArr, l: l('última chegada', 'last arrival') } : null });
-    const second = nightCard({ ...hero, end: ds.end || hero.end }, next) || nextCard(next, l('A seguir', 'Next'), { withDay: true });
+    const night = nightCard({ ...hero, end: ds.end || hero.end }, next);
+    const sameDay = !night && next && next.iso === today ? nextCard(next, l('A seguir', 'Next'), { withDay: true }) : null;
     // Com o aviso dos limites (é sobre ESTE serviço, vai em primeiro), o 2.º passa a linha fina — a regra dos dois cartões.
     cards = vSlim
-      ? [vSlim, ...wFirst, one, second ? (second.slim || second) : null, ...wLast].filter(Boolean).map((c) => { if (c.slim) { const { slim, ...r } = c; return r; } return c; })
-      : assemble(one, second);
+      ? [vSlim, ...wFirst, one, ...(night || sameDay ? [(night || sameDay).slim || (night || sameDay)] : laterOf(next)), ...wLast].filter(Boolean).map((c) => { if (c.slim) { const { slim, ...r } = c; return r; } return c; })
+      : assembleDay(one, night, next);
   } else if (state === 'hoje' && hero) {
     // Aqui só o VOO tem fases (antes do report · em terra · no ar · aterrado); o posicionamento segue o ramo dos serviços
     // sem fase ("Começa às" · "Termina às"), com a cor de voo — como no motor do Início (isNonFlight).
@@ -554,7 +585,7 @@ export function homeCards(H = {}) {
           dur: total ? `${F.dur(live.elapsedMin)} ${l('de', 'of')} ${F.dur(total)}` : null,
           b: pay ? { v: pay, l: hero.kind === 'standby_airport' ? l('se não chamarem', 'if not called') : (hero.pay.lbl || l('garantido', 'guaranteed')), gain: true } : null,
           pct: total && live.elapsedMin != null ? Math.max(0, Math.min(100, Math.round((live.elapsedMin / total) * 100))) : null, corner: 'chev', action: null, open: openDay(hero) };
-        cards = assemble(one, nextCard(next, l('A seguir', 'Next'), { withDay: true }));
+        cards = assembleDay(one, null, next);
       } else {
         const pre = live.cdMin != null && live.cdMin > 0;
         T = top({ text: F.cap(kindShort(hero.kind)), live: true }, { text: F.wd(hero.iso), iso: hero.iso },   // o tipo é o título; a pílula diz o dia
@@ -564,7 +595,7 @@ export function homeCards(H = {}) {
             pre ? (hero.end ? fact(hero.end, l('acaba', 'ends')) : null) : (hero.report ? fact(hero.report, l('começou', 'started')) : null)));
         const one = { t: 'slim', id: 'day', color: colorOf(hero.kind), title: hero.kind === 'positioning' && Array.isArray(hero.stations) && hero.stations.length > 1 ? `${hero.kindLabel || l('Posicionamento', 'Positioning')} · ${chain(hero.stations)}` : (hero.kindLabel || l('Serviço em terra', 'Ground duty')),
           sub: total ? `${F.dur(total)} ${hero.kind === 'positioning' ? l('de posicionamento', 'positioning') : l('de serviço em terra', 'ground duty')}` : null, value: pay, gain: !!pay, open: openDay(hero) };
-        cards = assemble(one, nextCard(next, l('A seguir', 'Next'), { withDay: true }));
+        cards = assembleDay(one, null, next);
       }
     } else if (H.phase === 'pre' || !H.phase) {
       const unc = uncertain(hero);
@@ -576,7 +607,7 @@ export function homeCards(H = {}) {
           wxReportFact()));
       limCard = limUncOf(hero, l('O limite de hoje', 'Today’s limit'));   // incerto: um cartão à parte, por cima (L2), que abre o porquê
       const one = planDayCard(hero, { e3: true });
-      cards = assemble(one, nightCard(hero, next) || nextCard(next, l('A seguir', 'Next'), { withDay: true }));
+      cards = assembleDay(one, nightCard(hero, next), next);
     } else {
       // A decorrer: depois do report (em terra · no ar · aterrado). O topo é o próximo marco do SETOR; o cartão é o dia todo.
       const ph = H.phase;
@@ -602,7 +633,7 @@ export function homeCards(H = {}) {
       const f2 = unc ? fact(l('Incerto', 'Uncertain'), l('PSV até', 'FDP until'))
         : marginFact() || (!card.b && psvOf(ps) ? fact(psvOf(ps), l('PSV até', 'FDP until')) : (!hero.report ? fact(l('Sem report', 'No report'), l('PSV não calculado', 'FDP not calculated')) : null));
       T = top({ text: ph === 'air' ? l('Em voo', 'In flight') : ph === 'landed' ? l('Aterrado', 'Landed') : l('Em serviço', 'On duty'), live: true }, pill2, what, giantOf(big || '—', null, stn || null), facts(f1, f2, (ph === 'duty' || ph === 'air') ? wxArrivalFact() : null));
-      cards = assemble(card, nightCard(hero, next) || nextCard(next, l('A seguir', 'Next'), { withDay: true }));
+      cards = assembleDay(card, nightCard(hero, next), next);
     }
   } else {
     // Estado desconhecido (não devia acontecer): a data de hoje e os avisos, sem números inventados.
@@ -619,10 +650,23 @@ export function homeCards(H = {}) {
   return {
     state,
     top: T,
-    cards: cards.filter(Boolean),
+    cards: oneFull(cards.filter(Boolean)),
     credit: wxUsed ? l('Meteorologia: MET Norway', 'Weather data: MET Norway') : null,
     caption: liveState && H.longHaul ? l('O FTL automático assume aclimatizado e na base. Em longo curso, confirma na Simulação.', 'Auto FTL assumes acclimatised and in-base. On long haul, check it in the Simulation.') : null,
   };
+}
+
+// ── O2 · SÓ O PRINCIPAL CHEIO (design/cores-decisoes.html O2, escolhida pelo Nuno a 2026-11-14; design-system "O padrão da cor") ──
+// A cor de fundo diz "isto é o agora": o primeiro cartão de tipo (voo · terra · repouso) fica cheio; os outros de tipo passam a
+// neutros com o quadradinho da sua cor (`swatch`), e leem-se sem competir. Os avisos (laranja, vermelho) ficam cheios — pedem olhar.
+const TYPE_COLORS = ['flight', 'ground', 'rest'];
+function oneFull(cards) {
+  let seen = false;
+  return cards.map((c) => {
+    if (!c || !TYPE_COLORS.includes(c.color)) return c;
+    if (!seen) { seen = true; return c; }
+    return { ...c, color: 'neutral', swatch: c.color };
+  });
 }
 
 // ── O TOPO LADO A LADO E IGUAL NAS TRÊS ABAS (L1 de design/topo-lado.html, escolhida pelo Nuno a 2026-11-14) ──

@@ -228,7 +228,7 @@ export function legendTour(cells = [], lang = 'pt') {
     ['terra', (c) => c.kind === 'terra' && !c.two, l('O anel lilás é um serviço em terra: assistência, formação, escritório.', 'A lilac ring is a ground duty: standby, training, office.')],
     ['two', (c) => c.two, l('Fatias: um dia com mais de um serviço — uma fatia por serviço, pela hora.', 'Slices: a day with more than one duty — one slice per duty, in time order.')],
     ['ns', (c) => c.ns, l('A lua ao lado do destino: dormes fora da base.', 'The moon next to the destination: you sleep away from base.')],
-    ['dirty', (c) => c.dirty, l('O ponto laranja: a escala mudou no calendário e falta rever.', 'The orange dot: the roster changed in the calendar and needs a review.')],
+    ['dirty', (c) => c.dirty, l('O ponto âmbar: a escala mudou no calendário e falta rever.', 'The amber dot: the roster changed in the calendar and needs a review.')],
     ['abs', (c) => c.kind === 'fer' || c.kind === 'doe', l('Tracejado: férias (FÉR) ou baixa (DOE).', 'Dashed: leave (LVE) or sick leave (SCK).')],
     // os dias que já passaram ficam iguais aos outros (o Nuno, 2026-11-13): "feito" não é um sinal, não tem balão
   ];
@@ -259,7 +259,7 @@ export function daySigns(cell, count = 0, lang = 'pt') {
   if (cell.kind === 'fer') add('abs', l('tracejado: férias', 'dashed: leave'));
   if (cell.kind === 'doe') add('abs', l('tracejado: baixa', 'dashed: sick leave'));
   if (cell.ns) add('ns', l('lua: dormes fora da base', 'moon: you sleep away from base'));
-  if (cell.dirty) add('dirty', l('ponto laranja: a escala mudou e falta rever', 'orange dot: the roster changed and needs a review'));
+  if (cell.dirty) add('dirty', l('ponto âmbar: a escala mudou e falta rever', 'amber dot: the roster changed and needs a review'));
   if (cell.today) add('today', l('a tinta: hoje', 'ink: today'));
   if (!cell.kind) add(cell.free ? 'free' : 'none', cell.free ? l('só o número: folga', 'just the number: day off') : l('só o número: sem serviços na escala', 'just the number: no duties in the roster'));
   return out;

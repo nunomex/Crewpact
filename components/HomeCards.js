@@ -24,10 +24,12 @@ const MAX_SCALE = 1.3;
 // A língua do VoiceOver = a língua escolhida na app (na Expo Go o iOS usava a voz inglesa da Expo Go para ler português — iPhone, 2026-11-11).
 const a11yLang = (l) => (l ? l('pt-PT', 'en-GB') : 'pt-PT');   // letra grande: os cartões crescem até 130 % (a folha desliza); o topo fica fixo
 
+// `line`/`track`: a tinta dos traços (a linha do dia, a barra, os fios das pernas) e a linha de fundo — seguem a tinta do cartão,
+// para um cartão neutro à noite (O2) não ficar com traços pretos sobre o escuro.
 function toneOf(C, color) {
-  if (color === 'dark') return { bg: C.ink, fg: C.sheet, sub: C.darkSub, kind: C.darkSub, go: C.darkGo };
-  if (color === 'neutral' || !C[color]) return { bg: C.neutral, fg: C.ink, sub: C.neutralSub, kind: C.neutralKind, go: C.neutralGo };
-  return { bg: C[color], fg: CARD.onCard, sub: CARD.onCardSub, kind: CARD.onCardKind, go: CARD.go };
+  if (color === 'dark') return { bg: C.ink, fg: C.sheet, sub: C.darkSub, kind: C.darkSub, go: C.darkGo, line: C.sheet, track: C.darkGo };
+  if (color === 'neutral' || !C[color]) return { bg: C.neutral, fg: C.ink, sub: C.neutralSub, kind: C.neutralKind, go: C.neutralGo, line: C.ink, track: C.round };
+  return { bg: C[color], fg: CARD.onCard, sub: CARD.onCardSub, kind: CARD.onCardKind, go: CARD.go, line: CARD.onCard, track: CARD.onCardTrack };
 }
 
 function GainChip({ text }) {
@@ -74,7 +76,8 @@ export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l, compact 
         {head ? (
           <View style={s.titleWrap} accessible accessibilityRole="header" accessibilityLanguage={AL} accessibilityLabel={top.pill.live ? `${top.pill.text}, ${l('agora', 'now')}` : top.pill.text}>
             <Text style={[TXT3.stateTitle, s.titleTxt, { color: C.ink }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} maxFontSizeMultiplier={1.15}>{top.pill.text}</Text>
-            {top.pill.live ? <View style={[s.stateDot, { backgroundColor: BRAND.signal }]} /> : null}
+            {/* o ponto "ao vivo" com o aro de tinta de dia (S2, design/cores-decisoes.html): o amarelo sozinho dava 1,33:1 sobre a secretária */}
+            {top.pill.live ? <View style={[s.stateDot, { backgroundColor: BRAND.signal }, C.liveRing ? [s.stateDotRing, { borderColor: C.liveRing }] : null]} /> : null}
           </View>
         ) : null}
         {top.pill && !titled ? (
@@ -157,7 +160,13 @@ function BigCard({ c, C, onOpen, l }) {
       <Main style={s.cdMain} {...mainProps}>
         <View style={s.cdTop}>
           <View style={s.cdHead}>
-            <Text style={[TXT3.kind, { color: T.kind }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.kind}</Text>
+            {/* `swatch` (O2): um cartão de tipo que não é o principal fica neutro, com o quadradinho da sua cor antes do rótulo */}
+            {c.swatch && C[c.swatch] ? (
+              <View style={s.kindRow}>
+                <View style={[s.swatch, { backgroundColor: C[c.swatch] }]} />
+                <Text style={[TXT3.kind, s.kindTxt, { color: T.kind }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.kind}</Text>
+              </View>
+            ) : <Text style={[TXT3.kind, { color: T.kind }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.kind}</Text>}
             <Text style={[TXT3.cardTitle, s.cdTitle, { color: T.fg }]} numberOfLines={2} maxFontSizeMultiplier={MAX_SCALE}>{c.title}</Text>
             {c.cities ? <Text style={[TXT3.cardSub, { color: T.sub }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.cities}</Text> : null}
           </View>
@@ -220,9 +229,9 @@ function BigCard({ c, C, onOpen, l }) {
         ) : null}
         {c.pct != null ? (
           <View style={s.prog} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
-            <View style={[s.progTrack, { backgroundColor: CARD.onCardTrack }]} />
-            <View style={[s.progFill, { width: `${c.pct}%`, backgroundColor: CARD.onCard }]} />
-            <View style={[s.progKnob, { left: `${c.pct}%`, backgroundColor: CARD.onCard, borderColor: T.bg }]} />
+            <View style={[s.progTrack, { backgroundColor: T.track }]} />
+            <View style={[s.progFill, { width: `${c.pct}%`, backgroundColor: T.line }]} />
+            <View style={[s.progKnob, { left: `${c.pct}%`, backgroundColor: T.line, borderColor: T.bg }]} />
           </View>
         ) : null}
       </Main>
@@ -277,10 +286,10 @@ function DayLine({ line, T }) {
       ) : null}
       <View style={s.dlPts}>
         {/* a linha e os voos atrás dos pontos (centrados no ponto de 14: a linha a 6, os voos a 5) */}
-        <View style={[s.dlTrack, { backgroundColor: CARD.onCardTrack }]} />
+        <View style={[s.dlTrack, { backgroundColor: T.track }]} />
         {segs.map(([x0, x1, gl, gr], i) => (
           <View key={i} style={[s.dlSegBox, { left: `${x0}%`, width: `${x1 - x0}%` }]}>
-            <View style={[s.dlSeg, gl ? s.dlGapL : null, gr ? s.dlGapR : null, { backgroundColor: CARD.onCard }]} />
+            <View style={[s.dlSeg, gl ? s.dlGapL : null, gr ? s.dlGapR : null, { backgroundColor: T.line }]} />
           </View>
         ))}
         {pts.map((x, i) => {
@@ -288,7 +297,7 @@ function DayLine({ line, T }) {
           const place = first ? s.dlFirst : last ? s.dlLast : [s.dlBox, { left: `${pos[i]}%`, transform: [{ translateX: -LINE_BOX / 2 }] }];
           return (
             <View key={`${x.l}-${i}`} style={[s.dlPt, place]}>
-              <View style={[s.dlDot, x.end ? { backgroundColor: T.bg, borderColor: CARD.onCard } : { backgroundColor: CARD.onCard, borderColor: T.bg }]} />
+              <View style={[s.dlDot, x.end ? { backgroundColor: T.bg, borderColor: T.line } : { backgroundColor: T.line, borderColor: T.bg }]} />
               <Text style={[TXT3.fact, { color: T.fg }]} numberOfLines={1} allowFontScaling={false}>{x.v}</Text>
               <Text style={[TXT3.cardNumLbl, { color: T.sub }]} numberOfLines={1} allowFontScaling={false}>{x.l}</Text>
             </View>
@@ -310,7 +319,7 @@ function Legs({ legs, T }) {
           {(g.fno || g.z || g.dh) ? (
             <View style={s.legH}>
               {/* DH = perna de posicionamento: não conta como setor (ORO.FTL.215(a)) — o Detalhe antigo marcava-a e o cartão também. */}
-              {(g.fno || g.dh) ? <View style={[s.fno, { backgroundColor: CARD.go }]}><Text style={[TXT3.kind, { color: CARD.onCard }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{[g.fno, g.dh ? 'DH' : null].filter(Boolean).join(' · ')}</Text></View> : <View />}
+              {(g.fno || g.dh) ? <View style={[s.fno, { backgroundColor: T.go }]}><Text style={[TXT3.kind, { color: T.fg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{[g.fno, g.dh ? 'DH' : null].filter(Boolean).join(' · ')}</Text></View> : <View />}
               {g.z ? <Text style={[TXT3.cardNumLbl, { color: T.sub }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{g.z}</Text> : null}
             </View>
           ) : null}
@@ -320,7 +329,7 @@ function Legs({ legs, T }) {
               <Text style={[TXT3.cardNumLbl, { color: T.sub }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{g.a.l}</Text>
             </View>
             <View style={s.legMid}>
-              <View style={[s.legWire, { backgroundColor: CARD.onCardTrack }]} />
+              <View style={[s.legWire, { backgroundColor: T.track }]} />
               {g.dur ? (
                 <View style={[s.dur, s.legDur]}>
                   <Icon name="plane" size={12} color={CARD.onCard} />
@@ -335,9 +344,9 @@ function Legs({ legs, T }) {
           </View>
           {g.gap ? (
             <View style={s.legGap}>
-              <View style={[s.legGapLine, { backgroundColor: CARD.onCardTrack }]} />
+              <View style={[s.legGapLine, { backgroundColor: T.track }]} />
               <Text style={[TXT3.cardNumLbl, { color: T.sub }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{g.gap}</Text>
-              <View style={[s.legGapLine, { backgroundColor: CARD.onCardTrack }]} />
+              <View style={[s.legGapLine, { backgroundColor: T.track }]} />
             </View>
           ) : null}
         </View>
@@ -350,7 +359,7 @@ function Legs({ legs, T }) {
 function Slim({ c, C, onOpen, l }) {
   const AL = a11yLang(l);
   const T = toneOf(C, c.dark ? 'dark' : c.color);
-  const a11y = [c.kind, c.title, c.sub, c.value].filter(Boolean).join('. ');
+  const a11y = [c.kind, c.title, c.sub, c.valueLbl && c.value ? `${c.valueLbl} ${c.value}` : c.value].filter(Boolean).join('. ');
   const Box = c.open ? TouchableOpacity : View;
   // `longOpen` (a pernoita da Escala: o toque abre os mapas, o toque longo edita o hotel) — dito ao VoiceOver como ação à parte.
   const longP = c.open && c.longOpen ? { onLongPress: () => onOpen(c.longOpen), accessibilityActions: [{ name: 'longpress', label: l('Editar', 'Edit') }], onAccessibilityAction: (e) => { if (e.nativeEvent.actionName === 'longpress') onOpen(c.longOpen); } } : {};
@@ -361,12 +370,20 @@ function Slim({ c, C, onOpen, l }) {
       {c.ring ? <View style={s.ringLead}><View style={[s.ringIn, { borderColor: c.ring }]} /></View> : null}
       {/* `mark` (mapa B): o ✕ de um aviso fora do limite, num disco à frente — a cor não é o único sinal */}
       {c.mark ? <View style={s.ringLead}><Text style={[TXT3.badge, { color: CARD.onCard }]} allowFontScaling={false}>{c.mark}</Text></View> : null}
+      {/* `swatch` (O2): uma linha de tipo que não é a principal fica neutra, com o quadradinho da sua cor à frente */}
+      {c.swatch && C[c.swatch] ? <View style={[s.swatchLead, { backgroundColor: C[c.swatch] }]} /> : null}
       <View style={s.slimT}>
         {c.kind ? <Text style={[TXT3.kind, { color: T.kind }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.kind}</Text> : null}
         <Text style={[TXT3.slimTitle, { color: T.fg }]} numberOfLines={c.kind ? 2 : 1} maxFontSizeMultiplier={MAX_SCALE}>{c.title}</Text>
         {c.sub ? <Text style={[TXT3.slimSub, { color: T.sub }]} numberOfLines={2} maxFontSizeMultiplier={MAX_SCALE}>{c.sub}</Text> : null}
       </View>
-      {c.value ? (c.gain ? <GainChip text={c.value} /> : <Text style={[TXT3.slimVal, { color: T.fg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.value}</Text>)
+      {c.value ? (c.gain ? <GainChip text={c.value} /> : c.valueLbl ? (
+        // a hora à direita com o que é por baixo ("05:40" · "report"), como numa agenda (B3 afinada)
+        <View style={s.slimValBox}>
+          <Text style={[TXT3.fact, { color: T.fg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.value}</Text>
+          <Text style={[TXT3.cardNumLbl, { color: T.sub }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.valueLbl}</Text>
+        </View>
+      ) : <Text style={[TXT3.slimVal, { color: T.fg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.value}</Text>)
         : c.open ? <View style={[s.go, s.goStatic, { backgroundColor: T.go }]}><Icon name="chevron" size={16} color={T.fg} /></View> : null}
     </Box>
   );
@@ -431,6 +448,8 @@ export function HomeCards({ cards, C, onOpen, l }) {
     if (c.t === 'slim') return <Slim key={k} c={c} C={C} onOpen={onOpen} l={l} />;
     if (c.t === 'lines') return <Lines key={k} c={c} C={C} onOpen={onOpen} l={l} />;
     if (c.t === 'text') return <TextCard key={k} c={c} C={C} onOpen={onOpen} l={l} />;
+    // o cabeçalho de secção (o próximo serviço noutro dia: "Amanhã · quinta 12") — mais ar por cima, junto da linha de baixo
+    if (c.t === 'hdr') return <Text key={k} style={[TXT3.pill, s.hdr, { color: C.soft }]} accessibilityRole="header" numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.text}</Text>;
     return null;
   });
 }
@@ -450,6 +469,7 @@ const s = StyleSheet.create({
   whatTxt: { flex: 1, minWidth: 0 },
   pillSm: { height: 30, paddingHorizontal: SPACE.md, borderRadius: RADIUS.pill, borderWidth: 1.5, flexDirection: 'row', alignItems: 'center', gap: SPACE.xs, flexShrink: 0 },
   stateDot: { width: 10, height: 10, borderRadius: RADIUS.pill },
+  stateDotRing: { width: 14, height: 14, borderWidth: 2 },   // o aro por fora: o amarelo continua com 10 por dentro
   grow: { flex: 1 },
   l1Row: { flexDirection: 'row', alignItems: 'baseline' },
   // o número à esquerda e os factos à direita, com o fio (16 entre eles — GIANT.gap; 16 de recuo — GIANT.sidePad). 12 por baixo da
@@ -463,6 +483,10 @@ const s = StyleSheet.create({
   cdMain: { gap: SPACE.md },
   cdTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: SPACE.md },
   cdHead: { flex: 1, minWidth: 0 },
+  kindRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.s },
+  kindTxt: { flexShrink: 1 },
+  swatch: { width: 10, height: 10, borderRadius: 2 },
+  swatchLead: { width: 12, height: 12, borderRadius: 4 },
   cdTitle: { marginTop: SPACE.xxs },
   goSpace: { width: 36, height: 36 },
   go: { position: 'absolute', top: SPACE.lg, right: SPACE.lg, width: 36, height: 36, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
@@ -491,6 +515,8 @@ const s = StyleSheet.create({
   dlLast: { right: 0, alignItems: 'flex-end' },
   dlDot: { width: 14, height: 14, borderRadius: RADIUS.pill, borderWidth: 3 },
   slimDashed: { borderWidth: 1.5, borderStyle: 'dashed' },
+  slimValBox: { alignItems: 'flex-end', flexShrink: 0 },
+  hdr: { paddingHorizontal: SPACE.lg, marginTop: SPACE.sm, marginBottom: -SPACE.xs },
   factIcV: { flexShrink: 1 },
   chip: { height: 28, paddingHorizontal: SPACE.md, borderRadius: RADIUS.pill, backgroundColor: CARD.chip, flexDirection: 'row', alignItems: 'center', flexShrink: 0 },
   cdRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: SPACE.sm },

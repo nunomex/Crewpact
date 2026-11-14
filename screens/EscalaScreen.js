@@ -387,7 +387,8 @@ export default function EscalaScreen({ navigation, route }) {
               {c.today ? <SvgCircle cx={CX} cy={CX} r={segs.length || isAbs ? RR - RING_W / 2 : CX} fill={C.ink} /> : null}
             </Svg>
             <Text style={[s.numTxt, { color: c.today ? C.sheet : C.ink }]} allowFontScaling={false}>{c.day}</Text>
-            {c.dirty ? <View style={[s.pend, { backgroundColor: C.alert, borderColor: C.sheet }]} pointerEvents="none" /> : null}
+            {/* o ponto "por confirmar" com o aro de tinta (S2, 2026-11-14): o âmbar sozinho dá 2,08:1 sobre o branco; o aro 18:1 */}
+            {c.dirty ? <View style={[s.pend, { backgroundColor: C.alert, borderColor: C.liveRing || C.sheet }]} pointerEvents="none" /> : null}
             {c.sel ? <View style={[s.selRing, { borderColor: C.ink }]} pointerEvents="none" /> : null}
             {tourStep && tourStep.iso === c.iso ? <View style={[s.tourRing, { borderColor: C.ink }]} pointerEvents="none" /> : null}
           </View>
@@ -552,7 +553,7 @@ export default function EscalaScreen({ navigation, route }) {
   const legSwatch = (key, on) => {
     if (key === 'ns') return <View style={s.legSw}><Icon name="moon" size={11} color={on ? C.sheet : C.soft} /></View>;
     if (key === 'free') return <View style={s.legSw}><Text style={[TXT.tag, { color: on ? C.sheet : C.ink }]} allowFontScaling={false}>7</Text></View>;
-    if (key === 'dirty') return <View style={s.legSw}><View style={[s.legDot, { backgroundColor: C.alert }]} /></View>;
+    if (key === 'dirty') return <View style={s.legSw}><View style={[s.legDot, { backgroundColor: C.alert, borderColor: C.liveRing || C.sheet }]} /></View>;
     const half = SWCIRC / 2 - (SWCIRC * RING_GAP_DEG) / 360;
     return (
       <View style={s.legSw}>
@@ -842,7 +843,7 @@ const s = StyleSheet.create({
   ask: { alignSelf: 'flex-start', paddingHorizontal: SPACE.xs, marginTop: SPACE.xs },
   askTxt: { textDecorationLine: 'underline' },
   legSw: { width: 14, height: 14, alignItems: 'center', justifyContent: 'center' },
-  legDot: { width: 8, height: 8, borderRadius: RADIUS.pill },
+  legDot: { width: 8, height: 8, borderRadius: RADIUS.pill, borderWidth: 1.5 },   // como o ponto do mês: o âmbar com o aro de tinta
   // a guiada: o dia de que o balão fala acende com um anel de tinta mais largo por fora
   tourRing: { position: 'absolute', top: -SPACE.s, left: -SPACE.s, right: -SPACE.s, bottom: -SPACE.s, borderRadius: RADIUS.pill, borderWidth: 3 },
 

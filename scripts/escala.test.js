@@ -117,7 +117,7 @@ const sig = (d, n) => E.daySigns(C(d), n).map((x) => `${x.key}: ${x.text}`);
 eq('o 13 (hoje, um voo com pernoita)', sig(13, 1), ['voo: anel azul: voo', 'ns: lua: dormes fora da base', 'today: a tinta: hoje']);
 eq('o 19 (dois serviços)', sig(19, 2), ['two: o anel em 2 fatias: um serviço cada, pela hora']);
 eq('o 7 (assistência)', sig(7, 1), ['terra: anel lilás: serviço em terra']);
-eq('o 28 (alteração por rever)', sig(28, 1), ['voo: anel azul: voo', 'dirty: ponto laranja: a escala mudou e falta rever']);
+eq('o 28 (alteração por rever)', sig(28, 1), ['voo: anel azul: voo', 'dirty: ponto âmbar: a escala mudou e falta rever']);
 eq('férias e baixa', [sig(24, 0), sig(27, 0)], [['abs: tracejado: férias'], ['abs: tracejado: baixa']]);
 eq('a folga entre serviços e o dia fora da escala', [sig(5, 0), sig(1, 0)], [['free: só o número: folga'], ['none: só o número: sem serviços na escala']]);
 yes('em inglês', E.daySigns(C(13), 1, 'en')[0].text === 'blue ring: flight');

@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="pt"><meta charset="utf-8"><title>CrewPact · Amanhã, não hoje</title><meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* AMANHÃ, NÃO HOJE (2026-11-14). O Nuno gostou da B de design/a-seguir.html (o próximo serviço numa linha fina, num dia de serviço) e
+   perguntou se se percebe que é amanhã e não hoje. Não: "domingo 15" obriga a saber que hoje é sábado 14 (e no Dia de voo a data
+   de hoje não está no ecrã — a pílula é o nº do voo); o dia vai na linha pequena; e a linha é azul como o voo de hoje (o mapa B: a
+   cor é o tipo — não muda). Em todas: a palavra relativa ("amanhã"; o dia da semana só daí para a frente). B1 o dia no rótulo · B2
+   o dia no título, como uma frase (recomendada) · B3 um cabeçalho a separar. Gerado a partir do código com os dados do teste do Nuno.
+   Imagens do Nuno: 3456 (a lista do que vem a seguir, com cabeçalho), 3409 (a data grande à esquerda). Mobbin: Qantas, Air NZ. */
+
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#E8E7E2;color:#141414;font-family:'Hanken','Helvetica Neue',Arial,sans-serif;padding:32px 16px 64px}
+.page{max-width:1760px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+.lead{max-width:960px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px} .lead p{font-size:14px;line-height:1.55;color:#55554F} .lead b{color:#141414}
+.grid{display:flex;flex-wrap:wrap;gap:20px}
+.cap{font-size:12px;font-weight:600;color:#55554F;margin:0 0 6px 6px;max-width:406px} .cap b{color:#141414;font-weight:800}
+.ph{position:relative;display:flex;flex-direction:column;width:406px;min-height:852px;border:8px solid #04060A;border-radius:52px 52px 0 0;border-bottom:0;overflow:hidden;background:#E3E1DB;color:#141414}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.topA{padding:0 20px 28px;flex:none}
+.ttlRow{display:flex;align-items:center;gap:10px;min-height:68px;padding:8px 0 16px}
+.ttlRow .t{font-weight:800;font-size:34px;line-height:38px;letter-spacing:-.8px;display:flex;align-items:center;gap:12px;white-space:nowrap;min-width:0}
+.ttlRow .t i.dot{width:10px;height:10px;border-radius:5px;background:#F0C24A;display:block;flex:none}
+.pl{height:38px;padding:0 16px;border-radius:19px;border:1.5px solid #141414;display:inline-flex;align-items:center;font-weight:700;font-size:13px;white-space:nowrap;flex:none}
+.pl.sm{height:30px;padding:0 12px;border-radius:15px} .ml{margin-left:auto}
+.what{font-weight:500;font-size:15px;line-height:20px;color:#3A3A36} .what.inl{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.hero{display:flex;align-items:stretch;gap:16px;margin-top:12px}
+.g{font-weight:700;white-space:nowrap;flex:none} .g .l1,.g .l2{display:flex;align-items:baseline}
+.g .big{font-size:62px;line-height:62px;letter-spacing:-2.85px} .g small{font-size:34px;letter-spacing:-1px;margin-left:6px} .g .z{font-size:20px;margin-left:8px}
+.grey{color:rgba(20,20,20,0.5)}
+.side{border-left:1.5px solid #141414;padding-left:16px;display:flex;flex-direction:column;justify-content:center;gap:12px;min-width:0}
+.fv{display:flex;align-items:center;gap:4px;font-weight:700;font-size:20px;line-height:22px;white-space:nowrap} .fv.gain{color:#0B6E43} .fv.was{text-decoration:line-through;opacity:.5}
+.fl{display:block;font-weight:500;font-size:11px;line-height:15px;color:#3A3A36;white-space:nowrap}
+.ic{display:block;fill:currentColor;flex:none}
+.sheetN{flex:1;background:#fff;border-radius:32px 32px 0 0;padding:12px 12px 24px;display:flex;flex-direction:column;gap:8px}
+.cd{border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:10px;position:relative}
+.kd{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8);padding-right:44px}
+.ct{font-weight:800;font-size:22px;line-height:26px;letter-spacing:-.4px;margin-top:-6px;padding-right:44px}
+.cities{font-weight:500;font-size:12px;color:rgba(20,20,20,.82);margin-top:-8px}
+.cs{font-weight:500;font-size:12px;line-height:16px;color:rgba(20,20,20,.82)} .cs u{color:#141414}
+.subrow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:-6px}
+.go{position:absolute;right:14px;top:14px;width:36px;height:36px;border-radius:18px;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px}
+.chip{background:#fff;color:#0B6E43;border-radius:14px;padding:5px 10px;font-weight:800;font-size:14px;white-space:nowrap}
+.badges{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:-4px}
+.badge{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.55);border-radius:10px;padding:2px 8px;font-weight:800;font-size:11px}
+.pd{display:flex;align-items:center;gap:6px;font-weight:500;font-size:11px;color:rgba(20,20,20,.82)}
+.dl{margin-top:2px} .dlc{position:relative;height:16px;margin-bottom:2px} .dlc span{position:absolute;transform:translateX(-50%);font-weight:800;font-size:11px;letter-spacing:.8px;color:rgba(20,20,20,.8)}
+.dlp{position:relative;height:54px} .dlt{position:absolute;left:7px;right:7px;top:6px;height:2px;background:rgba(20,20,20,.18)}
+.dls{position:absolute;top:5px;height:4px;background:#141414;border-radius:2px}
+.dpt{position:absolute;top:0;display:flex;flex-direction:column;gap:2px}
+.dot2{width:14px;height:14px;border-radius:7px;background:#141414;border:3px solid rgba(255,255,255,.0);box-shadow:0 0 0 3px #6DBEFA inset} .dot2.o{background:#6DBEFA;border:3px solid #141414;box-shadow:none}
+.dpt b{font-weight:700;font-size:20px;line-height:22px;white-space:nowrap} .dpt span:not(.dot2){font-weight:500;font-size:11px;line-height:15px;color:rgba(20,20,20,.82);white-space:nowrap}
+.quiet{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;border-top:1px solid rgba(20,20,20,.14);padding-top:8px;font-weight:500;font-size:12px;color:rgba(20,20,20,.82)}
+.quiet b{font-weight:700;color:#141414} .quiet .qv{font-size:15px} .quiet > span:first-child{flex:1;min-width:0} .quiet > span:last-child{white-space:nowrap}
+.quiet2{border-top:1px solid rgba(20,20,20,.14);padding-top:8px;display:flex;flex-direction:column;gap:2px;font-weight:500;font-size:12px;color:rgba(20,20,20,.82)} .quiet2 .qr{display:flex;justify-content:space-between;align-items:baseline;gap:8px;white-space:nowrap} .quiet2 .qr > b{font-weight:700;color:#141414;overflow:hidden;text-overflow:ellipsis} .quiet2 .qv{font-weight:700;color:#141414;font-size:15px}
+.ab{display:flex;align-items:flex-end;justify-content:space-between;gap:8px} .ab b{display:block;font-weight:700;font-size:22px;line-height:24px} .ab span{display:block;font-weight:500;font-size:11px;color:rgba(20,20,20,.82)}
+.dur{background:rgba(255,255,255,.75);border-radius:14px;padding:5px 10px;font-weight:700;font-size:12px;white-space:nowrap}
+.prog{position:relative;height:6px;border-radius:3px;background:rgba(20,20,20,.18)} .prog i{position:absolute;left:0;top:0;bottom:0;background:#141414;border-radius:3px} .prog s{position:absolute;top:-4px;width:14px;height:14px;margin-left:-7px;border-radius:7px;background:#141414}
+.act{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.55);border-radius:14px;padding:10px 12px;font-weight:700;font-size:14px}
+.lr{display:flex;justify-content:space-between;gap:12px;font-size:15px;line-height:20px} .lr span{font-weight:500} .lr b{font-weight:700}
+.lfoot{border-top:1px solid rgba(20,20,20,.14);padding-top:8px;display:flex;flex-direction:column;gap:8px}
+.tx{font-weight:500;font-size:14px;line-height:20px}
+.slim{border-radius:20px;padding:12px 16px;display:flex;align-items:center;gap:12px;min-height:56px} .slim.dashed{border:1.5px dashed rgba(20,20,20,.55)}
+.slim .st{flex:1;min-width:0;display:flex;flex-direction:column} .slim .k{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8)}
+.slim b{font-weight:800;font-size:16px;line-height:20px} .slim .st > span:not(.k){font-weight:500;font-size:12px;line-height:16px;color:rgba(20,20,20,.82)}
+.slim .sv{font-weight:800;font-size:20px;white-space:nowrap}
+.mark{width:30px;height:30px;border-radius:15px;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex:none}
+.goS{width:34px;height:34px;border-radius:17px;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex:none}
+.credit{font-weight:500;font-size:12px;color:#5E5E57;padding:2px 6px}
+.hdr{font-weight:800;font-size:13px;color:#55554F;padding:8px 6px 0}
+.fold{position:absolute;left:0;right:0;top:750px;border-top:2px dashed rgba(236,122,108,.9);pointer-events:none} .fold span{position:absolute;right:10px;top:2px;font-size:10px;font-weight:800;color:#C0503F;background:rgba(255,255,255,.85);padding:1px 6px;border-radius:6px}
+
+.opt{display:flex;flex-direction:column;gap:10px} .opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:#55554F;max-width:900px} .opt > p b{color:#141414}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:940px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase} .card2 li{font-size:13px;line-height:1.5;color:#55554F} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:#141414}
+.ph{min-height:0;height:800px}
+</style><body><div class="page">
+  <div class="lead"><h1>Amanhã, não hoje</h1>
+    <p>Gostaste da linha fina (B). A pergunta é se se percebe logo que <b>é amanhã e não hoje</b>. Assim não: "domingo 15" obriga a saber que hoje é sábado 14, e no Dia de voo <b>a data de hoje não está no ecrã</b> (a pílula é o número do voo); o dia vai na linha pequena, que se lê depois do título; e a linha é azul como o voo de hoje (a cor diz o tipo, por isso não muda — a diferença tem de vir das palavras e do sítio). <b>Em todas:</b> diz-se <b>"amanhã"</b> (o dia da semana só daí para a frente). Gerado a partir do código, com os dados do teu teste. <b>As tuas imagens:</b> 3456 (o que vem a seguir numa lista com cabeçalho), 3409 (a data grande à esquerda). <b>Mobbin:</b> <a href="https://mobbin.com/screens/dfb983b1-79b0-4908-9d34-855e8fe8234c">Qantas</a>, <a href="https://mobbin.com/screens/d953ded8-3c50-49f6-ba43-2f73477f563d">Air NZ</a>.</p></div>
+  <div class="opt"><h3>A mesma regra noutros sítios</h3><p>O cartão do próximo serviço na <b>folga</b> e no <b>dia fechado</b> passa a dizer "Próximo serviço · <b>amanhã</b>" em vez de "domingo 15".</p>
+    <div class="grid"><div class="cell"><div class="cap"><b>Folga</b> · com o voo amanhã</div>
+    <div class="ph"><div class="status"><span>12:14</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="topA">
+    <div class="ttlRow"><span class="t">Folga</span><span class="pl ml">Notificações</span></div>
+    <div class="what inl"><span>Próximo serviço daqui a</span><span class="pl sm">sábado 14 ›</span></div>
+    <div class="hero"><div class="g"><div class="l1"><span class="big">17</span><small>h 25</small></div>
+      </div>
+      <div class="side"><div><span class="fv">amanhã</span><span class="fl">até lá</span></div><div><span class="fv">17 h</span><span class="fl">de 60 em 7 dias</span></div><div><span class="fv"><svg class="ic" width="18" height="18" viewBox="0 0 24 24"><path d="M7 15a5 5 0 0 1-.6-10A6 6 0 0 1 18 7a4 4 0 0 1-.5 8H7zm1 2 1.6 1-1.4 3-1.6-1zm4.5 0 1.6 1-1.4 3-1.6-1zm4.5 0 1.6 1-1.4 3-1.6-1z"/></svg>12 °C</span><span class="fl">chuva às 05:40</span></div></div></div></div>
+      <div class="sheetN"><div class="cd" style="background:#6DBEFA"><span class="go">›</span><span class="kd">Próximo serviço · amanhã · 1 setor</span><span class="ct">LIS → FNC</span><span class="cities">Lisboa → Funchal</span><div class="badges"><span class="badge"><svg class="ic" width="12" height="12" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>EZY7841</span><span class="pd">per diem <span class="chip">+154,51 €</span></span></div><div class="dl">
+    <div class="dlp"><span class="dlt"></span><span class="dls" style="left:calc(30% + 0px);right:calc(30% + 0px)"></span>
+    <div class="dpt" style="left:0;align-items:flex-start"><span class="dot2 o"></span><b>05:40</b><span>report</span></div><div class="dpt" style="left:30%;transform:translateX(-50%);align-items:center;text-align:center"><span class="dot2"></span><b>06:40</b><span>parte</span></div><div class="dpt" style="left:70%;transform:translateX(-50%);align-items:center;text-align:center"><span class="dot2"></span><b>08:15</b><span>chega</span></div><div class="dpt" style="right:0;align-items:flex-end;text-align:right"><span class="dot2 o"></span><b>08:45</b><span>fim</span></div></div></div><div class="quiet2"><div class="qr"><b>PSV dentro do limite</b><span>margem <b class="qv">9 h 55</b></span></div><span>2 h 35 de 12 h 30</span></div>
+    </div><div class="slim" style="background:#F1EFEA"><div class="st"><b>Novembro</b><span>estimado · bruto</span></div>
+      <span class="sv">2 431,50 €</span></div><div class="credit">Meteorologia: MET Norway</div></div>
+      <div class="fold"><span>fim do ecrã do iPhone (por cima da barra de abas) — o resto desliza</span></div></div></div><div class="cell"><div class="cap"><b>Dia fechado</b> · depois do voo de hoje</div>
+    <div class="ph"><div class="status"><span>19:20</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="topA">
+    <div class="ttlRow"><span class="t">Dia fechado</span><span class="pl ml">Notificações</span></div>
+    <div class="what inl"><span>PSV de hoje</span><span class="pl sm">sábado 14 ›</span></div>
+    <div class="hero"><div class="g"><div class="l1"><span class="big">1:35</span><small>h</small></div>
+      </div>
+      <div class="side"><div><span class="fv gain">+154,51 €</span><span class="fl">ganhos de hoje</span></div><div><span class="fv">19 h</span><span class="fl">de 60 em 7 dias</span></div><div><span class="fv"><svg class="ic" width="18" height="18" viewBox="0 0 24 24"><path d="M7 15a5 5 0 0 1-.6-10A6 6 0 0 1 18 7a4 4 0 0 1-.5 8H7zm1 2 1.6 1-1.4 3-1.6-1zm4.5 0 1.6 1-1.4 3-1.6-1zm4.5 0 1.6 1-1.4 3-1.6-1z"/></svg>12 °C</span><span class="fl">chuva às 05:40</span></div></div></div></div>
+      <div class="sheetN"><div class="cd" style="background:#B4C2A2"><span class="go">›</span><span class="kd">Repouso · na base</span><span class="ct">Descansa</span><div class="subrow"><span class="cs">o dia fechou nos limites</span></div><div class="ab"><div><b>17:20</b><span>fim de serviço</span></div><span class="dur">mínimo 12 h</span><div style="text-align:right"><b>05:20</b><span>cumprido</span></div></div><div class="prog"><i style="width:10%"></i><s style="left:10%"></s></div>
+    </div><div class="cd" style="background:#6DBEFA"><span class="go">›</span><span class="kd">Próximo serviço · amanhã · 1 setor</span><span class="ct">LIS → FNC</span><span class="cities">Lisboa → Funchal</span><div class="dl">
+    <div class="dlp"><span class="dlt"></span><span class="dls" style="left:calc(30% + 0px);right:calc(30% + 0px)"></span>
+    <div class="dpt" style="left:0;align-items:flex-start"><span class="dot2 o"></span><b>05:40</b><span>report</span></div><div class="dpt" style="left:30%;transform:translateX(-50%);align-items:center;text-align:center"><span class="dot2"></span><b>06:40</b><span>parte</span></div><div class="dpt" style="left:70%;transform:translateX(-50%);align-items:center;text-align:center"><span class="dot2"></span><b>08:15</b><span>chega</span></div><div class="dpt" style="right:0;align-items:flex-end;text-align:right"><span class="dot2 o"></span><b>08:45</b><span>fim</span></div></div></div>
+    </div><div class="credit">Meteorologia: MET Norway</div></div>
+      <div class="fold"><span>fim do ecrã do iPhone (por cima da barra de abas) — o resto desliza</span></div></div></div></div></div>
+  <div class="opt"><h3>B1 · O dia no rótulo</h3><p>Em cima, em pequeno, <b>"AMANHÃ · DOMINGO 15"</b>; o título é a rota; por baixo a hora do report. Compacto, mas o "amanhã" fica no rótulo pequeno.</p><div class="grid"><div class="cell"><div class="cap"><b>Dia de voo</b> · antes do report</div>
+    <div class="ph"><div class="status"><span>12:37</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="topA">
+    <div class="ttlRow"><span class="t">Dia de voo<i class="dot"></i></span><span class="pl ml">Notificações</span></div>
+    <div class="what inl"><span>Report às</span><span class="pl sm">EZY1010 ›</span></div>
+    <div class="hero"><div class="g"><div class="l1"><span class="big">15:15</span></div>
+      <div class="l2"><span class="big">OPO</span></div></div>
+      <div class="side"><div><span class="fv">44 min</span><span class="fl">falta</span></div><div><span class="fv">03:15 +1</span><span class="fl">PSV até</span></div><div><span class="fv"><svg class="ic" width="18" height="18" viewBox="0 0 24 24"><path d="M7 4h2v2H7zM2 9h2v2H2zm1.6-4 1.4-1.4 1.4 1.4L5 6.4zM8 7a4 4 0 0 1 3.7 2.4A5 5 0 0 1 19 13a4 4 0 0 1-1 7.9H7a4.5 4.5 0 0 1-2.4-8.3A4 4 0 0 1 8 7z"/></svg>16 °C</span><span class="fl">parcialmente nublado às 15:15</span></div></div></div></div>
+      <div class="sheetN"><div class="cd" style="background:#6DBEFA"><span class="go"><svg class="ic" width="16" height="16" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.7 15.4 6.8l1 1.7-6.8 3.9zm0 2.6 1-1.7 6.8 3.9-1 1.7z"/></svg></span><span class="kd">Dia de serviço · 1 setor</span><span class="ct">OPO → LIS</span><span class="cities">Porto → Lisboa</span><div class="badges"><span class="badge"><svg class="ic" width="12" height="12" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>EZY1010</span><span class="pd">per diem <span class="chip">+154,51 €</span></span></div><div class="dl">
+    <div class="dlp"><span class="dlt"></span><span class="dls" style="left:calc(30% + 0px);right:calc(30% + 0px)"></span>
+    <div class="dpt" style="left:0;align-items:flex-start"><span class="dot2 o"></span><b>15:15</b><span>report</span></div><div class="dpt" style="left:30%;transform:translateX(-50%);align-items:center;text-align:center"><span class="dot2"></span><b>16:00</b><span>parte</span></div><div class="dpt" style="left:70%;transform:translateX(-50%);align-items:center;text-align:center"><span class="dot2"></span><b>16:50</b><span>chega</span></div><div class="dpt" style="right:0;align-items:flex-end;text-align:right"><span class="dot2 o"></span><b>17:20</b><span>fim</span></div></div></div><div class="quiet2"><div class="qr"><b>Dentro do limite</b><span>margem <b class="qv">10 h 25</b></span></div><span>PSV 1 h 35 de 12 h</span></div>
+    </div><div class="slim" style="background:#6DBEFA"><div class="st"><span class="k">Amanhã · domingo 15</span><b>LIS → FNC</b><span>report 05:40 · Lisboa → Funchal</span></div>
+      <span class="goS">›</span></div><div class="credit">Meteorologia: MET Norway</div></div>
+      <div class="fold"><span>fim do ecrã do iPhone (por cima da barra de abas) — o resto desliza</span></div></div></div><div class="cell"><div class="cap"><b>Em voo</b></div>
+    <div class="ph"><div class="status"><span>16:20</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="topA">
+    <div class="ttlRow"><span class="t">Em voo<i class="dot"></i></span><span class="pl ml">Notificações</span></div>
+    <div class="what inl"><span>Aterras às</span><span class="pl sm">EZY1010 ›</span></div>
+    <div class="hero"><div class="g"><div class="l1"><span class="big">16:50</span></div>
+      <div class="l2"><span class="big">LIS</span></div></div>
+      <div class="side"><div><span class="fv">30 min</span><span class="fl">falta para aterrar</span></div><div><span class="fv">10:25</span><span class="fl">de margem no PSV</span></div><div><span class="fv"><svg class="ic" width="18" height="18" viewBox="0 0 24 24"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm-1-6h2v3h-2zm0 19h2v3h-2zM1 11h3v2H1zm19 0h3v2h-3zM3.5 5l1.4-1.4 2.2 2.1-1.4 1.4zm13.4 13.4 1.4-1.4 2.1 2.2-1.4 1.4zM3.5 19l2.2-2.1 1.4 1.4L4.9 20.4zM16.9 5.6l2.1-2.1 1.4 1.4-2.1 2.2z"/></svg>18 °C</span><span class="fl">sol em LIS à chegada</span></div></div></div></div>
+      <div class="sheetN"><div class="cd" style="background:#6DBEFA"><span class="go"><svg class="ic" width="16" height="16" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.7 15.4 6.8l1 1.7-6.8 3.9zm0 2.6 1-1.7 6.8 3.9-1 1.7z"/></svg></span><span class="kd">Dia de serviço</span><span class="ct">OPO → LIS</span><div class="subrow"><span class="cs">a horas</span></div><div class="ab"><div><b>15:15</b><span>report</span></div><span class="dur">PSV 1:05 de 12:00</span><div style="text-align:right"><b>03:15</b><span>limite · amanhã</span></div></div><div class="prog"><i style="width:50%"></i><s style="left:50%"></s></div>
+    </div><div class="slim" style="background:#6DBEFA"><div class="st"><span class="k">Amanhã · domingo 15</span><b>LIS → FNC</b><span>report 05:40 · Lisboa → Funchal</span></div>
+      <span class="goS">›</span></div><div class="credit">Meteorologia: MET Norway</div></div>
+      <div class="fold"><span>fim do ecrã do iPhone (por cima da barra de abas) — o resto desliza</span></div></div></div></div></div><div class="opt"><h3>B2 · O dia no título, como uma frase<span class="rec">RECOMENDO</span></h3><p>O título diz <b>"Amanhã · report às 05:40"</b>; por baixo a rota e a data. Lê-se primeiro o que importa para a noite de hoje.</p><div class="grid"><div class="cell"><div class="cap"><b>Dia de voo</b> · antes do report</div>
+    <div class="ph"><div class="status"><span>12:37</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="topA">
+    <div class="ttlRow"><span class="t">Dia de voo<i class="dot"></i></span><span class="pl ml">Notificações</span></div>
+    <div class="what inl"><span>Report às</span><span class="pl sm">EZY1010 ›</span></div>
+    <div class="hero"><div class="g"><div class="l1"><span class="big">15:15</span></div>
+      <div class="l2"><span class="big">OPO</span></div></div>
+      <div class="side"><div><span class="fv">44 min</span><span class="fl">falta</span></div><div><span class="fv">03:15 +1</span><span class="fl">PSV até</span></div><div><span class="fv"><svg class="ic" width="18" height="18" viewBox="0 0 24 24"><path d="M7 4h2v2H7zM2 9h2v2H2zm1.6-4 1.4-1.4 1.4 1.4L5 6.4zM8 7a4 4 0 0 1 3.7 2.4A5 5 0 0 1 19 13a4 4 0 0 1-1 7.9H7a4.5 4.5 0 0 1-2.4-8.3A4 4 0 0 1 8 7z"/></svg>16 °C</span><span class="fl">parcialmente nublado às 15:15</span></div></div></div></div>
+      <div class="sheetN"><div class="cd" style="background:#6DBEFA"><span class="go"><svg class="ic" width="16" height="16" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.7 15.4 6.8l1 1.7-6.8 3.9zm0 2.6 1-1.7 6.8 3.9-1 1.7z"/></svg></span><span class="kd">Dia de serviço · 1 setor</span><span class="ct">OPO → LIS</span><span class="cities">Porto → Lisboa</span><div class="badges"><span class="badge"><svg class="ic" width="12" height="12" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>EZY1010</span><span class="pd">per diem <span class="chip">+154,51 €</span></span></div><div class="dl">
+    <div class="dlp"><span class="dlt"></span><span class="dls" style="left:calc(30% + 0px);right:calc(30% + 0px)"></span>
+    <div class="dpt" style="left:0;align-items:flex-start"><span class="dot2 o"></span><b>15:15</b><span>report</span></div><div class="dpt" style="left:30%;transform:translateX(-50%);align-items:center;text-align:center"><span class="dot2"></span><b>16:00</b><span>parte</span></div><div class="dpt" style="left:70%;transform:translateX(-50%);align-items:center;text-align:center"><span class="dot2"></span><b>16:50</b><span>chega</span></div><div class="dpt" style="right:0;align-items:flex-end;text-align:right"><span class="dot2 o"></span><b>17:20</b><span>fim</span></div></div></div><div class="quiet2"><div class="qr"><b>Dentro do limite</b><span>margem <b class="qv">10 h 25</b></span></div><span>PSV 1 h 35 de 12 h</span></div>
+    </div><div class="slim" style="background:#6DBEFA"><div class="st"><span class="k">Próximo serviço</span><b>Amanhã · report às 05:40</b><span>LIS → FNC · domingo 15</span></div>
+      <span class="goS">›</span></div><div class="credit">Meteorologia: MET Norway</div></div>
+      <div class="fold"><span>fim do ecrã do iPhone (por cima da barra de abas) — o resto desliza</span></div></div></div><div class="cell"><div class="cap"><b>Em voo</b></div>
+    <div class="ph"><div class="status"><span>16:20</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="topA">
+    <div class="ttlRow"><span class="t">Em voo<i class="dot"></i></span><span class="pl ml">Notificações</span></div>
+    <div class="what inl"><span>Aterras às</span><span class="pl sm">EZY1010 ›</span></div>
+    <div class="hero"><div class="g"><div class="l1"><span class="big">16:50</span></div>
+      <div class="l2"><span class="big">LIS</span></div></div>
+      <div class="side"><div><span class="fv">30 min</span><span class="fl">falta para aterrar</span></div><div><span class="fv">10:25</span><span class="fl">de margem no PSV</span></div><div><span class="fv"><svg class="ic" width="18" height="18" viewBox="0 0 24 24"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm-1-6h2v3h-2zm0 19h2v3h-2zM1 11h3v2H1zm19 0h3v2h-3zM3.5 5l1.4-1.4 2.2 2.1-1.4 1.4zm13.4 13.4 1.4-1.4 2.1 2.2-1.4 1.4zM3.5 19l2.2-2.1 1.4 1.4L4.9 20.4zM16.9 5.6l2.1-2.1 1.4 1.4-2.1 2.2z"/></svg>18 °C</span><span class="fl">sol em LIS à chegada</span></div></div></div></div>
+      <div class="sheetN"><div class="cd" style="background:#6DBEFA"><span class="go"><svg class="ic" width="16" height="16" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.7 15.4 6.8l1 1.7-6.8 3.9zm0 2.6 1-1.7 6.8 3.9-1 1.7z"/></svg></span><span class="kd">Dia de serviço</span><span class="ct">OPO → LIS</span><div class="subrow"><span class="cs">a horas</span></div><div class="ab"><div><b>15:15</b><span>report</span></div><span class="dur">PSV 1:05 de 12:00</span><div style="text-align:right"><b>03:15</b><span>limite · amanhã</span></div></div><div class="prog"><i style="width:50%"></i><s style="left:50%"></s></div>
+    </div><div class="slim" style="background:#6DBEFA"><div class="st"><span class="k">Próximo serviço</span><b>Amanhã · report às 05:40</b><span>LIS → FNC · domingo 15</span></div>
+      <span class="goS">›</span></div><div class="credit">Meteorologia: MET Norway</div></div>
+      <div class="fold"><span>fim do ecrã do iPhone (por cima da barra de abas) — o resto desliza</span></div></div></div></div></div><div class="opt"><h3>B3 · Um cabeçalho a separar</h3><p>Fora do cartão, em cinzento, <b>"Amanhã · domingo 15"</b> (como as listas do iPhone separam os dias); por baixo, a linha com a rota e o report. A separação mais clara, mas gasta uma linha a mais.</p><div class="grid"><div class="cell"><div class="cap"><b>Dia de voo</b> · antes do report</div>
+    <div class="ph"><div class="status"><span>12:37</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="topA">
+    <div class="ttlRow"><span class="t">Dia de voo<i class="dot"></i></span><span class="pl ml">Notificações</span></div>
+    <div class="what inl"><span>Report às</span><span class="pl sm">EZY1010 ›</span></div>
+    <div class="hero"><div class="g"><div class="l1"><span class="big">15:15</span></div>
+      <div class="l2"><span class="big">OPO</span></div></div>
+      <div class="side"><div><span class="fv">44 min</span><span class="fl">falta</span></div><div><span class="fv">03:15 +1</span><span class="fl">PSV até</span></div><div><span class="fv"><svg class="ic" width="18" height="18" viewBox="0 0 24 24"><path d="M7 4h2v2H7zM2 9h2v2H2zm1.6-4 1.4-1.4 1.4 1.4L5 6.4zM8 7a4 4 0 0 1 3.7 2.4A5 5 0 0 1 19 13a4 4 0 0 1-1 7.9H7a4.5 4.5 0 0 1-2.4-8.3A4 4 0 0 1 8 7z"/></svg>16 °C</span><span class="fl">parcialmente nublado às 15:15</span></div></div></div></div>
+      <div class="sheetN"><div class="cd" style="background:#6DBEFA"><span class="go"><svg class="ic" width="16" height="16" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.7 15.4 6.8l1 1.7-6.8 3.9zm0 2.6 1-1.7 6.8 3.9-1 1.7z"/></svg></span><span class="kd">Dia de serviço · 1 setor</span><span class="ct">OPO → LIS</span><span class="cities">Porto → Lisboa</span><div class="badges"><span class="badge"><svg class="ic" width="12" height="12" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>EZY1010</span><span class="pd">per diem <span class="chip">+154,51 €</span></span></div><div class="dl">
+    <div class="dlp"><span class="dlt"></span><span class="dls" style="left:calc(30% + 0px);right:calc(30% + 0px)"></span>
+    <div class="dpt" style="left:0;align-items:flex-start"><span class="dot2 o"></span><b>15:15</b><span>report</span></div><div class="dpt" style="left:30%;transform:translateX(-50%);align-items:center;text-align:center"><span class="dot2"></span><b>16:00</b><span>parte</span></div><div class="dpt" style="left:70%;transform:translateX(-50%);align-items:center;text-align:center"><span class="dot2"></span><b>16:50</b><span>chega</span></div><div class="dpt" style="right:0;align-items:flex-end;text-align:right"><span class="dot2 o"></span><b>17:20</b><span>fim</span></div></div></div><div class="quiet2"><div class="qr"><b>Dentro do limite</b><span>margem <b class="qv">10 h 25</b></span></div><span>PSV 1 h 35 de 12 h</span></div>
+    </div><div class="hdr">Amanhã · domingo 15</div><div class="slim" style="background:#6DBEFA"><div class="st"><b>LIS → FNC</b><span>report 05:40 · Lisboa → Funchal</span></div>
+      <span class="goS">›</span></div><div class="credit">Meteorologia: MET Norway</div></div>
+      <div class="fold"><span>fim do ecrã do iPhone (por cima da barra de abas) — o resto desliza</span></div></div></div><div class="cell"><div class="cap"><b>Em voo</b></div>
+    <div class="ph"><div class="status"><span>16:20</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="topA">
+    <div class="ttlRow"><span class="t">Em voo<i class="dot"></i></span><span class="pl ml">Notificações</span></div>
+    <div class="what inl"><span>Aterras às</span><span class="pl sm">EZY1010 ›</span></div>
+    <div class="hero"><div class="g"><div class="l1"><span class="big">16:50</span></div>
+      <div class="l2"><span class="big">LIS</span></div></div>
+      <div class="side"><div><span class="fv">30 min</span><span class="fl">falta para aterrar</span></div><div><span class="fv">10:25</span><span class="fl">de margem no PSV</span></div><div><span class="fv"><svg class="ic" width="18" height="18" viewBox="0 0 24 24"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm-1-6h2v3h-2zm0 19h2v3h-2zM1 11h3v2H1zm19 0h3v2h-3zM3.5 5l1.4-1.4 2.2 2.1-1.4 1.4zm13.4 13.4 1.4-1.4 2.1 2.2-1.4 1.4zM3.5 19l2.2-2.1 1.4 1.4L4.9 20.4zM16.9 5.6l2.1-2.1 1.4 1.4-2.1 2.2z"/></svg>18 °C</span><span class="fl">sol em LIS à chegada</span></div></div></div></div>
+      <div class="sheetN"><div class="cd" style="background:#6DBEFA"><span class="go"><svg class="ic" width="16" height="16" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.7 15.4 6.8l1 1.7-6.8 3.9zm0 2.6 1-1.7 6.8 3.9-1 1.7z"/></svg></span><span class="kd">Dia de serviço</span><span class="ct">OPO → LIS</span><div class="subrow"><span class="cs">a horas</span></div><div class="ab"><div><b>15:15</b><span>report</span></div><span class="dur">PSV 1:05 de 12:00</span><div style="text-align:right"><b>03:15</b><span>limite · amanhã</span></div></div><div class="prog"><i style="width:50%"></i><s style="left:50%"></s></div>
+    </div><div class="hdr">Amanhã · domingo 15</div><div class="slim" style="background:#6DBEFA"><div class="st"><b>LIS → FNC</b><span>report 05:40 · Lisboa → Funchal</span></div>
+      <span class="goS">›</span></div><div class="credit">Meteorologia: MET Norway</div></div>
+      <div class="fold"><span>fim do ecrã do iPhone (por cima da barra de abas) — o resto desliza</span></div></div></div></div></div>
+  <div class="card2"><h3>A minha recomendação: B2</h3><ul>
+    <li><b>B2</b> põe a palavra que separa o amanhã do hoje <b>no título</b>, o que se lê primeiro, e diz de uma vez o que importa para a noite: <b>amanhã começas às 05:40</b>. A rota e a data ficam por baixo, para quem quiser.</li>
+    <li><b>B1</b> diz o mesmo, mas o "amanhã" fica no rótulo pequeno em maiúsculas; o olho vai primeiro para "LIS → FNC" e pode ler-se como mais um voo de hoje.</li>
+    <li><b>B3</b> separa melhor do que todas (um cabeçalho é uma secção nova), mas são duas coisas por baixo do voo de hoje em vez de uma.</li></ul></div>
+</div><script>document.fonts.ready.then(function(){ document.querySelectorAll('.ttlRow').forEach(function(r){ var t = r.querySelector('.t'), p = r.querySelector('.pl'); var room = r.clientWidth - p.offsetWidth - 10; var fs = 34; while (t.scrollWidth > room && fs > 24) { fs -= 1; t.style.fontSize = fs + 'px'; } }); });</script></body></html>

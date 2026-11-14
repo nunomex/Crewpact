@@ -139,6 +139,39 @@ for (const f of ['App.js', ...MARCA_DIRS.flatMap((d) => fs.readdirSync(d).filter
   });
 }
 
+// ── AS CORES, MEDIDAS (o capítulo "Cor" de docs/design-system.md, 2026-11-14) ──
+// Regra dura: todo o TEXTO tem 4,5:1 sobre o seu fundo (WCAG AA), de dia e de noite. Dívida (só pode descer): os sinais sem texto
+// abaixo de 3:1 (o ponto "ao vivo") e o laranja e o vermelho que se confundem para quem não distingue o vermelho do verde
+// (deuteranopia, ~8 % dos homens; matriz de Machado 2009; ΔE CIE76 < 20). A cor nunca vai sozinha — mas tem de se ver.
+{
+  const { CARD, BRAND } = require(path.resolve('data/constants.js'));
+  const rgba = (c) => { const s = String(c).trim(); const m = /^rgba?\(([^)]+)\)$/.exec(s);
+    if (m) { const p = m[1].split(',').map((x) => parseFloat(x)); return [p[0] / 255, p[1] / 255, p[2] / 255, p[3] == null ? 1 : p[3]]; }
+    const h = s.replace('#', ''); return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).concat(1); };
+  const over = (fg, bg) => { const f = rgba(fg), b = rgba(bg); return f.slice(0, 3).map((v, i) => v * f[3] + b[i] * (1 - f[3])); };
+  const lin = (v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+  const lum = (c) => { const [r, g, b] = c.map(lin); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+  const ratio = (fg, bg) => { const B = rgba(bg).slice(0, 3), F = over(fg, bg); const a = lum(F), b = lum(B); return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05); };
+  const DEUT = [[0.367322, 0.860646, -0.227968], [0.280085, 0.672501, 0.047413], [-0.01182, 0.04294, 0.968881]];
+  const deut = (c) => { const v = rgba(c).slice(0, 3).map(lin); return DEUT.map((r) => Math.min(1, Math.max(0, r[0] * v[0] + r[1] * v[1] + r[2] * v[2]))); };
+  const lab = (L) => { const [r, g, b] = L; const x = (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047, y = r * 0.2126 + g * 0.7152 + b * 0.0722, z = (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883;
+    const f = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116); return [116 * f(y) - 16, 500 * (f(x) - f(y)), 200 * (f(y) - f(z))]; };
+  const dE = (a, b) => { const p = lab(a), q = lab(b); return Math.sqrt(p.reduce((s, v, i) => s + (v - q[i]) ** 2, 0)); };
+  const cores = { sinalFraco: 0, laranjaVermelho: 0 };
+  const texto = (nome, fg, bg) => { const r = ratio(fg, bg); if (r < 4.5) duras.push(`cores: ${nome} tem ${r.toFixed(2)}:1 — o texto pede 4,5:1`); };
+  for (const [modo, P] of [['dia', CARD.day], ['noite', CARD.night]]) {
+    for (const k of ['flight', 'ground', 'rest', 'alert', 'stop']) texto(`(${modo}) a tinta dos cartões sobre "${k}"`, CARD.onCardSub, P[k]);
+    for (const k of ['desk', 'sheet', 'neutral']) texto(`(${modo}) a tinta sobre "${k}"`, P.ink, P[k]);
+    texto(`(${modo}) o texto secundário sobre o neutro`, P.neutralSub, P.neutral);
+    texto(`(${modo}) o ganho fora da pílula sobre a folha`, P.gainOut, P.sheet);
+    // o ponto "ao vivo": vê-se pelo amarelo ou pelo aro de tinta à volta (S2, 2026-11-14) — um dos dois a 3:1 com a secretária
+    if (ratio(BRAND.signal, P.desk) < 3 && !(P.liveRing && ratio(P.liveRing, P.desk) >= 3)) cores.sinalFraco++;
+    if (dE(deut(P.alert), deut(P.stop)) < 20) cores.laranjaVermelho++;
+  }
+  texto('o ganho na pílula branca', CARD.gain, CARD.chip);
+  atual['data/constants.js (cores)'] = cores;
+}
+
 const base = fs.existsSync(BASE_FILE) ? JSON.parse(fs.readFileSync(BASE_FILE, 'utf8')) : null;
 const subidas = [], descidas = [];
 if (base) {

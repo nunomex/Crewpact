@@ -332,7 +332,7 @@ export default function StatsScreen({ navigation }) {
   const baptismNote = alertBaptism ? (
     <Text style={[TXT3.cardSub, { color: CARD.day.tabSub }]}>
       <Text style={[TXT3.dur, { color: CARD.day.ink }]}>{l('Primeira vez com cor? ', 'First time seeing colour? ')}</Text>
-      <Text style={{ color: CARD.day.alert }}>● </Text><Text style={[TXT3.dur, { color: CARD.day.ink }]}>{l('Laranja', 'Orange')}</Text>
+      <Text style={{ color: CARD.day.alert }}>● </Text><Text style={[TXT3.dur, { color: CARD.day.ink }]}>{l('Âmbar', 'Amber')}</Text>
       {l(' = a partir de 85 % de um limite — atenção cedo, não é decisão. ', ' = from 85% of a limit — early attention, not a decision. ')}
       <Text style={{ color: CARD.day.stop }}>● </Text><Text style={[TXT3.dur, { color: CARD.day.ink }]}>{l('Vermelho', 'Red')}</Text>
       {l(' = a estimativa passa o limite — confirma com o planeamento. Dentro do limite não há cor. A app estima, nunca declara legalidade.', ' = the estimate goes over the limit — check with crewing. Within the limit there is no colour. The app estimates, it never declares legality.')}
@@ -612,7 +612,7 @@ export default function StatsScreen({ navigation }) {
               </View>
             );
           })}
-        <Text style={[TXT3.cardSub, s.note]}>{l('Os períodos de dias contam para trás a partir de hoje — ou de amanhã, quando o serviço de hoje passa a meia-noite (vale o mais carregado). O ano civil conta o ano inteiro, com o que já está na escala. ', 'Day periods count back from today — or from tomorrow when today’s duty runs past midnight (the heavier one applies). The calendar year counts the whole year, including what is already rostered. ')}{l('A barra fica laranja a partir de 85 % de um limite e vermelha só quando o passa (o mapa das cores).', 'The bar turns orange from 85% of a limit and red only when it is exceeded (the colour map).')}</Text>
+        <Text style={[TXT3.cardSub, s.note]}>{l('Os períodos de dias contam para trás a partir de hoje — ou de amanhã, quando o serviço de hoje passa a meia-noite (vale o mais carregado). O ano civil conta o ano inteiro, com o que já está na escala. ', 'Day periods count back from today — or from tomorrow when today’s duty runs past midnight (the heavier one applies). The calendar year counts the whole year, including what is already rostered. ')}{l('A barra fica âmbar a partir de 85 % de um limite e vermelha só quando o passa (o mapa das cores).', 'The bar turns amber from 85% of a limit and red only when it is exceeded (the colour map).')}</Text>
           <Text style={[TXT3.dur, s.law]} onPress={() => { select(); setProva(provaFor('limites', provaCtx)); }} accessibilityRole="button">{l('§ ORO.FTL.210 — ver a lei', '§ ORO.FTL.210 — see the law')}</Text>
         </ScrollView>
       </PeleSheet>

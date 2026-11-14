@@ -8,7 +8,9 @@
   "corSolta": 48,
   "ionicons": 7,
   "iconeNavSolto": 3,
-  "amareloTexto": 0
+  "amareloTexto": 0,
+  "sinalFraco": 0,
+  "laranjaVermelho": 0
  },
  "ficheiros": {
   "App.js": {
@@ -350,6 +352,10 @@
    "ionicons": 0,
    "iconeNavSolto": 0,
    "amareloTexto": 0
+  },
+  "data/constants.js (cores)": {
+   "sinalFraco": 0,
+   "laranjaVermelho": 0
   }
  }
 }

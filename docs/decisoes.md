@@ -1126,8 +1126,37 @@ motor está na versão **21**. **O que falta, por ordem:**
   número — dois estilos `fno` no mesmo ficheiro, o segundo apagava o primeiro; o guardião `test:design` passa a recusar estilos com
   o nome repetido (regra dura). **Acertado a seguir (visto na página de todos os estados):** a linha do dia com a partida e a chegada a 30 % e
   70 % (o menor espaço entre duas horas passou de ~5/~2 pt para 26/21 pt a 390/375, medido) e a linha do limite em duas filas fixas
-  (o veredicto e o repouso em cima com a margem; o PSV em baixo) — nunca se parte onde calha. Nota: com o título,
-  a 2.ª linha cinzenta do número repete o estado ("livre" na folga, "fechado" no pós-voo).
+  (o veredicto e o repouso em cima com a margem; o PSV em baixo) — nunca se parte onde calha.
+  **"A seguir" num dia de serviço** (o Nuno: o voo de domingo aparecia como "A SEGUIR" no Dia de voo): esboço `design/a-seguir.html`
+  (A desaparece · B uma linha fina "Próximo serviço · domingo 15 · report 05:40", recomendada · C o cartão grande com o nome certo; em
+  todas, "A seguir" só no mesmo dia) — **o Nuno escolheu a B** e perguntou se se percebe que é amanhã → `design/a-seguir-amanha.html`
+  (B1 o dia no rótulo · B2 "Amanhã · report às 05:40" no título, recomendada · B3 um cabeçalho; em todas, "amanhã" em vez de
+  "domingo 15", também na folga e no dia fechado) — **o Nuno escolheu a B3** (um cabeçalho "Amanhã · domingo 15") e pediu as minhas
+  sugestões num esboço → `design/a-seguir-b3.html` — **a B3 afinada escolhida e construída** (por gravar; golden homecards 309): "A
+  seguir" só no mesmo dia; noutro dia, o cabeçalho "Amanhã · quinta 12" / "Sábado 14 · daqui a 3 dias" e a linha com o report à
+  direita; "Próximo serviço · amanhã" na folga e no dia fechado. **Ver no iPhone:** o Dia de voo de hoje (o cabeçalho "Amanhã ·
+  domingo 15" e "05:40 report" à direita).
+  **As cores (pedido do Nuno: "ter um padrão no design system… como as melhores apps fazem"; análise com a Apple HIG, o 14 CFR /
+  CS 25.1322 e as companhias no Mobbin) — o Nuno: "vamos pelo recomendado" (por gravar):** (a) **corrigido já** (erros objetivos):
+  os avisos laranja ganharam o "!" (o vermelho já tinha o ✕ — a cor nunca sozinha); as férias saíram do laranja para o neutro (o
+  laranja é só para olhar); o vermelho da noite passou de #DC6B5E para **#DF7366** (o texto a 82 % dava 4,38:1, agora 4,64:1);
+  (b) **o guardião `test:design` mede as cores**: o texto dos cartões ≥ 4,5:1, de dia e de noite (regra dura), e duas dívidas que
+  só podem descer — o ponto "ao vivo" #FFB800 a 1,33:1 de dia, e o laranja/vermelho a ΔE 19,7 em deuteranopia (Machado 2009);
+  (c) **o capítulo "O padrão da cor"** em `docs/design-system.md` (7 regras + o que está por decidir); (d) **3 esboços para cada
+  decisão** em `design/cores-decisoes.html` (gerado a partir do código): o verde (G1 fica no dinheiro, recomendado · G2 dinheiro a
+  tinta · G3 verde = "normal"), quanta cor num dia de serviço (O1 como está · O2 só o principal cheio, recomendado · O3 nenhum
+  cheio, com a faixa) e os sinais (S1 como está · S2 âmbar #F2A33A + o ponto com aro, recomendado · S3 âmbar + vermelho fundo com
+  letra branca). **O Nuno escolheu G1 · O2 · S2 — O2 e S2 construídas (por gravar):** o golden primeiro (homecards 421: no máximo um
+  cartão de tipo cheio; os outros neutros com o quadradinho `swatch`); o âmbar #F2A33A de dia e #EDA03A de noite; o aro de tinta no
+  ponto "ao vivo" de dia e nos pontos "por confirmar" da Escala (o âmbar sozinho dá 2,08:1 sobre o branco); as palavras "laranja"
+  dos ecrãs passaram a "âmbar" (a nota dos Números, a barra, o ponto da Escala; golden `test:escala` primeiro); as duas dívidas das
+  cores no guardião a 0. **Ver no iPhone:** o Início num dia de voo (o voo cheio, a pernoita neutra com o quadradinho), os avisos
+  âmbar, o ponto com aro, a Escala com uma alteração por rever.
+  **O modo noite (o Nuno: "a app vai ter modo noite… como fica a app"):** esboço `design/modo-noite.html` (N1 a paleta noturna que
+  o Início já usa na véspera e na pernoita · N2 cartões escuros com a faixa da cor · N3 tons fundos com letra clara, os avisos
+  vivos — recomendado). **O Nuno escolheu a N3 e "segue o iPhone".** Pergunta aberta: no modo claro, a véspera e a pernoita
+  continuam a escurecer sozinhas? (recomendação: não — ver a resposta de 2026-11-14). **Por construir:** é a base do tema (cada
+  ecrã lê as cores de um sítio que muda com o iPhone) — Opus 5.5 Extra, pela tabela do método.
 - **Do dia 2026-11-14 (gravado e enviado até `81c2dfd`) — tudo por ver:** os Números (o total sozinho no topo; "Acima da base" no
   fim do "De onde vem"; com a base incerta, "O total fica entre"); o topo lado a lado igual no Início, na Escala e nos Números
   (o número do mesmo tamanho; a frase com ar por cima); a meteorologia (na véspera e antes do report, a base à hora do report no

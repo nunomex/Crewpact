@@ -81,8 +81,28 @@ combinações de letra e 924 espaçamentos fora da escala (medido a 2026-11-02).
   Em serviço · Aterrado · o tipo; "Amanhã" → Voo amanhã; "Novembro" → Fecho do mês; "Começar" → Bem-vindo) e onde fica o título:
   T1 como está (313 pt) · T2 na fila de cima, a pílula do dia na linha da frase (269 pt, recomendada) · T3 título e pílula na mesma
   fila (259 pt, mas a pílula sai com títulos compridos). Alturas medidas.
+- **`a-seguir.html`** (2026-11-14, **B escolhida** → `a-seguir-amanha.html`; gerado a partir do código com os dados do teste do Nuno) — o próximo serviço noutro dia,
+  num dia de serviço (o Nuno: "não devia aparecer 'a seguir'"). Em todas: "A seguir" só no mesmo dia; noutro dia "Próximo serviço"
+  com o dia. A desaparece (a regra "nunca vazio" põe o mês) · B uma linha fina com o dia (recomendada) · C o mesmo cartão grande com o
+  nome certo.
+- **`a-seguir-amanha.html`** (2026-11-14, **B3 escolhida** → `a-seguir-b3.html`; gerado a partir do código) — a linha B a dizer que é AMANHÃ ("domingo 15" obriga
+  a saber que hoje é sábado 14, e no Dia de voo a data de hoje não está no ecrã): B1 o dia no rótulo · B2 o dia no título, "Amanhã ·
+  report às 05:40" (recomendada) · B3 um cabeçalho a separar. Em todas e na folga/dia fechado: "amanhã" em vez do dia da semana.
+- **`a-seguir-b3.html`** (2026-11-14, **afinada escolhida e construída**; gerado a partir do código) — a B3 afinada: como está · afinada (a hora do report
+  grande à direita com "report" por baixo; o cabeçalho junto da linha e alinhado com o texto; "Terça 17 · daqui a 3 dias"; título de
+  secção no VoiceOver — recomendada) · a hora no cabeçalho. Em dois casos: amanhã e daqui a 3 dias.
 - **`estados-todos.html`** (2026-11-14, GERADO — `node scripts/render-estados.js`) — todos os estados do Início desenhados a partir
   do código (`data/homeCards.js`) com os dados de teste do golden; a linha vermelha marca o fim do ecrã do iPhone. Não se edita à mão.
+  A véspera e a pernoita saem com a paleta noturna (`CARD.night`), como na app.
+- **`cores-decisoes.html`** (2026-11-14, **escolhidas G1 · O2 · S2 — O2 e S2 no código**; gerado a partir do código, só mudam as cores; o S1 mostra o laranja antigo) — as três decisões do capítulo
+  "O padrão da cor" (`docs/design-system.md`): o verde (G1 fica no dinheiro, recomendado · G2 dinheiro a tinta · G3 verde = "normal") ·
+  quanta cor num dia de serviço (O1 como está · O2 só o principal cheio, os outros com o quadradinho da cor, recomendado · O3 nenhum
+  cheio, com a faixa) · os sinais (S1 como está · S2 âmbar #F2A33A + o ponto "ao vivo" com aro, recomendado · S3 âmbar + vermelho
+  fundo com letra branca). Imagens 3424 (o chip de estado) e 3406 (os chips na cor do tipo); Apple HIG Color; CS 25.1322; no Mobbin,
+  as companhias (cartões neutros, a cor nos selos de estado).
+- **`modo-noite.html`** (2026-11-14, **escolhida a N3 — segue o claro/escuro do iPhone; por construir**; gerado a partir do código) — o Início no modo noite: N1 a paleta noturna de hoje
+  (a da véspera e da pernoita) · N2 cartões escuros com a faixa da cor · N3 tons fundos com letra clara e os avisos vivos
+  (recomendado). Apple HIG ("in dark environments, colors appear bright and saturated").
 - **`topo-factos-2.html`** (2026-11-14, A construída e depois **retirada com a L1** — os quadradinhos não cabem ao lado) — a F3 nos casos difíceis, a 375 (três factos com a hora UTC, a assistência, antes de ligar a escala, a Escala com 4 999,99 €, os Números com +55 512,34 €): A o quadradinho (32) só onde há tipo (recomendada) · B o quadradinho por cima do valor, em todos (o topo cresce 34) · C a cor no fio (4). Imagens 3409/3431/3412/3442/3424; Mobbin Kit, Satispay, Shopee.
 - **`botao-simulacao.html`** (2026-11-14, **T2 escolhida e construída**) — com a regra nova (à mão só na Simulação), o ＋ abre a Simulação: T1 o redondo com o ícone da Simulação · T2 o botão escrito "Simular" (recomendada; a 375 cada aba fica com 57 pt) · T3 uma aba ao centro da cápsula. Mobbin: Subway, Otter, Preply, Tubi; nenhuma imagem do Nuno para barras.
 - **`prova-campos.html`** (2026-11-14, **PA escolhida e construída**) — a Prova como o Hotel F2 (a regra proposta: nas folhas, campos à F2; nos ecrãs, cartões): PA tudo em campos · PB os curtos lado a lado (imagem 3460; recomendada) · PC campos e a regra num cartão. Com o Hotel F2 ao lado.

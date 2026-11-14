@@ -66,7 +66,9 @@ const SVG = {
   bell: '<path d="M12 22a2.5 2.5 0 0 0 2.5-2.5h-5A2.5 2.5 0 0 0 12 22zm7-6V11a7 7 0 0 0-5.5-6.8V3a1.5 1.5 0 0 0-3 0v1.2A7 7 0 0 0 5 11v5l-2 2v1h18v-1z"/>',
   edit: '<path d="M3 17.3V21h3.7L17.8 9.9l-3.7-3.7zM20.7 7a1 1 0 0 0 0-1.4l-2.3-2.3a1 1 0 0 0-1.4 0l-1.8 1.8 3.7 3.7z"/>' };
 const ic = (n, s) => `<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24">${SVG[n] || SVG.cloud}</svg>`;
-const bg = (color) => (color === 'dark' ? C.ink : C[color] || C.neutral);
+const NEUTRAL = (color) => !color || color === 'neutral' || !CARD.day[color] || ['desk', 'sheet', 'ink', 'soft'].includes(color);
+const bgOf = (P, color) => (color === 'dark' ? P.ink : (!NEUTRAL(color) ? P[color] : P.neutral));
+const vars = (P) => `--desk:${P.desk};--ink:${P.ink};--soft:${P.soft};--sheet:${P.sheet};--neutral:${P.neutral};--grey:${P.grey};--sub:${P.neutralSub};--kind:${P.neutralKind};--caption:${P.caption};--gain:${P.gainOut};--flight:${P.flight}`;
 
 function topHTML(t) {
   if (!t) return '';
@@ -92,18 +94,40 @@ function lineHTML(line) {
     ${pts.map((x, i) => { const place = i === 0 ? 'left:0;align-items:flex-start' : i === n - 1 ? 'right:0;align-items:flex-end;text-align:right' : `left:${pos[i]}%;transform:translateX(-50%);align-items:center;text-align:center`;
       return `<div class="dpt" style="${place}"><span class="dot2${x.end ? ' o' : ''}"></span><b>${esc(x.v)}</b><span>${esc(x.l)}</span></div>`; }).join('')}</div></div>`;
 }
-function cardHTML(c) {
-  const B = bg(c.color);
+const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const relLum = (rgb) => { const [r, g, b] = rgb.map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+const contrast = (a, b) => { const [x, y] = [relLum(a), relLum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+function legible(fg, bg, ink) {
+  const F = hexRgb(fg), B = hexRgb(bg), I = hexRgb(ink);
+  for (let t = 0; t <= 1.0001; t += 0.05) { const m = F.map((v, i) => Math.round(v + (I[i] - v) * t)); if (contrast(m, B) >= 4.5) return `rgb(${m.join(',')})`; }
+  return ink;
+}
+function cardHTML(c, P = C, look = {}) {
+  const TYPE = ['flight', 'ground', 'rest'];
+  const typeCol = !NEUTRAL(c.color) && TYPE.includes(c.color);
+  const toNeutral = (look.accent && typeCol) || c._neutralize;
+  const B = toNeutral ? P.neutral : bgOf(P, c.color);
+  // a linha ESCURA (a ação principal: ligar o calendário, ler a escala) — a letra da folha sobre a tinta, como `toneOf` 'dark' na app
+  const dk = c.color === 'dark' ? ' dk' : '';
+  const neu = !dk && (NEUTRAL(c.color) || toNeutral) ? ' neu' : '';
+  const lt = !toNeutral && (look.light || []).includes(c.color) ? ' lt' : '';
+  const accentStyle = toNeutral ? `;border-left:6px solid ${P[c.color]}` : '';
+  // o quadradinho da cor (O2, como a app: `swatch` vem de data/homeCards.js); `_neutralize` fica para os esboços antigos
+  const sq = c.swatch && P[c.swatch] ? `<span class="sqc" style="background:${P[c.swatch]}"></span>`
+    : c._neutralize && !look.accent ? `<span class="sqc" style="background:${P[c.color]}"></span>` : '';
+  // o rótulo na cor do tipo, sobre o neutro: a cor do cartão como letra não chega a 4,5:1 (o azul dá ~1,9) — mistura-se com a tinta até chegar
+  const kdStyle = toNeutral ? ` style="color:${legible(P[c.color], P.neutral, P.ink)}"` : '';
   if (c.t === 'slim') {
-    return `<div class="slim${c.dashed ? ' dashed' : ''}" style="background:${B}">${c.mark ? `<span class="mark">${esc(c.mark)}</span>` : ''}<div class="st">${c.kind ? `<span class="k">${esc(c.kind)}</span>` : ''}<b>${esc(c.title)}</b>${c.sub ? `<span>${esc(c.sub)}</span>` : ''}</div>
-      ${c.value ? (c.gain ? `<span class="chip">${esc(c.value)}</span>` : `<span class="sv">${esc(c.value)}</span>`) : c.open ? '<span class="goS">›</span>' : ''}</div>`;
+    return `<div class="slim${c.dashed ? ' dashed' : ''}${neu}${dk}${lt}" style="background:${B}${accentStyle}">${sq}${c.mark ? `<span class="mark">${esc(c.mark)}</span>` : ''}<div class="st">${c.kind ? `<span class="k"${kdStyle}>${esc(c.kind)}</span>` : ''}<b>${esc(c.title)}</b>${c.sub ? `<span>${esc(c.sub)}</span>` : ''}</div>
+      ${c.value ? (c.gain ? `<span class="chip">${esc(c.value)}</span>` : c.valueLbl ? `<span class="svl"><b>${esc(c.value)}</b><span>${esc(c.valueLbl)}</span></span>` : `<span class="sv">${esc(c.value)}</span>`) : c.open ? '<span class="goS">›</span>' : ''}</div>`;
   }
   if (c.t === 'lines') {
-    return `<div class="cd" style="background:${B}"><span class="kd">${esc(c.kind)}</span>${(c.rows || []).map((r) => `<div class="lr"><span>${esc(r.k)}</span><b>${esc(r.v)}</b></div>`).join('')}
+    return `<div class="cd${neu}" style="background:${B}"><span class="kd">${esc(c.kind)}</span>${(c.rows || []).map((r) => `<div class="lr"><span>${esc(r.k)}</span><b>${esc(r.v)}</b></div>`).join('')}
       ${c.foot ? `<div class="lfoot">${c.foot.map((r) => `<div class="lr"><span>${esc(r.k)}</span><b>${esc(r.v)}</b></div>`).join('')}</div>` : ''}
       ${c.note || c.link ? `<div class="cs">${esc(c.note || '')} ${c.link ? `<u>${esc(c.link.label)}</u>` : ''}</div>` : ''}</div>`;
   }
-  if (c.t === 'text') return `<div class="cd" style="background:${B}"><span class="kd">${esc(c.kind)}</span><div class="tx">${esc(c.text)}</div></div>`;
+  if (c.t === 'hdr') return `<div class="hdr${c.near ? ' near' : ''}">${esc(c.text)}</div>`;   // só nos esboços: um cabeçalho de secção entre cartões
+  if (c.t === 'text') return `<div class="cd${neu}" style="background:${B}"><span class="kd">${esc(c.kind)}</span><div class="tx">${esc(c.text)}</div></div>`;
   // o cartão grande
   const corner = c.corner === 'share' ? `<span class="go">${ic('share', 16)}</span>` : (c.open ? '<span class="go">›</span>' : '');
   let body = '';
@@ -111,23 +135,33 @@ function cardHTML(c) {
     body += c.sub ? `<span class="cs">${esc(c.sub)}</span>` : '';
     body += (c.flightNo || c.gain) ? `<div class="badges">${c.flightNo ? `<span class="badge">${ic('plane', 12)}${esc(c.flightNo)}</span>` : '<span></span>'}${c.gain ? `<span class="pd">${esc(c.gainLbl || '')} <span class="chip">${esc(c.gain)}</span></span>` : ''}</div>` : '';
     body += lineHTML(c.line);
-    body += c.quiet ? `<div class="quiet2"><div class="qr"><b>${esc(c.quiet.rest ? c.quiet.l + ' · ' + c.quiet.rest : c.quiet.l)}</b><span>${esc(c.quiet.r.k)} <b class="qv">${esc(c.quiet.r.v)}</b></span></div><span>${esc(c.quiet.sub)}</span></div>` : '';
+    body += c.quiet ? `<div class="quiet2"><div class="qr"><b>${look.statusGreen ? '<i class="gdot"></i>' : ''}${esc(c.quiet.rest ? c.quiet.l + ' · ' + c.quiet.rest : c.quiet.l)}</b><span>${esc(c.quiet.r.k)} <b class="qv">${esc(c.quiet.r.v)}</b></span></div><span>${esc(c.quiet.sub)}</span></div>` : '';
   } else {
-    body += (c.sub || c.gain) ? `<div class="subrow"><span class="cs">${esc(c.sub || '')}</span>${c.gain ? `<span class="chip">${esc(c.gain)}</span>` : ''}</div>` : '';
+    body += (c.sub || c.gain) ? `<div class="subrow"><span class="cs">${look.statusGreen && /^a horas/.test(c.sub || '') ? `<span class="gbadge">A horas</span>${esc((c.sub || '').replace(/^a horas/, ''))}` : esc(c.sub || '')}</span>${c.gain ? `<span class="chip">${esc(c.gain)}</span>` : ''}</div>` : '';
     body += (c.a || c.dur || c.b) ? `<div class="ab"><div>${c.a ? `<b>${esc(c.a.v)}</b><span>${esc(c.a.l)}</span>` : ''}</div>${c.dur ? `<span class="dur">${esc(c.dur)}</span>` : ''}<div style="text-align:right">${c.b ? (c.b.gain ? `<span class="chip">${esc(c.b.v)}</span>` : `<b>${esc(c.b.v)}</b>`) + `<span>${esc(c.b.l)}</span>` : ''}</div></div>` : '';
     body += c.pct != null ? `<div class="prog"><i style="width:${c.pct}%"></i><s style="left:${c.pct}%"></s></div>` : '';
   }
-  return `<div class="cd" style="background:${B}">${corner}<span class="kd">${esc(c.kind)}</span><span class="ct">${esc(c.title)}</span>${c.cities ? `<span class="cities">${esc(c.cities)}</span>` : ''}${body}
+  return `<div class="cd${neu}${lt}" style="background:${B}${accentStyle}">${corner}<span class="kd"${kdStyle}>${sq}${esc(c.kind)}</span><span class="ct">${esc(c.title)}</span>${c.cities ? `<span class="cities">${esc(c.cities)}</span>` : ''}${body}
     ${c.action ? `<div class="act">${ic(c.action.icon || 'bell', 16)}${esc(c.action.label)}</div>` : ''}</div>`;
 }
-function phone(name, note, h, clock) {
-  const out = homeCards(h);
-  const cards = (out.cards || []).map(cardHTML).join('');
-  return `<div class="cell"><div class="cap"><b>${esc(name)}</b>${note ? ` · ${esc(note)}` : ''}</div>
-    <div class="ph"><div class="status"><span>${esc(clock)}</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>${topHTML(out.top)}
+// Um telemóvel a partir da SAÍDA do homeCards (os esboços podem mexer num cartão e desenhar o resto como a app).
+// `night`: a paleta noturna (CARD.night). Sem dizer, como a app: noturna na véspera e na pernoita.
+function phoneOut(name, note, out, clock, { night, look = {} } = {}) {
+  const nt = night != null ? night : ['vespera', 'pernoita'].includes(out.state);
+  const P = { ...(nt ? CARD.night : CARD.day), ...(look.palette || {}) };
+  // budget 'principal': só o 1.º cartão grande de tipo fica cheio; os outros de tipo passam a neutros com o quadradinho da cor
+  let firstDone = false;
+  const list = (out.cards || []).map((c) => { const typed = ['flight', 'ground', 'rest'].includes(c.color);
+    if (look.budget === 'principal' && typed) { if (!firstDone && c.t === 'card') { firstDone = true; return c; } return { ...c, _neutralize: true }; }
+    return c; });
+  const cards = list.map((c) => cardHTML(c, P, look)).join('');
+  return `<div class="cell"><div class="cap"><b>${esc(name)}</b>${note ? ` · ${esc(note)}` : ''}${nt ? ' · <i>tema da noite</i>' : ''}</div>
+    <div class="ph${nt ? ' night' : ''}${look.ring || P.liveRing ? ' ring' : ''}${look.moneyInk ? ' minky' : ''}" style="${vars(P)}"><div class="status"><span>${esc(clock)}</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>${topHTML(out.top)}
       <div class="sheetN">${cards}${out.credit ? `<div class="credit">${esc(out.credit)}</div>` : ''}</div>
       <div class="fold"><span>fim do ecrã do iPhone (por cima da barra de abas) — o resto desliza</span></div></div></div>`;
 }
+const phone = (name, note, h, clock, opts) => phoneOut(name, note, homeCards(h), clock, opts);
+const pickPalette = (night) => (night ? CARD.night : CARD.day);
 
 const css = `
 @font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
@@ -140,25 +174,39 @@ body{background:#E8E7E2;color:#141414;font-family:'Hanken','Helvetica Neue',Aria
 .lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px} .lead p{font-size:14px;line-height:1.55;color:#55554F} .lead b{color:#141414}
 .grid{display:flex;flex-wrap:wrap;gap:20px}
 .cap{font-size:12px;font-weight:600;color:#55554F;margin:0 0 6px 6px;max-width:406px} .cap b{color:#141414;font-weight:800}
-.ph{position:relative;display:flex;flex-direction:column;width:406px;min-height:852px;border:8px solid #04060A;border-radius:52px 52px 0 0;border-bottom:0;overflow:hidden;background:${C.desk};color:${C.ink}}
+.ph{position:relative;display:flex;flex-direction:column;width:406px;min-height:852px;border:8px solid #04060A;border-radius:52px 52px 0 0;border-bottom:0;overflow:hidden;background:var(--desk);color:var(--ink)}
 .status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
 .topA{padding:0 20px 28px;flex:none}
 .ttlRow{display:flex;align-items:center;gap:10px;min-height:68px;padding:8px 0 16px}
 .ttlRow .t{font-weight:800;font-size:34px;line-height:38px;letter-spacing:-.8px;display:flex;align-items:center;gap:12px;white-space:nowrap;min-width:0}
 .ttlRow .t i.dot{width:10px;height:10px;border-radius:5px;background:#F0C24A;display:block;flex:none}
-.pl{height:38px;padding:0 16px;border-radius:19px;border:1.5px solid ${C.ink};display:inline-flex;align-items:center;font-weight:700;font-size:13px;white-space:nowrap;flex:none}
+.pl{height:38px;padding:0 16px;border-radius:19px;border:1.5px solid var(--ink);display:inline-flex;align-items:center;font-weight:700;font-size:13px;white-space:nowrap;flex:none}
 .pl.sm{height:30px;padding:0 12px;border-radius:15px} .ml{margin-left:auto}
-.what{font-weight:500;font-size:15px;line-height:20px;color:${C.soft}} .what.inl{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.what{font-weight:500;font-size:15px;line-height:20px;color:var(--soft)} .what.inl{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .hero{display:flex;align-items:stretch;gap:16px;margin-top:12px}
 .g{font-weight:700;white-space:nowrap;flex:none} .g .l1,.g .l2{display:flex;align-items:baseline}
 .g .big{font-size:62px;line-height:62px;letter-spacing:-2.85px} .g small{font-size:34px;letter-spacing:-1px;margin-left:6px} .g .z{font-size:20px;margin-left:8px}
-.grey{color:${C.grey}}
-.side{border-left:1.5px solid ${C.ink};padding-left:16px;display:flex;flex-direction:column;justify-content:center;gap:12px;min-width:0}
-.fv{display:flex;align-items:center;gap:4px;font-weight:700;font-size:20px;line-height:22px;white-space:nowrap} .fv.gain{color:#0B6E43} .fv.was{text-decoration:line-through;opacity:.5}
-.fl{display:block;font-weight:500;font-size:11px;line-height:15px;color:${C.soft};white-space:nowrap}
+.grey{color:var(--grey)}
+.side{border-left:1.5px solid var(--ink);padding-left:16px;display:flex;flex-direction:column;justify-content:center;gap:12px;min-width:0}
+.fv{display:flex;align-items:center;gap:4px;font-weight:700;font-size:20px;line-height:22px;white-space:nowrap} .fv.gain{color:var(--gain)} .fv.was{text-decoration:line-through;opacity:.5}
+.fl{display:block;font-weight:500;font-size:11px;line-height:15px;color:var(--soft);white-space:nowrap}
 .ic{display:block;fill:currentColor;flex:none}
-.sheetN{flex:1;background:#fff;border-radius:32px 32px 0 0;padding:12px 12px 24px;display:flex;flex-direction:column;gap:8px}
+.sheetN{flex:1;background:var(--sheet);border-radius:32px 32px 0 0;padding:12px 12px 24px;display:flex;flex-direction:column;gap:8px}
 .cd{border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:10px;position:relative}
+.cd,.slim{color:#141414}   /* os cartões de cor: a tinta escura (CARD.onCard), de dia e de noite */
+.dk,.dk b{color:var(--sheet)} .ph .dk .st > span:not(.k){color:var(--sheet);opacity:.82} .dk .goS{background:rgba(127,127,127,.35);color:var(--sheet)}
+.lt,.lt .ct,.lt b,.lt .dpt b{color:#F4F2ED} .lt .kd,.lt .k,.lt .cs,.lt .cities,.lt .st > span:not(.k),.lt .ab span,.lt .dpt span:not(.dot2),.lt .quiet2,.lt .pd,.lt .dlc span{color:rgba(244,242,237,.8)}
+.lt .go,.lt .goS,.lt .badge,.lt .mark{background:rgba(255,255,255,.16);color:#F4F2ED} .lt .dot2{background:#F4F2ED} .lt .dot2.o{border-color:#F4F2ED;background:transparent} .lt .dls{background:#F4F2ED} .lt .dlt{background:rgba(244,242,237,.25)}
+.sqc{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:0}
+.neu .quiet2 .qr > b,.neu .quiet2 .qv,.neu .dpt b,.neu .ab b{color:var(--ink)} .neu .dpt span:not(.dot2),.neu .dlc span{color:var(--sub)} .neu .dot2{background:var(--ink)} .neu .dot2.o{border-color:var(--ink);background:transparent} .neu .dls{background:var(--ink)}
+.lt .quiet2 .qr > b,.lt .quiet2 .qv,.lt .ab b{color:#F4F2ED}
+.ph .lt .st > span:not(.k),.ph .lt .cs,.ph .lt .ab span{color:rgba(244,242,237,.8)} .ph .lt .dur,.ph .neu .dur{background:rgba(255,255,255,.16);color:var(--ink)} .ph .lt .dur{color:#F4F2ED}
+.ph .lt .prog{background:rgba(244,242,237,.25)} .ph .lt .prog i,.ph .lt .prog s{background:#F4F2ED} .ph .neu .prog{background:rgba(127,127,127,.3)} .ph .neu .prog i,.ph .neu .prog s{background:var(--ink)} .ph .neu .st > span:not(.k){color:var(--sub)}
+.slim .sqc{width:12px;height:12px;flex:none;margin:0}
+.ring .ttlRow .t i.dot{box-shadow:0 0 0 2px #141414} .night.ring .ttlRow .t i.dot{box-shadow:none}
+.minky .chip{color:#141414} .minky .fv.gain{color:var(--ink)}
+.gbadge{display:inline-block;background:#0B6E43;color:#fff;border-radius:6px;padding:1px 6px;font-weight:800;font-size:11px;margin-right:6px}
+.gdot{display:inline-block;width:8px;height:8px;border-radius:4px;background:#0B6E43;margin-right:6px;vertical-align:1px}
 .kd{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8);padding-right:44px}
 .ct{font-weight:800;font-size:22px;line-height:26px;letter-spacing:-.4px;margin-top:-6px;padding-right:44px}
 .cities{font-weight:500;font-size:12px;color:rgba(20,20,20,.82);margin-top:-8px}
@@ -173,7 +221,7 @@ body{background:#E8E7E2;color:#141414;font-family:'Hanken','Helvetica Neue',Aria
 .dlp{position:relative;height:54px} .dlt{position:absolute;left:7px;right:7px;top:6px;height:2px;background:rgba(20,20,20,.18)}
 .dls{position:absolute;top:5px;height:4px;background:#141414;border-radius:2px}
 .dpt{position:absolute;top:0;display:flex;flex-direction:column;gap:2px}
-.dot2{width:14px;height:14px;border-radius:7px;background:#141414;border:3px solid rgba(255,255,255,.0);box-shadow:0 0 0 3px ${C.flight} inset} .dot2.o{background:${C.flight};border:3px solid #141414;box-shadow:none}
+.dot2{width:14px;height:14px;border-radius:7px;background:#141414;box-shadow:0 0 0 3px var(--flight) inset} .dot2.o{background:var(--flight);border:3px solid #141414;box-shadow:none}
 .dpt b{font-weight:700;font-size:20px;line-height:22px;white-space:nowrap} .dpt span:not(.dot2){font-weight:500;font-size:11px;line-height:15px;color:rgba(20,20,20,.82);white-space:nowrap}
 .quiet{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;border-top:1px solid rgba(20,20,20,.14);padding-top:8px;font-weight:500;font-size:12px;color:rgba(20,20,20,.82)}
 .quiet b{font-weight:700;color:#141414} .quiet .qv{font-size:15px} .quiet > span:first-child{flex:1;min-width:0} .quiet > span:last-child{white-space:nowrap}
@@ -191,7 +239,10 @@ body{background:#E8E7E2;color:#141414;font-family:'Hanken','Helvetica Neue',Aria
 .slim .sv{font-weight:800;font-size:20px;white-space:nowrap}
 .mark{width:30px;height:30px;border-radius:15px;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex:none}
 .goS{width:34px;height:34px;border-radius:17px;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex:none}
-.credit{font-weight:500;font-size:12px;color:#5E5E57;padding:2px 6px}
+.credit{font-weight:500;font-size:12px;color:var(--caption);padding:2px 6px}
+.neu,.neu .ct,.neu b,.neu .lr b{color:var(--ink)} .neu .kd,.neu .k{color:var(--kind)} .neu .cs,.neu .cities,.neu .st > span:not(.k),.neu .lr span,.neu .ab span,.neu .tx,.neu .quiet2{color:var(--sub)} .neu .goS,.neu .go{background:rgba(127,127,127,.2)} .neu.dashed{border-color:var(--kind)}
+.hdr{font-weight:800;font-size:13px;color:var(--soft);padding:8px 6px 0} .hdr.near{padding:14px 16px 0;margin-bottom:-4px}
+.svl{display:flex;flex-direction:column;align-items:flex-end;flex:none} .svl b{font-weight:700;font-size:20px;line-height:22px} .svl span{font-weight:500;font-size:11px;line-height:15px;color:rgba(20,20,20,.82)}
 .fold{position:absolute;left:0;right:0;top:750px;border-top:2px dashed rgba(236,122,108,.9);pointer-events:none} .fold span{position:absolute;right:10px;top:2px;font-size:10px;font-weight:800;color:#C0503F;background:rgba(255,255,255,.85);padding:1px 6px;border-radius:6px}
 `;
 const fit = `document.fonts.ready.then(function(){ document.querySelectorAll('.ttlRow').forEach(function(r){ var t = r.querySelector('.t'), p = r.querySelector('.pl'); var room = r.clientWidth - p.offsetWidth - 10; var fs = 34; while (t.scrollWidth > room && fs > 24) { fs -= 1; t.style.fontSize = fs + 'px'; } }); });`;
@@ -209,5 +260,8 @@ ${css}</style>
     <p>Dados de teste (easyJet, a semana de 11 de novembro de 2026; o tempo como no iPhone). Para regenerar: <b>node scripts/render-estados.js</b>.</p></div>
   <div class="grid">${STATES.map(([n, note, h, clock]) => phone(n, note, h, clock)).join('')}</div>
 </div><script>${fit}</script></body></html>`;
-fs.writeFileSync(path.resolve('design/estados-todos.html'), html);
-console.log(`design/estados-todos.html — ${STATES.length} estados`);
+module.exports = { phoneOut, css, fit, esc, homeCards, S, CARD };
+if (require.main === module) {
+  fs.writeFileSync(path.resolve('design/estados-todos.html'), html);
+  console.log(`design/estados-todos.html — ${STATES.length} estados`);
+}

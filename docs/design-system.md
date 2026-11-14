@@ -329,6 +329,12 @@ O que muda em relação à §2 ("branco · preto · amarelo, plana, hairline"):
   em todos os estados com serviço (folga e pós-voo com o voo amanhã, véspera, antes do report, em serviço e em voo, pernoita).
   Os cartões não o repetem — menos a cidade da pernoita à chegada, no cartão da pernoita. Sem serviço, nada. O crédito
   "Meteorologia: MET Norway" por baixo dos cartões. O ícone e o espaço entram na largura medida (`GIANT.factIc`/`factIcGap`).
+- **O próximo serviço noutro dia, num dia de serviço** (Nuno, 2026-11-14 — B3 afinada de `design/a-seguir-b3.html`): "A seguir" só
+  no MESMO dia (a pernoita a seguir ao voo; um 2.º serviço hoje — "A seguir · hoje"); noutro dia, um **cabeçalho de secção**
+  (`t:'hdr'`, TXT3.pill cinzento, mais ar por cima do que por baixo, alinhado com o texto dos cartões, título de secção no VoiceOver:
+  "Amanhã · quinta 12"; "Sábado 14 · daqui a 3 dias") e **uma linha fina** com a rota e as cidades à esquerda e a hora do report à
+  direita ("05:40" · "report"). Na folga e no dia fechado, o cartão diz "Próximo serviço · amanhã" (o dia da semana só daí em
+  diante).
 - **O estado como título do Início** (Nuno, 2026-11-14 — S2 de `design/estados-topo.html` + as palavras e a T2 de
   `design/estados-s2.html`): o estado deixa de ser a pílula preta e passa a título do ecrã (`TXT3.stateTitle`, 34/38; encolhe até
   70 % nas palavras compridas), **na fila de cima, ao lado das Notificações**, com o ponto amarelo nos estados ao vivo e o papel de
@@ -383,7 +389,8 @@ fora de `data/constants.js` é regra dura (exceção: o medidor da palavra-passe
 **Medido (WCAG 2.1 e ΔE em Lab com a simulação de Machado para deuteranopia e protanopia; abaixo de ~15 confunde-se de
 relance):** voo × atenção 97 · 92 · 80 (com a areia era 33 · 12 · 16 — um aviso podia parecer só mais um voo) · voo × terra
 37 · 31 · 23 (os dois sempre com o nome escrito) · pior par de todos repouso × passa 19 · tinta sobre voo 9,12 · terra 8,04 ·
-repouso 9,81 · atenção 7,16 · passa 6,64 · a linha a 82 % ≥ 5,07 e o rótulo a 80 % ≥ 4,91, de dia e de noite.
+repouso 9,81 · atenção 7,16 · passa 6,64 · a linha a 82 % ≥ 5,07 e o rótulo a 80 % ≥ 4,91 de dia; **de noite o vermelho
+falhava** (a linha a 4,38:1 sobre `#DC6B5E` — apanhado pelo guardião das cores a 2026-11-14 e corrigido para `#DF7366`, 4,6:1).
 **O tom, escolhido pelo Nuno ("vou pelo que recomendas", 2026-11-13):** o tom 2 de `design/cores.html` §4 — céu vivo +
 lilás-rosado, procurado entre milhares de tons frios com a liberdade "podes usar todas as cores que existem, caso seja
 necessário". Mantém "lilás = terra". (Os outros: tom 1, o do esboço, voo × terra 21 · 19 · 14; tom 3, céu vivo + azul-petróleo,
@@ -393,6 +400,43 @@ necessário". Mantém "lilás = terra". (Os outros: tom 1, o do esboço, voo × 
 Escala e a régua do dia na B, e as páginas 2.0 com os sentidos arrumados (verde só no dinheiro; dentro sem cor; incerto neutro;
 os 90 % dos Números, o "Amarelo", a fadiga e a radiação). **Fica para a migração de cada página:** o resto dos laranjas e
 vermelhos da 2.0 revistos um a um, e o amarelo da marca (`BRAND.signal/marker`) como sinal de seleção nas páginas 2.0.
+
+### O padrão da cor (2026-11-14 — análise das melhores apps e das regras da Apple e do cockpit; pedido do Nuno)
+
+**As regras (valem para todos os ecrãs, de dia e de noite):**
+1. **Uma cor, um significado** (Apple HIG: *"Avoid using the same color to mean different things"*). A tabela do mapa B, acima, é
+   fechada: um token novo entra primeiro aqui, com a sua tarefa.
+2. **A cor nunca vai sozinha** (*"Avoid relying solely on color"*): o âmbar leva "!" e a palavra; o vermelho leva "✕" e a
+   palavra; o tipo leva o nome escrito; o "ao vivo" leva o título do estado ("Em voo").
+3. **Vermelho e laranja só para alertas** (a lógica do 14 CFR 25.1322 / CS 25.1322: vermelho = aviso, âmbar = cuidado; o uso
+   para outras coisas é limitado, para não gastar o alerta). O que é só informação vai a **neutro** (os avisos: `tone: 'info'` —
+   as férias por gozar). Âmbar (era laranja até à S2) = cuidado, falta um dado ou pede uma ação (a escala que mudou, o aeroporto atrasado, o documento
+   a caducar, o dinheiro por confirmar).
+4. **O contraste é medido, não visto** — pelo guardião (`npm run test:design`): o texto 4,5:1 sobre o seu fundo, de dia e de noite
+   (regra dura); os sinais sem texto 3:1 e o laranja e o vermelho distinguíveis para quem não vê o vermelho e o verde (ΔE ≥ 20 em
+   deuteranopia) — dívida que só pode descer (`sinalFraco`, `laranjaVermelho`).
+5. **Três versões de cada cor:** claro (`CARD.day`), escuro (`CARD.night`) e, a seguir, contraste aumentado (a Apple pede-o).
+6. **A cor de fundo comunica, não decora** (Apple: *"Use background color when you have something to communicate"*): a cor do
+   tipo nos cartões da escala; a ordem de importância vem do tamanho e do sítio, não da cor.
+7. **Testar ao sol e no escuro**, no iPhone (*"In dark environments, colors appear bright and saturated"*).
+
+**Decidido pelo Nuno a 2026-11-14** (esboços `design/cores-decisoes.html` e `design/modo-noite.html`):
+- **G1 — o verde fica no dinheiro.** Só no que se ganha (`CARD.gain`, `gainOut`); nunca quer dizer "está bem" — dentro do limite
+  não tem cor. (Recusados: G2, o dinheiro a tinta; G3, o verde = "normal" como no cockpit — acenderia cor quando está tudo bem.)
+- **O2 — só o principal cheio.** No Início, o primeiro cartão de tipo (o serviço de agora) fica com a cor cheia; os outros de tipo
+  passam a neutros com um **quadradinho da sua cor** (10 pt no rótulo do cartão grande, 12 pt à frente da linha fina). Os avisos
+  ficam cheios — pedem olhar. Decide-o `data/homeCards.js` (`oneFull`, golden `test:homecards`); desenha-o `components/HomeCards.js`
+  (`swatch`). O rótulo do cartão neutro fica na tinta neutra (no esboço saía na cor do tipo escurecida: seria mais uma cor por tipo).
+  Os traços dos cartões (a linha do dia, a barra, os fios) seguem a tinta do cartão (`toneOf` → `line`/`track`), para um neutro à
+  noite não ter traços pretos.
+- **S2 — âmbar no lugar do laranja + o ponto com aro.** `CARD.day.alert` #F0854A → **#F2A33A** (ΔE 32,5 para o vermelho em
+  deuteranopia; o texto 6,32:1); `CARD.night.alert` #EE7C40 → **#EDA03A** (ΔE 33,2; 6,13:1). O ponto "ao vivo" de dia ganha um
+  **aro de tinta** (`CARD.day.liveRing`, 2 pt por fora; 14,1:1); de noite não precisa (10,4:1). O mesmo aro nos pontos "por
+  confirmar" da Escala (o âmbar sozinho dá 2,08:1 sobre o branco). As duas dívidas do guardião (`sinalFraco`, `laranjaVermelho`)
+  desceram a 0. A palavra nos ecrãs passou de "laranja" a "âmbar".
+- **N3 — o modo noite com a cor em tom fundo.** Os cartões de tipo ficam na mesma cor em tom fundo (azul-noite #1F4B6E, ameixa
+  #4B3550, musgo #36452F) com letra clara; os avisos (âmbar, vermelho) ficam vivos. **Segue o claro/escuro do iPhone** (o Nuno,
+  2026-11-14). **Por construir** — é a base do tema: cada ecrã passa a ler as cores de um sítio que muda com o iPhone.
 
 ### Peças escolhidas a 2026-11-13 (das 57 referências de `referencias/Para a app/`)
 

@@ -256,7 +256,8 @@ export const TXT = {
 export const CARD = {
   day: {
     desk: '#E3E1DB', ink: '#141414', soft: '#3A3A36', sheet: '#FFFFFF', neutral: '#F1EFEA',
-    flight: '#6DBEFA', ground: '#C3A1BE', rest: '#B4C2A2', alert: '#F0854A', stop: '#EC7A6C',
+    flight: '#6DBEFA', ground: '#C3A1BE', rest: '#B4C2A2', alert: '#F2A33A', stop: '#EC7A6C',   // S2 (2026-11-14): o laranja #F0854A passou a âmbar — ΔE 32,5 para o vermelho em deuteranopia (era 19,7); o texto 6,32:1
+    liveRing: '#141414',                  // S2: o aro de tinta do ponto "ao vivo" (o amarelo sozinho dava 1,33:1 sobre a secretária; o aro 14,1:1)
     grey: 'rgba(20,20,20,0.5)',          // a 2.ª linha do número quando QUALIFICA ("estimado", "livre") — 3,24 (texto muito grande pede 3)
     gainOut: '#0B6E43',                   // ganho FORA de uma pílula branca (o facto "+96,90 €" do pós-voo) — 5,64
     tabSub: '#5E5E57', tabOn: '#FFFFFF', round: 'rgba(127,127,127,0.22)', caption: '#77776F',
@@ -265,7 +266,8 @@ export const CARD = {
   },
   night: {
     desk: '#14161B', ink: '#F4F2ED', soft: 'rgba(244,242,237,0.7)', sheet: '#1F222A', neutral: '#2A2E38',
-    flight: '#58AFEC', ground: '#B592B0', rest: '#A3B490', alert: '#EE7C40', stop: '#DC6B5E',
+    flight: '#58AFEC', ground: '#B592B0', rest: '#A3B490', alert: '#EDA03A', stop: '#DF7366',   // S2: âmbar da noite (era #EE7C40) — ΔE 33,2 para o vermelho em deuteranopia; o texto 6,13:1
+    liveRing: null,                       // à noite o amarelo já se vê sozinho (10,4:1) — sem aro   // o vermelho noturno era #DC6B5E: o texto ficava a 4,38:1 (o guardião das cores, 2026-11-14)
     grey: 'rgba(244,242,237,0.5)', gainOut: '#7BE3B0',
     tabSub: 'rgba(244,242,237,0.62)', tabOn: 'rgba(244,242,237,0.16)', round: 'rgba(127,127,127,0.22)', caption: 'rgba(244,242,237,0.62)',
     neutralSub: 'rgba(244,242,237,0.82)', neutralKind: 'rgba(244,242,237,0.8)', neutralGo: 'rgba(127,127,127,0.2)',
