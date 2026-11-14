@@ -171,7 +171,7 @@ function BigCard({ c, C, onOpen, l }) {
             {(c.flightNo || c.gain) ? (
               <View style={s.e3Badges}>
                 {c.flightNo ? (
-                  <View style={[s.fno, { backgroundColor: T.go }]}>
+                  <View style={[s.fnoBadge, { backgroundColor: T.go }]}>
                     <Icon name="plane" size={12} color={T.fg} />
                     <Text style={[TXT3.badge, { color: T.fg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.flightNo}</Text>
                   </View>
@@ -186,13 +186,15 @@ function BigCard({ c, C, onOpen, l }) {
             ) : null}
             <DayLine line={c.line} T={T} />
             {c.quiet ? (
+              // duas filas fixas: em cima o veredicto (e o repouso na véspera) e a margem; em baixo o PSV, em pequeno
               <View style={[s.quiet, { borderTopColor: CARD.rule }]}>
-                <Text style={[TXT3.cardSub, s.quietL, { color: T.sub }]} numberOfLines={2} maxFontSizeMultiplier={MAX_SCALE}>
-                  <Text style={[TXT3.dur, { color: T.fg }]}>{c.quiet.l}</Text>{` · ${c.quiet.sub}`}
-                </Text>
-                <Text style={[TXT3.cardSub, { color: T.sub }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>
-                  {`${c.quiet.r.k} `}<Text style={[TXT3.lineVal, { color: T.fg }]}>{c.quiet.r.v}</Text>
-                </Text>
+                <View style={s.quietRow}>
+                  <Text style={[TXT3.dur, s.quietL, { color: T.fg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.quiet.rest ? `${c.quiet.l} · ${c.quiet.rest}` : c.quiet.l}</Text>
+                  <Text style={[TXT3.cardSub, { color: T.sub }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>
+                    {`${c.quiet.r.k} `}<Text style={[TXT3.lineVal, { color: T.fg }]}>{c.quiet.r.v}</Text>
+                  </Text>
+                </View>
+                <Text style={[TXT3.cardSub, { color: T.sub }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.quiet.sub}</Text>
               </View>
             ) : null}
           </>
@@ -246,17 +248,18 @@ function BigCard({ c, C, onOpen, l }) {
 }
 
 // ── A LINHA DO DIA (o cartão do voo E3) ──
-// Os pontos em posições fixas — 4: 0 · 25 · 75 · 100 % (report · parte · chega · fim; a metade do meio é dos voos); 3: 0 · 50 · 100;
+// Os pontos em posições fixas — 4: 0 · 30 · 70 · 100 % (report · parte · chega · fim; o meio é dos voos); 3: 0 · 50 · 100;
 // 2: as pontas. A parte preta é o voo (da partida à última chegada). Com 3 sítios ou mais (V2), um traço por voo, com uma folga em
 // cada escala, e os aeroportos por cima. Os números não crescem com a letra (como os do topo): a linha tem de caber.
-const LINE_POS = { 2: [0, 100], 3: [0, 50, 100], 4: [0, 25, 75, 100] };
+// 4 pontos: 0 · 30 · 70 · 100 % — a 25 % o report e a partida ficavam a ~5 pt um do outro a 390 e ~2 pt a 375 (medido, 2026-11-14).
+const LINE_POS = { 2: [0, 100], 3: [0, 50, 100], 4: [0, 30, 70, 100] };
 const LINE_BOX = 76;   // a caixa centrada de cada ponto do meio (largura; o texto centra-se nela)
 function DayLine({ line, T }) {
   const pts = line.pts || [];
   const pos = LINE_POS[pts.length] || pts.map((_, i) => (pts.length > 1 ? (100 * i) / (pts.length - 1) : 0));
   const mids = pts.map((x, i) => (!x.end ? i : -1)).filter((i) => i >= 0);
-  const a = mids.length ? pos[mids[0]] : (line.stops ? 25 : null);
-  const b = mids.length ? pos[mids[mids.length - 1]] : (line.stops ? 75 : null);
+  const a = mids.length ? pos[mids[0]] : (line.stops ? 30 : null);
+  const b = mids.length ? pos[mids[mids.length - 1]] : (line.stops ? 70 : null);
   const stops = line.stops || null;
   const k = stops ? stops.length - 1 : 1;
   const at = (i) => a + ((b - a) * i) / k;
@@ -469,9 +472,10 @@ const s = StyleSheet.create({
   factIcRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.xs },   // = GIANT.factIcGap
   // o cartão do voo E3
   e3Badges: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.md, marginTop: -SPACE.xs },
-  fno: { flexDirection: 'row', alignItems: 'center', gap: SPACE.xs, paddingHorizontal: SPACE.sm, paddingVertical: SPACE.xxs, borderRadius: RADIUS.sm },
+  fnoBadge: { flexDirection: 'row', alignItems: 'center', gap: SPACE.xs, paddingHorizontal: SPACE.sm, paddingVertical: SPACE.xxs, borderRadius: RADIUS.sm },
   e3Gain: { flexDirection: 'row', alignItems: 'center', gap: SPACE.s },
-  quiet: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: SPACE.sm, borderTopWidth: 1, paddingTop: SPACE.sm },
+  quiet: { borderTopWidth: 1, paddingTop: SPACE.sm, gap: SPACE.xxs },
+  quietRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: SPACE.sm },
   quietL: { flex: 1, minWidth: 0 },
   dl: { marginTop: SPACE.xxs },
   dlCodes: { height: 16, marginBottom: SPACE.xxs },

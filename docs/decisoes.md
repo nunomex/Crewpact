@@ -1120,7 +1120,13 @@ motor está na versão **21**. **O que falta, por ordem:**
   (a lei: 1 principal + 2) — 3 esboços; (5) **os números do topo não abrem o seu porquê** (a Prova existe noutros ecrãs) — 3
   esboços; (6) ~~as repetições do título no número~~ — corrigido; (7) **o documento da LI está desatualizado** (v3: a voz manuscrita,
   o FAB/criar à mão e os nudges morreram com o 3.0 e com "só o calendário") — e **pergunta ao Nuno: a voz volta numa forma nova?**;
-  (8) ver no iPhone se a mudança de estado anima como a lei pede (220 ms, sem saltos). Nota: com o título,
+  (8) ver no iPhone se a mudança de estado anima como a lei pede (220 ms, sem saltos).
+  **Todos os estados num só sítio:** `design/estados-todos.html`, gerado a partir do código por `node scripts/render-estados.js`
+  (21 estados com os dados do golden). **Corrigido no iPhone (2026-11-14):** o selo do voo do cartão novo tinha o avião por cima do
+  número — dois estilos `fno` no mesmo ficheiro, o segundo apagava o primeiro; o guardião `test:design` passa a recusar estilos com
+  o nome repetido (regra dura). **Acertado a seguir (visto na página de todos os estados):** a linha do dia com a partida e a chegada a 30 % e
+  70 % (o menor espaço entre duas horas passou de ~5/~2 pt para 26/21 pt a 390/375, medido) e a linha do limite em duas filas fixas
+  (o veredicto e o repouso em cima com a margem; o PSV em baixo) — nunca se parte onde calha. Nota: com o título,
   a 2.ª linha cinzenta do número repete o estado ("livre" na folga, "fechado" no pós-voo).
 - **Do dia 2026-11-14 (gravado e enviado até `81c2dfd`) — tudo por ver:** os Números (o total sozinho no topo; "Acima da base" no
   fim do "De onde vem"; com a base incerta, "O total fica entre"); o topo lado a lado igual no Início, na Escala e nos Números

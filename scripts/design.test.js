@@ -71,6 +71,18 @@ for (const f of FILES) {
     if (/(\/>\}?|<\/[A-Za-z][\w.]*>)\s+\/\/\s/.test(line)) duras.push(`${f}:${i + 1}: "//" a seguir a JSX vira texto solto — usar {/* … */}`);
   });
   if (/Animated\.(timing|spring|loop|decay)\(/.test(src) && !/reduce/i.test(src)) duras.push(`${f}: anima com Animated mas não lê o reduce-motion (motion §5)`);
+  // Um estilo com o NOME REPETIDO no mesmo StyleSheet.create: o segundo apaga o primeiro sem aviso (o JavaScript aceita a chave
+  // repetida). Visto no iPhone a 2026-11-14: o selo do voo do cartão novo (`fno`) perdeu a fila porque as pernas da Escala tinham
+  // outro `fno` mais abaixo — o avião ficou por cima do número.
+  for (let i = src.indexOf('StyleSheet.create({'); i >= 0; i = src.indexOf('StyleSheet.create({', i + 1)) {
+    let depth = 0, j = src.indexOf('{', i); const st = j;
+    for (; j < src.length; j++) { if (src[j] === '{') depth++; else if (src[j] === '}') { depth--; if (!depth) break; } }
+    const seen = new Set();
+    for (const m of src.slice(st + 1, j).matchAll(/^\s{2}([A-Za-z0-9_]+):\s*\{/gm)) {
+      if (seen.has(m[1])) duras.push(`${f}: o estilo "${m[1]}" aparece duas vezes no mesmo StyleSheet — o segundo apaga o primeiro`);
+      seen.add(m[1]);
+    }
+  }
   // Componente usado em JSX sem import nem definição: o pacote gera, mas a app rebenta ao abrir o ecrã.
   // (Apanhou 2 casos reais na migração de 2026-11-02 — SheetHeader nos cartões de partilha.)
   const importBlocks = [...src.matchAll(/import\s+([\s\S]*?)\s+from\s+['"]/g)].map((x) => x[1]).join(' ');

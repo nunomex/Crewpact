@@ -192,8 +192,9 @@ export function homeCards(H = {}) {
     const sure = !!(d.legal && d.legal.status === 'ok');
     const span = `${F.dur(pm)} ${l('de', 'of')} ${F.dur(mx)}`;
     // Na véspera, o repouso verificado diz-se ("está verificado, dorme" — a ficha da Living Interface); o curto é o aviso por cima.
+    // Duas filas fixas no cartão (nunca se parte onde calha): em cima o veredicto e o repouso, à direita a margem; em baixo o PSV.
     return { l: sure ? l('Dentro do limite', 'Within limits') : l('PSV dentro do limite', 'FDP within the limit'),
-      sub: [sure ? `PSV ${span}` : span, rest ? l('repouso cumprido', 'rest met') : null].filter(Boolean).join(' · '), r: { k: l('margem', 'margin'), v: F.dur(mx - pm) } };
+      rest: rest ? l('repouso cumprido', 'rest met') : null, sub: sure ? `PSV ${span}` : span, r: { k: l('margem', 'margin'), v: F.dur(mx - pm) } };
   };
   // O limite incerto num cartão à parte (L2): neutro e tracejado, a margem nas duas pontas quando as há, e o que falta.
   const limUncOf = (d, kindLbl) => {
