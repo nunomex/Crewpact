@@ -34,6 +34,7 @@ const STATES = [
   ['Atenção', 'um documento a caducar (≤ 7 dias)', S.documento, '10:00'],
   ['Voo amanhã', 'a véspera, depois das 18:00', { ...S.vespera, wx: { report: WXL, night: { ...WXA } } }, '21:40'],
   ['Dia de voo', 'antes do report', { ...S.antes, wx: { report: WXL } }, '03:35'],
+  ['Dia de voo, tudo a horas', 'a verificação (W1): o voo, o avião, o aeroporto', { ...S.antes, wx: { report: WXL }, calm: { seen: '03:33', flight: true, plane: { here: true, st: 'LIS' }, airport: true } }, '03:35'],
   ['Dia de voo, limite incerto', 'falta um dado para a lei decidir', S.incerto, '03:35'],
   ['Dia de voo, acima do limite', 'o aviso vermelho do ecrã', { ...S.antes, hero: { ...S.antes.hero, legal: { status: 'bad' } }, warns: [OVER_W] }, '03:35'],
   ['Atraso', 'disrupção: o avião ainda vem a caminho', S.disrupcao, '05:40'],
@@ -126,6 +127,8 @@ function cardHTML(c, P = C, look = {}) {
       ${c.foot ? `<div class="lfoot">${c.foot.map((r) => `<div class="lr"><span>${esc(r.k)}</span><b>${esc(r.v)}</b></div>`).join('')}</div>` : ''}
       ${c.note || c.link ? `<div class="cs">${esc(c.note || '')} ${c.link ? `<u>${esc(c.link.label)}</u>` : ''}</div>` : ''}</div>`;
   }
+  // W1 · a verificação: três sinais com o anel (o movimento só no esboço design/calma-uau.html; aqui o estado final)
+  if (c.t === 'checks') return `<div class="ck" style="background:${P.neutral}"><div class="ckH"><b>${esc(c.title)}</b>${c.seen ? `<span>${esc(c.seen)}</span>` : ''}</div><div class="ckR">${(c.items || []).map((x) => `<div class="ci"><svg class="rg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5" fill="none" stroke="${x.ok === true ? 'var(--ink)' : 'var(--kind)'}" stroke-width="2.2"${x.ok === true ? '' : ' stroke-dasharray="2.5 3.2"'}/>${x.ok === true ? '<path d="M7.6 12.4l3 3 5.8-6.2" fill="none" stroke="var(--ink)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>' : ''}</svg><b>${esc(x.k)}</b><span>${esc(x.v)}</span></div>`).join('')}</div></div>`;
   if (c.t === 'hdr') return `<div class="hdr${c.near ? ' near' : ''}">${esc(c.text)}</div>`;   // só nos esboços: um cabeçalho de secção entre cartões
   if (c.t === 'text') return `<div class="cd${neu}" style="background:${B}"><span class="kd">${esc(c.kind)}</span><div class="tx">${esc(c.text)}</div></div>`;
   // o cartão grande
@@ -194,6 +197,8 @@ body{background:#E8E7E2;color:#141414;font-family:'Hanken','Helvetica Neue',Aria
 .sheetN{flex:1;background:var(--sheet);border-radius:32px 32px 0 0;padding:12px 12px 24px;display:flex;flex-direction:column;gap:8px}
 .cd{border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:10px;position:relative}
 .cd,.slim{color:#141414}   /* os cartões de cor: a tinta escura (CARD.onCard), de dia e de noite */
+.ck{border-radius:24px;padding:12px 16px;color:var(--ink);display:flex;flex-direction:column;gap:8px} .ckH{display:flex;justify-content:space-between;align-items:baseline;gap:8px} .ckH b{font-weight:800;font-size:16px;line-height:20px} .ckH span{font-weight:500;font-size:11px;color:var(--sub)}
+.ckR{display:grid;grid-template-columns:repeat(3,1fr);gap:8px} .ci{display:grid;grid-template-columns:24px 1fr;column-gap:6px;min-width:0} .ci .rg{grid-row:1 / span 2;width:24px;height:24px;margin-top:2px} .ci b{font-weight:700;font-size:14px;line-height:18px} .ci span{font-weight:500;font-size:12px;line-height:16px;color:var(--sub)}
 .dk,.dk b{color:var(--sheet)} .ph .dk .st > span:not(.k){color:var(--sheet);opacity:.82} .dk .goS{background:rgba(127,127,127,.35);color:var(--sheet)}
 .lt,.lt .ct,.lt b,.lt .dpt b{color:#F4F2ED} .lt .kd,.lt .k,.lt .cs,.lt .cities,.lt .st > span:not(.k),.lt .ab span,.lt .dpt span:not(.dot2),.lt .quiet2,.lt .pd,.lt .dlc span{color:rgba(244,242,237,.8)}
 .lt .go,.lt .goS,.lt .badge,.lt .mark{background:rgba(255,255,255,.16);color:#F4F2ED} .lt .dot2{background:#F4F2ED} .lt .dot2.o{border-color:#F4F2ED;background:transparent} .lt .dls{background:#F4F2ED} .lt .dlt{background:rgba(244,242,237,.25)}

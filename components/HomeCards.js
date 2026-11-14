@@ -7,8 +7,10 @@
 // botões À PARTE (irmãos, não filhos — o VoiceOver chega aos três). O número gigante não cresce com a letra grande (a largura
 // é calculada pelas métricas da fonte); os cartões crescem e a folha desliza.
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions, Animated, Easing } from 'react-native';
+import Svg, { Circle, Path } from 'react-native-svg';
 import Icon from './Icon';
+import useReduceMotion from '../hooks/useReduceMotion';
 import { CARD, TXT3, SPACE, RADIUS, BRAND, PELE_FONT } from '../data/constants';
 import { GIANT } from '../data/homeCards';
 import { textWidth } from '../data/fontMetrics';
@@ -427,6 +429,77 @@ function Lines({ c, C, onOpen, l }) {
   );
 }
 
+// ── W1 · A VERIFICAÇÃO (antes do report; design/calma-uau.html W1, escolhida pelo Nuno a 2026-11-14) ──
+// Três sinais — Voo · Avião · Aeroporto — numa linha neutra; o que cada um diz vem pronto de data/homeCards.js. O anel DESENHA-SE
+// quando o sinal passa a certo: o traço de um SVG, que só o thread JS anima (motion §2: useNativeDriver false "quando a propriedade
+// obriga", como a largura das barras); 700 ms out(cubic), escalonados 180 ms (§3, dados a crescer); o visto assenta a seguir (220 ms).
+// Só anima quando um sinal PASSA a certo (ao montar, ou com dado novo) — nunca a cada abertura; com os movimentos reduzidos aparece
+// já fechado (§5). Sem dados ou por ver: o anel a tracejado, sem visto. A cor é a tinta do cartão (sem verde: dentro sem cor).
+const ACircle = Animated.createAnimatedComponent(Circle);
+const APath = Animated.createAnimatedComponent(Path);
+const RING_R = 9.5;
+const RING_C = 2 * Math.PI * RING_R;
+const TICK_L = 13;   // o comprimento do visto (M7.6 12.4 l3 3 l5.8 -6.2 ≈ 4,2 + 8,5)
+function CheckRing({ ok, T, i, reduce }) {
+  const start = ok === true && !reduce ? 0 : 1;
+  const ring = React.useRef(new Animated.Value(start)).current;
+  const tick = React.useRef(new Animated.Value(start)).current;
+  const was = React.useRef(false);
+  React.useEffect(() => {
+    if (ok !== true) { was.current = false; return undefined; }
+    if (was.current) return undefined;
+    was.current = true;
+    if (reduce) { ring.setValue(1); tick.setValue(1); return undefined; }
+    ring.setValue(0); tick.setValue(0);
+    const anim = Animated.sequence([
+      Animated.delay(250 + i * 180),
+      Animated.timing(ring, { toValue: 1, duration: 700, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
+      Animated.timing(tick, { toValue: 1, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
+    ]);
+    anim.start();
+    // se a animação for interrompida (o cartão sai, os movimentos reduzidos ligam a meio), fica no fim — nunca meio anel
+    return () => { anim.stop(); ring.setValue(1); tick.setValue(1); };
+  }, [ok, reduce, i, ring, tick]);
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" style={s.ckRing}>
+      <Circle cx={12} cy={12} r={RING_R} fill="none" stroke={ok === true ? T.track : T.kind} strokeWidth={2} strokeDasharray={ok === true ? undefined : '2.5 3.2'} />
+      {ok === true ? (
+        <>
+          <ACircle cx={12} cy={12} r={RING_R} fill="none" stroke={T.line} strokeWidth={2.2} strokeLinecap="round" transform="rotate(-90 12 12)"
+            strokeDasharray={`${RING_C} ${RING_C}`} strokeDashoffset={ring.interpolate({ inputRange: [0, 1], outputRange: [RING_C, 0] })} />
+          <APath d="M7.6 12.4l3 3 5.8-6.2" fill="none" stroke={T.line} strokeWidth={2.3} strokeLinecap="round" strokeLinejoin="round"
+            strokeDasharray={`${TICK_L} ${TICK_L}`} strokeDashoffset={tick.interpolate({ inputRange: [0, 1], outputRange: [TICK_L, 0] })} />
+        </>
+      ) : null}
+    </Svg>
+  );
+}
+function Checks({ c, C, l }) {
+  const AL = a11yLang(l);
+  const T = toneOf(C, c.color);
+  const reduce = useReduceMotion();
+  const a11y = [c.title, ...(c.items || []).map((x) => `${x.k}: ${x.v}`), c.seen].filter(Boolean).join('. ');
+  return (
+    <View style={[s.ck, { backgroundColor: T.bg }]} accessible accessibilityLanguage={AL} accessibilityLabel={a11y}>
+      <View style={s.ckHead}>
+        <Text style={[TXT3.slimTitle, s.ckTitle, { color: T.fg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.title}</Text>
+        {c.seen ? <Text style={[TXT3.cardNumLbl, { color: T.sub }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.seen}</Text> : null}
+      </View>
+      <View style={s.ckRow}>
+        {(c.items || []).map((x, i) => (
+          <View key={x.k} style={s.ckItem}>
+            <CheckRing ok={x.ok} T={T} i={i} reduce={reduce} />
+            <View style={s.ckTxt}>
+              <Text style={[TXT3.checkK, { color: T.fg }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} maxFontSizeMultiplier={MAX_SCALE}>{x.k}</Text>
+              <Text style={[TXT3.slimSub, { color: T.sub }]} numberOfLines={2} maxFontSizeMultiplier={MAX_SCALE}>{x.v}</Text>
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 // ── TEXTO (o que o acordo garante · quando aparecem os serviços) ──
 function TextCard({ c, C, onOpen, l }) {
   const AL = a11yLang(l);
@@ -448,6 +521,7 @@ export function HomeCards({ cards, C, onOpen, l }) {
     if (c.t === 'slim') return <Slim key={k} c={c} C={C} onOpen={onOpen} l={l} />;
     if (c.t === 'lines') return <Lines key={k} c={c} C={C} onOpen={onOpen} l={l} />;
     if (c.t === 'text') return <TextCard key={k} c={c} C={C} onOpen={onOpen} l={l} />;
+    if (c.t === 'checks') return <Checks key={k} c={c} C={C} l={l} />;
     // o cabeçalho de secção (o próximo serviço noutro dia: "Amanhã · quinta 12") — mais ar por cima, junto da linha de baixo
     if (c.t === 'hdr') return <Text key={k} style={[TXT3.pill, s.hdr, { color: C.soft }]} accessibilityRole="header" numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.text}</Text>;
     return null;
@@ -458,6 +532,14 @@ export function HomeCards({ cards, C, onOpen, l }) {
 const s = StyleSheet.create({
   top: { paddingHorizontal: SPACE.lgPlus, paddingBottom: SPACE.xxl },
   topCompact: { paddingBottom: SPACE.lg },
+  // W1 · a verificação: o título e o "visto" numa fila; os três sinais lado a lado, o anel à esquerda do nome
+  ck: { borderRadius: RADIUS.xxl, paddingVertical: SPACE.md, paddingHorizontal: SPACE.lg, gap: SPACE.sm },
+  ckHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: SPACE.sm },
+  ckTitle: { flexShrink: 1 },
+  ckRow: { flexDirection: 'row', gap: SPACE.sm },
+  ckItem: { flex: 1, flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.s, minWidth: 0 },
+  ckTxt: { flex: 1, minWidth: 0 },
+  ckRing: { marginTop: SPACE.xxs },
   // A fila tem SEMPRE a altura do sino (44): trocar o sino pela pílula "Exemplo · sair" (38) fazia a página saltar 6 pt (iPhone, 2026-11-11).
   pills: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, paddingTop: SPACE.sm, paddingBottom: SPACE.lg, minHeight: 44 + SPACE.sm + SPACE.lg },
   pill: { height: 38, paddingHorizontal: SPACE.lg, borderRadius: RADIUS.pill, flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, borderWidth: 1.5, flexShrink: 0 },

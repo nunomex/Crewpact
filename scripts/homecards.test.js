@@ -560,6 +560,38 @@ const WXF = { c: 4, label: 'nevoeiro', ic: 'fog', at: '05:30', st: 'LIS' };
     R.incerto.cards.slice(0, 2).map((c) => [c.color, c.swatch || null, !!c.dashed]), [['neutral', null, true], ['flight', null, false]]);
 }
 
+// ═══ W1 · A VERIFICAÇÃO ANTES DO REPORT (design/calma-uau.html W1, escolhida pelo Nuno a 2026-11-14) ═══
+// Três sinais — Voo · Avião · Aeroporto — numa linha neutra logo a seguir ao cartão do voo, só com o que os dados dizem. "Tudo a
+// horas" só com os três; sem um dado, esse sinal fica "sem dados" e o título passa a "Voo a horas"; o voo atrasado não tem calma
+// (é o estado Atraso); com qualquer aviso (ou o limite incerto) a linha sai; antes da janela do ao vivo diz quando começa. Como faz
+// um aviso, a pernoita passa a linha fina (a regra dos dois cartões).
+{
+  const CALM = { seen: '03:33', flight: true, plane: { here: true, st: 'LIS' }, airport: true };
+  const CK = (c) => pick(c, ['t', 'id', 'color', 'title', 'seen', 'items']);
+  const ok3 = homeCards({ ...S.antes, calm: CALM });
+  eq('W1 · tudo bem: o voo, os três sinais, a pernoita em linha fina', ok3.cards.map((c) => [c.id, c.t]), [['day', 'card'], ['calm', 'checks'], ['night', 'slim']]);
+  eq('W1 · tudo bem: "Tudo a horas", visto às 03:33, o avião já em LIS', CK(ok3.cards[1]),
+    { t: 'checks', id: 'calm', color: 'neutral', title: 'Tudo a horas', seen: 'visto 03:33', items: [{ k: 'Voo', v: 'a horas', ok: true }, { k: 'Avião', v: 'já em LIS', ok: true }, { k: 'Aeroporto', v: 'normal', ok: true }] });
+  eq('W1 · o avião a caminho, a tempo: "chega 05:20"', homeCards({ ...S.antes, calm: { ...CALM, plane: { eta: '05:20' } } }).cards[1].items[1], { k: 'Avião', v: 'chega 05:20', ok: true });
+  const noPlane = homeCards({ ...S.antes, calm: { ...CALM, plane: null } }).cards[1];
+  eq('W1 · sem o avião: "Voo a horas" e o sinal do avião "sem dados"', [noPlane.title, noPlane.items[1]], ['Voo a horas', { k: 'Avião', v: 'sem dados', ok: false }]);
+  const noApt = homeCards({ ...S.antes, calm: { ...CALM, airport: null } }).cards[1];
+  eq('W1 · sem o aeroporto: "Voo a horas" e "sem dados"', [noApt.title, noApt.items[2]], ['Voo a horas', { k: 'Aeroporto', v: 'sem dados', ok: false }]);
+  const late = homeCards({ ...S.antes, calm: { ...CALM, flight: false } });
+  eq('W1 · o voo não está a horas: sem a linha, e a pernoita fica cartão', late.cards.map((c) => [c.id, c.t]), [['day', 'card'], ['night', 'card']]);
+  eq('W1 · sem saber do voo: sem a linha', homeCards({ ...S.antes, calm: { ...CALM, flight: null } }).cards.some((c) => c.id === 'calm'), false);
+  const early = homeCards({ ...S.antes, calm: { from: '02:15' } }).cards[1];
+  eq('W1 · antes da janela: "O voo ao vivo às 02:15" e os três por ver', CK(early),
+    { t: 'checks', id: 'calm', color: 'neutral', title: 'O voo ao vivo às 02:15', seen: null, items: [{ k: 'Voo', v: 'por ver', ok: null }, { k: 'Avião', v: 'por ver', ok: null }, { k: 'Aeroporto', v: 'por ver', ok: null }] });
+  eq('W1 · com um aviso no ecrã: a linha sai', homeCards({ ...S.antes, calm: CALM, warns: [ROSTER_W] }).cards.some((c) => c.id === 'calm'), false);
+  eq('W1 · com o limite incerto (o cartão tracejado por cima): a linha sai', homeCards({ ...S.incerto, calm: CALM }).cards.some((c) => c.id === 'calm'), false);
+  eq('W1 · só antes do report: em voo não aparece', homeCards({ ...S.emVoo, calm: CALM }).cards.some((c) => c.id === 'calm'), false);
+  eq('W1 · sem calm: como antes', homeCards(S.antes).cards.map((c) => [c.id, c.t]), [['day', 'card'], ['night', 'card']]);
+  const en = homeCards({ ...S.antes, lang: 'en', calm: { ...CALM, airport: null } }).cards[1];
+  eq('W1 · em inglês', [en.title, en.seen, en.items.map((i) => `${i.k}: ${i.v}`)], ['Flight on time', 'seen 03:33', ['Flight: on time', 'Aircraft: already at LIS', 'Airport: no data']]);
+  eq('W1 · em inglês, os três e antes da janela', [homeCards({ ...S.antes, lang: 'en', calm: CALM }).cards[1].title, homeCards({ ...S.antes, lang: 'en', calm: { from: '02:15' } }).cards[1].title], ['All on time', 'Live flight from 02:15']);
+}
+
 // ═══ EM INGLÊS — os mesmos estados, nada indefinido ═══
 for (const [k, v] of Object.entries(S)) {
   const r = homeCards({ ...v, lang: 'en' });

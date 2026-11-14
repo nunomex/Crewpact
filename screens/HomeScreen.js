@@ -35,7 +35,7 @@ import { monthAudit } from '../data/audit';
 import AuditSheet from '../components/AuditSheet';
 import { yearCount, eventCounts } from '../data/aeEvents';
 import { liveRdp } from '../data/disruption';
-import { fetchFlightStatus, fetchAircraftStatus, fetchAirportStats, hasDeviation, worstDelay, arrDelayMin, recordBehindLive, settledArrZ, schedArrZ, inboundGap, airportDisruption, activeLegIndex, legNo } from '../data/flightStatus';
+import { fetchFlightStatus, fetchAircraftStatus, fetchAirportStats, hasDeviation, worstDelay, arrDelayMin, recordBehindLive, settledArrZ, schedArrZ, inboundGap, airportDisruption, airportCalm, activeLegIndex, legNo } from '../data/flightStatus';
 import { nightStopStation } from '../data/hotels';
 import { scheduleWakeUp } from '../data/reminders';
 import HotelSheet from '../components/HotelSheet';
@@ -369,7 +369,7 @@ export default function HomeScreen({ navigation }) {
     let cancelled = false;
     if (!flightNo || !inFlightWindow) { setFsRaw(null); return; }
     const no = flightNo;
-    fetchFlightStatus(no).then((st) => { if (!cancelled) setFsRaw({ no, st: st || null }); });
+    fetchFlightStatus(no).then((st) => { if (!cancelled) setFsRaw({ no, st: st || null, at: Date.now() }); });   // `at`: o "visto às" da W1
     return () => { cancelled = true; };
   }, [flightNo, inFlightWindow, fsTick]);
   // Só vale o estado do voo que está a ser seguido (no instante da troca de setor, o antigo ainda está em memória).
@@ -987,8 +987,27 @@ export default function HomeScreen({ navigation }) {
   // mesmo serviço (o mesmo dia e o mesmo report) — nunca os de outro voo.
   const nextF = nextF0 && heroF && nextF0.iso === heroF.iso && (nextF0.report || null) === (heroF.report || null) && heroF.kind === nextF0.kind
     ? { ...nextF0, flightNo: heroF.flightNo || null, perDiem: heroF.perDiem != null ? heroF.perDiem : null, psv: heroF.psv || null } : nextF0;
+  // ── W1 · A VERIFICAÇÃO antes do report (design/calma-uau.html W1, 2026-11-14): os três sinais, SÓ com o que os dados dizem;
+  // data/homeCards.js decide o que se escreve (golden test:homecards). Antes da janela do ao vivo (4 h antes, a mesma conta do
+  // inFlightWindow), diz quando começa — só com o nº do voo (sem ele a app nunca vê o voo e não o promete).
+  const calmF = (() => {
+    if (homeState !== 'hoje' || phase !== 'pre' || !flightNo || !depTs) return null;
+    const hhmm = (ms) => { const d = new Date(ms); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+    const opens = depTs - 4 * 3600e3;
+    if (now < opens) return { from: hhmm(opens) };
+    if (!flightStatus) return null;   // a janela abriu mas ainda não há resposta (ou não há rede): a app cala-se
+    const flightOk = !fsDev && !fsCancelled && !fsDiverted && (((fsDep && fsDep.delayMin) || 0) < 15);
+    // O avião: "já em LIS" só se aterrou MESMO na nossa estação; "chega hh:mm" se vem a caminho e fica pronto a tempo
+    // (inboundGap: 35 min de rotação); o resto (sem matrícula, outro destino, dados ambíguos) = sem dados.
+    const inbArr = inbound && inbound.arr;
+    const plane = !inboundInfo || inboundInfo.gapMin < 0 || !inbArr ? null
+      : (inbArr.actualUtc || inbArr.actual) ? { here: true, st: (fsDep && fsDep.iata) || inbArr.iata || null }
+      : { eta: hm(inbArr.estimated || inbArr.scheduled) || (inboundInfo.etaZ ? `${inboundInfo.etaZ}Z` : null) };
+    return { seen: fsRaw && fsRaw.at ? hhmm(fsRaw.at) : null, flight: flightOk, plane: plane && (plane.st || plane.eta) ? plane : null, airport: airportCalm(depAirport) ? true : null };
+  })();
   const H = {
     lang, state: homeState, todayISO, phase,
+    calm: calmF,
     hero: ['hoje', 'disrupcao', 'vespera'].includes(homeState) || (homeState === 'pernoita' && flight && flight.report) ? heroF : null,
     live: liveF, next: nextF,
     untilMin: nextF && nextF.startMs != null ? Math.max(0, Math.floor((nextF.startMs - now) / 60000)) : null,

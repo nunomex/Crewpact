@@ -300,6 +300,7 @@ export const TXT3 = {
   chip:      { fontFamily: PELE_FONT.bodyHeavy, fontSize: 14 },                                      // "+45,40 €"
   dur:       { fontFamily: PELE_FONT.bodyBold,  fontSize: 12 },                                      // o selo entre as duas horas
   act:       { fontFamily: PELE_FONT.bodyBold,  fontSize: 14 },                                      // a barra de ação do cartão
+  checkK:    { fontFamily: PELE_FONT.bodyBold,  fontSize: 14, lineHeight: 18 },                      // o nome de cada sinal da verificação (W1: Voo · Avião · Aeroporto)
   slimTitle: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 16, lineHeight: 20 },
   slimSub:   { fontFamily: PELE_FONT.bodyMed,   fontSize: 12, lineHeight: 16 },
   slimVal:   { fontFamily: PELE_FONT.bodyHeavy, fontSize: 20 },

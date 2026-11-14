@@ -21,7 +21,7 @@ Module._extensions['.js'] = function (m, filename) {
   m._compile(transform(fs.readFileSync(filename, 'utf8'), filename), filename);
 };
 
-const { depDelayMin, arrDelayMin, hasDeviation, worstDelay, settledArrZ, schedArrZ, recordBehindLive, storedMatchesReal, inboundGap, airportDisruption } = require(path.resolve('data/flightDelay.js'));
+const { depDelayMin, arrDelayMin, hasDeviation, worstDelay, settledArrZ, schedArrZ, recordBehindLive, storedMatchesReal, inboundGap, airportDisruption, airportCalm } = require(path.resolve('data/flightDelay.js'));
 const { legsForShare } = require(path.resolve('data/shareDay.js'));
 
 let ok = 0, fail = 0;
@@ -126,6 +126,17 @@ eq('warn por cancelamentos (12%)', airportDisruption(AP(S(60, 15, 20, 12), S(55,
 eq('bad: 25% cancelados nas chegadas', airportDisruption(AP(S(60, 10), S(55, 22, 40, 25))), { side: 'arr', tone: 'bad', delayedPct: 22, avgDelayMin: 40, cancelPct: 25 });
 eq('pior lado ganha (dep warn vs arr bad → arr)', airportDisruption(AP(S(60, 34, 25), S(55, 55, 45))).side, 'arr');
 eq('sem stats → null', airportDisruption(null), null);
+// ── airportCalm — a W1 de design/calma-uau.html (2026-11-14): "o aeroporto está normal?" — só com dados que o digam ──
+// airportDisruption devolve nada tanto para "normal" como para "sem dados"; a calma só se afirma com 8 partidas ou mais na amostra
+// e sem aviso em nenhum dos lados (os limites do aviso: 30 % atrasados, 10 % cancelados).
+eq('calma: saudável, 60 partidas', airportCalm(AP(S(60, 10), S(55, 8))), { side: 'dep', n: 60, delayedPct: 10, cancelPct: 0 });
+eq('calma: as chegadas com amostra pequena não contam (as partidas é que dizem)', airportCalm(AP(S(12, 20, 15, 2), S(3, 100))), { side: 'dep', n: 12, delayedPct: 20, cancelPct: 2 });
+eq('sem calma: amostra de partidas pequena (n=5) → não afirma', airportCalm(AP(S(5, 0), S(55, 8))), null);
+eq('sem calma: 35 % atrasados é aviso, não calma', airportCalm(AP(S(60, 35, 28), S(55, 10))), null);
+eq('sem calma: as chegadas com 25 % cancelados (o aviso do lado das chegadas)', airportCalm(AP(S(60, 10), S(55, 22, 40, 25))), null);
+eq('sem calma: no limite do aviso (30 %) já é aviso', airportCalm(AP(S(60, 30), S(55, 8))), null);
+eq('sem calma: sem stats', airportCalm(null), null);
+eq('sem calma: sem o lado das partidas', airportCalm({ iata: 'LIS', arr: S(55, 8) }), null);
 
 // ── legsForShare — legs mínimas do link da família (PURA, data/shareDay.js) ──
 const dutyLegs = { legs: [{ flightNo: 'EJU7625', dep: 'LIS', arr: 'FNC' }, { flightNo: 'EJU7626', dep: 'FNC', arr: 'LIS' }] };

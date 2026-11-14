@@ -109,6 +109,16 @@ export function airportDisruption(stats) {
   return score(dep) >= score(arr) ? { side: 'dep', ...dep } : { side: 'arr', ...arr };
 }
 
+// ── O AEROPORTO ESTÁ NORMAL? (a W1 de design/calma-uau.html, escolhida pelo Nuno a 2026-11-14) ──
+// O avesso do airportDisruption, mas só com dados que o digam: o `null` de lá quer dizer "normal" OU "sem amostra". Aqui a
+// calma afirma-se com 8 partidas ou mais na amostra (o lado que conta para quem vai partir) e sem aviso em nenhum dos lados.
+// Devolve { side:'dep', n, delayedPct, cancelPct } ou null (aviso, amostra pequena ou sem dados — a app cala-se).
+export function airportCalm(stats) {
+  if (!stats || !stats.dep || (stats.dep.n || 0) < 8) return null;
+  if (airportDisruption(stats)) return null;
+  return { side: 'dep', n: stats.dep.n, delayedPct: stats.dep.delayedPct || 0, cancelPct: stats.dep.cancelPct || 0 };
+}
+
 export function inboundGap(inb, { ourFlight, ourDepZ, ourDepIata = null, turnMin = 35 } = {}) {
   if (!inb || !inb.arr) return null;
   const norm = (x) => String(x || '').toUpperCase().replace(/\s+/g, '');

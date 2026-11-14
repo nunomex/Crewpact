@@ -1156,7 +1156,38 @@ motor está na versão **21**. **O que falta, por ordem:**
   o Início já usa na véspera e na pernoita · N2 cartões escuros com a faixa da cor · N3 tons fundos com letra clara, os avisos
   vivos — recomendado). **O Nuno escolheu a N3 e "segue o iPhone".** Pergunta aberta: no modo claro, a véspera e a pernoita
   continuam a escurecer sozinhas? (recomendação: não — ver a resposta de 2026-11-14). **Por construir:** é a base do tema (cada
-  ecrã lê as cores de um sítio que muda com o iPhone) — Opus 5.5 Extra, pela tabela do método.
+  ecrã lê as cores de um sítio que muda com o iPhone) — Opus 5.5 Extra, pela tabela do método. **O Nuno pediu primeiro o resto da
+  análise da Living Interface** (a N3 fica depois).
+  **A tranquilidade antes do report (ponto 2 da LI):** esboço `design/tranquilidade.html` — T1 o selo "A horas" no cartão do voo ·
+  **T2 a linha calma no lugar do aviso** (recomendada: "Tudo a horas" · "o avião já está em LIS · aeroporto normal" · "visto 03:33";
+  a pernoita passa a linha fina, como com um aviso) · T3 a frase por baixo do título. Regras em todas: só o que os dados dizem ("a
+  horas" com o voo a horas E o avião a tempo; "aeroporto normal" com 8 voos ou mais e abaixo dos limites do aviso); sem um dado, cala
+  essa parte; com um problema, entra o que já existe; com qualquer aviso, sai; antes das 02:15 (4 h antes da partida) diz quando a
+  app começa a ver o voo. **O Nuno escolheu a T2** e pediu "algo uau, diferente e intuitivo" → `design/calma-uau.html`. Para construir: uma função pura "o aeroporto está normal?" (hoje `airportDisruption`
+  devolve nada para "normal" e para "sem dados").
+  **A voz (pergunta do ponto 7 da LI) — o Nuno: "que achas de voltar com uma forma nova?":** a minha opinião é que volta, só com
+  frases verdadeiras e sem repetir o ecrã (saem as do tempo e a do aviso; ficam as calmas, os marcos e o último dia de férias).
+  Esboço `design/voz.html` (as frases do motor `data/stateVoice.js`): V1 por baixo do título · **V2 na folha, por cima dos cartões,
+  na letra da app** (recomendada) · V3 o bilhete manuscrito direito, no fim. **O Nuno escolheu a V2** (e o "uau", abaixo). Entra com o ponto 4 (a folga com
+  1 principal + 2): os esboços da folga levam a voz escolhida.
+  **A calma, uau (a T2 e a V2 mais longe):** esboço `design/calma-uau.html`, com movimento — **W1 a verificação** (recomendada: três
+  sinais que fecham um a um quando o dado chega — Voo · Avião · Aeroporto antes do report; na folga, por baixo da voz, Escala ·
+  Validades · O mês, os avisos que estão calados; sem verde; um falha → a linha passa a ser o aviso âmbar desse item) · W2 a folga
+  do avião (a linha do tempo até à partida; fica como pormenor da W1) · W3 a frase viva. Medido: a W1 cabe a 390 (19 pt; folga 7).
+  **O Nuno escolheu a W1 — construída antes do report (por gravar):** golden primeiro — `airportCalm` em `data/flightDelay.js`
+  (`test:flightstatus` 74: 8 partidas ou mais e sem aviso), o cartão `checks` em `data/homeCards.js` (`calmOf`; `test:homecards` 435:
+  tudo bem · o avião a caminho · sem o avião ou o aeroporto = "sem dados" e "Voo a horas" · o voo não a horas = sem linha · antes da
+  janela "O voo ao vivo às hh:mm" · com aviso ou limite incerto = sem linha · só antes do report · em inglês); o desenho `Checks` +
+  `CheckRing` em `components/HomeCards.js` (o anel desenha-se com o `Animated`, reduce = já fechado; token `TXT3.checkK`); o ecrã passa
+  `calm` (`screens/HomeScreen.js`: o "visto" = a hora da resposta do voo; "já em LIS" só com o avião aterrado na nossa estação).
+  **Ver no iPhone:** um dia de voo com nº de voo — antes das 4 h, "O voo ao vivo às hh:mm" com os três por ver; dentro da janela,
+  os anéis a fechar um a um e o "visto"; com os movimentos reduzidos, já fechados. **Fica para a folga:** os três sinais por baixo
+  da voz (Escala · Validades · O mês).
+  **"A escala mudou" com o quê e quando (ponto 3 da LI):** esboço `design/escala-mudou.html` — E1 a alteração mais próxima na linha
+  ("Sexta 13: report às 06:45 · era às 05:30 · e mais 2") · **E2 a lista do antes → depois** (recomendada: cartão âmbar com "!", o dia
+  grande à esquerda, o novo a cheio e o antigo riscado, "lido às 11:52", "Rever e aceitar") · E3 a mudança dentro do cartão que ela
+  muda. A app sabe o dia, o tipo e o antes/depois de cada campo (`data/rosterDiff.js`) e a hora a que leu o calendário; não sabe quando
+  a empresa mudou (o calendário não o diz). Medido: a E2 na folga passa 58 pt (a folga com 4 cartões, o ponto seguinte). **Por escolher.**
 - **Do dia 2026-11-14 (gravado e enviado até `81c2dfd`) — tudo por ver:** os Números (o total sozinho no topo; "Acima da base" no
   fim do "De onde vem"; com a base incerta, "O total fica entre"); o topo lado a lado igual no Início, na Escala e nos Números
   (o número do mesmo tamanho; a frase com ar por cima); a meteorologia (na véspera e antes do report, a base à hora do report no

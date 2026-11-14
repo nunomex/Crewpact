@@ -95,6 +95,7 @@ Onde o movimento existe hoje — atualizar quando se adiciona/remove:
 - `screens/EscalaScreen.js` — swipe de mês: kick 110 + spring-back (gesto — persiste em reduce)
 - `screens/ValidadesScreen.js` — carteira de cartões (PanResponder + shuffle 260–280; reduce = assenta sem viagem)
 - `screens/StatsScreen.js` — GrowBar 800 / MonthBar 700 (reduce-aware)
+- `components/HomeCards.js` · `CheckRing` (2026-11-14, a verificação W1 antes do report) — o anel desenha-se (o traço do SVG, `useNativeDriver: false`: a propriedade obriga) 700 out(cubic), escalonado 180 depois de 250, e o visto assenta 220; só quando um sinal PASSA a certo (nunca a cada abertura); interrompido = fica no fim; reduce = já fechado
 - (2026-07-09: `SearchModal` apagado — saiu do inventário)
 
 ---

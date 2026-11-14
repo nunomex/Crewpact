@@ -35,11 +35,14 @@
 //             verdict:{ verdict, realStr, maxStr, projected }, commander, lastArr, end }
 //   vac   — { left, quota, retIso, fromIso, toIso } · sick — { day, first3, payText } · doc — { name, days, expiryIso, after }
 //   empty — { rosterOk, lastRead } · demo · wake — { hm } · longHaul · restOk (véspera: true|false|null)
+//   calm  — antes do report (W1): { from:'hh:mm' } antes da janela do ao vivo · ou { seen:'hh:mm', flight:true|false|null,
+//           plane:{ here:true, st }|{ eta:'hh:mm' }|null, airport:true|null } (airportCalm de data/flightDelay.js)
 //   warns — [{ id, title, sub, value, first, open, tone }] (já escritos pelo ecrã, por ordem de prioridade; no máx. 2;
 //           tone 'stop' = fora do limite → vermelho com ✕, pelo mapa B; sem tone = olhar → laranja)
 //
 // SAÍDA: { state, top: { pill:{ text, live }, pill2:{ text, iso }|null, what, giant:{ l1, unit, l2, l2Grey, zulu? }, facts[] },
-//          cards: [ card | slim | lines | text ], caption }
+//          cards: [ card | slim | lines | text | checks | hdr ], caption }
+//   checks = { t:'checks', id:'calm', color:'neutral', title, seen, items:[{ k, v, ok:true|false|null }] } (W1; ok null = por ver)
 //   card  = { t:'card', id, color, kind, title, sub, gain, a:{v,l}, dur, b:{v,l,gain}, pct, corner:'share'|'chev', action, open }
 //   slim  = { t:'slim', id, color, title, sub, value, gain, dark, open }
 //   lines = { t:'lines', id, color, kind, rows:[{k,v,open}], foot, note, link, open }
@@ -155,9 +158,32 @@ export function homeCards(H = {}) {
   // Montagem com a regra dos dois cartões: [avisos deste serviço] · o do momento · o que vem a seguir (linha fina se houver
   // aviso) · [linhas finas próprias do estado] · [avisos de outra coisa].
   let limCard = null;   // o limite incerto num cartão à parte (L2) — posto pelo estado antes de montar
+  let calmCard = null;  // a verificação antes do report (W1) — posta pelo estado; ocupa o lugar de um aviso
   const assemble = (one, two, ...slims) => {
-    const second = two && two.t === 'card' && (warns.length || limCard) ? (two.slim || null) : two;
-    return [limCard, ...wFirst, one, second, ...slims, ...wLast].filter(Boolean).map((c) => { if (c && c.slim) { const { slim, ...rest } = c; return rest; } return c; });
+    const second = two && two.t === 'card' && (warns.length || limCard || calmCard) ? (two.slim || null) : two;
+    return [limCard, ...wFirst, one, calmCard, second, ...slims, ...wLast].filter(Boolean).map((c) => { if (c && c.slim) { const { slim, ...rest } = c; return rest; } return c; });
+  };
+
+  // ── W1 · A VERIFICAÇÃO ANTES DO REPORT (design/calma-uau.html W1, escolhida pelo Nuno a 2026-11-14) ──
+  // Três sinais — Voo · Avião · Aeroporto — só com o que os dados dizem (o ecrã passa-os em H.calm):
+  //   { from: 'hh:mm' }  antes da janela do ao vivo (4 h antes da partida): diz quando começa, os três "por ver";
+  //   { seen, flight: true|false|null, plane: { here, st } | { eta } | null, airport: true|null }  com os dados.
+  // "Tudo a horas" só com os três (a regra antiga: "nunca se afirma o que a rotação desmente"); sem um dado, esse sinal fica "sem
+  // dados" e o título passa a "Voo a horas"; o voo que não está a horas não tem calma (é o estado Atraso); com qualquer aviso ou o
+  // limite incerto, a linha sai (1 principal + 2). Sem verde (dentro sem cor).
+  const calmOf = (c) => {
+    if (!c || warns.length || limCard) return null;
+    const K = [l('Voo', 'Flight'), l('Avião', 'Aircraft'), l('Aeroporto', 'Airport')];
+    if (c.from) return { t: 'checks', id: 'calm', color: 'neutral', title: l(`O voo ao vivo às ${c.from}`, `Live flight from ${c.from}`), seen: null,
+      items: K.map((k) => ({ k, v: l('por ver', 'to check'), ok: null })) };
+    if (c.flight !== true) return null;
+    const pl = c.plane && c.plane.here && c.plane.st ? l(`já em ${c.plane.st}`, `already at ${c.plane.st}`)
+      : c.plane && c.plane.eta ? l(`chega ${c.plane.eta}`, `lands ${c.plane.eta}`) : null;
+    const items = [{ k: K[0], v: l('a horas', 'on time'), ok: true },
+      { k: K[1], v: pl || l('sem dados', 'no data'), ok: !!pl },
+      { k: K[2], v: c.airport ? l('normal', 'normal') : l('sem dados', 'no data'), ok: !!c.airport }];
+    return { t: 'checks', id: 'calm', color: 'neutral', title: items.every((x) => x.ok) ? l('Tudo a horas', 'All on time') : l('Voo a horas', 'Flight on time'),
+      seen: c.seen ? l(`visto ${c.seen}`, `seen ${c.seen}`) : null, items };
   };
 
   // ── O CARTÃO DO VOO E3 (design/cartoes-c2.html E3 + cartoes-e3.html V2 + cartoes-limite.html L2, escolhidos pelo Nuno a 2026-11-14) ──
@@ -606,6 +632,7 @@ export function homeCards(H = {}) {
           unc ? fact(l('Incerto', 'Uncertain'), l('PSV até', 'FDP until')) : lat ? fact(lat, l('PSV até', 'FDP until')) : (!hero.report ? fact(l('Sem report', 'No report'), l('PSV não calculado', 'FDP not calculated')) : null),
           wxReportFact()));
       limCard = limUncOf(hero, l('O limite de hoje', 'Today’s limit'));   // incerto: um cartão à parte, por cima (L2), que abre o porquê
+      calmCard = calmOf(H.calm);                                          // W1: a verificação, logo a seguir ao cartão do voo
       const one = planDayCard(hero, { e3: true });
       cards = assembleDay(one, nightCard(hero, next), next);
     } else {

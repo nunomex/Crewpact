@@ -438,6 +438,18 @@ vermelhos da 2.0 revistos um a um, e o amarelo da marca (`BRAND.signal/marker`) 
   #4B3550, musgo #36452F) com letra clara; os avisos (âmbar, vermelho) ficam vivos. **Segue o claro/escuro do iPhone** (o Nuno,
   2026-11-14). **Por construir** — é a base do tema: cada ecrã passa a ler as cores de um sítio que muda com o iPhone.
 
+### A verificação (W1, 2026-11-14 — `design/calma-uau.html`, escolhida pelo Nuno; no código antes do report)
+
+Antes do report, uma linha neutra logo a seguir ao cartão do voo, com três sinais lado a lado: **Voo · Avião · Aeroporto**. Cada
+sinal é um anel (24 pt) com o nome (`TXT3.checkK`, 14) e o que diz por baixo (`TXT3.slimSub`); o título em cima à esquerda
+("Tudo a horas" / "Voo a horas" / "O voo ao vivo às 02:15") e "visto 03:33" à direita. **Certo** = o anel fecha e aparece o visto, a
+tinta do cartão; **sem dados** ou **por ver** = o anel a tracejado, sem visto. **Sem verde** (dentro sem cor). O anel desenha-se
+quando o sinal passa a certo (motion §7, `CheckRing`). Ocupa o lugar de um aviso: com qualquer aviso ou o limite incerto, sai; e,
+como um aviso, faz a pernoita passar a linha fina (1 principal + 2). O que se escreve decide-o `data/homeCards.js` (`calmOf`, golden
+`test:homecards`); "o aeroporto está normal?" é `airportCalm` (`data/flightDelay.js`, golden `test:flightstatus`: 8 partidas ou
+mais e sem aviso). **Por fazer:** na folga, os mesmos três sinais por baixo da voz (Escala · Validades · O mês) — entram com os
+esboços da folga; tocar em "Avião" para a linha da folga do avião (a W2 do esboço).
+
 ### Peças escolhidas a 2026-11-13 (das 57 referências de `referencias/Para a app/`)
 
 **No código (2026-11-13, ainda mais tarde):** o "Ver tudo" (o corpo do Detalhe, `DutyDetailBody`) está no 3.0 — escolha B de `design/detalhe-3.html`: o cartão de cor do serviço com a perna B2 (DH marcado) e os cartões neutros (Limites com a barra B9, Completar, Horário com a régua B3, Pernoita com "Mapas ↗", Pagamento com o total em A1, Outros serviços com a linha B7). Serve a Escala e o ecrã do Detalhe.
