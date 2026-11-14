@@ -308,7 +308,8 @@ O que muda em relação à §2 ("branco · preto · amarelo, plana, hairline"):
   altura (não se troca a família nos tokens de uma vez: a Hanken é mais larga e partia os ecrãs antigos). O número gigante
   do topo (86) continua fora da escala, afinado no `TUNE`.
 - **A anatomia do Início:** pílula do estado + número em duas linhas + os factos à direita de um fio (L1 de `design/topo-lado.html`,
-  2026-11-14, no tamanho comum das três abas; nos Números só o total); folha com o cartão do
+  2026-11-14, no tamanho comum das três abas; nos Números só o total); a frase por cima do número a 12 (`SPACE.md`; E2 de
+  `design/topo-frase.html` — com 4 ficava colada no iPhone); folha com o cartão do
   momento e o do que vem a seguir (nunca mais de dois grandes; com um aviso, o segundo passa a linha fina). Sem teclas.
 - **Raios:** cartão `RADIUS.xxl` (24); a folha pede um degrau novo, 32 (acrescentar à escala na construção); pílulas e a
   cápsula da barra = `pill`.

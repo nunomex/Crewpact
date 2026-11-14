@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · A frase por cima do número</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* A FRASE POR CIMA DO NÚMERO (2026-11-14). O Nuno: "a frase por cima dos números está muito perto" ("Próximo serviço daqui a",
+   "A tua escala de novembro", "Ganhos brutos de novembro"). Medido com as métricas da Hanken (fontTools: subida 1000, descida 303,
+   algarismos 708 em 1000): o código dá ao número uma linha de 1,1 em, abaixo da altura natural da letra (1,303 em); o iOS corta essa
+   diferença POR CIMA, e o número sobe ~0,2 em em relação ao navegador. A 62: da linha de base da frase ao topo dos algarismos ~8 pt;
+   dos pés do "p", "g", "ç" ~5 pt; por cima da frase até às pílulas ~20 pt. Este esboço SIMULA a colocação do iPhone (a linha
+   natural, deslocada 0,203 em para cima) para se ver como no telemóvel. Três espaços a mais entre a frase e o número: +4 (SPACE.sm),
+   +8 (SPACE.md), +12 (SPACE.lg) — em todas, o topo cresce o mesmo nas três abas. Imagens do Nuno: 3424 (o rótulo em cima, o número
+   em baixo, bem separados). Mobbin: Tonal, Wise (o rótulo do total com ar por baixo). */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+.lead{max-width:940px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)} .lead a{color:var(--pfg)}
+.opt{display:flex;flex-direction:column;gap:10px}
+.opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:var(--muted);max-width:900px} .opt > p b{color:var(--pfg)}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.row{display:flex;flex-wrap:wrap;gap:20px}
+.cap{font-size:12px;font-weight:700;color:var(--muted);margin:0 0 6px 6px}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:940px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card2 li{font-size:13px;line-height:1.5;color:var(--muted)} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:var(--pfg)}
+
+.ph{display:flex;flex-direction:column;width:406px;height:340px;border:8px solid #04060A;border-radius:52px 52px 0 0;border-bottom:0;overflow:hidden;position:relative;background:#E3E1DB;color:#141414;max-width:100%}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.topA{padding:0 20px 32px;flex:none}
+.pills{display:flex;align-items:center;gap:8px;min-height:68px;padding:8px 0 16px}
+.pl{height:38px;padding:0 16px;border-radius:19px;border:1.5px solid #141414;display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:13px;white-space:nowrap}
+.pl.ink{background:#141414;color:#E3E1DB}
+.bell{width:44px;height:44px;border-radius:22px;background:rgba(127,127,127,.22);margin-left:auto}
+.ml{margin-left:auto}
+.seg{display:inline-flex;background:rgba(127,127,127,.22);border-radius:19px;padding:3px;height:38px;align-items:center;margin-left:auto}
+.seg span{padding:0 14px;height:32px;border-radius:16px;display:flex;align-items:center;font-weight:700;font-size:13px;color:#3A3A36}
+.seg span.on{background:#141414;color:#E3E1DB}
+.what{font-weight:500;font-size:15px;line-height:20px;color:#3A3A36}
+.hero{display:flex;align-items:stretch;gap:16px}
+.g{font-weight:700;white-space:nowrap}
+.g .l1{display:flex;align-items:baseline}
+.g small{font-size:34px;letter-spacing:-1px;margin-left:6px}
+.grey{color:rgba(20,20,20,.5)}
+.side{border-left:1.5px solid #141414;padding-left:16px;display:flex;flex-direction:column;justify-content:center;gap:12px;min-width:0}
+.fv{display:block;font-weight:700;font-size:20px;line-height:22px;white-space:nowrap}
+.fl{display:block;font-weight:500;font-size:11px;line-height:15px;color:#3A3A36;white-space:nowrap}
+.gain{color:#0B6E43}
+.sheetN{flex:1;background:#fff;border-radius:32px 32px 0 0}
+.meas{position:absolute;left:12px;width:4px;background:#EC7A6C;border-radius:2px}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>A frase por cima do número</h1>
+    <p>Tens razão: está colada. Medi com as medidas da letra (Hanken). O código dá ao número uma altura de linha mais baixa do que a altura natural da letra (1,1 contra 1,303), e o <b>iPhone corta essa diferença por cima</b>, por isso o número sobe uns 6 pontos. A 62, ficam cerca de <b>8 pontos</b> entre a linha de base da frase e o topo dos algarismos, e só uns <b>5</b> dos pés do "p", do "g" e do "ç". <b>Por cima da frase, até às pílulas, há cerca de 20.</b> A frase devia estar mais perto do número do que das pílulas, mas sem tocar.</p>
+    <p>Este esboço <b>simula a forma como o iPhone coloca o número</b>. A barra vermelha à esquerda mostra o espaço entre os pés da frase e o topo dos algarismos. Em todas as opções, o topo cresce o mesmo nas três abas, e a folha continua a começar no mesmo sítio. <b>As tuas imagens:</b> 3424 (o rótulo em cima e o número em baixo, bem separados). <b>Mobbin:</b> <a href="https://mobbin.com/screens/e5dcd7a4-253e-4b0f-a487-7809db572ee8">Tonal</a>, <a href="https://mobbin.com/screens/7e290de8-f26d-4c71-8f4b-0ed616345078">Wise</a> (o rótulo do total com ar por baixo).</p>
+  </div>
+  <div id="opts" style="display:flex;flex-direction:column;gap:36px"></div>
+  <div class="card2"><h3>A minha recomendação: E2 (+8)</h3><ul>
+    <li><b>E2</b> deixa cerca de <b>13 pontos</b> entre os pés da frase e o número. A frase fica claramente ligada ao número (13 por baixo, contra ~20 por cima, até às pílulas), mas já não toca. O topo cresce 8 pontos (de 236 para 244) nas três abas.</li>
+    <li><b>E1 (+4)</b> fica com ~9 pontos: melhora, mas no "Ganhos" e no "serviço" os pés ainda quase chegam ao número.</li>
+    <li><b>E3 (+12)</b> fica com ~17 pontos, quase tanto como por cima, e a frase começa a parecer solta, a meio caminho entre as pílulas e o número.</li></ul></div>
+</div>
+<script>
+// a simulação do iPhone: a linha do número com a altura natural (1,303 em), deslocada 0,203 em para cima (o iOS corta por cima
+// a diferença para a linha de 1,1 em que o código pede); duas linhas de base a base a 0,9 em; as margens do código (−0,1 em).
+var Z = 62;
+function giant(d){
+  var z = Z, N = Math.round(z * 1.303), trim = Math.round(z * 0.1), st = 'font-size:' + z + 'px;line-height:' + N + 'px;letter-spacing:' + (z * -0.046).toFixed(2) + 'px';
+  return '<div class="g" style="margin-top:' + (-trim - Math.round(z * 0.203)) + 'px;margin-bottom:' + (-trim) + 'px"><div class="l1"><span class="dg" style="' + st + '">' + d.l1 + '</span>' + (d.unit ? '<small>' + d.unit + '</small>' : '') + '</div>'
+    + '<div class="' + (d.grey ? 'grey' : '') + '" style="' + st + ';margin-top:' + (-Math.round(z * 0.403)) + 'px">' + d.l2 + '</div></div>';
+}
+function side(fx){ return fx.length ? '<div class="side">' + fx.map(function(f){ return '<div><span class="fv' + (f[2] ? ' gain' : '') + '">' + f[0] + '</span><span class="fl">' + f[1] + '</span></div>'; }).join('') + '</div>' : ''; }
+var INI = { tab: 'Início · folga', pills: '<span class="pl ink">Folga</span><span class="pl">quarta 11</span><span class="bell"></span>', what: 'Próximo serviço daqui a', l1: '2', unit: 'dias', l2: 'livre', grey: true, f: [['sexta 13', 'até lá'], ['31 h', 'de 60 em 7 dias']] };
+var ESC = { tab: 'Escala', pills: '<span class="pl">Novembro 2026 ▾</span><span class="pl ml">Sincronizar</span>', what: 'A tua escala de novembro', l1: '11', unit: '', l2: 'serviços', grey: true, f: [['6', 'pernoitas'], ['1 732,80 €', 'per diem · estimado', 1]] };
+var NUM = { tab: 'Números', pills: '<span class="pl">Novembro 2026 ▾</span><span class="seg"><span class="on">Mês</span><span>Ano</span></span>', what: 'Ganhos brutos de novembro', l1: '15 137', unit: ',64 €', l2: 'estimado', grey: true, f: [] };
+function frame(d, gap){
+  return '<div class="ph"><div class="status"><span>09:41</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>'
+    + '<div class="topA"><div class="pills">' + d.pills + '</div><div class="what">' + d.what + '</div><div class="hero" style="margin-top:' + gap + 'px">' + giant(d) + side(d.f) + '</div></div>'
+    + '<div class="sheetN"></div></div>';
+}
+var O = [['Hoje · +0 (4)', false, 'Como está no código: <b>4</b> entre a frase e o número. ~5 pontos dos pés da frase ao topo dos algarismos.', 4],
+         ['E1 · +4 (8 · SPACE.sm)', false, '<b>8</b> entre a frase e o número: ~9 pontos dos pés da frase ao número. O topo cresce 4.', 8],
+         ['E2 · +8 (12 · SPACE.md)', true, '<b>12</b> entre a frase e o número: ~13 pontos dos pés da frase ao número; por cima continua ~20. O topo cresce 8.', 12],
+         ['E3 · +12 (16 · SPACE.lg)', false, '<b>16</b> entre a frase e o número: ~17 pontos, quase tanto como por cima. O topo cresce 12.', 16]];
+document.getElementById('opts').innerHTML = O.map(function(o){
+  return '<div class="opt"><h3>' + o[0] + (o[1] ? '<span class="rec">RECOMENDO</span>' : '') + '</h3><p>' + o[2] + '</p><div class="row">'
+    + [INI, ESC, NUM].map(function(d){ return '<div><div class="cap">' + d.tab + ' · <b class="hh"></b></div>' + frame(d, o[3]) + '</div>'; }).join('') + '</div></div>';
+}).join('');
+// a barra vermelha: dos pés da frase (a linha de base + a descida do "p", 0,21 em) ao topo dos algarismos
+document.fonts.ready.then(function(){
+  var cv = document.createElement('canvas').getContext('2d');
+  document.querySelectorAll('.ph').forEach(function(ph){
+    var w = ph.querySelector('.what'), dg = ph.querySelector('.dg'), r = ph.getBoundingClientRect();
+    var wr = w.getBoundingClientRect(), dr = dg.getBoundingClientRect();
+    cv.font = '500 15px Hanken'; var mw = cv.measureText('p'); var wBase = wr.top + (20 - 19.545) / 2 + 15; var wFeet = wBase + mw.actualBoundingBoxDescent;
+    cv.font = '700 ' + Z + 'px Hanken'; var md = cv.measureText('0123456789'); var dBase = dr.top + Z; var dTop = dBase - md.actualBoundingBoxAscent;
+    var bar = document.createElement('div'); bar.className = 'meas'; bar.style.top = (wFeet - r.top - 8) + 'px'; bar.style.height = Math.max(1, dTop - wFeet) + 'px'; ph.appendChild(bar);
+    ph.parentNode.querySelector('.hh').textContent = Math.round(dTop - wFeet) + ' pt dos pés da frase ao número · topo ' + Math.round(ph.querySelector('.topA').getBoundingClientRect().height);
+  });
+});
+</script>
+</body>
+</html>

@@ -859,7 +859,15 @@ simulação é que podemos inserir para simular"). Parei a migração do "Extra 
   ecrã antes de ligar a escala diz "Link" (o "Connect" só cabia a 52) · `HomeTop` volta ao lado a lado com o fio · Escala: o per
   diem a verde, sem quadradinhos · Números: o topo só com o total (em € e em horas); o "acima da base" é a última linha do "De onde
   vem" e, com a base incerta, "O total fica entre X e Y" é a primeira; as horas e os voos estão na linha "Voo", o limite mais cheio
-  no "Limites · agora". Testes todos · guardião · pacote iOS gera.
+  no "Limites · agora". Testes todos · guardião · pacote iOS gera. **Gravado (`01085eb`, por enviar).**
+  **O Nuno: "a frase por cima dos números está muito perto"** ("Próximo serviço daqui a", "A tua escala de novembro", "Ganhos
+  brutos de novembro"). Medido com as métricas da Hanken (fontTools: subida 1000, descida 303, algarismos 708): pelas contas do
+  navegador 14,5 pt da linha de base da frase ao topo dos algarismos (16,4 a 86 — mudou pouco com o tamanho); mas a linha do número
+  é 1,1 em, abaixo da altura natural (1,303 em), e o iOS corta a diferença POR CIMA (o comentário do `GIANT_LINE`: "abaixo do tamanho o
+  iOS cortou letras no v6"), o número sobe ~6 pt: no iPhone ~8 pt da linha de base e ~5 pt dos pés do "p"/"g"/"ç"; por cima da
+  frase até às pílulas ~20. Esboço `design/topo-frase.html` (simula a colocação do iOS): E1 +4 (9 pt) · E2 +8 (13 pt, recomendada;
+  topo 236 → 244 nas três abas) · E3 +12 (17 pt). **O Nuno escolheu a E2 — CONSTRUÍDA (por ver no iPhone; por gravar):** `HomeTop`
+  `s.hero` com `marginTop: SPACE.md` (era `SPACE.xs`), o mesmo nas três abas. A confirmar no iPhone (a simulação segue o corte por cima).
   **Também gravado nesta ronda:** a centragem dos números nos círculos (`s.numTxt`, acima) e os esboços `janelas-3.html`,
   `janelas-c.html` e `botoes-escritos.html`.
   **E o Nuno: "depois vê os botões das notificações, o X para fechar e o de sincronizar — não estão com o layout novo, pois não?"**

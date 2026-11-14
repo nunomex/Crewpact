@@ -326,8 +326,10 @@ const s = StyleSheet.create({
   pillDot: { width: 7, height: 7, borderRadius: RADIUS.pill },
   grow: { flex: 1 },
   l1Row: { flexDirection: 'row', alignItems: 'baseline' },
-  // o número à esquerda e os factos à direita, com o fio (16 entre eles — GIANT.gap; 16 de recuo — GIANT.sidePad)
-  hero: { flexDirection: 'row', alignItems: 'stretch', gap: SPACE.lg, marginTop: SPACE.xs },
+  // o número à esquerda e os factos à direita, com o fio (16 entre eles — GIANT.gap; 16 de recuo — GIANT.sidePad). 12 por baixo da
+  // frase (E2 de design/topo-frase.html, 2026-11-14): com 4, no iPhone os pés do "p"/"g"/"ç" ficavam a ~5 pt dos algarismos (o iOS
+  // corta por cima a linha de 1,1 em e o número sobe); com 12 ficam ~13, e por cima da frase continuam ~20 até às pílulas.
+  hero: { flexDirection: 'row', alignItems: 'stretch', gap: SPACE.lg, marginTop: SPACE.md },
   side: { borderLeftWidth: 1.5, paddingLeft: SPACE.lg, justifyContent: 'center', gap: SPACE.md, flexShrink: 1, minWidth: 0 },
   was: { textDecorationLine: 'line-through', opacity: 0.5 },
 
