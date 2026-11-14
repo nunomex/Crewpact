@@ -1,10 +1,10 @@
 {
  "gerado": "2026-11-14",
  "total": {
-  "tipoFora": 165,
-  "tipoMenor11": 77,
-  "espacoFora": 332,
-  "raioFora": 42,
+  "tipoFora": 149,
+  "tipoMenor11": 73,
+  "espacoFora": 316,
+  "raioFora": 39,
   "corSolta": 53,
   "ionicons": 7,
   "iconeNavSolto": 3,
@@ -22,20 +22,20 @@
    "amareloTexto": 0
   },
   "screens/DisrupcaoScreen.js": {
-   "tipoFora": 11,
+   "tipoFora": 9,
    "tipoMenor11": 5,
-   "espacoFora": 14,
-   "raioFora": 1,
+   "espacoFora": 12,
+   "raioFora": 0,
    "corSolta": 1,
    "ionicons": 0,
    "iconeNavSolto": 0,
    "amareloTexto": 0
   },
   "screens/EstabilidadeScreen.js": {
-   "tipoFora": 10,
+   "tipoFora": 8,
    "tipoMenor11": 5,
-   "espacoFora": 14,
-   "raioFora": 1,
+   "espacoFora": 12,
+   "raioFora": 0,
    "corSolta": 1,
    "ionicons": 0,
    "iconeNavSolto": 0,
@@ -92,10 +92,10 @@
    "amareloTexto": 0
   },
   "screens/RelatoriosScreen.js": {
-   "tipoFora": 8,
-   "tipoMenor11": 4,
-   "espacoFora": 11,
-   "raioFora": 2,
+   "tipoFora": 5,
+   "tipoMenor11": 3,
+   "espacoFora": 9,
+   "raioFora": 1,
    "corSolta": 0,
    "ionicons": 0,
    "iconeNavSolto": 0,
@@ -288,16 +288,6 @@
    "raioFora": 0,
    "corSolta": 0,
    "ionicons": 1,
-   "iconeNavSolto": 0,
-   "amareloTexto": 0
-  },
-  "components/QuestionDetailSheet.js": {
-   "tipoFora": 9,
-   "tipoMenor11": 3,
-   "espacoFora": 10,
-   "raioFora": 0,
-   "corSolta": 0,
-   "ionicons": 0,
    "iconeNavSolto": 0,
    "amareloTexto": 0
   },

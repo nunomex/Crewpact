@@ -1,15 +1,25 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import PeleSheet from './PeleSheet';
+import SheetHeader from './SheetHeader';
+import { Field } from './Field';
+import { WideButton } from './PillButton';
+import MarkRow from './MarkRow';
 import Icon from './Icon';
-import { PELE as P, PELE_FONT as F } from '../data/constants';
+import { CARD, TXT, TXT3, SPACE, RADIUS } from '../data/constants';
 import { validityLabel } from '../data/validities';
+import { wdShort } from '../data/escalaDay';
 
 // Folha "porquê" das perguntas do Início — a JUSTIFICAÇÃO detalhada (os números por trás da
 // resposta), em mini-barras estilo Oura/Health + conselho. NÃO inventa nada: formata o `raw`
 // que cada pergunta já traz (data/today.js). Aberta ao tocar numa pergunta.
 // Pele nova sobre PeleSheet; tons de estado = ok/warn/red da pele (alteração de escala = âmbar,
 // a MESMA língua do pontinho da aba Escala).
+// A REGRA DAS FOLHAS (2026-11-14, design-system §11): folha branca, "Fechar" escrito; a resposta grande, a tinta, com o sinal do mapa
+// B ao lado quando é preciso olhar ("!" laranja) ou parar ("✕" vermelho) — nunca a letra a cor; as barras na peça "limite com barra"
+// das imagens do Nuno (3408 · 3415 · 3428 · 3431 · 3441 · 3462): o valor com o máximo pequeno, a barra a tinta (laranja aos 85 %,
+// vermelho só quando passa) e "faltam" — nunca percentagem; as linhas em campos (`Field`, 3417); as alterações da escala com o dia no
+// quadradinho (H2, 3409/3435); o caminho ("Rever na Escala", "Gerir validades") largo no fundo.
 
 const pMin = (s) => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(s || '')); return m ? (+m[1]) * 60 + (+m[2]) : null; };
 const fmtMin = (min) => { const x = Math.max(0, Math.round(min || 0)); return `${Math.floor(x / 60)}:${String(x % 60).padStart(2, '0')}`; };
@@ -33,6 +43,7 @@ function detailFor(it, lang) {
       k: `${w.key === 'voo' ? l('Voo', 'Flight') : l('Serviço', 'Duty')} · ${w.days} d`,
       label: `${over && w.doneMin != null ? hmQ(w.doneMin) : r0(w.done)} / ${r0(w.limit)} h`, tone: over ? 'red' : ratioTone(ratio), fill: Math.min(100, ratio * 100),
       tag: over ? (w.overMin != null ? `+${hmQ(w.overMin)}` : `+${r0(w.done - w.limit)} h`) : null,
+      left: !over && w.limit ? l(`faltam ${r0(w.limit - w.done)} h`, `${r0(w.limit - w.done)} h left`) : null,
     };
   };
   if (it.id === 'legal' || it.id === 'headroom') {
@@ -40,7 +51,8 @@ function detailFor(it, lang) {
       const act = pMin(raw.psv.result), max = pMin(raw.psv.max), ratio = max ? act / max : 0;
       out.bars.push({ k: l('PSV (FDP)', 'FDP'), label: `${raw.psv.result} / ${raw.psv.max}`,
         tone: raw.psv.over ? 'red' : ratioTone(ratio), fill: Math.min(100, ratio * 100),
-        tag: raw.psv.over ? (raw.psv.excess ? `+${raw.psv.excess}` : l('excede', 'over')) : null });
+        tag: raw.psv.over ? (raw.psv.excess ? `+${raw.psv.excess}` : l('excede', 'over')) : null,
+        left: !raw.psv.over && act != null && max != null ? l(`faltam ${fmtMin(max - act)}`, `${fmtMin(max - act)} left`) : null });
     }
     const wins = raw.windows || [];
     const sel = wins.filter((w) => w.id === '28d' || w.over);
@@ -51,7 +63,7 @@ function detailFor(it, lang) {
       out.bars.push({ k: l('Repouso antes do report', 'Rest before report'),
         label: `${fmtMin(raw.actualMin)} / ${l('mín', 'min')} ${fmtMin(raw.requiredMin)}`,
         tone: under ? 'red' : 'green', fill: Math.min(100, ratio * 100),
-        tag: under ? `−${fmtMin(raw.requiredMin - raw.actualMin)}` : null });
+        tag: under ? `−${fmtMin(raw.requiredMin - raw.actualMin)}` : null, left: under ? null : l('cumprido', 'met') });
       if (raw.prevDutyMin) out.rows.push({ k: l('Serviço anterior', 'Preceding duty'), v: fmtMin(raw.prevDutyMin) });
     }
   } else if (it.id === 'roster') {
@@ -73,120 +85,120 @@ function detailFor(it, lang) {
   return out;
 }
 
-function DetailContent({ item, lang, onNav }) {
+const W = CARD.day;
+// O sinal do mapa B: "!" laranja = olhar · "✕" vermelho = parar; dentro não tem sinal.
+const Mark = ({ tone }) => (tone === 'bad' || tone === 'warn' ? (
+  <View style={[st.mark, { backgroundColor: tone === 'bad' ? W.stop : W.alert }]}>
+    <Text style={[TXT3.badge, { color: CARD.onCard }]} allowFontScaling={false}>{tone === 'bad' ? '✕' : '!'}</Text>
+  </View>
+) : null);
+const barTone = (t) => (t === 'red' ? 'bad' : t === 'amber' ? 'warn' : null);
+
+function DetailContent({ item, lang, winH }) {
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const d = detailFor(item, lang);
-  // Sem acento-cor da pele em texto (o amarelo não lê sobre papel): info = ink neutro.
-  const vTone = item.status === 'bad' ? P.red : item.status === 'warn' ? P.warn
-    : P.ink;   // dentro sem cor (§14)
-  const fillC = (t) => (t === 'red' ? P.red : t === 'amber' ? P.warn : P.ink);
-  const rowTone = (t) => (t === 'bad' ? P.red : t === 'warn' ? P.warn : P.ink);
-  const dateLbl = (iso) => {
-    const dt = new Date(iso + 'T00:00:00'); if (isNaN(dt)) return iso;
-    const x = dt.toLocaleDateString(lang === 'en' ? 'en-GB' : 'pt-PT', { weekday: 'short', day: 'numeric', month: 'short' });
-    return x.charAt(0).toUpperCase() + x.slice(1);
-  };
+  const tone = item.status === 'bad' ? 'bad' : item.status === 'warn' ? 'warn' : null;
   return (
-    <ScrollView style={s.scroll} contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
-      <Text style={[s.verdict, { color: vTone }]}>{d.verdict}</Text>
+    <ScrollView style={{ maxHeight: Math.round(winH * 0.58) }} contentContainerStyle={st.body} showsVerticalScrollIndicator={false}>
+      {/* A resposta: grande, a tinta, com o sinal ao lado quando é preciso olhar ou parar. */}
+      <View style={st.verdictRow}>
+        <Mark tone={tone} />
+        <Text style={[TXT3.cardTitle, st.flex, { color: W.ink }]}>{d.verdict}</Text>
+      </View>
 
       {d.bars.length ? (
-        <View style={{ marginTop: 16 }}>
-          <Text style={s.why}>{l('PORQUÊ', 'WHY')}</Text>
-          {d.bars.map((b, i) => (
-            <View key={i} style={s.bar}>
-              <View style={s.barTop}>
-                <Text style={s.barK} numberOfLines={1}>{b.k}</Text>
-                <Text style={[s.barV, { color: fillC(b.tone) }]} numberOfLines={1}>{b.label}{b.tag ? <Text style={s.barTag}>  {b.tag}</Text> : null}</Text>
+        <View style={st.group}>
+          <Text style={[TXT3.kind, st.lab]}>{l('Porquê', 'Why')}</Text>
+          {d.bars.map((b, i) => {
+            const t = barTone(b.tone);
+            const [val, max] = String(b.label).split(' / ');
+            return (
+              <View key={i} style={st.bar} accessible accessibilityLabel={`${b.k}: ${b.label}${b.tag ? `, ${b.tag}` : ''}${b.left ? `, ${b.left}` : ''}`}>
+                <Text style={[TXT3.kind, st.lab]}>{b.k}</Text>
+                <View style={st.barTop}>
+                  <Text style={[TXT3.fact, { color: W.ink }]} allowFontScaling={false}>{val}{max ? <Text style={[TXT3.cardSub, { color: W.tabSub }]}>{`  / ${max}`}</Text> : null}</Text>
+                  <View style={st.barRight}>
+                    <Mark tone={t} />
+                    <Text style={[TXT3.dur, { color: W.ink }]}>{b.tag || b.left || ''}</Text>
+                  </View>
+                </View>
+                <View style={[st.track, { backgroundColor: W.neutral }]}>
+                  <View style={[st.fill, { width: `${b.fill}%`, backgroundColor: t === 'bad' ? W.stop : t === 'warn' ? W.alert : W.ink }]} />
+                </View>
               </View>
-              <View style={s.track}><View style={[s.fill, { width: `${b.fill}%`, backgroundColor: fillC(b.tone) }]} /></View>
-            </View>
-          ))}
+            );
+          })}
         </View>
       ) : null}
 
       {d.rows.length ? (
-        <View style={s.panel}>
+        <View style={st.group}>
           {d.rows.map((r, i) => (
-            <View key={i} style={[s.prow, i > 0 && s.prowBorder]}>
-              <Text style={s.prowK} numberOfLines={2}>{r.k}</Text>
-              <Text style={[s.prowV, r.tone ? { color: rowTone(r.tone) } : null]} numberOfLines={1}>{r.v}</Text>
-            </View>
+            <Field key={i} label={r.k} value={r.v}>
+              <View style={st.rowVal}>
+                <Mark tone={r.tone === 'bad' ? 'bad' : r.tone === 'warn' ? 'warn' : null} />
+                <Text style={[TXT3.fact, { color: W.ink }]}>{r.v}</Text>
+              </View>
+            </Field>
           ))}
         </View>
       ) : null}
 
       {d.changes && d.changes.length ? (
-        <View style={s.panel}>
+        <View style={st.group}>
           {d.changes.slice(0, 8).map((c, i) => (
-            <View key={i} style={[s.prow, i > 0 && s.prowBorder]}>
-              <Text style={s.prowK}>{dateLbl(c.date)}</Text>
-              <Text style={[s.prowV, { color: c.k === 'removed' ? P.red : c.k === 'added' ? P.ink : P.warn }]}>{c.label}</Text>
-            </View>
+            <MarkRow key={i} first={i === 0}
+              mark={{ day: String(+String(c.date).slice(8, 10)), wd: wdShort(c.date, lang === 'en' ? 'en' : 'pt'), bg: W.neutral, badge: c.k === 'removed' ? 'stop' : null }}
+              title={c.label.charAt(0).toUpperCase() + c.label.slice(1)} />
           ))}
         </View>
       ) : null}
 
       {d.advise ? (
-        <View style={s.advise}>
-          <Icon name="bulb" size={16} color={P.warn} />
-          <Text style={s.adviseT}>{d.advise}</Text>
+        <View style={st.advise}>
+          <Icon name="bulb" size={16} color={W.ink} />
+          <Text style={[TXT3.text, st.flex, { color: W.soft }]}>{d.advise}</Text>
         </View>
       ) : null}
 
-      {d.navTo ? (
-        <TouchableOpacity style={s.nav} activeOpacity={0.85} onPress={() => onNav && onNav(d.navTo)} accessibilityRole="button">
-          <Text style={s.navT}>{d.navTo.label}</Text>
-          <Icon name="chevron" size={14} color={P.onInk} />
-        </TouchableOpacity>
-      ) : null}
-
-      <Text style={s.foot}>{l('Estimativa FTL (Reg. UE 83/2014) · confirma sempre com a companhia.', 'FTL estimate (EU Reg. 83/2014) · always confirm with the company.')}</Text>
+      <Text style={[TXT.caption, st.foot]}>{l('Estimativa FTL (Reg. UE 83/2014) · confirma sempre com a companhia.', 'FTL estimate (EU Reg. 83/2014) · always confirm with the company.')}</Text>
     </ScrollView>
   );
 }
 
 export default function QuestionDetailSheet({ item, lang, onClose, onNav }) {
   const l = (pt, en) => (lang === 'en' ? en : pt);
+  const { height: winH } = useWindowDimensions();
+  const nav = item ? detailFor(item, lang).navTo : null;
   return (
-    <PeleSheet visible={!!item} onClose={onClose}>
+    <PeleSheet visible={!!item} onClose={onClose} bg={W.sheet}>
       {item ? (
         <>
-          <Text style={s.kick} allowFontScaling={false}>{l('Porquê', 'Why')}</Text>
-          <Text style={s.title} allowFontScaling={false}>{item.q}</Text>
-          <DetailContent item={item} lang={lang} onNav={onNav} />
+          <SheetHeader card title={item.q} onClose={onClose} closeLabel={l('Fechar', 'Close')} style={st.head} />
+          <DetailContent item={item} lang={lang} winH={winH} />
+          {nav ? <WideButton label={nav.label} onPress={() => onNav && onNav(nav)} style={st.btn} /> : null}
         </>
       ) : null}
     </PeleSheet>
   );
 }
 
-const s = StyleSheet.create({
-  kick: { fontSize: 10, fontFamily: F.bodyHeavy, letterSpacing: 1.6, textTransform: 'uppercase', color: P.grey },
-  title: { fontFamily: F.display, fontSize: 24, letterSpacing: -0.3, lineHeight: 28, color: P.ink, marginTop: 2 },
-  scroll: { maxHeight: Math.round(Dimensions.get('window').height * 0.62) },
-  body: { paddingTop: 14, paddingBottom: 6 },
-  verdict: { fontSize: 22, fontFamily: F.display, letterSpacing: -0.3, lineHeight: 26 },
-  why: { fontSize: 10, fontFamily: F.bodyHeavy, letterSpacing: 1.4, color: P.grey, marginBottom: 11, marginLeft: 1 },
-  // mini-barras (estilo Oura)
-  bar: { marginBottom: 14 },
-  barTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 },
-  barK: { fontSize: 12.5, fontFamily: F.bodyBold, color: P.ink, flex: 1 },
-  barV: { fontSize: 12.5, fontFamily: F.bodyHeavy, fontVariant: ['tabular-nums'], marginLeft: 8 },
-  barTag: { fontSize: 11, fontFamily: F.bodyHeavy, color: P.red },
-  track: { height: 8, borderRadius: 99, backgroundColor: P.soft2, overflow: 'hidden' },
-  fill: { height: '100%', borderRadius: 99 },
-  // painel k/v (validades, serviço anterior, alterações)
-  panel: { backgroundColor: P.soft, borderRadius: 14, paddingHorizontal: 14, marginTop: 6 },
-  prow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 11, gap: 12 },
-  prowBorder: { borderTopWidth: 1, borderTopColor: P.line },
-  prowK: { fontSize: 12.5, fontFamily: F.body, color: P.grey, flex: 1 },
-  prowV: { fontSize: 12.5, fontFamily: F.bodyBold, color: P.ink, fontVariant: ['tabular-nums'] },
-  // conselho
-  advise: { flexDirection: 'row', gap: 9, alignItems: 'flex-start', backgroundColor: P.warnSoft, borderWidth: 1, borderColor: P.warnSoftLine, borderRadius: 14, padding: 13, marginTop: 16 },
-  adviseT: { flex: 1, fontSize: 11.5, fontFamily: F.bodyMed, color: P.ink, lineHeight: 16 },
-  // botão de navegação (escala/validades)
-  nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: P.ink, borderRadius: 14, paddingVertical: 13, marginTop: 14 },
-  navT: { color: P.onInk, fontSize: 13.5, fontFamily: F.bodyHeavy, letterSpacing: 0.3 },
-  foot: { fontSize: 10, fontFamily: F.bodyMed, color: P.grey, marginTop: 14, textAlign: 'center', lineHeight: 15 },
+// A regra das folhas (2026-11-14): a folha branca da 3.0; texto em TXT3/TXT, espaço em SPACE.
+const st = StyleSheet.create({
+  head: { paddingHorizontal: 0, paddingTop: 0 },
+  body: { paddingBottom: SPACE.sm, gap: SPACE.md },
+  flex: { flex: 1, minWidth: 0 },
+  verdictRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md },
+  mark: { width: 24, height: 24, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
+  group: { gap: SPACE.xs },
+  lab: { color: W.tabSub },
+  bar: { paddingVertical: SPACE.xs, gap: SPACE.xs },
+  barTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: SPACE.md },
+  barRight: { flexDirection: 'row', alignItems: 'center', gap: SPACE.s },
+  track: { height: 8, borderRadius: RADIUS.pill, overflow: 'hidden' },
+  fill: { height: '100%', borderRadius: RADIUS.pill },
+  rowVal: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm },
+  advise: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.sm },
+  foot: { color: W.tabSub, textAlign: 'center' },
+  btn: { marginTop: SPACE.sm },
 });

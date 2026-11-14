@@ -734,7 +734,23 @@ simulação é que podemos inserir para simular"). Parei a migração do "Extra 
   flight-status OPTIONS 200 · sem sessão 401. **O "Corrigir ›" da "Rever a escala" FICA, por agora:** sem ele, um dia "a corrigir" (aeroporto desconhecido, hora de
   fim em falta) ficava FORA da escala sem ninguém saber — a importação guarda-os de fora até corrigidos, e o golden do bloco 4 (A-220)
   tranca isso ("sem fim, fica a corrigir — fora dos 210"). A solução certa (importá-los como "incerto", sem perder um dia) mexe nos
-  acumulados do ORO.FTL.210 → **para a sessão Fable.** Testes todos · guardião · pacote iOS gera. **Por ver no iPhone; por gravar.**
+  acumulados do ORO.FTL.210 → **para a sessão Fable.** Testes todos · guardião · pacote iOS gera. **Gravado em `53d4c22` e enviado.**
+- **Mais folhas na regra (2026-11-14, o Nuno: "continua"):**
+  - **O "porquê" das perguntas do Início** (`components/QuestionDetailSheet.js`): a resposta grande a tinta com o sinal do mapa B ao
+    lado ("!" / "✕", nunca a letra a cor); as barras na peça "limite com barra" das imagens do Nuno (3408 · 3415 · 3428 · 3431 · 3441 ·
+    3462): o valor com o máximo pequeno, a barra a tinta (laranja aos 85 %, vermelho só quando passa) e "faltam X h" / "cumprido" —
+    nunca percentagem; as linhas em `Field`; as alterações da escala com o dia no quadradinho; o caminho ("Rever na Escala", "Gerir
+    validades") largo no fundo.
+  - **A identidade dos documentos** (nome + nº de tripulante, antes de gerar o Registo 245, a prova da Disrupção e a da Estabilidade):
+    era a MESMA folha copiada à mão em 3 ecrãs → uma peça, `components/RecordIdentitySheet.js` (dois `FieldInput`, "Gerar" largo); o
+    título passa a "O teu nome e número" (na Disrupção e na Estabilidade dizia "Registo ORO.FTL.245" — errado); dívida do guardião
+    desceu 10.
+  - **Fica para a vez da TAP:** o limite do acordo (`AeLimitSheet` — só regras e ligações da TAP).
+  - **Ficam para o redesenho do ECRÃ, com esboços:** as 3 folhas dos **Números** (Segurança, Voo, Corpo — as barras mostram
+    PERCENTAGEM, contra a regra das imagens "faltam X, nunca percentagem"; e o lugar dos extras) e a folha da **Biblioteca** (o ecrã
+    Info ainda é 2.0; a imagem 3416 dá os cartões da Biblioteca). Ainda por migrar: Simulação (página), partilhas (voo, ano), as
+    janelas do meio (Família, Definições), o formulário de serviço (Simulação) e as Validades.
+  Testes todos · guardião (chão novo) · pacote iOS gera. **Por ver no iPhone; por gravar.**
   **Também gravado nesta ronda:** a centragem dos números nos círculos (`s.numTxt`, acima) e os esboços `janelas-3.html`,
   `janelas-c.html` e `botoes-escritos.html`.
   **E o Nuno: "depois vê os botões das notificações, o X para fechar e o de sincronizar — não estão com o layout novo, pois não?"**

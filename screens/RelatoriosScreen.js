@@ -4,15 +4,14 @@
 // ORO.FTL.245 (PDF na pele, fontes embebidas) e CSV da escala (dados em bruto, sem pele de
 // propósito). O relatório de disrupção (RDP/SNC) nascerá AQUI quando a peça existir.
 import React, { useContext, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, Alert, Share, Keyboard } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Share, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '../data/secureStorage';
 import { GUTTER, PELE, PELE_FONT } from '../data/constants';
 import { baseCityName } from '../data/countries';
 import PeleHeader from '../components/PeleHeader';
 import PeleSide from '../components/PeleSide';
-import PeleSheet from '../components/PeleSheet';
-import PrimaryButton from '../components/PrimaryButton';
+import RecordIdentitySheet from '../components/RecordIdentitySheet';
 import Icon from '../components/Icon';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t } from '../data/i18n';
@@ -351,18 +350,9 @@ export default function RelatoriosScreen({ navigation }) {
       </ScrollView>
 
       {/* Identidade do 245 (nome + nº de tripulante) — pedida ao gerar, persistida. */}
-      <PeleSheet visible={recOpen} onClose={() => setRecOpen(false)}>
-        <Text style={s.shTitle} allowFontScaling={false}>{t('duties.recTitle', lang)}</Text>
-        <Text style={s.shSub}>{t('duties.recSub', lang)}</Text>
-        <Text style={s.fLbl}>{t('duties.recName', lang)}</Text>
-        <TextInput value={recForm.name} onChangeText={(v) => setRecForm((f) => ({ ...f, name: v }))}
-          placeholder={t('duties.recNamePh', lang)} placeholderTextColor={PELE.placeholder} style={s.fInput} />
-        <Text style={s.fLbl}>{t('duties.recId', lang)}</Text>
-        <TextInput value={recForm.crewId} onChangeText={(v) => setRecForm((f) => ({ ...f, crewId: v }))}
-          placeholder={t('duties.recIdPh', lang)} placeholderTextColor={PELE.placeholder} autoCapitalize="characters" style={s.fInput} />
-        <PrimaryButton onPress={onGeneratePdf} icon="document-text-outline" style={{ marginTop: 20 }} label={t('duties.recGenerate', lang)} />
-        <Text style={s.shHint}>{t('duties.recHint', lang)}</Text>
-      </PeleSheet>
+      {/* A identidade dos documentos (nome + nº de tripulante) — pedida ao gerar, guardada; uma peça só (2026-11-14). */}
+      <RecordIdentitySheet visible={recOpen} onClose={() => setRecOpen(false)} form={recForm} setForm={setRecForm} onGenerate={onGeneratePdf} lang={lang}
+        title={l('O teu nome e número', 'Your name and ID')} sub={t('duties.recSub', lang)} cta={t('duties.recGenerate', lang)} hint={t('duties.recHint', lang)} />
     </SafeAreaView>
   );
 }
@@ -392,10 +382,4 @@ const s = StyleSheet.create({
   cLine: { fontSize: 10.5, fontFamily: PELE_FONT.bodyBold, color: PELE.grey, marginTop: 3 },
   cLineHot: { fontFamily: PELE_FONT.bodyHeavy, color: PELE.warn },
   foot: { fontSize: 9.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, lineHeight: 15, marginTop: 4 },
-  // Folha da identidade
-  shTitle: { fontFamily: PELE_FONT.display, fontSize: 24, color: PELE.ink },
-  shSub: { fontSize: 12, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, lineHeight: 18, marginTop: 6 },
-  fLbl: { fontSize: 11.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, marginTop: 14, marginBottom: 6 },
-  fInput: { backgroundColor: PELE.soft, borderRadius: 12, borderWidth: 1, borderColor: PELE.line, paddingHorizontal: 12, paddingVertical: 11, color: PELE.ink, fontSize: 13.5, fontFamily: PELE_FONT.bodyMed },
-  shHint: { fontSize: 10.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, textAlign: 'center', marginTop: 12 },
 });
