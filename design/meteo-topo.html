@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · O tempo no topo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* O TEMPO NO TOPO, EM TODOS OS ESTADOS COM SERVIÇO (2026-11-14). O Nuno escolheu a D3 de design/meteo-amanha.html (o tempo é um
+   facto do topo) e quer o tempo "sempre no topo, seja qual for o estado". O que este esboço resolve: (1) só onde há um serviço — um
+   sítio e uma hora (folga com o serviço amanhã, véspera, antes do report, em serviço e em voo, pernoita); sem serviço não há tempo
+   (a app não usa a localização); (2) ao lado do número cabem 3 factos (medido: 135 pt ao lado de um número de 155) e na véspera e
+   antes do report, no verão ou fora de Lisboa, já são 3 com a hora UTC — três saídas lado a lado; (3) o tempo sai das linhas dos
+   cartões (a M1), para não se repetir, menos a cidade da pernoita à chegada (outro sítio, outra hora), que fica no cartão dela.
+   O número grande fica no tamanho comum das três abas (62 a 390). Dados de TESTE (o voo do iPhone do Nuno, LIS → FNC); tempo inventado.
+   Imagens do Nuno: 3444 (Orix: a hora local e a outra hora lado a lado — a saída a), 3419 (números com unidade, numa coluna) e 3453
+   (o número em duas linhas e o par ao lado). Mobbin: Fly Delta (a temperatura no cabeçalho da chegada), The Weather Channel ("18:15a
+   (GMT…)": o fuso logo a seguir à hora), Air NZ (o tempo do destino). */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+.lead{max-width:940px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)} .lead a{color:var(--pfg)}
+.opt{display:flex;flex-direction:column;gap:10px}
+.opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:var(--muted);max-width:900px} .opt > p b{color:var(--pfg)}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.row{display:flex;flex-wrap:wrap;gap:20px}
+.cap{font-size:12px;font-weight:700;color:var(--muted);margin:0 0 6px 6px;max-width:406px;min-height:22px;display:flex;align-items:center;gap:4px}
+.cap b{color:var(--pfg)}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:940px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card2 li{font-size:13px;line-height:1.5;color:var(--muted)} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:var(--pfg)}
+
+.ph{display:flex;flex-direction:column;width:406px;height:720px;border:8px solid #04060A;border-radius:52px 52px 0 0;border-bottom:0;overflow:hidden;position:relative;background:#E3E1DB;color:#141414;max-width:100%}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.topA{padding:0 20px 32px;flex:none}
+.pills{display:flex;align-items:center;gap:8px;min-height:68px;padding:8px 0 16px}
+.pl{height:38px;padding:0 16px;border-radius:19px;border:1.5px solid #141414;display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:13px;white-space:nowrap}
+.pl.ink{background:#141414;color:#E3E1DB} .pl.ink i{width:7px;height:7px;border-radius:4px;background:#F0C24A;display:block}
+.ml{margin-left:auto}
+.what{font-weight:500;font-size:15px;line-height:20px;color:#3A3A36}
+.hero{display:flex;align-items:stretch;gap:16px;margin-top:12px}
+.g{font-weight:700;white-space:nowrap;flex:none}
+.g .l1,.g .l2{display:flex;align-items:baseline}
+.g small{font-size:34px;letter-spacing:-1px;margin-left:6px}
+.g .z{font-size:22px;letter-spacing:-.4px;margin-left:8px;color:#141414}
+.grey{color:rgba(20,20,20,.5)}
+.side{border-left:1.5px solid #141414;padding-left:16px;display:flex;flex-direction:column;justify-content:center;gap:12px;min-width:0}
+.fv{display:flex;align-items:center;gap:6px;font-weight:700;font-size:20px;line-height:22px;white-space:nowrap}
+.fl{display:block;font-weight:500;font-size:11px;line-height:15px;color:#3A3A36;white-space:nowrap}
+.ic{display:block;fill:currentColor}
+.sheetN{flex:1;background:#fff;border-radius:32px 32px 0 0;padding:12px 12px 0;display:flex;flex-direction:column;gap:8px}
+.cd{border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:10px;position:relative}
+.kd{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8)}
+.ct{font-weight:800;font-size:24px;line-height:28px}
+.cs{font-weight:500;font-size:14px;line-height:19px;color:rgba(20,20,20,.82)}
+.ab{display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
+.ab b{display:block;font-weight:800;font-size:24px;line-height:26px} .ab span{display:block;font-weight:600;font-size:12px;color:rgba(20,20,20,.82)}
+.dur{background:rgba(255,255,255,.75);border-radius:14px;padding:5px 12px;font-weight:800;font-size:13px;white-space:nowrap}
+.go{position:absolute;right:14px;top:14px;width:38px;height:38px;border-radius:19px;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px}
+.slim{border-radius:20px;padding:14px 16px;display:flex;align-items:center;gap:12px;background:#F1EFEA}
+.slim .t{flex:1;min-width:0} .slim .t > b{display:block;font-weight:800;font-size:18px;line-height:22px} .slim .t span b{font-weight:800} .slim .t span{display:block;font-weight:500;font-size:13px;line-height:17px;color:rgba(20,20,20,.75)}
+.money{font-weight:800;font-size:22px;white-space:nowrap}
+.credit{font-weight:500;font-size:12px;color:#5E5E57;padding:2px 6px}
+.note{font-size:11px;font-weight:700;color:#8A887F;padding:0 6px}
+.chip{background:#fff;color:#0B6E43;border-radius:14px;padding:5px 10px;font-weight:800;font-size:13px;white-space:nowrap}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>O tempo no topo, em todos os estados com serviço</h1>
+    <p>Escolheste a <b>D3</b>: o tempo é um dos dados ao lado do número grande. Aqui está <b>em todos os estados com um serviço</b>, porque são os que têm um sítio e uma hora: a folga com o serviço amanhã, a véspera, antes do report, em voo e na pernoita. <b>Sem serviço não aparece</b> (férias, baixa, folga sem serviço amanhã): a app não sabe onde estás, porque não usa a localização. O tempo <b>sai das linhas dos cartões</b> para não se repetir. Fica só a cidade da pernoita à chegada, no cartão da pernoita, porque é outro sítio e outra hora. A linha "Meteorologia: MET Norway" continua por baixo dos cartões.</p>
+    <p><b>As tuas imagens:</b> 3444 (a hora local e a outra hora lado a lado, na saída a), 3419 (números com unidade, numa coluna) e 3453 (o número em duas linhas com o par ao lado). <b>Mobbin:</b> <a href="https://mobbin.com/screens/b47a73f5-765e-45cd-b548-7ef7a2a777fa">Fly Delta</a> (a temperatura no cabeçalho da chegada), <a href="https://mobbin.com/screens/6f9121e3-35d2-47cc-ad18-033eb12ec44f">The Weather Channel</a> ("18:15a (GMT…)": o fuso logo a seguir à hora), <a href="https://mobbin.com/screens/8f87cb7a-1eaf-43a6-8198-c4d441faf151">Air NZ</a> (o tempo do destino).</p>
+  </div>
+  <div id="opts" style="display:flex;flex-direction:column;gap:36px"></div>
+  <div class="card2"><h3>A minha recomendação: a)</h3><ul>
+    <li><b>a)</b> põe a hora UTC <b>junto do sítio, por baixo da hora do report</b> ("LIS 04:40Z"). A hora local e a UTC ficam juntas, como no teu 3444, e os três dados ao lado ficam sempre os mesmos: falta, PSV até e o tempo. No inverno, em Lisboa, a hora UTC é igual à local e não aparece, por isso o "LIS" fica sozinho.</li>
+    <li><b>b)</b> é a mais simples, mas <b>em Portugal tira o tempo do topo metade do ano</b> (no verão a hora UTC aparece sempre), e o mesmo acontece em quase todas as pernoitas fora.</li>
+    <li><b>c)</b> mantém os três dados, mas o "PSV até" é a hora-limite do dia. <b>Descê-lo para o cartão</b> tira do topo o número que mais importa antes de um voo.</li>
+    <li><b>Em todas:</b> o texto do tempo é curto ("12 °C" e por baixo "chuva às 05:40"), para o número grande não encolher. Meço o tamanho no golden das três abas.</li></ul></div>
+</div>
+<script>
+var P = {
+  rain:'<path d="M7 15a5 5 0 0 1-.6-10A6 6 0 0 1 18 7a4 4 0 0 1-.5 8H7zm1 2 1.6 1-1.4 3-1.6-1zm4.5 0 1.6 1-1.4 3-1.6-1zm4.5 0 1.6 1-1.4 3-1.6-1z"/>',
+  sun:'<path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm-1-6h2v3h-2zm0 19h2v3h-2zM1 11h3v2H1zm19 0h3v2h-3zM3.5 5l1.4-1.4 2.2 2.1-1.4 1.4zm13.4 13.4 1.4-1.4 2.1 2.2-1.4 1.4zM3.5 19l2.2-2.1 1.4 1.4L4.9 20.4zM16.9 5.6l2.1-2.1 1.4 1.4-2.1 2.2z"/>',
+  share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.7 15.4 6.8l1 1.7-6.8 3.9zm0 2.6 1-1.7 6.8 3.9-1 1.7z"/>' };
+function ic(n, s){ return '<svg class="ic" width="' + s + '" height="' + s + '" viewBox="0 0 24 24">' + P[n] + '</svg>'; }
+var CREDIT = '<div class="credit">Meteorologia: MET Norway</div>';
+var Z = 62, ST = 'font-size:' + Z + 'px;line-height:' + Z + 'px;letter-spacing:' + (Z * -0.046).toFixed(2) + 'px';
+function giant(l1, unit, l2, grey, zulu){
+  return '<div class="g"><div class="l1"><span style="' + ST + '">' + l1 + '</span>' + (unit ? '<small>' + unit + '</small>' : '') + '</div>'
+    + '<div class="l2 ' + (grey ? 'grey' : '') + '"><span style="' + ST + '">' + l2 + '</span>' + (zulu ? '<span class="z">' + zulu + '</span>' : '') + '</div></div>';
+}
+function side(fx){ return '<div class="side">' + fx.map(function(f){ return '<div><span class="fv">' + (f[2] ? ic(f[2], 20) : '') + f[0] + '</span><span class="fl">' + f[1] + '</span></div>'; }).join('') + '</div>'; }
+function mkTop(pills, what, g, fx){ return '<div class="topA"><div class="pills">' + pills + '<span class="pl ml">Notificações</span></div><div class="what">' + what + '</div><div class="hero">' + g + side(fx) + '</div></div>'; }
+function phone(clock, topH, sheet){ return '<div class="ph"><div class="status"><span>' + clock + '</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>' + topH + '<div class="sheetN">' + sheet + '</div></div>'; }
+function card(kind, title, sub, a, dur, b, corner, chip){ return '<div class="cd" style="background:' + (kind.indexOf('Repouso') === 0 ? '#B4C2A2' : '#7EBDF4') + '">' + (corner ? '<span class="go">' + corner + '</span>' : '') + '<span class="kd">' + kind + '</span><span class="ct">' + title + '</span><span class="cs">' + sub + '</span>'
+  + (chip ? '<span><span class="chip">' + chip + '</span></span>' : '') + '<div class="ab"><div><b>' + a[0] + '</b><span>' + a[1] + '</span></div><span class="dur">' + dur + '</span><div style="text-align:right"><b>' + b[0] + '</b><span>' + b[1] + '</span></div></div></div>'; }
+function slim(title, sub, bg, val){ return '<div class="slim" style="background:' + (bg || '#F1EFEA') + '"><div class="t"><b>' + title + '</b><span>' + sub + '</span></div>' + (val || '') + '</div>'; }
+var MONTH = slim('Novembro', 'estimado · bruto', null, '<span class="money">15 498,17 €</span>');
+
+// ── Igual nas três opções ──
+var FOLGA = phone('12:14', mkTop('<span class="pl ink">Folga</span><span class="pl">sábado 14</span>', 'Próximo serviço daqui a', giant('17', 'h 25', 'livre', true),
+    [['amanhã', 'até lá'], ['17 h', 'de 60 em 7 dias'], ['12 °C', 'chuva às 05:40', 'rain']]),
+  card('Próximo serviço', 'LIS → FNC', '1 setor', ['05:40', 'report'], '3 h 05', ['08:45', 'fim'], '›') + MONTH + CREDIT);
+var VOO = phone('07:10', mkTop('<span class="pl ink"><i></i>Em voo</span><span class="pl">EZY7841</span>', 'Aterras às', giant('08:15', '', 'FNC', false),
+    [['1 h 05', 'falta para aterrar'], ['9:55', 'de margem no PSV'], ['21 °C', 'sol em FNC à chegada', 'sun']]),
+  card('Dia de serviço · setor 1 de 1', 'LIS → FNC', 'a horas', ['05:40', 'report'], 'PSV 1:30 de 12:30', ['18:10', 'limite'], ic('share', 16)) + slim('Pernoita no Funchal', 'fim de serviço 08:45 · Hotel do Funchal', '#B4C2A2', '<span class="chip">+91,20 €</span>') + CREDIT);
+var NOITE = phone('21:40', mkTop('<span class="pl ink">Pernoita</span><span class="pl">FNC</span>', 'Report amanhã às', giant('06:20', '', 'FNC', false),
+    [['8 h 40', 'falta'], ['16 °C', 'chuva às 06:20', 'rain']]),
+  card('Repouso · fora da base', 'Hotel do Funchal', 'pernoita desta noite', ['08:45', 'fim de serviço'], 'mínimo 10 h', ['18:45', 'cumprido'], '') + slim('FNC → LIS', 'segunda 16 · report 06:20', '#7EBDF4') + CREDIT);
+
+// ── A véspera no verão (a hora UTC aparece): as três saídas ──
+var V_PILLS = '<span class="pl ink"><i></i>Amanhã</span><span class="pl">domingo 14</span>';
+function vCards(psvSub){ return card('Dia de serviço · 1 setor', 'LIS → FNC', psvSub, ['06:40', 'parte'], '1 h 35', ['08:15', 'última chegada'], ic('share', 16))
+  + slim('Pernoita no Funchal', 'fim de serviço 08:45 · Hotel do Funchal · <b>24 °C, sol à chegada</b>', '#B4C2A2', '<span class="chip">+91,20 €</span>') + CREDIT; }
+var VA = phone('18:30', mkTop(V_PILLS, 'Report às', giant('05:40', '', 'LIS', false, '04:40Z'), [['11 h 10', 'falta'], ['18:10', 'PSV até'], ['18 °C', 'céu limpo às 05:40', 'sun']]), vCards('PSV 2:35 de 12:30 · repouso cumprido'));
+var VB = phone('18:30', mkTop(V_PILLS, 'Report às', giant('05:40', '', 'LIS', false), [['11 h 10', 'falta'], ['18:10', 'PSV até'], ['04:40Z', 'report em UTC']]), vCards('PSV 2:35 de 12:30 · repouso cumprido') + '<div class="note">(o tempo não aparece: no verão, a hora UTC ocupa o lugar)</div>');
+var VC = phone('18:30', mkTop(V_PILLS, 'Report às', giant('05:40', '', 'LIS', false), [['11 h 10', 'falta'], ['04:40Z', 'report em UTC'], ['18 °C', 'céu limpo às 05:40', 'sun']]), vCards('PSV 2:35 de 12:30 · <b>até às 18:10</b>'));
+
+var O = [
+  ['Igual nas três opções', false, 'A folga com o serviço amanhã, o voo e a pernoita: <b>três dados ao lado do número, e o último é o tempo</b>. Em voo é o tempo do destino à chegada; nos outros, o tempo à hora do report. Nenhum cartão repete o tempo.',
+    [['<b>Folga 12:14</b> · o serviço é amanhã', FOLGA], ['<b>Em voo</b> · o destino à chegada', VOO], ['<b>Pernoita</b> · à hora do report (como hoje)', NOITE]]],
+  ['A hora UTC: as três saídas (véspera no verão)', false, 'No verão, ou numa pernoita fora, aparece a hora do report em UTC. Com ela seriam quatro dados, e só cabem três. <b>a)</b> a hora UTC vai para junto do sítio, por baixo da hora do report · <b>b)</b> o tempo cede o lugar · <b>c)</b> o "PSV até" desce para o cartão.',
+    [['<b>a)</b> a hora UTC junto do sítio <span class="rec">RECOMENDO</span>', VA], ['<b>b)</b> o tempo cede o lugar', VB], ['<b>c)</b> o "PSV até" desce para o cartão', VC]]]];
+document.getElementById('opts').innerHTML = O.map(function(o){
+  return '<div class="opt"><h3>' + o[0] + '</h3><p>' + o[2] + '</p><div class="row">'
+    + o[3].map(function(s){ return '<div><div class="cap">' + s[0] + '</div>' + s[1] + '</div>'; }).join('') + '</div></div>';
+}).join('');
+</script>
+</body>
+</html>

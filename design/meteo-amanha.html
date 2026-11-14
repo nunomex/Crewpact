@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · O tempo de amanhã na folga</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* O TEMPO DE AMANHÃ NA FOLGA (2026-11-14). A M1 (design/meteo-inicio.html, no código) mostra o tempo no cartão do dia na véspera
+   (report a ≤ 14 h e já depois das 18:00, data/crewState.js) e antes do report. De dia, com o serviço amanhã, o Início está em
+   "Folga" e não mostra nada — o Nuno viu-o no iPhone e disse "sim" a mostrar já de dia. Três maneiras, cada uma em três telemóveis:
+   folga ao meio-dia com chuva, folga com bom tempo, e a véspera às 18:30 (a M1, igual nas três) — para se ver se o tempo salta de
+   sítio às 18:00. Dados de TESTE (os do iPhone do Nuno: folga no sábado 14, LIS → FNC no domingo 15, report 05:40); o tempo é inventado.
+   Imagens do Nuno: nenhuma de meteorologia no índice (referencias/Para a app/README); aproveita-se 3412 (o ícone dentro do cartão,
+   na linha do tempo), 3424 (um chip de estado no cartão — a D2 só aparece quando pede atenção) e 3419 (a fila de números com unidade —
+   o facto do topo da D3). Mobbin: Apple Invites (o tempo do dia do evento antes de ele chegar), AllTrails ("Excessive heat expected":
+   só avisa quando importa), Air NZ (o tempo num cartão por baixo do voo). */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+.lead{max-width:940px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)} .lead a{color:var(--pfg)}
+.opt{display:flex;flex-direction:column;gap:10px}
+.opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:var(--muted);max-width:900px} .opt > p b{color:var(--pfg)}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.row{display:flex;flex-wrap:wrap;gap:20px}
+.cap{font-size:12px;font-weight:700;color:var(--muted);margin:0 0 6px 6px}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:940px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card2 li{font-size:13px;line-height:1.5;color:var(--muted)} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:var(--pfg)}
+
+.ph{display:flex;flex-direction:column;width:406px;height:780px;border:8px solid #04060A;border-radius:52px 52px 0 0;border-bottom:0;overflow:hidden;position:relative;background:#E3E1DB;color:#141414;max-width:100%}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.topA{padding:0 20px 32px;flex:none}
+.pills{display:flex;align-items:center;gap:8px;min-height:68px;padding:8px 0 16px}
+.pl{height:38px;padding:0 16px;border-radius:19px;border:1.5px solid #141414;display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:13px;white-space:nowrap}
+.pl.ink{background:#141414;color:#E3E1DB} .pl.ink i{width:7px;height:7px;border-radius:4px;background:#F0C24A;display:block}
+.ml{margin-left:auto}
+.what{font-weight:500;font-size:15px;line-height:20px;color:#3A3A36}
+.hero{display:flex;align-items:stretch;gap:16px;margin-top:12px}
+.g{font-weight:700;white-space:nowrap}
+.g .l1{display:flex;align-items:baseline}
+.g small{font-size:34px;letter-spacing:-1px;margin-left:6px}
+.grey{color:rgba(20,20,20,.5)}
+.side{border-left:1.5px solid #141414;padding-left:16px;display:flex;flex-direction:column;justify-content:center;gap:12px;min-width:0}
+.fv{display:flex;align-items:center;gap:6px;font-weight:700;font-size:20px;line-height:22px;white-space:nowrap}
+.fl{display:block;font-weight:500;font-size:11px;line-height:15px;color:#3A3A36;white-space:nowrap}
+.ic{display:block;fill:currentColor}
+.sheetN{flex:1;background:#fff;border-radius:32px 32px 0 0;padding:12px 12px 0;display:flex;flex-direction:column;gap:8px}
+.cd{border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:10px;position:relative}
+.kd{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8)}
+.ct{font-weight:800;font-size:24px;line-height:28px}
+.cs{font-weight:500;font-size:14px;line-height:19px;color:rgba(20,20,20,.82)}
+.ab{display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
+.ab b{display:block;font-weight:800;font-size:24px;line-height:26px} .ab span{display:block;font-weight:600;font-size:12px;color:rgba(20,20,20,.82)}
+.dur{background:rgba(255,255,255,.75);border-radius:14px;padding:5px 12px;font-weight:800;font-size:13px;white-space:nowrap}
+.go{position:absolute;right:14px;top:14px;width:38px;height:38px;border-radius:19px;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px}
+.slim{border-radius:20px;padding:14px 16px;display:flex;align-items:center;gap:12px;background:#F1EFEA}
+.slim .t{flex:1;min-width:0} .slim .t b{display:block;font-weight:800;font-size:18px;line-height:22px} .slim .t span{display:block;font-weight:500;font-size:13px;line-height:17px;color:rgba(20,20,20,.75)}
+.money{font-weight:800;font-size:22px;white-space:nowrap}
+/* a linha do tempo (a da M1) */
+.wx{display:flex;align-items:center;gap:6px;font-weight:600;font-size:14px;color:#141414}
+.wx b{font-weight:800}
+.credit{font-weight:500;font-size:12px;color:#5E5E57;padding:2px 6px}
+.note{font-size:11px;font-weight:700;color:#8A887F;padding:0 6px}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>O tempo de amanhã, já na folga</h1>
+    <p><b>Hoje:</b> a meteorologia aparece no cartão do dia na <b>véspera</b>, que começa às <b>18:00</b>, e no próprio dia antes do report (é a M1). Ao meio-dia de sábado, com o voo no domingo às 05:40, o Início está em "Folga" e <b>não mostra nada</b>. Tu viste isso no iPhone e disseste que querias ver o tempo já de dia.</p>
+    <p>Cada opção tem <b>três telemóveis</b>: a folga ao meio-dia <b>com chuva</b>, a folga <b>com bom tempo</b>, e a <b>véspera às 18:30</b> (a M1, igual nas três). O terceiro mostra se o tempo muda de sítio às 18:00. Os dados são os do teu teste; o tempo é inventado. <b>As tuas imagens:</b> não há nenhuma de meteorologia; aproveito a 3412 (o ícone dentro do cartão), a 3424 (um aviso pequeno no cartão, na D2) e a 3419 (um número com unidade, no facto do topo da D3). <b>Mobbin:</b> <a href="https://mobbin.com/screens/f02d78d3-a7a9-4c81-bcd8-38394221b738">Apple Invites</a> (o tempo do dia do evento antes de ele chegar), <a href="https://mobbin.com/screens/70abd958-8899-425b-992f-9d6e6b6ab872">AllTrails</a> ("Excessive heat expected": só avisa quando importa), <a href="https://mobbin.com/screens/8f87cb7a-1eaf-43a6-8198-c4d441faf151">Air NZ</a> (o tempo num cartão por baixo do voo).</p>
+  </div>
+  <div id="opts" style="display:flex;flex-direction:column;gap:36px"></div>
+  <div class="card2"><h3>A minha recomendação: D1</h3><ul>
+    <li><b>D1</b> é a mesma linha da M1, no mesmo sítio: o cartão do próximo serviço. Às 18:00 o cartão muda de nome ("Próximo serviço" → "Dia de serviço"), mas <b>o tempo não se mexe</b>. Uma regra só: se o serviço é amanhã, vês o tempo da base à hora do report. Quando não aparece, é porque não há previsão (sem rede), nunca porque está bom tempo.</li>
+    <li><b>D2</b> faz menos ruído: só aparece quando o tempo pode atrasar a ida para o aeroporto (trovoada, neve, gelo, nevoeiro, chuva forte, vento forte). Mas <b>quando não aparece não se sabe porquê</b>: está bom tempo, ou não carregou? E as condições que contam como "pede atenção" teriam de ser inventadas por nós (não vêm de lei nenhuma).</li>
+    <li><b>D3</b> põe o tempo <b>no topo</b>, onde se vê primeiro. Mas na folga o topo fala do tempo livre ("17 h 25 livre"), e às 18:00 o tempo <b>salta do topo para o cartão</b>. São duas maneiras de mostrar a mesma coisa na mesma app.</li>
+    <li><b>Em todas:</b> só quando o próximo serviço é <b>amanhã</b> e tem hora de report (sem ela não se sabe a hora que interessa). A previsão do MET Norway é hora a hora até cerca de dois dias, por isso o report de amanhã de manhã está sempre coberto. A linha "Meteorologia: MET Norway" aparece por baixo dos cartões sempre que há tempo. Nas férias e na baixa continua a não aparecer.</li></ul></div>
+</div>
+<script>
+var P = {
+  rain:'<path d="M7 15a5 5 0 0 1-.6-10A6 6 0 0 1 18 7a4 4 0 0 1-.5 8H7zm1 2 1.6 1-1.4 3-1.6-1zm4.5 0 1.6 1-1.4 3-1.6-1zm4.5 0 1.6 1-1.4 3-1.6-1z"/>',
+  sun:'<path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm-1-6h2v3h-2zm0 19h2v3h-2zM1 11h3v2H1zm19 0h3v2h-3zM3.5 5l1.4-1.4 2.2 2.1-1.4 1.4zm13.4 13.4 1.4-1.4 2.1 2.2-1.4 1.4zM3.5 19l2.2-2.1 1.4 1.4L4.9 20.4zM16.9 5.6l2.1-2.1 1.4 1.4-2.1 2.2z"/>' };
+function ic(n, s){ return '<svg class="ic" width="' + s + '" height="' + s + '" viewBox="0 0 24 24">' + P[n] + '</svg>'; }
+var CREDIT = '<div class="credit">Meteorologia: MET Norway</div>';
+var Z = 62;
+function giant(l1, unit, l2, grey){
+  var st = 'font-size:' + Z + 'px;line-height:' + Math.round(Z * 1.0) + 'px;letter-spacing:' + (Z * -0.046).toFixed(2) + 'px';
+  return '<div class="g"><div class="l1"><span style="' + st + '">' + l1 + '</span>' + (unit ? '<small>' + unit + '</small>' : '') + '</div>'
+    + '<div class="' + (grey ? 'grey' : '') + '" style="' + st + '">' + l2 + '</div></div>';
+}
+function side(fx){ return '<div class="side">' + fx.map(function(f){ return '<div><span class="fv">' + (f[2] ? ic(f[2], 20) : '') + f[0] + '</span><span class="fl">' + f[1] + '</span></div>'; }).join('') + '</div>'; }
+function mkTop(pills, what, g, fx){ return '<div class="topA"><div class="pills">' + pills + '<span class="pl ml">Notificações</span></div><div class="what">' + what + '</div><div class="hero">' + g + side(fx) + '</div></div>'; }
+function phone(clock, topH, sheet){ return '<div class="ph"><div class="status"><span>' + clock + '</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>' + topH + '<div class="sheetN">' + sheet + '</div></div>'; }
+function wxl(icn, txt){ return '<span class="wx">' + ic(icn, 18) + txt + '</span>'; }
+function nextCard(extra){ return '<div class="cd" style="background:#7EBDF4"><span class="go">›</span><span class="kd">Próximo serviço</span><span class="ct">LIS → FNC</span><span class="cs">1 setor</span>' + (extra || '')
+  + '<div class="ab"><div><b>05:40</b><span>report</span></div><span class="dur">3 h 05</span><div style="text-align:right"><b>08:45</b><span>fim</span></div></div></div>'; }
+function dayCard(extra){ return '<div class="cd" style="background:#7EBDF4"><span class="go"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:#141414"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.7 15.4 6.8l1 1.7-6.8 3.9zm0 2.6 1-1.7 6.8 3.9-1 1.7z"/></svg></span><span class="kd">Dia de serviço · 1 setor</span><span class="ct">LIS → FNC</span><span class="cs">PSV 2:35 de 12:30 · repouso cumprido</span>' + (extra || '')
+  + '<div class="ab"><div><b>06:40</b><span>parte</span></div><span class="dur">1 h 35</span><div style="text-align:right"><b>08:15</b><span>última chegada</span></div></div></div>'; }
+var MONTH = '<div class="slim"><div class="t"><b>Novembro</b><span>estimado · bruto</span></div><span class="money">15 498,17 €</span></div>';
+var F_PILLS = '<span class="pl ink">Folga</span><span class="pl">sábado 14</span>';
+var V_PILLS = '<span class="pl ink"><i></i>Amanhã</span><span class="pl">domingo 15</span>';
+var F_G = giant('17', 'h 25', 'livre', true), F_FX = [['amanhã', 'até lá'], ['17 h', 'de 60 em 7 dias']];
+var RAIN = ['rain', '<b>12 °C</b> · chuva em LIS às 05:40'], SUN = ['sun', '<b>14 °C</b> · céu limpo em LIS às 05:40'];
+// a véspera às 18:30 — a M1, igual nas três opções
+function vespera(){ return phone('18:30', mkTop(V_PILLS, 'Report às', giant('05:40', '', 'LIS', false), [['11 h 10', 'falta'], ['18:10', 'PSV até']]),
+  dayCard(wxl(RAIN[0], RAIN[1])) + MONTH + CREDIT); }
+// D1 — a linha da M1 no cartão do próximo serviço, sempre que é amanhã
+function D1(w){ return phone('12:14', mkTop(F_PILLS, 'Próximo serviço daqui a', F_G, F_FX), nextCard(wxl(w[0], w[1])) + MONTH + CREDIT); }
+// D2 — só quando pede atenção (com bom tempo não aparece nada)
+function D2(w, bad){ return phone('12:14', mkTop(F_PILLS, 'Próximo serviço daqui a', F_G, F_FX),
+  nextCard(bad ? wxl(w[0], '<b>2 °C</b> · nevoeiro em LIS às 05:40 · conta com mais tempo até ao aeroporto') : '') + MONTH + (bad ? CREDIT : '<div class="note">(com bom tempo não aparece nada)</div>')); }
+// D3 — um facto do topo (o 3.º), na folga
+function D3(w){ return phone('12:14', mkTop(F_PILLS, 'Próximo serviço daqui a', F_G, F_FX.concat([[w === RAIN ? '12 °C' : '14 °C', (w === RAIN ? 'chuva' : 'céu limpo') + ' · LIS às 05:40', w[0]]])), nextCard('') + MONTH + CREDIT); }
+var O = [
+  ['D1 · A linha da M1, no cartão do próximo serviço', true, 'A <b>mesma linha da véspera</b>, no mesmo cartão: o tempo da base <b>à hora do report</b>, sempre que o serviço é amanhã. Às 18:00 o cartão passa a "Dia de serviço" e a linha fica onde estava.',
+    [['Folga 12:14 · com chuva', D1(RAIN)], ['Folga 12:14 · com bom tempo', D1(SUN)], ['Véspera 18:30 · M1 (igual)', vespera()]]],
+  ['D2 · Só quando o tempo pede atenção', false, 'A linha <b>só aparece quando o tempo pode atrasar a ida para o aeroporto</b> (trovoada, neve, gelo, nevoeiro, chuva forte, vento forte), com uma frase do que fazer. Com bom tempo não aparece nada (o segundo telemóvel). Na véspera fica a M1, que mostra sempre.',
+    [['Folga 12:14 · nevoeiro de manhã', D2(RAIN, true)], ['Folga 12:14 · com bom tempo', D2(SUN, false)], ['Véspera 18:30 · M1 (igual)', vespera()]]],
+  ['D3 · Um facto do topo', false, 'O tempo é <b>o terceiro facto do topo</b>, ao lado do número, na folga. Às 18:00 sai do topo e passa para o cartão do dia (a M1).',
+    [['Folga 12:14 · com chuva', D3(RAIN)], ['Folga 12:14 · com bom tempo', D3(SUN)], ['Véspera 18:30 · M1 (salta)', vespera()]]]];
+document.getElementById('opts').innerHTML = O.map(function(o){
+  return '<div class="opt"><h3>' + o[0] + (o[1] ? '<span class="rec">RECOMENDO</span>' : '') + '</h3><p>' + o[2] + '</p><div class="row">'
+    + o[3].map(function(s){ return '<div><div class="cap">' + s[0] + '</div>' + s[1] + '</div>'; }).join('') + '</div></div>';
+}).join('');
+</script>
+</body>
+</html>

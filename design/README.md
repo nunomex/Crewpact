@@ -47,6 +47,36 @@ combinações de letra e 924 espaçamentos fora da escala (medido a 2026-11-02).
 - **`topo-frase.html`** (2026-11-14, **E2 escolhida e construída**) — a frase por cima do número estava colada (no iPhone ~5 pt dos pés do "p"/"g"/"ç" ao topo dos algarismos; ~20 por cima, até às pílulas): E1 +4 (9 pt) · E2 +8 (13 pt, recomendada) · E3 +12 (17 pt); simula a colocação do iOS (a linha do número abaixo da altura natural é cortada por cima). Imagem 3424; Mobbin Tonal, Wise.
 - **`topo-lado.html`** (2026-11-14, **L1 escolhida e construída** — substitui a H1 e os quadradinhos) — o Nuno não gosta dos factos por baixo e quer o lado a lado de antes, sem os tamanhos diferentes: L3 uma linha grande a 66 e a 2.ª pequena, factos à direita com os quadradinhos (topo 210; recomendada) · L1 como antes, tudo a 62 com o fio (236) · L2 cada aba no seu tamanho e a folha no mesmo sítio (279). Em todas, os Números só com o total no topo (os factos vão para o "De onde vem"). Medido: lado a lado com os factos de hoje em todas, 36. Imagens 3424/3440/3416; Mobbin Tonal, Copilot, Kit.
 - **`meteo-inicio.html`** (2026-11-14, **M1 escolhida e construída**) — a meteorologia no Início (hoje só na pernoita, a máxima de amanhã, sem crédito): M1 no cartão do sítio, à hora que conta (recomendada) · M2 um facto do topo (em voo já não cabe) · M3 um cartão do tempo; em todas, a previsão à hora que interessa, "°C" e o crédito "Meteorologia: MET Norway". Sem imagens do Nuno sobre tempo; Mobbin CLEAR, Air NZ, Fly Delta.
+- **`meteo-amanha.html`** (2026-11-14, **D3 escolhida**; o Nuno quer o tempo no topo em todos os estados — por esboçar) — o tempo de amanhã já na folga (de dia o Início está em "Folga" e a M1 só
+  aparece na véspera, às 18:00): D1 a linha da M1 no cartão do próximo serviço, sempre que é amanhã (recomendada; às 18:00 não se
+  mexe) · D2 só quando o tempo pede atenção (com bom tempo não aparece nada) · D3 um facto do topo (às 18:00 salta para o cartão).
+  Cada uma em três telemóveis: chuva, bom tempo, véspera. Imagens do Nuno 3412, 3424, 3419; Mobbin Apple Invites, AllTrails, Air NZ.
+- **`meteo-topo.html`** (2026-11-14, **a) escolhida**) — o tempo no topo em todos os estados com serviço (folga com o serviço amanhã,
+  véspera, antes do report, em voo, pernoita; sem serviço não há tempo), fora das linhas dos cartões (menos a cidade da pernoita à
+  chegada). A hora UTC (no máximo 3 factos): a) junto do sítio, por baixo da hora do report (recomendada) · b) o tempo cede o lugar
+  · c) o "PSV até" desce para o cartão. Medido: o topo mais largo ocupa 283 de 350 pt, o número fica a 62. Imagens do Nuno 3444,
+  3419, 3453; Mobbin Fly Delta, The Weather Channel, Air NZ.
+- **`cartoes-conteudo.html`** (2026-11-14, **o Nuno gostou da C2** e pediu melhor → `cartoes-c2.html`) — o que vai dentro dos cartões do Início (o Nuno: "bem visível e
+  compreensível"; gosta do cartão do voo do Detalhe, "quando vemos tudo"): C1 só arrumar (nome em cada número, durações "1 h 35",
+  o dia no Próximo serviço, a resposta inteira) · C2 o cartão do Detalhe no Início (nº do voo, cidades, a duração ao meio, a fila
+  report · fim · PSV, "per diem" junto do €; avisos com a resposta em grande; a escala que mudou com a hora antiga riscada;
+  recomendada) · C3 a C2 com a barra do PSV. Três telemóveis cada: folga, hoje, 3 setores. Imagens 3417, 3422, 3444, 3424, 3428,
+  3462; Mobbin Qantas, Fly Delta, American Airlines.
+- **`cartoes-c2.html`** (2026-11-14, **E3 escolhida** → `cartoes-e3.html`) — a C2, melhor (lida em três segundos: repetia o topo, não dizia o limite em
+  palavras, estava pela ordem do passageiro, e as durações das pernas eram ruído): E1 a C2 afinada · E2 a C2 com a barra do limite ·
+  E3 pela ordem do dia (report → parte → chega → fim numa linha, o limite em palavras; recomendada). Os números de cada cartão
+  MEDIDOS no esboço (E3: 8 em todos os dias; E1/E2 chegam a 11 com 3 setores).
+- **`cartoes-e3.html`** (2026-11-14, **V2 escolhida + a linha pequena com as cidades**) — a E3 afinada: os estados do limite pelas regras que já existem (dentro sem cor
+  · incerto neutro tracejado com as duas pontas e o motivo · acima com o ✕ e quanto passa · sem report a linha começa na partida) e
+  os dias de vários setores: V1 as escalas no título · V2 cada voo um traço na linha com os aeroportos por cima (recomendada) · V3 as
+  escalas numa linha por baixo.
+- **`cartoes-limite.html`** (2026-11-14, **L2 escolhida e construída**) — o limite num cartão à parte? (o Nuno) L1 sempre à parte · L2 à parte só
+  quando pede atenção, dentro = uma linha discreta no cartão do voo (recomendada) · L3 igual, dentro = um selo. O cartão à parte É o
+  aviso que já existe ('ftl'), escrito com a resposta em grande — sem o "acima" duas vezes. Alturas medidas: L2 dentro 341 pt, L1 394.
+- **`estados-topo.html`** (2026-11-14, por escolher) — o estado em destaque no Início (o Nuno: "deviam estar mais destacados"):
+  S1 a pílula maior com ícone · S2 o estado como título grande (34 pt; recomendada; o topo cresce 54 pt, de 259 para 313) · S3 a
+  pílula na cor do tipo (mapa B; folga/férias/baixa a preto). O topo todo a cor continua recusado. Imagens 3424, 3406, 3444, 3407;
+  Mobbin Oura, American Airlines, Slack.
 - **`topo-factos-2.html`** (2026-11-14, A construída e depois **retirada com a L1** — os quadradinhos não cabem ao lado) — a F3 nos casos difíceis, a 375 (três factos com a hora UTC, a assistência, antes de ligar a escala, a Escala com 4 999,99 €, os Números com +55 512,34 €): A o quadradinho (32) só onde há tipo (recomendada) · B o quadradinho por cima do valor, em todos (o topo cresce 34) · C a cor no fio (4). Imagens 3409/3431/3412/3442/3424; Mobbin Kit, Satispay, Shopee.
 - **`botao-simulacao.html`** (2026-11-14, **T2 escolhida e construída**) — com a regra nova (à mão só na Simulação), o ＋ abre a Simulação: T1 o redondo com o ícone da Simulação · T2 o botão escrito "Simular" (recomendada; a 375 cada aba fica com 57 pt) · T3 uma aba ao centro da cápsula. Mobbin: Subway, Otter, Preply, Tubi; nenhuma imagem do Nuno para barras.
 - **`prova-campos.html`** (2026-11-14, **PA escolhida e construída**) — a Prova como o Hotel F2 (a regra proposta: nas folhas, campos à F2; nos ecrãs, cartões): PA tudo em campos · PB os curtos lado a lado (imagem 3460; recomendada) · PC campos e a regra num cartão. Com o Hotel F2 ao lado.

@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · O limite à parte</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* O LIMITE NUM CARTÃO À PARTE? (2026-11-14). O Nuno escolheu a V2 e a linha pequena com as cidades (design/cartoes-e3.html) e
+   perguntou: "os estados do limite, mete num card à parte, que achas?" A app já tem o aviso vermelho quando o PSV passa o limite
+   (id 'ftl' no Início): com a linha dentro do cartão do voo, o "acima" aparecia duas vezes. L1 sempre à parte · L2 à parte só
+   quando pede atenção, dentro = uma linha discreta no cartão do voo (recomendada) · L3 igual, dentro = um selo. Mapa B: dentro sem
+   cor, incerto neutro tracejado com as duas pontas, acima vermelho com ✕. Dados de TESTE (o OPO → LIS do iPhone do Nuno; o
+   incerto e o acima são inventados). Imagens do Nuno: 3424, 3428, 3462. Mobbin: AllTrails, Qantas. */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+.lead{max-width:940px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)} .lead a{color:var(--pfg)}
+.opt{display:flex;flex-direction:column;gap:10px}
+.opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:var(--muted);max-width:900px} .opt > p b{color:var(--pfg)}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.row{display:flex;flex-wrap:wrap;gap:20px}
+.cap{font-size:12px;font-weight:700;color:var(--muted);margin:0 0 6px 6px;max-width:406px;min-height:18px}
+.cap b{color:var(--pfg)}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:940px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card2 li{font-size:13px;line-height:1.5;color:var(--muted)} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:var(--pfg)}
+
+.ph{display:flex;flex-direction:column;width:406px;height:900px;border:8px solid #04060A;border-radius:52px 52px 0 0;border-bottom:0;overflow:hidden;position:relative;background:#E3E1DB;color:#141414;max-width:100%}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.topA{padding:0 20px 28px;flex:none}
+.pills{display:flex;align-items:center;gap:8px;min-height:68px;padding:8px 0 16px}
+.pl{height:38px;padding:0 16px;border-radius:19px;border:1.5px solid #141414;display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:13px;white-space:nowrap}
+.pl.ink{background:#141414;color:#E3E1DB} .pl.ink i{width:7px;height:7px;border-radius:4px;background:#F0C24A;display:block}
+.ml{margin-left:auto}
+.what{font-weight:500;font-size:15px;line-height:20px;color:#3A3A36}
+.hero{display:flex;align-items:stretch;gap:16px;margin-top:12px}
+.g{font-weight:700;white-space:nowrap;flex:none}
+.g .l1,.g .l2{display:flex;align-items:baseline}
+.g small{font-size:34px;letter-spacing:-1px;margin-left:6px}
+.grey{color:rgba(20,20,20,.5)}
+.side{border-left:1.5px solid #141414;padding-left:16px;display:flex;flex-direction:column;justify-content:center;gap:12px;min-width:0}
+.fv{display:flex;align-items:center;gap:4px;font-weight:700;font-size:20px;line-height:22px;white-space:nowrap}
+.fl{display:block;font-weight:500;font-size:11px;line-height:15px;color:#3A3A36;white-space:nowrap}
+.ic{display:block;fill:currentColor;flex:none}
+.sheetN{flex:1;background:#fff;border-radius:32px 32px 0 0;padding:12px 12px 0;display:flex;flex-direction:column;gap:8px}
+/* os cartões — tamanhos do TXT3 */
+.cd{border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:10px;position:relative}
+.kd{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8)}
+.ct{font-weight:800;font-size:22px;line-height:26px;letter-spacing:-.4px}
+.cs{font-weight:500;font-size:12px;line-height:16px;color:rgba(20,20,20,.82)}
+.cs b{font-weight:800;color:#141414}
+.ab{display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
+.ab b{display:block;font-weight:700;font-size:22px;line-height:24px} .ab span{display:block;font-weight:500;font-size:11px;line-height:15px;color:rgba(20,20,20,.82)}
+.dur{background:rgba(255,255,255,.75);border-radius:14px;padding:5px 10px;font-weight:700;font-size:12px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+.go{position:absolute;right:14px;top:14px;width:36px;height:36px;border-radius:18px;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px}
+.chip{background:#fff;color:#0B6E43;border-radius:14px;padding:5px 10px;font-weight:800;font-size:14px;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.55);border-radius:8px;padding:3px 8px;font-weight:800;font-size:12px;letter-spacing:.5px}
+.slim{border-radius:20px;padding:13px 16px;display:flex;align-items:center;gap:12px;background:#F1EFEA;position:relative}
+.slim .t{flex:1;min-width:0} .slim .t > b{display:block;font-weight:800;font-size:16px;line-height:20px} .slim .t > span{display:block;font-weight:500;font-size:12px;line-height:16px;color:rgba(20,20,20,.78)}
+.slim .k{display:block;font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8);margin-bottom:2px}
+.mark{width:30px;height:30px;border-radius:15px;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex:none}
+.goS{width:34px;height:34px;border-radius:17px;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex:none}
+.money{font-weight:800;font-size:20px;white-space:nowrap}
+.credit{font-weight:500;font-size:12px;color:#5E5E57;padding:2px 6px}
+/* a perna (do Detalhe) */
+.leg{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px}
+.leg .tm{font-weight:700;font-size:22px;line-height:24px}
+.leg .mid{display:flex;align-items:center;gap:6px}
+.leg .mid i{flex:1;height:1.5px;background:rgba(20,20,20,.45);display:block}
+.legc{display:flex;justify-content:space-between;font-weight:600;font-size:12px;color:rgba(20,20,20,.82);margin-top:-6px}
+.legs3{display:flex;flex-direction:column;gap:6px}
+.l3{display:grid;grid-template-columns:44px 34px 1fr 34px 44px;align-items:center;gap:6px;font-size:13px}
+.l3 b{font-weight:800} .l3 .c{font-weight:700;color:rgba(20,20,20,.75)} .l3 .r{text-align:right}
+.l3 .mid{display:flex;align-items:center;gap:5px;font-weight:700;font-size:11px;color:rgba(20,20,20,.75)} .l3 .mid i{flex:1;height:1.5px;background:rgba(20,20,20,.4);display:block}
+/* a fila de dados com rótulo (Qantas · American Airlines) */
+.frow{display:grid;gap:8px;border-top:1px solid rgba(20,20,20,.18);padding-top:10px}
+.frow div{min-width:0} .frow span{display:block;font-weight:800;font-size:10px;letter-spacing:.7px;text-transform:uppercase;color:rgba(20,20,20,.72)} .frow b{display:block;font-weight:700;font-size:15px;line-height:20px;white-space:nowrap}
+/* a barra do PSV (Limites do Detalhe · 3428/3462) */
+.bar{display:flex;flex-direction:column;gap:6px;border-top:1px solid rgba(20,20,20,.18);padding-top:10px}
+.bar .h{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;font-weight:600;color:rgba(20,20,20,.82)} .bar .h b{font-weight:800;font-size:15px;color:#141414}
+.bar .t{height:8px;border-radius:4px;background:rgba(20,20,20,.15);overflow:hidden} .bar .t i{display:block;height:100%;background:#141414;border-radius:4px}
+.bar .e{display:flex;justify-content:space-between;font-size:11px;font-weight:600;color:rgba(20,20,20,.75)}
+/* extra: a linha do dia (E3) e a barra com o veredicto (E2) */
+.tl{position:relative;margin-top:4px}
+.tl .ln{position:absolute;left:6px;right:6px;top:6px;height:2px;background:rgba(20,20,20,.35)}
+.tl .fl2{position:absolute;top:5px;height:4px;background:#141414;border-radius:2px}
+.tl .pts{position:relative;display:grid;grid-template-columns:repeat(4,1fr)}
+.tl .pt{display:flex;flex-direction:column;gap:2px}
+.tl .pt:nth-child(2),.tl .pt:nth-child(3){align-items:center;text-align:center}
+.tl .pt:last-child{align-items:flex-end;text-align:right}
+.tl .dot{width:14px;height:14px;border-radius:7px;background:#141414;border:3px solid #7EBDF4;box-sizing:border-box}
+.tl .dot.o{background:#7EBDF4;border-color:#141414}
+.tl b{font-weight:700;font-size:20px;line-height:22px;margin-top:4px}
+.tl span{font-weight:600;font-size:11px;line-height:14px;color:rgba(20,20,20,.82)}
+.verd{display:flex;justify-content:space-between;align-items:baseline;gap:8px;border-top:1px solid rgba(20,20,20,.18);padding-top:10px;font-size:12px;font-weight:600;color:rgba(20,20,20,.82)}
+.verd b{font-weight:800;font-size:15px;color:#141414}
+.chain{font-weight:700;font-size:13px;color:rgba(20,20,20,.82)}
+.count{font-size:11px;font-weight:800;color:#8A887F;padding:0 6px}
+/* extra da E3 afinada */
+.verdbox{border-top:1px solid rgba(20,20,20,.18);padding-top:10px;display:flex;flex-direction:column;gap:2px;font-size:12px;font-weight:600;color:rgba(20,20,20,.82)}
+.verdbox .r1{display:flex;justify-content:space-between;align-items:center;gap:8px;white-space:nowrap}
+.verdbox .r1 > b{font-weight:800;font-size:15px;color:#141414;display:flex;align-items:center;gap:6px} .verdbox .r1 span b{font-weight:800;font-size:15px;color:#141414}
+.verdbox.unc{border-top:0;padding:8px 10px;border:1.5px dashed rgba(20,20,20,.45);border-radius:12px;background:rgba(255,255,255,.25)}
+.xm{width:20px;height:20px;border-radius:10px;background:#EC7A6C;color:#141414;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:11px}
+.tl .codes{position:relative;height:14px;margin-bottom:2px}
+.tl .codes span{position:absolute;transform:translateX(-50%);font-weight:800;font-size:10px;letter-spacing:.4px;color:rgba(20,20,20,.8)}
+.tl .seg{position:absolute;top:5px;height:4px;background:#141414;border-radius:2px}
+.route{display:flex;align-items:center;gap:5px;font-weight:800;font-size:12px;color:rgba(20,20,20,.85);flex-wrap:wrap}
+.route i{display:inline-flex}
+/* extra: o cartão do limite à parte */
+.sheet{width:390px;max-width:100%;background:#fff;border-radius:32px;padding:12px;display:flex;flex-direction:column;gap:8px;border:1px solid #D6D4CD}
+.city{font-weight:600;font-size:12px;color:rgba(20,20,20,.82);margin-top:-8px}
+.quiet{display:flex;justify-content:space-between;gap:8px;border-top:1px solid rgba(20,20,20,.18);padding-top:8px;font-size:12px;font-weight:600;color:rgba(20,20,20,.82)}
+.quiet b{font-weight:800;color:#141414}
+.okchip{display:inline-flex;align-items:center;background:rgba(255,255,255,.55);border-radius:8px;padding:3px 8px;font-weight:800;font-size:11px;letter-spacing:.3px}
+.lim{border-radius:20px;padding:13px 16px;display:flex;align-items:center;gap:12px}
+.lim .t{flex:1;min-width:0}
+.lim .k{display:block;font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8);margin-bottom:2px}
+.lim b{display:block;font-weight:800;font-size:16px;line-height:20px}
+.lim span.s{display:block;font-weight:500;font-size:12px;line-height:16px;color:rgba(20,20,20,.78)}
+.lim.unc{border:1.5px dashed rgba(20,20,20,.45);background:#F7F6F2}
+.hcount{font-size:11px;font-weight:800;color:#8A887F;padding:4px 6px 0}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>O limite num cartão à parte?</h1>
+    <p>Pediste para pôr os estados do limite num cartão à parte. Três maneiras, cada uma nos três estados: <b>dentro do limite</b>, <b>incerto</b> e <b>acima do limite</b>. O cartão do voo já leva a V2 (nos dias de vários setores) e a <b>linha pequena com as cidades</b> ("Porto → Lisboa"), que escolheste. Os cartões que pedem atenção vão <b>por cima</b> do cartão do voo, como os avisos de hoje. Por baixo de cada folha, a altura dos cartões, medida.</p>
+    <p><b>Uma coisa que a app já faz:</b> quando o PSV passa o limite, aparece em cima um aviso vermelho ("Dentro dos limites?"). Com a linha do limite dentro do cartão do voo (a E3), o "acima do limite" aparecia duas vezes. Um cartão à parte acaba com isso: <b>passa a ser esse aviso</b>, escrito com a resposta em grande. <b>As tuas imagens:</b> 3424 (o chip de estado no cartão, na L3), 3428 e 3462 (o limite com "faltam"). <b>Mobbin:</b> <a href="https://mobbin.com/screens/70abd958-8899-425b-992f-9d6e6b6ab872">AllTrails</a> (o aviso à parte, só quando importa), <a href="https://mobbin.com/screens/dfb983b1-79b0-4908-9d34-855e8fe8234c">Qantas</a> (o voo sem avisos misturados).</p>
+  </div>
+  <div id="opts" style="display:flex;flex-direction:column;gap:36px"></div>
+  <div class="card2"><h3>A minha recomendação: L2</h3><ul>
+    <li><b>L2</b>: o limite tem cartão próprio <b>só quando pede atenção</b>. O incerto é um cartão neutro e tracejado, com as duas pontas e o motivo; o acima do limite é vermelho, com o ✕ e quanto passa. Quando está dentro, que é quase sempre, fica <b>uma linha discreta</b> no fundo do cartão do voo ("Dentro do limite · margem 10 h 25"). A boa notícia não ocupa um cartão, e o aviso salta à vista quando é preciso.</li>
+    <li><b>L1</b> (a tua ideia à letra): o cartão do limite está <b>sempre</b>. O sítio é sempre o mesmo, mas quase todos os dias é um cartão inteiro para dizer que está tudo bem, e a folga, que já pede deslizar, fica mais comprida.</li>
+    <li><b>L3</b> é como a L2, mas quando está dentro fica <b>um selo pequeno</b> ao lado do número do voo ("dentro do limite"). É a mais curta, mas a margem deixa de se ver (só no Detalhe).</li></ul></div>
+</div>
+<script>
+var P = {
+  plane:'<path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>',
+  share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.7 15.4 6.8l1 1.7-6.8 3.9zm0 2.6 1-1.7 6.8 3.9-1 1.7z"/>' };
+function ic(n, s, st){ return '<svg class="ic" width="' + s + '" height="' + s + '" viewBox="0 0 24 24"' + (st ? ' style="' + st + '"' : '') + '>' + P[n] + '</svg>'; }
+var BLUE = '#7EBDF4', RED = '#EC7A6C';
+function tl(pts){ return '<div class="tl"><div style="position:relative"><span class="ln"></span><span class="seg" style="left:37.5%;right:37.5%"></span><div class="pts" style="grid-template-columns:repeat(4,1fr)">'
+  + pts.map(function(x, i){ return '<div class="pt" style="' + (i === 0 ? '' : i === 3 ? 'align-items:flex-end;text-align:right' : 'align-items:center;text-align:center') + '"><span class="dot' + (x[2] ? ' o' : '') + '"></span><b>' + x[0] + '</b><span>' + x[1] + '</span></div>'; }).join('') + '</div></div></div>'; }
+// o cartão do voo (E3 + a linha das cidades); `extra` = o que vai no fundo (L2) · `chip` = o selo ao lado do nº do voo (L3)
+function flight(late, extra, chip){
+  var pts = late ? [['15:15', 'report', 1], ['16:00', 'parte'], ['04:00', 'chega'], ['04:30', 'fim', 1]] : [['15:15', 'report', 1], ['16:00', 'parte'], ['16:50', 'chega'], ['17:20', 'fim', 1]];
+  return '<div class="cd" style="background:' + BLUE + '"><span class="kd">Dia de serviço · 1 setor</span>'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:-4px"><span class="ct">OPO → LIS</span><span class="go" style="position:static;flex:none">' + ic('share', 16) + '</span></div>'
+    + '<span class="city">Porto → Lisboa</span>'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:-4px"><span style="display:flex;gap:6px;align-items:center"><span class="badge">' + ic('plane', 12) + 'EZY1010</span>' + (chip || '') + '</span>'
+    + '<span style="display:flex;align-items:center;gap:6px;font-weight:600;font-size:11px;color:rgba(20,20,20,.8)">per diem <span class="chip">+154,51 €</span></span></div>'
+    + tl(pts) + (extra || '') + '</div>'; }
+var QUIET = '<div class="quiet"><span><b>Dentro do limite</b> · PSV 1 h 35 de 12 h</span><span>margem <b>10 h 25</b></span></div>';
+var OKCHIP = '<span class="okchip">dentro do limite</span>';
+function limOk(){ return '<div class="lim" style="background:#F1EFEA"><div class="t"><span class="k">O limite de hoje</span><b>Dentro do limite</b><span class="s">PSV 1 h 35 de 12 h · margem 10 h 25</span></div><span class="goS">›</span></div>'; }
+function limUnc(){ return '<div class="lim unc"><div class="t"><span class="k">O limite de hoje</span><b>Incerto · margem 7 h 25 a 10 h 25</b><span class="s">PSV 1 h 35 de 9 h a 12 h · depende de o voo te ter sido dado durante a assistência</span></div><span class="goS">›</span></div>'; }
+function limOver(){ return '<div class="lim" style="background:' + RED + '"><span class="mark">✕</span><div class="t"><span class="k">O limite de hoje</span><b>Acima do limite · 0 h 45 a mais</b><span class="s">PSV 12 h 45 de 12 h, com o atraso de hoje · confirma com a companhia</span></div><span class="goS">›</span></div>'; }
+var NEXT = '<div class="slim" style="background:' + BLUE + '"><div class="t"><b>LIS → FNC</b><span>domingo 15 · report 05:40</span></div><span class="goS">›</span></div>';
+function sheet(inner){ return '<div class="sheet">' + inner + '</div><div class="hcount"></div>'; }
+var O = [
+  ['L1 · Sempre num cartão à parte', false, 'O limite tem <b>sempre</b> o seu cartão, por baixo do do voo quando está tudo bem, por cima quando pede atenção.',
+    [['<b>Dentro do limite</b>', sheet(flight(false) + limOk() + NEXT)], ['<b>Incerto</b>', sheet(limUnc() + flight(false) + NEXT)], ['<b>Acima do limite</b>', sheet(limOver() + flight(true) + NEXT)]]],
+  ['L2 · À parte só quando pede atenção', true, 'Dentro do limite: <b>uma linha discreta</b> no fundo do cartão do voo. Incerto ou acima: <b>um cartão próprio, por cima</b>, e o cartão do voo fica sem a linha.',
+    [['<b>Dentro do limite</b>', sheet(flight(false, QUIET) + NEXT)], ['<b>Incerto</b>', sheet(limUnc() + flight(false) + NEXT)], ['<b>Acima do limite</b>', sheet(limOver() + flight(true) + NEXT)]]],
+  ['L3 · À parte só quando pede atenção, um selo quando está dentro', false, 'Como a L2, mas dentro do limite fica <b>só um selo</b> ao lado do número do voo.',
+    [['<b>Dentro do limite</b>', sheet(flight(false, '', OKCHIP) + NEXT)], ['<b>Incerto</b>', sheet(limUnc() + flight(false) + NEXT)], ['<b>Acima do limite</b>', sheet(limOver() + flight(true) + NEXT)]]]];
+document.getElementById('opts').innerHTML = O.map(function(o){
+  return '<div class="opt"><h3>' + o[0] + (o[1] ? '<span class="rec">RECOMENDO</span>' : '') + '</h3><p>' + o[2] + '</p><div class="row">'
+    + o[3].map(function(s){ return '<div><div class="cap">' + s[0] + '</div>' + s[1] + '</div>'; }).join('') + '</div></div>';
+}).join('');
+document.fonts.ready.then(function(){ document.querySelectorAll('.sheet').forEach(function(sh){ sh.nextElementSibling.textContent = 'os cartões ocupam ' + Math.round(sh.getBoundingClientRect().height) + ' pt'; }); });
+</script>
+</body>
+</html>

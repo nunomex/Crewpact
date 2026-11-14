@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · A C2, melhor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* A C2, MELHOR (2026-11-14). O Nuno gostou da C2 de design/cartoes-conteudo.html (o cartão do voo do Detalhe no Início) e perguntou:
+   "não dá para fazer melhor? combinações? é de fácil compreensão? percebe-se logo tudo?" Lida em três segundos, a C2 tem quatro
+   atrasos: repete o topo (o report); não diz em palavras se está dentro do limite ("1 h 35 / 12 h"); está pela ordem do passageiro
+   (partida e chegada em grande) e não pela do tripulante (report → fim); no dia de 3 setores a duração de cada perna é ruído.
+   E1 a C2 afinada · E2 a C2 com a barra do limite (C2 + C3) · E3 pela ordem do dia (a régua de 3420). Em todas: nada repete o topo,
+   o limite em palavras, "de" em vez de "/". Por baixo de cada telemóvel, os números do cartão do voo, MEDIDOS no texto.
+   Dados de TESTE (os do iPhone do Nuno; o dia de 3 setores é inventado). Imagens do Nuno: 3417, 3422, 3420, 3428, 3462, 3424.
+   Mobbin: Qantas, Fly Delta, American Airlines. */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+.lead{max-width:940px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)} .lead a{color:var(--pfg)}
+.opt{display:flex;flex-direction:column;gap:10px}
+.opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:var(--muted);max-width:900px} .opt > p b{color:var(--pfg)}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.row{display:flex;flex-wrap:wrap;gap:20px}
+.cap{font-size:12px;font-weight:700;color:var(--muted);margin:0 0 6px 6px;max-width:406px;min-height:18px}
+.cap b{color:var(--pfg)}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:940px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card2 li{font-size:13px;line-height:1.5;color:var(--muted)} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:var(--pfg)}
+
+.ph{display:flex;flex-direction:column;width:406px;height:900px;border:8px solid #04060A;border-radius:52px 52px 0 0;border-bottom:0;overflow:hidden;position:relative;background:#E3E1DB;color:#141414;max-width:100%}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.topA{padding:0 20px 28px;flex:none}
+.pills{display:flex;align-items:center;gap:8px;min-height:68px;padding:8px 0 16px}
+.pl{height:38px;padding:0 16px;border-radius:19px;border:1.5px solid #141414;display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:13px;white-space:nowrap}
+.pl.ink{background:#141414;color:#E3E1DB} .pl.ink i{width:7px;height:7px;border-radius:4px;background:#F0C24A;display:block}
+.ml{margin-left:auto}
+.what{font-weight:500;font-size:15px;line-height:20px;color:#3A3A36}
+.hero{display:flex;align-items:stretch;gap:16px;margin-top:12px}
+.g{font-weight:700;white-space:nowrap;flex:none}
+.g .l1,.g .l2{display:flex;align-items:baseline}
+.g small{font-size:34px;letter-spacing:-1px;margin-left:6px}
+.grey{color:rgba(20,20,20,.5)}
+.side{border-left:1.5px solid #141414;padding-left:16px;display:flex;flex-direction:column;justify-content:center;gap:12px;min-width:0}
+.fv{display:flex;align-items:center;gap:4px;font-weight:700;font-size:20px;line-height:22px;white-space:nowrap}
+.fl{display:block;font-weight:500;font-size:11px;line-height:15px;color:#3A3A36;white-space:nowrap}
+.ic{display:block;fill:currentColor;flex:none}
+.sheetN{flex:1;background:#fff;border-radius:32px 32px 0 0;padding:12px 12px 0;display:flex;flex-direction:column;gap:8px}
+/* os cartões — tamanhos do TXT3 */
+.cd{border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:10px;position:relative}
+.kd{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8)}
+.ct{font-weight:800;font-size:22px;line-height:26px;letter-spacing:-.4px}
+.cs{font-weight:500;font-size:12px;line-height:16px;color:rgba(20,20,20,.82)}
+.cs b{font-weight:800;color:#141414}
+.ab{display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
+.ab b{display:block;font-weight:700;font-size:22px;line-height:24px} .ab span{display:block;font-weight:500;font-size:11px;line-height:15px;color:rgba(20,20,20,.82)}
+.dur{background:rgba(255,255,255,.75);border-radius:14px;padding:5px 10px;font-weight:700;font-size:12px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+.go{position:absolute;right:14px;top:14px;width:36px;height:36px;border-radius:18px;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px}
+.chip{background:#fff;color:#0B6E43;border-radius:14px;padding:5px 10px;font-weight:800;font-size:14px;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.55);border-radius:8px;padding:3px 8px;font-weight:800;font-size:12px;letter-spacing:.5px}
+.slim{border-radius:20px;padding:13px 16px;display:flex;align-items:center;gap:12px;background:#F1EFEA;position:relative}
+.slim .t{flex:1;min-width:0} .slim .t > b{display:block;font-weight:800;font-size:16px;line-height:20px} .slim .t > span{display:block;font-weight:500;font-size:12px;line-height:16px;color:rgba(20,20,20,.78)}
+.slim .k{display:block;font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8);margin-bottom:2px}
+.mark{width:30px;height:30px;border-radius:15px;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex:none}
+.goS{width:34px;height:34px;border-radius:17px;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex:none}
+.money{font-weight:800;font-size:20px;white-space:nowrap}
+.credit{font-weight:500;font-size:12px;color:#5E5E57;padding:2px 6px}
+/* a perna (do Detalhe) */
+.leg{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px}
+.leg .tm{font-weight:700;font-size:22px;line-height:24px}
+.leg .mid{display:flex;align-items:center;gap:6px}
+.leg .mid i{flex:1;height:1.5px;background:rgba(20,20,20,.45);display:block}
+.legc{display:flex;justify-content:space-between;font-weight:600;font-size:12px;color:rgba(20,20,20,.82);margin-top:-6px}
+.legs3{display:flex;flex-direction:column;gap:6px}
+.l3{display:grid;grid-template-columns:44px 34px 1fr 34px 44px;align-items:center;gap:6px;font-size:13px}
+.l3 b{font-weight:800} .l3 .c{font-weight:700;color:rgba(20,20,20,.75)} .l3 .r{text-align:right}
+.l3 .mid{display:flex;align-items:center;gap:5px;font-weight:700;font-size:11px;color:rgba(20,20,20,.75)} .l3 .mid i{flex:1;height:1.5px;background:rgba(20,20,20,.4);display:block}
+/* a fila de dados com rótulo (Qantas · American Airlines) */
+.frow{display:grid;gap:8px;border-top:1px solid rgba(20,20,20,.18);padding-top:10px}
+.frow div{min-width:0} .frow span{display:block;font-weight:800;font-size:10px;letter-spacing:.7px;text-transform:uppercase;color:rgba(20,20,20,.72)} .frow b{display:block;font-weight:700;font-size:15px;line-height:20px;white-space:nowrap}
+/* a barra do PSV (Limites do Detalhe · 3428/3462) */
+.bar{display:flex;flex-direction:column;gap:6px;border-top:1px solid rgba(20,20,20,.18);padding-top:10px}
+.bar .h{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;font-weight:600;color:rgba(20,20,20,.82)} .bar .h b{font-weight:800;font-size:15px;color:#141414}
+.bar .t{height:8px;border-radius:4px;background:rgba(20,20,20,.15);overflow:hidden} .bar .t i{display:block;height:100%;background:#141414;border-radius:4px}
+.bar .e{display:flex;justify-content:space-between;font-size:11px;font-weight:600;color:rgba(20,20,20,.75)}
+/* extra: a linha do dia (E3) e a barra com o veredicto (E2) */
+.tl{position:relative;margin-top:4px}
+.tl .ln{position:absolute;left:6px;right:6px;top:6px;height:2px;background:rgba(20,20,20,.35)}
+.tl .fl2{position:absolute;top:5px;height:4px;background:#141414;border-radius:2px}
+.tl .pts{position:relative;display:grid;grid-template-columns:repeat(4,1fr)}
+.tl .pt{display:flex;flex-direction:column;gap:2px}
+.tl .pt:nth-child(2),.tl .pt:nth-child(3){align-items:center;text-align:center}
+.tl .pt:last-child{align-items:flex-end;text-align:right}
+.tl .dot{width:14px;height:14px;border-radius:7px;background:#141414;border:3px solid #7EBDF4;box-sizing:border-box}
+.tl .dot.o{background:#7EBDF4;border-color:#141414}
+.tl b{font-weight:700;font-size:20px;line-height:22px;margin-top:4px}
+.tl span{font-weight:600;font-size:11px;line-height:14px;color:rgba(20,20,20,.82)}
+.verd{display:flex;justify-content:space-between;align-items:baseline;gap:8px;border-top:1px solid rgba(20,20,20,.18);padding-top:10px;font-size:12px;font-weight:600;color:rgba(20,20,20,.82)}
+.verd b{font-weight:800;font-size:15px;color:#141414}
+.chain{font-weight:700;font-size:13px;color:rgba(20,20,20,.82)}
+.count{font-size:11px;font-weight:800;color:#8A887F;padding:0 6px}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>A C2, melhor</h1>
+    <p>A C2 é boa, mas lida em três segundos tem quatro coisas que atrasam: <b>repete o topo</b> (a fila diz "REPORT 15:15" e o topo já diz "Report às 15:15"); <b>não diz em palavras se está dentro do limite</b> ("1 h 35 / 12 h" obriga a fazer a conta, e a barra "/" não se lê); está <b>pela ordem do passageiro</b> (as horas grandes são a partida e a chegada, mas o teu dia começa no report e acaba no fim do serviço); e, no dia de 3 setores, <b>a duração de cada perna é ruído</b>.</p>
+    <p>Três maneiras de a melhorar, todas a partir da C2. <b>Em todas:</b> nada repete o topo (o que o topo diz, o cartão não diz — menos o report no princípio da linha da E3, que é o seu ponto de partida); o limite diz-se em palavras ("dentro do limite · margem 10 h 25"); "1 h 35 de 12 h" em vez de "/"; os avisos e a escala que mudou ficam como na C2. Por baixo de cada telemóvel, <b>quantos números tem o cartão do voo</b>: menos números, leitura mais rápida. <b>As tuas imagens:</b> 3417 e 3422 (a perna), 3420 (a régua do dia, na E3), 3428 e 3462 (a barra com "faltam", na E2), 3424 (o rótulo em cima, o valor em baixo). <b>Mobbin:</b> <a href="https://mobbin.com/screens/dfb983b1-79b0-4908-9d34-855e8fe8234c">Qantas</a>, <a href="https://mobbin.com/screens/e5fd83bd-2df5-4871-ad01-9005def50918">Fly Delta</a>, <a href="https://mobbin.com/screens/8c235e1a-f757-49a2-a732-a3f2750c1fff">American Airlines</a>.</p>
+  </div>
+  <div id="opts" style="display:flex;flex-direction:column;gap:36px"></div>
+  <div class="card2"><h3>A minha recomendação: E3</h3><ul>
+    <li><b>E3</b> lê-se <b>pela ordem do teu dia</b>, da esquerda para a direita: report, parte, chega, fim. A linha preta é o voo, e o limite diz-se por baixo, em palavras. Num dia de 3 setores fica igual, com os sítios todos no título ("LIS → FNC → LIS → LGW"). É a única em que os números <b>vêm pela ordem em que acontecem</b>, e a única em que <b>não aumentam com os setores</b> (8 em todos os dias; na E1 e na E2 o dia de 3 setores chega a 11). O número do voo e as cidades continuam lá.</li>
+    <li><b>E1</b> é a C2 corrigida: igual ao que gostaste, sem repetir o topo e com o limite em palavras. É a mudança mais pequena, mas continua pela ordem do passageiro.</li>
+    <li><b>E2</b> junta a C2 e a C3: a barra mostra quanto do limite o dia usa. Vê-se de relance se há margem, mas o cartão fica mais alto.</li>
+    <li><b>Ao tocar</b>, em todas, abre o Detalhe com tudo (as pernas, os limites, a Prova). O cartão do Início fica com o que se lê num relance.</li></ul></div>
+</div>
+<script>
+var P = {
+  rain:'<path d="M7 15a5 5 0 0 1-.6-10A6 6 0 0 1 18 7a4 4 0 0 1-.5 8H7zm1 2 1.6 1-1.4 3-1.6-1zm4.5 0 1.6 1-1.4 3-1.6-1zm4.5 0 1.6 1-1.4 3-1.6-1z"/>',
+  fog:'<path d="M3 8h14v1.8H3zm4 4h14v1.8H7zm-4 4h14v1.8H3z"/>',
+  plane:'<path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>',
+  share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.7 15.4 6.8l1 1.7-6.8 3.9zm0 2.6 1-1.7 6.8 3.9-1 1.7z"/>' };
+function ic(n, s, st){ return '<svg class="ic" width="' + s + '" height="' + s + '" viewBox="0 0 24 24"' + (st ? ' style="' + st + '"' : '') + '>' + P[n] + '</svg>'; }
+var CREDIT = '<div class="credit">Meteorologia: MET Norway</div>';
+var Z = 62, ST = 'font-size:' + Z + 'px;line-height:' + Z + 'px;letter-spacing:' + (Z * -0.046).toFixed(2) + 'px';
+function giant(l1, unit, l2, grey){ return '<div class="g"><div class="l1"><span style="' + ST + '">' + l1 + '</span>' + (unit ? '<small>' + unit + '</small>' : '') + '</div><div class="l2 ' + (grey ? 'grey' : '') + '"><span style="' + ST + '">' + l2 + '</span></div></div>'; }
+function side(fx){ return '<div class="side">' + fx.map(function(f){ return '<div><span class="fv">' + (f[2] ? ic(f[2], 18) : '') + f[0] + '</span><span class="fl">' + f[1] + '</span></div>'; }).join('') + '</div>'; }
+function mkTop(pills, what, g, fx){ return '<div class="topA"><div class="pills">' + pills + '<span class="pl ml">Notificações</span></div><div class="what">' + what + '</div><div class="hero">' + g + side(fx) + '</div></div>'; }
+function phone(clock, topH, sheet){ return '<div class="ph"><div class="status"><span>' + clock + '</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>' + topH + '<div class="sheetN">' + sheet + '</div></div>'; }
+var BLUE = '#7EBDF4', GREEN = '#B4C2A2', ORANGE = '#F0854A', RED = '#EC7A6C';
+var MONTH = '<div class="slim"><div class="t"><b>Novembro</b><span>estimado · bruto</span></div><span class="money">15 498,17 €</span></div>';
+var NS = '<div class="slim" style="background:' + GREEN + '"><div class="t"><b>Pernoita em Londres</b><span>fim de serviço 14:20 · Hotel do aeroporto</span></div><span class="chip">+45,40 €</span></div>';
+var NEXT_SLIM = '<div class="slim" style="background:' + BLUE + '"><div class="t"><b>LIS → FNC</b><span>domingo 15 · report 05:40</span></div><span class="goS">›</span></div>';
+var REST = '<div class="slim" style="background:' + RED + '"><span class="mark">✕</span><div class="t"><span class="k">Repouso antes de domingo 15</span><b>Falta uma noite local</b><span>25 h 10 de repouso, mas de um noturno para um matinal a lei pede 8 h entre as 22:00 e as 08:00</span></div><span class="goS">›</span></div>';
+var ROSTER = '<div class="slim" style="background:' + ORANGE + '"><div class="t"><span class="k">A escala mudou · por confirmar</span><b>Domingo 15 · report às 06:00</b><span>era <s>05:40</s> · nada entra sem confirmares</span></div><span class="goS">›</span></div>';
+var T_FOLGA = mkTop('<span class="pl ink">Folga</span><span class="pl">sábado 14</span>', 'Próximo serviço daqui a', giant('17', 'h 25', 'livre', true), [['amanhã', 'até lá'], ['17 h', 'de 60 em 7 dias'], ['12 °C', 'chuva às 05:40', 'rain']]);
+var T_HOJE = mkTop('<span class="pl ink"><i></i>Hoje</span><span class="pl">EZY1010</span>', 'Report às', giant('15:15', '', 'OPO', false), [['2 h 38', 'falta'], ['03:15 +1', 'PSV até'], ['16 °C', 'aguaceiros às 15:15', 'rain']]);
+var T_3S = mkTop('<span class="pl ink"><i></i>Amanhã</span><span class="pl">segunda 16</span>', 'Report às', giant('05:15', '', 'LIS', false), [['10 h 35', 'falta'], ['17:00', 'PSV até'], ['4 °C', 'nevoeiro às 05:15', 'fog']]);
+
+function head(kind, title, badge, chip, corner){ return '<span class="kd">' + kind + '</span>'
+  + '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:-4px"><span class="ct">' + title + '</span><span class="go" style="position:static;flex:none">' + corner + '</span></div>'
+  + '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:-6px">' + (badge ? '<span class="badge">' + ic('plane', 12) + badge + '</span>' : '<span></span>')
+  + (chip ? '<span style="display:flex;align-items:center;gap:6px;font-weight:600;font-size:11px;color:rgba(20,20,20,.8)">per diem <span class="chip">' + chip + '</span></span>' : '') + '</div>'; }
+function leg1(dep, depC, off, mid, on, arr, arrC){ return '<div class="leg"><span class="tm">' + off + '</span><span class="mid"><i></i><span class="dur">' + ic('plane', 13, 'transform:rotate(90deg)') + mid + '</span><i></i></span><span class="tm">' + on + '</span></div>'
+  + '<div class="legc"><span>' + dep + ' · ' + depC + '</span><span>' + arr + ' · ' + arrC + '</span></div>'; }
+function legs3(rows){ return '<div class="legs3">' + rows.map(function(r){ return '<div class="l3" style="grid-template-columns:44px 34px 1fr 34px 44px"><b>' + r[0] + '</b><span class="c">' + r[1] + '</span><span class="mid"><i></i>' + ic('plane', 11, 'transform:rotate(90deg)') + '<i></i></span><span class="c r">' + r[2] + '</span><b class="r">' + r[3] + '</b></div>'; }).join('') + '</div>'; }
+function frow(cells){ return '<div class="frow" style="grid-template-columns:repeat(' + cells.length + ',minmax(0,1fr))">' + cells.map(function(c){ return '<div><span>' + c[0] + '</span><b>' + c[1] + '</b></div>'; }).join('') + '</div>'; }
+function card(inner){ return '<div class="cd" style="background:' + BLUE + '">' + inner + '</div>'; }
+var L3 = [['06:15', 'LIS', 'FNC', '07:50'], ['08:40', 'FNC', 'LIS', '10:15'], ['11:05', 'LIS', 'LGW', '13:50']];
+
+// ── E1 · a C2 afinada ──
+var E1 = {
+  folga: card(head('Próximo serviço · domingo 15', 'LIS → FNC', 'EZY7841', '+154,51 €', '›') + leg1('LIS', 'Lisboa', '06:40', '1 h 35', '08:15', 'FNC', 'Funchal') + frow([['Report', '05:40'], ['Fim', '08:45'], ['Margem', '9 h 55']])),
+  hoje: card(head('Dia de serviço · 1 setor', 'OPO → LIS', 'EZY1010', '+154,51 €', ic('share', 16)) + leg1('OPO', 'Porto', '16:00', '50 min', '16:50', 'LIS', 'Lisboa') + frow([['Fim', '17:20'], ['PSV', '1 h 35 de 12 h'], ['Margem', '10 h 25']])),
+  tres: card(head('Dia de serviço · 3 setores · pernoita', 'LIS → LGW', null, '+287,40 €', ic('share', 16)) + legs3(L3) + frow([['Fim', '14:20'], ['PSV', '8 h 35 de 11 h 45'], ['Margem', '3 h 10']])),
+  n: [] };
+// ── E2 · a C2 com a barra do limite (C2 + C3) ──
+function verdBar(psv, max, pct, left, end){ return '<div class="bar"><div class="h"><span><b>Dentro do limite</b></span><span>margem <b>' + left + '</b></span></div><div class="t"><i style="width:' + pct + '%"></i></div><div class="e"><span>PSV ' + psv + ' de ' + max + '</span><span>' + end + '</span></div></div>'; }
+var E2 = {
+  folga: card(head('Próximo serviço · domingo 15', 'LIS → FNC', 'EZY7841', '+154,51 €', '›') + '<span class="cs" style="margin-top:-4px">report <b>05:40</b> · fim do serviço <b>08:45</b></span>' + leg1('LIS', 'Lisboa', '06:40', '1 h 35', '08:15', 'FNC', 'Funchal') + verdBar('2 h 35', '12 h 30', 21, '9 h 55', 'limite 18:10')),
+  hoje: card(head('Dia de serviço · 1 setor', 'OPO → LIS', 'EZY1010', '+154,51 €', ic('share', 16)) + leg1('OPO', 'Porto', '16:00', '50 min', '16:50', 'LIS', 'Lisboa') + verdBar('1 h 35', '12 h', 13, '10 h 25', 'fim do serviço 17:20')),
+  tres: card(head('Dia de serviço · 3 setores · pernoita', 'LIS → LGW', null, '+287,40 €', ic('share', 16)) + legs3(L3) + verdBar('8 h 35', '11 h 45', 73, '3 h 10', 'fim do serviço 14:20')),
+  n: [] };
+// ── E3 · pela ordem do teu dia ──
+// a linha: report → parte → chega → fim; a parte preta é o voo (da partida à última chegada)
+function tl(p){ return '<div class="tl"><span class="ln"></span><span class="fl2" style="left:' + p.fs + '%;right:' + p.fe + '%"></span><div class="pts">'
+  + p.pts.map(function(x, i){ return '<div class="pt"><span class="dot' + (i === 0 || i === 3 ? ' o' : '') + '"></span><b>' + x[0] + '</b><span>' + x[1] + '</span></div>'; }).join('') + '</div></div>'; }
+// o limite em palavras: o veredicto e a margem numa linha, o PSV por baixo, em pequeno
+function verdict(txt, right){ var m = right.split(' · '); return '<div class="verd" style="flex-direction:column;align-items:stretch;gap:2px"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;white-space:nowrap"><b>' + txt + '</b><span>' + m[1] + '</span></div><span>' + m[0] + '</span></div>'; }
+var E3 = {
+  folga: card(head('Próximo serviço · domingo 15 · 1 setor', 'LIS → FNC', 'EZY7841', '+154,51 €', '›') + tl({ fs: 37, fe: 37, pts: [['05:40', 'report'], ['06:40', 'parte LIS'], ['08:15', 'chega FNC'], ['08:45', 'fim']] }) + verdict('Dentro do limite', 'PSV 2 h 35 de 12 h 30 · margem <b>9 h 55</b>')),
+  hoje: card(head('Dia de serviço · 1 setor', 'OPO → LIS', 'EZY1010', '+154,51 €', ic('share', 16)) + tl({ fs: 37, fe: 37, pts: [['15:15', 'report'], ['16:00', 'parte OPO'], ['16:50', 'chega LIS'], ['17:20', 'fim']] }) + verdict('Dentro do limite', 'PSV 1 h 35 de 12 h · margem <b>10 h 25</b>')),
+  tres: card(head('Dia de serviço · 3 setores · pernoita', 'LIS → FNC → LIS → LGW', null, '+287,40 €', ic('share', 16)) + tl({ fs: 37, fe: 37, pts: [['05:15', 'report'], ['06:15', 'parte LIS'], ['13:50', 'chega LGW'], ['14:20', 'fim']] }) + verdict('Dentro do limite', 'PSV 8 h 35 de 11 h 45 · margem <b>3 h 10</b>')),
+  n: [] };
+
+function row(E){ return [['<b>Folga</b> · o voo é amanhã', phone('12:14', T_FOLGA, REST + E.folga + ROSTER + MONTH + CREDIT)], ['<b>Hoje</b> · antes do report', phone('12:37', T_HOJE, E.hoje + NEXT_SLIM + CREDIT)], ['<b>Véspera</b> · um dia de 3 setores', phone('18:40', T_3S, E.tres + NS + CREDIT)]]; }
+var O = [
+  ['E1 · A C2 afinada', false, 'A C2 de que gostaste, com o que atrasava corrigido: <b>a fila não repete o topo</b> (hoje mostra fim · PSV · margem; na folga, como o topo não diz o report, mostra-o), o limite com a <b>margem</b> em vez da conta, "de" em vez de "/", e no dia de 3 setores <b>sem a duração de cada perna</b>.', row(E1)],
+  ['E2 · A C2 com a barra do limite', false, 'A C2 e a C3 juntas: por baixo da perna, <b>uma barra diz "Dentro do limite"</b>, com a margem à direita e o PSV e o fim do serviço por baixo. Na folga, o report e o fim vão na linha por baixo do título (como no Detalhe).', row(E2)],
+  ['E3 · Pela ordem do teu dia', true, 'O voo <b>numa linha, pela ordem em que acontece</b>: report → parte → chega → fim. A parte preta é o voo. Por baixo, o limite <b>em palavras</b>. Num dia de 3 setores, a linha vai do report ao fim e os sítios ficam todos no título ("LIS → FNC → LIS → LGW").', row(E3)]];
+document.getElementById('opts').innerHTML = O.map(function(o){
+  return '<div class="opt"><h3>' + o[0] + (o[1] ? '<span class="rec">RECOMENDO</span>' : '') + '</h3><p>' + o[2] + '</p><div class="row">'
+    + o[3].map(function(s){ return '<div><div class="cap">' + s[0] + '</div>' + s[1] + '<div class="count"></div></div>'; }).join('') + '</div></div>';
+}).join('');
+// quantos números tem o cartão do voo (horas, durações, €) — medido, não escrito à mão
+document.querySelectorAll('.ph').forEach(function(ph){
+  var c = ph.querySelector('.cd'); var txt = c ? c.innerText : '';
+  var n = (txt.match(/\d{1,2}:\d{2}( \+1)?|\d+ h( \d{2})?|\d+ min|[+]?[\d ]+,\d{2} €/g) || []).length;
+  ph.parentNode.querySelector('.count').textContent = n + ' números no cartão do voo';
+});
+</script>
+</body>
+</html>

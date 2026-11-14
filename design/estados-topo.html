@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · O estado em destaque</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* O ESTADO EM DESTAQUE NO INÍCIO (2026-11-14). O Nuno: "os tipos de estados que temos deviam estar mais destacados na aba Início".
+   Hoje o estado é a pílula preta de 13 pt no canto ("Folga", "Em voo", "Pernoita") — a coisa mais pequena do topo; num relance
+   manda o número. S1 a pílula maior, com ícone · S2 o estado como título grande (o rótulo por cima do dia) · S3 a pílula na cor do
+   tipo (mapa B: azul = dia de voo, verde-acinzentado = repouso/pernoita, lilás = em terra, laranja = disrupção; folga, férias e
+   baixa sem cor). O topo todo a cor já foi recusado (o sistema de luz, 2026-07) — a cor fica só na pílula. Em todas, o resto do topo
+   é o de hoje (o número a 62, o tempo como 3.º facto). Dados de TESTE (os do iPhone do Nuno).
+   Imagens do Nuno: 3424 (o chip de estado), 3406 (os chips na cor do tipo), 3444 e 3407 (a data gigante com o resto pequeno).
+   Mobbin: Oura (o estado como frase grande com o rótulo por cima), American Airlines (o título grande), Slack (o estado com o ponto). */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1760px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+.lead{max-width:940px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)} .lead a{color:var(--pfg)}
+.opt{display:flex;flex-direction:column;gap:10px}
+.opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:var(--muted);max-width:900px} .opt > p b{color:var(--pfg)}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.row{display:flex;flex-wrap:wrap;gap:16px}
+.cap{font-size:12px;font-weight:700;color:var(--muted);margin:0 0 6px 6px}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:940px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card2 li{font-size:13px;line-height:1.5;color:var(--muted)} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:var(--pfg)}
+.ph{display:flex;flex-direction:column;width:406px;height:400px;border:8px solid #04060A;border-radius:52px 52px 0 0;border-bottom:0;overflow:hidden;position:relative;background:#E3E1DB;color:#141414;max-width:100%}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.topA{padding:0 20px 24px;flex:none}
+.pills{display:flex;align-items:center;gap:8px;min-height:68px;padding:8px 0 16px}
+.pl{height:38px;padding:0 16px;border-radius:19px;border:1.5px solid #141414;display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:13px;white-space:nowrap}
+.pl.ink{background:#141414;color:#E3E1DB} .pl i.dot{width:7px;height:7px;border-radius:4px;background:#F0C24A;display:block}
+.ml{margin-left:auto}
+/* S1 */
+.pl.big{height:44px;padding:0 18px 0 14px;border-radius:22px;font-size:16px;gap:8px}
+/* S2 */
+.ttl{display:flex;flex-direction:column;gap:2px;padding:6px 0 10px}
+.ttl .k{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:#3A3A36;display:flex;align-items:center;gap:6px}
+.ttl .t{font-weight:800;font-size:34px;line-height:38px;letter-spacing:-.8px;display:flex;align-items:center;gap:10px}
+.ttl .t i.dot{width:10px;height:10px;border-radius:5px;background:#F0C24A;display:block}
+.what{font-weight:500;font-size:15px;line-height:20px;color:#3A3A36}
+.hero{display:flex;align-items:stretch;gap:16px;margin-top:12px}
+.g{font-weight:700;white-space:nowrap;flex:none}
+.g .l1,.g .l2{display:flex;align-items:baseline}
+.g small{font-size:34px;letter-spacing:-1px;margin-left:6px}
+.grey{color:rgba(20,20,20,.5)}
+.side{border-left:1.5px solid #141414;padding-left:16px;display:flex;flex-direction:column;justify-content:center;gap:12px;min-width:0}
+.fv{display:flex;align-items:center;gap:4px;font-weight:700;font-size:20px;line-height:22px;white-space:nowrap}
+.fl{display:block;font-weight:500;font-size:11px;line-height:15px;color:#3A3A36;white-space:nowrap}
+.ic{display:block;fill:currentColor;flex:none}
+.sheetN{flex:1;background:#fff;border-radius:32px 32px 0 0}
+.hh{font-size:11px;font-weight:800;color:#8A887F;padding:4px 6px 0}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>O estado em destaque</h1>
+    <p>Hoje o estado é <b>a coisa mais pequena do topo</b>: uma pílula preta de 13 pt no canto ("Folga", "Em voo", "Pernoita"). Num relance manda o número, e o estado só se lê se o procurares. Três maneiras de o pôr à vista, cada uma em quatro estados: <b>folga, amanhã, em voo e pernoita</b>. O resto do topo fica igual (o número a 62, o tempo como 3.º dado). Por baixo de cada telemóvel, a altura do topo, medida.</p>
+    <p><b>Uma regra que fica:</b> pintar o topo todo de cor já foi recusado (o sistema de luz). Na S3 a cor fica <b>só na pílula</b>. <b>As tuas imagens:</b> 3424 (o chip de estado), 3406 (os chips na cor do tipo), 3444 e 3407 (a data gigante com o resto pequeno). <b>Mobbin:</b> <a href="https://mobbin.com/screens/31d2964f-6f51-40f4-9b56-773e284abed4">Oura</a> (o estado como frase grande, com o rótulo por cima), <a href="https://mobbin.com/screens/2b1345e3-e957-41bc-94e8-0032c1276a39">American Airlines</a> (o título grande), <a href="https://mobbin.com/screens/8c4fbb2d-a0b9-4ea7-8553-ca3457dcfa17">Slack</a> (o estado com o ponto).</p>
+  </div>
+  <div id="opts" style="display:flex;flex-direction:column;gap:36px"></div>
+  <div class="card2"><h3>A minha recomendação: S2</h3><ul>
+    <li><b>S2</b> faz do estado <b>o título do ecrã</b> ("Em voo", "Pernoita", "Folga", em 34 pt), com o dia num rótulo pequeno por cima. É o que o iPhone faz em todas as apps (o título grande), e num relance lês primeiro <b>onde estás no teu dia</b>, depois o número. Custa <b>54 pontos</b> de altura no topo (medido: de 259 para 313), e a folha dos cartões começa mais abaixo; é o preço de o estado ser a primeira coisa que se lê.</li>
+    <li><b>S1</b> só aumenta a pílula (16 pt, com ícone). Destaca um pouco, sem mudar nada, mas continua a ser um botão pequeno no canto: o olho continua a ir primeiro para o número.</li>
+    <li><b>S3</b> pinta a pílula na cor do tipo. Liga o estado aos cartões (o azul do voo no topo e no cartão), mas na folga, nas férias e na baixa a pílula fica sem cor, e um estado sem cor volta a ser pouco visível.</li></ul></div>
+</div>
+<script>
+var P = {
+  rain:'<path d="M7 15a5 5 0 0 1-.6-10A6 6 0 0 1 18 7a4 4 0 0 1-.5 8H7zm1 2 1.6 1-1.4 3-1.6-1zm4.5 0 1.6 1-1.4 3-1.6-1zm4.5 0 1.6 1-1.4 3-1.6-1z"/>',
+  sun:'<path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm-1-6h2v3h-2zm0 19h2v3h-2zM1 11h3v2H1zm19 0h3v2h-3zM3.5 5l1.4-1.4 2.2 2.1-1.4 1.4zm13.4 13.4 1.4-1.4 2.1 2.2-1.4 1.4zM3.5 19l2.2-2.1 1.4 1.4L4.9 20.4zM16.9 5.6l2.1-2.1 1.4 1.4-2.1 2.2z"/>',
+  plane:'<path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>',
+  moon:'<path d="M14.5 2.5a9.5 9.5 0 1 0 7 15.9A8 8 0 0 1 14.5 2.5z"/>',
+  clock:'<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2.2a7.8 7.8 0 1 1 0 15.6 7.8 7.8 0 0 1 0-15.6zM11 6.5v6.1l4.6 2.8 1-1.7-3.6-2.1V6.5z"/>',
+  home:'<path d="M12 3 2 11.5h3V21h5.5v-6h3v6H19v-9.5h3z"/>' };
+function ic(n, s){ return '<svg class="ic" width="' + s + '" height="' + s + '" viewBox="0 0 24 24">' + P[n] + '</svg>'; }
+var Z = 62, ST = 'font-size:' + Z + 'px;line-height:' + Z + 'px;letter-spacing:' + (Z * -0.046).toFixed(2) + 'px';
+function giant(l1, unit, l2, grey){ return '<div class="g"><div class="l1"><span style="' + ST + '">' + l1 + '</span>' + (unit ? '<small>' + unit + '</small>' : '') + '</div><div class="l2 ' + (grey ? 'grey' : '') + '"><span style="' + ST + '">' + l2 + '</span></div></div>'; }
+function side(fx){ return '<div class="side">' + fx.map(function(f){ return '<div><span class="fv">' + (f[2] ? ic(f[2], 18) : '') + f[0] + '</span><span class="fl">' + f[1] + '</span></div>'; }).join('') + '</div>'; }
+var COL = { flight: '#7EBDF4', rest: '#B4C2A2', none: null };
+// os quatro estados (dados do iPhone do Nuno)
+var ST4 = [
+  { cap: 'Folga', name: 'Folga', icon: 'home', live: false, type: 'none', p2: 'sábado 14', what: 'Próximo serviço daqui a', g: giant('17', 'h 25', 'livre', true), fx: [['amanhã', 'até lá'], ['17 h', 'de 60 em 7 dias'], ['12 °C', 'chuva às 05:40', 'rain']], clock: '12:14' },
+  { cap: 'Amanhã (véspera)', name: 'Amanhã', icon: 'clock', live: true, type: 'flight', p2: 'domingo 15', what: 'Report às', g: giant('05:40', '', 'LIS', false), fx: [['11 h 10', 'falta'], ['18:10', 'PSV até'], ['12 °C', 'chuva às 05:40', 'rain']], clock: '18:30' },
+  { cap: 'Em voo', name: 'Em voo', icon: 'plane', live: true, type: 'flight', p2: 'EZY7841', what: 'Aterras às', g: giant('08:15', '', 'FNC', false), fx: [['1 h 05', 'falta para aterrar'], ['9 h 55', 'de margem no PSV'], ['21 °C', 'sol em FNC à chegada', 'sun']], clock: '07:10' },
+  { cap: 'Pernoita', name: 'Pernoita', icon: 'moon', live: false, type: 'rest', p2: 'FNC', what: 'Report amanhã às', g: giant('06:20', '', 'FNC', false), fx: [['8 h 40', 'falta'], ['16 °C', 'chuva às 06:20', 'rain']], clock: '21:40' }];
+function body(st){ return '<div class="what">' + st.what + '</div><div class="hero">' + st.g + side(st.fx) + '</div>'; }
+function phone(st, topInner){ return '<div><div class="cap">' + st.cap + '</div><div class="ph"><div class="status"><span>' + st.clock + '</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="topA">' + topInner + '</div><div class="sheetN"></div></div><div class="hh"></div></div>'; }
+// hoje (para comparar)
+function NOW(st){ return phone(st, '<div class="pills"><span class="pl ink">' + (st.live ? '<i class="dot"></i>' : '') + st.name + '</span><span class="pl">' + st.p2 + '</span><span class="pl ml">Notificações</span></div>' + body(st)); }
+// S1 · a pílula maior, com ícone
+function S1(st){ return phone(st, '<div class="pills"><span class="pl ink big">' + ic(st.icon, 18) + st.name + (st.live ? '<i class="dot"></i>' : '') + '</span><span class="pl">' + st.p2 + '</span><span class="pl ml">Notificações</span></div>' + body(st)); }
+// S2 · o estado como título grande; o dia num rótulo por cima
+function S2(st){ return phone(st, '<div class="pills" style="padding-bottom:4px"><span class="pl">' + st.p2 + '</span><span class="pl ml">Notificações</span></div>'
+  + '<div class="ttl"><span class="t">' + st.name + (st.live ? '<i class="dot"></i>' : '') + '</span></div>' + body(st)); }
+// S3 · a pílula na cor do tipo (mapa B)
+function S3(st){ var c = COL[st.type]; return phone(st, '<div class="pills"><span class="pl" style="' + (c ? 'background:' + c + ';border-color:' + c : 'background:#141414;color:#E3E1DB;border-color:#141414') + '">' + (st.live ? '<i class="dot" style="background:#141414"></i>' : '') + st.name + '</span><span class="pl">' + st.p2 + '</span><span class="pl ml">Notificações</span></div>' + body(st)); }
+var O = [
+  ['Hoje (para comparar)', false, 'A pílula preta de 13 pt no canto.', NOW],
+  ['S1 · A pílula maior, com ícone', false, 'A pílula cresce (44 de altura, 16 pt) e ganha um ícone do estado: casa na folga, relógio na véspera, avião em voo, lua na pernoita.', S1],
+  ['S2 · O estado como título grande', true, 'O estado passa a ser <b>o título do ecrã</b>, em 34 pt, à esquerda. A pílula com o dia (ou o voo) fica em cima, ao lado das Notificações. O ponto amarelo continua nos estados ao vivo.', S2],
+  ['S3 · A pílula na cor do tipo', false, 'A pílula pinta-se pelo mapa B: <b>azul</b> no dia de voo (amanhã, hoje, em voo), <b>verde-acinzentado</b> na pernoita; folga, férias e baixa ficam a preto, como hoje.', S3]];
+document.getElementById('opts').innerHTML = O.map(function(o){
+  return '<div class="opt"><h3>' + o[0] + (o[1] ? '<span class="rec">RECOMENDO</span>' : '') + '</h3><p>' + o[2] + '</p><div class="row">' + ST4.map(o[3]).join('') + '</div></div>';
+}).join('');
+document.fonts.ready.then(function(){ document.querySelectorAll('.ph').forEach(function(ph){ var t = ph.querySelector('.topA'); ph.parentNode.querySelector('.hh').textContent = 'o topo mede ' + Math.round(t.getBoundingClientRect().height) + ' pt'; }); });
+</script>
+</body>
+</html>
