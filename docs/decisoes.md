@@ -471,7 +471,7 @@ referência para o layout das páginas que faltam e para o sistema de desenho. *
   "Notificações"); não há abreviatura corrente ("Sinc.", "Notif.") e "Sync" é inglês. → esboço `design/botoes-escritos.html`:
   **S1** as palavras inteiras · **S2** "Atualizar" · "Avisos" · **S3** "Sync" · "Notif." — todas cabem a 375 pt (o pior caso, a
   Escala noutro mês com "Hoje", 332 de 335). Recomendei **S1**.
-  **O Nuno escolheu C1 e S1 (2026-11-13) — CONSTRUÍDO e gravado (por ver no iPhone):**
+  **O Nuno escolheu C1 e S1 (2026-11-13) — CONSTRUÍDO e gravado em `01a06f0`, sem enviar (por ver no iPhone):**
   - **`components/PillButton.js`** (novo): a pílula de contorno escrita (38 pt, contorno 1,5, `TXT3.pill`, toque 44, contagem num
     círculo laranja no canto) + `WideButton` (o botão largo no fundo das janelas: tinta, 54 pt, `TXT3.slimTitle`, ícone opcional).
   - **"Fechar" escrito em todas as janelas** no lugar do ✕: `SheetHeader` (todas as páginas modais), o dia e a folha do serviço da
