@@ -80,8 +80,10 @@ secundários, nunca se empilham mais de 2.
 | `PeleSide` | rótulo lateral rodado | label muda com o estado/ecrã |
 | `PeleSheet` | folha modal da pele | gesto de arrasto + teclado já resolvidos |
 | `Icon` + `design/icons.js` | pictogramas SVG próprios | emoji proibido |
-| `IconButton` | ✕ fechar · ‹ voltar · ações de cabeçalho | **único** botão de ícone: 36 redondo, ícone 16 (‹ 18), toque 44, `label` obrigatório, `night` para o tema noturno (§10) |
-| `SheetHeader` | cabeçalho de folhas e páginas modais | rótulo (ponto amarelo) + título `TXT.titleLg` + ✕ à direita; ‹ opcional à esquerda. Não recriar à mão |
+| `IconButton` | ‹ voltar · ações de cabeçalho | **único** botão de ícone: 36 redondo, ícone 16 (‹ 18), toque 44, `label` obrigatório, `night` para o tema noturno (§10). Desde 2026-11-13 já não fecha janelas (é o `PillButton` "Fechar") |
+| `PillButton` | "Fechar" das janelas · os botões escritos do topo ("Sincronizar", "Notificações") | pílula de contorno 38, contorno 1,5, `TXT3.pill`, toque 44, contagem num círculo laranja no canto (C1 + S1, 2026-11-13). `WideButton` = a ação larga no fundo de uma janela |
+| `MarkRow` | as linhas das janelas 3.0 (notificações, calendário) | o quadradinho de 36 pelo mapa B (laranja "!" · vermelho "✕" · neutro com ícone) + título + linha de baixo + hora ou seta |
+| `SheetHeader` | cabeçalho de folhas e páginas modais | rótulo (ponto amarelo) + título `TXT.titleLg` + "Fechar" escrito à direita; ‹ opcional à esquerda; `card` = o das janelas 3.0 (sem rótulo, título `TXT3.month`). Não recriar à mão |
 | `Porta` | ecrãs **antes da app** (entrada, código, nome, palavra-passe, Face ID, bloqueio, reativar, configuração) | placa de tinta com a marca + folha de papel com o passo; ‹ e `footer` (ação larga) como no §10; a placa encolhe para faixa com o teclado; `progress` = "Configuração · 2 de 6" + barra amarela na faixa. **Nunca** num ecrã com barra de abas (§11) |
 | `MonthYearWheel` | escolher mês e ano (antiguidade, promoção) | roda de 2 colunas; `monthsAhead` (0 = nunca no futuro); o valor só nasce quando a pessoa mexe; ajustável no VoiceOver |
 | `OptCard` | escolher uma opção (configuração, páginas do Perfil) | o MESMO cartão em todo o lado: código · nome · apoio · círculo vazio ou visto amarelo (ou etiqueta "atual") |
@@ -211,13 +213,19 @@ Cada ecrã migrado vê-se no iPhone antes de fechar — passar de 12,5 para 13 m
 
 ## §10 · Posição dos controlos (a regra, igual em toda a app)
 
-- **✕ fechar** — canto superior **direito** de folhas e páginas modais (`SheetHeader`). Uma página que
+- **"Fechar" escrito** (era o ✕ redondo até 2026-11-13; esboço `design/janelas-c.html`, C1: "gosto do botão Fechar assim
+  escrito") — canto superior **direito** de folhas e páginas modais (`SheetHeader` → `PillButton`). Uma página que
   sobe de baixo **fecha**, não "volta": nunca ‹ para fechar uma janela.
 - **‹ voltar** — canto superior **esquerdo** de ecrãs empilhados (`PeleHeader onBack`) e de passos
   dentro de uma janela. **Só aparece quando há para onde voltar.**
 - **Nunca dois fechos no mesmo ecrã** (era o caso do formulário de serviço: ‹ e ✕ faziam o mesmo).
-- **Um só botão de ícone:** `IconButton` (36 redondo, toque 44, rótulo obrigatório). Remover um item
-  dentro de um chip (✕ pequeno inline) não é navegação e fica fora desta regra.
+- **Um só botão de ícone:** `IconButton` (36 redondo, toque 44, rótulo obrigatório) — para o ‹ e as ações de cabeçalho. Remover
+  um item dentro de um chip (✕ pequeno inline) não é navegação e fica fora desta regra.
+- **Os botões do topo escrevem-se** (S1, 2026-11-13, `design/botoes-escritos.html`): "Notificações" no Início, "Sincronizar"
+  (ou "Importar") na Escala — a palavra inteira, como as interfaces em pt-PT; a contagem num círculo laranja no canto.
+  A pílula do mês (M3): o mês por extenso e o ano só quando não é o deste ano ("Dezembro"; "Fevereiro 2027") — `monthPillLabel`.
+- **A ação principal de uma janela** vai num botão largo no fundo (`WideButton`), onde o polegar chega: "Fechar" em cima, a ação
+  em baixo (C1).
 - **Abrir/expandir uma secção:** a linha inteira é tocável, com um chevron à direita que roda.
 - **Guardar num formulário** (decidido 2026-11-02, opção 2 do Mobbin): **uma só ação principal, larga, no
   fundo** (`PrimaryButton`), que sobe com o teclado; **sair é o ✕ do cabeçalho** — sem "Cancelar" a competir

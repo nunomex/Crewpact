@@ -5,8 +5,8 @@
 //   área de toque 44 pt (hitSlop) · rótulo de acessibilidade OBRIGATÓRIO.
 // Antes havia 4 tamanhos (26/30/34/36), 2 formas (redondo/quadrado) e ícones de 11 a 20.
 //
-// Posição (regra §10 do design system): ✕ no canto superior DIREITO de folhas e páginas
-// modais · ‹ no canto superior ESQUERDO de ecrãs empilhados e de passos.
+// Posição (regra §10 do design system): ‹ no canto superior ESQUERDO de ecrãs empilhados e de passos.
+// FECHAR uma janela já não é um ✕ redondo: desde 2026-11-13 é o "Fechar" escrito (components/PillButton.js; C1).
 //
 //   <IconButton icon="close" onPress={onClose} label={t('common.close', lang)} />
 //   <IconButton icon="back" onPress={goBack} label={l('Voltar', 'Back')} night={isNight} />

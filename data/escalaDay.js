@@ -141,6 +141,14 @@ export function agendaRows({ ym, duties = {}, absences = {}, today = null, money
 }
 
 // O ano em meses (A1, 3439): quantos dias com serviço tem cada mês; o mês em que se está; os meses sem escala.
+// A pílula do mês (M3, design/botoes-escritos.html, 2026-11-13): o mês por extenso e o ano SÓ quando não é o deste ano, como o
+// Calendário do iPhone ("Dezembro"; "Fevereiro 2027"). Nunca abreviado — as palavras inteiras, como os botões escritos (S1).
+export function monthPillLabel({ year, month0, todayYear, locale = 'pt-PT' }) {
+  const name = new Date(year, month0, 15, 12).toLocaleDateString(locale, { month: 'long' });
+  const cap = name.charAt(0).toUpperCase() + name.slice(1);
+  return year === todayYear ? cap : `${cap} ${year}`;
+}
+
 export function yearMonths({ year, duties = {}, today = null, lang = 'pt' }) {
   const names = lang === 'en' ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] : ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
   return names.map((label, i) => {

@@ -12,7 +12,8 @@ const OUT = Dimensions.get('window').height;
 
 // `onClosed`: chamado DEPOIS de a folha sair e o Modal desmontar. Para abrir outra folha a seguir a esta: no iOS, apresentar um
 // Modal com o anterior ainda a fechar bloqueia o ecrã (visto no iPhone a 2026-11-11, com um temporizador de 280 ms).
-export default function PeleSheet({ visible, onClose, onClosed, children }) {
+// `bg`: a cor da folha — a 2.0 é o papel; as janelas da 3.0 passam CARD.day.sheet (branca, C1 2026-11-13).
+export default function PeleSheet({ visible, onClose, onClosed, children, bg }) {
   const closedRef = useRef(onClosed);
   closedRef.current = onClosed;
   const reduce = useReduceMotion();                       // RM: fade sem deslocação (o arrasto mantém-se — é gesto)
@@ -82,7 +83,7 @@ export default function PeleSheet({ visible, onClose, onClosed, children }) {
         <Pressable style={s.scrimHit} onPress={() => { if (kbOpen) { Keyboard.dismiss(); } else if (onClose) { onClose(); } }}
           accessibilityRole="button" accessibilityLabel="Fechar" />
       </Animated.View>
-      <Animated.View style={[s.sheet, { transform: [{ translateY: Animated.add(ty, kb) }] }, reduce && { opacity: op }]}>
+      <Animated.View style={[s.sheet, bg ? { backgroundColor: bg } : null, { transform: [{ translateY: Animated.add(ty, kb) }] }, reduce && { opacity: op }]}>
         <View style={s.grabArea} {...pan.panHandlers}><View style={s.grab} /></View>
         {children}
       </Animated.View>

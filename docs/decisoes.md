@@ -451,7 +451,63 @@ referência para o layout das páginas que faltam e para o sistema de desenho. *
   grande; era 15), o destino a 12 (TXT3.dur; era 11); os dias da semana ficam a 11 (o "kind" dos cartões); o anel 4,5. Contas: a
   375 pt o dia mede 46,7 (cabe); a 390, um mês de 6 semanas acaba ~8 pt acima da barra. `npm test` verde (37), guardião sem dívida
   nova, pacote iOS gera. **Ver no iPhone:** os tamanhos (375 e 390), o mês de 6 semanas inteiro em repouso, os sinais do dia, o
-  anel à frente dos serviços, "Ver no meu mês".
+  anel à frente dos serviços, "Ver no meu mês". **Gravado e enviado em `f6a8591`.**
+  **Depois (por gravar), o Nuno: "os números do calendário parecem não estar centrados nos círculos".** Causa: o número usava o
+  `TXT3.fact` (lineHeight 22 para uma letra de 20 cuja caixa natural é 26) e o iOS desloca os algarismos quando a lineHeight fica
+  abaixo da natural. Lido do .ttf: a Hanken tem 1,000 em por cima da linha de base, 0,303 por baixo e as maiúsculas (os
+  algarismos) 0,697 — na caixa natural o meio dos algarismos é exatamente o meio da caixa (13,03 pt a 20). O número do círculo
+  passou a não ter lineHeight (`s.numTxt`). Guardião, pacote iOS gera. **Ver no iPhone:** os números ao centro (1, 11, 28; hoje).
+  **O ✕ e as janelas da 2.0** (pedido acima) → esboço `design/janelas-3.html`, três maneiras aplicadas às duas janelas
+  (notificações; calendário) e ao ✕: **A** cartões neutros como o "Ver tudo" (os dias que mudaram com a pílula Alterada/Nova/
+  Cancelada e o antes riscado; a ação principal na linha escura do Início) + ✕ redondo de 44 (o do sino e o de sincronizar) ·
+  **B** linhas finas de cor como o Início ("Novas"/"Antes"; o detalhe abre ao tocar) + ✕ de 30 (o do iOS) com o título ao
+  centro · **C** lista com o quadradinho B7 + "Fechar" escrito numa pílula de contorno. Recomendei **A**. **O Nuno: "gostei da C,
+  mas com alterações, que achas? gosto do botão Fechar assim escrito".** Os meus acertos: "Fechar" escrito em todas as janelas
+  (o `SheetHeader`) e também no ✕ de dentro do ecrã (fechar o dia), para ser uma peça só; o detalhe do que mudou à vista; a ação
+  principal destacada; "Novas" e "Antes". → esboço `design/janelas-c.html`: **C1** o detalhe por baixo da linha + a ação num botão
+  largo no fundo · **C2** secções + a 1.ª linha escura + o detalhe ao tocar · **C3** a lista agrupada (Ajustes). Recomendo **C1**.
+  **E os botões escritos (o Nuno: "os botões da sincronização, podes meter escrito Sync, em português sincro ou vê como escrevem, e
+  nas notificações vê como escrevem a abreviação").** Pesquisa: em pt-PT as interfaces escrevem a palavra inteira ("Sincronizar",
+  "Notificações"); não há abreviatura corrente ("Sinc.", "Notif.") e "Sync" é inglês. → esboço `design/botoes-escritos.html`:
+  **S1** as palavras inteiras · **S2** "Atualizar" · "Avisos" · **S3** "Sync" · "Notif." — todas cabem a 375 pt (o pior caso, a
+  Escala noutro mês com "Hoje", 332 de 335). Recomendei **S1**.
+  **O Nuno escolheu C1 e S1 (2026-11-13) — CONSTRUÍDO e gravado (por ver no iPhone):**
+  - **`components/PillButton.js`** (novo): a pílula de contorno escrita (38 pt, contorno 1,5, `TXT3.pill`, toque 44, contagem num
+    círculo laranja no canto) + `WideButton` (o botão largo no fundo das janelas: tinta, 54 pt, `TXT3.slimTitle`, ícone opcional).
+  - **"Fechar" escrito em todas as janelas** no lugar do ✕: `SheetHeader` (todas as páginas modais), o dia e a folha do serviço da
+    Escala, as Validades, a `CenterDialog` e o formulário de serviço. O ‹ voltar continua `IconButton`. Os ✕ pequenos de remover
+    (chip de aeroporto, limpar a pesquisa, tirar uma perna) não são fechos e ficam.
+  - **`SheetHeader card`**: o cabeçalho das janelas 3.0 — sem rótulo, título `TXT3.month` (26), "Fechar" à direita.
+  - **`components/MarkRow.js`** (novo): a linha das janelas — o quadradinho de 36 (mapa B: laranja "!" olhar · vermelho "✕" parar
+    · neutro com o ícone = informação), título, linha de baixo, à direita a hora ou a seta, o ponto do que é novo e o que vem por
+    baixo (os dias que mudaram).
+  - **As notificações (C1):** folha branca, "Novas" e "Antes" (os rótulos só quando há das duas), os dias que mudaram À VISTA por
+    baixo da linha (pílula Alterada laranja / Nova azul / Cancelada vermelha + o antes riscado), "Rever N alterações" largo no
+    fundo. A linha da escala diz "2 dias · toca para rever" (saíram os "alterada(s)"). **O nível de cada uma vem dos dados**
+    (`level` em `data/notifications.js`; golden novo **`test:notifications`**, 15 casos, no `npm test`): escala mudou = olhar ·
+    documento caducado = parar, a caducar = informação · limite FTL ultrapassado = parar, a aproximar-se = olhar · mês e acordo =
+    informação.
+  - **O calendário da Escala (C1):** `PeleSheet bg` branca + `SheetHeader card` ("Calendário" / "Importar escala") · "Rever N
+    alterações" (laranja, quando há) · "Mudar calendário" (diz a que está ligado) · "Importar o PDF" · o cadeado · "Sincronizar
+    agora" largo no fundo (sem calendário: "Ligar ao calendário").
+  - **Os botões do topo (S1):** o Início tem "Notificações" escrito (a contagem por ler no círculo laranja); a Escala tem
+    "Sincronizar" (sem calendário, "Importar"; a contagem do que falta rever no círculo). As contas da fila do topo usam a largura
+    escrita (`pillWidth`), por isso a pílula do meio sai primeiro se não couber.
+  - Guardião (dívida desceu: tipo 198→196, espaço 384→380; chão novo gravado) · `test:escala` 117 · `test:homecards` 251 · pacote
+    iOS gera.
+  **Ver no iPhone:** o "Fechar" em todas as janelas (cabe ao lado dos títulos compridos?) · o "Notificações" do Início com e sem
+  número, de dia e de noite · o "Sincronizar" da Escala noutro mês com o "Hoje" (iPhone de 375) · a janela das notificações com
+  uma alteração de escala (os dias por baixo) e o botão largo · a janela do calendário, ligado e sem calendário.
+  **A seguir, os meses (o Nuno: "Escala noutro mês, podemos abreviar o nome dos meses, que achas?")** → no mesmo esboço
+  (`design/botoes-escritos.html`, "Os meses na pílula"): **M1** abreviar só noutro mês ("Dez. 2026") · **M2** sempre abreviado
+  ("Nov. 2026") · **M3** sem o ano quando é o deste ano ("Dezembro"; "Fevereiro 2027"), como o Calendário do iPhone. Medido:
+  hoje já cabe tudo (pior caso 331 de 335); abreviar dá folga. A abreviatura pt-PT é "dez." (com ponto; é o que o iPhone
+  escreve). Recomendo **M3** (palavras inteiras, como a S1). **O Nuno escolheu a M3 — CONSTRUÍDO e gravado:** `monthPillLabel` em
+  `data/escalaDay.js` (golden primeiro: 6 casos em `test:escala`, agora 123) — o mês por extenso e o ano só quando não é o deste
+  ano ("Dezembro"; "Fevereiro 2027"; inglês igual). **Ver no iPhone:** a pílula do mês em novembro ("Novembro"), noutro mês deste
+  ano com o "Hoje" e num mês de 2027.
+  **Também gravado nesta ronda:** a centragem dos números nos círculos (`s.numTxt`, acima) e os esboços `janelas-3.html`,
+  `janelas-c.html` e `botoes-escritos.html`.
   **E o Nuno: "depois vê os botões das notificações, o X para fechar e o de sincronizar — não estão com o layout novo, pois não?"**
   Visto no código: **o ✕** (`components/IconButton.js`, 31 sítios) é o da 2.0 — 36 pt, fundo `PELE.soft`, ícone `PELE.ink` (na
   Escala passa-se o `C.round` por cima); **o sino** do Início já é o redondo de 44 do 3.0, mas **o número por ler não tinha fundo**

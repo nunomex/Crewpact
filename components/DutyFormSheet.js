@@ -6,6 +6,7 @@ import AirportRoute from './AirportRoute';
 import PrimaryButton from './PrimaryButton';
 import Icon from './Icon';
 import IconButton from './IconButton';
+import PillButton from './PillButton';
 import PeleSide from './PeleSide';
 import { RADIUS, GUTTER, PELE, PELE_FONT, BRAND, SPACE, MONEY } from '../data/constants';
 import { isNightStop } from '../data/rosterImport';
@@ -1113,7 +1114,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
         {phase === 'type' ? (
           <>
             <View style={s.hdr}>
-              <IconButton icon="close" onPress={requestClose} label={t('common.close', lang)} style={s.cl} />
+              <PillButton label={t('common.close', lang)} onPress={requestClose} style={s.cl} />
             </View>
             <PeleSide label={simulate ? l('SIMULAÇÃO', 'SIMULATION') : l('NOVO', 'NEW')} accent={l('SERVIÇOS', 'SERVICES')} />
             <ScrollView style={{ flex: 1 }} contentContainerStyle={s.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
@@ -1142,7 +1143,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
           <>
             <View style={s.hdr}>
               {canBackToIndex ? <IconButton icon="back" onPress={() => { setPhase('type'); setStep(0); }} label={l('Mudar tipo', 'Change type')} /> : null}
-              <IconButton icon="close" onPress={requestClose} label={t('common.close', lang)} style={s.cl} />
+              <PillButton label={t('common.close', lang)} onPress={requestClose} style={s.cl} />
             </View>
             <PeleSide label={simulate ? l('SIMULAÇÃO', 'SIMULATION') : l('NOVO', 'NEW')} accent={kindLabel.toUpperCase()} />
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
@@ -1202,7 +1203,7 @@ const s = StyleSheet.create({
   page: { flex: 1, backgroundColor: PELE.paper },
   // Cabeçalho pele (‹ back + ✕ close)
   hdr: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: GUTTER, paddingTop: 8 },
-  cl: { marginLeft: 'auto' },   // ✕ sempre à direita (IconButton faz o resto)
+  cl: { marginLeft: 'auto' },   // "Fechar" escrito sempre à direita (PillButton faz o resto; C1, 2026-11-13)
   body: { paddingHorizontal: GUTTER, paddingTop: 4, paddingBottom: 28 },
   // Herói
   eyb: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 11, letterSpacing: 1.6, textTransform: 'uppercase', color: PELE.grey, marginTop: 8 },

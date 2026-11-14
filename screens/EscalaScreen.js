@@ -8,6 +8,9 @@ import AsyncStorage from '../data/secureStorage';   // wrapper de cifra-em-repou
 import { RADIUS, GUTTER, SPACE, TXT, TXT3, TYPE, CARD, PELE, PELE_FONT, BRAND } from '../data/constants';
 import Icon from '../components/Icon';
 import IconButton from '../components/IconButton';
+import PillButton, { WideButton } from '../components/PillButton';
+import MarkRow from '../components/MarkRow';
+import SheetHeader from '../components/SheetHeader';
 import PeleSheet from '../components/PeleSheet';
 import { HomeCards, HomeTop, pillWidth } from '../components/HomeCards';
 import { DutyDetailBody } from './DutyDetailScreen';
@@ -20,7 +23,7 @@ import { monthlyAe, serviceMoney, aeIndex, awayNights } from '../data/perdiem';
 import { sncToRegister } from '../data/disruption';
 import { nightStopStation, hotelMapsUrl } from '../data/hotels';
 import { baseCityName } from '../data/countries';
-import { monthCells, orderServices, dayCards, yearMonths, prettyRoute, legendTour, daySigns } from '../data/escalaDay';
+import { monthCells, orderServices, dayCards, yearMonths, prettyRoute, legendTour, daySigns, monthPillLabel } from '../data/escalaDay';
 import HotelSheet from '../components/HotelSheet';
 import RosterImportSheet from '../components/RosterImportSheet';
 import CalendarPickerSheet from '../components/CalendarPickerSheet';
@@ -210,7 +213,7 @@ export default function EscalaScreen({ navigation, route }) {
   }, [ym]); // eslint-disable-line react-hooks/exhaustive-deps
   const monthName = monthDate.toLocaleDateString(locale, { month: 'long' });
   const monthCap = monthName.charAt(0).toUpperCase() + monthName.slice(1);
-  const monthLabel = `${monthCap} ${y}`;
+  const monthLabel = monthPillLabel({ year: y, month0: m0, todayYear: new Date().getFullYear(), locale });   // M3: sem o ano deste ano
 
   const monthDutyDays = Object.keys(duties).filter((iso) => iso.startsWith(ym) && duties[iso] && !duties[iso].deleted).sort();
 
@@ -383,7 +386,7 @@ export default function EscalaScreen({ navigation, route }) {
               )) : null}
               {c.today ? <SvgCircle cx={CX} cy={CX} r={segs.length || isAbs ? RR - RING_W / 2 : CX} fill={C.ink} /> : null}
             </Svg>
-            <Text style={[TXT3.fact, s.numTxt, { color: c.today ? C.sheet : C.ink }]} allowFontScaling={false}>{c.day}</Text>
+            <Text style={[s.numTxt, { color: c.today ? C.sheet : C.ink }]} allowFontScaling={false}>{c.day}</Text>
             {c.dirty ? <View style={[s.pend, { backgroundColor: C.alert, borderColor: C.sheet }]} pointerEvents="none" /> : null}
             {c.sel ? <View style={[s.selRing, { borderColor: C.ink }]} pointerEvents="none" /> : null}
             {tourStep && tourStep.iso === c.iso ? <View style={[s.tourRing, { borderColor: C.ink }]} pointerEvents="none" /> : null}
@@ -433,7 +436,11 @@ export default function EscalaScreen({ navigation, route }) {
   };
   const giant = fitGiant(top, winW - SPACE.lgPlus * 2);
   // A pílula do mês nunca pode sair (é a maneira de mudar de mês): se a fila não couber, sai o "Hoje" (o mês atual fica no ano em meses).
-  const baseRowW = pillWidth(monthLabel) + 12 + SPACE.sm + SPACE.sm + 44;
+  // O botão da direita é escrito (S1, esboço design/botoes-escritos.html, 2026-11-13): "Sincronizar" com o calendário ligado,
+  // "Importar" sem ele — abre a janela do calendário. A contagem do que mudou e falta rever vai no círculo laranja do canto.
+  const syncLabel = calendarId ? l('Sincronizar', 'Sync') : l('Importar', 'Import');
+  const syncW = pillWidth(syncLabel);
+  const baseRowW = pillWidth(monthLabel) + 12 + SPACE.sm + SPACE.sm + syncW;
   const showHoje = !isCurrentMonth && baseRowW + pillWidth(l('Hoje', 'Today')) + SPACE.sm <= winW - SPACE.lgPlus * 2;
   const hojeW = showHoje ? pillWidth(l('Hoje', 'Today')) + SPACE.sm : 0;
   const topRight = (
@@ -443,13 +450,13 @@ export default function EscalaScreen({ navigation, route }) {
           <Text style={[TXT3.pill, { color: C.ink }]} allowFontScaling={false}>{l('Hoje', 'Today')}</Text>
         </TouchableOpacity>
       ) : null}
-      <TouchableOpacity style={[s.round, { backgroundColor: C.round }]} onPress={openHub} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={calendarId ? l('Calendário e sincronizar', 'Calendar and sync') : l('Importar escala', 'Import roster')}>
-        <Icon name={calendarId ? 'sync' : 'download'} size={20} color={C.ink} />
-        {(rcCounts?.total || lsCount) ? <View style={[s.hdrDot, { backgroundColor: C.alert, borderColor: C.desk }]} /> : null}
-      </TouchableOpacity>
+      <PillButton label={syncLabel} onPress={openHub} ink={C.ink} ring={C.desk} badgeBg={C.alert}
+        badge={rcCounts?.total ? rcCounts.total : lsCount ? true : null}
+        a11yLabel={[calendarId ? l('Calendário e sincronizar', 'Calendar and sync') : l('Importar escala', 'Import roster'),
+          rcCounts?.total ? l(`${rcCounts.total} por rever`, `${rcCounts.total} to review`) : null].filter(Boolean).join(' · ')} />
     </View>
   );
-  const topRightW = 44 + hojeW;
+  const topRightW = syncW + hojeW;
 
   // ── O DIA (por baixo do mês): uma linha por serviço (pela hora; a pernoita vai na linha do voo e no Hotel); tocar numa abre a
   // folha do serviço. Sem serviço: a folga ou a ausência. ──
@@ -524,7 +531,7 @@ export default function EscalaScreen({ navigation, route }) {
       </View>
     );
   };
-  // O cabeçalho do dia: o dia (e "hoje" · quantos serviços) à esquerda; ✕ à direita (§10) volta à legenda. Outro dia = tocar
+  // O cabeçalho do dia: o dia (e "hoje" · quantos serviços) à esquerda; "Fechar" escrito à direita (§10; C1, 2026-11-13) volta à legenda. Outro dia = tocar
   // nele no mês, que está inteiro por cima.
   const renderDayHead = (iso) => {
     const nSvc = svcsAt(iso).filter(Boolean).length, abs = dayAbs[iso];
@@ -535,7 +542,7 @@ export default function EscalaScreen({ navigation, route }) {
           <Text style={[TXT3.slimTitle, { color: C.ink }]} numberOfLines={1} accessibilityRole="header">{dayTitleOf(iso)}</Text>
           <Text style={[TXT3.cardSub, { color: C.tabSub }]} numberOfLines={1}>{sub}</Text>
         </View>
-        <IconButton icon="close" onPress={closeDay} label={l('Fechar o dia', 'Close the day')} style={{ backgroundColor: C.round }} />
+        <PillButton label={l('Fechar', 'Close')} onPress={closeDay} ink={C.ink} a11yLabel={l('Fechar o dia', 'Close the day')} />
       </View>
     );
   };
@@ -617,9 +624,7 @@ export default function EscalaScreen({ navigation, route }) {
           <>
             <View style={s.hdr}>
               <Text style={[TXT3.kind, s.hdrTxt, { color: C.tabSub }]} numberOfLines={1}>{`${l('A tua escala', 'Your roster')}${calendarId && calendarName ? ` · ${calendarName}` : ''}`}</Text>
-              <TouchableOpacity style={[s.round, { backgroundColor: C.round }]} onPress={openHub} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={calendarId ? l('Calendário e sincronizar', 'Calendar and sync') : l('Importar escala', 'Import roster')}>
-                <Icon name={calendarId ? 'sync' : 'download'} size={20} color={C.ink} />
-              </TouchableOpacity>
+              <PillButton label={syncLabel} onPress={openHub} ink={C.ink} a11yLabel={calendarId ? l('Calendário e sincronizar', 'Calendar and sync') : l('Importar escala', 'Import roster')} />
             </View>
             <ScrollView style={s.flex} contentContainerStyle={[s.startPad, { paddingBottom: tabSpace }]} showsVerticalScrollIndicator={false}>
               <Text style={[TXT3.month, { color: C.ink }]}>{l('Serviços', 'Duties')}</Text>
@@ -673,7 +678,7 @@ export default function EscalaScreen({ navigation, route }) {
                 <Text style={[TXT3.slimTitle, { color: C.ink }]} numberOfLines={1} accessibilityRole="header">{svcTitleOf(svcShown)}</Text>
                 <Text style={[TXT3.cardSub, { color: C.tabSub }]} numberOfLines={1}>{dayTitleOf(svcShown.iso)}</Text>
               </View>
-              <IconButton icon="close" onPress={closeSvc} label={l('Fechar', 'Close')} style={{ backgroundColor: C.round }} />
+              <PillButton label={l('Fechar', 'Close')} onPress={closeSvc} ink={C.ink} />
             </View>
             <ScrollView style={s.flex} contentContainerStyle={s.dsBody} showsVerticalScrollIndicator={false}>
               <DutyDetailBody date={svcShown.iso} idx={svcShown.idx} navigation={navigation}
@@ -714,69 +719,41 @@ export default function EscalaScreen({ navigation, route }) {
         }}
         onClose={() => { setImportOpen(false); checkRosterChanges && checkRosterChanges(); }} />
 
-      {/* Hub de importar — Ligar calendário · Importar PDF (janela por migrar: segue a 2.0) */}
-      <PeleSheet visible={hubOpen} onClose={() => setHubOpen(false)}>
-        <Text style={s.sheetTitle}>{calendarId ? l('Calendário', 'Calendar') : l('Importar escala', 'Import roster')}</Text>
+      {/* A janela do calendário (C1, esboço design/janelas-c.html, 2026-11-13): "Fechar" escrito em cima · as linhas com o quadradinho
+          (laranja "!" = rever as alterações; neutro = o resto) · a ação principal num botão largo no fundo ("Sincronizar agora"; sem
+          calendário, "Ligar ao calendário"). */}
+      <PeleSheet visible={hubOpen} onClose={() => setHubOpen(false)} bg={CARD.day.sheet}>
+        <SheetHeader card title={calendarId ? l('Calendário', 'Calendar') : l('Importar escala', 'Import roster')} onClose={() => setHubOpen(false)}
+          closeLabel={l('Fechar', 'Close')} style={s.hubHead} />
         {calendarId ? (
           <>
-            <Text style={s.hubSub}>{l('Ligado a', 'Connected to')}: <Text style={s.hubStrong}>{calendarName || l('calendário do telemóvel', 'phone calendar')}</Text></Text>
-            <TouchableOpacity activeOpacity={0.85} onPress={() => { setHubOpen(false); onSync(); }} style={s.hubOpt}>
-              <View style={s.hubOptIc}><Icon name="sync" size={20} color={PELE.ink} /></View>
-              <View style={s.flex}>
-                <Text style={s.hubOptT}>{l('Sincronizar agora', 'Sync now')}</Text>
-                <Text style={s.hubOptS}>{l('Relê o calendário e mostra as alterações.', 'Re-reads the calendar and shows any changes.')}</Text>
-              </View>
-              <Icon name="chevron" size={16} color={PELE.grey} />
-            </TouchableOpacity>
             {rcCounts?.total ? (
-              <TouchableOpacity activeOpacity={0.85} onPress={() => { setHubOpen(false); setImportSource('calendar'); setTimeout(() => setImportOpen(true), 320); }} style={s.hubOpt}>
-                <View style={[s.hubOptIc, { backgroundColor: PELE.warnSoft }]}><Icon name="alert" size={19} color={PELE.warn} /></View>
-                <View style={s.flex}>
-                  <Text style={s.hubOptT}>{l(`Rever ${rcCounts.total} alteração(ões)`, `Review ${rcCounts.total} change(s)`)}</Text>
-                  <Text style={s.hubOptS}>{l('A escala mudou no calendário — confirma antes de aplicar.', 'The roster changed in your calendar — confirm before applying.')}</Text>
-                </View>
-                <Icon name="chevron" size={16} color={PELE.grey} />
-              </TouchableOpacity>
+              <MarkRow first isNew mark={{ bg: CARD.day.alert, glyph: '!' }} chevron
+                title={rcCounts.total === 1 ? l('Rever 1 alteração', 'Review 1 change') : l(`Rever ${rcCounts.total} alterações`, `Review ${rcCounts.total} changes`)}
+                sub={l('a escala mudou · confirma antes de aplicar', 'the roster changed · confirm before applying')}
+                onPress={() => { setHubOpen(false); setImportSource('calendar'); setTimeout(() => setImportOpen(true), 320); }} />
             ) : null}
-            <TouchableOpacity activeOpacity={0.85} onPress={() => { setHubOpen(false); setTimeout(() => setCalPickerOpen(true), 320); }} style={s.hubOpt}>
-              <View style={s.hubOptIc}><Icon name="transfer" size={19} color={PELE.ink} /></View>
-              <View style={s.flex}>
-                <Text style={s.hubOptT}>{l('Mudar calendário', 'Change calendar')}</Text>
-                <Text style={s.hubOptS}>{l('Escolher outro feed do telemóvel.', 'Pick another phone feed.')}</Text>
-              </View>
-              <Icon name="chevron" size={16} color={PELE.grey} />
-            </TouchableOpacity>
-            <TouchableOpacity activeOpacity={0.85} onPress={() => { setHubOpen(false); setImportSource('paste'); setTimeout(() => setImportOpen(true), 320); }} style={s.hubOpt}>
-              <View style={s.hubOptIc}><Icon name="doc" size={19} color={PELE.ink} /></View>
-              <View style={s.flex}>
-                <Text style={s.hubOptT}>{l('Importar PDF', 'Import PDF')}</Text>
-                <Text style={s.hubOptS}>{l('Em alternativa, lê o PDF da escala (RGPD: a cópia é apagada).', 'Alternatively, read the roster PDF (GDPR: the copy is deleted).')}</Text>
-              </View>
-              <Icon name="chevron" size={16} color={PELE.grey} />
-            </TouchableOpacity>
+            <MarkRow first={!rcCounts?.total} mark={{ icon: 'transfer' }} chevron title={l('Mudar calendário', 'Change calendar')}
+              sub={calendarName ? l(`ligado a «${calendarName}»`, `connected to “${calendarName}”`) : l('escolher outro calendário do telemóvel', 'pick another phone calendar')}
+              onPress={() => { setHubOpen(false); setTimeout(() => setCalPickerOpen(true), 320); }} />
+            <MarkRow mark={{ icon: 'doc' }} chevron title={l('Importar o PDF', 'Import the PDF')}
+              sub={l('em alternativa · a cópia é apagada (RGPD)', 'alternatively · the copy is deleted (GDPR)')}
+              onPress={() => { setHubOpen(false); setImportSource('paste'); setTimeout(() => setImportOpen(true), 320); }} />
           </>
         ) : (
           <>
-            <Text style={s.hubSub}>{l('Trazemos os teus serviços para a Escala — escolhe a fonte.', 'We bring your duties into the roster — pick a source.')}</Text>
-            <TouchableOpacity activeOpacity={0.85} onPress={() => { setHubOpen(false); setTimeout(() => connectCalendar(), 320); }} style={s.hubOpt}>
-              <View style={s.hubOptIc}><Icon name="cal" size={19} color={PELE.ink} /></View>
-              <View style={s.flex}>
-                <Text style={s.hubOptT}>{l('Ligar ao calendário', 'Connect calendar')}</Text>
-                <Text style={s.hubOptS}>{l('Escolhes o calendário do telemóvel; sincroniza sozinho. Só de leitura.', 'Pick your phone calendar; it syncs on its own. Read-only.')}</Text>
-              </View>
-              <Icon name="chevron" size={16} color={PELE.grey} />
-            </TouchableOpacity>
-            <TouchableOpacity activeOpacity={0.85} onPress={() => { setHubOpen(false); setImportSource('paste'); setTimeout(() => setImportOpen(true), 320); }} style={s.hubOpt}>
-              <View style={s.hubOptIc}><Icon name="doc" size={19} color={PELE.ink} /></View>
-              <View style={s.flex}>
-                <Text style={s.hubOptT}>{l('Importar PDF', 'Import PDF')}</Text>
-                <Text style={s.hubOptS}>{l('Lês o PDF da escala no telemóvel; a cópia é apagada (RGPD).', 'Read the roster PDF on-device; the copy is deleted (GDPR).')}</Text>
-              </View>
-              <Icon name="chevron" size={16} color={PELE.grey} />
-            </TouchableOpacity>
+            <Text style={[TXT3.text, s.hubLead]}>{l('Trazemos os teus serviços para a Escala. O melhor é ligar o calendário do telemóvel: sincroniza sozinho e só lê.', 'We bring your duties into the roster. Best is to connect your phone calendar: it syncs on its own and only reads.')}</Text>
+            <MarkRow first mark={{ icon: 'doc' }} chevron title={l('Importar o PDF', 'Import the PDF')}
+              sub={l('lês o PDF da escala no telemóvel · a cópia é apagada (RGPD)', 'read the roster PDF on-device · the copy is deleted (GDPR)')}
+              onPress={() => { setHubOpen(false); setImportSource('paste'); setTimeout(() => setImportOpen(true), 320); }} />
           </>
         )}
-        <View style={s.hubNote}><Icon name="lock" size={13} color={C.ink} /><Text style={s.hubNoteTxt}>{l('Lido no telemóvel · confirmas antes de gravar', 'Read on your phone · you confirm before saving')}</Text></View>
+        <View style={s.hubNote}><Icon name="lock" size={13} color={CARD.day.tabSub} /><Text style={[TXT.caption, { color: CARD.day.tabSub }]}>{l('Lido no telemóvel · confirmas antes de gravar', 'Read on your phone · you confirm before saving')}</Text></View>
+        {calendarId ? (
+          <WideButton glyph="sync" label={l('Sincronizar agora', 'Sync now')} onPress={() => { setHubOpen(false); onSync(); }} />
+        ) : (
+          <WideButton glyph="cal" label={l('Ligar ao calendário', 'Connect calendar')} onPress={() => { setHubOpen(false); setTimeout(() => connectCalendar(), 320); }} />
+        )}
       </PeleSheet>
       <HotelSheet visible={hotelOpen} onClose={() => setHotelOpen(false)} station={hotelStation} />
 
@@ -833,8 +810,6 @@ const s = StyleSheet.create({
   hdr: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.md, minHeight: 44, paddingTop: SPACE.xs, paddingHorizontal: GUTTER },
   hdrTxt: { flex: 1 },
   topRight: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm },
-  round: { width: 44, height: 44, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
-  hdrDot: { position: 'absolute', top: 6, right: 6, width: 10, height: 10, borderRadius: RADIUS.pill, borderWidth: 1.5 },
   hoje: { height: 38, paddingHorizontal: SPACE.lg, borderRadius: RADIUS.pill, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
 
   // A folha (branca, por cima do fundo, como no Início)
@@ -852,7 +827,12 @@ const s = StyleSheet.create({
   cellBlank: { height: ROW_H },
   cell: { height: ROW_H, alignItems: 'center', paddingTop: SPACE.xs, gap: SPACE.xxs },
   ring: { width: RING, height: RING, alignItems: 'center', justifyContent: 'center' },
-  numTxt: { fontVariant: ['tabular-nums'] },
+  // O número ao CENTRO do círculo (o Nuno, 2026-11-13: "os números não estão centrados nos círculos"): a Hanken tem 1,000 em por
+  // cima da linha de base e 0,303 por baixo, e os algarismos a altura das maiúsculas, 0,697 (lido do .ttf, OS/2). Na caixa NATURAL
+  // da letra (sem lineHeight) o meio dos algarismos é exatamente o meio da caixa — (1,000 + 0,303) / 2 = 1,000 − 0,697 / 2 =
+  // 0,6515 em —, e o círculo centra a caixa. Com uma lineHeight abaixo da natural (o TXT3.fact tem 22 para 20 · 1,303 = 26) o
+  // iOS desloca os algarismos; por isso aqui não há lineHeight.
+  numTxt: { fontFamily: TXT3.fact.fontFamily, fontSize: TXT3.fact.fontSize, fontVariant: ['tabular-nums'] },
   code: { flexDirection: 'row', alignItems: 'center', gap: SPACE.xxs },
   selRing: { position: 'absolute', top: -SPACE.xs, left: -SPACE.xs, right: -SPACE.xs, bottom: -SPACE.xs, borderRadius: RADIUS.pill, borderWidth: 2 },   // o escolhido: por fora, afastado
   pend: { position: 'absolute', top: 0, right: 0, width: 8, height: 8, borderRadius: RADIUS.pill, borderWidth: 1.5 },
@@ -887,15 +867,9 @@ const s = StyleSheet.create({
   yTileCur: { borderWidth: 2 },
 
   // Folhas (hub de importar · seletor de mês) — por migrar, seguem a 2.0
-  sheetTitle: { ...TXT.titleLg, color: PELE.ink, marginBottom: SPACE.s },
-  hubSub: { ...TXT.body, color: PELE.grey },
-  hubStrong: { fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
-  hubOpt: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, backgroundColor: PELE.paper, borderWidth: 1, borderColor: PELE.line, borderRadius: RADIUS.md, paddingVertical: SPACE.md, paddingHorizontal: SPACE.md, marginTop: SPACE.sm },
-  hubOptIc: { width: 40, height: 40, borderRadius: RADIUS.md, backgroundColor: PELE.soft2, alignItems: 'center', justifyContent: 'center' },
-  hubOptT: { fontFamily: PELE_FONT.bodyBold, fontSize: TYPE.sub, letterSpacing: -0.2, color: PELE.ink },
-  hubOptS: { ...TXT.footnote, color: PELE.grey, marginTop: SPACE.xxs },
-  hubNote: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACE.s, marginTop: SPACE.lg },
-  hubNoteTxt: { ...TXT.caption, color: PELE.grey },
+  hubHead: { paddingHorizontal: 0, paddingTop: 0 },
+  hubLead: { color: CARD.day.soft, paddingBottom: SPACE.sm },
+  hubNote: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACE.s, paddingVertical: SPACE.md },
   mpYear: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACE.lgPlus, marginBottom: SPACE.md },
   mpYearTxt: { ...TXT.title, color: PELE.ink, minWidth: 76, textAlign: 'center' },
   mpGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: SPACE.sm },

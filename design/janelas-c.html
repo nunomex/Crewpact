@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · As janelas, a C com acertos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* AS JANELAS · A C COM ACERTOS (2026-11-13). O Nuno: "gostei da C, mas com alterações; gosto do botão Fechar assim escrito".
+   Acertos à C: "Fechar" escrito em todas as janelas (no lugar do ✕); o detalhe do que mudou à vista; a ação principal destacada;
+   as novas separadas das antigas. Três maneiras de resolver o detalhe e a ação principal: C1 o detalhe por baixo da linha + o
+   botão largo no fundo · C2 secções + a 1.ª linha escura + o detalhe ao tocar · C3 a lista agrupada (como os Ajustes). */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+.lead{max-width:940px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px} .lead h2{font-weight:800;font-size:22px;margin-top:6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,406px),406px));gap:26px 24px;justify-content:center}
+.opt{display:flex;flex-direction:column;gap:10px;min-width:0}
+.opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:var(--muted);min-height:76px} .opt > p b{color:var(--pfg)}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:940px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card2 li{font-size:13px;line-height:1.5;color:var(--muted)} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:var(--pfg)}
+.refs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:10px}
+.refs div{background:#fff;border:1px solid #D6D4CD;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.4;color:var(--muted)} .refs b{color:var(--pfg)}
+
+.ph{width:406px;height:860px;border:8px solid #04060A;border-radius:52px;overflow:hidden;position:relative;background:#BDBBB5;
+  --desk:#E3E1DB;--ink:#141414;--soft:#3A3A36;--sheet:#FFFFFF;--neutral:#F1EFEA;--voo:#6DBEFA;--terra:#C3A1BE;--rest:#B4C2A2;--alert:#F0854A;--stop:#EC7A6C;--gain:#0B6E43;
+  --tsub:#5E5E57;--round:rgba(127,127,127,.22);--rule:rgba(127,127,127,.25);color:var(--ink)}
+.status{height:47px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.behind{position:absolute;left:10px;right:10px;top:47px;height:30px;border-radius:14px 14px 0 0;background:#D2D0CA}
+.sh{position:absolute;left:0;right:0;top:58px;bottom:0;background:var(--sheet);border-radius:14px 14px 0 0;display:flex;flex-direction:column}
+.grab{display:flex;justify-content:center;padding:7px 0 3px} .grab i{width:36px;height:5px;border-radius:3px;background:rgba(127,127,127,.35)}
+.body{flex:1;overflow:hidden;padding:4px 12px 20px;display:flex;flex-direction:column;gap:8px}
+.ic{display:inline-block;flex:none;fill:currentColor}
+/* os ✕ */
+.xA{width:44px;height:44px;border-radius:22px;background:var(--round);display:flex;align-items:center;justify-content:center;flex:none}
+.xB{width:30px;height:30px;border-radius:15px;background:var(--round);display:flex;align-items:center;justify-content:center;flex:none}
+.xC{height:38px;padding:0 16px;border-radius:19px;border:1.5px solid var(--ink);display:inline-flex;align-items:center;font-weight:700;font-size:13px;flex:none}
+/* cabeçalhos */
+.hA{display:flex;align-items:flex-start;gap:12px;padding:6px 16px 10px} .hA .t{flex:1} .hA .k{display:block;font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub)} .hA h4{font-weight:800;font-size:22px;line-height:26px;letter-spacing:-.4px;margin-top:2px}
+.hB{display:flex;align-items:center;justify-content:center;position:relative;padding:8px 16px 12px} .hB h4{font-weight:800;font-size:16px} .hB .xB{position:absolute;right:14px;top:4px}
+.hC{display:flex;align-items:center;gap:12px;padding:8px 16px 12px} .hC h4{flex:1;font-weight:800;font-size:26px;letter-spacing:-.5px}
+/* A · cartões neutros */
+.cA{background:var(--neutral);border-radius:22px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.cA .kk{display:flex;align-items:center;gap:6px;font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub)} .cA .kk i{width:8px;height:8px;border-radius:4px;background:var(--alert)}
+.cA b.tt{font-weight:800;font-size:16px;line-height:20px} .cA span.sb{font-weight:500;font-size:12px;line-height:16px;color:var(--soft)}
+.chg{display:flex;align-items:center;gap:8px;font-weight:600;font-size:12px} .chg s{text-decoration:line-through;color:var(--tsub)}
+.pl{height:22px;padding:0 9px;border-radius:11px;font-weight:800;font-size:11px;display:inline-flex;align-items:center;flex:none}
+.pl.new{background:#DCEFFD} .pl.chg2{background:#FCE1D2} .pl.cx{background:#FAD9D4}
+.dark{background:var(--ink);color:#fff;border-radius:18px;padding:12px 14px;display:flex;align-items:center;gap:10px} .dark .t{flex:1} .dark b{display:block;font-weight:800;font-size:15px} .dark span{font-size:12px;opacity:.75}
+.go{width:30px;height:30px;border-radius:15px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;flex:none}
+.cap{font-weight:500;font-size:12px;color:var(--tsub);text-align:center;padding:6px 0}
+.lnA{display:flex;align-items:center;gap:10px;padding:10px 2px;border-top:1px solid var(--rule)} .lnA:first-of-type{border-top:0} .lnA .t{flex:1} .lnA b{display:block;font-weight:700;font-size:15px} .lnA span{font-size:12px;color:var(--tsub)}
+/* B · linhas finas na cor do tipo */
+.sl{border-radius:22px;padding:12px 16px;display:flex;align-items:center;gap:12px;min-height:56px}
+.sl .t{flex:1;min-width:0} .sl .t b{display:block;font-weight:800;font-size:16px;line-height:20px} .sl .t span{display:block;font-weight:500;font-size:12px;line-height:16px;opacity:.82}
+.sl.alert{background:var(--alert)} .sl.voo{background:var(--voo)} .sl.neutral{background:var(--neutral)} .sl.dk{background:var(--ink);color:#fff}
+.sl .go2{width:30px;height:30px;border-radius:15px;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;flex:none} .sl.neutral .go2{background:rgba(127,127,127,.18)} .sl.dk .go2{background:rgba(255,255,255,.22)}
+.sl .tm{font-weight:700;font-size:11px;opacity:.75;white-space:nowrap}
+.secB{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub);padding:8px 4px 0}
+/* os acertos */
+.dch{display:flex;flex-direction:column;gap:6px;margin:-4px 0 4px 48px}
+.dch div{display:flex;align-items:center;gap:8px;font-weight:600;font-size:12px} .dch s{text-decoration:line-through;color:var(--tsub)}
+.big{height:54px;border-radius:18px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;font-size:16px;flex:none;margin-top:auto}
+.sec{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub);padding:10px 4px 2px}
+.lC.dkr{background:var(--ink);color:#fff;border-radius:18px;padding:12px;border-top:0;margin-bottom:6px} .lC.dkr .t span{color:rgba(255,255,255,.75)} .lC.dkr .sq{background:rgba(255,255,255,.18)!important;color:#fff}
+.lC.open{background:var(--neutral);border-radius:18px;padding:12px;border-top:0;flex-wrap:wrap}
+.lC.open .dch{flex-basis:100%;margin:8px 0 0 48px}
+.grp{background:var(--neutral);border-radius:18px;padding:0 12px;flex:none} .grp .lC{border-top-color:rgba(127,127,127,.22)}
+.cap2{font-weight:500;font-size:12px;color:var(--tsub);padding:2px 4px}
+/* C · lista com o quadradinho do ícone */
+.lC{display:flex;align-items:center;gap:12px;padding:12px 4px;border-top:1px solid var(--rule);position:relative} .lC.f{border-top:0}
+.sq{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex:none;color:#141414}
+.lC .t{flex:1;min-width:0} .lC .t b{display:block;font-weight:800;font-size:15px;line-height:19px} .lC .t span{display:block;font-weight:500;font-size:12px;line-height:16px;color:var(--tsub)}
+.lC .tm{font-weight:600;font-size:11px;color:var(--tsub);align-self:flex-start;white-space:nowrap}
+.lC .nd{position:absolute;left:-6px;top:50%;width:7px;height:7px;border-radius:4px;background:var(--alert);transform:translateY(-50%)}
+.foot{display:flex;align-items:center;justify-content:center;gap:6px;font-weight:600;font-size:12px;color:var(--tsub);padding:10px 0}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>As janelas · a C com acertos</h1>
+    <p>A C que escolheste, com <b>"Fechar" escrito</b> (vai para todas as janelas da app, no lugar do ✕) e os acertos que propus: <b>o detalhe do que mudou à vista</b> (na C só dizia "toca para rever"), <b>a ação principal destacada</b> (na C "Sincronizar agora" pesava o mesmo que as outras) e <b>as novas separadas das antigas</b>. Três maneiras de resolver o detalhe e a ação principal.</p>
+  </div>
+  <div class="lead"><h2>As notificações (o sino do Início)</h2></div>
+  <div class="grid3" id="g1"></div>
+  <div class="lead"><h2>O calendário (o botão de sincronizar da Escala)</h2></div>
+  <div class="grid3" id="g2"></div>
+  <div class="card2"><h3>A minha recomendação: C1</h3><ul>
+    <li><b>C1</b>: a lista calma que escolheste, com o que mudou à vista sem tocar, e a única coisa que se faz nesta janela num botão largo no fundo, onde o polegar chega — a regra das janelas da app ("Fechar" em cima, a ação larga em baixo).</li>
+    <li><b>C2</b> destaca a ação em cima e guarda o detalhe para quando se toca — mais limpa, mas um toque a mais para ver os dias.</li>
+    <li><b>C3</b> é a mais iOS (os Ajustes), arrumada em grupos, mas não destaca nada: "Sincronizar agora" fica igual às outras linhas.</li>
+    <li><b>Em todas, o "Fechar" escrito</b> substitui o ✕ das janelas (o cabeçalho das folhas, `SheetHeader`); o ✕ pequeno dentro do ecrã (fechar o dia na Escala) também passa a "Fechar", para ser uma peça só.</li></ul></div>
+  <div class="refs">
+    <div><b>A base</b> — a C de <code>design/janelas-3.html</code> (o quadradinho B7 das tuas imagens) e a pílula de contorno do topo.</div>
+    <div><b>O botão largo no fundo</b> — a regra das janelas da app: fechar em cima, a ação larga em baixo.</div>
+    <div><b>A lista agrupada</b> — os Ajustes do iPhone.</div>
+  </div>
+</div>
+
+<script>
+var P = { x:'<path d="M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12 19 17.6 17.6 19 12 13.4 6.4 19 5 17.6 10.6 12 5 6.4z"/>', chev:'<path d="M8.6 4.2 16.4 12l-7.8 7.8-1.9-1.9 5.9-5.9-5.9-5.9z"/>',
+  sync:'<path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z"/>', plane:'<path d="M21 15.5v-2l-8-5V3.6a1.5 1.5 0 0 0-3 0V8.5l-8 5v2l8-2.5V18l-2 1.5V21l3.5-1 3.5 1v-1.5L13 18v-5z"/>',
+  doc:'<path d="M6 2h8l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7 1.5V8h4.5z"/>', cal:'<path d="M7 2h2.6v3H7V2zm7.4 0H17v3h-2.6V2zM4 5h16v3.6H4V5zm0 5h16v10a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 20V10z"/>',
+  lock:'<path d="M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1zm2 0h6V7a3 3 0 0 0-6 0v3z"/>', swap:'<path d="M7 7h11l-3-3 1.4-1.4L21.8 8l-5.4 5.4L15 12l3-3H7V7zm10 10H6l3 3-1.4 1.4L2.2 16l5.4-5.4L9 12l-3 3h11v2z"/>' };
+function ic(n, s){ return '<svg class="ic" width="' + s + '" height="' + s + '" viewBox="0 0 24 24">' + P[n] + '</svg>'; }
+function phone(head, body){ return '<div class="ph"><div class="status"><span>17:31</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="behind"></div><div class="sh"><div class="grab"><i></i></div>' + head + '<div class="body">' + body + '</div></div></div>'; }
+var X = { A: '<span class="xA">' + ic('x', 20) + '</span>', B: '<span class="xB">' + ic('x', 15) + '</span>', C: '<span class="xC">Fechar</span>' };
+function head(v, kind, title){
+  if (v === 'A') return '<div class="hA"><div class="t"><span class="k">' + kind + '</span><h4>' + title + '</h4></div>' + X.A + '</div>';
+  if (v === 'B') return '<div class="hB"><h4>' + title + '</h4>' + X.B + '</div>';
+  return '<div class="hC"><h4>' + title + '</h4>' + X.C + '</div>';
+}
+// ── as notificações (as de hoje: a escala mudou, o voo ao vivo, a validade) ──
+var N_A = '<div class="cA"><span class="kk"><i></i>Escala · há 2 h</span><b class="tt">A escala mudou</b>'
+  + '<div class="chg"><span class="pl chg2">Alterada</span><span>sáb 14 · <s>LIS → OPO</s> → LIS → LGW</span></div>'
+  + '<div class="chg"><span class="pl new">Nova</span><span>qua 18 · LIS → OPO → LIS · 2 setores</span></div>'
+  + '<div class="dark"><div class="t"><b>Rever 2 alterações</b><span>nada entra sem ti</span></div><span class="go">' + ic('chev', 14) + '</span></div></div>'
+  + '<div class="cA"><span class="kk"><i></i>Voo ao vivo · 17:05</span><b class="tt">EZY1873 parte 20 min mais tarde</b><span class="sb">Nova partida 19:05 · o PSV continua dentro do limite (margem 2:40).</span></div>'
+  + '<div class="cA"><span class="kk">Validades · ontem</span><b class="tt">O certificado médico caduca em 6 dias</b><span class="sb">Regista a data nova quando renovares, para o aviso sair.</span></div>'
+  + '<p class="cap">Não há mais notificações.</p>';
+var N_B = '<div class="secB">Novas</div>'
+  + '<div class="sl alert"><div class="t"><b>A escala mudou</b><span>sáb 14 alterado · qua 18 novo · nada entra sem ti</span></div><span class="tm">há 2 h</span><span class="go2">' + ic('chev', 14) + '</span></div>'
+  + '<div class="sl voo"><div class="t"><b>EZY1873 parte 20 min mais tarde</b><span>nova partida 19:05 · PSV dentro (margem 2:40)</span></div><span class="tm">17:05</span><span class="go2">' + ic('chev', 14) + '</span></div>'
+  + '<div class="secB">Antes</div>'
+  + '<div class="sl neutral"><div class="t"><b>O certificado médico caduca em 6 dias</b><span>regista a data nova quando renovares</span></div><span class="tm">ontem</span><span class="go2">' + ic('chev', 14) + '</span></div>'
+  + '<p class="cap">Não há mais notificações.</p>';
+var N_C = '<div class="lC f"><i class="nd"></i><span class="sq" style="background:var(--alert)"><b style="font-weight:800;font-size:17px">!</b></span><div class="t"><b>A escala mudou</b><span>sáb 14 alterado · qua 18 novo — toca para rever</span></div><span class="tm">há 2 h</span></div>'
+  + '<div class="lC"><i class="nd"></i><span class="sq" style="background:var(--voo)">' + ic('plane', 18) + '</span><div class="t"><b>EZY1873 parte 20 min mais tarde</b><span>nova partida 19:05 · PSV dentro (margem 2:40)</span></div><span class="tm">17:05</span></div>'
+  + '<div class="lC"><span class="sq" style="background:var(--neutral)">' + ic('doc', 17) + '</span><div class="t"><b>O certificado médico caduca em 6 dias</b><span>regista a data nova quando renovares</span></div><span class="tm">ontem</span></div>'
+  + '<p class="cap">Não há mais notificações.</p>';
+// ── o calendário (as opções de hoje: sincronizar, rever, mudar de calendário, importar o PDF) ──
+var K_A = '<div class="dark"><div class="t"><b>Sincronizar agora</b><span>relê o calendário e mostra as alterações</span></div><span class="go">' + ic('sync', 15) + '</span></div>'
+  + '<div class="cA" style="background:var(--alert)"><span class="kk" style="color:rgba(20,20,20,.8)">A escala mudou</span><b class="tt">Rever 2 alterações</b><span class="sb" style="color:rgba(20,20,20,.82)">Confirma antes de aplicar — nada entra sem ti.</span></div>'
+  + '<div class="cA"><span class="kk">Mais</span><div class="lnA"><div class="t"><b>Mudar calendário</b><span>escolher outro feed do telemóvel</span></div>' + ic('chev', 14) + '</div><div class="lnA"><div class="t"><b>Importar o PDF</b><span>se a escala chegou por e-mail (a cópia é apagada)</span></div>' + ic('chev', 14) + '</div></div>'
+  + '<div class="foot">' + ic('lock', 13) + 'Lido no telemóvel · confirmas antes de gravar</div>';
+var K_B = '<div class="sl dk"><div class="t"><b>Sincronizar agora</b><span>relê o calendário e mostra as alterações</span></div><span class="go2">' + ic('sync', 15) + '</span></div>'
+  + '<div class="sl alert"><div class="t"><b>Rever 2 alterações</b><span>a escala mudou · confirma antes de aplicar</span></div><span class="go2">' + ic('chev', 14) + '</span></div>'
+  + '<div class="sl neutral"><div class="t"><b>Mudar calendário</b><span>escolher outro feed do telemóvel</span></div><span class="go2">' + ic('chev', 14) + '</span></div>'
+  + '<div class="sl neutral"><div class="t"><b>Importar o PDF</b><span>se a escala chegou por e-mail</span></div><span class="go2">' + ic('chev', 14) + '</span></div>'
+  + '<div class="foot">' + ic('lock', 13) + 'Lido no telemóvel · confirmas antes de gravar</div>';
+var K_C = '<div class="lC f"><span class="sq" style="background:var(--ink);color:#fff">' + ic('sync', 18) + '</span><div class="t"><b>Sincronizar agora</b><span>relê o calendário e mostra as alterações</span></div>' + ic('chev', 14) + '</div>'
+  + '<div class="lC"><i class="nd"></i><span class="sq" style="background:var(--alert)"><b style="font-weight:800;font-size:17px">!</b></span><div class="t"><b>Rever 2 alterações</b><span>a escala mudou · confirma antes de aplicar</span></div>' + ic('chev', 14) + '</div>'
+  + '<div class="lC"><span class="sq" style="background:var(--neutral)">' + ic('swap', 17) + '</span><div class="t"><b>Mudar calendário</b><span>escolher outro feed do telemóvel</span></div>' + ic('chev', 14) + '</div>'
+  + '<div class="lC"><span class="sq" style="background:var(--neutral)">' + ic('doc', 17) + '</span><div class="t"><b>Importar o PDF</b><span>se a escala chegou por e-mail</span></div>' + ic('chev', 14) + '</div>'
+  + '<div class="foot">' + ic('lock', 13) + 'Lido no telemóvel · confirmas antes de gravar</div>';
+function rowC(sq, title, sub, tm, opt){ opt = opt || {};
+  return '<div class="lC' + (opt.cls ? ' ' + opt.cls : '') + (opt.first ? ' f' : '') + '">' + (opt.dot ? '<i class="nd"></i>' : '') + '<span class="sq" style="background:' + sq[0] + '">' + sq[1] + '</span><div class="t"><b>' + title + '</b><span>' + sub + '</span></div>' + (tm ? '<span class="tm">' + tm + '</span>' : ic('chev', 14)) + (opt.after || '') + '</div>'; }
+var EX = ['var(--alert)', '<b style="font-weight:800;font-size:17px">!</b>'], PL = ['var(--voo)', ic('plane', 18)], DC = ['var(--neutral)', ic('doc', 17)], SY = ['var(--ink);color:#fff', ic('sync', 18)], SW = ['var(--neutral)', ic('swap', 17)];
+var DAYS = '<div class="dch"><div><span class="pl chg2">Alterada</span><span>sáb 14 · <s>LIS → OPO</s> → LIS → LGW</span></div><div><span class="pl new">Nova</span><span>qua 18 · LIS → OPO → LIS</span></div></div>';
+var lock = '<div class="foot">' + ic('lock', 13) + 'Lido no telemóvel · confirmas antes de gravar</div>';
+var N = {
+  C1: '<div class="sec">Novas</div>' + rowC(EX, 'A escala mudou', '2 dias · toca para rever', 'há 2 h', { first: true, dot: true }) + DAYS
+    + rowC(PL, 'EZY1873 parte 20 min mais tarde', 'nova partida 19:05 · PSV dentro (margem 2:40)', '17:05', { dot: true })
+    + '<div class="sec">Antes</div>' + rowC(DC, 'O certificado médico caduca em 6 dias', 'regista a data nova quando renovares', 'ontem', { first: true })
+    + '<div class="big">Rever 2 alterações</div>',
+  C2: '<div class="sec">Novas</div>' + rowC(EX, 'A escala mudou', '2 dias · sáb 14 alterado, qua 18 novo', 'há 2 h', { cls: 'open', dot: true, after: DAYS.replace('class="dch"', 'class="dch"') })
+    + rowC(PL, 'EZY1873 parte 20 min mais tarde', 'nova partida 19:05 · PSV dentro (margem 2:40)', '17:05', { dot: true })
+    + '<div class="sec">Antes</div>' + rowC(DC, 'O certificado médico caduca em 6 dias', 'regista a data nova quando renovares', 'ontem', { first: true })
+    + '<p class="cap2">Toca numa para ver o que mudou; a aberta tem fundo.</p>',
+  C3: '<div class="sec">Novas</div><div class="grp">' + rowC(EX, 'A escala mudou', '2 dias · toca para rever', 'há 2 h', { first: true, dot: true }) + DAYS
+    + rowC(PL, 'EZY1873 parte 20 min mais tarde', 'nova partida 19:05 · PSV dentro', '17:05', { dot: true }) + '</div>'
+    + '<div class="sec">Antes</div><div class="grp">' + rowC(DC, 'O certificado médico caduca em 6 dias', 'regista a data nova quando renovares', 'ontem', { first: true }) + '</div>'
+    + '<p class="cap">Não há mais notificações.</p>'
+};
+var K = {
+  C1: rowC(EX, 'Rever 2 alterações', 'a escala mudou · confirma antes de aplicar', null, { first: true, dot: true })
+    + rowC(SW, 'Mudar calendário', 'escolher outro feed do telemóvel') + rowC(DC, 'Importar o PDF', 'se a escala chegou por e-mail')
+    + lock + '<div class="big">' + ic('sync', 18) + 'Sincronizar agora</div>',
+  C2: '<div class="sec">Agora</div>' + rowC(SY, 'Sincronizar agora', 'relê o calendário e mostra as alterações', null, { cls: 'dkr', first: true })
+    + rowC(EX, 'Rever 2 alterações', 'a escala mudou · confirma antes de aplicar', null, { first: true, dot: true })
+    + '<div class="sec">Mais</div>' + rowC(SW, 'Mudar calendário', 'escolher outro feed do telemóvel', null, { first: true }) + rowC(DC, 'Importar o PDF', 'se a escala chegou por e-mail') + lock,
+  C3: '<div class="grp">' + rowC(SY, 'Sincronizar agora', 'relê o calendário e mostra as alterações', null, { first: true }) + rowC(EX, 'Rever 2 alterações', 'a escala mudou · confirma antes de aplicar', null, { dot: true }) + '</div>'
+    + '<div class="sec">Mais</div><div class="grp">' + rowC(SW, 'Mudar calendário', 'escolher outro feed do telemóvel', null, { first: true }) + rowC(DC, 'Importar o PDF', 'se a escala chegou por e-mail') + '</div>' + lock
+};
+var O = [
+  ['C1', 'C1 · O detalhe à vista e o botão largo', true, 'A lista da C com <b>os dias que mudaram por baixo da linha</b> (a pílula e o antes riscado) e <b>a ação principal num botão largo no fundo</b>, à mão do polegar ("Rever 2 alterações", "Sincronizar agora"). "Novas" e "Antes".'],
+  ['C2', 'C2 · Secções e a linha escura', false, 'A ação principal é <b>a primeira linha, escura</b>; o detalhe <b>abre ao tocar</b> (a linha aberta ganha fundo e mostra os dias). "Novas" e "Antes"; "Agora" e "Mais".'],
+  ['C3', 'C3 · A lista agrupada', false, 'As linhas <b>dentro de grupos neutros de cantos redondos</b>, como os Ajustes do iPhone; os dias que mudaram por baixo da linha; nada destacado — a ordem diz o que vem primeiro.']
+];
+document.getElementById('g1').innerHTML = O.map(function(o){ return '<div class="opt"><h3>' + o[1] + (o[2] ? '<span class="rec">RECOMENDO</span>' : '') + '</h3><p>' + o[3] + '</p>' + phone(head('C', '', 'Notificações'), N[o[0]]) + '</div>'; }).join('');
+document.getElementById('g2').innerHTML = O.map(function(o){ return '<div class="opt"><h3>' + o[1] + '</h3>' + phone(head('C', '', 'Calendário'), K[o[0]]) + '</div>'; }).join('');
+</script>
+</body>
+</html>

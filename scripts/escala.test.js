@@ -246,5 +246,14 @@ const tres = { '2026-11-10': { ...voo('LIS-OPO', '18:00', [leg('EZY1', 'LIS', '1
 eq('três serviços: o primeiro dos outros pela hora e "e mais 1"', E.agendaRows({ ym: '2026-11', duties: tres, today: '2026-11-01', kindLabel, fmtEur }).find((r) => r.iso === '2026-11-10').also, 'e Assistência em casa · 06:00–10:00 · e mais 1');
 eq('em inglês: "and …"', E.agendaRows({ ym: '2026-11', duties: D, today: '2026-11-13', lang: 'en', kindLabel, fmtEur }).find((r) => r.iso === '2026-11-19').also, 'and Assistência em casa · 06:00–12:00');
 
+// ── M3 (design/botoes-escritos.html, 2026-11-13): a pílula do mês diz o mês por extenso e o ano SÓ quando não é o deste ano,
+//    como o Calendário do iPhone ("Dezembro"; "Fevereiro 2027"); nunca abreviado (as palavras inteiras, como a S1). ──
+eq('M3: o mês deste ano, sem o ano', E.monthPillLabel({ year: 2026, month0: 11, todayYear: 2026, locale: 'pt-PT' }), 'Dezembro');
+eq('M3: o mês atual, sem o ano', E.monthPillLabel({ year: 2026, month0: 10, todayYear: 2026, locale: 'pt-PT' }), 'Novembro');
+eq('M3: outro ano, com o ano', E.monthPillLabel({ year: 2027, month0: 1, todayYear: 2026, locale: 'pt-PT' }), 'Fevereiro 2027');
+eq('M3: o ano passado, com o ano', E.monthPillLabel({ year: 2025, month0: 8, todayYear: 2026, locale: 'pt-PT' }), 'Setembro 2025');
+eq('M3: em inglês', E.monthPillLabel({ year: 2026, month0: 11, todayYear: 2026, locale: 'en-GB' }), 'December');
+eq('M3: em inglês, outro ano', E.monthPillLabel({ year: 2027, month0: 0, todayYear: 2026, locale: 'en-GB' }), 'January 2027');
+
 console.log(`\n${fail ? '✗' : '✓'} escala (escalaDay): ${ok} certos, ${fail} errados`);
 process.exit(fail ? 1 : 0);

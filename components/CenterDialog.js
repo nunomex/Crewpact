@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Modal, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Pressable } from 'react-native';
 import Icon from './Icon';
-import IconButton from './IconButton';
+import PillButton from './PillButton';
 import Eyebrow from './Eyebrow';
 import { PELE as P, PELE_FONT as F, SHADOW } from '../data/constants';
 
@@ -28,7 +28,7 @@ export default function CenterDialog({ visible, onClose, title, eyebrow, closeLa
               {hasEye ? <Eyebrow>{eyebrow}</Eyebrow> : null}
               <Text style={[s.title, { fontSize: hasEye ? 22 : 24, marginTop: hasEye ? 2 : 0 }]} allowFontScaling={false}>{title}</Text>
             </View>
-            <IconButton icon="close" onPress={onClose} label={closeLabel} />
+            <PillButton label={closeLabel} onPress={onClose} />
           </View>
           <ScrollView style={s.body} bounces={false} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             {children}

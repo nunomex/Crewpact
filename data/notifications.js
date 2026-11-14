@@ -8,6 +8,9 @@
 // Cada evento nasce de um CRUZAMENTO DE ESTADO com id determinístico (o padrão do
 // aviso de escala): o id muda quando o CONJUNTO muda → re-avisa sem repetir. Módulo
 // PURO — o caller (NotificationsBell) passa os dados já calculados do contexto.
+//
+// `level` (2026-11-13, a janela C1 — golden scripts/notifications.test.js): a cor do quadradinho pelo mapa das cores B
+// (design-system §14) — 'alert' (olhar) · 'stop' (parar) · null (informação). Vem dos dados, nunca do texto.
 import { validityStatus, validityLabel } from './validities';
 import { computeFlightTime, computeDutyTime } from '../ftl';
 
@@ -46,6 +49,7 @@ export function buildNotifications(profile, lang = 'pt', opts = {}) {
     list.push({
       id: 'roster:' + dates.join(','),
       action: 'roster',
+      level: 'alert',
       tag: en ? 'ROSTER' : 'ESCALA',
       time: en ? 'Calendar' : 'Calendário',
       title: en ? 'Roster changes' : 'Alterações na escala',
@@ -66,6 +70,7 @@ export function buildNotifications(profile, lang = 'pt', opts = {}) {
     list.push({
       id: 'docs:' + sig,
       action: 'validades',
+      level: expired ? 'stop' : null,      // caducado = parar; a caducar = informação (a data está no texto)
       tag: 'DOC',
       time: en ? 'Documents' : 'Validades',
       title: expired ? (en ? 'Document expired' : 'Documento expirado') : (en ? 'Document expiring' : 'Validade a expirar'),
@@ -86,6 +91,7 @@ export function buildNotifications(profile, lang = 'pt', opts = {}) {
       list.push({
         id: 'ftl90:' + sig,
         action: 'stats',
+        level: over ? 'stop' : 'alert',      // ultrapassado = parar; a aproximar-se = olhar
         tag: 'FTL',
         time: 'ORO.FTL.210',
         title: over ? (en ? 'Limit exceeded' : 'Limite ultrapassado') : (en ? 'Approaching a limit' : 'Limite a aproximar-se'),
@@ -100,6 +106,7 @@ export function buildNotifications(profile, lang = 'pt', opts = {}) {
     list.push({
       id: 'month:' + ms.ym,
       action: 'stats',
+      level: null,
       tag: en ? 'MONTH' : 'MÊS',
       time: ms.label || ms.ym,
       title: en ? 'Month closed' : 'Mês fechado',
@@ -116,6 +123,7 @@ export function buildNotifications(profile, lang = 'pt', opts = {}) {
       list.push({
         id: `ae:${ai.aeId || 'ae'}:${ai.lastFrom}`,
         action: 'library',
+        level: null,
         tag: 'AE',
         time: ai.lastFrom,
         title: en ? 'Agreement updated' : 'Acordo atualizado',
@@ -129,6 +137,7 @@ export function buildNotifications(profile, lang = 'pt', opts = {}) {
     list.push({
       id: 'legal:' + LEGAL_UPDATED,
       action: 'legal',
+      level: null,
       tag: en ? 'LEGAL' : 'LEGAL',
       time: LEGAL_UPDATED,
       title: en ? 'Terms updated' : 'Termos atualizados',

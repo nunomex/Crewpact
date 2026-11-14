@@ -1,9 +1,9 @@
 {
  "gerado": "2026-11-13",
  "total": {
-  "tipoFora": 198,
-  "tipoMenor11": 94,
-  "espacoFora": 384,
+  "tipoFora": 196,
+  "tipoMenor11": 93,
+  "espacoFora": 380,
   "raioFora": 54,
   "corSolta": 59,
   "ionicons": 9,
@@ -282,9 +282,9 @@
    "amareloTexto": 0
   },
   "components/NotificationsBell.js": {
-   "tipoFora": 3,
-   "tipoMenor11": 2,
-   "espacoFora": 6,
+   "tipoFora": 1,
+   "tipoMenor11": 1,
+   "espacoFora": 2,
    "raioFora": 0,
    "corSolta": 1,
    "ionicons": 0,

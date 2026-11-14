@@ -4,6 +4,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PELE, PELE_FONT, GUTTER, BRAND, SPACE } from '../data/constants';
 import Icon from '../components/Icon';
 import IconButton from '../components/IconButton';
+import PillButton from '../components/PillButton';
 import PeleSide from '../components/PeleSide';
 import PeleHeader from '../components/PeleHeader';
 import { t } from '../data/i18n';
@@ -361,7 +362,7 @@ export default function ValidadesScreen({ navigation }) {
                   ) : null}
                   <Text style={s.sheetTitle} numberOfLines={1}>{isPicking ? l('Adicionar', 'Add') : editing?.id ? l('Editar validade', 'Edit item') : validityLabel(editing?.type, isPilot, lang)}</Text>
                 </View>
-                <IconButton icon="close" onPress={requestCloseEditing} label={t('common.close', lang)} />
+                <PillButton label={t('common.close', lang)} onPress={requestCloseEditing} />
               </View>
 
               {isPicking ? (

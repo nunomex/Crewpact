@@ -2,7 +2,7 @@ import React, { useContext, useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, Platform, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { RADIUS, SPACE, TYPE, PELE, PELE_FONT, BRAND, CARD, TXT3 } from '../data/constants';
+import { RADIUS, SPACE, PELE, PELE_FONT, BRAND, CARD, TXT3 } from '../data/constants';
 import { buildNotifications } from '../data/notifications';
 import { aeMonthTotal } from '../data/perdiem';
 import { eventCounts } from '../data/aeEvents';
@@ -11,6 +11,8 @@ import { t } from '../data/i18n';
 import { AppContext } from '../data/appContext';
 import Icon from './Icon';
 import SheetHeader from './SheetHeader';
+import PillButton, { WideButton } from './PillButton';
+import MarkRow, { MARK_INDENT } from './MarkRow';
 
 // Sino do cabeçalho + central de notificações em PÁGINA INTEIRA (Modal slide-up, no
 // estilo das páginas de duty/import). Partilhado pelo cabeçalho da pele (PeleHeader).
@@ -18,8 +20,12 @@ import SheetHeader from './SheetHeader';
 // aparece no topo e é tocável → abre a revisão.
 // `variant`: 'bell' (ícone fixo — o ARQUIVO, header do Perfil) · 'pill' (Início: a pílula
 // "N novidades" que SÓ EXISTE quando há por ler — o botão desaparece quando não tem nada
-// para dizer, à Apple/Living Interface) · 'round' (Início 3.0, 2026-11-11: botão redondo de 44 ao lado das pílulas,
-// sempre presente, com a contagem por ler num selo laranja). `night` = tema noturno do Início.
+// para dizer, à Apple/Living Interface) · 'written' (Início 3.0: o botão ESCRITO "Notificações" ao lado das pílulas — S1, esboço
+// design/botoes-escritos.html, 2026-11-13; era um redondo com o sino —, sempre presente, com a contagem por ler num círculo laranja
+// no canto). `night` = tema noturno do Início.
+// A JANELA (C1, esboço design/janelas-c.html, 2026-11-13): "Fechar" escrito em cima · as novas separadas das antigas ("Novas" ·
+// "Antes") · cada uma com o quadradinho do que é (laranja "!" = olhar · vermelho "✕" = parar · neutro = informação, o mapa B) ·
+// os dias que mudaram À VISTA por baixo da linha · a única ação (rever as alterações) num botão largo no fundo.
 export default function NotificationsBell({ variant = 'bell', night = false }) {
   const { profile, lang, readNotifIds, setReadNotifIds, rosterChanges, validities, isPilot, dayLog, duties, ae, aeAt, crewAt, crewFleet, aeEvents, serviceStart, serviceStartExact, largada, crewHistory, companyHistory, lifestyle, homeBaseAt } = useContext(AppContext);
   const insets = useSafeAreaInsets();
@@ -63,9 +69,7 @@ export default function NotificationsBell({ variant = 'bell', night = false }) {
   // Detalhe por-dia do aviso de escala: data curta + rota/tipo + etiqueta de estado.
   const fmtDay = (iso) => { const d = new Date(`${iso}T00:00:00`); if (isNaN(d)) return iso; const x = d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric' }); return x.charAt(0).toUpperCase() + x.slice(1); };
   const descOf = (it) => it.route || t('duties.kind.' + (it.kind || 'flight'), lang);
-  const dayChip = (status) => status === 'added' ? { txt: l('Nova', 'New'), box: s.dchipNew, fg: { color: PELE.ink } }
-    : status === 'removed' ? { txt: l('Cancelada', 'Cancelled'), box: s.dchipCx, fg: { color: PELE.red } }
-    : { txt: l('Alterada', 'Changed'), box: s.dchipCh, fg: { color: PELE.warn } };
+
 
   const notifs = buildNotifications(profile, lang, { rosterChanges, validities, isPilot, dayLog, monthSummary, aeInfo });
   const unread = notifs.filter(n => !readNotifIds.has(n.id)).length;
@@ -81,22 +85,70 @@ export default function NotificationsBell({ variant = 'bell', night = false }) {
     return null;
   };
 
+  // ── A janela (C1) ──
+  // As novas por cima das antigas; os rótulos só quando há das duas (sem novas, a lista é uma só).
+  const fresh = notifs.filter((n) => !readNotifIds.has(n.id)), old = notifs.filter((n) => readNotifIds.has(n.id));
+  const groups = [
+    fresh.length ? { key: 'new', label: l('Novas', 'New'), items: fresh } : null,
+    old.length ? { key: 'old', label: fresh.length ? l('Antes', 'Earlier') : null, items: old } : null,
+  ].filter(Boolean);
+  const rosterN = (rosterChanges && rosterChanges.counts && rosterChanges.counts.total) || 0;
+  // O quadradinho diz o que é, pelo mapa das cores B (design-system §14): quente = olhar ("!" laranja) · parar ("✕" vermelho, um
+  // limite ultrapassado ou um documento caducado) · neutro = informação (o ícone do sítio para onde leva).
+  const W = CARD.day;
+  const markOf = (n) => {
+    if (n.level === 'stop') return { bg: W.stop, glyph: '✕' };
+    if (n.level === 'alert') return { bg: W.alert, glyph: '!' };
+    if (n.action === 'validades') return { bg: W.neutral, icon: 'doc' };
+    if (n.action === 'stats') return { bg: W.neutral, icon: 'stats' };
+    if (n.action === 'library') return { bg: W.neutral, icon: 'book' };
+    if (n.action === 'legal') return { bg: W.neutral, icon: 'shield' };
+    return { bg: W.neutral, icon: 'bell' };
+  };
+  const chipOf = (status) => status === 'added' ? { txt: l('Nova', 'New'), bg: W.flight }
+    : status === 'removed' ? { txt: l('Cancelada', 'Cancelled'), bg: W.stop }
+    : { txt: l('Alterada', 'Changed'), bg: W.alert };
+  const renderRow = (n, first) => {
+    const isNew = !readNotifIds.has(n.id);
+    const mk = markOf(n);
+    const act = actionFor(n);
+    const nDays = n.days && n.days.length ? n.days.length : 0;
+    // A escala: a linha diz quantos dias e os dias vêm por baixo (sem os "(s)" do resumo); as outras dizem o resumo delas.
+    const sub = nDays ? `${nDays} ${nDays === 1 ? l('dia', 'day') : l('dias', 'days')} · ${l('toca para rever', 'tap to review')}` : n.body;
+    return (
+      <MarkRow key={n.id} mark={mk} title={n.title} sub={sub} time={n.time} isNew={isNew} onPress={act || undefined} first={first} a11yLanguage={AL}
+        a11yLabel={[isNew ? l('Nova', 'New') : null, n.title, sub, n.time].filter(Boolean).join('. ')}>
+        {nDays ? (
+          <View style={s.days}>
+            {n.days.map((it, di) => {
+              const chip = chipOf(it.status);
+              return (
+                <View key={di} style={s.day}>
+                  <View style={[s.dchip, { backgroundColor: chip.bg }]}><Text style={[TXT3.badge, { color: CARD.onCard }]} allowFontScaling={false}>{chip.txt}</Text></View>
+                  <Text style={[TXT3.cardSub, s.flex, { color: W.ink }]} numberOfLines={1} maxFontSizeMultiplier={1.2}>
+                    <Text style={TXT3.dur}>{fmtDay(it.date)}</Text>{' · '}
+                    {it.beforeRoute ? <Text style={[s.strike, { color: W.tabSub }]}>{it.beforeRoute}</Text> : null}{it.beforeRoute ? ' → ' : ''}
+                    {descOf(it)}{it.status === 'added' && it.sectors ? ` · ${it.sectors} ${t('duties.sectorsShort', lang)}` : ''}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        ) : null}
+      </MarkRow>
+    );
+  };
+
   // Pílula do Início: sem novidades, NÃO EXISTE (nada de mobília em repouso).
   if (variant === 'pill' && unread === 0) return null;
 
   return (
     <>
       {/* O leitor de ecrã DIZ quantas há por ler (o ponto visual era mudo p/ VoiceOver/TalkBack). */}
-      {variant === 'round' ? (
-        <TouchableOpacity style={[s.round, { backgroundColor: (night ? CARD.night : CARD.day).round }]} onPress={() => setOpen(true)} activeOpacity={0.8}
-          accessibilityRole="button" accessibilityLanguage={AL} accessibilityLabel={`${t('home.notifsAria', lang)}${unread > 0 ? ` · ${unread} ${l('por ler', 'unread')}` : ''}`}>
-          <Icon name="bell" size={20} color={(night ? CARD.night : CARD.day).ink} />
-          {unread > 0 ? (
-            <View style={[s.roundBadge, { backgroundColor: (night ? CARD.night : CARD.day).alert }]}>
-              <Text style={[TXT3.badge, { color: CARD.badgeFg }]} allowFontScaling={false}>{unread > 9 ? '9+' : unread}</Text>
-            </View>
-          ) : null}
-        </TouchableOpacity>
+      {variant === 'written' ? (
+        <PillButton label={t('home.notifsTitle', lang)} onPress={() => setOpen(true)} ink={(night ? CARD.night : CARD.day).ink}
+          ring={(night ? CARD.night : CARD.day).desk} badgeBg={(night ? CARD.night : CARD.day).alert} badge={unread || null} a11yLanguage={AL}
+          a11yLabel={`${t('home.notifsAria', lang)}${unread > 0 ? ` · ${unread} ${l('por ler', 'unread')}` : ''}`} />
       ) : variant === 'pill' ? (
         <TouchableOpacity style={[s.pill, night && s.pillNight]} onPress={() => setOpen(true)} activeOpacity={0.8} hitSlop={8}
           accessibilityRole="button" accessibilityLanguage={AL} accessibilityLabel={`${t('home.notifsAria', lang)} · ${unread} ${l('por ler', 'unread')}`}>
@@ -115,53 +167,24 @@ export default function NotificationsBell({ variant = 'bell', night = false }) {
 
       {/* pageSheet no iOS (superfície LEVE, com gesto de arrasto do sistema); fullScreen só Android. */}
       <Modal visible={open} animationType="slide" onRequestClose={close} presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'}>
-        <View style={[s.page, { paddingTop: Platform.OS === 'ios' ? 16 : Math.max(insets.top, 12), paddingBottom: insets.bottom }]}>
-          <SheetHeader eyebrow={t('home.notifsEyebrow', lang)} title={t('home.notifsTitle', lang)}
-            onClose={close} closeLabel={t('common.close', lang)} />
+        <View style={[s.page, { paddingTop: Platform.OS === 'ios' ? SPACE.lg : Math.max(insets.top, SPACE.md), paddingBottom: Math.max(insets.bottom, SPACE.lg) }]}>
+          <SheetHeader card title={t('home.notifsTitle', lang)} onClose={close} closeLabel={t('common.close', lang)} />
 
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
-            {notifs.map((n, i) => {
-              const isNew = !readNotifIds.has(n.id);
-              const st = [s.notifItem, i > 0 && { borderTopWidth: 1, borderTopColor: PELE.line }];
-              const inner = (
-                <>
-                  <View style={[s.notifDot, { backgroundColor: isNew ? PELE.red : PELE.line }]} />
-                  <View style={{ flex: 1 }}>
-                    <View style={s.notifMeta}>
-                      <View style={s.tagBadge}><Text style={s.tagTxt}>{n.tag}</Text></View>
-                      <Text style={s.notifTime}>{n.time}</Text>
-                    </View>
-                    <Text style={s.notifItemTitle}>{n.title}</Text>
-                    {n.days && n.days.length ? (
-                      <View style={s.days}>
-                        {n.days.map((it, di) => {
-                          const chip = dayChip(it.status);
-                          return (
-                            <View key={di} style={s.day}>
-                              <View style={[s.dchip, chip.box]}><Text style={[s.dchipTxt, chip.fg]}>{chip.txt}</Text></View>
-                              <Text style={s.dtxt} numberOfLines={1}>
-                                <Text style={s.dd}>{fmtDay(it.date)}</Text>{' · '}
-                                {it.beforeRoute ? <Text style={s.dstrike}>{it.beforeRoute}</Text> : null}{it.beforeRoute ? ' → ' : ''}
-                                {descOf(it)}{it.status === 'added' && it.sectors ? ` · ${it.sectors} ${t('duties.sectorsShort', lang)}` : ''}
-                              </Text>
-                            </View>
-                          );
-                        })}
-                      </View>
-                    ) : (
-                      <Text style={s.notifItemBody}>{n.body}</Text>
-                    )}
-                  </View>
-                  {actionFor(n) ? <Icon name="chevron" size={16} color={PELE.grey} /> : null}
-                </>
-              );
-              const act = actionFor(n);
-              return act
-                ? <TouchableOpacity key={n.id} style={st} activeOpacity={0.7} onPress={act}>{inner}</TouchableOpacity>
-                : <View key={n.id} style={st}>{inner}</View>;
-            })}
-            <Text style={s.noMore}>{t('home.noMore', lang)}</Text>
+          <ScrollView style={s.flex} contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
+            {!notifs.length ? <Text style={[TXT3.text, s.empty]}>{l('Não há notificações.', 'No notifications.')}</Text> : null}
+            {groups.map((g) => (
+              <View key={g.key}>
+                {g.label ? <Text style={[TXT3.kind, s.sec]} accessibilityRole="header">{g.label}</Text> : null}
+                {g.items.map((n, i) => renderRow(n, i === 0))}
+              </View>
+            ))}
           </ScrollView>
+          {rosterN ? (
+            <View style={s.foot}>
+              <WideButton label={rosterN === 1 ? l('Rever 1 alteração', 'Review 1 change') : l(`Rever ${rosterN} alterações`, `Review ${rosterN} changes`)}
+                onPress={openRoster} a11yLanguage={AL} />
+            </View>
+          ) : null}
         </View>
       </Modal>
     </>
@@ -178,32 +201,17 @@ const s = StyleSheet.create({
   pillDot: { width: 6, height: 6, borderRadius: 99, backgroundColor: BRAND.signal },
   pillTxt: { fontSize: 10.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.ink },
   pillTxtNight: { color: '#F4F2ED' },
-  // Início 3.0 — o botão redondo (44, cinzento translúcido sobre o fundo) e o selo da contagem (18, laranja, tinta).
-  round: { width: 44, height: 44, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
-  roundBadge: { position: 'absolute', top: -SPACE.xxs, right: -SPACE.xxs, minWidth: 18, height: 18, borderRadius: RADIUS.pill, paddingHorizontal: SPACE.xs, alignItems: 'center', justifyContent: 'center' },
 
-  // Central de notificações — página inteira (igual às de duty/import)
-  page: { flex: 1, backgroundColor: PELE.paper },
-  body: { paddingHorizontal: 24, paddingBottom: 24 },
-
-  notifItem: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingVertical: SPACE.md + 5 },
-  notifDot: { width: 8, height: 8, borderRadius: RADIUS.pill, flexShrink: 0 },
-  notifMeta: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, marginBottom: SPACE.xs },
-  tagBadge: { backgroundColor: PELE.soft, borderRadius: RADIUS.sm - 6, paddingHorizontal: 6, paddingVertical: 2 },
-  tagTxt: { fontSize: 11, fontFamily: PELE_FONT.body, color: PELE.ink, letterSpacing: 0.5 },
-  notifTime: { fontSize: TYPE.eyebrow, color: PELE.grey },
-  notifItemTitle: { fontSize: 13, fontFamily: PELE_FONT.bodyMed, color: PELE.ink },
-  notifItemBody: { fontSize: TYPE.label, color: PELE.grey, marginTop: 2, lineHeight: 17 },
-  // Detalhe por-dia do aviso de escala (chips + rota/tipo)
-  days: { marginTop: 9, gap: 8 },
-  day: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-  dchip: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, minWidth: 72, alignItems: 'center' },
-  dchipTxt: { fontSize: 9.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.4, textTransform: 'uppercase' },
-  dchipCh: { backgroundColor: PELE.warnSoft },
-  dchipNew: { backgroundColor: PELE.soft },
-  dchipCx: { backgroundColor: PELE.redSoft },
-  dtxt: { flex: 1, fontSize: 12.5, fontFamily: PELE_FONT.body, color: PELE.ink },
-  dd: { fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
-  dstrike: { color: PELE.grey, textDecorationLine: 'line-through' },
-  noMore: { textAlign: 'center', fontSize: 11, color: PELE.grey, padding: SPACE.lg },
+  // A janela (C1): a folha branca da 3.0, a lista com o quadradinho e o botão largo no fundo.
+  flex: { flex: 1 },
+  page: { flex: 1, backgroundColor: CARD.day.sheet },
+  body: { paddingHorizontal: SPACE.lgPlus, paddingBottom: SPACE.xl },
+  empty: { color: CARD.day.tabSub, textAlign: 'center', paddingVertical: SPACE.xxl },
+  sec: { color: CARD.day.tabSub, paddingTop: SPACE.md, paddingBottom: SPACE.xs },
+  // os dias que mudaram, por baixo da linha, alinhados com o texto (36 do quadradinho + 12)
+  days: { marginLeft: MARK_INDENT, marginTop: SPACE.sm, gap: SPACE.s },
+  day: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm },
+  dchip: { height: 22, paddingHorizontal: SPACE.sm, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
+  strike: { textDecorationLine: 'line-through' },
+  foot: { paddingHorizontal: SPACE.lgPlus, paddingTop: SPACE.sm },
 });
