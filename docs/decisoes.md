@@ -1236,6 +1236,11 @@ motor está na versão **21**. **O que falta, por ordem:**
   período escolhido (o que acaba hoje, ou o de amanhã se o serviço de hoje passar a meia-noite e pesar mais) — golden primeiro
   (`test:ftl` 1013, nenhum número mudou); a conta diz "31 h de serviço de 5 a 11 nov" e a barra da folha "ficam 29 h · de 5 a 11
   nov" (`test:homecards` 482).
+  **O documento da Living Interface v3 (ponto 7 da LI) — feito (por gravar):** `docs/living-interface.md` reescrito a partir do código
+  (os princípios revistos — "a calma prova-se", "só o calendário", "a cor tem um significado"; os dois motores; a anatomia do 3.0;
+  os 17 estados como estão; o que morreu da v2, com a data; onde está cada coisa; o que falta). **Achado ao escrever:** o Início 3.0
+  **não anima a mudança de estado** (nenhuma animação no código) — o ponto 8 da LI ("ver no iPhone se anima") passa a "por fazer,
+  com esboço". O guião `docs/verificacao-device.md` está por pôr em dia com a v3.
 - **Do dia 2026-11-14 (gravado e enviado até `81c2dfd`) — tudo por ver:** os Números (o total sozinho no topo; "Acima da base" no
   fim do "De onde vem"; com a base incerta, "O total fica entre"); o topo lado a lado igual no Início, na Escala e nos Números
   (o número do mesmo tamanho; a frase com ar por cima); a meteorologia (na véspera e antes do report, a base à hora do report no
