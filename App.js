@@ -1035,7 +1035,7 @@ export default function App() {
       // SÓ DETETA (não grava): expõe o diff p/ o user rever e CONFIRMAR no import (decisão do
       // user — nada entra no `duties` sem confirmação). Gravar = RosterImportSheet → saveDuty.
       const res = diffUpcoming({ incoming, duties: dutiesRef.current, window });
-      setRosterChanges(res);
+      setRosterChanges({ ...res, at: Date.now() });   // `at`: a hora desta leitura — o "lido às" do cartão das alterações (E2)
       return res;
     } catch { return null; /* best-effort */ }
   }, [company, calendarId]);

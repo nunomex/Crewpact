@@ -301,6 +301,8 @@ export const TXT3 = {
   dur:       { fontFamily: PELE_FONT.bodyBold,  fontSize: 12 },                                      // o selo entre as duas horas
   act:       { fontFamily: PELE_FONT.bodyBold,  fontSize: 14 },                                      // a barra de ação do cartão
   checkK:    { fontFamily: PELE_FONT.bodyBold,  fontSize: 14, lineHeight: 18 },                      // o nome de cada sinal da verificação (W1: Voo · Avião · Aeroporto)
+  voiceB:    { fontFamily: PELE_FONT.bodyHeavy, fontSize: 20, lineHeight: 25, letterSpacing: -0.2 },  // a voz (V2): a 1.ª frase, a cheio
+  voiceT:    { fontFamily: PELE_FONT.bodyMed,   fontSize: 17, lineHeight: 23 },                      // a voz (V2): a cauda, mais leve
   slimTitle: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 16, lineHeight: 20 },
   slimSub:   { fontFamily: PELE_FONT.bodyMed,   fontSize: 12, lineHeight: 16 },
   slimVal:   { fontFamily: PELE_FONT.bodyHeavy, fontSize: 20 },

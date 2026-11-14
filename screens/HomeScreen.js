@@ -9,6 +9,7 @@ import FlightShareCard from '../components/FlightShareCard';
 import { shareCardFor } from '../data/shareLeg';
 import { HomeTop, HomeCards, pillWidth } from '../components/HomeCards';
 import { homeCards, topGiant } from '../data/homeCards';
+import { stateVoice } from '../data/stateVoice';
 import { getUpcomingFlight } from '../data/calendar';
 import { catLabel } from '../data/extras';
 import { serviceMoney, aeIndex, annualLabel } from '../data/perdiem';
@@ -745,7 +746,9 @@ export default function HomeScreen({ navigation }) {
 
   // ── AUDITORIA DO MÊS (design/auditoria-mes.html v2): o radar corre SÓ no estado fecho.
   const [auditOpen, setAuditOpen] = useState(false);
-  const audit = useMemo(() => (homeState === 'fecho' && ae && crewCategory
+  // Corre também na FOLGA (2026-11-14, F2): o sinal "O mês · nada por confirmar" só é verdade se o radar correr — e, se encontrar
+  // alguma coisa, é o aviso dele que aparece.
+  const audit = useMemo(() => ((homeState === 'fecho' || homeState === 'folga') && ae && crewCategory
     ? monthAudit(duties || {}, { ym: todayISO.slice(0, 7), ae, cat: crewCategory, fleet: crewFleet, base, rosterLog: rosterLog || [], events: aeEvents || [], isPilot })
     : null), [homeState, duties, ae, crewCategory, crewFleet, base, rosterLog, aeEvents, isPilot, todayISO]);
 
@@ -972,10 +975,10 @@ export default function HomeScreen({ navigation }) {
     if (left > 0) pushW({ id: 'vac', title: `${l('Férias', 'Leave')} ${todayISO.slice(0, 4)}`, open: { to: 'stats' },
       sub: l(`${left === 1 ? 'fica 1' : `ficam ${left}`} de ${quota} dias · o ano acaba daqui a ${toYearEnd} dias`, `${left} of ${quota} days left · the year ends in ${toYearEnd} days`) });
   }
-  if (homeState === 'fecho') {
+  if (homeState === 'fecho' || homeState === 'folga') {
     if (audit && audit.count > 0) pushW({ id: 'audit', title: l('Auditoria do mês', 'Month audit'), open: { to: 'audit' },
       sub: `${audit.count} ${audit.count === 1 ? l('item por confirmar', 'item to confirm') : l('itens por confirmar', 'items to confirm')}${audit.totalEur > 0 ? ` · ≈ ${eur(audit.totalEur)} ${l('em causa', 'at stake')}` : ''}` });
-    if (monthAe && monthAe.missing) pushW({ id: 'miss', title: 'Per-diem', sub: `${monthAe.missing} ${l('voo(s) sem rota — per-diem incompleto', 'flight(s) without a route — per-diem incomplete')}` });
+    if (homeState === 'fecho' && monthAe && monthAe.missing) pushW({ id: 'miss', title: 'Per-diem', sub: `${monthAe.missing} ${l('voo(s) sem rota — per-diem incompleto', 'flight(s) without a route — per-diem incomplete')}` });
   }
 
   // ── A ENTRADA do homeCards ──
@@ -1005,9 +1008,40 @@ export default function HomeScreen({ navigation }) {
       : { eta: hm(inbArr.estimated || inbArr.scheduled) || (inboundInfo.etaZ ? `${inboundInfo.etaZ}Z` : null) };
     return { seen: fsRaw && fsRaw.at ? hhmm(fsRaw.at) : null, flight: flightOk, plane: plane && (plane.st || plane.eta) ? plane : null, airport: airportCalm(depAirport) ? true : null };
   })();
+  // ── E2 · "A ESCALA MUDOU" COM O QUÊ E QUANDO (design/escala-mudou.html E2, 2026-11-14): o diff (data/rosterDiff.js) na forma que o
+  // homeCards lê — ele decide as linhas (golden test:homecards). "lido às" = a hora da deteção (App.js guarda `at`); a app não sabe
+  // quando a empresa mudou.
+  const changesF = (() => {
+    const rc = rosterChanges;
+    if (!rc || !rc.counts || !rc.counts.total) return null;
+    const hhmm = (ms) => { const d = new Date(ms); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+    const pack = (type) => (x) => {
+      const d = (type === 'removed' ? x.before : x.after) || {};
+      const k = d.kind || null;
+      return { iso: x.date, type, kind: k, kindLabel: k && k !== 'flight' ? t('duties.kind.' + k, lang) : null, route: d.route || null,
+        report: d.report_time || null, end: d.block_on || null,
+        fields: (x.fields || []).map((f) => ({ key: f.key, label: f.label || null, before: f.before ?? null, after: f.after ?? null })) };
+    };
+    const items = [...(rc.changed || []).map(pack('changed')), ...(rc.conflict || []).map(pack('conflict')), ...(rc.added || []).map(pack('added')), ...(rc.removed || []).map(pack('removed'))];
+    return items.length ? { seen: rc.at ? hhmm(rc.at) : null, items } : null;
+  })();
+  // ── V2 · A VOZ (folga · férias · baixa) e a W1 DA FOLGA (design/folga-1-2.html F2, 2026-11-14) ──
+  // A frase vem do motor (data/stateVoice.js, golden test:voice): sem o tempo (a app não usa a localização) e sem o aviso (com um aviso
+  // que pede ação, o homeCards cala a voz). Os três sinais só com os dados que os sustentam: a escala com a hora da deteção (sem ela,
+  // "sem dados"); as validades só se as registadas estão em dia; o mês só se a auditoria correu e não achou nada.
+  const hhmmOf = (ms) => { const d = new Date(ms); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+  const tmwISO = (() => { const d = new Date(`${todayISO}T12:00:00`); d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
+  const voiceF = ['folga', 'ferias', 'doenca'].includes(homeState) ? stateVoice({ state: homeState, lang, dateISO: todayISO, hour: hourNow, wx: null,
+    ctx: { tmwReport: nextF && nextF.iso === tmwISO ? (nextF.report || null) : null, serviceStart: serviceStart || null,
+      companhia: company && company.name ? company.name : null, lastVacDay: !!(vacInfo && vacInfo.toIso === todayISO) } }) : null;
+  const watchF = homeState === 'folga' ? {
+    roster: calendarId && rosterChanges && rosterChanges.at && !(rosterChanges.counts && rosterChanges.counts.total) ? { seen: hhmmOf(rosterChanges.at) } : null,
+    docs: (() => { const vi = todayItems.find((it) => it.id === 'validades'); return vi && vi.status === 'ok' ? true : null; })(),
+    month: audit && audit.count === 0 ? true : null,
+  } : null;
   const H = {
     lang, state: homeState, todayISO, phase,
-    calm: calmF,
+    calm: calmF, changes: changesF, voice: voiceF, watch: watchF,
     hero: ['hoje', 'disrupcao', 'vespera'].includes(homeState) || (homeState === 'pernoita' && flight && flight.report) ? heroF : null,
     live: liveF, next: nextF,
     untilMin: nextF && nextF.startMs != null ? Math.max(0, Math.floor((nextF.startMs - now) / 60000)) : null,

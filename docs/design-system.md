@@ -447,8 +447,30 @@ tinta do cartão; **sem dados** ou **por ver** = o anel a tracejado, sem visto. 
 quando o sinal passa a certo (motion §7, `CheckRing`). Ocupa o lugar de um aviso: com qualquer aviso ou o limite incerto, sai; e,
 como um aviso, faz a pernoita passar a linha fina (1 principal + 2). O que se escreve decide-o `data/homeCards.js` (`calmOf`, golden
 `test:homecards`); "o aeroporto está normal?" é `airportCalm` (`data/flightDelay.js`, golden `test:flightstatus`: 8 partidas ou
-mais e sem aviso). **Por fazer:** na folga, os mesmos três sinais por baixo da voz (Escala · Validades · O mês) — entram com os
-esboços da folga; tocar em "Avião" para a linha da folga do avião (a W2 do esboço).
+mais e sem aviso). **Na folga** (F2, abaixo): os mesmos três sinais, sem caixa, por baixo da voz — Escala · Validades · O mês. **Por
+fazer:** tocar em "Avião" para a linha da folga do avião (a W2 do esboço).
+
+### A folga, 1 principal + 2 (F2, 2026-11-14 — `design/folga-1-2.html`, escolhida pelo Nuno; no código)
+
+Numa folga o principal é **a calma**: a voz (V2 — uma frase na folha, sem caixa: `TXT3.voiceB` 20 a cheio e `TXT3.voiceT` 17 mais
+leve, alinhada com o texto dos cartões; as frases do motor `data/stateVoice.js`, sem as do tempo nem a do aviso) e, por baixo, os três
+sinais sem caixa (Escala "lida às hh:mm" · Validades "em dia" · O mês "nada por confirmar"; sem o dado, "sem dados" / "nenhuma
+registada"). Depois **o próximo serviço numa linha com o dia** (como a B3: "Sexta 13 · daqui a 2 dias", o report à direita — o topo
+já diz quanto falta). Depois **um secundário**, pela prioridade: o 2.º aviso que pede ação > as férias (de novembro em diante, com
+dias por gozar — CT art. 240.º) > o mês. **Com um aviso que pede ação** (a escala mudou, os documentos, a auditoria do mês — que passou
+a correr também na folga), o aviso é o principal e a voz e os sinais calam-se. Os avisos que pedem ação passam à frente das férias
+(só cabem 2). A voz também nas férias e na baixa, por cima dos cartões, e só sem avisos. Decide-o `data/homeCards.js` (golden
+`test:homecards`); o ecrã passa `voice` e `watch` (`screens/HomeScreen.js`).
+
+### As alterações da escala (E2, 2026-11-14 — `design/escala-mudou.html`, escolhida pelo Nuno; no código)
+
+O aviso "A escala mudou" deixa de ser só uma contagem: é um cartão âmbar com o "!" (o tipo, "N alterações" e "lido às hh:mm" em
+cima), uma linha por alteração — **o dia grande à esquerda** (`TXT3.fact`, o dia da semana em `TXT3.kind`; a imagem 3409), o que
+mudou a cheio com **o antes riscado** (`TXT3.lineVal`), o pormenor por baixo (`TXT3.slimSub`; o cancelado riscado) — numa caixa
+branca translúcida (`CARD.go`), até três linhas e "e mais N", e a barra **"Rever e aceitar · nada entra sem ti"** (`CARD.act`). O
+cartão inteiro abre a revisão. O que se escreve decide-o `data/homeCards.js` (`changesCard`, golden `test:homecards`: a mais
+próxima primeiro; o campo que mais pesa — report > rota > tipo > off-block > on-block > setores). "Lido às" é a hora da deteção
+(a app não sabe quando a empresa mudou). Sem os dados do diff, fica a linha de antes.
 
 ### Peças escolhidas a 2026-11-13 (das 57 referências de `referencias/Para a app/`)
 

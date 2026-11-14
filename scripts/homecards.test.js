@@ -156,12 +156,14 @@ eq('standby · o próximo serviço daqui a 3 dias: o cabeçalho e a linha', [HDR
 // ═══ 7 · Folga — o número é quanto falta; o dinheiro do mês numa linha; o aviso de outra coisa em último ═══
 eq('folga · topo', R.folga.top, { pill: { text: 'Folga', live: false }, pill2: { text: 'quarta 11', iso: D11 }, what: 'Próximo serviço daqui a',
   giant: { l1: '2', unit: 'dias', l2: null, l2Grey: false }, facts: [{ v: 'sexta 13', l: 'até lá', tone: null }, { v: '31 h', l: 'de 60 em 7 dias', tone: null }] });
-// O "Próximo serviço" diz o dia (a análise de 2026-11-14: só o topo o dizia).
-eq('folga · o próximo serviço (E3, com o dia)', E(R.folga.cards[0]), { t: 'card', color: 'flight', kind: 'Próximo serviço · sexta 13 · 2 setores', title: 'LIS → FNC → LIS', cities: 'Lisboa → Funchal → Lisboa', flightNo: null, gain: null, gainLbl: null, line: { pts: [pt('05:30', 'report', true), pt('11:10', 'fim', true)], stops: ['LIS', 'FNC', 'LIS'] }, quiet: null, sub: null, a: null, dur: null, b: null, corner: 'chev', action: null });
-eq('folga · cartões', R.folga.cards.slice(1).map(C), [
-  { t: 'slim', color: 'neutral', title: 'Novembro', sub: 'estimado · bruto', gain: false, value: '2 431,50 €' },
-  // as férias por gozar são informação, não um cuidado: neutro (o laranja é só para olhar — 14 CFR 25.1322, a lógica do cockpit)
-  { t: 'slim', color: 'neutral', title: 'Férias 2026', sub: 'ficam 12 de 22 dias · o ano acaba daqui a 50 dias', gain: false, value: null }]);
+// F2 (design/folga-1-2.html, escolhida pelo Nuno a 2026-11-14): a calma em cima (a voz e os três sinais — os dados vêm do ecrã), o
+// próximo serviço numa linha com o dia (como a B3; o topo já diz quanto falta) e mais um secundário pela prioridade — o aviso que pede
+// ação > a verificação > as férias (de novembro em diante) > o mês. Sem os dados da calma (o golden base), fica o resto.
+eq('folga · F2: o próximo serviço numa linha com o dia; as férias (novembro) no 2.º lugar', R.folga.cards.map((c) => [c.t, c.id]), [['hdr', 'nextHdr'], ['slim', 'next'], ['slim', 'vac']]);
+eq('folga · F2: o cabeçalho e a linha do próximo serviço', [HDR(R.folga.cards[0]), LINEN(R.folga.cards[1])],
+  [{ t: 'hdr', id: 'nextHdr', text: 'Sexta 13 · daqui a 2 dias' }, { t: 'slim', id: 'next', color: 'flight', title: 'LIS → FNC → LIS', sub: 'Lisboa → Funchal → Lisboa · 2 setores', value: '05:30', valueLbl: 'report' }]);
+// as férias por gozar são informação, não um cuidado: neutro (o âmbar é só para olhar — 14 CFR 25.1322, a lógica do cockpit)
+eq('folga · as férias por gozar: neutro', C(R.folga.cards[2]), { t: 'slim', color: 'neutral', title: 'Férias 2026', sub: 'ficam 12 de 22 dias · o ano acaba daqui a 50 dias', gain: false, value: null });
 // A menos de 48 h conta em HORAS (auditoria do tripulante, 2026-11-04: "amanhã às 06:00" era "1 dia" e eram 18 h).
 eq('folga < 48 h · número em horas', R.folgaHoras.top.giant, { l1: '18', unit: 'h 30', l2: null, l2Grey: false });
 eq('folga < 48 h · "amanhã até lá"', R.folgaHoras.top.facts[0], { v: 'amanhã', l: 'até lá', tone: null });
@@ -488,7 +490,8 @@ const WXF = { c: 4, label: 'nevoeiro', ic: 'fog', at: '05:30', st: 'LIS' };
   // acima do limite: o cartão do voo sem a linha (o aviso vermelho vem do ecrã, por cima)
   eq('acima do limite · sem a linha discreta', homeCards({ ...S.antes, hero: { ...HERO, legal: { status: 'bad' } } }).cards[0].quiet, null);
   // o próximo serviço com o PSV conhecido (vem do mesmo voo do topo): o limite discreto, sem dizer "Dentro do limite" sem os acumulados
-  const nx = homeCards({ ...S.folga, next: { ...NEXT_IV(D13), psv: { max: '12:15', plan: '05:10' }, perDiem: 120.4, flightNo: 'EZY7841' } }).cards[0];
+  // (na folga o próximo serviço passou a linha — F2; o cartão grande do próximo serviço continua no pós-voo e no regresso das férias)
+  const nx = homeCards({ ...S.posvoo, next: { ...NEXT_IV(D14), psv: { max: '12:15', plan: '05:10' }, perDiem: 120.4, flightNo: 'EZY7841' } }).cards.find((c) => c.id === 'next');
   eq('próximo serviço com o PSV · "PSV dentro do limite" e o per diem', [nx.quiet, nx.gain, nx.flightNo], [{ l: 'PSV dentro do limite', rest: null, sub: '5 h 10 de 12 h 15', r: { k: 'margem', v: '7 h 05' } }, '+120,40 €', null]);
   // os avisos podem levar o tema por cima (o limite excedido: "O limite de hoje")
   const ov = homeCards({ ...S.folga, warns: [{ id: 'ftl', first: true, tone: 'stop', kind: 'O limite de hoje', title: 'Acima do limite · 45 min a mais', sub: 'PSV 12 h 45 de 12 h', open: { to: 'item', id: 'legal' } }] }).cards.find((c) => c.id === 'ftl');
@@ -529,7 +532,7 @@ const WXF = { c: 4, label: 'nevoeiro', ic: 'fog', at: '05:30', st: 'LIS' };
   // a pernoita continua a ser o que vem a seguir ao voo de hoje
   eq('com pernoita · o cartão da pernoita (como antes)', R.antes.cards[1].id, 'night');
   // a folga e o pós-voo: "Próximo serviço · amanhã"
-  eq('folga com o voo amanhã · "Próximo serviço · amanhã"', R.folgaHoras.cards[0].kind, 'Próximo serviço · amanhã · 2 setores');
+  eq('folga com o voo amanhã · o cabeçalho "Amanhã · quinta 12" (F2)', HDR(R.folgaHoras.cards[0]), { t: 'hdr', id: 'nextHdr', text: 'Amanhã · quinta 12' });
   // em inglês
   const ee = homeCards({ ...S.emVoo, lang: 'en', warns: [], hero: { ...S.emVoo.hero, nightStop: null } });
   eq('em inglês · o cabeçalho e a linha', [ee.cards[1].text, ee.cards[2].valueLbl], ['Tomorrow · Thursday 12', 'report']);
@@ -590,6 +593,77 @@ const WXF = { c: 4, label: 'nevoeiro', ic: 'fog', at: '05:30', st: 'LIS' };
   const en = homeCards({ ...S.antes, lang: 'en', calm: { ...CALM, airport: null } }).cards[1];
   eq('W1 · em inglês', [en.title, en.seen, en.items.map((i) => `${i.k}: ${i.v}`)], ['Flight on time', 'seen 03:33', ['Flight: on time', 'Aircraft: already at LIS', 'Airport: no data']]);
   eq('W1 · em inglês, os três e antes da janela', [homeCards({ ...S.antes, lang: 'en', calm: CALM }).cards[1].title, homeCards({ ...S.antes, lang: 'en', calm: { from: '02:15' } }).cards[1].title], ['All on time', 'Live flight from 02:15']);
+}
+
+// ═══ E2 · "A ESCALA MUDOU" COM O QUÊ E QUANDO (design/escala-mudou.html E2, escolhida pelo Nuno a 2026-11-14) ═══
+// O aviso da escala passa a cartão âmbar com "!", uma linha por alteração (a mais próxima primeiro): o dia grande à esquerda, o que
+// mudou (o campo que mais pesa: report > rota > tipo > off-block > on-block > setores), o antes riscado e o novo a cheio; "lido às" a
+// hora da leitura do calendário; até 3 linhas (e "e mais N"); "Rever e aceitar · nada entra sem ti". Os dados vêm do diff
+// (data/rosterDiff.js) em H.changes; sem eles, fica a linha de antes (só a contagem).
+{
+  const F_ = (key, pt, before, after) => ({ key, label: { pt, en: pt }, before, after });
+  const CH = { seen: '11:52', items: [
+    { iso: '2026-11-17', type: 'removed', kind: 'standby_home', kindLabel: 'Standby em casa', route: null, report: '08:00', end: '14:00', fields: [] },
+    { iso: D13, type: 'changed', kind: 'flight', route: 'LIS-FNC-LIS', report: '06:45', end: '12:25', fields: [F_('report_time', 'Report', '05:30', '06:45'), F_('block_on', 'On-block', '11:10', '12:25')] },
+    { iso: '2026-11-15', type: 'added', kind: 'flight', route: 'LIS-LGW-LIS', report: '07:00', end: null, fields: [] },
+  ] };
+  const CW = { id: 'roster', title: 'A escala mudou', sub: '3 alterações por rever · nada entra sem ti', open: { to: 'review' } };
+  const fo = homeCards({ ...S.folga, warns: [CW, ...S.folga.warns], changes: CH });
+  const card = fo.cards.find((c) => c.id === 'roster');
+  eq('E2 · a folga: o aviso da escala é o cartão das alterações (no lugar da linha)', [card.t, card.color, card.mark, card.kind, card.title, card.seen],
+    ['changes', 'alert', '!', 'A escala mudou', '3 alterações', 'lido às 11:52']);
+  eq('E2 · as linhas pela data: sexta 13 o report (o antes e o novo), domingo 15 o serviço novo, terça 17 o cancelado', card.rows, [
+    { day: '13', wd: 'sex', k: 'Report', old: '05:30', v: '06:45', sub: 'LIS → FNC → LIS · On-block 11:10 → 12:25', struck: false },
+    { day: '15', wd: 'dom', k: 'Serviço novo', old: null, v: null, sub: 'LIS → LGW → LIS · report 07:00', struck: false },
+    { day: '17', wd: 'ter', k: 'Cancelado', old: null, v: null, sub: 'Standby em casa · 08:00–14:00', struck: true }]);
+  eq('E2 · a ação e o que abre', [card.more, card.action, card.open], [0, { label: 'Rever e aceitar', note: 'nada entra sem ti' }, { to: 'review' }]);
+  eq('E2 · na folga (F2) o cartão das alterações é o principal', fo.cards.map((c) => c.id), ['roster', 'nextHdr', 'next', 'vac']);
+  // mais de 3: as 3 primeiras e "e mais N"
+  const many = homeCards({ ...S.folga, warns: [CW], changes: { seen: '11:52', items: [...CH.items, { iso: '2026-11-20', type: 'added', kind: 'flight', route: 'LIS-OPO', report: '09:00', fields: [] }, { iso: '2026-11-21', type: 'removed', kind: 'flight', route: 'LIS-FNC', report: '06:00', end: '10:00', fields: [] }] } }).cards.find((c) => c.id === 'roster');
+  eq('E2 · com 5: o título conta as 5, mostra 3 e "e mais 2"', [many.title, many.rows.length, many.more], ['5 alterações', 3, 2]);
+  // uma só; o campo que mais pesa; os dois mexeram; um campo sem rótulo conhecido
+  const one = (it) => homeCards({ ...S.folga, warns: [CW], changes: { seen: null, items: [it] } }).cards.find((c) => c.id === 'roster');
+  eq('E2 · 1 alteração e sem a hora da leitura', [one(CH.items[1]).title, one(CH.items[1]).seen], ['1 alteração', null]);
+  eq('E2 · a rota pesa mais do que o on-block', one({ iso: D13, type: 'changed', kind: 'flight', route: 'LIS-OPO-LIS', report: '05:30', fields: [F_('block_on', 'On-block', '11:10', '10:40'), F_('route', 'Rota', 'LIS-FNC-LIS', 'LIS-OPO-LIS')] }).rows[0],
+    { day: '13', wd: 'sex', k: 'Rota', old: 'LIS → FNC → LIS', v: 'LIS → OPO → LIS', sub: 'On-block 11:10 → 10:40', struck: false });
+  eq('E2 · os dois mexeram: diz que escolhes na revisão', one({ ...CH.items[1], type: 'conflict' }).rows[0].sub, 'LIS → FNC → LIS · On-block 11:10 → 12:25 · também o mudaste — escolhes na revisão');
+  eq('E2 · o tipo mudou: o nome do serviço', one({ iso: D13, type: 'changed', kind: 'standby_airport', route: null, report: '06:00', fields: [F_('kind', 'Tipo', 'flight', 'standby_airport')] }).rows[0],
+    { day: '13', wd: 'sex', k: 'Tipo', old: 'voo', v: 'standby', sub: 'report 06:00', struck: false });
+  eq('E2 · mudou uma perna (sem campo principal): "Mudou" e o que mudou', one({ iso: D13, type: 'changed', kind: 'flight', route: 'LIS-FNC-LIS', report: '05:30', fields: [F_('leg2_off', 'Perna 2 · off-block', '08:10', '08:40')] }).rows[0],
+    { day: '13', wd: 'sex', k: 'Mudou', old: null, v: null, sub: 'LIS → FNC → LIS · Perna 2 · off-block 08:10 → 08:40', struck: false });
+  eq('E2 · sem H.changes: a linha de antes (só a contagem)', pick(homeCards({ ...S.folga, warns: [CW] }).cards.find((c) => c.id === 'roster'), ['t', 'title', 'sub', 'mark']),
+    { t: 'slim', title: 'A escala mudou', sub: '3 alterações por rever · nada entra sem ti', mark: '!' });
+  const en = homeCards({ ...S.folga, lang: 'en', warns: [CW], changes: CH }).cards.find((c) => c.id === 'roster');
+  eq('E2 · em inglês', [en.kind, en.title, en.seen, en.rows.map((r) => `${r.wd} ${r.day} ${r.k}`), en.action],
+    ['Roster changed', '3 changes', 'read at 11:52', ['Fri 13 Report', 'Sun 15 New duty', 'Tue 17 Cancelled'], { label: 'Review and accept', note: 'nothing lands without you' }]);
+}
+
+// ═══ F2 · A FOLGA COM 1 PRINCIPAL + 2, A VOZ (V2) E A VERIFICAÇÃO DA FOLGA (W1) — design/folga-1-2.html, 2026-11-14 ═══
+{
+  const V = { bold: 'Folga a sério.', tail: 'Nada pendente, nada a vigiar.' };
+  const WT = { roster: { seen: '11:52' }, docs: true, month: true };
+  const f = homeCards({ ...S.folga, voice: V, watch: WT });
+  eq('F2 · a calma em cima: a voz, os três sinais, o próximo serviço, as férias', f.cards.map((c) => [c.t, c.id]), [['voice', 'voice'], ['checks', 'watch'], ['hdr', 'nextHdr'], ['slim', 'next'], ['slim', 'vac']]);
+  eq('F2 · a voz', pick(f.cards[0], ['t', 'bold', 'tail', 'open']), { t: 'voice', bold: 'Folga a sério.', tail: 'Nada pendente, nada a vigiar.', open: null });
+  eq('F2 · os três sinais da folga (sem caixa, por baixo da voz)', pick(f.cards[1], ['t', 'id', 'color', 'plain', 'title', 'seen', 'items']),
+    { t: 'checks', id: 'watch', color: 'neutral', plain: true, title: null, seen: null, items: [{ k: 'Escala', v: 'lida às 11:52', ok: true }, { k: 'Validades', v: 'em dia', ok: true }, { k: 'O mês', v: 'nada por confirmar', ok: true }] });
+  eq('F2 · a escala em dia sem a hora da leitura: "em dia"', homeCards({ ...S.folga, voice: V, watch: { ...WT, roster: { seen: null } } }).cards[1].items[0], { k: 'Escala', v: 'em dia', ok: true });
+  eq('F2 · sem os dados: "sem dados" e "nenhuma registada"', homeCards({ ...S.folga, voice: V, watch: { roster: null, docs: null, month: null } }).cards[1].items,
+    [{ k: 'Escala', v: 'sem dados', ok: false }, { k: 'Validades', v: 'nenhuma registada', ok: false }, { k: 'O mês', v: 'sem dados', ok: false }]);
+  eq('F2 · sem H.watch: só a voz por cima', homeCards({ ...S.folga, voice: V }).cards.map((c) => c.id), ['voice', 'nextHdr', 'next', 'vac']);
+  eq('F2 · sem as férias (de janeiro a outubro): entra o mês', homeCards({ ...S.folga, warns: [], voice: V, watch: WT }).cards.map((c) => c.id), ['voice', 'watch', 'nextHdr', 'next', 'month']);
+  const ROSTER = { id: 'roster', title: 'A escala mudou', sub: '3 alterações por rever', open: { to: 'review' } };
+  eq('F2 · a escala mudou: o aviso é o principal; a voz e a calma calam-se', homeCards({ ...S.folga, warns: [ROSTER, ...S.folga.warns], voice: V, watch: WT }).cards.map((c) => c.id), ['roster', 'nextHdr', 'next', 'vac']);
+  eq('F2 · dois avisos: o 2.º no lugar das férias', homeCards({ ...S.folga, warns: [ROSTER, { id: 'audit', title: 'Auditoria do mês', sub: '2 itens por confirmar', open: { to: 'audit' } }], voice: V, watch: WT }).cards.map((c) => c.id), ['roster', 'nextHdr', 'next', 'audit']);
+  eq('F2 · a voz que leva a algum lado (o marco → os Números)', homeCards({ ...S.folga, voice: { bold: '500 horas este ano.', tail: 'E o ano ainda não acabou.', to: 'numeros' }, watch: WT }).cards[0].open, { to: 'stats' });
+  eq('F2 · em inglês', homeCards({ ...S.folga, lang: 'en', voice: V, watch: { roster: { seen: '11:52' }, docs: null, month: true } }).cards[1].items.map((i) => `${i.k}: ${i.v}`),
+    ['Roster: read at 11:52', 'Documents: none saved', 'Month: nothing to confirm']);
+  eq('F2 · os avisos que pedem ação passam à frente das férias (só cabem 2)', homeCards({ ...S.folga, warns: [...S.folga.warns, ROSTER, { id: 'audit', title: 'Auditoria do mês', sub: '2 itens por confirmar', open: { to: 'audit' } }], voice: V, watch: WT }).cards.map((c) => c.id), ['roster', 'nextHdr', 'next', 'audit']);
+  eq('V2 · nas férias, a voz por cima', homeCards({ ...S.ferias, voice: { bold: 'Férias a sério.', tail: 'A escala não manda — desfruta.' } }).cards.map((c) => c.t), ['voice', 'card', 'slim']);
+  eq('V2 · nas férias com um aviso, a voz cala-se', homeCards({ ...S.ferias, warns: [ROSTER], voice: V }).cards.some((c) => c.t === 'voice'), false);
+  eq('V2 · na baixa, a voz por cima', homeCards({ ...S.baixa, voice: { bold: 'Cuida de ti.', tail: 'A escala pode esperar — as melhoras.' } }).cards.map((c) => c.t), ['voice', 'text', 'slim']);
+  eq('V2 · num dia de voo, nunca', homeCards({ ...S.antes, voice: V }).cards.some((c) => c.t === 'voice'), false);
+  eq('V2 · na folga sem serviços, não', homeCards({ ...S.vazia, voice: V }).cards.some((c) => c.t === 'voice'), false);
 }
 
 // ═══ EM INGLÊS — os mesmos estados, nada indefinido ═══

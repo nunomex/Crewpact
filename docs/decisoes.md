@@ -1187,7 +1187,26 @@ motor está na versão **21**. **O que falta, por ordem:**
   ("Sexta 13: report às 06:45 · era às 05:30 · e mais 2") · **E2 a lista do antes → depois** (recomendada: cartão âmbar com "!", o dia
   grande à esquerda, o novo a cheio e o antigo riscado, "lido às 11:52", "Rever e aceitar") · E3 a mudança dentro do cartão que ela
   muda. A app sabe o dia, o tipo e o antes/depois de cada campo (`data/rosterDiff.js`) e a hora a que leu o calendário; não sabe quando
-  a empresa mudou (o calendário não o diz). Medido: a E2 na folga passa 58 pt (a folga com 4 cartões, o ponto seguinte). **Por escolher.**
+  a empresa mudou (o calendário não o diz). Medido: a E2 na folga passa 58 pt (a folga com 4 cartões, o ponto seguinte).
+  **O Nuno escolheu a E2 — construída (por gravar):** golden primeiro (`test:homecards` 447: as linhas pela data, o campo que mais
+  pesa, os dois mexeram, uma perna, mais de 3 = "e mais N", sem diff = a linha de antes, em inglês); o cartão `changes` em
+  `data/homeCards.js` (`changesCard`, no lugar do aviso da escala); o desenho `Changes` em `components/HomeCards.js`; `App.js` guarda
+  a hora da deteção (`at`) e o ecrã passa o diff (`changes`). **Ver no iPhone:** mudar um serviço no calendário de teste e abrir o
+  Início — o cartão âmbar com o dia, o antes riscado, "lido às" e "Rever e aceitar" (abre a revisão). **Na folga ainda passa a
+  dobra** (59 pt) — resolve-se no ponto seguinte (a folga com 1 principal + 2).
+  **A folga com 1 principal + 2 (ponto 4 da LI), com a V2, a W1 da folga e a E2:** esboço `design/folga-1-2.html` — F1 o serviço em
+  cima (o cartão azul grande; com as alterações, as férias passam 59 pt) · **F2 a calma em cima** (recomendada: a voz e os três sinais
+  primeiro; o próximo serviço numa linha como a B3, "Sexta 13 · daqui a 2 dias", o report à direita; mais um secundário) · F3 só o que
+  pede (o mês e as férias saem do Início). Regras: secundários pela prioridade — o aviso que pede ação > a verificação > as férias
+  (de novembro em diante, com dias por gozar; CT art. 240.º) > o mês (nos Números); com um aviso, a voz cala-se.
+  **O Nuno escolheu a F2 — construída (por gravar):** golden primeiro (`test:homecards` 465: a calma em cima, sem dados, sem as férias
+  entra o mês, a escala mudou = o aviso é o principal, dois avisos, os avisos à frente das férias, a voz que leva aos Números, a voz
+  nas férias e na baixa e nunca num dia de voo); `data/homeCards.js` (a folga 1 + 2, `voiceItem`, `watchOf`, os avisos que pedem ação
+  primeiro); `components/HomeCards.js` (`Voice`, os sinais `plain`; tokens `TXT3.voiceB`/`voiceT`); `screens/HomeScreen.js` passa
+  `voice` (o motor `stateVoice`, sem o tempo) e `watch` (a escala com a hora da deteção; as validades; a auditoria). **Mudou de
+  comportamento:** a auditoria do mês corre também na folga e o aviso dela aparece lá (o sinal "O mês" só é verdade assim). **Ver no
+  iPhone:** a folga com a frase e os três sinais; o próximo serviço numa linha; com uma alteração na escala, o cartão âmbar em cima
+  e a frase calada; as férias e a baixa com a frase por cima.
 - **Do dia 2026-11-14 (gravado e enviado até `81c2dfd`) — tudo por ver:** os Números (o total sozinho no topo; "Acima da base" no
   fim do "De onde vem"; com a base incerta, "O total fica entre"); o topo lado a lado igual no Início, na Escala e nos Números
   (o número do mesmo tamanho; a frase com ar por cima); a meteorologia (na véspera e antes do report, a base à hora do report no

@@ -479,12 +479,15 @@ function Checks({ c, C, l }) {
   const T = toneOf(C, c.color);
   const reduce = useReduceMotion();
   const a11y = [c.title, ...(c.items || []).map((x) => `${x.k}: ${x.v}`), c.seen].filter(Boolean).join('. ');
+  // `plain` (a folga, F2): os três sinais pousam na folha, sem caixa, por baixo da voz — alinhados com o texto dos cartões
   return (
-    <View style={[s.ck, { backgroundColor: T.bg }]} accessible accessibilityLanguage={AL} accessibilityLabel={a11y}>
-      <View style={s.ckHead}>
-        <Text style={[TXT3.slimTitle, s.ckTitle, { color: T.fg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.title}</Text>
-        {c.seen ? <Text style={[TXT3.cardNumLbl, { color: T.sub }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.seen}</Text> : null}
-      </View>
+    <View style={c.plain ? s.ckPlain : [s.ck, { backgroundColor: T.bg }]} accessible accessibilityLanguage={AL} accessibilityLabel={a11y}>
+      {c.title || c.seen ? (
+        <View style={s.ckHead}>
+          <Text style={[TXT3.slimTitle, s.ckTitle, { color: T.fg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.title}</Text>
+          {c.seen ? <Text style={[TXT3.cardNumLbl, { color: T.sub }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.seen}</Text> : null}
+        </View>
+      ) : null}
       <View style={s.ckRow}>
         {(c.items || []).map((x, i) => (
           <View key={x.k} style={s.ckItem}>
@@ -497,6 +500,72 @@ function Checks({ c, C, l }) {
         ))}
       </View>
     </View>
+  );
+}
+
+// ── E2 · "A ESCALA MUDOU" COM O QUÊ E QUANDO (design/escala-mudou.html E2, escolhida pelo Nuno a 2026-11-14) ──
+// O cartão âmbar com o "!": em cima o tipo, quantas e "lido às"; uma linha por alteração (o dia grande à esquerda, o que mudou com o
+// antes riscado e o novo a cheio, o pormenor por baixo; o cancelado riscado); "e mais N"; a barra "Rever e aceitar". O cartão inteiro
+// é um botão que abre a revisão (a barra é o sinal dela). Os textos vêm prontos de data/homeCards.js.
+function Changes({ c, C, onOpen, l }) {
+  const AL = a11yLang(l);
+  const T = toneOf(C, c.color);
+  const rowsA11y = (c.rows || []).map((r) => [`${r.wd} ${r.day}`, r.k, r.old && r.v ? l(`de ${r.old} para ${r.v}`, `from ${r.old} to ${r.v}`) : null, r.sub].filter(Boolean).join(', '));
+  const a11y = [c.kind, c.title, c.seen, ...rowsA11y, c.more ? l(`e mais ${c.more}`, `and ${c.more} more`) : null, c.action && c.action.note].filter(Boolean).join('. ');
+  return (
+    <TouchableOpacity style={[s.chg, { backgroundColor: T.bg }]} activeOpacity={0.85} onPress={() => onOpen(c.open)}
+      accessibilityRole="button" accessibilityLanguage={AL} accessibilityLabel={a11y} accessibilityHint={l('Abre a revisão', 'Opens the review')}>
+      <View style={s.chgHead}>
+        {c.mark ? <View style={s.ringLead}><Text style={[TXT3.badge, { color: CARD.onCard }]} allowFontScaling={false}>{c.mark}</Text></View> : null}
+        <View style={s.chgHeadT}>
+          <Text style={[TXT3.kind, { color: T.kind }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.kind}</Text>
+          <Text style={[TXT3.slimTitle, { color: T.fg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.title}</Text>
+        </View>
+        {c.seen ? <Text style={[TXT3.cardNumLbl, s.chgSeen, { color: T.sub }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.seen}</Text> : null}
+      </View>
+      <View style={[s.chgList, { backgroundColor: CARD.go }]}>
+        {(c.rows || []).map((r, i) => (
+          <View key={`${r.day}-${i}`} style={[s.chgRow, i > 0 ? [s.chgRowRule, { borderTopColor: CARD.onCardTrack }] : null]}>
+            <View style={s.chgDay}>
+              <Text style={[TXT3.fact, { color: T.fg }]} allowFontScaling={false}>{r.day}</Text>
+              <Text style={[TXT3.kind, { color: T.kind }]} allowFontScaling={false}>{r.wd}</Text>
+            </View>
+            <View style={s.chgTxt}>
+              <Text style={[TXT3.lineVal, { color: T.fg }]} numberOfLines={2} maxFontSizeMultiplier={MAX_SCALE}>
+                {r.k}{r.old ? ' ' : ''}{r.old ? <Text style={[s.chgOld, { color: T.sub }]}>{r.old}</Text> : null}{r.v ? ` ${r.v}` : ''}
+              </Text>
+              {r.sub ? <Text style={[TXT3.slimSub, r.struck ? s.chgOld : null, { color: T.sub }]} numberOfLines={2} maxFontSizeMultiplier={MAX_SCALE}>{r.sub}</Text> : null}
+            </View>
+          </View>
+        ))}
+        {c.more ? <Text style={[TXT3.slimSub, s.chgMore, { color: T.sub }]} maxFontSizeMultiplier={MAX_SCALE}>{l(`e mais ${c.more}`, `and ${c.more} more`)}</Text> : null}
+      </View>
+      {c.action ? (
+        <View style={[s.chgAct, { backgroundColor: CARD.act }]}>
+          <Text style={[TXT3.act, { color: CARD.onCard }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.action.label}</Text>
+          {c.action.note ? <Text style={[TXT3.cardNumLbl, { color: CARD.onCardSub }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.action.note}</Text> : null}
+        </View>
+      ) : null}
+    </TouchableOpacity>
+  );
+}
+
+// ── V2 · A VOZ (design/voz.html V2 + design/folga-1-2.html F2, escolhidas pelo Nuno a 2026-11-14) ──
+// Uma frase na folha, sem caixa, por cima dos cartões: o negrito grande e a cauda mais leve, na letra da app (o bilhete manuscrito do
+// v6 traduzido para o 3.0). A que leva a algum lado (o marco → os Números) toca-se e leva ›; as outras ficam quietas.
+function Voice({ c, C, onOpen, l }) {
+  const AL = a11yLang(l);
+  const body = (
+    <>
+      <Text style={[TXT3.voiceB, { color: C.ink }]} maxFontSizeMultiplier={MAX_SCALE}>{c.bold}</Text>
+      {c.tail || c.open ? <Text style={[TXT3.voiceT, { color: C.soft }]} maxFontSizeMultiplier={MAX_SCALE}>{`${c.tail || ''}${c.open ? ' ›' : ''}`}</Text> : null}
+    </>
+  );
+  const label = [c.bold, c.tail].filter(Boolean).join(' ');
+  return c.open ? (
+    <TouchableOpacity style={s.voice} activeOpacity={0.7} onPress={() => onOpen(c.open)} accessibilityRole="button" accessibilityLanguage={AL} accessibilityLabel={label}>{body}</TouchableOpacity>
+  ) : (
+    <View style={s.voice} accessible accessibilityLanguage={AL} accessibilityLabel={label}>{body}</View>
   );
 }
 
@@ -522,6 +591,8 @@ export function HomeCards({ cards, C, onOpen, l }) {
     if (c.t === 'lines') return <Lines key={k} c={c} C={C} onOpen={onOpen} l={l} />;
     if (c.t === 'text') return <TextCard key={k} c={c} C={C} onOpen={onOpen} l={l} />;
     if (c.t === 'checks') return <Checks key={k} c={c} C={C} l={l} />;
+    if (c.t === 'changes') return <Changes key={k} c={c} C={C} onOpen={onOpen} l={l} />;
+    if (c.t === 'voice') return <Voice key={k} c={c} C={C} onOpen={onOpen} l={l} />;
     // o cabeçalho de secção (o próximo serviço noutro dia: "Amanhã · quinta 12") — mais ar por cima, junto da linha de baixo
     if (c.t === 'hdr') return <Text key={k} style={[TXT3.pill, s.hdr, { color: C.soft }]} accessibilityRole="header" numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.text}</Text>;
     return null;
@@ -540,6 +611,22 @@ const s = StyleSheet.create({
   ckItem: { flex: 1, flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.s, minWidth: 0 },
   ckTxt: { flex: 1, minWidth: 0 },
   ckRing: { marginTop: SPACE.xxs },
+  ckPlain: { paddingHorizontal: SPACE.lg, paddingBottom: SPACE.sm, gap: SPACE.sm },
+  // V2 · a voz: na folha, alinhada com o texto dos cartões (como o cabeçalho de secção)
+  voice: { paddingHorizontal: SPACE.lg, paddingTop: SPACE.xs, paddingBottom: SPACE.sm, gap: SPACE.xxs },
+  // E2 · as alterações da escala: o cabeçalho com o "!"; a lista num fundo branco translúcido; o dia numa coluna; a barra no fundo
+  chg: { borderRadius: RADIUS.xxl, paddingVertical: SPACE.md, paddingHorizontal: SPACE.lg, gap: SPACE.sm },
+  chgHead: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md },
+  chgHeadT: { flex: 1, minWidth: 0 },
+  chgSeen: { alignSelf: 'flex-start', marginTop: SPACE.xxs },
+  chgList: { borderRadius: RADIUS.lg, paddingHorizontal: SPACE.md, paddingVertical: SPACE.xs },
+  chgRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingVertical: SPACE.s },
+  chgRowRule: { borderTopWidth: StyleSheet.hairlineWidth },
+  chgDay: { width: 32, alignItems: 'center' },
+  chgTxt: { flex: 1, minWidth: 0 },
+  chgOld: { textDecorationLine: 'line-through' },
+  chgMore: { paddingVertical: SPACE.s },
+  chgAct: { minHeight: 44, borderRadius: RADIUS.pill, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.sm, paddingHorizontal: SPACE.lg },
   // A fila tem SEMPRE a altura do sino (44): trocar o sino pela pílula "Exemplo · sair" (38) fazia a página saltar 6 pt (iPhone, 2026-11-11).
   pills: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, paddingTop: SPACE.sm, paddingBottom: SPACE.lg, minHeight: 44 + SPACE.sm + SPACE.lg },
   pill: { height: 38, paddingHorizontal: SPACE.lg, borderRadius: RADIUS.pill, flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, borderWidth: 1.5, flexShrink: 0 },

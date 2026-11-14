@@ -29,7 +29,11 @@ const OVER_W = { id: 'ftl', first: true, tone: 'stop', kind: 'O limite de hoje',
 const STATES = [
   ['Bem-vindo', 'sem calendário ligado', S.setup, '09:00'],
   ['Folga, sem serviços', 'a escala está vazia', S.vazia, '12:40'],
-  ['Folga', 'o próximo serviço daqui a 2 dias', S.folga, '12:00'],
+  ['Folga', 'tudo em dia: a voz, os três sinais, o próximo serviço, as férias (F2)', { ...S.folga, voice: { bold: 'Folga a sério.', tail: 'Nada pendente, nada a vigiar.' }, watch: { roster: { seen: '11:52' }, docs: true, month: true } }, '12:00'],
+  ['Folga, a escala mudou', 'as alterações com o quê e quando (E2)', { ...S.folga, warns: [{ id: 'roster', title: 'A escala mudou', sub: '3 alterações por rever', open: { to: 'review' } }, ...S.folga.warns], changes: { seen: '11:52', items: [
+    { iso: '2026-11-13', type: 'changed', kind: 'flight', route: 'LIS-FNC-LIS', report: '06:45', end: '12:25', fields: [{ key: 'report_time', label: { pt: 'Report', en: 'Report' }, before: '05:30', after: '06:45' }, { key: 'block_on', label: { pt: 'On-block', en: 'On-block' }, before: '11:10', after: '12:25' }] },
+    { iso: '2026-11-15', type: 'added', kind: 'flight', route: 'LIS-LGW-LIS', report: '07:00', end: null, fields: [] },
+    { iso: '2026-11-17', type: 'removed', kind: 'standby_home', kindLabel: 'Standby em casa', route: null, report: '08:00', end: '14:00', fields: [] }] } }, '12:00'],
   ['Folga, com o voo amanhã', 'o tempo do report de amanhã', { ...S.folgaHoras, wx: { report: { ...WXL, at: '05:30' } } }, '11:00'],
   ['Atenção', 'um documento a caducar (≤ 7 dias)', S.documento, '10:00'],
   ['Voo amanhã', 'a véspera, depois das 18:00', { ...S.vespera, wx: { report: WXL, night: { ...WXA } } }, '21:40'],
@@ -47,7 +51,7 @@ const STATES = [
   ['Dia fechado', 'o dia acabou na base', { ...S.posvoo, wx: { report: { ...WXL, at: '05:30' } } }, '19:20'],
   ['Fecho do mês', 'os últimos 3 dias', S.fecho, '10:00'],
   ['Folga, o mês incerto', 'falta um dado do perfil (o dia de entrada)', S.mesIncerto, '10:00'],
-  ['Férias', '', S.ferias, '11:00'],
+  ['Férias', 'com a voz (V2)', { ...S.ferias, voice: { bold: 'Férias a sério.', tail: 'A escala não manda — desfruta.' } }, '11:00'],
   ['Baixa', '', S.baixa, '10:00'],
 ];
 
@@ -127,8 +131,14 @@ function cardHTML(c, P = C, look = {}) {
       ${c.foot ? `<div class="lfoot">${c.foot.map((r) => `<div class="lr"><span>${esc(r.k)}</span><b>${esc(r.v)}</b></div>`).join('')}</div>` : ''}
       ${c.note || c.link ? `<div class="cs">${esc(c.note || '')} ${c.link ? `<u>${esc(c.link.label)}</u>` : ''}</div>` : ''}</div>`;
   }
+  // E2 · as alterações da escala: o cartão âmbar com as linhas (o dia, o antes riscado e o novo) e a barra "Rever e aceitar"
+  if (c.t === 'changes') return `<div class="rc" style="background:${P.alert}"><div class="rcH"><span class="mark">${esc(c.mark || '!')}</span><div class="rcT"><span class="k">${esc(c.kind)}</span><b>${esc(c.title)}</b></div>${c.seen ? `<span class="rcS">${esc(c.seen)}</span>` : ''}</div>`
+    + `<div class="rcL">${(c.rows || []).map((r) => `<div class="rr"><div class="rd"><b>${esc(r.day)}</b><span>${esc(r.wd)}</span></div><div class="rx"><b>${esc(r.k)}${r.old ? ` <s>${esc(r.old)}</s>` : ''}${r.v ? ` ${esc(r.v)}` : ''}</b>${r.sub ? `<span>${r.struck ? `<s>${esc(r.sub)}</s>` : esc(r.sub)}</span>` : ''}</div></div>`).join('')}${c.more ? `<div class="rmore">e mais ${c.more}</div>` : ''}</div>`
+    + `${c.action ? `<div class="rcA"><b>${esc(c.action.label)}</b><span>${esc(c.action.note || '')}</span></div>` : ''}</div>`;
+  // V2 · a voz: a frase na folha, sem caixa
+  if (c.t === 'voice') return `<div class="v2"><b>${esc(c.bold)}</b><span>${esc(c.tail || '')}${c.open ? ' ›' : ''}</span></div>`;
   // W1 · a verificação: três sinais com o anel (o movimento só no esboço design/calma-uau.html; aqui o estado final)
-  if (c.t === 'checks') return `<div class="ck" style="background:${P.neutral}"><div class="ckH"><b>${esc(c.title)}</b>${c.seen ? `<span>${esc(c.seen)}</span>` : ''}</div><div class="ckR">${(c.items || []).map((x) => `<div class="ci"><svg class="rg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5" fill="none" stroke="${x.ok === true ? 'var(--ink)' : 'var(--kind)'}" stroke-width="2.2"${x.ok === true ? '' : ' stroke-dasharray="2.5 3.2"'}/>${x.ok === true ? '<path d="M7.6 12.4l3 3 5.8-6.2" fill="none" stroke="var(--ink)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>' : ''}</svg><b>${esc(x.k)}</b><span>${esc(x.v)}</span></div>`).join('')}</div></div>`;
+  if (c.t === 'checks') return `<div class="ck${c.plain ? ' plain' : ''}" style="background:${c.plain ? 'transparent' : P.neutral}">${c.title || c.seen ? `<div class="ckH"><b>${esc(c.title || '')}</b>${c.seen ? `<span>${esc(c.seen)}</span>` : ''}</div>` : ''}<div class="ckR">${(c.items || []).map((x) => `<div class="ci"><svg class="rg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5" fill="none" stroke="${x.ok === true ? 'var(--ink)' : 'var(--kind)'}" stroke-width="2.2"${x.ok === true ? '' : ' stroke-dasharray="2.5 3.2"'}/>${x.ok === true ? '<path d="M7.6 12.4l3 3 5.8-6.2" fill="none" stroke="var(--ink)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>' : ''}</svg><b>${esc(x.k)}</b><span>${esc(x.v)}</span></div>`).join('')}</div></div>`;
   if (c.t === 'hdr') return `<div class="hdr${c.near ? ' near' : ''}">${esc(c.text)}</div>`;   // só nos esboços: um cabeçalho de secção entre cartões
   if (c.t === 'text') return `<div class="cd${neu}" style="background:${B}"><span class="kd">${esc(c.kind)}</span><div class="tx">${esc(c.text)}</div></div>`;
   // o cartão grande
@@ -197,8 +207,13 @@ body{background:#E8E7E2;color:#141414;font-family:'Hanken','Helvetica Neue',Aria
 .sheetN{flex:1;background:var(--sheet);border-radius:32px 32px 0 0;padding:12px 12px 24px;display:flex;flex-direction:column;gap:8px}
 .cd{border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:10px;position:relative}
 .cd,.slim{color:#141414}   /* os cartões de cor: a tinta escura (CARD.onCard), de dia e de noite */
-.ck{border-radius:24px;padding:12px 16px;color:var(--ink);display:flex;flex-direction:column;gap:8px} .ckH{display:flex;justify-content:space-between;align-items:baseline;gap:8px} .ckH b{font-weight:800;font-size:16px;line-height:20px} .ckH span{font-weight:500;font-size:11px;color:var(--sub)}
+.ck{border-radius:24px;padding:12px 16px;color:var(--ink);display:flex;flex-direction:column;gap:8px} .ck.plain{padding:0 16px 8px}
+.v2{display:flex;flex-direction:column;gap:2px;padding:4px 16px 8px} .v2 b{font-weight:800;font-size:20px;line-height:25px;letter-spacing:-.2px;color:var(--ink)} .v2 span{font-weight:500;font-size:17px;line-height:23px;color:var(--soft)} .ckH{display:flex;justify-content:space-between;align-items:baseline;gap:8px} .ckH b{font-weight:800;font-size:16px;line-height:20px} .ckH span{font-weight:500;font-size:11px;color:var(--sub)}
 .ckR{display:grid;grid-template-columns:repeat(3,1fr);gap:8px} .ci{display:grid;grid-template-columns:24px 1fr;column-gap:6px;min-width:0} .ci .rg{grid-row:1 / span 2;width:24px;height:24px;margin-top:2px} .ci b{font-weight:700;font-size:14px;line-height:18px} .ci span{font-weight:500;font-size:12px;line-height:16px;color:var(--sub)}
+.rc{border-radius:24px;padding:12px 16px;color:#141414;display:flex;flex-direction:column;gap:8px} .rcH{display:flex;align-items:center;gap:10px} .rcH .mark{position:static;flex:none} .rcT{display:flex;flex-direction:column;flex:1;min-width:0} .rcT .k{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8)} .rcT b{font-weight:800;font-size:16px;line-height:20px} .rcS{font-weight:500;font-size:11px;color:rgba(20,20,20,.82);align-self:flex-start;margin-top:2px}
+.rcL{display:flex;flex-direction:column;background:rgba(255,255,255,.55);border-radius:16px;padding:4px 12px} .rr{display:flex;gap:12px;align-items:center;padding:6px 0} .rr + .rr{border-top:1px solid rgba(20,20,20,.18)} .rd{width:32px;flex:none;display:flex;flex-direction:column;align-items:center} .rd b{font-weight:700;font-size:20px;line-height:22px} .rd span{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8)}
+.rx{display:flex;flex-direction:column;min-width:0} .rx b{font-weight:700;font-size:15px;line-height:20px} .rx span{font-weight:500;font-size:12px;line-height:16px;color:rgba(20,20,20,.82)} .rx s{font-weight:500;opacity:.75} .rmore{font-weight:500;font-size:12px;padding:6px 0;color:rgba(20,20,20,.82)}
+.rcA{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.62);border-radius:99px;padding:12px 16px;gap:8px} .rcA b{font-weight:700;font-size:14px} .rcA span{font-weight:500;font-size:11px;color:rgba(20,20,20,.82)}
 .dk,.dk b{color:var(--sheet)} .ph .dk .st > span:not(.k){color:var(--sheet);opacity:.82} .dk .goS{background:rgba(127,127,127,.35);color:var(--sheet)}
 .lt,.lt .ct,.lt b,.lt .dpt b{color:#F4F2ED} .lt .kd,.lt .k,.lt .cs,.lt .cities,.lt .st > span:not(.k),.lt .ab span,.lt .dpt span:not(.dot2),.lt .quiet2,.lt .pd,.lt .dlc span{color:rgba(244,242,237,.8)}
 .lt .go,.lt .goS,.lt .badge,.lt .mark{background:rgba(255,255,255,.16);color:#F4F2ED} .lt .dot2{background:#F4F2ED} .lt .dot2.o{border-color:#F4F2ED;background:transparent} .lt .dls{background:#F4F2ED} .lt .dlt{background:rgba(244,242,237,.25)}

@@ -118,11 +118,17 @@ combinações de letra e 924 espaçamentos fora da escala (medido a 2026-11-02).
   Escala · Validades · O mês, os avisos que estão calados), recomendada · W2 a folga do avião (a linha do tempo até à partida) · W3 a
   frase viva (palavra a palavra, no mesmo sítio). Medido a 390: W1 cabe (19 pt; folga 7 pt), W2 passa 21 pt, W3 na dobra. Movimento
   visto com e sem movimentos reduzidos. Imagens 3424/3453/3420/3443 e o GIF 7EEA; Mobbin Fly Delta, The Weather Channel, Bevel.
-- **`escala-mudou.html`** (2026-11-14, por escolher; gerado a partir do código, as alterações na forma de `data/rosterDiff.js`) — "A
+- **`escala-mudou.html`** (2026-11-14, **E2 escolhida — no código**; gerado a partir do código, as alterações na forma de `data/rosterDiff.js`) — "A
   escala mudou" a dizer o quê e quando (ponto 3 da análise da Living Interface): E1 a alteração mais próxima na linha · E2 a lista
   do antes → depois, com o dia grande à esquerda, "lido às 11:52" e "Rever e aceitar" (recomendada) · E3 a mudança dentro do
   cartão que ela muda. Em dois casos: a folga com 3 alterações (uma é o próximo serviço) e em voo com 1. Medido: a E2 na folga passa
   58 pt (a folga com 4 cartões — o ponto seguinte). Imagens 3409/3431/3435/3424; Mobbin Air NZ, Booking.com, Rivian, Revolut, Future Pro.
+- **`folga-1-2.html`** (2026-11-14, **F2 escolhida — no código**; gerado a partir do código) — a folga com 1 principal + 2 (ponto 4 da análise da
+  Living Interface), com a voz (V2), a verificação da folga (W1: Escala · Validades · O mês) e as alterações (E2). Prioridade dos
+  secundários: o aviso que pede ação > a verificação > as férias (de novembro em diante, CT art. 240.º) > o mês; com um aviso, a voz
+  cala-se. F1 o serviço em cima · F2 a calma em cima, o serviço numa linha como a B3 (recomendada) · F3 só o que pede. Em três casos:
+  novembro sem avisos, a escala mudou, o mesmo dia sem as férias. Medido: F2 e F3 cabem nos três; a F1 com as alterações passa 59 pt.
+  Imagens 3407/3415/3443; Mobbin Air NZ, Bevel.
 - **`topo-factos-2.html`** (2026-11-14, A construída e depois **retirada com a L1** — os quadradinhos não cabem ao lado) — a F3 nos casos difíceis, a 375 (três factos com a hora UTC, a assistência, antes de ligar a escala, a Escala com 4 999,99 €, os Números com +55 512,34 €): A o quadradinho (32) só onde há tipo (recomendada) · B o quadradinho por cima do valor, em todos (o topo cresce 34) · C a cor no fio (4). Imagens 3409/3431/3412/3442/3424; Mobbin Kit, Satispay, Shopee.
 - **`botao-simulacao.html`** (2026-11-14, **T2 escolhida e construída**) — com a regra nova (à mão só na Simulação), o ＋ abre a Simulação: T1 o redondo com o ícone da Simulação · T2 o botão escrito "Simular" (recomendada; a 375 cada aba fica com 57 pt) · T3 uma aba ao centro da cápsula. Mobbin: Subway, Otter, Preply, Tubi; nenhuma imagem do Nuno para barras.
 - **`prova-campos.html`** (2026-11-14, **PA escolhida e construída**) — a Prova como o Hotel F2 (a regra proposta: nas folhas, campos à F2; nos ecrãs, cartões): PA tudo em campos · PB os curtos lado a lado (imagem 3460; recomendada) · PC campos e a regra num cartão. Com o Hotel F2 ao lado.

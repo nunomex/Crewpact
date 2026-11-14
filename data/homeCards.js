@@ -35,6 +35,9 @@
 //             verdict:{ verdict, realStr, maxStr, projected }, commander, lastArr, end }
 //   vac   — { left, quota, retIso, fromIso, toIso } · sick — { day, first3, payText } · doc — { name, days, expiryIso, after }
 //   empty — { rosterOk, lastRead } · demo · wake — { hm } · longHaul · restOk (véspera: true|false|null)
+//   changes — as alterações da escala (E2): { seen:'hh:mm', items:[{ iso, type, kind, kindLabel, route, report, end, fields }] }
+//   voice — a frase da folga, das férias e da baixa (V2): { bold, tail, to? } (data/stateVoice.js) · watch — os três sinais da folga
+//           (W1): { roster:{ seen }|null, docs:true|null, month:true|null }
 //   calm  — antes do report (W1): { from:'hh:mm' } antes da janela do ao vivo · ou { seen:'hh:mm', flight:true|false|null,
 //           plane:{ here:true, st }|{ eta:'hh:mm' }|null, airport:true|null } (airportCalm de data/flightDelay.js)
 //   warns — [{ id, title, sub, value, first, open, tone }] (já escritos pelo ecrã, por ordem de prioridade; no máx. 2;
@@ -43,6 +46,9 @@
 // SAÍDA: { state, top: { pill:{ text, live }, pill2:{ text, iso }|null, what, giant:{ l1, unit, l2, l2Grey, zulu? }, facts[] },
 //          cards: [ card | slim | lines | text | checks | hdr ], caption }
 //   checks = { t:'checks', id:'calm', color:'neutral', title, seen, items:[{ k, v, ok:true|false|null }] } (W1; ok null = por ver)
+//   voice  = { t:'voice', id:'voice', bold, tail, open } (V2; na folha, sem caixa) · checks com plain:true = os sinais da folga, sem caixa
+//   changes = { t:'changes', id:'roster', color:'alert', mark:'!', kind, title, seen, rows:[{ day, wd, k, old, v, sub, struck }], more,
+//              action:{ label, note }, open } (E2; no lugar do aviso da escala)
 //   card  = { t:'card', id, color, kind, title, sub, gain, a:{v,l}, dur, b:{v,l,gain}, pct, corner:'share'|'chev', action, open }
 //   slim  = { t:'slim', id, color, title, sub, value, gain, dark, open }
 //   lines = { t:'lines', id, color, kind, rows:[{k,v,open}], foot, note, link, open }
@@ -149,12 +155,74 @@ export function homeCards(H = {}) {
   // dos alertas do cockpit, 14 CFR 25.1322). As férias por gozar são informação.
   const INFO_WARNS = ['vac'];
   const warnTone = (w) => (w.tone === 'stop' ? 'stop' : w.tone === 'info' || INFO_WARNS.includes(w.id) ? 'info' : 'alert');
-  const slimWarn = (w) => { const tn = warnTone(w);
+  const slimWarn = (w) => { if (w.id === 'roster' && CHG) { const cc = changesCard(w); if (cc) return cc; }
+    const tn = warnTone(w);
     return { t: 'slim', id: w.id, color: tn === 'stop' ? 'stop' : tn === 'info' ? 'neutral' : 'alert', ...(tn === 'stop' ? { mark: '✕' } : tn === 'alert' ? { mark: '!' } : {}),
       ...(w.kind ? { kind: w.kind } : {}), title: w.title, sub: w.sub || null, value: w.value || null, gain: false, open: w.open || null }; };
-  const warns = (H.warns || []).filter((w) => w && w.title).slice(0, 2);
+  const kindShort = (k) => ({ training: l('formação', 'training'), office: l('escritório', 'office'), standby_airport: 'standby', standby_home: 'standby', reserve: l('reserva', 'reserve'), positioning: l('posicionamento', 'positioning') }[k] || l('serviço', 'duty'));
+
+  // ── E2 · "A ESCALA MUDOU" COM O QUÊ E QUANDO (design/escala-mudou.html E2, escolhida pelo Nuno a 2026-11-14) ──
+  // O aviso da escala passa a cartão âmbar com uma linha por alteração, a mais próxima primeiro: o dia, o que mudou (o campo que
+  // mais pesa), o antes riscado e o novo a cheio. H.changes = { seen:'hh:mm' (a leitura do calendário), items:[{ iso, type:'changed'|
+  // 'conflict'|'added'|'removed', kind, kindLabel, route, report, end, fields:[{ key, label:{pt,en}, before, after }] }] } — a forma
+  // do diff (data/rosterDiff.js). A app não sabe quando a empresa mudou (o calendário não o diz): diz quando leu.
+  const CHG = H.changes && Array.isArray(H.changes.items) && H.changes.items.length ? H.changes : null;
+  const CH_PRI = ['report_time', 'route', 'kind', 'block_off', 'block_on', 'sectors'];
+  const routeTxt = (r) => (r ? String(r).split(/[-–>\s]+/).filter(Boolean).join(' → ') : null);
+  const kindName = (k) => (!k || k === 'flight' ? l('voo', 'flight') : kindShort(k));
+  const fval = (key, v) => (v == null || v === '' ? l('sem valor', 'none') : key === 'route' ? routeTxt(v) : key === 'kind' ? kindName(v) : String(v));
+  const flabel = (f) => (f.label && (f.label[lang] || f.label.pt)) || f.key;
+  const fTxt = (f) => `${flabel(f)} ${fval(f.key, f.before)} → ${fval(f.key, f.after)}`;
+  const changeRow = (it) => {
+    const day = String(Number(it.iso.slice(8, 10)));
+    const wd = F.wds(it.iso).split(' ')[0];
+    const where = it.kind && it.kind !== 'flight' && it.kindLabel ? it.kindLabel : routeTxt(it.route);
+    const what = where || kindName(it.kind);
+    if (it.type === 'added') return { day, wd, k: l('Serviço novo', 'New duty'), old: null, v: null, sub: [what, it.report ? `report ${it.report}` : null].filter(Boolean).join(' · '), struck: false };
+    if (it.type === 'removed') return { day, wd, k: l('Cancelado', 'Cancelled'), old: null, v: null, sub: [what, it.report && it.end ? `${it.report}–${it.end}` : it.report ? `report ${it.report}` : null].filter(Boolean).join(' · '), struck: true };
+    const fs = Array.isArray(it.fields) ? it.fields : [];
+    const main = CH_PRI.map((k) => fs.find((f) => f && f.key === k)).find(Boolean) || null;
+    const rest = fs.filter((f) => f && f !== main);
+    const extra = rest.length ? `${fTxt(rest[0])}${rest.length > 1 ? ` ${l(`e mais ${rest.length - 1}`, `and ${rest.length - 1} more`)}` : ''}` : null;
+    const both = it.type === 'conflict' ? l('também o mudaste — escolhes na revisão', 'you changed it too — choose in the review') : null;
+    const parts = [main && main.key === 'route' ? null : where, extra, both].filter(Boolean);
+    const sub = parts.length ? parts.join(' · ') : (it.report && !(main && main.key === 'report_time') ? `report ${it.report}` : null);
+    return main ? { day, wd, k: flabel(main), old: fval(main.key, main.before), v: fval(main.key, main.after), sub, struck: false }
+      : { day, wd, k: l('Mudou', 'Changed'), old: null, v: null, sub, struck: false };
+  };
+  const changesCard = (w) => {
+    const items = CHG.items.filter((it) => it && isISO(it.iso)).sort((a, b) => (a.iso < b.iso ? -1 : a.iso > b.iso ? 1 : 0));
+    if (!items.length) return null;
+    const n = items.length;
+    return { t: 'changes', id: w.id, color: 'alert', mark: '!', kind: l('A escala mudou', 'Roster changed'), title: n === 1 ? l('1 alteração', '1 change') : l(`${n} alterações`, `${n} changes`),
+      seen: CHG.seen ? l(`lido às ${CHG.seen}`, `read at ${CHG.seen}`) : null, rows: items.slice(0, 3).map(changeRow), more: Math.max(0, n - 3),
+      action: { label: l('Rever e aceitar', 'Review and accept'), note: l('nada entra sem ti', 'nothing lands without you') }, open: w.open || { to: 'review' } };
+  };
+  // os avisos que pedem ação primeiro, e só depois a informação (as férias) — guardam-se 2 (a regra 1 principal + 2)
+  const warns0 = (H.warns || []).filter((w) => w && w.title);
+  const warns = [...warns0.filter((w) => warnTone(w) !== 'info'), ...warns0.filter((w) => warnTone(w) === 'info')].slice(0, 2);
   const wFirst = warns.filter((w) => w.first).map(slimWarn);
   const wLast = warns.filter((w) => !w.first).map(slimWarn);
+  const alertWarns = warns.filter((w) => warnTone(w) !== 'info');   // os avisos que pedem ação (âmbar · vermelho); as férias são informação
+
+  // ── V2 · A VOZ (design/voz.html V2 + design/folga-1-2.html F2, escolhidas pelo Nuno a 2026-11-14) ──
+  // Uma frase na folha, por cima dos cartões — só na folga, nas férias e na baixa, e só sem avisos que peçam ação ("nada pendente"
+  // seria falso; quando aperta, a app fala só em interface). A frase vem pronta do motor data/stateVoice.js (golden test:voice), sem as
+  // frases do tempo (a app já não usa a localização) nem a do aviso (diria o mesmo que o aviso). A que leva a algum lado toca-se.
+  const voiceOpen = (to) => (to === 'numeros' ? { to: 'stats' } : to === 'amanha' && next ? openDay(next) : null);
+  const voiceItem = H.voice && H.voice.bold && !alertWarns.length
+    ? { t: 'voice', id: 'voice', bold: H.voice.bold, tail: H.voice.tail || '', open: voiceOpen(H.voice.to) } : null;
+  // ── W1 NA FOLGA · os três sinais por baixo da voz: Escala · Validades · O mês — os avisos que estão calados (o silêncio também é
+  // informação, princípio 4). H.watch = { roster: { seen }|null, docs: true|null, month: true|null } (o ecrã só os passa com os dados
+  // que os sustentam); quando um falha, é o aviso dele que aparece (e esta linha sai: há um aviso que pede ação).
+  const watchOf = (w) => {
+    if (!w || alertWarns.length) return null;
+    const r = w.roster;
+    return { t: 'checks', id: 'watch', color: 'neutral', plain: true, title: null, seen: null, items: [
+      { k: l('Escala', 'Roster'), v: r ? (r.seen ? l(`lida às ${r.seen}`, `read at ${r.seen}`) : l('em dia', 'up to date')) : l('sem dados', 'no data'), ok: !!r },
+      { k: l('Validades', 'Documents'), v: w.docs ? l('em dia', 'up to date') : l('nenhuma registada', 'none saved'), ok: !!w.docs },
+      { k: l('O mês', 'Month'), v: w.month ? l('nada por confirmar', 'nothing to confirm') : l('sem dados', 'no data'), ok: !!w.month }] };
+  };
   // Montagem com a regra dos dois cartões: [avisos deste serviço] · o do momento · o que vem a seguir (linha fina se houver
   // aviso) · [linhas finas próprias do estado] · [avisos de outra coisa].
   let limCard = null;   // o limite incerto num cartão à parte (L2) — posto pelo estado antes de montar
@@ -401,7 +469,6 @@ export function homeCards(H = {}) {
   };
   const weekFact = () => (H.week && H.week.limit ? fact(`${Math.round(H.week.done || 0)} h`, l(`de ${H.week.limit} em 7 dias`, `of ${H.week.limit} in 7 days`)) : null);
   const todayPill = (iso = today) => ({ text: F.wd(iso), iso });
-  const kindShort = (k) => ({ training: l('formação', 'training'), office: l('escritório', 'office'), standby_airport: 'standby', standby_home: 'standby', reserve: l('reserva', 'reserve'), positioning: l('posicionamento', 'positioning') }[k] || l('serviço', 'duty'));
 
   let T = null, cards = [];
 
@@ -448,7 +515,13 @@ export function homeCards(H = {}) {
         : giantOf(days != null ? days : '—', days === 1 ? l('dia', 'day') : l('dias', 'days'));
       T = top({ text: l('Folga', 'Day off'), live: false }, todayPill(), l('Próximo serviço daqui a', 'Next duty in'), g,
         facts(fact(when(next.iso), l('até lá', 'until then')), weekFact(), wxTomorrow()));
-      cards = assemble(nextCard(next, l('Próximo serviço', 'Next duty'), { withDay: false }), null, monthCard());
+      // F2 (design/folga-1-2.html, escolhida pelo Nuno a 2026-11-14): 1 principal + 2. O principal é o aviso que pede ação — ou, sem
+      // ele, a calma (a voz e os três sinais). Depois o próximo serviço numa linha com o dia (como a B3: o topo já diz quanto falta).
+      // Depois o 2.º aviso, ou as férias (de novembro em diante, com dias por gozar — CT art. 240.º), ou o mês (que fica nos Números).
+      const infoW = warns.filter((w) => warnTone(w) === 'info');
+      const lead = alertWarns.length ? [slimWarn(alertWarns[0])] : [voiceItem, watchOf(H.watch)];
+      const sec = alertWarns[1] ? slimWarn(alertWarns[1]) : infoW[0] ? slimWarn(infoW[0]) : monthCard();
+      cards = [...lead, ...laterOf(next), sec].filter(Boolean);
     }
   } else if (state === 'ferias') {
     const v = H.vac || {};
@@ -673,6 +746,8 @@ export function homeCards(H = {}) {
   if (['hoje', 'vespera', 'disrupcao', 'pernoita', 'posvoo'].includes(state) && cards.filter(Boolean).length === 1) {
     const mc = monthCard(); if (mc) cards = [...cards, mc];
   }
+  // V2: nas férias e na baixa, a voz por cima (na folga já vai no principal).
+  if ((state === 'ferias' || state === 'doenca') && voiceItem) cards = [voiceItem, ...cards.filter(Boolean)];
   const liveState = ['hoje', 'vespera', 'disrupcao', 'pernoita'].includes(state);
   return {
     state,
