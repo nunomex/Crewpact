@@ -109,6 +109,21 @@
    **Recusado:** Google Places (pago; as regras não deixam guardar os dados no telemóvel) · OpenStreetMap
    já no Expo Go (dados pobres, sem telefone, e deitava-se fora quando isto chegasse).
 
+10. **A família com a app — de iPhone para iPhone** (Nuno, 2026-11-14, no Perfil: "há maneira de partilhar com o iPhone,
+   de iPhone para iPhone?"). **Hoje:** cada pessoa tem o seu link (`family_links`: só o nome e o link), que abre no
+   navegador e vai por AirDrop ou Mensagens pela folha de partilha — e a app não sabe quem o abre (por isso o anel "a seguir"
+   saiu dos círculos da família no Perfil novo). **Com o dev build:** a pessoa instala a CrewPact num "modo família" e recebe
+   um aviso quando o tripulante aterra (push APNs) e a chegada no ecrã bloqueado (Live Activity atualizada por push) — como
+   o Flighty faz com os amigos. Aí a app passa a saber quem segue, e o círculo pode voltar a ter o anel "a seguir".
+   **Precisa:** o dev build · a chave APNs na conta Apple do Nuno · o servidor a mandar o push quando o voo aterra (o relógio
+   da ideia "Notificações à família", abaixo, com a quota AirLabs) · o desenho do modo família (sem escala nem limites: só
+   as chegadas de quem segue) · RGPD: a pessoa da família passa a ser utilizadora (consentimento, apagar, a política).
+
+11. **App Clip da chegada (POR INVESTIGAR — não prometer)** (Nuno, 2026-11-14, a mesma pergunta). O link da família abria
+   uma parte pequena da app, sem a instalar, com a chegada ao vivo. **Confirmar na documentação da Apple ANTES de decidir:**
+   o que um App Clip pode fazer (avisos temporários sem pedir autorização, e por quanto tempo; Live Activities num App Clip),
+   o tamanho máximo, e se o Expo o suporta (config plugin). Só depois disso entra no plano.
+
 > Ideias Flighty→crew que NÃO precisavam de dev build (partilha com a família ·
 > "Ano de voo" partilhável · inbound do avião) saíram desta lista — feitas já
 > (2026-07-03). Descartado e registado: Shared with You · Friends' Flights ·

@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · A cor no Perfil</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* A COR NO PERFIL (2026-11-14). O Nuno: "a página perfil tem pouca cor... achas que tá bom assim?". O Perfil (W1 de design/perfil-6.html,
+   construído) é quase todo neutro: o mapa B (docs/design-system.md §14) dá cor ao TIPO da escala (voo azul, repouso salva, solo
+   lilás) e ao que pede ATENÇÃO (laranja "!", vermelho "✕"); verde só no dinheiro. O Perfil são definições, sem tipo. Três níveis de cor
+   que não partem a regra: K2 só acentos · K1 a carreira a azul (é a vida a voar) e o cartão de tripulante a tinta (um crachá) ·
+   K3 o mesmo e a família a azul (seguem os teus voos) e a validade num cartão laranja quando está perto (como o aviso do Início).
+   Cada um em dois estados: tudo em dia · o médico a 12 dias (a expirar). Imagens do Nuno: 3407/3444 (os cartões de cor do Início),
+   3432/3440 (o cartão preto), 3408 (laranja = pede atenção, nunca o principal), 3424 (a cor diz o tipo, não a intensidade).
+   Mobbin: Orb Social (o cartão de cor de destaque), Satispay (um cartão escuro ao lado de neutros). Dados de TESTE: Rita Almeida. */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif;--flight:#6DBEFA;--alert:#F0854A;--stop:#EC7A6C;--neutral:#F1EFEA}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+.lead{max-width:980px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)} .lead a{color:var(--pfg)}
+.opt{display:flex;flex-direction:column;gap:10px}
+.opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:var(--muted);max-width:900px} .opt > p b{color:var(--pfg)}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.row{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.cap{font-size:12px;font-weight:700;color:var(--muted);margin:0 0 6px 6px}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:980px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card2 li{font-size:13px;line-height:1.5;color:var(--muted)} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:var(--pfg)}
+
+.ph{display:flex;flex-direction:column;width:406px;height:1180px;border:8px solid #04060A;border-radius:52px 52px 0 0;border-bottom:0;overflow:hidden;background:#E3E1DB;color:#141414;max-width:100%}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.topA{padding:0 20px 32px;flex:none}
+.pills{display:flex;align-items:center;gap:8px;min-height:68px;padding:8px 0 16px}
+.pl{height:38px;padding:0 16px;border-radius:19px;border:1.5px solid #141414;display:inline-flex;align-items:center;font-weight:700;font-size:13px;white-space:nowrap}
+.pl.ink{background:#141414;color:#E3E1DB}
+.bell{width:44px;height:44px;border-radius:22px;background:rgba(127,127,127,.22);margin-left:auto}
+.what{font-weight:500;font-size:15px;line-height:20px;color:#3A3A36}
+.hero{display:flex;align-items:stretch;gap:16px;margin-top:12px}
+.g{font-weight:700;white-space:nowrap;font-size:62px;line-height:68px;letter-spacing:-2.85px} .g div{margin-top:-6px} .g div + div{margin-top:-12px} .grey{color:rgba(20,20,20,.5)}
+.side{border-left:1.5px solid #141414;padding-left:16px;display:flex;flex-direction:column;justify-content:center;gap:12px}
+.fv{display:block;font-weight:700;font-size:20px;line-height:22px} .fl{display:block;font-weight:500;font-size:11px;line-height:15px;color:#3A3A36}
+.sheetN{flex:1;background:#fff;border-radius:32px 32px 0 0;margin-top:-16px;padding:16px 12px 0;display:flex;flex-direction:column;gap:12px}
+.ic{display:block;fill:currentColor}
+.kd{display:block;font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8)}
+.card{background:var(--neutral);border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.hd{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.chip{height:24px;padding:0 10px;border-radius:12px;background:#fff;font-weight:800;font-size:10px;letter-spacing:.7px;display:inline-flex;align-items:center}
+.chip.al{background:var(--alert)}
+.warn{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:10px;background:var(--alert);font-weight:800;font-size:13px;margin-right:6px;vertical-align:2px}
+.vrow{display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
+.vrow .t{font-weight:800;font-size:20px;line-height:24px} .vrow .n{font-weight:800;font-size:30px;line-height:30px;letter-spacing:-1px} .vrow .n small{font-size:14px;letter-spacing:0;margin-left:3px}
+.sub{font-weight:500;font-size:13px;color:#5E5E57;display:flex;justify-content:space-between;align-items:center} .sub b{color:#141414}
+.dots{display:flex;gap:5px;align-items:center} .dots i{width:10px;height:10px;border-radius:5px;background:#141414;display:block} .dots i.al{background:var(--alert)}
+.leg{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px}
+.leg b{display:block;font-weight:800;font-size:24px;line-height:26px} .leg span{display:block;font-weight:500;font-size:12px;color:#5E5E57} .leg .r{text-align:right}
+.track{position:relative;height:40px}
+.track .base{position:absolute;left:0;right:0;top:19px;border-top:2px dashed rgba(20,20,20,.35)}
+.track .fill{position:absolute;left:0;right:0;top:18px;height:4px;border-radius:2px;background:#141414}
+.track .stop{position:absolute;left:38%;top:13px;width:14px;height:14px;border-radius:7px;background:#fff;border:3px solid #141414;transform:translateX(-50%)}
+.track .stl{position:absolute;left:38%;top:-3px;transform:translateX(-50%);font-weight:700;font-size:10px;white-space:nowrap}
+.track .plane{position:absolute;right:-6px;top:8px}
+.selo{display:flex;justify-content:center} .selo span{background:#141414;color:#fff;border-radius:12px;padding:4px 10px;font-weight:700;font-size:12px}
+.pass{background:var(--neutral);border-radius:24px}
+.pass .top{padding:16px 16px 12px;display:flex;justify-content:space-between;gap:10px}
+.pass .nm{font-weight:800;font-size:22px;line-height:26px;margin-top:6px} .pass .rk{font-weight:500;font-size:13px;color:#5E5E57}
+.mud{height:30px;padding:0 12px;border-radius:15px;border:1.5px solid #141414;font-weight:700;font-size:12px;display:inline-flex;align-items:center;white-space:nowrap}
+.perf{position:relative;height:2px;margin:0 16px;border-top:2px dashed rgba(20,20,20,.25)}
+.perf::before,.perf::after{content:'';position:absolute;top:-13px;width:24px;height:24px;border-radius:12px;background:#fff} .perf::before{left:-30px} .perf::after{right:-30px}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;padding:14px 16px 16px}
+.f small{display:block;font-weight:700;font-size:10.5px;letter-spacing:.5px;color:#5E5E57} .f b{display:block;font-weight:800;font-size:19px;line-height:23px} .f span{display:block;font-weight:500;font-size:11.5px;color:#5E5E57}
+.three{display:grid;grid-template-columns:repeat(3,1fr)} .three div{padding:0 10px;border-left:1px solid rgba(127,127,127,.3)} .three div:first-child{border-left:0;padding-left:0}
+.three b{display:block;font-weight:800;font-size:22px;line-height:24px} .three b small{font-size:12px;margin-left:2px} .three span{display:block;font-weight:500;font-size:12px;color:#5E5E57}
+.people{display:flex;gap:12px} .pc{display:flex;flex-direction:column;align-items:center;gap:6px;width:64px}
+.av{width:56px;height:56px;border-radius:28px;background:#141414;color:#fff;font-weight:800;font-size:17px;display:flex;align-items:center;justify-content:center}
+.av.add{background:none;border:1.5px dashed rgba(20,20,20,.45);color:#141414} .pc b{font-weight:700;font-size:13px}
+.dotw{width:7px;height:7px;border-radius:4px;background:var(--alert);display:inline-block;margin-right:5px;vertical-align:2px}
+.ci{width:32px;height:32px;border-radius:16px;background:#fff;display:inline-flex;align-items:center;justify-content:center}
+/* ── as variações de cor ── */
+/* K1/K3: a carreira a azul (a vida a voar); o cartão de tripulante a tinta (o crachá) */
+.blue{background:var(--flight)} .blue .leg span{color:rgba(20,20,20,.75)} .blue .track .base{border-color:rgba(20,20,20,.4)} .blue .track .stop{background:var(--flight)}
+.inkp{background:#141414;color:#fff} .inkp .kd{color:rgba(255,255,255,.75)} .inkp .rk,.inkp .f small,.inkp .f span{color:rgba(255,255,255,.7)}
+.inkp .mud{border-color:#fff;color:#fff} .inkp .perf{border-color:rgba(255,255,255,.3)}
+/* K2: só acentos */
+.acc-plane .track .fill{background:var(--flight)} .acc-plane .track .plane{color:#1F6FB0} .acc-plane .track .stop{border-color:var(--flight)}
+.acc-ci{background:var(--flight)!important}
+/* K3: a família a azul e a validade num cartão laranja quando está perto */
+.famblue .av:not(.add){background:#1F5E8E} .famblue{background:#DCEEFC}
+.alertcard{background:var(--alert)} .alertcard .sub,.alertcard .sub span{color:rgba(20,20,20,.82)} .alertcard .warn{background:#fff} .alertcard .chip.al{background:#fff}
+.alertcard .dots i.al{background:#fff}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>A cor no Perfil</h1>
+    <p>O Perfil é quase todo neutro porque o mapa das cores dá cor ao <b>tipo da escala</b> (voo azul, repouso salva, solo lilás) e ao que <b>pede atenção</b> (laranja "!", vermelho "✕"); o verde é só do dinheiro. As definições não têm tipo. Três níveis de cor <b>que não partem essa regra</b>, cada um em dois estados: tudo em dia, e o médico a 12 dias.</p>
+    <p><b>As tuas imagens:</b> 3407 e 3444 (os cartões de cor do Início), 3432 e 3440 (o cartão preto), 3408 (o laranja pede atenção, nunca é o principal), 3424 (a cor diz o tipo, não a intensidade). <b>Mobbin:</b> <a href="https://mobbin.com/screens/913535a0-3a5f-4562-b224-982651a3320e">Orb Social</a> (um cartão de cor em destaque entre neutros), <a href="https://mobbin.com/screens/ce177872-c7d1-4652-9e16-73d84b649ec4">Satispay</a> (um cartão escuro ao lado de neutros).</p>
+  </div>
+  <div id="opts" style="display:flex;flex-direction:column;gap:36px"></div>
+  <div class="card2"><h3>A minha recomendação: K1</h3><ul>
+    <li><b>K1</b> dá ao Perfil <b>dois blocos fortes com significado</b>. A <b>carreira a azul</b>: é a tua vida a voar, e o azul é o do voo em toda a app. O <b>cartão de tripulante a tinta</b>: um crachá, como o cartão preto das tuas imagens. O resto fica neutro, e o laranja só aparece quando uma validade precisa de atenção, por isso continua a saltar à vista. A página ganha ritmo (neutro, azul, preto, neutro) sem cores inventadas.</li>
+    <li><b>K2</b> fica quase como está e só acende <b>pequenos pontos</b>: a linha e o avião da carreira a azul, o "+" da família. Respeita tudo, mas continua a parecer pouco colorida.</li>
+    <li><b>K3</b> vai mais longe: a <b>família também a azul</b> (seguem os teus voos) e a <b>validade num cartão laranja</b> quando está perto, como o aviso do Início. Tem muita cor, mas dois azuis e um laranja juntos competem entre si, e a família azul diz "voo" sem ser um voo.</li></ul></div>
+</div>
+<script>
+var PLANE = '<svg class="ic" width="24" height="24" viewBox="0 0 24 24" style="transform:rotate(90deg)"><path d="M21 15.5v-2l-8-5V3.6a1.5 1.5 0 0 0-3 0V8.5l-8 5v2l8-2.5V18l-2 1.5V21l3.5-1 3.5 1v-1.5L13 18v-5z"/></svg>';
+var PLUS = '<svg class="ic" width="20" height="20" viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>';
+var TOP = '<div class="status"><span>09:41</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="topA"><div class="pills"><span class="pl ink">Piloto</span><span class="pl">easyJet</span><span class="bell"></span></div>'
+  + '<div class="what">Rita Almeida · primeiro-oficial</div><div class="hero"><div class="g"><div>FO</div><div class="grey">LIS</div></div><div class="side"><div><span class="fv">2019</span><span class="fl">na easyJet desde</span></div><div><span class="fv">12/12</span><span class="fl">contrato</span></div></div></div></div>';
+function VAL(near, cls){ return '<div class="card ' + (cls || '') + '"><div class="hd"><span class="kd">Validades · a mais perto</span>' + (near ? '<span class="chip al">A EXPIRAR</span>' : '') + '</div>'
+  + '<div class="vrow"><span class="t">' + (near ? '<span class="warn">!</span>' : '') + 'Médico Classe 1</span><span class="n">' + (near ? '12' : '43') + '<small>dias</small></span></div>'
+  + '<div class="sub"><span>até <b>' + (near ? '26 nov' : '27 dez') + '</b></span><span class="dots">' + (near ? '<i class="al"></i><i></i><i></i>' : '<i></i><i></i><i></i>') + '<span>&nbsp;3 documentos</span></span></div></div>'; }
+function LEG(cls){ return '<div class="card ' + (cls || '') + '"><div class="hd"><span class="kd">A tua carreira · easyJet</span><span class="kd">LIS</span></div><div class="leg"><div><b>2019</b><span>SO</span></div>'
+  + '<div class="track"><div class="base"></div><div class="fill"></div><span class="stop"></span><span class="stl">2021 · FO</span><span class="plane">' + PLANE + '</span></div><div class="r"><b>hoje</b><span>Primeiro-oficial</span></div></div><div class="selo"><span>7 anos e 8 meses</span></div></div>'; }
+function PASS(cls){ return '<div class="pass ' + (cls || '') + '"><div class="top"><div><span class="kd">O teu cartão de tripulante</span><div class="nm">Rita Almeida</div><div class="rk">Primeiro-oficial · nº E 48213</div></div><span class="mud">Mudar</span></div>'
+  + '<div class="perf"></div><div class="pgrid"><div class="f"><small>CONTRATO</small><b>12/12</b><span>Tempo inteiro</span></div><div class="f"><small>BASE</small><b>LIS</b><span>Lisboa</span></div>'
+  + '<div class="f"><small>LARGADA</small><b><span class="dotw"></span>por confirmar</b></div><div class="f"><small>COMPANHIA</small><b>easyJet</b><span>TAP Air Portugal em breve</span></div></div></div>'; }
+var AE = '<div class="card"><div class="hd"><span class="kd">Acordo e serviço</span><span class="chip">ABRANGIDO</span></div><div class="three"><div><b><span class="dotw"></span>30<small>min</small></b><span>pós-voo</span></div><div><b>22<small>dias</small></b><span>férias por ano</span></div><div><b>Empresa</b><span>vínculo</span></div></div></div>';
+function FAM(cls, plusBlue){ return '<div class="card ' + (cls || '') + '"><div class="hd"><span class="kd">Família · chegada ao vivo</span><span style="font-weight:600;font-size:12px;color:#5E5E57">3 pessoas</span></div><div class="people">'
+  + '<div class="pc"><div class="av add"' + (plusBlue ? ' style="border-color:#1F6FB0;color:#1F6FB0"' : '') + '>' + PLUS + '</div><b>Juntar</b></div>'
+  + [['AR', 'Ana'], ['J', 'João'], ['P', 'Pai']].map(function(x){ return '<div class="pc"><div class="av">' + x[0] + '</div><b>' + x[1] + '</b></div>'; }).join('') + '</div></div>'; }
+function phone(sheet){ return '<div class="ph">' + TOP + '<div class="sheetN">' + sheet + '</div></div>'; }
+var K2 = function(near){ return phone(VAL(near) + LEG('acc-plane') + PASS() + AE + FAM('', true)); };
+var K1 = function(near){ return phone(VAL(near) + LEG('blue') + PASS('inkp') + AE + FAM()); };
+var K3 = function(near){ return phone(VAL(near, near ? 'alertcard' : '') + LEG('blue') + PASS('inkp') + AE + FAM('famblue')); };
+var O = [['K1 · A carreira a azul, o cartão a tinta', true, 'Dois blocos fortes com significado: <b>a carreira a azul</b> (o azul do voo em toda a app) e <b>o cartão de tripulante a tinta</b> (um crachá). O resto neutro; o laranja só quando pede atenção.', K1],
+         ['K2 · Só acentos', false, 'Quase como está: <b>a linha e o avião da carreira a azul</b> e o "+" da família; os cartões continuam neutros.', K2],
+         ['K3 · Mais cor', false, 'O K1, e ainda <b>a família a azul</b> (seguem os teus voos) e <b>a validade num cartão laranja</b> quando está perto (como o aviso do Início).', K3]];
+document.getElementById('opts').innerHTML = O.map(function(o){
+  return '<div class="opt"><h3>' + o[0] + (o[1] ? '<span class="rec">RECOMENDO</span>' : '') + '</h3><p>' + o[2] + '</p><div class="row">'
+    + '<div><div class="cap">Tudo em dia</div>' + o[3](false) + '</div><div><div class="cap">O médico a 12 dias</div>' + o[3](true) + '</div></div></div>';
+}).join('');
+</script>
+</body>
+</html>

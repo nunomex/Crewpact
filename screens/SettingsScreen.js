@@ -1,7 +1,9 @@
 import React, { useContext, useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Animated, Share, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Animated, Share, Linking, Dimensions } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useScrollToTop } from '@react-navigation/native';
+import { useScrollToTop, useIsFocused } from '@react-navigation/native';
 import CenterDialog from '../components/CenterDialog';
 import ConfirmDialog from '../components/ConfirmDialog';
 import OTPInput from '../components/OTPInput';
@@ -9,15 +11,21 @@ import ProofField, { PROOF0, proofReady } from '../components/ProofField';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import PrimaryButton from '../components/PrimaryButton';
 import Icon from '../components/Icon';
-import IconButton from '../components/IconButton';
-import PeleSide from '../components/PeleSide';
-import PeleHeader from '../components/PeleHeader';
+import { HomeTop, pillWidth } from '../components/HomeCards';
+import NotificationsBell from '../components/NotificationsBell';
+import PeleSheet from '../components/PeleSheet';
+import SheetHeader from '../components/SheetHeader';
+import { WideButton } from '../components/PillButton';
+import RecordIdentitySheet from '../components/RecordIdentitySheet';
+import { ValidityCard, CareerCard, CrewPass, AgreementCard, FamilyCard, QuickSettings, QuickTiles, AccountRow } from '../components/ProfileCards';
+import { topGiant } from '../data/homeCards';
+import { profileTop, nearestValidity, careerLeg, agreementFacts, familyCircles, soonAirlinesText } from '../data/profileCards';
 import useEnter from '../hooks/useEnter';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
 import useReduceMotion from '../hooks/useReduceMotion';
 
-import { PELE, PELE_FONT, BRAND, TXT, SPACE, RADIUS } from '../data/constants';
+import { PELE, PELE_FONT, TXT, TXT3, SPACE, RADIUS, CARD } from '../data/constants';
 import { baseCityName } from '../data/countries';
 import usePerfilActions from '../hooks/usePerfilActions';
 import { cleanLabel } from '../components/OptCard';
@@ -27,23 +35,26 @@ import { AppContext } from '../data/appContext';
 import { dataExportJson } from '../data/dataExport';
 import useFamilyLinks from '../hooks/useFamilyLinks';
 
-// Linha do índice do Perfil (2026-11-03, esboço design/perfil-v3.html): ícone num círculo suave ·
-// rótulo · valor atual · ›. Toca → a página da definição (ou a janela da ação de conta).
-function Linha({ icon, label, value, valueColor, dot, onPress, last, danger }) {
+// A linha da folha "A tua conta" (a REGRA DAS FOLHAS, design-system §11): rótulo pequeno, valor grande, fio; toca → a ação.
+function AccField({ label, value, sub, onPress, danger, last }) {
+  const W = CARD.day;
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={[s.linha, !last && s.linhaBorder]}
-      accessibilityRole="button" accessibilityLabel={[label, value].filter(Boolean).join(', ')}>
-      <View style={[s.lIc, danger && s.lIcDanger]}><Icon name={icon} size={16} color={danger ? PELE.red : PELE.ink} /></View>
-      <Text style={[s.lLab, danger && s.lDanger]} numberOfLines={1}>{label}</Text>
-      {dot ? <View style={[s.lDot, { backgroundColor: dot }]} /> : null}
-      <Text style={[s.lVal, valueColor ? { color: valueColor } : null]} numberOfLines={1}>{value || ''}</Text>
-      {!danger ? <Icon name="chevron" size={14} color={PELE.placeholder} /> : null}
+    <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={[s.accField, last ? s.accLast : null]}
+      accessibilityRole="button" accessibilityLabel={[label, value, sub].filter(Boolean).join(', ')}>
+      <View style={s.flex}>
+        <Text style={[TXT3.kind, { color: W.neutralKind }]}>{label}</Text>
+        <Text style={[TXT3.slimTitle, s.accVal, { color: W.ink }]} numberOfLines={1}>{value}</Text>
+        {sub ? <Text style={[TXT3.cardSub, { color: W.tabSub }]} numberOfLines={1}>{sub}</Text> : null}
+      </View>
+      {danger ? <View style={s.accStop}><Icon name="trash" size={14} color={W.ink} /></View> : <Icon name="chevron" size={14} color={W.caption} />}
     </TouchableOpacity>
   );
 }
 
 export default function SettingsScreen({ navigation }) {
-  const { user, company, crewType, ae, caps, aeStatus, employment, aeCovered, duties, dayLog, crewCategory, crewContract, crewFleet, postFlightMin, postFlightSource, vacationDaysYear, vacationSource, crewHistory, companyHistory, baseHistory, serviceStart, largada, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, aeEvents, setProfile, lang, setLang, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout, setUser, setOnboarded } = useContext(AppContext);
+  const { user, company, crewType, ae, caps, aeStatus, employment, aeCovered, duties, dayLog, crewCategory, crewContract, crewFleet, postFlightMin, postFlightSource, vacationDaysYear, vacationSource, crewHistory, companyHistory, baseHistory, serviceStart, largada, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, aeEvents, setProfile, lang, setLang, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout, setUser, setOnboarded, validities, airlines, isPilot } = useContext(AppContext);
+  const C = CARD.day;   // o Perfil no aspeto novo (W1 de design/perfil-6.html)
+  const isFocused = useIsFocused();
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const tabSpace = useTabBarSpace();
   const perfilScrollRef = useRef(null);
@@ -167,19 +178,53 @@ export default function SettingsScreen({ navigation }) {
   const A = usePerfilActions();
   const page = (kind) => { select(); navigation.navigate('PerfilPagina', { kind }); };
   const companyBases = bases.filter((b) => b.airline_id === company?.id);
-  const contractTxt = (() => {
-    const c = crewContract || '12/12';
-    const lbl = ae && ae.contractLabel ? cleanLabel(ae.contractLabel(c, lang), c) : '';
-    return lbl && lbl !== c ? `${c} · ${lbl}` : c;
-  })();
-  const startTxt = serviceStart
-    ? new Date(`${String(serviceStart).slice(0, 10)}T00:00:00`).toLocaleDateString(lang === 'en' ? 'en-GB' : 'pt-PT', { month: 'long', year: 'numeric' })
-    : l('Por definir', 'Not set');
   // TAP: a data da largada (anuidades e senioridade contam dela). Sem ela, a app conta da entrada e avisa.
   const largadaTxt = largada
     ? new Date(`${String(largada).slice(0, 10)}T00:00:00`).toLocaleDateString(lang === 'en' ? 'en-GB' : 'pt-PT', { month: 'long', year: 'numeric' })
     : l('Por definir', 'Not set');
-  const employmentTxt = { employee: l('Empresa', 'Employee'), agency: l('Agência', 'Agency'), independent: l('Independente', 'Independent') }[employment || 'employee'];
+
+  // ══ O PERFIL NO ASPETO NOVO — W1 "como um voo" de design/perfil-6.html (escolhida pelo Nuno a 2026-11-14). O que vai para onde:
+  // data/profileCards.js (golden test:profilecards). O topo é o das outras abas; por baixo, a validade mais perto, a carreira
+  // como uma perna de voo, o cartão de tripulante (picotado), o acordo em números, a família em círculos, os mini-cartões
+  // (Face ID, lembretes, idioma), os atalhos e a conta numa linha escura (que abre a folha da conta). ══
+  // O nome e o nº de tripulante: os mesmos dos documentos (Registo 245, Disrupção, Estabilidade — `cp_record_<uid>`).
+  const [rec, setRec] = useState({ name: '', crewId: '' });
+  const [recOpen, setRecOpen] = useState(false);
+  useEffect(() => {
+    if (!user?.id || !isFocused) return;
+    AsyncStorage.getItem(`cp_record_${user.id}`).then((v) => { if (v) { try { setRec(JSON.parse(v) || { name: '', crewId: '' }); } catch { /* corrompido */ } } }).catch(() => {});
+  }, [user?.id, isFocused]);
+  const saveRec = async () => {
+    setRecOpen(false);
+    if (user?.id) AsyncStorage.setItem(`cp_record_${user.id}`, JSON.stringify(rec)).catch(() => {});
+    const nm = String(rec.name || '').trim();
+    if (nm && nm !== user?.name) { const r = await updateProfile({ name: nm }, lang); if (r.ok && r.user) setUser(r.user); }   // o nome da conta segue o dos documentos
+    success();
+  };
+  const catLbl = crewCategory && ae && ae.categoryLabel ? ae.categoryLabel(crewCategory, lang) : null;
+  const displayName = String(rec.name || user?.name || '').trim() || null;
+  const top = profileTop({ lang, crewType, name: displayName, category: crewCategory, categoryLabel: catLbl, base, companyName: company?.name || null,
+    startISO: serviceStart, contract: ae ? (crewContract || '12/12') : null });
+  const giant = topGiant(top, Dimensions.get('window').width - SPACE.lgPlus * 2);
+  const nv = nearestValidity(validities, { isPilot, today: new Date(), lang });
+  const leg = careerLeg({ crewHistory, companyHistory, serviceStart, today: new Date(), lang });
+  const ag = agreementFacts({ lang, postFlightMin, postFlightAssumed: postFlightSource === 'assumed', vacationDaysYear, showVacation: !!A.hasVacExtra,
+    employment, showEmployment: !!A.companyHasAe, covered: (employment || 'employee') === 'employee' ? aeCovered !== false : false });
+  const fam = familyCircles(famLinks);
+  const soon = soonAirlinesText(airlines, company?.id, lang);
+  const fmtDay = (iso) => new Date(`${String(iso).slice(0, 10)}T12:00:00`).toLocaleDateString(lang === 'en' ? 'en-GB' : 'pt-PT', { day: 'numeric', month: 'short', year: 'numeric' }).replace('.', '');
+  const contractLbl = ae && ae.contractLabel ? cleanLabel(ae.contractLabel(crewContract || '12/12', lang), crewContract || '12/12') : null;
+  const passCells = [
+    ae ? { k: 'contrato', label: l('Contrato', 'Contract'), v: crewContract || '12/12', sub: contractLbl && contractLbl !== (crewContract || '12/12') ? contractLbl : null, onPress: () => page('contrato') } : null,
+    A.showFleet ? { k: 'frota', label: l('Frota', 'Fleet'), v: crewFleet || 'NB', sub: null, onPress: () => page('frota') } : null,
+    companyBases.length ? { k: 'base', label: l('Base', 'Base'), v: base || l('Por definir', 'Not set'), sub: base ? baseCityName(base, baseObj?.city, lang) : null, onPress: () => page('base') } : null,
+    ae && typeof ae.seniority === 'function' ? { k: 'largada', label: l('Largada', 'Line release'), v: largada ? largadaTxt : l('por confirmar', 'to confirm'), sub: largada ? null : l('a antiguidade conta dela', 'seniority counts from it'), dot: !largada, onPress: () => page('largada') } : null,
+    { k: 'companhia', label: l('Companhia', 'Airline'), v: company?.name || '—', sub: soon, onPress: () => { select(); navigation.navigate('PerfilTrabalho'); } },
+  ].filter(Boolean);
+  // A folha da conta: cada ação abre a sua janela DEPOIS de a folha sair (PeleSheet · onClosed — nunca uma janela por cima de outra).
+  const [accOpen, setAccOpen] = useState(false);
+  const accNext = useRef(null);
+  const accDo = (fn) => { accNext.current = fn; setAccOpen(false); };
 
   // RGPD — exportar TODOS os meus dados num JSON (conta+perfil+escala+FTL+AE),
   // partilhado pela folha do sistema (sem sair para servidor; o user escolhe o destino).
@@ -216,131 +261,60 @@ export default function SettingsScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={s.safe} edges={['top']}>
-      {/* Rótulo = QUE PÁGINA é + contexto (padrão da casa: INFO·REFERÊNCIA, ESCALA·JULHO…);
-          o galão vive no FANTASMA (decisão 2026-07-09). */}
-      <PeleSide label={l('PERFIL', 'PROFILE')} accent={String(company?.name || '').toUpperCase() || undefined} />
-      {/* Header CANÓNICO dos empurrados (igual Validades/Detalhe): PeleHeader FIXO fora do
-          scroll, ‹ voltar na linha de topo do próprio componente (o hdr improvisado saiu). */}
-      {(() => {
-        const displayName = user ? (user.name || user.email?.split('@')[0] || '—') : '—';
-        const w = String(displayName).trim().split(/\s+/).filter(Boolean);
-        const inits = !w.length ? '?' : (w.length >= 2 ? w[0][0] + w[1][0] : w[0].slice(0, 2)).toUpperCase();
-        const catLbl = crewCategory && ae && ae.categoryLabel ? ae.categoryLabel(crewCategory, lang) : (crewCategory || null);
-        return (
-          <View style={s.headWrap}>
-            <PeleHeader
-              // RÉGUA ROOT (2026-07-10, user: "o header não está direito"): o Perfil é ABA —
-              // página-mãe nunca fala mais baixo que as filhas (Validades/Aeroportos a 130/44).
-              // Eyebrow = a FUNÇÃO, NA LINHA DE TOPO à esquerda (padrão da saudação do Início,
-              // decisão do user 2026-07-10); o SINO passou para a DIREITA (ações à direita).
-              bell
-              eyebrowTop
-              eyebrow={t(crewType === 'pilot' ? 'profile.crewPilot' : 'profile.crewCabin', lang)}
-              // Fantasma = o GALÃO (um só significado); iniciais apenas pré-onboarding (raro).
-              ghost={crewCategory || inits}
-              word={displayName}
-              // Kick = SÓ a categoria por extenso, a amarelo (a função subiu ao eyebrow;
-              // o eco sigla↔extenso é o padrão da casa — Validades: "02" + "2 documentos").
-              kick={catLbl ? <Text style={s.pkick} numberOfLines={1}><Text style={s.pkickY}>{catLbl}</Text></Text> : null}
-            />
-          </View>
-        );
-      })()}
-      <ScrollView ref={perfilScrollRef} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: tabSpace }} showsVerticalScrollIndicator={false}>
-
-        {/* Meta do herói (Desde · Base · AE) — primeiro item do scroll, sob a régua fixa */}
-        {user ? (
-          <Animated.View style={[s.pmeta, seg(0)]}>
-            {serviceStart ? <Text style={s.pmetaTxt}>{l('Desde', 'Since')} <Text style={s.pmetaB}>{serviceStart.slice(0, 4)}</Text></Text> : null}
-            {base ? <Text style={s.pmetaTxt}>{l('Base', 'Base')} <Text style={s.pmetaB}>{base}</Text></Text> : null}
-            {A.companyHasAe ? <Text style={s.pmetaTxt}>AE <Text style={[s.pmetaB, { color: aeCovered !== false ? PELE.ink : PELE.grey }]}>{aeCovered !== false ? l('abrangido', 'covered') : l('FTL-only', 'FTL-only')}</Text></Text> : null}
+    <SafeAreaView style={[s.safe, { backgroundColor: C.desk }]} edges={['top']}>
+      {isFocused ? <StatusBar style="dark" /> : null}
+      <HomeTop top={top} C={C} size={giant.size} l={l} rightW={pillWidth(l('Notificações', 'Notifications'))} right={<NotificationsBell variant="written" />} />
+      <View style={[s.sheet, { backgroundColor: C.sheet }]}>
+        <ScrollView ref={perfilScrollRef} style={s.flex} contentContainerStyle={[s.sheetIn, { paddingBottom: tabSpace + SPACE.lg }]} showsVerticalScrollIndicator={false}>
+          <Animated.View style={seg(0)}><ValidityCard nv={nv} l={l} fmtDate={fmtDay} onPress={() => { select(); navigation.navigate('Validades'); }} /></Animated.View>
+          {leg ? <Animated.View style={seg(1)}><CareerCard leg={leg} l={l} companyName={company?.name || null} base={base} catLabel={catLbl} /></Animated.View> : null}
+          <Animated.View style={seg(2)}>
+            <CrewPass l={l} name={displayName} crewId={rec.crewId || null} roleLabel={catLbl || crewCategory} cells={passCells} onChange={() => { select(); navigation.navigate('PerfilTrabalho'); }} />
           </Animated.View>
-        ) : null}
-
-        {/* ÍNDICE EM GRUPOS (2026-11-03, esboço design/perfil-v3.html, opção 1 do Nuno): cada linha mostra
-            o valor atual e abre a sua página (screens/PerfilPaginaScreen) — à Flighty. Os diálogos
-            "Segurança" e "Idioma & avisos" morreram: cada coisa tem a sua linha. */}
-        <Animated.View style={seg(1)}>
-          <Text style={s.glab}>{l('O teu trabalho', 'Your job')}</Text>
-          <View style={s.card}>
-            {ae ? <Linha icon="rank" label={l('Categoria', 'Rank')} value={crewCategory ? `${crewCategory} · ${ae.categoryLabel ? ae.categoryLabel(crewCategory, lang) : ''}` : l('Por definir', 'Not set')} onPress={() => page('categoria')} /> : null}
-            {ae ? <Linha icon="doc" label={l('Contrato', 'Contract')} value={contractTxt} onPress={() => page('contrato')} /> : null}
-            {A.showFleet ? <Linha icon="plane" label={l('Frota', 'Fleet')} value={crewFleet || 'NB'} onPress={() => page('frota')} /> : null}
-            {companyBases.length ? <Linha icon="pin" label={l('Base', 'Base')} value={base ? `${base} · ${baseCityName(base, baseObj?.city, lang)}` : l('Por definir', 'Not set')} onPress={() => page('base')} /> : null}
-            {ae ? <Linha icon="cal" label={l('Na companhia desde', 'With the airline since')} value={startTxt} onPress={() => page('inicio')} /> : null}
-            {ae && typeof ae.seniority === 'function' ? <Linha icon="cal" label={l('Largada', 'Line release')} value={largadaTxt} dot={largada ? null : PELE.warn} onPress={() => page('largada')} /> : null}
-            <Linha icon="sync" label={l('Mudar de companhia', 'Change airline')} value={company?.name || ''} onPress={() => { select(); setOnboarded(false); }} last />
-          </View>
-        </Animated.View>
-
-        <Animated.View style={seg(1)}>
-          <Text style={s.glab}>{l('Acordo e serviço', 'Agreement and duty')}</Text>
-          <View style={s.card}>
-            <Linha icon="clock" label={l('Serviço pós-voo', 'Post-flight duty')} value={`${postFlightMin || 0} min`} dot={postFlightSource === 'assumed' ? PELE.warn : null} onPress={() => page('posvoo')}
-              last={!A.hasVacExtra && !A.showLifestyle && !A.showInstructor && !A.companyHasAe} />
-            {A.hasVacExtra ? <Linha icon="sun" label={l('Férias por ano', 'Leave per year')} value={`${vacationDaysYear ?? 22} ${l('dias', 'days')}`} onPress={() => page('ferias')}
-              last={!A.showLifestyle && !A.showInstructor && !A.companyHasAe} /> : null}
-            {A.showLifestyle ? <Linha icon="sun" label={l('Tipo de PPY', 'PPY type')} value={lifestyle ? l('Estilo de vida', 'Lifestyle') : l('Sazonal', 'Seasonal')} onPress={() => page('ppy')}
-              last={!A.showInstructor && !A.companyHasAe} /> : null}
-            {A.showInstructor ? <Linha icon="rank" label={l('Qualificação de instrutor', 'Instructor rating')} value={instructorRated ? l('Sim', 'Yes') : l('Não', 'No')} onPress={() => page('instrutor')}
-              last={!A.companyHasAe} /> : null}
-            {A.companyHasAe ? <Linha icon="doc" label={l('Vínculo', 'Employment')} value={employmentTxt} onPress={() => page('vinculo')}
-              last={(employment || 'employee') !== 'employee'} /> : null}
-            {A.companyHasAe && (employment || 'employee') === 'employee'
-              ? <Linha icon="shield" label={l('Abrangido pelo AE', 'Covered by the agreement')} value={aeCovered !== false ? l('Sim', 'Yes') : l('Não', 'No')} valueColor={null} onPress={() => page('abrangido')} last />
-              : null}
-          </View>
-        </Animated.View>
-
-        <Animated.View style={seg(2)}>
-          <Text style={s.glab}>{l('Família', 'Family')}</Text>
-          <View style={s.card}>
-            <Linha icon="fam" label={l('Chegada ao vivo', 'Live arrival')}
-              value={famCount ? `${famCount} ${famCount === 1 ? l('pessoa', 'person') : l('pessoas', 'people')}` : l('Adicionar', 'Add')}
-              onPress={() => { select(); navigation.navigate('Familia'); }} last />
-          </View>
-        </Animated.View>
-
-        <Animated.View style={seg(2)}>
-          <Text style={s.glab}>{l('Ferramentas', 'Tools')}</Text>
-          <View style={s.card}>
-            {/* "Validades" a seco: é o jargão da tripulação e o objeto real (sem cofre de ficheiros — RGPD). */}
-            <Linha icon="passport" label={l('Validades', 'Currency')} value={l('médico, recorrentes, licença', 'medical, recurrents, licence')} onPress={() => navigation.navigate('Validades')} />
-            <Linha icon="bed" label={l('Hotéis', 'Hotels')} value={l('por estação', 'per station')} onPress={() => navigation.navigate('Hoteis')} />
-            <Linha icon="book" label={l('Biblioteca', 'Library')} value={l('lei e acordos', 'law and agreements')} onPress={() => navigation.navigate('Biblioteca')} />
-            <Linha icon="doc" label={l('Relatórios', 'Reports')} value="PDF · CSV" onPress={() => navigation.navigate('Relatorios')} last />
-          </View>
-        </Animated.View>
-
-        <Animated.View style={seg(3)}>
-          <Text style={s.glab}>{l('Conta e segurança', 'Account and security')}</Text>
-          <View style={s.card}>
-            <Linha icon="mail" label={l('E-mail', 'Email')} value={user?.email || ''} onPress={openEmailChange} />
-            {/* "Definir": serve quem já tem palavra-passe (mudar) e quem entrou só com código (criar). */}
-            <Linha icon="lock" label={l('Palavra-passe', 'Password')} value={l('Definir', 'Set')} onPress={() => { setPwProof(PROOF0); setNewPw(''); setConfPw(''); setPwErr(''); setPwModal(true); }} />
-            <Linha icon="faceid" label={l('Bloqueio com Face ID', 'Face ID lock')} value={lockEnabled ? l('Ligado', 'On') : l('Desligado', 'Off')} valueColor={null} onPress={() => page('bloqueio')} />
-            <Linha icon="globe" label={l('Idioma', 'Language')} value={lang === 'en' ? 'English' : 'Português'} onPress={() => page('idioma')} />
-            <Linha icon="bell" label={l('Lembretes', 'Reminders')} value={remindersOn ? l('Ligados', 'On') : l('Desligados', 'Off')} onPress={() => page('lembretes')} />
-            <Linha icon="download" label={l('Exportar os meus dados', 'Export my data')} value="RGPD" onPress={exportData} />
-            <Linha icon="trash" label={l('Apagar conta', 'Delete account')} danger last onPress={() => { setDelWord(''); setDelProof(PROOF0); setDelErr(''); setDelModal(true); }} />
-          </View>
-        </Animated.View>
-
-        {/* Terminar sessão — sozinho, no fim */}
-        <Animated.View style={seg(4)}>
-          <View style={[s.card, s.cardOut]}>
-            <Linha icon="logout" label={l('Terminar sessão', 'Log out')} danger last onPress={() => setLogoutOpen(true)} />
-          </View>
-          {/* Legal — acesso PERMANENTE aos termos/privacidade (a aceitação vive na entrada). */}
+          <Animated.View style={seg(3)}><AgreementCard ag={ag} l={l} onItem={(k) => page(k)} onChip={() => page('abrangido')} /></Animated.View>
+          <Animated.View style={seg(4)}>
+            <FamilyCard fam={fam} total={famCount} l={l} onAdd={() => { select(); navigation.navigate('Familia'); }} onOpen={() => { select(); navigation.navigate('Familia'); }} />
+          </Animated.View>
+          <Animated.View style={seg(5)}>
+            <QuickSettings l={l} lang={lang} lockOn={lockEnabled} onLock={(v) => A.toggleLock(v)} remindersOn={remindersOn} onReminders={() => { select(); toggleReminders(); }}
+              onLang={(k) => { if (k !== lang) { select(); setLang(k); } }} />
+          </Animated.View>
+          <Animated.View style={seg(6)}>
+            <QuickTiles items={[
+              { k: 'hotel', icon: 'bed', label: l('Hotéis', 'Hotels'), sub: l('por estação', 'per station'), onPress: () => { select(); navigation.navigate('Hoteis'); } },
+              { k: 'bib', icon: 'book', label: l('Biblioteca', 'Library'), sub: l('lei e acordos', 'law, agreements'), onPress: () => { select(); navigation.navigate('Biblioteca'); } },
+              { k: 'rel', icon: 'doc', label: l('Relatórios', 'Reports'), sub: 'PDF · CSV', onPress: () => { select(); navigation.navigate('Relatorios'); } },
+            ]} />
+          </Animated.View>
+          <Animated.View style={seg(7)}>
+            <AccountRow l={l} sub={l('nome e nº · e-mail · palavra-passe · os teus dados · sair', 'name and no. · email · password · your data · log out')} onPress={() => { select(); setAccOpen(true); }} />
+          </Animated.View>
+          {/* Legal — acesso PERMANENTE aos termos e à privacidade (a aceitação vive na entrada) */}
           <View style={s.legalRow}>
-            <Text style={s.legalLink} onPress={() => Linking.openURL('https://crewpact.app/termos').catch(() => {})}>{l('Termos', 'Terms')}</Text>
-            <Text style={s.legalDot}>·</Text>
-            <Text style={s.legalLink} onPress={() => Linking.openURL('https://crewpact.app/privacidade').catch(() => {})}>{l('Privacidade', 'Privacy')}</Text>
+            <Text style={[TXT3.cardSub, s.legalLink]} onPress={() => Linking.openURL('https://crewpact.app/termos').catch(() => {})}>{l('Termos', 'Terms')}</Text>
+            <Text style={[TXT3.cardSub, { color: C.caption }]}>·</Text>
+            <Text style={[TXT3.cardSub, s.legalLink]} onPress={() => Linking.openURL('https://crewpact.app/privacidade').catch(() => {})}>{l('Privacidade', 'Privacy')}</Text>
+            <Text style={[TXT3.cardSub, { color: C.caption }]}>{`·  v${appJson.expo.version}`}</Text>
           </View>
-          <Text style={s.foot}>CrewPact · v{appJson.expo.version}</Text>
-        </Animated.View>
-      </ScrollView>
+        </ScrollView>
+      </View>
+
+      {/* A FOLHA DA CONTA (a regra das folhas: campos) — cada ação abre a sua janela depois de a folha sair */}
+      <PeleSheet visible={accOpen} onClose={() => setAccOpen(false)} bg={C.sheet}
+        onClosed={() => { const fn = accNext.current; accNext.current = null; if (fn) fn(); }}>
+        <SheetHeader card title={l('A tua conta', 'Your account')} onClose={() => setAccOpen(false)} closeLabel={l('Fechar', 'Close')} style={s.accHead} />
+        <AccField label={l('Nome e nº de tripulante', 'Name and crew number')} value={displayName || l('Por escrever', 'Not set')} sub={rec.crewId ? l(`nº ${rec.crewId} · vai para os documentos`, `no. ${rec.crewId} · goes on your documents`) : l('vai para o Registo 245 e as provas', 'goes on the 245 record and proofs')}
+          onPress={() => accDo(() => setRecOpen(true))} />
+        <AccField label={l('E-mail', 'Email')} value={user?.email || '—'} onPress={() => accDo(openEmailChange)} />
+        <AccField label={l('Palavra-passe', 'Password')} value={l('Definir', 'Set')} onPress={() => accDo(() => { setPwProof(PROOF0); setNewPw(''); setConfPw(''); setPwErr(''); setPwModal(true); })} />
+        <AccField label={l('Os teus dados', 'Your data')} value={l('Exportar (RGPD)', 'Export (GDPR)')} onPress={() => accDo(exportData)} />
+        <AccField label={l('Apagar conta', 'Delete account')} value={l('Definitivo', 'Permanent')} sub={l('RGPD art. 17.º · 7 dias para voltar atrás', 'GDPR art. 17 · 7 days to undo')} danger last
+          onPress={() => accDo(() => { setDelWord(''); setDelProof(PROOF0); setDelErr(''); setDelModal(true); })} />
+        <WideButton glyph="logout" label={l('Terminar sessão', 'Log out')} onPress={() => accDo(() => setLogoutOpen(true))} style={s.accOut} />
+      </PeleSheet>
+      <RecordIdentitySheet visible={recOpen} onClose={() => setRecOpen(false)} form={rec} setForm={setRec} onGenerate={saveRec} lang={lang}
+        title={l('O teu nome e número', 'Your name and number')} sub={l('Vão para o Registo 245 e para as provas da Disrupção e da Estabilidade.', 'They go on the 245 record and on the Disruption and Stability proofs.')}
+        cta={l('Guardar', 'Save')} />
 
       <ConfirmDialog visible={logoutOpen} danger icon="log-out-outline"
         title={l('Terminar sessão?', 'Log out?')}
@@ -453,28 +427,21 @@ export default function SettingsScreen({ navigation }) {
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: PELE.paper },
-  headWrap: { paddingHorizontal: 20 },   // header canónico fixo (PeleHeader c/ onBack), gutter do ecrã
-  // Herói do perfil — fantasma/nome/eyebrow/régua vêm do PeleHeader (size 'detail'); só o kick fica (categoria a amarelo)
-  pkick: { fontFamily: PELE_FONT.bodyBold, fontSize: 12.5, color: PELE.grey, marginTop: 6 },
-  pkickY: { color: BRAND.signal, fontFamily: PELE_FONT.bodyHeavy },
-  pmeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, paddingTop: 11 },
-  pmetaTxt: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 9.5, letterSpacing: 0.6, textTransform: 'uppercase', color: PELE.grey },
-  pmetaB: { color: PELE.ink },
-  // Índice em grupos (2026-11-03): rótulo do grupo · cartão de linhas · linha (ícone · rótulo · valor · ›)
-  glab: { ...TXT.eyebrow, color: PELE.grey, marginTop: SPACE.xl, marginBottom: SPACE.sm, marginLeft: SPACE.xs },
-  card: { borderWidth: 1.5, borderColor: PELE.line, borderRadius: RADIUS.md, overflow: 'hidden', backgroundColor: PELE.paper },
-  cardOut: { marginTop: SPACE.xl },
-  linha: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, minHeight: 48, paddingHorizontal: SPACE.md, paddingVertical: SPACE.sm },
-  linhaBorder: { borderBottomWidth: 1, borderBottomColor: PELE.line },
-  lIc: { width: 28, height: 28, borderRadius: 999, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
-  lIcDanger: { backgroundColor: PELE.redSoft },
-  lLab: { ...TXT.callout, color: PELE.ink },
-  lDanger: { color: PELE.red },
-  lDot: { width: 8, height: 8, borderRadius: 999, marginLeft: 'auto' },
-  lVal: { ...TXT.body, color: PELE.grey, flex: 1, textAlign: 'right' },
-  // Modal de password
-  eyebrow: { fontSize: 11, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.4, textTransform: 'uppercase', color: PELE.grey },
+  safe: { flex: 1 },
+  flex: { flex: 1, minWidth: 0 },
+  // a folha, como nos Números: raio 32, sobe 16 por cima do topo
+  sheet: { flex: 1, marginTop: -SPACE.lg, borderTopLeftRadius: RADIUS.sheet, borderTopRightRadius: RADIUS.sheet, overflow: 'hidden' },
+  sheetIn: { paddingHorizontal: SPACE.md, paddingTop: SPACE.lg, gap: SPACE.md },
+  legalRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACE.sm, paddingTop: SPACE.xs },
+  legalLink: { color: CARD.day.ink, textDecorationLine: 'underline', paddingVertical: SPACE.xs },
+  // a folha da conta (campos)
+  accHead: { paddingHorizontal: 0, paddingTop: 0 },
+  accField: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingVertical: SPACE.md, borderBottomWidth: 1, borderBottomColor: CARD.day.round },
+  accLast: { borderBottomWidth: 0 },
+  accVal: { marginTop: 2 },
+  accStop: { width: 28, height: 28, borderRadius: RADIUS.pill, backgroundColor: CARD.day.stop, alignItems: 'center', justifyContent: 'center' },
+  accOut: { marginTop: SPACE.lg },
+
   fieldLabel: { fontSize: 13, fontFamily: PELE_FONT.body, color: PELE.ink, marginBottom: 6 },
   pwInputRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: PELE.line, borderRadius: 12, paddingHorizontal: 14 },
   pwInput: { flex: 1, paddingVertical: 12, fontSize: 15, color: PELE.ink },
@@ -490,8 +457,4 @@ const s = StyleSheet.create({
   emSub: { fontSize: 14, color: PELE.ink, lineHeight: 20, marginBottom: 16 },
   emErr: { color: PELE.red, fontSize: 13, marginTop: 8 },
   emResend: { fontSize: 14, fontFamily: PELE_FONT.bodyBold, color: PELE.red },
-  foot: { textAlign: 'center', fontFamily: PELE_FONT.body, fontSize: 9.5, color: PELE.grey, marginTop: 16 },
-  legalRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 18 },
-  legalLink: { fontSize: 11, fontFamily: PELE_FONT.bodyBold, color: PELE.grey, textDecorationLine: 'underline', paddingVertical: 4 },
-  legalDot: { color: PELE.ghost, fontSize: 11 },
 });

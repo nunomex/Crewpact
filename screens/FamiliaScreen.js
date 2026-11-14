@@ -20,12 +20,8 @@ import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
 import { PELE, PELE_FONT, TXT, SPACE, RADIUS } from '../data/constants';
 
-// Inicial(is) para o avatar: "Mãe"→M, "João Carlos"→JC.
-export const familyInitials = (name) => {
-  const parts = (name || '').trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return '?';
-  return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
-};
+// As iniciais do círculo ("Mãe" → M, "João Carlos" → JC): uma só regra, em data/profileCards.js (o Perfil usa a mesma).
+import { familyInitials } from '../data/profileCards';
 
 export default function FamiliaScreen({ navigation }) {
   const { user, duties, lang } = useContext(AppContext);

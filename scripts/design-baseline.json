@@ -1,9 +1,9 @@
 {
  "gerado": "2026-11-14",
  "total": {
-  "tipoFora": 122,
-  "tipoMenor11": 61,
-  "espacoFora": 268,
+  "tipoFora": 119,
+  "tipoMenor11": 59,
+  "espacoFora": 265,
   "raioFora": 34,
   "corSolta": 48,
   "ionicons": 7,
@@ -102,9 +102,9 @@
    "amareloTexto": 0
   },
   "screens/SettingsScreen.js": {
-   "tipoFora": 3,
-   "tipoMenor11": 2,
-   "espacoFora": 11,
+   "tipoFora": 0,
+   "tipoMenor11": 0,
+   "espacoFora": 8,
    "raioFora": 1,
    "corSolta": 1,
    "ionicons": 0,

@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · O Perfil mais criativo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* O PERFIL MAIS CRIATIVO (2026-11-14). O Nuno gostou da V1 de design/perfil-5.html (a ficha, as pílulas, a família em círculos, os
+   atalhos, a conta numa linha) e pediu: "acho que podes fazer ainda melhor. analisa as minhas imagens, e retira coisas para certas
+   partes, sê criativo." Do índice (referencias/Para a app/README), parte a parte:
+   · a carreira como uma PERNA DE VOO — partida, chegada, a duração ao meio no selo (3422 · 3417 · 3444), o avião a andar;
+   · o trabalho como um CARTÃO DE EMBARQUE picotado (3418), rótulo pequeno e valor grande (3417);
+   · a validade como o CARTÃO DE PROGRESSO — chip do período em cima, número à direita, barra (3428 · 3462 · 3408) e um PONTO por
+     documento (3436, as contagens em pontos);
+   · o acordo em TRÊS NÚMEROS com a unidade pequena (3419) e o chip de estado "ABRANGIDO" (3424);
+   · a família em CÍRCULOS com o "+" (as duas imagens do Nuno no chat) e um ANEL azul a pulsar em quem segue o voo agora;
+   · o Face ID e os lembretes em MINI-CARTÕES com interruptor (a imagem "Settings" do Nuno · 3442 · 3426);
+   · os MEIOS CARTÕES dois a dois (3408 · 3415) — o mosaico da W3; os algarismos que rolam (GIF 7EEA).
+   Três maneiras: W1 "como um voo" · W2 "os números grandes" · W3 "o mosaico". Movimento (skill animacoes + motion §3): a entrada
+   820 ms escalonada; o avião percorre a perna e o traço enche-se atrás (800 ms out(cubic)); a barra e as contagens 800 ms; os pontos e
+   os círculos um a um; o anel do "a seguir" pulsa (loop ambiente, 650 ms por perna); os interruptores 220 ms. Reduzido: tudo no fim,
+   o anel parado. Sem JS: tudo visível. Dados de TESTE: Rita Almeida (inventada), primeiro-oficial easyJet. */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif;--out:cubic-bezier(.33,1,.68,1)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+.lead{max-width:980px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)}
+.replay{align-self:flex-start;height:40px;padding:0 18px;border-radius:20px;border:1.5px solid #141414;background:none;font:700 14px var(--body);cursor:pointer}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,406px),406px));gap:26px 24px;justify-content:center;align-items:start}
+.opt{display:flex;flex-direction:column;gap:10px;min-width:0}
+.opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:var(--muted);min-height:112px} .opt > p b{color:var(--pfg)}
+.cap{font-size:12px;font-weight:700;color:#C2410C;margin:0 0 2px 6px}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:980px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card2 li{font-size:13px;line-height:1.5;color:var(--muted)} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:var(--pfg)}
+
+.ph{display:flex;flex-direction:column;width:406px;border:8px solid #04060A;border-radius:52px;overflow:hidden;position:relative;background:#E3E1DB;color:#141414;max-width:100%}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.topA{padding:0 20px 32px;flex:none}
+.pills{display:flex;align-items:center;gap:8px;min-height:68px;padding:8px 0 16px}
+.pl{height:38px;padding:0 16px;border-radius:19px;border:1.5px solid #141414;display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:13px;white-space:nowrap}
+.pl.ink{background:#141414;color:#E3E1DB}
+.bell{width:44px;height:44px;border-radius:22px;background:rgba(127,127,127,.22);margin-left:auto;display:flex;align-items:center;justify-content:center}
+.what{font-weight:500;font-size:15px;line-height:20px;color:#3A3A36}
+.hero{display:flex;align-items:stretch;gap:16px;margin-top:12px}
+.g{font-weight:700;white-space:nowrap;font-size:62px;line-height:68px;letter-spacing:-2.85px}
+.g div{margin-top:-6px} .g div + div{margin-top:-12px}
+.grey{color:rgba(20,20,20,.5)}
+.side{border-left:1.5px solid #141414;padding-left:16px;display:flex;flex-direction:column;justify-content:center;gap:12px;min-width:0}
+.fv{display:block;font-weight:700;font-size:20px;line-height:22px;white-space:nowrap}
+.fl{display:block;font-weight:500;font-size:11px;line-height:15px;color:#3A3A36;white-space:nowrap}
+.sheetN{flex:1;background:#fff;border-radius:32px 32px 0 0;padding:16px 12px 0;display:flex;flex-direction:column;gap:12px}
+.ic{display:block;fill:currentColor}
+.kd{display:block;font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8)}
+.ci{width:32px;height:32px;border-radius:16px;background:#fff;display:flex;align-items:center;justify-content:center;flex:none}
+.mud{height:30px;padding:0 12px;border-radius:15px;border:1.5px solid #141414;font-weight:700;font-size:12px;display:inline-flex;align-items:center;white-space:nowrap;cursor:pointer}
+.dotw{width:7px;height:7px;border-radius:4px;background:#F0854A;display:inline-block;margin-right:5px;vertical-align:2px}
+.foot{font-weight:500;font-size:12px;color:#5E5E57;text-align:center;padding:4px 0 26px} .foot u{color:#141414}
+.card{background:#F1EFEA;border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.hd{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.chip{height:24px;padding:0 10px;border-radius:12px;background:#fff;font-weight:800;font-size:10px;letter-spacing:.7px;display:inline-flex;align-items:center;white-space:nowrap}
+.chip.al{background:#F0854A}
+.warn{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:10px;background:#F0854A;color:#141414;font-weight:800;font-size:13px;margin-right:6px;vertical-align:2px}
+.trk{height:10px;border-radius:5px;background:rgba(20,20,20,.12);overflow:hidden} .trk i{display:block;height:100%;border-radius:5px;background:#F0854A;transform-origin:left center}
+.sub{font-weight:500;font-size:13px;color:#5E5E57;display:flex;justify-content:space-between;gap:8px}
+.sub b{color:#141414}
+/* a validade (cartão de progresso, 3428): título à esquerda, número à direita */
+.vrow{display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
+.vrow .t{font-weight:800;font-size:20px;line-height:24px}
+.vrow .n{font-weight:800;font-size:34px;line-height:34px;letter-spacing:-1px;white-space:nowrap} .vrow .n small{font-size:14px;letter-spacing:0;margin-left:3px}
+.dots{display:flex;gap:6px;align-items:center} .dots i{width:10px;height:10px;border-radius:5px;background:#141414;display:block} .dots i.al{background:#F0854A} .dots span{font-weight:600;font-size:12px;color:#5E5E57;margin-left:4px}
+/* a carreira como uma perna de voo (3422 · 3417 · 3444) */
+.leg{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px}
+.leg .end b{display:block;font-weight:800;font-size:26px;line-height:28px;letter-spacing:-.6px} .leg .end span{display:block;font-weight:500;font-size:12px;color:#5E5E57}
+.leg .end.r{text-align:right}
+.track{position:relative;height:40px}
+.track .base{position:absolute;left:0;right:0;top:19px;border-top:2px dashed rgba(20,20,20,.35)}
+.track .fill{position:absolute;left:0;right:0;top:18px;height:4px;border-radius:2px;background:#141414;transform-origin:left center}
+.track .stop{position:absolute;top:13px;width:14px;height:14px;border-radius:7px;background:#fff;border:3px solid #141414;transform:translateX(-50%)}
+.track .stop + .stl{position:absolute;top:-2px;transform:translateX(-50%);font-weight:700;font-size:10px;color:#3A3A36;white-space:nowrap}
+.track .plane{position:absolute;top:8px;right:-6px;width:24px;height:24px;color:#141414}
+.selo{display:flex;justify-content:center;margin-top:-4px} .selo span{background:#141414;color:#fff;border-radius:12px;padding:4px 10px;font-weight:700;font-size:12px}
+/* o cartão de embarque picotado (3418) */
+.pass{background:#F1EFEA;border-radius:24px;position:relative}
+.pass .top{padding:16px 16px 14px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.pass .nm{font-weight:800;font-size:22px;line-height:26px} .pass .rk{font-weight:500;font-size:13px;color:#5E5E57}
+.perf{position:relative;height:2px;margin:0 16px;border-top:2px dashed rgba(20,20,20,.25)}
+.perf::before,.perf::after{content:'';position:absolute;top:-13px;width:24px;height:24px;border-radius:12px;background:#fff}
+.perf::before{left:-30px} .perf::after{right:-30px}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;padding:14px 16px 16px}
+.f small{display:block;font-weight:700;font-size:10.5px;letter-spacing:.5px;color:#5E5E57} .f b{display:block;font-weight:800;font-size:19px;line-height:23px;white-space:nowrap} .f span{display:block;font-weight:500;font-size:11.5px;color:#5E5E57}
+.f b .dotw{display:inline-block}
+/* o acordo em três números (3419) */
+.three{display:grid;grid-template-columns:repeat(3,1fr)}
+.three div{padding:0 10px;border-left:1px solid rgba(127,127,127,.3)} .three div:first-child{border-left:0;padding-left:0}
+.three b{display:block;font-weight:800;font-size:24px;line-height:26px;letter-spacing:-.6px;white-space:nowrap} .three b small{font-size:13px;letter-spacing:0;margin-left:2px} .three span{display:block;font-weight:500;font-size:12px;color:#5E5E57}
+.three b .dotw{display:inline-block}
+/* a família em círculos, com o anel de quem segue o voo */
+.people{display:flex;gap:12px}
+.pc{display:flex;flex-direction:column;align-items:center;gap:6px;width:66px;cursor:pointer}
+.av{width:58px;height:58px;border-radius:29px;background:#141414;color:#fff;font-weight:800;font-size:18px;letter-spacing:.5px;display:flex;align-items:center;justify-content:center;position:relative}
+.av.add{background:none;border:1.5px dashed rgba(20,20,20,.45);color:#141414}
+.av.live{box-shadow:0 0 0 3px #F1EFEA,0 0 0 6px #6DBEFA}
+.pc b{font-weight:700;font-size:13px;white-space:nowrap} .pc span{font-weight:500;font-size:11px;color:#5E5E57;margin-top:-5px;white-space:nowrap}
+/* os mini-cartões das definições com interruptor (a imagem "Settings" do Nuno · 3442) */
+.minis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mini{background:#F1EFEA;border-radius:20px;padding:12px;display:flex;flex-direction:column;gap:10px;min-height:112px;justify-content:space-between}
+.mini b{display:block;font-weight:800;font-size:14px;line-height:17px} .mini span{display:block;font-weight:500;font-size:11px;color:#5E5E57}
+.sw{width:51px;height:31px;border-radius:16px;background:#141414;position:relative;flex:none;cursor:pointer;transition:background .22s var(--out)}
+.sw::after{content:'';position:absolute;left:22px;top:2px;width:27px;height:27px;border-radius:14px;background:#fff;transition:transform .22s var(--out)}
+.sw.off{background:rgba(127,127,127,.35)} .sw.off::after{transform:translateX(-20px)}
+.lang{height:31px;border-radius:16px;background:#fff;display:inline-flex;align-items:center;padding:0 10px;font-weight:800;font-size:12px;align-self:flex-start}
+/* os atalhos e a conta */
+.quick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.q{background:#F1EFEA;border-radius:20px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:transform .15s var(--out)}
+.q:active{transform:scale(.97)} .q b{font-weight:700;font-size:12px} .q span{font-weight:500;font-size:11px;color:#5E5E57;margin-top:-6px}
+.acc{background:#141414;color:#fff;border-radius:22px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer}
+.acc .ci{background:rgba(255,255,255,.16);color:#fff} .acc .t{flex:1;min-width:0} .acc b{display:block;font-weight:800;font-size:16px} .acc span{display:block;font-weight:500;font-size:12px;color:rgba(255,255,255,.75);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* W2: os números grandes */
+.huge{font-weight:800;font-size:56px;line-height:56px;letter-spacing:-2px} .huge small{font-size:18px;letter-spacing:0;margin-left:4px}
+/* W3: o mosaico de meios cartões (3408 · 3415) */
+.bento{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bx{background:#F1EFEA;border-radius:22px;padding:14px;display:flex;flex-direction:column;gap:8px;min-height:124px;justify-content:space-between;min-width:0}
+.bx.w2{grid-column:span 2}
+.bx b.v{display:block;font-weight:800;font-size:26px;line-height:28px;letter-spacing:-.6px;white-space:nowrap} .bx b.v small{font-size:13px;letter-spacing:0;margin-left:3px}
+.bx span{display:block;font-weight:500;font-size:12px;color:#5E5E57}
+.bx .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+/* os pedaços em linha nunca partem a linha (a contagem, o "!", o ponto laranja) */
+.cnt{display:inline!important} .warn{display:inline-flex!important} .dotw{display:inline-block!important}
+/* o movimento — só com o JS a correr e sem movimentos reduzidos */
+@media (prefers-reduced-motion: no-preference){
+  .js .run .an{opacity:0;transform:translateY(12px)}
+  .js .run.go .an{animation:enter .82s var(--out) both;animation-delay:calc(var(--i,0) * 60ms)}
+  .js .run .trk i{transform:scaleX(0)}
+  .js .run.go .trk i{animation:grow .8s var(--out) .3s both}
+  .js .run .track .fill{transform:scaleX(0)}
+  .js .run.go .track .fill{animation:grow .8s var(--out) .4s both}
+  .js .run .track .plane{transform:translateX(calc(-1 * var(--w, 180px)))}
+  .js .run.go .track .plane{animation:fly .8s var(--out) .4s both}
+  .js .run .dots i,.js .run .av{opacity:0;transform:scale(.8)}
+  .js .run.go .dots i,.js .run.go .av{animation:popin .26s var(--out) both;animation-delay:calc(.5s + var(--p,0) * 60ms)}
+  .js .run.go .av.live{animation:popin .26s var(--out) both, ring 1.3s ease-in-out 1s infinite;animation-delay:calc(.5s + var(--p,0) * 60ms), 1.2s}
+}
+@media (prefers-reduced-motion: reduce){ .sw,.sw::after,.q{transition:none} }
+@keyframes enter{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes fly{from{transform:translateX(calc(-1 * var(--w, 180px)))}to{transform:none}}
+@keyframes popin{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:none}}
+@keyframes ring{0%,100%{box-shadow:0 0 0 3px #F1EFEA,0 0 0 6px #6DBEFA}50%{box-shadow:0 0 0 3px #F1EFEA,0 0 0 9px rgba(109,190,250,.45)}}
+</style>
+<script>document.documentElement.classList.add('js');</script>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>O Perfil mais criativo</h1>
+    <p>A V1, parte a parte, com ideias das tuas imagens:</p>
+    <ul style="font-size:14px;line-height:1.55;color:var(--muted);padding-left:20px">
+      <li>a <b>carreira como uma perna de voo</b>: partida, chegada e a duração ao meio no selo (3422 · 3417 · 3444), com o avião a andar;</li>
+      <li>o <b>trabalho como um cartão de embarque picotado</b> (3418), com rótulo pequeno e valor grande (3417);</li>
+      <li>a <b>validade como o cartão de progresso</b>: o chip em cima, o número à direita e a barra (3428 · 3462 · 3408), mais um <b>ponto por documento</b> (3436);</li>
+      <li>o <b>acordo em três números</b> com a unidade pequena (3419) e o chip "ABRANGIDO" (3424);</li>
+      <li>a <b>família em círculos</b> (as tuas duas imagens), com um <b>anel azul a pulsar</b> em quem está a seguir o voo agora;</li>
+      <li>o <b>Face ID, os lembretes e o idioma em mini-cartões com interruptor</b> (a tua imagem "Settings" · 3442 · 3426);</li>
+      <li>os <b>meios cartões dois a dois</b> (3408 · 3415), na W3;</li>
+      <li>os <b>algarismos que rolam</b> (GIF 7EEA).</li>
+    </ul>
+    <p>Com movimentos reduzidos, tudo aparece já no fim e o anel fica parado. Dados de teste: Rita Almeida (inventada).</p>
+    <button class="replay" onclick="replay()">↻ Repetir a animação</button>
+  </div>
+  <div class="grid3" id="g"></div>
+  <div class="card2"><h3>A minha recomendação: W1</h3><ul>
+    <li><b>W1 "como um voo"</b> fala a língua de quem voa. <b>A tua carreira é uma perna</b>: partiste em 2019 como cadete e hoje és FO. A escala de 2021 fica no meio, a duração vai no selo, e o avião percorre a linha ao entrar. <b>O teu trabalho é o teu cartão de embarque</b>, picotado: o nome e a função em cima, o contrato, a frota, a largada e a companhia em baixo. A validade é o cartão de progresso, com um ponto por documento. O acordo vai em três números. A família vai em círculos, com o anel de quem te segue. As definições rápidas são mini-cartões. Cada parte tem a sua forma, e nenhuma se repete.</li>
+    <li><b>W2 "os números grandes"</b> põe os números à frente: "43 dias" enorme na validade e a carreira em três números (anos na companhia, anos como FO, quando entraste). É clara e forte, mas fica mais parecida com os Números, e o Perfil perde a parte da aviação.</li>
+    <li><b>W3 "o mosaico"</b> arruma tudo em meios cartões dois a dois: validade e carreira, contrato e base, a família a toda a largura, o Face ID e os lembretes. É a mais curta e original, mas cada cartão diz menos, e a frota, a largada e a companhia passam para a página do trabalho.</li>
+    <li>Em todas: o topo é o das outras abas; o "Mudar" está no cartão do trabalho; a conta numa linha escura (com o nome, o nº, o e-mail, a palavra-passe, exportar, apagar a conta e terminar a sessão); as outras companhias "em breve".</li></ul></div>
+</div>
+<script>
+var P = { doc:'<path d="M6 2h8l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7 1.5V8h4.5z"/>', plane:'<path d="M21 15.5v-2l-8-5V3.6a1.5 1.5 0 0 0-3 0V8.5l-8 5v2l8-2.5V18l-2 1.5V21l3.5-1 3.5 1v-1.5L13 18v-5z"/>',
+  bed:'<path d="M3 6h2v7h7V8h6a3 3 0 0 1 3 3v7h-2v-2H5v2H3V6zm5 1.5A2.5 2.5 0 1 1 8 12.5a2.5 2.5 0 0 1 0-5z"/>', book:'<path d="M5 3h11a3 3 0 0 1 3 3v15H8a3 3 0 0 1-3-3V3zm2 2v11.2A3 3 0 0 1 8 16h9V6a1 1 0 0 0-1-1H7z"/>',
+  face:'<path d="M4 4h5v2H6v3H4V4zm11 0h5v5h-2V6h-3V4zM4 15h2v3h3v2H4v-5zm14 0h2v5h-5v-2h3v-3zM9 10h1.6v2H9zm4.4 0H15v2h-1.6zM9 15.2c1.8 1.4 4.2 1.4 6 0l1 1.4c-2.4 1.9-5.6 1.9-8 0z"/>',
+  bell:'<path d="M12 22a2.4 2.4 0 0 0 2.4-2.4H9.6A2.4 2.4 0 0 0 12 22zm7-6V11a7 7 0 0 0-5.5-6.8V3a1.5 1.5 0 0 0-3 0v1.2A7 7 0 0 0 5 11v5l-2 2v1h18v-1l-2-2z"/>',
+  globe:'<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2a8 8 0 0 1 7.9 7h-3.1a15 15 0 0 0-1.5-6.4A8 8 0 0 1 12 4zm-2 .5A15 15 0 0 0 8.2 11H4.1A8 8 0 0 1 10 4.5zM4.1 13h4.1a15 15 0 0 0 1.8 6.5A8 8 0 0 1 4.1 13zm8 6.9c-1-1.4-1.8-3.9-1.9-6.9h3.8c-.1 3-.9 5.5-1.9 6.9zm2.2-.4a15 15 0 0 0 1.5-6.5h3.1a8 8 0 0 1-4.6 6.5z"/>',
+  user:'<path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9zm-8 9a8 8 0 0 1 16 0H4z"/>', chev:'<path d="M8.6 4.2 16.4 12l-7.8 7.8-1.9-1.9 5.9-5.9-5.9-5.9z"/>', pin:'<path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/>',
+  plus:'<path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/>' };
+function ic(n, s, c){ return '<svg class="ic" width="' + s + '" height="' + s + '" viewBox="0 0 24 24"' + (c ? ' style="color:' + c + '"' : '') + '>' + P[n] + '</svg>'; }
+var CHW = ic('chev', 14, 'rgba(255,255,255,.75)');
+var TOP = '<div class="topA"><div class="pills"><span class="pl ink">Piloto</span><span class="pl">easyJet</span><span class="bell">' + ic('bell', 18) + '</span></div>'
+  + '<div class="what">Rita Almeida · primeiro-oficial</div><div class="hero"><div class="g"><div>FO</div><div class="grey">LIS</div></div>'
+  + '<div class="side"><div><span class="fv">2019</span><span class="fl">na easyJet desde</span></div><div><span class="fv">Efetivo</span><span class="fl">contrato · 100 %</span></div></div></div></div>';
+function phone(sheet){ return '<div class="ph run"><div class="status"><span>09:41</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>' + TOP + '<div class="sheetN">' + sheet + '<div class="foot"><u>Termos</u> · <u>Privacidade</u> · versão 1.0.0</div></div></div>'; }
+var DOTS = '<div class="dots">' + [0, 0, 0, 1].map(function(a, k){ return '<i class="' + (a ? 'al' : '') + '" style="--p:' + k + '"></i>'; }).join('') + '<span>4 documentos · 1 perto</span></div>';
+// as partes comuns
+var FAM = function(i){ var ppl = [['AR', 'Ana', 'a seguir', 1], ['JS', 'João', '', 0], ['PA', 'Pai', '', 0]];
+  return '<div class="card an" style="--i:' + i + '"><div class="hd"><span class="kd">Família · chegada ao vivo</span><span style="font-weight:600;font-size:12px;color:#5E5E57">3 pessoas</span></div><div class="people">'
+    + '<div class="pc"><div class="av add" style="--p:0">' + ic('plus', 20) + '</div><b>Adicionar</b></div>'
+    + ppl.map(function(x, k){ return '<div class="pc"><div class="av' + (x[3] ? ' live' : '') + '" style="--p:' + (k + 1) + '">' + x[0] + '</div><b>' + x[1] + '</b>' + (x[2] ? '<span>' + x[2] + '</span>' : '') + '</div>'; }).join('') + '</div></div>'; };
+var MINIS = function(i){ return '<div class="minis an" style="--i:' + i + '"><div class="mini"><span class="ci">' + ic('face', 16) + '</span><div><b>Face ID</b><span>ao abrir</span></div><span class="sw" onclick="this.classList.toggle(\'off\')"></span></div>'
+  + '<div class="mini"><span class="ci">' + ic('bell', 16) + '</span><div><b>Lembretes</b><span>antes do report</span></div><span class="sw off" onclick="this.classList.toggle(\'off\')"></span></div>'
+  + '<div class="mini"><span class="ci">' + ic('globe', 16) + '</span><div><b>Idioma</b><span>da app</span></div><span class="lang">PT · EN</span></div></div>'; };
+var QUICK = function(i){ return '<div class="quick an" style="--i:' + i + '">' + [['bed', 'Hotéis', '12 estações'], ['book', 'Biblioteca', 'lei e acordos'], ['doc', 'Relatórios', 'PDF · CSV']].map(function(x){ return '<div class="q"><span class="ci">' + ic(x[0], 16) + '</span><b>' + x[1] + '</b><span>' + x[2] + '</span></div>'; }).join('') + '</div>'; };
+var ACC = function(i){ return '<div class="acc an" style="--i:' + i + '"><span class="ci">' + ic('user', 16) + '</span><div class="t"><b>A tua conta</b><span>nome e nº · e-mail · palavra-passe · exportar · terminar sessão</span></div>' + CHW + '</div>'; };
+// W1 — como um voo
+var VAL1 = '<div class="card an" style="--i:0"><div class="hd"><span class="kd">Validades · a mais perto</span><span class="chip al">MÉDICO · CLASSE 1</span></div>'
+  + '<div class="vrow"><span class="t"><span class="warn">!</span>Certificado médico</span><span class="n"><span class="cnt" data-to="43">43</span><small>dias</small></span></div>'
+  + '<div class="trk"><i style="width:88%"></i></div><div class="sub"><span>até <b>27 dez</b> · 12 meses</span>' + DOTS.replace('class="dots"', 'class="dots" style="gap:5px"') + '</div></div>';
+var LEG = '<div class="card an" style="--i:1"><div class="hd"><span class="kd">A tua carreira · easyJet</span><span style="font-weight:600;font-size:12px;color:#5E5E57">LIS</span></div>'
+  + '<div class="leg"><div class="end"><b>2019</b><span>Cadete</span></div><div class="track" style="--w:170px"><div class="base"></div><div class="fill"></div><span class="stop" style="left:38%"></span><span class="stl" style="left:38%">2021 · FO</span><span class="plane">' + ic('plane', 24) + '</span></div>'
+  + '<div class="end r"><b>hoje</b><span>Primeiro-oficial</span></div></div><div class="selo"><span><span class="cnt" data-to="7">7</span> anos e 8 meses</span></div></div>';
+var PASS = '<div class="pass an" style="--i:2"><div class="top"><div><span class="kd">O teu cartão de tripulante</span><div class="nm" style="margin-top:6px">Rita Almeida</div><div class="rk">Primeiro-oficial · nº E 48213</div></div><span class="mud">Mudar</span></div>'
+  + '<div class="perf"></div><div class="pgrid"><div class="f"><small>CONTRATO</small><b>Efetivo</b><span>100 %</span></div><div class="f"><small>FROTA</small><b>A320</b><span>narrow body</span></div>'
+  + '<div class="f"><small>LARGADA</small><b><span class="dotw"></span>por confirmar</b><span>antiguidade</span></div><div class="f"><small>COMPANHIA</small><b>easyJet</b><span>TAP, Ryanair e Hi Fly em breve</span></div></div></div>';
+var AE3 = '<div class="card an" style="--i:3"><div class="hd"><span class="kd">Acordo · SPAC 2026</span><span class="chip">ABRANGIDO</span></div><div class="three">'
+  + '<div><b><span class="dotw"></span>30<small>min</small></b><span>pós-voo</span></div><div><b>22<small>dias</small></b><span>férias por ano</span></div><div><b>Contrato</b><span>vínculo</span></div></div></div>';
+function W1(){ return phone(VAL1 + LEG + PASS + AE3 + FAM(4) + MINIS(5) + QUICK(6) + ACC(7)); }
+// W2 — os números grandes
+var VAL2 = '<div class="card an" style="--i:0"><div class="hd"><span class="kd">Validades · a mais perto</span><span class="chip al">PERTO</span></div>'
+  + '<div class="vrow" style="align-items:flex-end"><span class="huge"><span class="cnt" data-to="43">43</span><small>dias</small></span><span style="text-align:right;font-weight:700;font-size:15px">Certificado médico<br><span style="font-weight:500;font-size:12px;color:#5E5E57">até 27 dez</span></span></div>'
+  + '<div class="trk"><i style="width:88%"></i></div>' + DOTS + '</div>';
+var CAR2 = '<div class="card an" style="--i:1"><span class="kd">A tua carreira · easyJet</span><div class="three"><div><b><span class="cnt" data-to="7">7</span><small>anos</small></b><span>na easyJet</span></div><div><b><span class="cnt" data-to="5">5</span><small>anos</small></b><span>como FO</span></div><div><b>2019</b><span>entraste cadete</span></div></div></div>';
+var FICHA2 = '<div class="card an" style="--i:2"><div class="hd"><span class="kd">O teu trabalho</span><span class="mud">Mudar</span></div><div class="pgrid" style="padding:0">'
+  + '<div class="f"><small>CONTRATO</small><b>Efetivo</b><span>100 %</span></div><div class="f"><small>FROTA</small><b>A320</b></div><div class="f"><small>LARGADA</small><b><span class="dotw"></span>por confirmar</b></div><div class="f"><small>COMPANHIA</small><b>easyJet</b><span>outras em breve</span></div></div></div>';
+function W2(){ return phone(VAL2 + CAR2 + FICHA2 + AE3.replace('--i:3', '--i:3') + FAM(4) + MINIS(5) + QUICK(6) + ACC(7)); }
+// W3 — o mosaico de meios cartões
+function bx(inner, w2, i){ return '<div class="bx' + (w2 ? ' w2' : '') + '">' + inner + '</div>'; }
+var BENTO = '<div class="bento an" style="--i:0">'
+  + bx('<span class="kd">Validade</span><div><b class="v"><span class="cnt" data-to="43">43</span><small>dias</small></b><span><span class="warn" style="width:16px;height:16px;font-size:11px">!</span>médico · 27 dez</span></div><div class="trk"><i style="width:88%"></i></div>')
+  + bx('<span class="kd">Carreira</span><div><b class="v"><span class="cnt" data-to="7">7</span><small>anos</small></b><span>2019 cadete → FO</span></div><div class="track" style="--w:110px;height:24px"><div class="base" style="top:11px"></div><div class="fill" style="top:10px"></div><span class="plane" style="top:0;width:22px;height:22px">' + ic('plane', 22) + '</span></div>')
+  + bx('<div class="row"><span class="kd">Contrato</span><span class="mud">Mudar</span></div><div><b class="v">Efetivo</b><span>100 % · contrato de trabalho</span></div>')
+  + bx('<div class="row"><span class="kd">Base</span><span class="mud">Mudar</span></div><div><b class="v">LIS</b><span>Lisboa · A320</span></div>')
+  + '</div>';
+var BENTO2 = '<div class="bento an" style="--i:2">'
+  + bx('<span class="ci">' + ic('face', 16) + '</span><div class="row"><div><b style="font-weight:800;font-size:15px">Face ID</b><span>ao abrir</span></div><span class="sw" onclick="this.classList.toggle(\'off\')"></span></div>')
+  + bx('<span class="ci">' + ic('bell', 16) + '</span><div class="row"><div><b style="font-weight:800;font-size:15px">Lembretes</b><span>antes do report</span></div><span class="sw off" onclick="this.classList.toggle(\'off\')"></span></div>')
+  + bx('<span class="kd">Acordo · SPAC 2026</span><div><b class="v">30<small>min</small></b><span><span class="dotw"></span>pós-voo assumido</span></div>')
+  + bx('<span class="kd">Trabalho</span><div><b class="v" style="font-size:17px;line-height:21px;white-space:normal">Frota, largada e companhia</b><span>A320 · por confirmar · easyJet ›</span></div>')
+  + '</div>';
+function W3(){ return phone(BENTO + FAM(1) + BENTO2 + QUICK(3) + ACC(4)); }
+var O = [['W1 · Como um voo', true, 'A <b>carreira é uma perna de voo</b> (o avião percorre-a ao entrar), o <b>trabalho é o teu cartão de embarque</b> picotado, a validade é o <b>cartão de progresso</b> com um ponto por documento, o acordo em <b>três números</b>, a família em <b>círculos</b> com o anel de quem te segue, as definições rápidas em <b>mini-cartões</b>.', W1],
+         ['W2 · Os números grandes', false, 'Os <b>números à frente</b>: "43 dias" enorme na validade, a carreira em <b>três números</b> (anos na companhia, anos como FO, quando entraste); o trabalho numa ficha; o resto como na W1.', W2],
+         ['W3 · O mosaico', false, '<b>Meios cartões dois a dois</b>: validade e carreira, contrato e base (com "Mudar"), a família a toda a largura, o Face ID e os lembretes, o acordo e o resto do trabalho.', W3]];
+document.getElementById('g').innerHTML = O.map(function(o){ return '<div class="opt"><h3>' + o[0] + (o[1] ? '<span class="rec">RECOMENDO</span>' : '') + '</h3><p>' + o[2] + '</p><div class="cap"></div>' + o[3]() + '</div>'; }).join('');
+var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function count(){ if (reduce) return; document.querySelectorAll('.cnt').forEach(function(el){ var to = +el.dataset.to, t0 = performance.now() + 300;
+  (function tick(t){ var k = Math.min(1, Math.max(0, (t - t0) / 800)); var e = 1 - Math.pow(1 - k, 3); el.textContent = Math.round(to * e); if (k < 1) requestAnimationFrame(tick); })(t0); }); }
+function replay(){ document.querySelectorAll('.run').forEach(function(p){ p.classList.remove('go'); void p.offsetWidth; p.classList.add('go'); }); count(); }
+document.fonts.ready.then(function(){ replay(); document.querySelectorAll('.opt').forEach(function(o){ o.querySelector('.cap').textContent = 'página com ' + Math.round(o.querySelector('.ph').getBoundingClientRect().height) + ' pontos'; }); });
+</script>
+</body>
+</html>

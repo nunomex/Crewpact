@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · As páginas do Perfil</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* AS PÁGINAS DE CADA DEFINIÇÃO DO PERFIL (2026-11-14). Ainda no aspeto 2.0: a moldura components/Pagina.js (o papel, o ‹, o título
+   da Porta, a explicação) e os OptCard. Há quatro tipos: os cartões de escolha que gravam ao tocar (categoria, contrato — estes dois
+   com "a partir de que mês?" numa roda e "Guardar" — frota, PPY, instrutor, abrangido, idioma, lembretes, Face ID), a roda de mês
+   (a entrada, a largada), a escolha rápida (o pós-voo) e o contador (as férias); a base e o vínculo em dois passos. As GRAVAÇÕES
+   não mudam (hooks/usePerfilActions) — muda a moldura e as peças. Mostram-se duas páginas: o contrato e o pós-voo.
+   Imagens do Nuno (referencias/Para a app/README): 3454 (a opção escolhida a tinta — OptCard; a roda) · 3442 (campos agrupados num
+   cartão neutro com fios) · 3412 e 3434 (o seletor com a pílula — o pós-voo) · 3419 (o número com a unidade pequena) · 3431 (os
+   movimentos datados — o histórico) · 3461 (os seletores do sistema dentro das folhas — a roda) · 3424 (o chip de estado "ATUAL").
+   Mobbin: Future Pro, Claude, Waymo e Substack (as opções num cartão, título + explicação + ✓ à direita, a nota por baixo; o chip
+   "Default" da Claude), Hypelist (o chip "Recomendado"). Três maneiras: G1 a mesa e a folha, um cartão de escolhas · G2 os
+   cartões de opção a tinta · G3 a lista simples. Dados de TESTE: piloto easyJet, contrato 12/12. */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+.lead{max-width:980px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)} .lead a{color:var(--pfg)}
+.opt{display:flex;flex-direction:column;gap:10px}
+.opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:var(--muted);max-width:900px} .opt > p b{color:var(--pfg)}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.row{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.cap{font-size:12px;font-weight:700;color:var(--muted);margin:0 0 6px 6px}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:980px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card2 li{font-size:13px;line-height:1.5;color:var(--muted)} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:var(--pfg)}
+
+.ph{display:flex;flex-direction:column;width:406px;height:880px;border:8px solid #04060A;border-radius:52px;overflow:hidden;position:relative;background:#E3E1DB;color:#141414;max-width:100%}
+.ph.white{background:#fff}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.ic{display:block;fill:currentColor}
+.back{width:44px;height:44px;border-radius:22px;background:rgba(127,127,127,.22);display:flex;align-items:center;justify-content:center}
+.topP{padding:8px 20px 32px;display:flex;flex-direction:column;gap:8px;flex:none}
+.title{font-weight:800;font-size:26px;line-height:30px;letter-spacing:-.4px;margin-top:12px}
+.leadP{font-weight:500;font-size:14px;line-height:20px;color:#3A3A36}
+.law{align-self:flex-start;height:26px;padding:0 10px;border-radius:13px;background:#fff;font-weight:800;font-size:11px;letter-spacing:.4px;display:inline-flex;align-items:center;gap:4px}
+.sheet{flex:1;background:#fff;border-radius:32px 32px 0 0;margin-top:-16px;padding:16px 12px;display:flex;flex-direction:column;gap:12px}
+.kd{display:block;font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8)}
+.foot{font-weight:500;font-size:12px;line-height:17px;color:#5E5E57;padding:0 6px}
+.wide{height:54px;border-radius:16px;background:#141414;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;margin-top:auto}
+.wide.off{opacity:.35}
+/* G1: um cartão de escolhas (Mobbin: Future Pro, Claude, Waymo) */
+.choices{background:#F1EFEA;border-radius:24px;padding:4px 16px}
+.ch{display:flex;align-items:center;gap:12px;min-height:56px;border-top:1px solid rgba(127,127,127,.25);padding:8px 0}
+.ch:first-child{border-top:0}
+.ch .t{flex:1;min-width:0} .ch .t b{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px} .ch .t span{display:block;font-weight:500;font-size:12px;color:#5E5E57}
+.tick{width:26px;height:26px;border-radius:13px;background:#141414;color:#fff;display:flex;align-items:center;justify-content:center;flex:none}
+.ring{width:26px;height:26px;border-radius:13px;border:1.5px solid rgba(20,20,20,.35);flex:none}
+.chip{height:20px;padding:0 8px;border-radius:10px;background:#fff;font-weight:800;font-size:10px;letter-spacing:.6px;display:inline-flex;align-items:center}
+.field{background:#F1EFEA;border-radius:24px;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.field .t{flex:1} .field small{display:block;font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8)} .field b{display:block;font-weight:800;font-size:20px;line-height:24px;margin-top:2px}
+.hist{display:flex;align-items:center;gap:8px;padding:0 6px;font-weight:600;font-size:12px;color:#3A3A36;flex-wrap:wrap}
+.hist i{width:9px;height:9px;border-radius:5px;border:2.5px solid #141414;background:#fff;display:inline-block} .hist i.now{background:#141414}
+.hist em{font-style:normal;flex:0 0 22px;border-top:2px dashed rgba(20,20,20,.3)}
+/* o seletor com a pílula (3412 · 3434) */
+.seg{display:flex;background:rgba(127,127,127,.18);border-radius:24px;padding:4px;height:52px}
+.seg span{flex:1;display:flex;align-items:center;justify-content:center;border-radius:20px;font-weight:800;font-size:16px;color:#3A3A36}
+.seg span.on{background:#141414;color:#fff}
+.bignum{font-weight:800;font-size:62px;line-height:62px;letter-spacing:-2.8px;padding:4px 6px 0} .bignum small{font-size:22px;letter-spacing:0;margin-left:6px}
+.src{background:#F1EFEA;border-radius:20px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;font-weight:500;font-size:13px;line-height:18px;color:#3A3A36}
+.src b{color:#141414} .src .dot{width:8px;height:8px;border-radius:4px;background:#F0854A;flex:none;margin-top:5px}
+/* G2: os cartões de opção a tinta (3454 · OptCard) */
+.opts{display:flex;flex-direction:column;gap:8px}
+.oc{background:#F1EFEA;border-radius:20px;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.oc.on{background:#141414;color:#fff} .oc.on span{color:rgba(255,255,255,.75)} .oc .t{flex:1} .oc b{display:block;font-weight:800;font-size:16px} .oc span{display:block;font-weight:500;font-size:12px;color:#5E5E57}
+.oc .code{width:52px;font-weight:800;font-size:15px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.tile{background:#F1EFEA;border-radius:20px;height:86px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:26px} .tile small{font-size:12px;font-weight:600;color:#5E5E57}
+.tile.on{background:#141414;color:#fff} .tile.on small{color:rgba(255,255,255,.75)}
+/* G3: a lista simples */
+.g3top{padding:8px 20px 8px;display:flex;flex-direction:column;gap:10px}
+.list{border-top:1px solid rgba(127,127,127,.25);border-bottom:1px solid rgba(127,127,127,.25);margin:8px 0 0}
+.li{display:flex;align-items:center;gap:12px;min-height:52px;padding:0 20px;border-top:1px solid rgba(127,127,127,.18)} .li:first-child{border-top:0}
+.li b{flex:1;font-weight:600;font-size:16px} .li .chk{color:#141414}
+.g3foot{font-weight:500;font-size:13px;line-height:18px;color:#5E5E57;padding:10px 20px}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>As páginas de cada definição</h1>
+    <p>As páginas do Perfil (categoria, contrato, base, pós-voo, férias…) ainda estão no aspeto antigo: o papel, o título da entrada e os cartões de opção grandes. <b>As gravações não mudam</b> (são as de sempre); muda a moldura e as peças, e muda em <b>todas as páginas de uma vez</b>, porque partilham a mesma moldura. Aqui ficam duas: o <b>contrato</b> (escolher, "a partir de que mês?", Guardar) e o <b>pós-voo</b> (a escolha rápida).</p>
+    <p><b>As tuas imagens:</b> 3454 (a opção escolhida a tinta, a roda), 3442 (os campos agrupados num cartão neutro), 3412 e 3434 (o seletor com a pílula), 3419 (o número com a unidade pequena), 3431 (os movimentos datados, para o histórico), 3461 (os seletores do sistema), 3424 (o chip "ATUAL"). <b>Mobbin:</b> <a href="https://mobbin.com/screens/160c8e4c-940c-4636-8d89-5d0013adcfd8">Future Pro</a>, <a href="https://mobbin.com/screens/5f298f05-d4d6-4044-9fc2-d33c768ad2d6">Claude</a>, <a href="https://mobbin.com/screens/41f499d7-7742-40de-acff-6790799a95b4">Waymo</a> e <a href="https://mobbin.com/screens/2c9362bd-69e7-4c89-afec-1c8cb7beb61a">Substack</a> (as opções num cartão, título + explicação + ✓, a nota por baixo, o chip "Default"), <a href="https://mobbin.com/screens/77ce5e44-b4f0-471f-a2c0-1c4851f161c7">Hypelist</a> (o chip "Recomendado").</p>
+  </div>
+  <div id="opts" style="display:flex;flex-direction:column;gap:36px"></div>
+  <div class="card2"><h3>A minha recomendação: G1</h3><ul>
+    <li><b>G1</b> é a mesma casa da página "O teu trabalho": a mesa em cima, com o ‹, o título e a explicação (e a lei num chip "§" <b>só onde a página já a cita</b> — o PPY, art. 66.9 do AE; o instrutor, art. 42.º; o abrangido, arts. 496.º e 497.º do Código do Trabalho — nunca uma citação nova sem a ver no texto); a folha branca por baixo, com as opções <b>num só cartão</b> (título, explicação e um visto a tinta, como nas apps boas do Mobbin), o chip "ATUAL" na de hoje, "A partir de" num campo que abre a roda, o histórico como uma pequena linha do tempo e "Guardar" largo no fundo. No pós-voo, o <b>seletor com a pílula</b> (0 · 15 · 30 · 45) e o número grande, com a fonte por baixo (o ponto laranja quando é assumido).</li>
+    <li><b>G2</b> guarda os <b>cartões de opção grandes a tinta</b> da entrada (3454): a escolhida fica preta. É forte e reconhece-se da entrada, mas são oito cartões grandes para os contratos e a página fica comprida; no pós-voo, quatro quadrados.</li>
+    <li><b>G3</b> é a <b>lista simples do iPhone</b>: página branca, linhas com o visto, a nota por baixo. É a mais leve, mas é a que menos se parece com a CrewPact.</li>
+    <li>Em todas: as gravações são as de hoje; a roda do mês é a mesma; as outras páginas (base, vínculo, entrada, largada, férias, idioma, lembretes, Face ID) seguem o mesmo modelo.</li></ul></div>
+</div>
+<script>
+var CHK = '<svg class="ic" width="14" height="14" viewBox="0 0 24 24"><path d="M9.5 16.2 5.3 12l-1.4 1.4 5.6 5.6L20.1 8.4 18.7 7z"/></svg>';
+var BACK = '<span class="back"><svg class="ic" width="18" height="18" viewBox="0 0 24 24"><path d="M15.4 4.2 7.6 12l7.8 7.8 1.9-1.9L11.4 12l5.9-5.9z"/></svg></span>';
+var CHEV = '<svg class="ic" width="14" height="14" viewBox="0 0 24 24" style="color:#77776F"><path d="M8.6 4.2 16.4 12l-7.8 7.8-1.9-1.9 5.9-5.9-5.9-5.9z"/></svg>';
+var CONTRACTS = [['12/12', 'Tempo inteiro', 'o salário inteiro'], ['PPY 9/12', 'Part-time anual 9/12', 'sazonal · 9 meses'], ['PPY 8/12', 'Part-time anual 8/12', 'sazonal · 8 meses'],
+  ['5/4', 'Escala fixa 5/4', '92 % do salário'], ['4-4', 'Escala fixa 4-4', '83 % do salário'], ['14-14', '14-14', '53 % do salário']];
+var SEL = 'PPY 9/12', CUR = '12/12';
+function status(){ return '<div class="status"><span>09:41</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>'; }
+var LEAD_C = 'Meses de trabalho por ano: o AE escala o salário com isto. A mudança conta a partir do mês que escolheres.';
+var LEAD_P = 'O tempo de serviço depois dos calços: relatórios, desembarque, briefing final. Conta para o repouso e para os limites de 7, 14 e 28 dias. Não conta para o PSV.';
+function topP(title, lead, law){ return '<div class="topP">' + BACK + '<div class="title">' + title + '</div><div class="leadP">' + lead + '</div>' + (law ? '<span class="law">§ ' + law + '</span>' : '') + '</div>'; }
+var HIST = '<div class="hist"><span><i></i> 12/12 · mar 2019</span><em></em><span><i class="now"></i> hoje</span></div>';
+// G1
+function G1c(){ return '<div class="ph">' + status() + topP('O teu contrato', LEAD_C) + '<div class="sheet">'
+  + '<div class="choices">' + CONTRACTS.map(function(c){ var on = c[0] === SEL, cur = c[0] === CUR;
+      return '<div class="ch"><div class="t"><b>' + c[0] + (cur ? '<span class="chip">ATUAL</span>' : '') + '</b><span>' + c[1] + ' · ' + c[2] + '</span></div>' + (on ? '<span class="tick">' + CHK + '</span>' : '<span class="ring"></span>') + '</div>'; }).join('') + '</div>'
+  + '<div class="field"><div class="t"><small>A partir de</small><b>dezembro 2026</b></div>' + CHEV + '</div>' + HIST
+  + '<div class="wide">Guardar o contrato</div></div></div>'; }
+function G1p(){ return '<div class="ph">' + status() + topP('Serviço pós-voo', LEAD_P) + '<div class="sheet">'
+  + '<span class="kd" style="padding:0 6px">Minutos, só nos serviços de voo</span><div class="seg"><span>0</span><span>15</span><span class="on">30</span><span>45</span></div>'
+  + '<div class="bignum">30<small>min</small></div>'
+  + '<div class="src"><span class="dot"></span><span><b>Assumido.</b> A tua companhia define este tempo no Manual de Operações. Se souberes o valor, escolhe-o: passa a ser teu.</span></div></div></div>'; }
+// G2
+function G2c(){ return '<div class="ph">' + status() + topP('O teu contrato', LEAD_C) + '<div class="sheet"><div class="opts">' + CONTRACTS.map(function(c){ var on = c[0] === SEL, cur = c[0] === CUR;
+      return '<div class="oc' + (on ? ' on' : '') + '"><span class="code">' + c[0] + '</span><div class="t"><b>' + c[1] + '</b><span>' + c[2] + (cur ? ' · atual' : '') + '</span></div>' + (on ? CHK.replace('class="ic"', 'class="ic" style="color:#fff"') : '') + '</div>'; }).join('')
+  + '</div><div class="field"><div class="t"><small>A partir de</small><b>dezembro 2026</b></div>' + CHEV + '</div><div class="wide">Guardar o contrato</div></div></div>'; }
+function G2p(){ return '<div class="ph">' + status() + topP('Serviço pós-voo', LEAD_P) + '<div class="sheet"><div class="tiles">' + [0, 15, 30, 45].map(function(m){ return '<div class="tile' + (m === 30 ? ' on' : '') + '">' + m + '<small>min</small></div>'; }).join('')
+  + '</div><div class="src"><span class="dot"></span><span><b>Assumido.</b> A tua companhia define este tempo no Manual de Operações. Se souberes o valor, escolhe-o: passa a ser teu.</span></div></div></div>'; }
+// G3
+function G3c(){ return '<div class="ph white">' + status() + '<div class="g3top">' + BACK + '<div class="title">O teu contrato</div></div>'
+  + '<div class="list">' + CONTRACTS.map(function(c){ return '<div class="li"><b>' + c[1] + (c[0] === CUR ? ' <span style="font-weight:500;color:#5E5E57">· atual</span>' : '') + '</b>' + (c[0] === SEL ? '<span class="chk">' + CHK + '</span>' : '') + '</div>'; }).join('') + '</div>'
+  + '<div class="g3foot">' + LEAD_C + '</div><div class="list"><div class="li"><b>A partir de</b><span style="color:#5E5E57">dezembro 2026</span>' + CHEV + '</div></div><div style="padding:16px 20px;margin-top:auto"><div class="wide">Guardar o contrato</div></div></div>'; }
+function G3p(){ return '<div class="ph white">' + status() + '<div class="g3top">' + BACK + '<div class="title">Serviço pós-voo</div></div>'
+  + '<div class="list">' + [0, 15, 30, 45].map(function(m){ return '<div class="li"><b>' + m + ' min</b>' + (m === 30 ? '<span class="chk">' + CHK + '</span>' : '') + '</div>'; }).join('') + '</div>'
+  + '<div class="g3foot">' + LEAD_P + ' <b style="color:#141414">Assumido</b>: a tua companhia define-o no Manual de Operações.</div></div>'; }
+var O = [['G1 · A mesa e a folha, um cartão de escolhas', true, 'Como a página "O teu trabalho": a mesa com o ‹, o título e a explicação (a lei num chip "§" só onde a página já a cita); a folha com <b>as opções num só cartão</b> (✓ a tinta, chip "ATUAL"), "A partir de" num campo, o histórico em linha do tempo e "Guardar" no fundo; no pós-voo, <b>o seletor com a pílula</b> e o número grande.', [G1c, G1p]],
+         ['G2 · Os cartões de opção a tinta', false, 'Os <b>cartões grandes da entrada</b> (3454): cada opção no seu cartão, a escolhida a tinta; no pós-voo, <b>quatro quadrados</b>.', [G2c, G2p]],
+         ['G3 · A lista simples', false, 'A <b>lista do iPhone</b>: página branca, linhas com o visto, a explicação por baixo.', [G3c, G3p]]];
+document.getElementById('opts').innerHTML = O.map(function(o){
+  return '<div class="opt"><h3>' + o[0] + (o[1] ? '<span class="rec">RECOMENDO</span>' : '') + '</h3><p>' + o[2] + '</p><div class="row">'
+    + '<div><div class="cap">O teu contrato</div>' + o[3][0]() + '</div><div><div class="cap">Serviço pós-voo</div>' + o[3][1]() + '</div></div></div>';
+}).join('');
+</script>
+</body>
+</html>

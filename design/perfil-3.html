@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · O Perfil no aspeto novo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* O PERFIL NO ASPETO NOVO (2026-11-14). O ecrã ainda é o 2.0 (screens/SettingsScreen.js, esboço design/perfil-v3.html): o
+   PeleHeader com o fantasma do galão, a linha "Desde · Base · AE" e quatro grupos de linhas (o teu trabalho · acordo e serviço ·
+   família e ferramentas · conta e segurança) e "Terminar sessão". O conteúdo fica; muda a linguagem para a do Início 3.0.
+   Imagens do Nuno (referencias/Para a app/README): 3447 (Perfil agrupado em cartões RADIUS.xxl, ícone, valor, ›, interruptor) ·
+   3432 ("Mudar" à direita: Companhia, Base, Contrato) · 3448 (secções com eyebrow; os círculos dos ícones ficam neutros) · 3426
+   (interruptores no Perfil) · 3408/3415/3454 (o cartão apagado "EM BREVE" — as outras companhias). Fica de fora: avatares.
+   Mobbin: Meta AI (grupos em cartões com título), MoonPay (ícone num quadradinho, valor e › no cartão), Base e Careem (o valor da
+   definição), TheFork ("Terminar sessão" e a versão no fim). Dados de TESTE (inventados): Rita Almeida, primeiro-oficial
+   easyJet, base Lisboa. Três maneiras: P1 o topo das abas · P2 o cartão de identidade · P3 a lista com secções. */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+.lead{max-width:940px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)} .lead a{color:var(--pfg)}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,406px),406px));gap:26px 24px;justify-content:center}
+.opt{display:flex;flex-direction:column;gap:10px;min-width:0}
+.opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:var(--muted);min-height:96px} .opt > p b{color:var(--pfg)}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:940px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card2 li{font-size:13px;line-height:1.5;color:var(--muted)} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:var(--pfg)}
+
+.ph{display:flex;flex-direction:column;width:406px;height:1860px;border:8px solid #04060A;border-radius:52px;overflow:hidden;position:relative;background:#E3E1DB;color:#141414;max-width:100%}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.topA{padding:0 20px 32px;flex:none}
+.pills{display:flex;align-items:center;gap:8px;min-height:68px;padding:8px 0 16px}
+.pl{height:38px;padding:0 16px;border-radius:19px;border:1.5px solid #141414;display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:13px;white-space:nowrap}
+.pl.ink{background:#141414;color:#E3E1DB}
+.bell{width:44px;height:44px;border-radius:22px;background:rgba(127,127,127,.22);margin-left:auto;display:flex;align-items:center;justify-content:center}
+.what{font-weight:500;font-size:15px;line-height:20px;color:#3A3A36}
+.hero{display:flex;align-items:stretch;gap:16px;margin-top:12px}
+.g{font-weight:700;white-space:nowrap;font-size:62px;line-height:68px;letter-spacing:-2.85px}
+.g div{margin-top:-6px} .g div + div{margin-top:-12px}
+.grey{color:rgba(20,20,20,.5)}
+.side{border-left:1.5px solid #141414;padding-left:16px;display:flex;flex-direction:column;justify-content:center;gap:12px;min-width:0}
+.fv{display:block;font-weight:700;font-size:20px;line-height:22px;white-space:nowrap}
+.fl{display:block;font-weight:500;font-size:11px;line-height:15px;color:#3A3A36;white-space:nowrap}
+.sheetN{flex:1;background:#fff;border-radius:32px 32px 0 0;padding:12px 12px 0;display:flex;flex-direction:column;gap:8px}
+.ic{display:block;fill:currentColor}
+/* os cartões agrupados (o LineCard: neutro, raio 24) */
+.grp{background:#F1EFEA;border-radius:24px;padding:14px 16px 4px}
+.kd{display:block;font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8);margin-bottom:4px}
+.r{display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid rgba(127,127,127,.25);padding:6px 0}
+.r.f{border-top:0}
+.ci{width:32px;height:32px;border-radius:16px;background:#fff;display:flex;align-items:center;justify-content:center;flex:none}
+.ci.stop{background:#EC7A6C}
+.rt{flex:1;min-width:0} .rt b{display:block;font-weight:700;font-size:15px;line-height:19px} .rt span{display:block;font-weight:500;font-size:12px;line-height:16px;color:#5E5E57;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rv{font-weight:600;font-size:14px;color:#3A3A36;white-space:nowrap}
+.mud{height:30px;padding:0 12px;border-radius:15px;border:1.5px solid #141414;font-weight:700;font-size:12px;display:inline-flex;align-items:center;white-space:nowrap}
+.sw{width:51px;height:31px;border-radius:16px;background:#141414;position:relative;flex:none} .sw::after{content:'';position:absolute;right:2px;top:2px;width:27px;height:27px;border-radius:14px;background:#fff}
+.sw.off{background:rgba(127,127,127,.35)} .sw.off::after{right:auto;left:2px}
+.dotw,.rt span.dotw{width:7px;height:7px;border-radius:4px;background:#F0854A;display:inline-block;margin-right:6px;vertical-align:1px}
+.wide{height:54px;border-radius:16px;border:1.5px solid #141414;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;font-size:15px;margin:4px 0}
+.foot{font-weight:500;font-size:12px;color:#5E5E57;text-align:center;padding:6px 0 24px}
+.foot u{color:#141414}
+/* P2: o cartão de identidade escuro */
+.idc{background:#141414;color:#fff;border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.idc .kd{color:rgba(255,255,255,.75)} .idc .nm{font-weight:800;font-size:26px;line-height:30px} .idc .sb{font-weight:500;font-size:13px;color:rgba(255,255,255,.8)}
+.idc .row{display:flex;gap:16px} .idc .row div b{display:block;font-weight:800;font-size:20px} .idc .row div span{font-weight:600;font-size:11px;color:rgba(255,255,255,.75)}
+.idc .mud{border-color:#fff;color:#fff}
+/* P3: a lista com secções por fora */
+.ttl{font-weight:800;font-size:34px;letter-spacing:-.6px;padding:6px 0 2px}
+.sec{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:#5E5E57;padding:14px 4px 6px}
+.grp3{background:#F1EFEA;border-radius:24px;padding:4px 16px}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>O Perfil</h1>
+    <p>O Perfil ainda está no aspeto antigo: o cabeçalho com o fantasma do galão, a linha "Desde · Base · AE" e quatro grupos de linhas. <b>O conteúdo fica todo</b> (o teu trabalho · acordo e serviço · família e ferramentas · conta e segurança · terminar sessão); muda a linguagem para a do Início.</p>
+    <p><b>As tuas imagens:</b> 3447 (o Perfil agrupado em cartões, com ícone, valor, › e interruptor), 3432 (o "Mudar" à direita na Companhia, na Base e no Contrato), 3448 (os títulos de secção, com os círculos dos ícones neutros), 3426 (os interruptores no Perfil). Sem avatares, como manda o índice. <b>Mobbin:</b> <a href="https://mobbin.com/screens/bc43b8c8-3c94-4e67-912e-da5e9f8e4de5">Meta AI</a> (grupos em cartões com título), <a href="https://mobbin.com/screens/f0367201-1f23-46b2-a0d9-7fb6fc049fae">MoonPay</a> (ícone, valor e › dentro do cartão), <a href="https://mobbin.com/screens/3f573b95-4bbb-4978-957e-56178543e8e7">Base</a> e <a href="https://mobbin.com/screens/9cf05d14-4989-4cf3-9c22-5c89b50eeeeb">Careem</a> (o valor da definição), <a href="https://mobbin.com/screens/048e0d20-dc3e-4d39-b6f8-5d2e5714a089">TheFork</a> ("Terminar sessão" e a versão no fim). Dados de teste: Rita Almeida (inventada), primeiro-oficial easyJet, base Lisboa. Os telemóveis estão alongados para se ver a página toda.</p>
+  </div>
+  <div class="grid3" id="g"></div>
+  <div class="card2"><h3>A minha recomendação: P1</h3><ul>
+    <li><b>P1</b> é o Perfil com <b>o mesmo topo das outras abas</b>: o galão e a base em grande, à esquerda ("FO / LIS", no tamanho das outras abas, como o fantasma de antes), os factos à direita (desde quando estás na companhia, o contrato), e por baixo <b>os grupos em cartões</b> com o título dentro, como o "De onde vem" dos Números. Uma só app: a quinta aba fala como as outras quatro.</li>
+    <li><b>P2</b> põe a tua identidade num <b>cartão escuro</b> (3447, o cartão preto da 3432), com o nome grande e "Mudar". Destaca-se, mas é um cartão que não existe em mais lado nenhum da app, e o topo deixa de ser o das outras abas.</li>
+    <li><b>P3</b> é <b>a lista de definições do iPhone</b>: título grande "Perfil", o nome numa linha e os títulos das secções por fora dos cartões (3448). É a mais simples e familiar, mas fica com cara de "Definições" e não de app da tripulação.</li>
+    <li>Em todas: cada linha mostra o valor e abre a sua página; <b>"Mudar"</b> na Companhia, na Base e no Contrato; <b>interruptores</b> no Face ID e nos Lembretes; o ponto laranja onde falta confirmar (largada, serviço pós-voo assumido); "Apagar conta" e "Terminar sessão" no fim, separados; Termos · Privacidade · versão. As outras companhias ficam "em breve" na página da companhia.</li></ul></div>
+</div>
+<script>
+var P = { rank:'<path d="M12 2 4 6v6c0 4.4 3.4 8.5 8 10 4.6-1.5 8-5.6 8-10V6l-8-4zm-3 9 2 2 4-4 1.4 1.4L11 15.8 7.6 12.4z"/>',
+  doc:'<path d="M6 2h8l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7 1.5V8h4.5z"/>', plane:'<path d="M21 15.5v-2l-8-5V3.6a1.5 1.5 0 0 0-3 0V8.5l-8 5v2l8-2.5V18l-2 1.5V21l3.5-1 3.5 1v-1.5L13 18v-5z"/>',
+  pin:'<path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/>', cal:'<path d="M7 2h2.6v3H7V2zm7.4 0H17v3h-2.6V2zM4 5h16v3.6H4V5zm0 5h16v10a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 20V10z"/>',
+  sync:'<path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z"/>', clock:'<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2.2a7.8 7.8 0 1 1 0 15.6 7.8 7.8 0 0 1 0-15.6zM11 6.5v6.1l4.6 2.8 1-1.7-3.6-2.1V6.5z"/>',
+  sun:'<circle cx="12" cy="12" r="4.5"/><path d="M11 1h2v3h-2zM11 20h2v3h-2zM1 11h3v2H1zM20 11h3v2h-3z"/>', shield:'<path d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5l-8-3z"/>',
+  fam:'<path d="M8 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zm8 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM2 20a6 6 0 0 1 12 0H2zm12.5 0a7.5 7.5 0 0 0-2-4.6A5 5 0 0 1 22 20h-7.5z"/>', passport:'<path d="M6 2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm6 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm-4 11v1.6h8V17z"/>',
+  bed:'<path d="M3 6h2v7h7V8h6a3 3 0 0 1 3 3v7h-2v-2H5v2H3V6zm5 1.5A2.5 2.5 0 1 1 8 12.5a2.5 2.5 0 0 1 0-5z"/>', book:'<path d="M5 3h11a3 3 0 0 1 3 3v15H8a3 3 0 0 1-3-3V3zm2 2v11.2A3 3 0 0 1 8 16h9V6a1 1 0 0 0-1-1H7z"/>',
+  mail:'<path d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm1.6 2L12 12l7.4-5H4.6z"/>', lock:'<path d="M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1zm2 0h6V7a3 3 0 0 0-6 0v3z"/>',
+  face:'<path d="M4 4h5v2H6v3H4V4zm11 0h5v5h-2V6h-3V4zM4 15h2v3h3v2H4v-5zm14 0h2v5h-5v-2h3v-3zM9 10h1.6v2H9zm4.4 0H15v2h-1.6zM9 15.2c1.8 1.4 4.2 1.4 6 0l1 1.4c-2.4 1.9-5.6 1.9-8 0z"/>', globe:'<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm6.9 9h-3a15 15 0 0 0-1.3-5.6A8 8 0 0 1 18.9 11zM12 4.1c.9 1.2 1.8 3.6 1.9 6.9h-3.8c.1-3.3 1-5.7 1.9-6.9zM5.1 13h3a15 15 0 0 0 1.3 5.6A8 8 0 0 1 5.1 13zm0-2a8 8 0 0 1 4.3-5.6A15 15 0 0 0 8.1 11zm6.9 8.9c-.9-1.2-1.8-3.6-1.9-6.9h3.8c-.1 3.3-1 5.7-1.9 6.9zm2.6-1.3a15 15 0 0 0 1.3-5.6h3a8 8 0 0 1-4.3 5.6z"/>',
+  bell:'<path d="M12 22a2.4 2.4 0 0 0 2.4-2.4H9.6A2.4 2.4 0 0 0 12 22zm7-6V11a7 7 0 0 0-5.5-6.8V3a1.5 1.5 0 0 0-3 0v1.2A7 7 0 0 0 5 11v5l-2 2v1h18v-1l-2-2z"/>', download:'<path d="M11 3h2v9.2l3.3-3.3 1.4 1.4L12 16 6.3 10.3l1.4-1.4 3.3 3.3zM4 18h16v2H4z"/>',
+  trash:'<path d="M9 3h6l1 2h4v2H4V5h4l1-2zm-3 6h12l-1 12H7L6 9z"/>', logout:'<path d="M10 3h9a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-9v-2h8V5h-8V3zm-.7 4.3 1.4 1.4L8.4 11H16v2H8.4l2.3 2.3-1.4 1.4L4.6 12z"/>',
+  chev:'<path d="M8.6 4.2 16.4 12l-7.8 7.8-1.9-1.9 5.9-5.9-5.9-5.9z"/>' };
+function ic(n, s, c){ return '<svg class="ic" width="' + s + '" height="' + s + '" viewBox="0 0 24 24"' + (c ? ' style="color:' + c + '"' : '') + '>' + P[n] + '</svg>'; }
+// [ícone, rótulo, valor, direita ('chev' | 'mud' | 'on' | 'off' | ''), ponto laranja, sub]
+var JOB = [['rank', 'Categoria', 'FO · Primeiro-oficial', 'chev'], ['doc', 'Contrato', 'Efetivo · 100 %', 'mud'], ['plane', 'Frota', 'A320', 'chev'], ['pin', 'Base', 'LIS · Lisboa', 'mud'],
+  ['cal', 'Na companhia desde', 'março 2019', 'chev'], ['cal', 'Largada', 'por confirmar', 'chev', 1], ['sync', 'Companhia', 'easyJet', 'mud']];
+var AE = [['clock', 'Serviço pós-voo', '30 min', 'chev', 1], ['sun', 'Férias por ano', '22 dias', 'chev'], ['doc', 'Vínculo', 'Contrato de trabalho', 'chev'], ['shield', 'Abrangido pelo AE', 'Sim', 'chev']];
+var TOOLS = [['fam', 'Família', '2 pessoas', 'chev', 0, 'chegada ao vivo'], ['passport', 'Validades', 'médico, recorrentes, licença', 'chev'], ['bed', 'Hotéis', 'por estação', 'chev'],
+  ['book', 'Biblioteca', 'lei e acordos', 'chev'], ['doc', 'Relatórios', 'PDF · CSV', 'chev']];
+var ACC = [['mail', 'E-mail', 'rita@exemplo.pt', 'chev'], ['lock', 'Palavra-passe', 'Definir', 'chev'], ['face', 'Bloqueio com Face ID', '', 'on'], ['globe', 'Idioma', 'Português', 'chev'],
+  ['bell', 'Lembretes', '', 'off'], ['download', 'Exportar os meus dados', 'RGPD', 'chev']];
+function row(x, i, valueRight){
+  var right = x[3] === 'mud' ? '<span class="mud">Mudar</span>' : x[3] === 'on' ? '<span class="sw"></span>' : x[3] === 'off' ? '<span class="sw off"></span>' : x[3] === 'chev' ? ic('chev', 14, '#77776F') : '';
+  var val = (x[4] ? '<span class="dotw"></span>' : '') + x[2];
+  var txt = valueRight ? '<div class="rt"><b>' + x[1] + '</b>' + (x[5] ? '<span>' + x[5] + '</span>' : '') + '</div>' + (x[2] ? '<span class="rv">' + val + '</span>' : '')
+    : '<div class="rt"><b>' + x[1] + '</b>' + (x[2] ? '<span>' + val + (x[5] ? ' · ' + x[5] : '') + '</span>' : '') + '</div>';
+  return '<div class="r' + (i === 0 ? ' f' : '') + '"><span class="ci">' + ic(x[0], 16) + '</span>' + txt + right + '</div>';
+}
+function grp(title, rows, valueRight){ return '<div class="grp"><span class="kd">' + title + '</span>' + rows.map(function(x, i){ return row(x, i, valueRight); }).join('') + '</div>'; }
+var DANGER = '<div class="grp" style="padding-top:4px"><div class="r f"><span class="ci stop">' + ic('trash', 16) + '</span><div class="rt"><b>Apagar conta</b><span>definitivo · RGPD art. 17.º</span></div>' + ic('chev', 14, '#77776F') + '</div></div>'
+  + '<div class="wide">' + ic('logout', 18) + 'Terminar sessão</div><div class="foot"><u>Termos</u> · <u>Privacidade</u> · versão 1.0.0</div>';
+var BODY = function(vr){ return grp('O teu trabalho', JOB, vr) + grp('Acordo e serviço', AE, vr) + grp('Família e ferramentas', TOOLS, vr) + grp('Conta e segurança', ACC, vr) + DANGER; };
+function phone(inner){ return '<div class="ph"><div class="status"><span>09:41</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>' + inner + '</div>'; }
+function P1(){
+  return phone('<div class="topA"><div class="pills"><span class="pl ink">Piloto</span><span class="pl">easyJet</span><span class="bell">' + ic('bell', 18) + '</span></div>'
+    + '<div class="what">Rita Almeida · primeiro-oficial</div><div class="hero"><div class="g"><div>FO</div><div class="grey">LIS</div></div>'
+    + '<div class="side"><div><span class="fv">2019</span><span class="fl">na easyJet desde</span></div><div><span class="fv">Efetivo</span><span class="fl">contrato · 100 %</span></div></div></div></div>'
+    + '<div class="sheetN">' + BODY(false) + '</div>');
+}
+function P2(){
+  return phone('<div class="topA" style="padding-bottom:16px"><div class="pills"><span class="pl">Perfil</span><span class="bell">' + ic('bell', 18) + '</span></div></div>'
+    + '<div class="sheetN"><div class="idc"><span class="kd">Piloto · easyJet</span><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px"><div><div class="nm">Rita Almeida</div><div class="sb">Primeiro-oficial · base Lisboa</div></div><span class="mud">Mudar</span></div>'
+    + '<div class="row"><div><b>FO</b><span>categoria</span></div><div><b>LIS</b><span>base</span></div><div><b>2019</b><span>na easyJet desde</span></div></div></div>' + BODY(true) + '</div>');
+}
+function P3(){
+  var g3 = function(t, rows){ return '<div class="sec">' + t + '</div><div class="grp3">' + rows.map(function(x, i){ return row(x, i, true); }).join('') + '</div>'; };
+  return phone('<div class="sheetN" style="border-radius:0;background:#E3E1DB;padding:0 16px"><div class="ttl">Perfil</div>'
+    + '<div class="grp3" style="margin-top:8px"><div class="r f"><span class="ci" style="background:#141414;color:#fff;font-weight:800;font-size:12px">FO</span><div class="rt"><b>Rita Almeida</b><span>Primeiro-oficial · easyJet · LIS</span></div>' + ic('chev', 14, '#77776F') + '</div></div>'
+    + g3('O teu trabalho', JOB) + g3('Acordo e serviço', AE) + g3('Família e ferramentas', TOOLS) + g3('Conta e segurança', ACC) + '<div style="height:12px"></div>' + DANGER + '</div>');
+}
+var O = [['P1 · O topo das abas', true, 'O <b>mesmo topo das outras abas</b>: o galão e a base em grande à esquerda ("FO / LIS", como o fantasma de antes), os factos à direita; por baixo, <b>os grupos em cartões</b> com o título dentro.', P1],
+         ['P2 · O cartão de identidade', false, 'Um <b>cartão escuro</b> com o nome em grande, a categoria, a base e "Mudar" (3447, o cartão preto da 3432); por baixo, os grupos com o valor à direita.', P2],
+         ['P3 · A lista com secções', false, 'A <b>lista de definições do iPhone</b>: título grande, o nome numa linha e os títulos das secções por fora dos cartões (3448).', P3]];
+document.getElementById('g').innerHTML = O.map(function(o){ return '<div class="opt"><h3>' + o[0] + (o[1] ? '<span class="rec">RECOMENDO</span>' : '') + '</h3><p>' + o[2] + '</p>' + o[3]() + '</div>'; }).join('');
+</script>
+</body>
+</html>

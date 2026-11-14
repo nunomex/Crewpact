@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · O Perfil curto</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* O PERFIL CURTO (2026-11-14). O Nuno escolheu a R1 de design/perfil-4.html (a validade mais perto + a carreira) e disse: "nos
+   outros cards parece tudo igual, e sempre o mesmo tipo de cards. não queria que fosse extensa. vê coisas novas e diferentes."
+   Em cima fica a R1. O resto deixa de ser uma lista de cartões iguais: cada grupo com a sua forma, e o que se usa pouco vai para a
+   sua página. Três maneiras: V1 a ficha (rótulo pequeno, valor grande) + pílulas + atalhos + a conta numa linha · V2 os separadores
+   (Trabalho | Acordo | Conta, um de cada vez) · V3 tudo em atalhos (uma grelha de quadrados, cada um abre a sua página).
+   Imagens do Nuno (referencias/Para a app/README): 3417 (o formulário de valores grandes — rótulo pequeno, valor grande) · 3449 e
+   3424 (pílulas número + palavra, chips) · 3412 e 3434 (o seletor com pílula deslizante) · 3412 e 3442 (o ícone num círculo dentro
+   do cartão) · 3432 ("Mudar") · 3454 ("EM BREVE") · 3447 (a conta numa linha escura). Mobbin: Pesse e X (os botões rápidos lado a
+   lado), Satispay e Fuse (os mosaicos), Copilot (o seletor com pílula), Careem (rótulo e valor).
+   Movimento (skill animacoes + docs/motion-design-system.md §3): a entrada escalonada (820 ms, 60 ms); as células da ficha uma a uma
+   (40 ms); a pílula do seletor desliza (260 ms out(cubic)) e o conteúdo troca com um esmaecer (180 ms); os atalhos encolhem ao toque
+   (0,97, 150 ms). Movimentos reduzidos: tudo no estado final; sem JS tudo visível. Dados de TESTE: Rita Almeida (inventada). */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif;--out:cubic-bezier(.33,1,.68,1)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+.lead{max-width:960px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)} .lead a{color:var(--pfg)}
+.replay{align-self:flex-start;height:40px;padding:0 18px;border-radius:20px;border:1.5px solid #141414;background:none;font:700 14px var(--body);cursor:pointer}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,406px),406px));gap:26px 24px;justify-content:center;align-items:start}
+.opt{display:flex;flex-direction:column;gap:10px;min-width:0}
+.opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:var(--muted);min-height:96px} .opt > p b{color:var(--pfg)}
+.cap{font-size:12px;font-weight:700;color:#C2410C;margin:0 0 2px 6px}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:960px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card2 li{font-size:13px;line-height:1.5;color:var(--muted)} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:var(--pfg)}
+
+.ph{display:flex;flex-direction:column;width:406px;border:8px solid #04060A;border-radius:52px;overflow:hidden;position:relative;background:#E3E1DB;color:#141414;max-width:100%}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.topA{padding:0 20px 32px;flex:none}
+.pills{display:flex;align-items:center;gap:8px;min-height:68px;padding:8px 0 16px}
+.pl{height:38px;padding:0 16px;border-radius:19px;border:1.5px solid #141414;display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:13px;white-space:nowrap}
+.pl.ink{background:#141414;color:#E3E1DB}
+.bell{width:44px;height:44px;border-radius:22px;background:rgba(127,127,127,.22);margin-left:auto;display:flex;align-items:center;justify-content:center}
+.what{font-weight:500;font-size:15px;line-height:20px;color:#3A3A36}
+.hero{display:flex;align-items:stretch;gap:16px;margin-top:12px}
+.g{font-weight:700;white-space:nowrap;font-size:62px;line-height:68px;letter-spacing:-2.85px}
+.g div{margin-top:-6px} .g div + div{margin-top:-12px}
+.grey{color:rgba(20,20,20,.5)}
+.side{border-left:1.5px solid #141414;padding-left:16px;display:flex;flex-direction:column;justify-content:center;gap:12px;min-width:0}
+.fv{display:block;font-weight:700;font-size:20px;line-height:22px;white-space:nowrap}
+.fl{display:block;font-weight:500;font-size:11px;line-height:15px;color:#3A3A36;white-space:nowrap}
+.sheetN{flex:1;background:#fff;border-radius:32px 32px 0 0;padding:16px 12px 0;display:flex;flex-direction:column;gap:12px}
+.ic{display:block;fill:currentColor}
+.kd{display:block;font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8)}
+.ci{width:32px;height:32px;border-radius:16px;background:#fff;display:flex;align-items:center;justify-content:center;flex:none}
+.mud{height:30px;padding:0 12px;border-radius:15px;border:1.5px solid #141414;font-weight:700;font-size:12px;display:inline-flex;align-items:center;white-space:nowrap;cursor:pointer}
+.dotw{width:7px;height:7px;border-radius:4px;background:#F0854A;display:inline-block;margin-right:5px;vertical-align:2px}
+.foot{font-weight:500;font-size:12px;color:#5E5E57;text-align:center;padding:4px 0 26px} .foot u{color:#141414}
+/* R1 em cima */
+.vcard{background:#F1EFEA;border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.vtop{display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
+.vtop b{font-weight:800;font-size:22px;line-height:26px} .vtop small{font-weight:600;font-size:13px;color:#5E5E57}
+.warn{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:10px;background:#F0854A;color:#141414;font-weight:800;font-size:13px;margin-right:6px;vertical-align:2px}
+.trk{height:10px;border-radius:5px;background:rgba(20,20,20,.12);overflow:hidden} .trk i{display:block;height:100%;border-radius:5px;background:#F0854A;transform-origin:left center}
+.vsub{font-weight:500;font-size:13px;color:#5E5E57;display:flex;justify-content:space-between}
+.tl{position:relative;height:96px}
+.tl svg{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible}
+.tl .st{position:absolute;top:44px;transform:translateX(-50%);text-align:center;white-space:nowrap}
+.tl .st b{display:block;font-weight:800;font-size:15px} .tl .st span{display:block;font-weight:500;font-size:11px;color:#5E5E57}
+.tl .yr{position:absolute;top:0;transform:translateX(-50%);font-weight:700;font-size:12px;color:#3A3A36}
+/* V1: a ficha (rótulo pequeno, valor grande) */
+.ficha{background:#F1EFEA;border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.fhead{display:flex;align-items:center;justify-content:space-between}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+.cell{padding:10px 0;border-top:1px solid rgba(127,127,127,.25);min-width:0;cursor:pointer}
+.cell:nth-child(-n+2){border-top:0;padding-top:2px}
+.cell small{display:block;font-weight:700;font-size:11px;letter-spacing:.4px;color:#5E5E57}
+.cell b{display:block;font-weight:800;font-size:20px;line-height:24px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cell span{display:block;font-weight:500;font-size:12px;color:#5E5E57;white-space:nowrap} .cell b .dotw{display:inline-block}
+.soonT{font-weight:500;font-size:12px;color:#5E5E57} .soonT i{font-style:normal;font-weight:800;font-size:9px;letter-spacing:.6px;border:1.5px dashed rgba(20,20,20,.3);border-radius:8px;padding:1px 5px;margin-left:4px}
+/* as pílulas do acordo */
+.pcard{display:flex;flex-direction:column;gap:10px;padding:2px 4px}
+.pwrap{display:flex;flex-wrap:wrap;gap:8px}
+.pp{height:40px;padding:0 14px;border-radius:20px;background:#F1EFEA;display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:14px;white-space:nowrap;cursor:pointer}
+.pp small{font-weight:500;font-size:12px;color:#5E5E57}
+/* os atalhos */
+.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.q{background:#F1EFEA;border-radius:20px;padding:12px 6px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:transform .15s var(--out)}
+.q:active{transform:scale(.97)}
+.q b{font-weight:700;font-size:12px} .q span{font-weight:500;font-size:11px;color:#5E5E57;margin-top:-6px}
+/* a família em círculos (as duas imagens que o Nuno mandou: a fila de pessoas com o nome por baixo e o "+" para adicionar);
+   iniciais e não fotos — a app não guarda fotos (RGPD) */
+.fam{background:#F1EFEA;border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.fhd{display:flex;align-items:center;justify-content:space-between} .fhd small{font-weight:600;font-size:12px;color:#5E5E57}
+.people{display:flex;gap:12px}
+.pc{display:flex;flex-direction:column;align-items:center;gap:6px;width:66px;cursor:pointer}
+.av{width:58px;height:58px;border-radius:29px;background:#141414;color:#fff;font-weight:800;font-size:18px;letter-spacing:.5px;display:flex;align-items:center;justify-content:center;position:relative}
+.av.add{background:none;border:1.5px dashed rgba(20,20,20,.45);color:#141414}
+.av i{position:absolute;right:1px;bottom:1px;width:14px;height:14px;border-radius:7px;background:#6DBEFA;border:2.5px solid #F1EFEA}
+.pc b{font-weight:700;font-size:13px;white-space:nowrap} .pc span{font-weight:500;font-size:11px;color:#5E5E57;margin-top:-5px;white-space:nowrap}
+/* a conta numa linha */
+.acc{background:#141414;color:#fff;border-radius:22px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer}
+.acc .ci{background:rgba(255,255,255,.16);color:#fff} .acc .t{flex:1;min-width:0} .acc b{display:block;font-weight:800;font-size:16px} .acc span{display:block;font-weight:500;font-size:12px;color:rgba(255,255,255,.75);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* V2: os separadores */
+.seg{display:flex;background:rgba(127,127,127,.18);border-radius:22px;padding:4px;position:relative;height:44px}
+.seg .knob{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px)/3);border-radius:18px;background:#141414;transition:transform .26s var(--out)}
+.seg button{flex:1;position:relative;z-index:1;background:none;border:0;font:700 14px var(--body);color:#3A3A36;cursor:pointer;transition:color .26s var(--out)}
+.seg button.on{color:#fff}
+.pane{display:none} .pane.on{display:block}
+.rows{background:#F1EFEA;border-radius:24px;padding:6px 16px}
+.r{display:flex;align-items:center;gap:12px;min-height:54px;border-top:1px solid rgba(127,127,127,.25)} .r.f{border-top:0}
+.rt{flex:1;min-width:0;font-weight:700;font-size:15px} .rv{font-weight:600;font-size:14px;color:#3A3A36;white-space:nowrap}
+.ci.stop{background:#EC7A6C}
+.sw{width:51px;height:31px;border-radius:16px;background:#141414;position:relative;flex:none;cursor:pointer;transition:background .22s var(--out)}
+.sw::after{content:'';position:absolute;left:22px;top:2px;width:27px;height:27px;border-radius:14px;background:#fff;transition:transform .22s var(--out)}
+.sw.off{background:rgba(127,127,127,.35)} .sw.off::after{transform:translateX(-20px)}
+/* V3: tudo em atalhos */
+.hub{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.h{background:#F1EFEA;border-radius:22px;padding:14px 12px;display:flex;flex-direction:column;gap:10px;min-height:116px;cursor:pointer;transition:transform .15s var(--out)}
+.h:active{transform:scale(.97)} .h b{display:block;font-weight:800;font-size:15px;line-height:18px} .h span{display:block;font-weight:500;font-size:11px;color:#5E5E57;line-height:14px}
+.h.dark{background:#141414;color:#fff} .h.dark span{color:rgba(255,255,255,.75)} .h.dark .ci{background:rgba(255,255,255,.16);color:#fff}
+/* o movimento — só com o JS a correr e sem movimentos reduzidos */
+@media (prefers-reduced-motion: no-preference){
+  .js .run .an{opacity:0;transform:translateY(12px)}
+  .js .run.go .an{animation:enter .82s var(--out) both;animation-delay:calc(var(--i,0) * 60ms)}
+  .js .run .cell{opacity:0}
+  .js .run.go .cell{animation:fade .4s var(--out) both;animation-delay:calc(.35s + var(--c,0) * 40ms)}
+  .js .run .trk i{transform:scaleX(0)}
+  .js .run.go .trk i{animation:grow .8s var(--out) .3s both}
+  .js .run .tl path.ln{stroke-dashoffset:var(--len)}
+  .js .run.go .tl path.ln{animation:draw .8s var(--out) .35s both}
+  .js .run .tl circle{transform:scale(0);transform-box:fill-box;transform-origin:center}
+  .js .run.go .tl circle{animation:pop .18s var(--out) both;animation-delay:calc(.45s + var(--k,0) * 140ms)}
+  .js .pane.on{animation:fade .18s var(--out) both}
+  .js .run .av{opacity:0;transform:scale(.8)}
+  .js .run.go .av{animation:popin .26s var(--out) both;animation-delay:calc(.5s + var(--p,0) * 60ms)}
+}
+@media (prefers-reduced-motion: reduce){ .seg .knob,.seg button,.sw,.sw::after,.q,.h{transition:none} }
+@keyframes enter{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes draw{from{stroke-dashoffset:var(--len)}to{stroke-dashoffset:0}}
+@keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes popin{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:none}}
+</style>
+<script>document.documentElement.classList.add('js');</script>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>O Perfil curto</h1>
+    <p>Em cima fica <b>a R1</b>: a validade mais perto de caducar e a tua carreira. O resto <b>deixa de ser uma lista de cartões iguais</b>. Cada grupo ganha a sua forma, e o que se usa pouco vai para a sua página. Por cima de cada telemóvel está o comprimento da página (a R1 com a lista tinha <b>2 330</b> pontos).</p>
+    <p><b>As tuas imagens:</b> 3417 (o formulário de valores grandes, rótulo pequeno e valor grande), 3449 e 3424 (as pílulas número + palavra), 3412 e 3434 (o seletor com a pílula que desliza), 3412 e 3442 (o ícone num círculo dentro do cartão), 3432 ("Mudar"), 3454 ("EM BREVE"), 3447 (a conta numa linha escura). <b>Mobbin:</b> <a href="https://mobbin.com/screens/384bd511-a32c-4290-8671-243d01fc0591">X</a> (os botões rápidos lado a lado), <a href="https://mobbin.com/screens/ce177872-c7d1-4652-9e16-73d84b649ec4">Satispay</a> e <a href="https://mobbin.com/screens/d3d8c65f-d4f5-4985-9daf-7c007268b9ff">Fuse</a> (os mosaicos), <a href="https://mobbin.com/screens/7eeae53b-0800-4b1e-9553-43f7eecb4dce">Copilot</a> (o seletor com pílula), <a href="https://mobbin.com/screens/9cf05d14-4989-4cf3-9c22-5c89b50eeeeb">Careem</a> (rótulo e valor).</p>
+    <p><b>O movimento:</b> os cartões entram um a um, as células da ficha aparecem uma a uma, a pílula do seletor desliza (260 ms) e o conteúdo troca com um esmaecer, os atalhos encolhem ao toque. No V2 podes tocar em "Acordo" e "Conta". Com movimentos reduzidos, tudo aparece já no fim. Dados de teste: Rita Almeida (inventada).</p>
+    <button class="replay" onclick="replay()">↻ Repetir a animação</button>
+  </div>
+  <div class="grid3" id="g"></div>
+  <div class="card2"><h3>A minha recomendação: V1</h3><ul>
+    <li><b>V1</b> dá <b>uma forma a cada coisa</b>. O teu trabalho numa <b>ficha</b>: rótulo pequeno, valor grande, duas colunas (como o formulário da 3417), com "Mudar" no canto. O acordo em <b>pílulas</b> que se tocam. A <b>família em círculos</b>, com as iniciais e o nome, e o "+" para adicionar (as tuas duas imagens). As outras ferramentas em <b>três atalhos</b> lado a lado. A conta numa <b>linha escura</b> que abre a sua página (o nome, o nº, o e-mail, a palavra-passe, o Face ID, o idioma, os lembretes, exportar, apagar a conta e terminar a sessão). Vê-se tudo sem deslizar muito, e nenhum cartão é igual ao do lado.</li>
+    <li><b>V2</b> mostra <b>um grupo de cada vez</b>, com um seletor (Trabalho | Acordo | Conta). É a mais curta, mas o acordo e a conta ficam escondidos atrás de um toque, e quem procura uma definição tem de adivinhar o separador.</li>
+    <li><b>V3</b> faz do Perfil <b>uma grelha de atalhos</b>, cada um com a sua página. É muito arrumada, mas deixa de se ver o valor de cada definição (a base, o contrato, o pós-voo) sem entrar.</li>
+    <li><b>A família em círculos</b> (as duas imagens que mandaste: a fila de pessoas com o nome por baixo e o "+" para adicionar): cada pessoa num círculo a tinta com as <b>iniciais</b> — não fotografias, porque a app não guarda fotos (a tua regra do RGPD) — e o nome por baixo; o ponto azul diz quem está a seguir o voo agora; os círculos aparecem um a um. Tocar numa pessoa abre-a; o "+" acrescenta.</li>
+    <li>Em todas, em cima: a validade mais perto e a carreira (R1), o mesmo topo das outras abas. As outras companhias aparecem "em breve".</li></ul></div>
+</div>
+<script>
+var P = { rank:'<path d="M12 2 4 6v6c0 4.4 3.4 8.5 8 10 4.6-1.5 8-5.6 8-10V6l-8-4zm-3 9 2 2 4-4 1.4 1.4L11 15.8 7.6 12.4z"/>',
+  doc:'<path d="M6 2h8l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7 1.5V8h4.5z"/>', plane:'<path d="M21 15.5v-2l-8-5V3.6a1.5 1.5 0 0 0-3 0V8.5l-8 5v2l8-2.5V18l-2 1.5V21l3.5-1 3.5 1v-1.5L13 18v-5z"/>',
+  pin:'<path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/>', cal:'<path d="M7 2h2.6v3H7V2zm7.4 0H17v3h-2.6V2zM4 5h16v3.6H4V5zm0 5h16v10a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 20V10z"/>',
+  sync:'<path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z"/>', clock:'<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2.2a7.8 7.8 0 1 1 0 15.6 7.8 7.8 0 0 1 0-15.6zM11 6.5v6.1l4.6 2.8 1-1.7-3.6-2.1V6.5z"/>',
+  shield:'<path d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5l-8-3z"/>',
+  fam:'<path d="M8 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zm8 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM2 20a6 6 0 0 1 12 0H2zm12.5 0a7.5 7.5 0 0 0-2-4.6A5 5 0 0 1 22 20h-7.5z"/>',
+  bed:'<path d="M3 6h2v7h7V8h6a3 3 0 0 1 3 3v7h-2v-2H5v2H3V6zm5 1.5A2.5 2.5 0 1 1 8 12.5a2.5 2.5 0 0 1 0-5z"/>', book:'<path d="M5 3h11a3 3 0 0 1 3 3v15H8a3 3 0 0 1-3-3V3zm2 2v11.2A3 3 0 0 1 8 16h9V6a1 1 0 0 0-1-1H7z"/>',
+  mail:'<path d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm1.6 2L12 12l7.4-5H4.6z"/>', lock:'<path d="M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1zm2 0h6V7a3 3 0 0 0-6 0v3z"/>',
+  face:'<path d="M4 4h5v2H6v3H4V4zm11 0h5v5h-2V6h-3V4zM4 15h2v3h3v2H4v-5zm14 0h2v5h-5v-2h3v-3zM9 10h1.6v2H9zm4.4 0H15v2h-1.6zM9 15.2c1.8 1.4 4.2 1.4 6 0l1 1.4c-2.4 1.9-5.6 1.9-8 0z"/>',
+  globe:'<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2a8 8 0 0 1 7.9 7h-3.1a15 15 0 0 0-1.5-6.4A8 8 0 0 1 12 4zm-2 .5A15 15 0 0 0 8.2 11H4.1A8 8 0 0 1 10 4.5zM4.1 13h4.1a15 15 0 0 0 1.8 6.5A8 8 0 0 1 4.1 13zm8 6.9c-1-1.4-1.8-3.9-1.9-6.9h3.8c-.1 3-.9 5.5-1.9 6.9zm2.2-.4a15 15 0 0 0 1.5-6.5h3.1a8 8 0 0 1-4.6 6.5z"/>',
+  bell:'<path d="M12 22a2.4 2.4 0 0 0 2.4-2.4H9.6A2.4 2.4 0 0 0 12 22zm7-6V11a7 7 0 0 0-5.5-6.8V3a1.5 1.5 0 0 0-3 0v1.2A7 7 0 0 0 5 11v5l-2 2v1h18v-1l-2-2z"/>', download:'<path d="M11 3h2v9.2l3.3-3.3 1.4 1.4L12 16 6.3 10.3l1.4-1.4 3.3 3.3zM4 18h16v2H4z"/>',
+  trash:'<path d="M9 3h6l1 2h4v2H4V5h4l1-2zm-3 6h12l-1 12H7L6 9z"/>', logout:'<path d="M10 3h9a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-9v-2h8V5h-8V3zm-.7 4.3 1.4 1.4L8.4 11H16v2H8.4l2.3 2.3-1.4 1.4L4.6 12z"/>',
+  chev:'<path d="M8.6 4.2 16.4 12l-7.8 7.8-1.9-1.9 5.9-5.9-5.9-5.9z"/>', user:'<path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9zm-8 9a8 8 0 0 1 16 0H4z"/>',
+  idc:'<path d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm5 3.5a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM5 15.5h6a3 3 0 0 0-6 0zm8-6h6V11h-6zm0 3h4v1.5h-4z"/>' };
+function ic(n, s, c){ return '<svg class="ic" width="' + s + '" height="' + s + '" viewBox="0 0 24 24"' + (c ? ' style="color:' + c + '"' : '') + '>' + P[n] + '</svg>'; }
+var CH = ic('chev', 14, '#77776F'), CHW = ic('chev', 14, 'rgba(255,255,255,.75)');
+var TOP = '<div class="topA"><div class="pills"><span class="pl ink">Piloto</span><span class="pl">easyJet</span><span class="bell">' + ic('bell', 18) + '</span></div>'
+  + '<div class="what">Rita Almeida · primeiro-oficial</div><div class="hero"><div class="g"><div>FO</div><div class="grey">LIS</div></div>'
+  + '<div class="side"><div><span class="fv">2019</span><span class="fl">na easyJet desde</span></div><div><span class="fv">Efetivo</span><span class="fl">contrato · 100 %</span></div></div></div></div>';
+var VAL = '<div class="vcard an" style="--i:0"><span class="kd">Validades · a mais perto</span><div class="vtop"><b><span class="warn">!</span>Certificado médico</b><small>até 27 dez</small></div>'
+  + '<div class="trk"><i style="width:88%"></i></div><div class="vsub"><span><b style="color:#141414">faltam 43 dias</b> · classe 1, 12 meses</span><span>3 em dia ›</span></div></div>';
+var TLW = 334, pts = [[18, '2019', 'Cadete', 'LIS'], [150, '2021', 'FO', 'primeiro-oficial'], [316, 'hoje', '7 anos', 'e 8 meses']];
+var CAR = '<div class="vcard an" style="--i:1"><span class="kd">A tua carreira · easyJet</span><div class="tl"><svg viewBox="0 0 ' + TLW + ' 96" preserveAspectRatio="none"><path class="ln" d="M18 30 H316" stroke="#141414" stroke-width="3" fill="none" stroke-linecap="round" style="--len:298;stroke-dasharray:298"/>'
+  + pts.map(function(p, k){ return '<circle cx="' + p[0] + '" cy="30" r="' + (k === 2 ? 8 : 6) + '" fill="' + (k === 2 ? '#141414' : '#fff') + '" stroke="#141414" stroke-width="3" style="--k:' + k + '"/>'; }).join('') + '</svg>'
+  + pts.map(function(p){ return '<span class="yr" style="left:' + (p[0] / TLW * 100) + '%">' + p[1] + '</span><span class="st" style="left:' + (p[0] / TLW * 100) + '%"><b>' + p[2] + '</b><span>' + p[3] + '</span></span>'; }).join('') + '</div></div>';
+var R1 = VAL + CAR;
+var FOOT = '<div class="foot"><u>Termos</u> · <u>Privacidade</u> · versão 1.0.0</div>';
+var QUICK = function(i){ return '<div class="quick an" style="--i:' + i + ';grid-template-columns:repeat(3,1fr)">' + [['bed', 'Hotéis', '12 estações'], ['book', 'Biblioteca', 'lei e acordos'], ['doc', 'Relatórios', 'PDF · CSV']].map(function(x){ return '<div class="q"><span class="ci">' + ic(x[0], 16) + '</span><b>' + x[1] + '</b><span>' + x[2] + '</span></div>'; }).join('') + '</div>'; };
+// a família: o "+" e cada pessoa com as iniciais (familyInitials) e o nome; o ponto azul = está a seguir o voo agora
+var FAM = function(i){ var ppl = [['AR', 'Ana', 'a seguir', 1], ['JS', 'João', '', 0], ['PA', 'Pai', '', 0]];
+  return '<div class="fam an" style="--i:' + i + '"><div class="fhd"><span class="kd">Família · chegada ao vivo</span><small>3 pessoas</small></div><div class="people">'
+    + '<div class="pc"><div class="av add" style="--p:0"><svg class="ic" width="20" height="20" viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg></div><b>Adicionar</b></div>'
+    + ppl.map(function(x, k){ return '<div class="pc"><div class="av" style="--p:' + (k + 1) + '">' + x[0] + (x[3] ? '<i></i>' : '') + '</div><b>' + x[1] + '</b>' + (x[2] ? '<span>' + x[2] + '</span>' : '') + '</div>'; }).join('') + '</div></div>'; };
+var ACC = function(i){ return '<div class="acc an" style="--i:' + i + '"><span class="ci">' + ic('user', 16) + '</span><div class="t"><b>A tua conta</b><span>nome · nº · e-mail · palavra-passe · Face ID · idioma · lembretes</span></div>' + CHW + '</div>'; };
+function phone(sheet){ return '<div class="ph run"><div class="status"><span>09:41</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>' + TOP + '<div class="sheetN">' + R1 + sheet + '</div></div>'; }
+// V1 — a ficha + as pílulas + os atalhos + a conta numa linha
+function cell(c, lab, val, sub, dot){ return '<div class="cell" style="--c:' + c + '"><small>' + lab + '</small><b>' + (dot ? '<span class="dotw"></span>' : '') + val + '</b>' + (sub ? '<span>' + sub + '</span>' : '') + '</div>'; }
+var FICHA = '<div class="ficha an" style="--i:2"><div class="fhead"><span class="kd">O teu trabalho</span><span class="mud">Mudar</span></div><div class="fgrid">'
+  + cell(0, 'CATEGORIA', 'FO', 'primeiro-oficial') + cell(1, 'BASE', 'LIS', 'Lisboa') + cell(2, 'CONTRATO', 'Efetivo', '100 %') + cell(3, 'FROTA', 'A320', 'NB')
+  + cell(4, 'LARGADA', 'por confirmar', 'antiguidade', 1) + cell(5, 'COMPANHIA', 'easyJet', 'TAP, Ryanair e Hi Fly em breve') + '</div></div>';
+var PILLS = '<div class="pcard an" style="--i:3"><span class="kd">Acordo e serviço · SPAC 2026</span><div class="pwrap">'
+  + '<span class="pp"><span class="dotw"></span>Pós-voo <small>30 min</small></span><span class="pp">Férias <small>22 dias</small></span><span class="pp">Vínculo <small>contrato</small></span><span class="pp">AE <small>abrangido</small></span></div></div>';
+function V1(){ return phone(FICHA + PILLS + FAM(4) + QUICK(5) + ACC(6) + FOOT); }
+// V2 — os separadores
+function r(icn, lab, val, right, i, extra){ var rt = right === 'mud' ? '<span class="mud">Mudar</span>' : right === 'on' ? '<span class="sw" onclick="this.classList.toggle(\'off\')"></span>' : right === 'off' ? '<span class="sw off" onclick="this.classList.toggle(\'off\')"></span>' : CH;
+  return '<div class="r' + (i === 0 ? ' f' : '') + '"><span class="ci' + (extra || '') + '">' + ic(icn, 16) + '</span><div class="rt">' + lab + '</div>' + (val ? '<span class="rv">' + val + '</span>' : '') + rt + '</div>'; }
+var PANES = {
+  t: [['rank', 'Categoria', 'FO', ''], ['doc', 'Contrato', 'Efetivo · 100 %', 'mud'], ['plane', 'Frota', 'A320', ''], ['pin', 'Base', 'LIS', 'mud'], ['cal', 'Largada', '<span class="dotw"></span>por confirmar', ''], ['sync', 'Companhia', 'easyJet', 'mud']],
+  a: [['clock', 'Serviço pós-voo', '<span class="dotw"></span>30 min', ''], ['cal', 'Férias por ano', '22 dias', ''], ['doc', 'Vínculo', 'Contrato', ''], ['shield', 'Abrangido pelo AE', 'Sim', '']],
+  c: [['user', 'Nome', 'Rita Almeida', ''], ['idc', 'Nº de tripulante', 'E 48213', ''], ['mail', 'E-mail', 'rita@exemplo.pt', ''], ['lock', 'Palavra-passe', 'Definir', ''], ['face', 'Face ID', '', 'on'], ['globe', 'Idioma', 'Português', ''], ['bell', 'Lembretes', '', 'off'], ['download', 'Exportar os dados', 'RGPD', '']]
+};
+function V2(){
+  var seg = '<div class="seg an" style="--i:3"><span class="knob"></span><button class="on" onclick="segGo(this,0)">Trabalho</button><button onclick="segGo(this,1)">Acordo</button><button onclick="segGo(this,2)">Conta</button></div>';
+  var panes = ['t', 'a', 'c'].map(function(k, n){ return '<div class="pane' + (n === 0 ? ' on' : '') + '"><div class="rows">' + PANES[k].map(function(x, i){ return r(x[0], x[1], x[2], x[3], i); }).join('')
+    + (k === 'c' ? r('trash', 'Apagar conta', '', '', 1, ' stop') + r('logout', 'Terminar sessão', '', '', 1) : '') + '</div></div>'; }).join('');
+  return phone(FAM(2) + QUICK(3) + seg + '<div class="an" style="--i:5">' + panes + '</div>' + FOOT);
+}
+// V3 — tudo em atalhos
+function hub(icn, t, s, dark){ return '<div class="h' + (dark ? ' dark' : '') + '"' + (dark ? ' style="grid-column:span 2"' : '') + '><span class="ci">' + ic(icn, 16, dark ? '#fff' : null) + '</span><div><b>' + t + '</b><span>' + s + '</span></div></div>'; }
+var HUB = '<div class="hub an" style="--i:2">' + hub('rank', 'Trabalho', 'FO · LIS · Efetivo · A320') + hub('doc', 'Acordo', 'SPAC 2026 · pós-voo 30 min')
+  + hub('bed', 'Hotéis', '12 estações') + hub('book', 'Biblioteca', 'lei e acordos') + hub('doc', 'Relatórios', 'PDF · CSV') + hub('lock', 'Segurança', 'Face ID ligado') + hub('bell', 'Avisos', 'português · lembretes')
+  + hub('user', 'A tua conta', 'rita@exemplo.pt', true) + '</div>';
+function V3(){ return phone(FAM(2) + HUB.replace('--i:2', '--i:3') + FOOT); }
+var O = [['V1 · A ficha, as pílulas, os atalhos', true, 'O trabalho numa <b>ficha</b> (rótulo pequeno, valor grande, duas colunas) com "Mudar"; o acordo em <b>pílulas</b>; a <b>família em círculos</b>; as ferramentas em <b>três atalhos</b>; a conta numa <b>linha escura</b> que abre a sua página.', V1],
+         ['V2 · Os separadores', false, 'A família em círculos, os atalhos e, por baixo, um <b>seletor</b> Trabalho | Acordo | Conta: <b>um grupo de cada vez</b> (toca para trocar; a pílula desliza).', V2],
+         ['V3 · Tudo em atalhos', false, 'A família em círculos e uma <b>grelha de quadrados</b>, cada um com a sua página: Trabalho, Acordo, Hotéis, Biblioteca, Relatórios, Segurança, Avisos e A tua conta.', V3]];
+document.getElementById('g').innerHTML = O.map(function(o){ return '<div class="opt"><h3>' + o[0] + (o[1] ? '<span class="rec">RECOMENDO</span>' : '') + '</h3><p>' + o[2] + '</p><div class="cap"></div>' + o[3]() + '</div>'; }).join('');
+function segGo(btn, n){ var seg = btn.parentNode; seg.querySelectorAll('button').forEach(function(b, k){ b.classList.toggle('on', k === n); }); seg.querySelector('.knob').style.transform = 'translateX(' + (n * 100) + '%)';
+  var panes = seg.parentNode.querySelectorAll('.pane'); panes.forEach(function(p, k){ p.classList.toggle('on', k === n); }); }
+function replay(){ document.querySelectorAll('.run').forEach(function(p){ p.classList.remove('go'); void p.offsetWidth; p.classList.add('go'); }); }
+document.fonts.ready.then(function(){ replay(); document.querySelectorAll('.opt').forEach(function(o){ var ph = o.querySelector('.ph'); o.querySelector('.cap').textContent = 'página com ' + Math.round(ph.getBoundingClientRect().height) + ' pontos'; }); });
+</script>
+</body>
+</html>

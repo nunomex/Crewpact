@@ -1,4 +1,7 @@
-// PÁGINAS DE DEFINIÇÃO do Perfil (2026-11-03, esboço design/perfil-v3.html, aprovado pelo Nuno).
+// PÁGINAS DE DEFINIÇÃO do Perfil (2026-11-03, esboço design/perfil-v3.html, aprovado pelo Nuno). NO ASPETO NOVO desde 2026-11-14:
+// G1 de design/perfil-paginas.html — a moldura components/Pagina3 (a mesa, o voltar, o título; a folha branca) e as peças de
+// components/SettingParts (as opções num só cartão com o ✓ a tinta e o "ATUAL", o "A partir de" num campo que abre a roda, o
+// histórico em linha do tempo, o seletor com a pílula, o número grande, a fonte do valor, o contador). As gravações não mudaram.
 // Uma rota ('PerfilPagina', param `kind`) → uma página à Flighty: título, explicação (com a lei), e um de
 // dois modelos aprovados:
 //   · CARTÕES (os mesmos da configuração, components/OptCard) — tocar GRAVA e volta ao índice; na
@@ -6,21 +9,23 @@
 //   · ESCOLHA RÁPIDA (pós-voo) ou contador (férias) — grava logo, sem botão.
 // As gravações são as de sempre (hooks/usePerfilActions); nenhuma regra nova.
 import React, { useContext, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { getLocales } from 'expo-localization';
-import Pagina from '../components/Pagina';
-import OptCard, { itemsOf, norm } from '../components/OptCard';
-import PrimaryButton from '../components/PrimaryButton';
+import Pagina from '../components/Pagina3';
+import { itemsOf, norm } from '../components/OptCard';
+import { WideButton } from '../components/PillButton';
+import { ChoiceCard, MonthField, HistoryLine, PillSelect, BigValue, SourceNote, Stepper, SettingCard } from '../components/SettingParts';
 import MonthYearWheel from '../components/MonthYearWheel';
 import Icon from '../components/Icon';
-import { portaTxt as P } from '../components/Porta';
 import usePerfilActions, { currentYmNow } from '../hooks/usePerfilActions';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { AppContext } from '../data/appContext';
 import { countryName as countryNameOf, baseCityName } from '../data/countries';
 import { companyStartYm } from '../data/crewHistory';
 import { select } from '../data/haptics';
-import { PELE, PELE_FONT, TXT, SPACE, RADIUS } from '../data/constants';
+import { CARD, TXT3, SPACE, RADIUS } from '../data/constants';
+
+const W = CARD.day;
 
 const BACK_MS = 280;   // o visto aparece e, só depois, volta ao índice
 
@@ -68,7 +73,7 @@ export default function PerfilPaginaScreen({ route, navigation }) {
     // Só os períodos da companhia ATUAL (depois de uma mudança, as categorias da antiga não são destas).
     const coStartC = companyStartYm(companyHistory);
     const hist = (crewHistory || []).filter((p, i, a) => p.from >= coStartC || !a.some((x) => x.from > p.from && x.from <= coStartC))
-      .map((p) => `${isCat ? (ae.categoryLabel ? ae.categoryLabel(p.category, lang) : p.category) : (ae.contractLabel ? ae.contractLabel(p.contract, lang) : p.contract)} ${l('desde', 'since')} ${ymLabel(p.from)}`).join(' · ');
+      .map((p) => `${isCat ? (ae.categoryLabel ? ae.categoryLabel(p.category, lang) : p.category) : (ae.contractLabel ? ae.contractLabel(p.contract, lang) : p.contract)} · ${ymLabel(p.from)}`);
     const save = () => {
       const ok = A.applyCrew(isCat ? selCrew : crewCategory, isCat ? (crewContract || '12/12') : selCrew, from);
       if (ok) goBack();
@@ -79,15 +84,10 @@ export default function PerfilPaginaScreen({ route, navigation }) {
         lead={isCat
           ? l('O AE paga por categoria. Uma promoção conta a partir do mês em que aconteceu: os meses antes ficam como estavam.', 'The agreement pays by rank. A promotion counts from the month it happened: earlier months stay as they were.')
           : l('Meses de trabalho por ano: o AE escala o salário com isto. A mudança conta a partir do mês que escolheres.', 'Working months per year: the agreement scales your pay with this. The change counts from the month you pick.')}
-        footer={<PrimaryButton label={isCat ? l('Guardar a promoção', 'Save the promotion') : l('Guardar o contrato', 'Save the contract')} onPress={save} disabled={!selCrew || selCrew === current} />}>
-        {items.map((it) => (
-          <OptCard key={it.id} code={it.code} label={it.label} reduce={reduce}
-            sel={selCrew === it.id && it.id !== current} tag={it.id === current ? l('atual', 'current') : null}
-            onPress={() => { select(); setSelCrew(it.id); }} />
-        ))}
-        <Text style={[P.label, s.gap]}>{l('A partir de que mês?', 'From which month?')}</Text>
-        <MonthYearWheel value={from} onChange={setFrom} lang={lang} monthsAhead={12} />
-        {hist ? <Text style={[P.foot, s.gap]}>{l('Histórico: ', 'History: ')}{hist}</Text> : null}
+        footer={<WideButton label={isCat ? l('Guardar a promoção', 'Save the promotion') : l('Guardar o contrato', 'Save the contract')} onPress={save} disabled={!selCrew || selCrew === current} />}>
+        <ChoiceCard l={l} items={items} isSel={(id) => selCrew === id && id !== current} isCur={(id) => id === current} onPick={(id) => { select(); setSelCrew(id); }} />
+        <MonthField l={l} label={l('A partir de', 'From')} value={from} onChange={setFrom} lang={lang} monthsAhead={12} />
+        <HistoryLine l={l} items={hist} />
       </Pagina>
     );
   }
@@ -101,20 +101,15 @@ export default function PerfilPaginaScreen({ route, navigation }) {
     const coStartF = companyStartYm(companyHistory);
     const hist = (crewHistory || []).filter((p, i, a) => p.from >= coStartF || !a.some((x) => x.from > p.from && x.from <= coStartF))
       .filter((p, i, a) => i === 0 || (p.fleet || null) !== (a[i - 1].fleet || null))
-      .map((p) => `${fLbl(p.fleet || current)} ${l('desde', 'since')} ${ymLabel(p.from)}`).join(' · ');
+      .map((p) => `${fLbl(p.fleet || current)} · ${ymLabel(p.from)}`);
     const save = () => { A.saveFleet(selCrew, from); goBack(); };
     return (
       <Pagina {...back} title={l('A tua frota', 'Your fleet')}
         lead={l('Wide-body ou narrow-body: muda o per-diem (no AE da TAP, quem é wide-body recebe sempre a tarifa WB). A mudança conta a partir do mês que escolheres.', 'Wide-body or narrow-body: it changes the per diem (in the TAP agreement, wide-body always gets the WB rate). The change counts from the month you pick.')}
-        footer={<PrimaryButton label={l('Guardar a frota', 'Save the fleet')} onPress={save} disabled={!selCrew || selCrew === current} />}>
-        {items.map((it) => (
-          <OptCard key={it.id} code={it.code} label={it.label} reduce={reduce}
-            sel={selCrew === it.id && it.id !== current} tag={it.id === current ? l('atual', 'current') : null}
-            onPress={() => { select(); setSelCrew(it.id); }} />
-        ))}
-        <Text style={[P.label, s.gap]}>{l('A partir de que mês?', 'From which month?')}</Text>
-        <MonthYearWheel value={from} onChange={setFrom} lang={lang} monthsAhead={12} />
-        {hist ? <Text style={[P.foot, s.gap]}>{l('Histórico: ', 'History: ')}{hist}.</Text> : null}
+        footer={<WideButton label={l('Guardar a frota', 'Save the fleet')} onPress={save} disabled={!selCrew || selCrew === current} />}>
+        <ChoiceCard l={l} items={items} isSel={(id) => selCrew === id && id !== current} isCur={(id) => id === current} onPick={(id) => { select(); setSelCrew(id); }} />
+        <MonthField l={l} label={l('A partir de', 'From')} value={from} onChange={setFrom} lang={lang} monthsAhead={12} />
+        <HistoryLine l={l} items={hist} />
       </Pagina>
     );
   }
@@ -133,9 +128,9 @@ export default function PerfilPaginaScreen({ route, navigation }) {
       <Pagina {...back}
         title={l(`Na ${coName} desde`, `With ${coName} since`)}
         lead={l('A antiguidade entra no salário (anuidades, senioridade, prémio de permanência, subsídios do 1.º ano — conforme o acordo): sem ela, sai incompleto. Mês e ano chegam; o dia, se o souberes, acerta o mês em que entraste.', 'Seniority goes into your pay (service-year pay, long-service award, first-year allowances — depending on the agreement): without it, your pay is incomplete. Month and year are enough; the day, if you know it, settles the month you joined.')}
-        footer={<PrimaryButton label={l('Guardar', 'Save')} onPress={save} disabled={!/^\d{4}-\d{2}(-\d{2})?$/.test(ym) || ym === startVal} />}>
-        <MonthYearWheel withDay value={startVal || null} onChange={setYm} lang={lang} />
-        <Text style={[P.foot, s.gap]}>{l('O dia é opcional (— é "não sei"). Só conta no mês em que entraste, que se paga pelos dias, e nos subsídios desse ano.', 'The day is optional (— means "don\'t know"). It only matters in the month you joined, paid by the day, and in that year\'s allowances.')}</Text>
+        footer={<WideButton label={l('Guardar', 'Save')} onPress={save} disabled={!/^\d{4}-\d{2}(-\d{2})?$/.test(ym) || ym === startVal} />}>
+        <SettingCard><MonthYearWheel withDay value={startVal || null} onChange={setYm} lang={lang} /></SettingCard>
+        <Text style={[TXT3.cardSub, s.note]}>{l('O dia é opcional (— é "não sei"). Só conta no mês em que entraste, que se paga pelos dias, e nos subsídios desse ano.', 'The day is optional (— means "don\'t know"). It only matters in the month you joined, paid by the day, and in that year\'s allowances.')}</Text>
       </Pagina>
     );
   }
@@ -149,9 +144,9 @@ export default function PerfilPaginaScreen({ route, navigation }) {
       <Pagina {...back}
         title={l('Largada', 'Line release')}
         lead={l('O acordo conta as anuidades e a senioridade a partir do teu primeiro voo de largada, não da entrada na companhia. Sem esta data, a app conta da entrada. Mês e ano chegam.', 'The agreement counts service-year pay from your first line release flight, not from joining. Without this date, the app counts from joining. Month and year are enough.')}
-        footer={<PrimaryButton label={l('Guardar', 'Save')} onPress={save} disabled={!/^\d{4}-\d{2}$/.test(ym) || ym === largadaYm || beforeEntry} />}>
-        <MonthYearWheel value={largadaYm || startYm || null} onChange={setYm} lang={lang} />
-        <Text style={[P.foot, s.gap]}>{beforeEntry
+        footer={<WideButton label={l('Guardar', 'Save')} onPress={save} disabled={!/^\d{4}-\d{2}$/.test(ym) || ym === largadaYm || beforeEntry} />}>
+        <SettingCard><MonthYearWheel value={largadaYm || startYm || null} onChange={setYm} lang={lang} /></SettingCard>
+        <Text style={[TXT3.cardSub, s.note]}>{beforeEntry
           ? l('A largada não pode ser antes da entrada na companhia.', 'The release cannot be before you joined.')
           : l('Roda ou toca no mês e no ano do teu primeiro voo de largada.', 'Spin or tap the month and year of your first line release flight.')}</Text>
       </Pagina>
@@ -168,36 +163,21 @@ export default function PerfilPaginaScreen({ route, navigation }) {
     return (
       <Pagina key="desde" onBack={backToList} backLabel={l('Voltar à lista', 'Back to the list')}
         title={l(`${cfg.name}, desde quando?`, `${cfg.name}, since when?`)} lead={cfg.lead}
-        footer={<PrimaryButton label={cfg.saveLabel} onPress={save} disabled={moved && !/^\d{4}-\d{2}$/.test(chgFrom)} />}>
-        <View style={s.seg} accessibilityRole="radiogroup">
-          {[['moved', cfg.segMoved], ['fix', cfg.segFix]].map(([id, lbl]) => {
-            const on = chgMode === id;
-            return (
-              <TouchableOpacity key={id} style={[s.segItem, on && s.segOn]} onPress={() => { select(); setChgMode(id); }}
-                accessibilityRole="radio" accessibilityState={{ checked: on }} accessibilityLabel={lbl}>
-                <Text style={[s.segTxt, on && s.segTxtOn]}>{lbl}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        footer={<WideButton label={cfg.saveLabel} onPress={save} disabled={moved && !/^\d{4}-\d{2}$/.test(chgFrom)} />}>
+        <ChoiceCard l={l} items={[{ id: 'moved', label: cfg.segMoved, sub: l('a partir de um mês', 'from a given month') }, { id: 'fix', label: cfg.segFix, sub: l('corrige os meses antigos', 'fixes the earlier months') }]}
+          isSel={(id) => chgMode === id} onPick={(id) => { select(); setChgMode(id); }} />
         {moved ? (
           <>
-            <Text style={[P.label, s.gap]}>{l('A partir de que mês?', 'From which month?')}</Text>
-            <MonthYearWheel value={chgFrom} onChange={setChgFrom} lang={lang} monthsAhead={0} />
+            <MonthField l={l} label={l('A partir de', 'From')} value={chgFrom} onChange={setChgFrom} lang={lang} monthsAhead={0} />
             {cfg.beforeName && cfg.beforeName !== cfg.name ? (
-              <Text style={[P.foot, s.gap]}>{l('Até ', 'Until ')}{ymLabel(prevYm(chgFrom))}{cfg.beforeLbl}<Text style={P.strong}>{cfg.beforeName}</Text>.</Text>
+              <Text style={[TXT3.cardSub, s.note]}>{l('Até ', 'Until ')}{ymLabel(prevYm(chgFrom))}{cfg.beforeLbl}<Text style={{ color: W.ink }}>{cfg.beforeName}</Text>.</Text>
             ) : null}
-            {cfg.hist ? <Text style={[P.foot, s.small]}>{l('Histórico: ', 'History: ')}{cfg.hist}.</Text> : null}
+            <HistoryLine l={l} items={cfg.hist} />
           </>
         ) : (
-          <View style={s.src}>
-            <Icon name="clock" size={16} color={PELE.ink} />
-            <Text style={s.srcTxt}>
-              {coStart === '2000-01'
-                ? l(`Corrige ${cfg.fixWhat} de todos os meses. ${cfg.fixCount}`, `Fixes ${cfg.fixWhat} for every month. ${cfg.fixCount}`)
-                : <>{l(`Corrige ${cfg.fixWhat} desde que entraste na ${company?.name || 'companhia'}, em `, `Fixes ${cfg.fixWhat} since you joined ${company?.name || 'the airline'}, in `)}<Text style={P.strong}>{ymLabel(coStart)}</Text>. {cfg.fixCount}</>}
-            </Text>
-          </View>
+          <SourceNote icon="clock" text={coStart === '2000-01'
+            ? l(`Corrige ${cfg.fixWhat} de todos os meses. ${cfg.fixCount}`, `Fixes ${cfg.fixWhat} for every month. ${cfg.fixCount}`)
+            : l(`Corrige ${cfg.fixWhat} desde que entraste na ${company?.name || 'companhia'}, em ${ymLabel(coStart)}. ${cfg.fixCount}`, `Fixes ${cfg.fixWhat} since you joined ${company?.name || 'the airline'}, in ${ymLabel(coStart)}. ${cfg.fixCount}`)} />
         )}
       </Pagina>
     );
@@ -216,7 +196,7 @@ export default function PerfilPaginaScreen({ route, navigation }) {
       name, lead: l('O repouso, as pernoitas e a Auditoria usam a base de cada mês.', 'Rest, night stops and the Audit use the base of each month.'),
       segMoved: l('Mudei de base', 'I moved base'), segFix: l('Sempre foi esta', 'It always was'),
       beforeLbl: l(' a tua base fica ', ' your base stays '), beforeName: (() => { const b = homeBaseAt(prevYm(chgFrom)); return b ? baseName(b) : null; })(),
-      hist: (baseHistory || []).filter((p) => p && p.base).map((p) => `${baseName(p.base)} ${l('desde', 'since')} ${ymLabel(p.from)}`).join(' · '),
+      hist: (baseHistory || []).filter((p) => p && p.base).map((p) => `${baseName(p.base)} · ${ymLabel(p.from)}`),
       fixWhat: l('a base', 'the base'), fixCount: l('Os meses antigos também passam a contar com esta base.', 'Earlier months also count with this base.'),
       saveLabel: l('Guardar a base', 'Save the base'), onSave: (opt) => A.saveBase(nextVal, opt),
     });
@@ -237,7 +217,7 @@ export default function PerfilPaginaScreen({ route, navigation }) {
       segMoved: l('Mudei de vínculo', 'It changed'), segFix: l('Sempre foi assim', 'It always was'),
       beforeLbl: l(' o teu vínculo fica ', ' your employment stays '), beforeName: empLabel(companyAt(prevYm(chgFrom)).employment || employment),
       hist: (companyHistory || []).filter((p) => p && p.from >= coStartV)
-        .map((p) => `${empLabel(p.employment || employment)} ${l('desde', 'since')} ${ymLabel(p.from)}`).join(' · '),
+        .map((p) => `${empLabel(p.employment || employment)} · ${ymLabel(p.from)}`),
       fixWhat: l('o vínculo', 'your employment'), fixCount: l('Os meses antigos também passam a contar assim.', 'Earlier months also count this way.'),
       saveLabel: l('Guardar o vínculo', 'Save'), onSave: (opt) => A.saveEmployment(nextVal, opt),
     });
@@ -247,11 +227,7 @@ export default function PerfilPaginaScreen({ route, navigation }) {
     return (
       <Pagina key="lista" {...back} title={l('Vínculo', 'Employment')}
         lead={l('Decide se o acordo de empresa te abrange no pagamento. Os limites FTL aplicam-se sempre.', 'Decides whether the company agreement covers your pay. FTL limits always apply.')}>
-        {EMP.map((it) => (
-          <OptCard key={it.id} label={it.label} sub={it.sub} reduce={reduce}
-            sel={pickedVal === it.id && it.id !== current} tag={it.id === current ? l('atual', 'current') : null}
-            onPress={() => pickNext(it.id, current)} />
-        ))}
+        <ChoiceCard l={l} items={EMP} isSel={(id) => pickedVal === id && id !== current} isCur={(id) => id === current} onPick={(id) => pickNext(id, current)} />
       </Pagina>
     );
   }
@@ -274,23 +250,17 @@ export default function PerfilPaginaScreen({ route, navigation }) {
       <Pagina key="lista" {...back} title={l('A tua base', 'Your base')}
         lead={l('O descanso legal depende dela: 12 h na base e 10 h fora (ORO.FTL.235). As ajudas de custo e as pernoitas contam fora dela.', 'Legal rest depends on it: 12 h at base and 10 h away (ORO.FTL.235). Per diems and night stops count away from it.')}>
         <View style={s.search}>
-          <Icon name="search" size={16} color={PELE.grey} />
-          <TextInput value={query} onChangeText={setQuery} style={s.searchInput}
-            placeholder={l('Procurar cidade ou código', 'Search city or code')} placeholderTextColor={PELE.placeholder}
+          <Icon name="search" size={16} color={W.tabSub} />
+          <TextInput value={query} onChangeText={setQuery} style={[TXT3.line, s.searchInput, { color: W.ink }]}
+            placeholder={l('Procurar cidade ou código', 'Search city or code')} placeholderTextColor={W.caption}
             autoCorrect={false} autoCapitalize="none" returnKeyType="search" clearButtonMode="while-editing"
             accessibilityLabel={l('Procurar base', 'Search base')} />
         </View>
         {groups.map((g) => (
-          <View key={g.cc}>
-            <Text style={[P.label, s.grp]}>{cName(g.cc)}</Text>
-            {g.items.map((b) => (
-              <OptCard key={b.code} code={b.code} label={b.name} sub={b.seasonal ? l('base sazonal', 'seasonal base') : null}
-                sel={pickedVal === b.code && b.code !== base} tag={b.code === base ? l('atual', 'current') : null} reduce={reduce}
-                onPress={() => pickNext(b.code, base)} />
-            ))}
-          </View>
+          <ChoiceCard key={g.cc} l={l} title={cName(g.cc)} items={g.items.map((b) => ({ id: b.code, code: b.code, label: b.name, sub: b.seasonal ? l('base sazonal', 'seasonal base') : null }))}
+            isSel={(id) => pickedVal === id && id !== base} isCur={(id) => id === base} onPick={(id) => pickNext(id, base)} />
         ))}
-        {!groups.length ? <Text style={P.foot}>{query.trim() ? l(`Nenhuma base com "${query.trim()}".`, `No base matches "${query.trim()}".`) : l('Catálogo de bases indisponível (sem ligação?).', 'Base catalogue unavailable (offline?).')}</Text> : null}
+        {!groups.length ? <Text style={[TXT3.cardSub, s.note]}>{query.trim() ? l(`Nenhuma base com "${query.trim()}".`, `No base matches "${query.trim()}".`) : l('Catálogo de bases indisponível (sem ligação?).', 'Base catalogue unavailable (offline?).')}</Text> : null}
       </Pagina>
     );
   }
@@ -302,34 +272,14 @@ export default function PerfilPaginaScreen({ route, navigation }) {
     return (
       <Pagina {...back} title={l('Serviço pós-voo', 'Post-flight duty')}
         lead={l('O tempo de serviço depois dos calços: relatórios, desembarque, briefing final. Conta para o repouso e para os limites de 7, 14 e 28 dias. Não conta para o PSV.', 'Duty time after on-blocks: reports, disembarkation, final briefing. It counts towards rest and the 7, 14 and 28-day limits. It does not count towards the FDP.')}>
-        {om ? (
-          <Text style={s.big}>{postFlightMin} min</Text>
-        ) : (
-          <View style={s.seg} accessibilityRole="radiogroup">
-            {[0, 15, 30, 45].map((m) => {
-              const on = (postFlightMin || 0) === m;
-              return (
-                <TouchableOpacity key={m} style={[s.segItem, on && s.segOn]} onPress={() => { select(); A.savePostFlight(m); }}
-                  accessibilityRole="radio" accessibilityState={{ checked: on }} accessibilityLabel={`${m} min`}>
-                  <Text style={[s.segTxt, on && s.segTxtOn]}>{m}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
-        <Text style={[P.foot, s.small]}>{l('minutos, só nos serviços de voo', 'minutes, flight duties only')}</Text>
-        <View style={s.src}>
-          {postFlightSource === 'assumed' ? <View style={[s.dot, { backgroundColor: PELE.warn }]} /> : null}
-          <Text style={s.srcTxt}>
-            {fromAe ? <Text style={P.strong}>{l('Do acordo de empresa. ', 'From the company agreement. ')}</Text>
-              : om ? <Text style={P.strong}>{l('Do Manual de Operações. ', 'From the Operations Manual. ')}</Text>
-              : postFlightSource === 'assumed' ? <Text style={P.strong}>{l('Assumido. ', 'Assumed. ')}</Text>
-                : <Text style={P.strong}>{l('Definido por ti. ', 'Set by you. ')}</Text>}
-            {fromAe ? l('O acordo diz que o serviço de voo acaba 30 minutos depois da imobilização do avião (TAP: pilotos Cl. 6.ª, n.º 40; cabine Cl. 4.ª, n.º 44).', 'The agreement says the flight duty ends 30 minutes after the aircraft comes to a stop (TAP: pilots Cl. 6, no. 40; cabin Cl. 4, no. 44).')
-              : om ? l('A tua companhia publica este valor; por isso não se muda aqui.', 'Your airline publishes this value, so it is not changed here.')
-              : l('A tua companhia define este tempo no Manual de Operações. Se souberes o valor, escolhe-o: passa a ser teu.', 'Your airline sets this time in its Operations Manual. If you know it, pick it: it becomes yours.')}
-          </Text>
-        </View>
+        {!om ? <Text style={[TXT3.kind, s.kindPad, { color: W.neutralKind }]}>{l('Minutos, só nos serviços de voo', 'Minutes, flight duties only')}</Text> : null}
+        {!om ? <PillSelect options={[0, 15, 30, 45]} value={postFlightMin || 0} unit="min" onPick={(m) => { select(); A.savePostFlight(m); }} l={l} /> : null}
+        <BigValue value={postFlightMin || 0} unit="min" />
+        <SourceNote alert={postFlightSource === 'assumed'}
+          strong={fromAe ? l('Do acordo de empresa.', 'From the company agreement.') : om ? l('Do Manual de Operações.', 'From the Operations Manual.') : postFlightSource === 'assumed' ? l('Assumido.', 'Assumed.') : l('Definido por ti.', 'Set by you.')}
+          text={fromAe ? l('O acordo diz que o serviço de voo acaba 30 minutos depois da imobilização do avião (TAP: pilotos Cl. 6.ª, n.º 40; cabine Cl. 4.ª, n.º 44).', 'The agreement says the flight duty ends 30 minutes after the aircraft stops (TAP: pilots Cl. 6, no. 40; cabin Cl. 4, no. 44).')
+            : om ? l('A tua companhia publica este valor; por isso não se muda aqui.', 'Your airline publishes this value, so it is not changed here.')
+            : l('A tua companhia define este tempo no Manual de Operações. Se souberes o valor, escolhe-o: passa a ser teu.', 'Your airline sets this time in its Operations Manual. If you know it, pick it: it becomes yours.')} />
       </Pagina>
     );
   }
@@ -345,16 +295,8 @@ export default function PerfilPaginaScreen({ route, navigation }) {
     return (
       <Pagina {...back} title={l('Férias por ano', 'Leave per year')}
         lead={l('Os dias de férias a que tens direito num ano. Alimenta o saldo que a app mostra quando registas férias.', 'The leave days you are entitled to in a year. It feeds the balance the app shows when you log leave.')}>
-        <View style={s.stepper}>
-          <TouchableOpacity style={s.stepBtn} onPress={() => step(-1)} disabled={n <= 1} accessibilityRole="button" accessibilityLabel={l('Menos um dia', 'One day less')}>
-            <Text style={s.stepTxt}>−</Text>
-          </TouchableOpacity>
-          <Text style={s.stepVal} accessibilityLiveRegion="polite">{n} {l('dias', 'days')}</Text>
-          <TouchableOpacity style={s.stepBtn} onPress={() => step(1)} disabled={n >= 99} accessibilityRole="button" accessibilityLabel={l('Mais um dia', 'One day more')}>
-            <Text style={s.stepTxt}>+</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={s.src}><Text style={s.srcTxt}>{srcTxt}</Text></View>
+        <Stepper value={n} unit={l('dias', 'days')} onStep={step} min={1} max={99} l={l} />
+        <SourceNote text={srcTxt} />
       </Pagina>
     );
   }
@@ -397,34 +339,14 @@ export default function PerfilPaginaScreen({ route, navigation }) {
   if (!c) return <Pagina {...back} title={l('Página não encontrada', 'Page not found')} />;
   return (
     <Pagina {...back} title={c.title} lead={c.lead}>
-      {c.items.map((it) => (
-        <OptCard key={String(it.id)} code={it.code} label={it.label} sub={it.sub} sel={c.value === it.id} reduce={reduce}
-          onPress={() => (c.value === it.id ? goBack() : pick(() => c.save(it.id), !!c.stay))} />
-      ))}
+      <ChoiceCard l={l} items={c.items} isSel={(id) => c.value === id} onPick={(id) => (c.value === id ? goBack() : pick(() => c.save(id), !!c.stay))} />
     </Pagina>
   );
 }
 
 const s = StyleSheet.create({
-  gap:      { marginTop: SPACE.lg },
-  grp:      { marginTop: SPACE.md },
-  small:    { marginTop: SPACE.sm },
-  search:   { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, height: 44, borderRadius: 999, backgroundColor: PELE.soft, paddingHorizontal: SPACE.lg, marginBottom: SPACE.sm },
-  searchInput: { flex: 1, fontSize: 15, fontFamily: PELE_FONT.body, color: PELE.ink },
-  big:      { ...TXT.numLg, color: PELE.ink },
-  // Escolha rápida (Flighty · Unidades): pílula suave com o escolhido em papel.
-  seg:      { flexDirection: 'row', height: 40, borderRadius: 999, backgroundColor: PELE.soft, padding: SPACE.xs },
-  segItem:  { flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 999 },
-  segOn:    { backgroundColor: PELE.paper },
-  segTxt:   { ...TXT.bodyStrong, fontSize: 14, color: PELE.grey },
-  segTxtOn: { color: PELE.ink },
-  // Fonte do valor (assumido · do OM · teu)
-  src:      { flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.s, backgroundColor: PELE.soft, borderRadius: RADIUS.md, padding: SPACE.md, marginTop: SPACE.lg },
-  dot:      { width: 8, height: 8, borderRadius: 999, marginTop: SPACE.s },
-  srcTxt:   { ...TXT.footnote, color: PELE.ink, flex: 1 },
-  // Contador das férias
-  stepper:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 2, borderColor: PELE.line, borderRadius: RADIUS.md, padding: SPACE.sm },
-  stepBtn:  { width: 44, height: 44, borderRadius: 999, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
-  stepTxt:  { ...TXT.title, color: PELE.ink },
-  stepVal:  { ...TXT.title, color: PELE.ink },
+  note: { color: W.tabSub, paddingHorizontal: SPACE.xs },
+  kindPad: { paddingHorizontal: SPACE.xs },
+  search: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, height: 48, borderRadius: RADIUS.pill, backgroundColor: W.neutral, paddingHorizontal: SPACE.lg },
+  searchInput: { flex: 1 },
 });

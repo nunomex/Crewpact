@@ -868,6 +868,86 @@ simulação é que podemos inserir para simular"). Parei a migração do "Extra 
   frase até às pílulas ~20. Esboço `design/topo-frase.html` (simula a colocação do iOS): E1 +4 (9 pt) · E2 +8 (13 pt, recomendada;
   topo 236 → 244 nas três abas) · E3 +12 (17 pt). **O Nuno escolheu a E2 — CONSTRUÍDA (por ver no iPhone; por gravar):** `HomeTop`
   `s.hero` com `marginTop: SPACE.md` (era `SPACE.xs`), o mesmo nas três abas. A confirmar no iPhone (a simulação segue o corte por cima).
+  **Gravado e enviado (`1d24c33`).**
+- **O PERFIL (a aba; o Nuno: "agora quero fazer a página perfil, da aba perfil"):** o ecrã é o 2.0 (`screens/SettingsScreen.js`,
+  esboço `design/perfil-v3.html`; as páginas de cada definição em `screens/PerfilPaginaScreen.js`). Esboço `design/perfil-3.html`
+  (imagens 3447 · 3432 · 3448 · 3426 · 3408/3415/3454; Mobbin Meta AI, MoonPay, Base, Careem, TheFork; sem avatares): P1 o topo das
+  abas ("FO / LIS" a 62, factos "2019 · na easyJet desde" e o contrato) + os grupos em cartões (recomendada) · P2 um cartão de
+  identidade escuro · P3 a lista de definições com as secções por fora. O conteúdo fica todo; em todas, "Mudar" na Companhia, na Base
+  e no Contrato, interruptores no Face ID e nos Lembretes, o ponto laranja onde falta confirmar. **Por escolher.** As páginas de cada
+  definição (`PerfilPaginaScreen`) vêm a seguir.
+  **O Nuno escolheu a P1 e disse: "falta mais coisas, e parece muito junto em cima… vê ideias, das minhas imagens e tuas, coisas
+  diferentes e animações"; e depois "devia ter também a opção de editar o nome".** Esboço `design/perfil-4.html`: MAIS AR (as
+  linhas em duas linhas eram o que juntava tudo → uma linha a 56 pt com o valor à direita; 12 entre cartões, 16 por dentro; o topo
+  é o das outras abas) e três maneiras de pôr o que faltava, com o que a app já guarda: R1 a validade mais perto de caducar (o limite
+  com barra e "faltam", laranja com "!" a partir de 85 %) + a carreira numa linha do tempo (`crewHistory`: entrada, promoções, há
+  quanto tempo) — recomendada · R2 um mosaico 2×2 (Validades com mini-barra, Família, Hotéis, Biblioteca) · R3 pílulas de estado.
+  Em todas: **Nome e Nº de tripulante** no topo do grupo "A tua conta" (abre o `RecordIdentitySheet`, a mesma folha do Registo 245 e
+  das provas — um só sítio), as outras companhias "EM BREVE" por baixo da Companhia. Movimento (skill animacoes + motion §3):
+  entrada 820 ms out(cubic) escalonada 60 ms, a barra e as contagens 800 ms, a linha do tempo a desenhar-se (stroke-dashoffset) e os
+  pontos 180 ms escalonados, o interruptor 220 ms; verificado no navegador: com movimento vai do início ao fim e para (~1,3 s); com
+  movimentos reduzidos tudo no estado final; sem JS tudo visível. **O Nuno escolheu a R1 e disse: "nos outros cards parece tudo igual,
+  sempre o mesmo tipo de cards; não queria que fosse extensa; vê coisas novas e diferentes"; e "para a família, ter aqueles círculos"
+  (duas imagens no chat: a fila de pessoas com o nome por baixo e o "+").** Esboço `design/perfil-5.html`: em cima a R1; o resto com
+  uma forma por grupo — V1 a ficha do trabalho (rótulo pequeno, valor grande, 2 colunas, "Mudar"; 3417) + o acordo em pílulas (3449)
+  + a família em círculos (as INICIAIS — a app não guarda fotos, RGPD; `familyInitials` já existe; o "+" a tracejado; o ponto azul de
+  quem segue o voo agora) + três atalhos (Hotéis, Biblioteca, Relatórios) + a conta numa linha escura que abre a sua página (nome,
+  nº, e-mail, palavra-passe, Face ID, idioma, lembretes, exportar, apagar a conta, terminar a sessão) — recomendada, 1 458 pt · V2 os
+  separadores Trabalho | Acordo | Conta (1 355) · V3 tudo em atalhos (1 225); a lista da R1 tinha 2 330. Movimento: a entrada
+  escalonada, as células da ficha uma a uma (40 ms), os círculos da família a aparecer (260 ms, 60 ms), a pílula do seletor (260 ms),
+  os atalhos a encolher ao toque (0,97); reduzido = estado final. **O Nuno: "gosto da V1. mas podes fazer ainda melhor. analisa as
+  minhas imagens e retira coisas para certas partes, sê criativo."** Esboço `design/perfil-6.html`, parte a parte do índice: W1
+  "como um voo" — a carreira como uma PERNA DE VOO (partida 2019 cadete, chegada hoje FO, a escala de 2021, a duração no selo; 3422 ·
+  3417 · 3444; o avião percorre a perna ao entrar) · o trabalho como um CARTÃO DE EMBARQUE picotado (3418; rótulo pequeno, valor grande
+  3417; o nome e o nº em cima, contrato/frota/largada/companhia em baixo; "Mudar") · a validade como o CARTÃO DE PROGRESSO (o chip em
+  cima, o número à direita, a barra — 3428/3462/3408 — e um PONTO por documento — 3436) · o acordo em TRÊS NÚMEROS (3419) com o chip
+  "ABRANGIDO" (3424) · a família em círculos com um ANEL azul a pulsar em quem segue o voo (loop 650 ms/perna; reduzido = parado) ·
+  o Face ID, os lembretes e o idioma em MINI-CARTÕES com interruptor (a imagem "Settings" do Nuno · 3442 · 3426) — recomendada,
+  1 564 pt · W2 os números grandes (1 509) · W3 o mosaico de meios cartões dois a dois (3408/3415; 1 261).
+  **O Nuno escolheu a W1 — CONSTRUÍDA (por ver no iPhone; por gravar).** Três acertos pela verdade dos dados (vistos no código antes
+  de escrever): (1) a BARRA da validade só quando a lei dá o prazo e se sabe a data feita (OPC, line check, SEP…); no médico, no
+  passaporte e na licença a app só tem o "válido até" → sem barra; o "a expirar" é o da app (30 dias, `validityStatus`), não 85 % ·
+  (2) a família guarda só o nome e o link (`family_links`: id, label, url) — a app não sabe quem segue o voo → o anel "a seguir" SAI ·
+  (3) as companhias "em breve" = `isRosterPending` (hoje só a TAP), como na entrada. Golden primeiro — `scripts/profilecards.test.js`
+  (`npm run test:profilecards`, 47; na cadeia do `npm test`, agora 39 suites): o topo (o galão e a base; "na <companhia> desde" e o
+  CÓDIGO do contrato — o nome por extenso, "14 dias de trabalho, 14 de folga", não cabia ao lado na cabine; cabe no tamanho comum),
+  a validade mais perto (bandas, barra só com prazo da lei, um ponto por documento, o caducado primeiro), a carreira (a entrada na
+  companhia atual, as promoções como escalas no sítio certo da perna, "7 anos e 8 meses"), o acordo (pós-voo com o ponto quando
+  assumido, férias, vínculo; o chip), a família (as iniciais — UMA regra, a que a Família já usava: "Mãe" → M, primeira e última
+  palavra; `FamiliaScreen` importa-a; até 3 círculos e "+N"; nunca "a seguir") e as companhias "em breve" · `data/profileCards.js`
+  · `components/ProfileCards.js` (ValidityCard, CareerCard com o avião a percorrer a perna, CrewPass picotado, AgreementCard,
+  FamilyCard, QuickSettings com Face ID — o `toggleLock` com a verificação — lembretes e PT|EN, QuickTiles, AccountRow; movimento
+  com o reduzido) · `screens/SettingsScreen.js`: o topo das abas (`HomeTop`, o sino escrito), a folha com os cartões, a folha "A tua
+  conta" (campos: nome e nº — o mesmo `cp_record_<uid>` dos documentos, e o nome da conta segue-o —, e-mail, palavra-passe, exportar,
+  apagar a conta, terminar a sessão; cada janela abre DEPOIS de a folha sair, `onClosed`) · `screens/TrabalhoScreen.js` (rota
+  `PerfilTrabalho`, o "Mudar"): todas as definições do trabalho e do acordo em cartões de linhas, cada uma a abrir a sua página;
+  "Mudar de companhia" e as "em breve". Os estilos antigos do Perfil saíram (a dívida do desenho desceu 3; chão novo gravado).
+  Testes todos · guardião · pacote iOS gera. **Por fazer:** as páginas de cada definição (`PerfilPaginaScreen`) no aspeto novo.
+  **E o Nuno: "há maneira de partilhar de iPhone para iPhone?" → "sim" (pôr na lista do dev build):** `docs/dev-build.md` itens 10
+  (a família com a app: o aviso quando aterras e a chegada no ecrã bloqueado por push, como o Flighty — aí a app sabe quem segue) e
+  11 (App Clip da chegada, POR INVESTIGAR na documentação da Apple antes de prometer). Hoje o link já vai por AirDrop/Mensagens.
+  **As páginas de cada definição (o Nuno: "vamos pôr no aspeto novo?"):** `screens/PerfilPaginaScreen.js` usa a moldura
+  `components/Pagina.js` (2.0) e os `OptCard`; quatro tipos (cartões que gravam ao tocar · roda de mês · escolha rápida/contador · dois
+  passos na base e no vínculo). Esboço `design/perfil-paginas.html` (o contrato e o pós-voo): G1 a mesa e a folha com as opções num só
+  cartão (✓ a tinta, "ATUAL"), "A partir de" num campo, o histórico em linha do tempo, "Guardar" no fundo, o pós-voo com o seletor
+  de pílula (recomendada) · G2 os cartões a tinta da entrada · G3 a lista simples. O chip "§" SÓ onde a página já cita a lei (PPY art.
+  66.9 AE, instrutor art. 42.º, abrangido CT 496.º/497.º) — duas citações inventadas no 1.º esboço (contrato, pós-voo) saíram.
+  **O Nuno escolheu a G1 — CONSTRUÍDA (por ver no iPhone; por gravar):** `components/Pagina3.js` (a moldura nova: a mesa, o voltar,
+  o título e a explicação; a folha branca; a ação larga no fundo; a `Pagina.js` antiga fica para a Família até à vez dela) ·
+  `components/SettingParts.js` (ChoiceCard — as opções num só cartão, ✓ a tinta, "ATUAL"; MonthField — o "A partir de" que abre a
+  roda numa folha; HistoryLine — o histórico em linha do tempo; PillSelect; BigValue; SourceNote; Stepper; SettingCard) ·
+  `screens/PerfilPaginaScreen.js`: todas as páginas trocadas (categoria, contrato, frota, entrada, largada, base com a pesquisa e o
+  2.º passo, vínculo, pós-voo, férias, PPY, instrutor, abrangido, idioma, lembretes, Face ID); as gravações e as regras NÃO mudaram
+  (`usePerfilActions`); os históricos passaram de frase a lista. Sem chip "§" à parte (as explicações já trazem as citações).
+  Testes todos · guardião (sem dívida nova) · pacote iOS gera.
+  **E o Nuno: "a página perfil tem pouca cor… achas que tá bom assim?"** É sóbria de propósito (o mapa B: a cor diz o TIPO da escala
+  ou pede ATENÇÃO; as definições não têm tipo), mas pode ter cor com significado. Esboço `design/perfil-cor.html`: K1 a carreira a
+  azul (é a vida a voar — o azul do voo) e o cartão de tripulante a tinta (o crachá), o resto neutro, o laranja só quando pede atenção
+  (recomendada) · K2 só acentos · K3 mais cor (a família a azul e a validade num cartão laranja). Nunca cores sem significado.
+  **O Nuno escolheu a K1 — CONSTRUÍDA (por ver no iPhone; por gravar):** `components/ProfileCards.js` — a `CareerCard` no azul do voo
+  (`CARD.day.flight`; o rótulo e as legendas em `CARD.onCardKind`/`onCardSub`, a escala com o fundo azul) e o `CrewPass` a tinta (o nome
+  e os valores na letra da folha, as legendas em `darkSub`, o picotado em `darkGo`, o "Mudar" branco); o resto neutro. Guardião sem
+  dívida nova · testes todos · pacote iOS gera.
   **Também gravado nesta ronda:** a centragem dos números nos círculos (`s.numTxt`, acima) e os esboços `janelas-3.html`,
   `janelas-c.html` e `botoes-escritos.html`.
   **E o Nuno: "depois vê os botões das notificações, o X para fechar e o de sincronizar — não estão com o layout novo, pois não?"**
