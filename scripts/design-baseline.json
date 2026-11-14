@@ -1,14 +1,14 @@
 {
  "gerado": "2026-11-14",
  "total": {
-  "tipoFora": 149,
-  "tipoMenor11": 73,
-  "espacoFora": 316,
-  "raioFora": 39,
-  "corSolta": 53,
+  "tipoFora": 122,
+  "tipoMenor11": 61,
+  "espacoFora": 268,
+  "raioFora": 34,
+  "corSolta": 48,
   "ionicons": 7,
   "iconeNavSolto": 3,
-  "amareloTexto": 2
+  "amareloTexto": 0
  },
  "ficheiros": {
   "App.js": {
@@ -112,14 +112,14 @@
    "amareloTexto": 0
   },
   "screens/StatsScreen.js": {
-   "tipoFora": 27,
-   "tipoMenor11": 12,
-   "espacoFora": 49,
-   "raioFora": 6,
-   "corSolta": 5,
+   "tipoFora": 0,
+   "tipoMenor11": 0,
+   "espacoFora": 1,
+   "raioFora": 1,
+   "corSolta": 0,
    "ionicons": 0,
    "iconeNavSolto": 0,
-   "amareloTexto": 2
+   "amareloTexto": 0
   },
   "screens/ValidadesScreen.js": {
    "tipoFora": 11,

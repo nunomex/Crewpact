@@ -750,7 +750,116 @@ simulação é que podemos inserir para simular"). Parei a migração do "Extra 
     PERCENTAGEM, contra a regra das imagens "faltam X, nunca percentagem"; e o lugar dos extras) e a folha da **Biblioteca** (o ecrã
     Info ainda é 2.0; a imagem 3416 dá os cartões da Biblioteca). Ainda por migrar: Simulação (página), partilhas (voo, ano), as
     janelas do meio (Família, Definições), o formulário de serviço (Simulação) e as Validades.
-  Testes todos · guardião (chão novo) · pacote iOS gera. **Por ver no iPhone; por gravar.**
+  Testes todos · guardião (chão novo) · pacote iOS gera. **Gravado em `714f101`.**
+- **OS NÚMEROS (a página da aba; o Nuno: "sim" e "tenho que mudar a página da aba números também"):** esboço `design/numeros-3.html`.
+  O ecrã era 2.0 (um mostrador de percentagens à volta do total, mosaicos com %, notas soltas; as folhas com barras em %). Imagens do
+  Nuno: o € numa barra empilhada, cêntimos mais pequenos, nunca abreviar (3421 · 3449 · 3433 · 3440 · 3441) · limite com barra,
+  "faltam", sem percentagem (3408 · 3415 · 3428 · 3431 · 3441 · 3462) · Mês | Ano em pílula (3412 · 3434) · movimentos (3431) · número
+  em duas linhas (3424). Mobbin: Lloyds (Breakdown), Turo, Ubank, Monarch. **N1** o topo do Início + cartões ("De onde vem": a barra
+  empilhada e as linhas base/per diem/pernoitas/extras — os extras abrem com os dias, do calendário; "Limites · agora": os dois mais
+  cheios em "faltam"; linhas finas Voo, Repouso, Auditoria) · **N2** a barra como herói (legenda em pílulas número + palavra; limites
+  em mosaicos) · **N3** os movimentos datados (cada per diem, pernoita, extra no seu dia). Por baixo, a folha dos limites na regra das
+  folhas (sem percentagem). O Ano: o mesmo ecrã com o total do ano e o ano em meses (3407/3439). Recomendo **N1**.
+  **O Nuno escolheu a N1 — CONSTRUÍDA (`screens/StatsScreen.js`; as contas não mudaram — data/stats.js, o motor FTL, o AE; por ver no
+  iPhone; por gravar):** o topo do Início (`HomeTop`: a pílula do período abre a escolha do mês — os 12 do ano com ‹ › — ou do ano;
+  o seletor Mês | Ano à direita; "Ganhos brutos de novembro", o total em duas linhas com "estimado", e os factos "+X € acima da base"
+  e as horas de voo; com a base incerta, "Incerto" e as duas pontas; sem acordo, as horas de voo); a folha branca com: as notas
+  honestas de sempre (tabela em falta, antiguidade, subsídio de férias, voos sem rota, índice, acordo expirado) · **"De onde vem"**
+  (`LineCard`: a barra empilhada — base a tinta, per diem azul do voo, pernoitas salva, posicionamento lilás, subsídios e extras
+  cinzentos — e as linhas com a lei (§, abre a Prova) e a explicação de cada parcela; os **extras abrem e mostram os dias**, do
+  calendário) · **"Limites · agora"** (os dois mais cheios: o valor, o máximo pequeno, "faltam" e a barra — laranja aos 85 %,
+  vermelho só quando passa — e "Os limites todos") · a nota "Primeira vez com cor?" (as cores num ponto ao lado da palavra) · as
+  linhas finas (`HomeCards`) Voo, Repouso, Auditoria e (no Ano) "Partilhar o meu ano de voo" · os limites do acordo da TAP como
+  estavam · as Férias do ano (`LineRows`). **As folhas na regra:** "Os limites" (Serviço e Voo, cada janela num campo, sem
+  percentagem; a nota passou a "laranja a partir de 85 %, vermelha só quando passa" — dizia "≥ 90 % assinala atenção", errado
+  desde o mapa das cores; § ORO.FTL.210) · "Voo" (as horas em grande; no Ano "faltam X h" para as 900 h, sem percentagem; o gráfico
+  a tinta, o mês/dia atual a azul; por tipo; destinos) · "Repouso" (os três campos e a radiação cósmica com os textos de sempre). Abre
+  no Mês (era o Ano). O teste das citações confere agora "Ganhos brutos de" + "estimado" (procurava a frase antiga). Testes todos ·
+  guardião (dívida desceu: amarelo em texto 2→0, cores soltas, raios) · pacote iOS gera.
+  **Visto no iPhone (2026-11-14, duas fotos):** com 15 137,64 € no mês e 127 912,70 € no ano, **os factos ao lado do número saíam
+  cortados** ("+5 170,…", "de voo · 12 set…"; no ano "+5 5…") — o `fitGiant` só encolhia o número até 60 e, lado a lado, eram
+  precisos 382 px (mês) e 423 px (ano) para 350; para caberem, o número teria de descer a 48 / 36. Esboço `design/numeros-topo.html`
+  (imagens 3440 · 3432 · 3430 · 3433 · 3424; Mobbin Wise, Zopa, Crypto.com, Stake — todos põem os factos de um total comprido por
+  baixo): T1 os factos numa fila por baixo · T2 em pílulas por baixo · T3 lado a lado com o número a encolher. **O Nuno escolheu a
+  T1 — CONSTRUÍDA (por ver no iPhone; por gravar):** golden primeiro (`test:homecards`, "Números": o mês a 86, o ano nunca abaixo
+  de 78, cada facto cabe na sua metade, até 199 999,99 €; e que lado a lado não cabia) · `fitGiant(t, w, { below: true })` e
+  `factsBelowFit` em `data/homeCards.js` · `HomeTop factsBelow` (duas metades com o mesmo fio, 12 de recuo; o valor encolhe até 70 %
+  antes de alguma vez se cortar) · os Números usam-no nos dois modos (€ e horas). O Início fica como está (lado a lado; os números
+  dele cabem — golden). **E dois erros de texto das fotos:** "paragens nocturnas" → "noturnas" (também na Biblioteca e no catálogo
+  dos extras) e "salário base · Novembro" → minúscula.
+  **O TOPO IGUAL NAS TRÊS ABAS (o Nuno: "o header tem tamanhos diferentes"):** medido, Início 86 / topo 279 · Escala 62 / 236 (o
+  número encolhia para "serviços" e o per diem caberem ao lado) · Números 86 / 332. Esboço `design/topo-igual.html` (imagens
+  3416 · 3424 · 3440 · 3412 · 3434; Mobbin Tonal, Neo Financial, Copilot): H1 os factos por baixo nas três · H2 ao lado onde cabem
+  · H3 os factos descem para a folha. **O Nuno escolheu a H1 — CONSTRUÍDA (por ver no iPhone; por gravar):** golden primeiro
+  (`test:homecards`, "o topo igual nas três abas": os 18 estados do Início em português e em inglês, a Escala e os Números — todos
+  no tamanho comum e cada facto na sua parte; o 3.º facto Zulu cabe) · `data/homeCards.js`: UM tamanho por largura de ecrã e por
+  língua, o maior em que cabe o € do ano (até 199 999,99 €) — 82 a 390, 78 a 375 (em inglês o € vai à frente e grande: 78 / 74) —
+  `commonGiant`/`topGiant`; o `fitGiant` mede só o número (saiu o "ao lado" e o `factsWidth`) · `HomeTop` com os factos sempre numa
+  fila por baixo · Início, Escala e Números passam a `topGiant(top, w, lang)`. Topo com 325 nas três (a 390). O Início desce de 86
+  para 82; a Escala sobe de 62 para 82. **E o Nuno: "os dois factos numa fila por baixo — podias ver outra maneira, mais
+  apelativa?"** Esboço `design/topo-factos.html` (imagens 3440 · 3424 · 3412 · 3442 · 3409 · 3431; Mobbin Orb Social, Satispay,
+  Shopee, GoHenry, Kit): F3 um quadradinho com a cor do tipo por facto (recomendada; topo 328) · F1 dois mosaicos brancos (387) ·
+  F2 a régua dividida (353). **O Nuno escolheu a F3 e perguntou "achas que fica bom?"** Medida com TODOS os factos da app: com
+  três factos (a hora UTC) não cabe o quadradinho de 40; o € do ano (+55 512,34 €) não cabe a 375; e muitos factos do Início não têm
+  tipo ("Em dia", "Só leitura", "Com o teu sim", "7° amanhã · chuva") — levariam um ícone só para encher; o quadradinho claro
+  quase não se vê no fundo. Esboço `design/topo-factos-2.html` (a 375): A o quadradinho (32) só onde há tipo (recomendada) · B por
+  cima do valor, em todos (+34) · C a cor no fio. Nas três cabe tudo. **O Nuno escolheu a A — CONSTRUÍDA (por ver no iPhone; por
+  gravar):** golden primeiro (`test:homecards`, "o quadradinho dos factos": o PSV é voo/escudo em antes, véspera, standby, em voo,
+  incerto e aterrado; o ganho de hoje é dinheiro/carteira; o "falta", a hora UTC, a meteorologia, a formação, a disrupção e as
+  frases ficam só texto; cada tipo com o seu ícone; tom verde ⇔ tipo dinheiro; e os factos com quadradinho cabem a 375) ·
+  `data/homeCards.js`: `fact(v, l, tone, k, ic)` (o tom "gain" dá o tipo dinheiro) e `psvFact`; `GIANT.sq` 32 e `sqGap` 6 (com 8,
+  o "PSV até, se chamarem já" passava meio ponto a 375); a fila com 12 entre factos · `HomeTop`: o quadradinho (raio dos pequenos
+  das linhas, ícone 18; no dinheiro verde com o ícone branco) e o texto; sem fio · Escala: pernoitas = repouso/cama, per diem =
+  dinheiro/carteira (agora verde) · Números: acima da base = dinheiro, horas de voo e voos = voo/avião; as pontas do total incerto
+  ficam a tinta, como o número. Testes todos · guardião · pacote iOS gera.
+  **E o Nuno: "a meteorologia onde aparece na aba Início?" (análise, sem código):** só na PERNOITA, como 2.º facto do topo (a
+  máxima de amanhã e o tempo — "7° · amanhã · chuva"), da estação onde se está; MET Norway pela Edge `flight-status`, cache 45 min.
+  **Falta a atribuição CC-BY 4.0** (`WX_ATTRIBUTION` existe em `data/weather.js` mas não aparece em nenhum ecrã — a licença
+  exige-a visível). Pendente: decidir onde.
+  **O Nuno: "sim" (tratar do crédito e dos dois acertos) + "onde deve mostrar mais? e não podia vir do telemóvel, por causa da
+  licença?"** Visto nas fontes oficiais: o iPhone não dá a meteorologia da app Tempo a outras apps; a alternativa "do telemóvel" é o
+  **WeatherKit** da Apple — um serviço (rede, como o MET Norway), 500 000 chamadas/mês incluídas na conta de programador, só no dev
+  build (o Expo Go não o tem; REST para o Android) e **também pede crédito, mais pesado**: a marca " Weather" e a ligação às fontes
+  (developer.apple.com/weatherkit/get-started). O MET Norway é grátis para uso comercial e só pede «Data from MET Norway»
+  (docs.api.met.no/doc/License; sem regra de sítio nem tamanho). **Fica o MET Norway, com o crédito.** A antiga "voz" do Início
+  (`data/stateVoice.js`, chuva/frio antes do report) já não aparece em nenhum ecrã. Esboço `design/meteo-inicio.html` (sem imagens
+  do Nuno sobre tempo; Mobbin CLEAR, Air NZ, Fly Delta): M1 no cartão do sítio, à hora que conta (a base à hora do report no
+  cartão do dia; a cidade da pernoita no cartão da pernoita; o destino à chegada em voo; a pernoita fica no topo, à hora do report)
+  — recomendada · M2 um facto do topo (em voo já não cabe) · M3 um cartão do tempo. Em todas: "°C", a hora que interessa e o
+  crédito "Meteorologia: MET Norway". Não nas folgas, férias, baixa nem standby (a app do tempo do telemóvel já o faz).
+  **O Nuno escolheu a M1 e perguntou se há outra grátis sem crédito.** Visto: Open-Meteo grátis só NÃO comercial e CC BY 4.0 mesmo
+  pago (open-meteo.com/en/terms) · NOAA GFS é domínio público (CC0; o crédito é pedido, não exigido — registry.opendata.aws/noaa-gfs-pds)
+  mas são ficheiros do modelo em bruto (GRIB/netCDF): teríamos de montar e pagar um serviço só para os ler, e é mais grosseiro para a
+  Europa · Pirate Weather (dados da NOAA, 10 000 pedidos/mês) não publica termos de uso comercial nem de crédito — não serve · o
+  WeatherKit pede mais (marca + ligação) · o telemóvel não dá a meteorologia a outras apps. **Fica o MET Norway com a linha do crédito.**
+  **M1 CONSTRUÍDA (por ver no iPhone; por gravar):** golden primeiro — `test:wx` (`wxAt`: a entrada da série mais perto da hora,
+  até 3 h; mais longe → nada) e `test:homecards` ("a meteorologia": a véspera e o antes do report com o tempo da base à hora do
+  report no cartão do dia; a pernoita com o tempo da cidade à chegada; em voo o destino à chegada; a pernoita com o facto à hora do
+  report, "8 °C · às 14:05 · chuva"; o crédito sempre que há tempo; nada nas folgas, férias, baixa, standby, fecho e vazia; o inglês)
+  · `data/weather.js`: `wxAt` · `data/homeCards.js`: `H.wx = { report, arrival, night }` → `card.wx` (ícone + texto), a cauda do
+  cartão da pernoita, o facto da pernoita e `credit` (saiu o `wxTmw`, a máxima de amanhã) · `HomeCards`: a linha do tempo no cartão
+  grande · `HomeScreen`: até três pedidos (a partida à hora do report pelo fuso do aeroporto, `airportUtcMs`; o destino do setor nas
+  fases em terra e no ar — pede-se em terra; a cidade da pernoita à chegada) e o crédito por baixo dos cartões. Testes todos ·
+  guardião · pacote iOS gera. **Por ver no iPhone:** em voo, o tempo só aparece se veio antes de descolar (sem rede, nada se inventa);
+  a hora de chegada do setor usa a hora do telemóvel (±1 h num destino com outro fuso — chega para o tempo hora a hora).
+  **O Nuno: "o topo não estou a gostar. gostava de como estava antes, num lado esquerdo e outro no lado direito. mas temos que ver
+  como ajustar."** Medido (métricas da app, todos os estados): lado a lado com o MESMO tamanho nas três abas e os factos de hoje → 36
+  (32 a 375; o € do ano). Sem factos no topo dos Números: duas linhas grandes com o fio 62 (58); com os quadradinhos ao lado 50 (46,
+  a Escala trava); uma linha grande + a 2.ª pequena com os quadradinhos 66 (60, o standby trava). Esboço `design/topo-lado.html`:
+  L3 uma linha grande a 66, a 2.ª pequena ("LIS · report 04:15 UTC", "serviços", "estimado"), factos à direita com os quadradinhos,
+  topo 210 (recomendada) · L1 como antes, tudo a 62 com o fio, 236 · L2 cada aba no seu tamanho (86 · 62 · 82), a folha no mesmo
+  sítio, 279. Em todas, os Números só com o total no topo (o "acima da base" e as horas vão para o "De onde vem"). **Por escolher.**
+  O código continua com a H1 (factos por baixo, 82) até à escolha.
+  **O Nuno escolheu a L2 e logo a seguir "L1, afinal" — L1 CONSTRUÍDA (por ver no iPhone; por gravar):** golden primeiro
+  (`test:homecards`, "o topo lado a lado e igual nas três abas": o tamanho comum 62 a 390 e 58 a 375; os 18 estados do Início em
+  português e em inglês, a Escala e os Números no comum com os factos ao lado; o 3.º facto Zulu cabe ao lado) · `data/homeCards.js`:
+  `GIANT_REFS` (os topos mais compridos: a Escala com "serviços" e 4 999,99 € de per diem, em PT e EN, e o € do ano dos Números sem
+  factos), `fitGiant` volta a medir com os factos ao lado (`factsWidth`), `commonGiant`/`topGiant` sem língua, `GIANT.min` 40; os
+  factos deixam de ter tipo e ícone (os quadradinhos da A saem do topo: não cabem ao lado na Escala) e o `psvFact` saiu; em inglês, o
+  ecrã antes de ligar a escala diz "Link" (o "Connect" só cabia a 52) · `HomeTop` volta ao lado a lado com o fio · Escala: o per
+  diem a verde, sem quadradinhos · Números: o topo só com o total (em € e em horas); o "acima da base" é a última linha do "De onde
+  vem" e, com a base incerta, "O total fica entre X e Y" é a primeira; as horas e os voos estão na linha "Voo", o limite mais cheio
+  no "Limites · agora". Testes todos · guardião · pacote iOS gera.
   **Também gravado nesta ronda:** a centragem dos números nos círculos (`s.numTxt`, acima) e os esboços `janelas-3.html`,
   `janelas-c.html` e `botoes-escritos.html`.
   **E o Nuno: "depois vê os botões das notificações, o X para fechar e o de sincronizar — não estão com o layout novo, pois não?"**

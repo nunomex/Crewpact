@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · Os factos do topo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* OS FACTOS DO TOPO (2026-11-14). Com a H1 de design/topo-igual.html (o topo igual nas três abas, o número a 82), os dois factos
+   ficaram numa fila por baixo, com o fio à esquerda. O Nuno: "podias ver outra maneira de metê-los? algo diferente? mais apelativo?"
+   Imagens do Nuno (referencias/Para a app/README): 3440 (o subvalor numa pílula com o ícone num círculo) · 3424 (o rótulo em cima, o
+   número em baixo) · 3412 e 3442 (o ícone num círculo branco dentro do cartão) · 3409 e 3431 (o quadradinho com a cor do tipo).
+   Mobbin: Orb Social e Satispay (dois mosaicos: rótulo, valor, ícone) · Shopee e GoHenry (uma régua dividida ao meio, rótulo em
+   cima) · Kit (cada valor ao lado de um quadradinho de cor). A cor segue o mapa B (docs/design-system.md §14): o que é da escala
+   leva a cor do tipo (voo azul, repouso salva), o dinheiro o verde, o tempo e as contagens ficam neutros. */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+.lead{max-width:940px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)} .lead a{color:var(--pfg)}
+.opt{display:flex;flex-direction:column;gap:10px}
+.opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:var(--muted);max-width:900px} .opt > p b{color:var(--pfg)}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.row{display:flex;flex-wrap:wrap;gap:20px}
+.cap{font-size:12px;font-weight:700;color:var(--muted);margin:0 0 6px 6px} .cap b{color:#C2410C}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:940px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card2 li{font-size:13px;line-height:1.5;color:var(--muted)} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:var(--pfg)}
+
+.ph{display:flex;flex-direction:column;width:406px;height:540px;border:8px solid #04060A;border-radius:52px 52px 0 0;border-bottom:0;overflow:hidden;position:relative;background:#E3E1DB;color:#141414;max-width:100%}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.topA{padding:0 20px 32px;flex:none}
+.pills{display:flex;align-items:center;gap:8px;min-height:68px;padding:8px 0 16px}
+.pl{height:38px;padding:0 16px;border-radius:19px;border:1.5px solid #141414;display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:13px;white-space:nowrap}
+.pl.ink{background:#141414;color:#E3E1DB} .pl.ink i{width:7px;height:7px;border-radius:4px;background:#F0854A;display:block}
+.bell{width:44px;height:44px;border-radius:22px;background:rgba(127,127,127,.22);margin-left:auto;display:flex;align-items:center;justify-content:center}
+.ml{margin-left:auto}
+.seg{display:inline-flex;background:rgba(127,127,127,.22);border-radius:19px;padding:3px;height:38px;align-items:center;margin-left:auto}
+.seg span{padding:0 14px;height:32px;border-radius:16px;display:flex;align-items:center;font-weight:700;font-size:13px;color:#3A3A36}
+.seg span.on{background:#141414;color:#E3E1DB}
+.what{font-weight:500;font-size:15px;line-height:20px;color:#3A3A36}
+.g{font-weight:700;white-space:nowrap;margin-top:4px}
+.g .l1{display:flex;align-items:baseline}
+.g small{font-size:34px;letter-spacing:-1px;margin-left:6px}
+.g .grey{color:rgba(20,20,20,.5)}
+.ic{display:block;fill:currentColor}
+.gain{color:#0B6E43}
+.sheetN{flex:1;background:#fff;border-radius:32px 32px 0 0;padding:16px 12px 0;position:relative}
+.sheetN::before{content:'';position:absolute;left:-8px;right:-8px;top:0;border-top:2px dashed #C2410C}
+.cardB{border-radius:24px;padding:16px;height:170px;display:flex;flex-direction:column;gap:10px}
+.kd{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8)}
+.ct{font-weight:800;font-size:22px;line-height:26px}
+.stack{display:flex;height:14px;border-radius:7px;overflow:hidden;gap:2px} .stack i{display:block;height:100%}
+.month{display:grid;grid-template-columns:repeat(7,1fr);gap:8px 4px;padding:4px 6px}
+.month span{font-weight:700;font-size:11px;color:#5E5E57;text-align:center}
+.month i{display:block;width:38px;height:38px;border-radius:19px;margin:0 auto;border:3px solid #6DBEFA}
+.month i.r{border-color:#B4C2A2} .month i.o{border-color:#E4E2DC}
+.fv{display:block;font-weight:700;font-size:20px;line-height:22px;white-space:nowrap}
+.fl{display:block;font-weight:500;font-size:11px;line-height:15px;color:#3A3A36;white-space:nowrap}
+
+/* Hoje (referência): a fila com o fio */
+.f0{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.f0 > div{border-left:1.5px solid #141414;padding-left:12px;min-width:0}
+/* F1: dois mosaicos brancos com o ícone num círculo */
+.f1{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
+.f1 > div{background:#fff;border-radius:20px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.f1 .cr{width:30px;height:30px;border-radius:15px;background:#E3E1DB;display:flex;align-items:center;justify-content:center}
+/* F2: a régua dividida ao meio, o rótulo em cima */
+.f2{display:grid;grid-template-columns:1fr 1fr;margin-top:16px;background:rgba(127,127,127,.18);border-radius:20px;padding:12px 0}
+.f2 > div{padding:0 16px;min-width:0} .f2 > div + div{border-left:1px solid rgba(20,20,20,.18)}
+.f2 .kl{display:block;font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.7);margin-bottom:4px;white-space:nowrap}
+/* F3: um quadradinho com a cor do tipo por facto */
+.f3{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.f3 > div{display:flex;align-items:center;gap:10px;min-width:0}
+.f3 .sq{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:none}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>Os factos do topo</h1>
+    <p>Com a H1 (o topo igual nas três abas, o número a 82), os dois factos ficaram numa fila por baixo do número, com o fio à esquerda (a referência, em baixo). Aqui ficam três maneiras mais apelativas, cada uma nas três abas. <b>As tuas imagens:</b> 3440 (o subvalor numa pílula com o ícone num círculo), 3424 (o rótulo em cima, o número em baixo), 3412 e 3442 (o ícone num círculo branco dentro do cartão), 3409 e 3431 (o quadradinho com a cor do tipo). <b>Mobbin:</b> <a href="https://mobbin.com/screens/913535a0-3a5f-4562-b224-982651a3320e">Orb Social</a> e <a href="https://mobbin.com/screens/ce177872-c7d1-4652-9e16-73d84b649ec4">Satispay</a> (dois mosaicos com rótulo, valor e ícone), <a href="https://mobbin.com/screens/71277687-5000-4da7-a0b4-ac53fb7bd2c1">Shopee</a> e <a href="https://mobbin.com/screens/94c2596d-e167-41d3-81c2-4992ccda2db6">GoHenry</a> (uma régua dividida ao meio), <a href="https://mobbin.com/screens/c8ea1570-3987-42ea-9b0c-6d176a8f6d4f">Kit</a> (cada valor ao lado de um quadradinho de cor).</p>
+    <p><b>As cores seguem o mapa B:</b> o que é da escala leva a cor do tipo (voo azul, repouso salva), o dinheiro leva o verde, e o tempo e as contagens ficam neutros. A <span style="color:#C2410C;font-weight:700">linha tracejada</span> marca onde começa a folha; por cima de cada telemóvel, a altura do topo.</p>
+  </div>
+  <div id="opts" style="display:flex;flex-direction:column;gap:36px"></div>
+  <div class="card2"><h3>A minha recomendação: F3</h3><ul>
+    <li><b>F3</b> fala a língua que a app já tem: o quadradinho com a cor do tipo é o das linhas da Escala, das notificações e do "De onde vem". Diz o tipo de relance (azul = voo, salva = repouso, verde = dinheiro), sem mais caixas no topo. É também o que menos cresce.</li>
+    <li><b>F1</b> é a mais "widget": dois mosaicos brancos com o ícone num círculo (Orb, Satispay, 3440). Destaca bem, mas são mais duas caixas brancas mesmo por cima da folha branca, e o topo fica mais alto.</li>
+    <li><b>F2</b> é a mais arrumada: uma régua cinzenta dividida ao meio, com o rótulo em cima em maiúsculas pequenas (Shopee, 3424). É sóbria, mas é a que menos muda em relação a hoje.</li>
+    <li>Em todas: cada facto passa a ter um tipo (voo, repouso, dinheiro ou neutro) e um ícone, escolhidos no código que decide o topo e trancados no golden; o € nunca se corta; o topo continua igual nas três abas.</li></ul></div>
+</div>
+<script>
+var Z = 82;
+var P = { plane:'<path d="M21 15.5v-2l-8-5V3.6a1.5 1.5 0 0 0-3 0V8.5l-8 5v2l8-2.5V18l-2 1.5V21l3.5-1 3.5 1v-1.5L13 18v-5z"/>',
+  clock:'<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2.2a7.8 7.8 0 1 1 0 15.6 7.8 7.8 0 0 1 0-15.6zM11 6.5v6.1l4.6 2.8 1-1.7-3.6-2.1V6.5z"/>',
+  shield:'<path d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5l-8-3zm0 2.2 6 2.3V11c0 4-2.6 7.7-6 8.8-3.4-1.1-6-4.8-6-8.8V6.5l6-2.3z"/>',
+  bed:'<path d="M3 6h2v7h7V8h6a3 3 0 0 1 3 3v7h-2v-2H5v2H3V6zm5 1.5A2.5 2.5 0 1 1 8 12.5a2.5 2.5 0 0 1 0-5z"/>',
+  eur:'<path d="M15 4.5c-3.2 0-5.9 2-6.9 4.9H5.5v1.8h2.2a7 7 0 0 0 0 1.6H5.5v1.8h2.6c1 2.9 3.7 4.9 6.9 4.9 1.5 0 2.9-.4 4-1.2l-.9-1.7c-.9.6-1.9.9-3.1.9-2.2 0-4.1-1.3-5-3H15v-1.7H9.3a5.5 5.5 0 0 1 0-1.6H15V9.4h-5c.9-1.8 2.8-3 5-3 1.2 0 2.2.3 3.1.9l.9-1.7a7.3 7.3 0 0 0-4-1.1z"/>' };
+function ic(n, s, c){ return '<svg class="ic" width="' + s + '" height="' + s + '" viewBox="0 0 24 24"' + (c ? ' style="color:' + c + '"' : '') + '>' + P[n] + '</svg>'; }
+// k = o tipo do facto: voo · repouso · dinheiro · neutro (o mapa B)
+var KC = { voo: '#6DBEFA', rep: '#B4C2A2', din: '#0B6E43', neu: '#F1EFEA' };
+var INI = { tab: 'Início', pills: '<span class="pl ink"><i></i>Hoje</span><span class="pl">EJU7601</span><span class="bell">' + ic('clock', 18) + '</span>', what: 'Report às', l1: '05:15', unit: '', l2: 'LIS', grey: false,
+  f: [{ v: '1 h 40', l: 'falta', ic: 'clock', k: 'neu' }, { v: '17:00', l: 'PSV até', ic: 'shield', k: 'voo' }],
+  sheet: '<div class="cardB" style="background:#6DBEFA"><span class="kd">Dia de serviço · 3 setores</span><span class="ct">LIS → FNC → LIS → OPO</span></div>' };
+var ESC = { tab: 'Escala', pills: '<span class="pl">Novembro 2026 ▾</span><span class="pl ml">Sincronizar</span>', what: 'A tua escala de novembro', l1: '11', unit: '', l2: 'serviços', grey: true,
+  f: [{ v: '6', l: 'pernoitas', ic: 'bed', k: 'rep' }, { v: '1 732,80 €', l: 'per diem · estimado', ic: 'eur', k: 'din' }],
+  sheet: '<div class="month">' + ['S','T','Q','Q','S','S','D'].map(function(d){ return '<span>' + d + '</span>'; }).join('') + [1,0,1,2,1,0,2,1,1,0,1,2,0,1].map(function(k){ return '<i class="' + (k === 0 ? 'o' : k === 2 ? 'r' : '') + '"></i>'; }).join('') + '</div>' };
+var NUM = { tab: 'Números', pills: '<span class="pl">Novembro 2026 ▾</span><span class="seg"><span class="on">Mês</span><span>Ano</span></span>', what: 'Ganhos brutos de novembro', l1: '15 137', unit: ',64 €', l2: 'estimado', grey: true,
+  f: [{ v: '+5 170,12 €', l: 'acima da base', ic: 'eur', k: 'din' }, { v: '78,5 h', l: 'de voo · 12 setores', ic: 'plane', k: 'voo' }],
+  sheet: '<div class="cardB" style="background:#F1EFEA"><span class="kd">De onde vem</span><div class="stack"><i style="flex:5059;background:#141414"></i><i style="flex:1733;background:#6DBEFA"></i><i style="flex:182;background:#B4C2A2"></i><i style="flex:60;background:#C3A1BE"></i></div></div>' };
+function giant(d){
+  var z = Z, lh = Math.round(z * 1.1), tr = Math.round(z * 0.1), st = 'font-size:' + z + 'px;line-height:' + lh + 'px;letter-spacing:' + (z * -0.046).toFixed(2) + 'px';
+  return '<div class="g" style="margin-bottom:-' + tr + 'px"><div class="l1" style="margin-top:-' + tr + 'px"><span style="' + st + '">' + d.l1 + '</span>' + (d.unit ? '<small>' + d.unit + '</small>' : '') + '</div>'
+    + '<div class="' + (d.grey ? 'grey' : '') + '" style="' + st + ';margin-top:-' + Math.round(z * 0.2) + 'px">' + d.l2 + '</div></div>';
+}
+var vcls = function(f){ return 'fv' + (f.k === 'din' ? ' gain' : ''); };
+var F0 = function(d){ return '<div class="f0">' + d.f.map(function(f){ return '<div><span class="' + vcls(f) + '">' + f.v + '</span><span class="fl">' + f.l + '</span></div>'; }).join('') + '</div>'; };
+var F1 = function(d){ return '<div class="f1">' + d.f.map(function(f){ return '<div><span class="cr">' + ic(f.ic, 16, f.k === 'din' ? '#0B6E43' : '#141414') + '</span><div><span class="' + vcls(f) + '">' + f.v + '</span><span class="fl">' + f.l + '</span></div></div>'; }).join('') + '</div>'; };
+var F2 = function(d){ return '<div class="f2">' + d.f.map(function(f){ return '<div><span class="kl">' + f.l + '</span><span class="' + vcls(f) + '">' + f.v + '</span></div>'; }).join('') + '</div>'; };
+var F3 = function(d){ return '<div class="f3">' + d.f.map(function(f){ var fg = f.k === 'din' ? '#fff' : '#141414'; return '<div><span class="sq" style="background:' + KC[f.k] + '">' + ic(f.ic, 20, fg) + '</span><div style="min-width:0"><span class="' + vcls(f) + '">' + f.v + '</span><span class="fl">' + f.l + '</span></div></div>'; }).join('') + '</div>'; };
+function frame(d, facts){
+  return '<div class="ph"><div class="status"><span>09:41</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>'
+    + '<div class="topA"><div class="pills">' + d.pills + '</div><div class="what">' + d.what + '</div>' + giant(d) + facts(d) + '</div>'
+    + '<div class="sheetN">' + d.sheet + '</div></div>';
+}
+var O = [['F3 · Um quadradinho de cor por facto', true, 'Cada facto ao lado de um <b>quadradinho com a cor do tipo</b> e o ícone (Kit; 3409 e 3431): o mesmo quadradinho das linhas da Escala, das notificações e do "De onde vem". Azul = voo, salva = repouso, verde = dinheiro, claro = tempo e contagens.', F3],
+         ['F1 · Dois mosaicos brancos', false, 'Cada facto num <b>mosaico branco</b>, com o ícone num círculo em cima, o valor e o rótulo (Orb Social, Satispay; 3440, 3412).', F1],
+         ['F2 · A régua dividida', false, 'Os dois factos numa <b>régua cinzenta dividida ao meio</b>, com o rótulo em cima em maiúsculas pequenas e o valor por baixo (Shopee, GoHenry; 3424).', F2],
+         ['Referência · hoje (a fila com o fio)', false, 'Como ficou com a H1: o valor e o rótulo, com o fio a tinta à esquerda.', F0]];
+document.getElementById('opts').innerHTML = O.map(function(o){
+  return '<div class="opt"><h3>' + o[0] + (o[1] ? '<span class="rec">RECOMENDO</span>' : '') + '</h3><p>' + o[2] + '</p><div class="row">'
+    + [INI, ESC, NUM].map(function(d){ return '<div><div class="cap">' + d.tab + ' · <b class="hh"></b></div>' + frame(d, o[3]) + '</div>'; }).join('') + '</div></div>';
+}).join('');
+document.fonts.ready.then(function(){ document.querySelectorAll('.ph').forEach(function(ph){
+  ph.parentNode.querySelector('.hh').textContent = 'topo ' + Math.round(ph.querySelector('.topA').getBoundingClientRect().height);
+}); });
+</script>
+</body>
+</html>

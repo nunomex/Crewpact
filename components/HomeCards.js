@@ -39,6 +39,8 @@ function GainChip({ text }) {
 // ── O TOPO ──
 // `rightW` = a largura do que está à direita (o sino, 44; ou a pílula "Exemplo · sair").
 // compact: só a fila das pílulas (a Escala com um dia aberto — a semana fica em cima e a folha do dia sobe por baixo).
+// O TOPO LADO A LADO E IGUAL NAS TRÊS ABAS (L1 de design/topo-lado.html, 2026-11-14): o número em duas linhas à esquerda, no
+// tamanho comum (`topGiant` de data/homeCards.js — 62 a 390, 58 a 375), e os factos à direita, com o fio a tinta.
 export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l, compact = false }) {
   const { width: winW } = useWindowDimensions();
   const AL = a11yLang(l);
@@ -88,11 +90,11 @@ export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l, compact 
             <Text style={[giantStyle, { color: g.l2Grey ? C.grey : C.ink, marginTop: -Math.round(size * (GIANT_LINE.lh - GIANT_LINE.lead)) }]} numberOfLines={1} allowFontScaling={false}>{g.l2}</Text>
           ) : null}
         </View>
-        {top.facts ? (
+        {top.facts && top.facts.length ? (
           <View style={[s.side, { borderLeftColor: C.ink }]}>
             {top.facts.map((f) => (
               <View key={`${f.v}-${f.l}`}>
-                <Text style={[TXT3.fact, { color: f.tone === 'gain' ? C.gainOut : C.ink }, f.tone === 'was' ? s.was : null]} numberOfLines={1} allowFontScaling={false}>{f.v}</Text>
+                <Text style={[TXT3.fact, { color: f.tone === 'gain' ? C.gainOut : C.ink }, f.tone === 'was' ? s.was : null]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} allowFontScaling={false}>{f.v}</Text>
                 <Text style={[TXT3.factLbl, { color: C.soft }]} numberOfLines={1} allowFontScaling={false}>{f.l}</Text>
               </View>
             ))}
@@ -108,7 +110,7 @@ function BigCard({ c, C, onOpen, l }) {
   const AL = a11yLang(l);
   const T = toneOf(C, c.color);
   const legsA11y = Array.isArray(c.legs) ? c.legs.map((g) => [g.fno, `${g.a.l} ${g.a.v}`, g.dur, `${g.b.l} ${g.b.v}`, g.z, g.gap].filter(Boolean).join(', ')) : [];
-  const a11y = [c.kind, c.title, c.sub, c.gain, ...legsA11y, c.a && `${c.a.l} ${c.a.v}`, c.dur, c.b && `${c.b.l} ${c.b.v}`].filter(Boolean).join('. ');
+  const a11y = [c.kind, c.title, c.sub, c.gain, c.wx && c.wx.txt, ...legsA11y, c.a && `${c.a.l} ${c.a.v}`, c.dur, c.b && `${c.b.l} ${c.b.v}`].filter(Boolean).join('. ');
   const Main = c.open ? TouchableOpacity : View;
   const mainProps = c.open
     ? { activeOpacity: 0.85, onPress: () => onOpen(c.open), accessibilityRole: 'button', accessibilityLanguage: AL, accessibilityLabel: a11y, accessibilityHint: l('Abre o detalhe', 'Opens the detail') }
@@ -128,6 +130,13 @@ function BigCard({ c, C, onOpen, l }) {
           <View style={s.subRow}>
             <Text style={[TXT3.cardSub, s.subTxt, { color: T.sub }]} numberOfLines={2} maxFontSizeMultiplier={MAX_SCALE}>{c.sub || ''}</Text>
             {c.gain ? <GainChip text={c.gain} /> : null}
+          </View>
+        ) : null}
+        {/* o tempo do sítio, à hora que conta (M1 de design/meteo-inicio.html) */}
+        {c.wx ? (
+          <View style={s.wxRow}>
+            {c.wx.ic ? <Icon name={c.wx.ic} size={16} color={T.fg} /> : null}
+            <Text style={[TXT3.cardSub, s.subTxt, { color: T.fg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.wx.txt}</Text>
           </View>
         ) : null}
         {Array.isArray(c.legs) && c.legs.length ? <Legs legs={c.legs} T={T} /> : null}
@@ -316,8 +325,9 @@ const s = StyleSheet.create({
   pillOut: { backgroundColor: 'transparent' },
   pillDot: { width: 7, height: 7, borderRadius: RADIUS.pill },
   grow: { flex: 1 },
-  hero: { flexDirection: 'row', alignItems: 'stretch', gap: SPACE.lg, marginTop: SPACE.xs },
   l1Row: { flexDirection: 'row', alignItems: 'baseline' },
+  // o número à esquerda e os factos à direita, com o fio (16 entre eles — GIANT.gap; 16 de recuo — GIANT.sidePad)
+  hero: { flexDirection: 'row', alignItems: 'stretch', gap: SPACE.lg, marginTop: SPACE.xs },
   side: { borderLeftWidth: 1.5, paddingLeft: SPACE.lg, justifyContent: 'center', gap: SPACE.md, flexShrink: 1, minWidth: 0 },
   was: { textDecorationLine: 'line-through', opacity: 0.5 },
 
@@ -331,6 +341,7 @@ const s = StyleSheet.create({
   goStatic: { position: 'relative', top: 0, right: 0 },
   subRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.md, marginTop: -SPACE.sm, minHeight: 28 },
   subTxt: { flex: 1, minWidth: 0 },
+  wxRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.s, marginTop: -SPACE.xs },
   chip: { height: 28, paddingHorizontal: SPACE.md, borderRadius: RADIUS.pill, backgroundColor: CARD.chip, flexDirection: 'row', alignItems: 'center', flexShrink: 0 },
   cdRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: SPACE.sm },
   cdEnd: { flexShrink: 1, minWidth: 0 },

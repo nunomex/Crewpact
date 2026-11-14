@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · Os Números no aspeto novo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* OS NÚMEROS NO ASPETO NOVO (2026-11-14). O ecrã ainda era 2.0: um "mostrador" de percentagens à volta do total, três mosaicos
+   (Segurança em %, Voo, Corpo) e notas soltas; as folhas com barras em PERCENTAGEM. Imagens do Nuno (referencias/Para a app/README):
+   o € do mês numa barra empilhada das parcelas, cêntimos mais pequenos, nunca abreviar (3421 · 3449 · 3433 · 3440 · 3441) · o limite
+   com barra: valor, máximo pequeno, barra, "faltam" — sem percentagem (3408 · 3415 · 3428 · 3431 · 3441 · 3462) · o ano em meses
+   (3407 · 3411 · 3439) · seletor com pílula (3412 · 3434) · movimentos (3431) · número em duas linhas (3424). Mobbin: Lloyds
+   (Breakdown), Turo, Ubank, Monarch. Três maneiras: N1 o topo do Início + cartões · N2 a barra como herói · N3 os movimentos.
+   Dados de TESTE (inventados): primeiro-oficial easyJet, base Lisboa, novembro de 2026; base 5 059,26 € e setor 45,60 € (BTE 29/2026). */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+.lead{max-width:940px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px} .lead h2{font-weight:800;font-size:22px;margin-top:6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,406px),406px));gap:26px 24px;justify-content:center}
+.opt{display:flex;flex-direction:column;gap:10px;min-width:0}
+.opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:var(--muted);min-height:76px} .opt > p b{color:var(--pfg)}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:940px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card2 li{font-size:13px;line-height:1.5;color:var(--muted)} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:var(--pfg)}
+.refs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:10px}
+.refs div{background:#fff;border:1px solid #D6D4CD;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.4;color:var(--muted)} .refs b{color:var(--pfg)}
+
+.ph{width:406px;height:860px;border:8px solid #04060A;border-radius:52px;overflow:hidden;position:relative;background:#BDBBB5;
+  --desk:#E3E1DB;--ink:#141414;--soft:#3A3A36;--sheet:#FFFFFF;--neutral:#F1EFEA;--voo:#6DBEFA;--terra:#C3A1BE;--rest:#B4C2A2;--alert:#F0854A;--stop:#EC7A6C;--gain:#0B6E43;
+  --tsub:#5E5E57;--round:rgba(127,127,127,.22);--rule:rgba(127,127,127,.25);color:var(--ink)}
+.status{height:47px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.behind{position:absolute;left:10px;right:10px;top:47px;height:30px;border-radius:14px 14px 0 0;background:#D2D0CA}
+.sh{position:absolute;left:0;right:0;top:58px;bottom:0;background:var(--sheet);border-radius:14px 14px 0 0;display:flex;flex-direction:column}
+.grab{display:flex;justify-content:center;padding:7px 0 3px} .grab i{width:36px;height:5px;border-radius:3px;background:rgba(127,127,127,.35)}
+.body{flex:1;overflow:hidden;padding:4px 12px 20px;display:flex;flex-direction:column;gap:8px}
+.ic{display:inline-block;flex:none;fill:currentColor}
+/* os ✕ */
+.xA{width:44px;height:44px;border-radius:22px;background:var(--round);display:flex;align-items:center;justify-content:center;flex:none}
+.xB{width:30px;height:30px;border-radius:15px;background:var(--round);display:flex;align-items:center;justify-content:center;flex:none}
+.xC{height:38px;padding:0 16px;border-radius:19px;border:1.5px solid var(--ink);display:inline-flex;align-items:center;font-weight:700;font-size:13px;flex:none}
+/* cabeçalhos */
+.hA{display:flex;align-items:flex-start;gap:12px;padding:6px 16px 10px} .hA .t{flex:1} .hA .k{display:block;font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub)} .hA h4{font-weight:800;font-size:22px;line-height:26px;letter-spacing:-.4px;margin-top:2px}
+.hB{display:flex;align-items:center;justify-content:center;position:relative;padding:8px 16px 12px} .hB h4{font-weight:800;font-size:16px} .hB .xB{position:absolute;right:14px;top:4px}
+.hC{display:flex;align-items:center;gap:12px;padding:8px 16px 12px} .hC h4{flex:1;font-weight:800;font-size:26px;letter-spacing:-.5px}
+/* A · cartões neutros */
+.cA{background:var(--neutral);border-radius:22px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.cA .kk{display:flex;align-items:center;gap:6px;font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub)} .cA .kk i{width:8px;height:8px;border-radius:4px;background:var(--alert)}
+.cA b.tt{font-weight:800;font-size:16px;line-height:20px} .cA span.sb{font-weight:500;font-size:12px;line-height:16px;color:var(--soft)}
+.chg{display:flex;align-items:center;gap:8px;font-weight:600;font-size:12px} .chg s{text-decoration:line-through;color:var(--tsub)}
+.pl{height:22px;padding:0 9px;border-radius:11px;font-weight:800;font-size:11px;display:inline-flex;align-items:center;flex:none}
+.pl.new{background:#DCEFFD} .pl.chg2{background:#FCE1D2} .pl.cx{background:#FAD9D4}
+.dark{background:var(--ink);color:#fff;border-radius:18px;padding:12px 14px;display:flex;align-items:center;gap:10px} .dark .t{flex:1} .dark b{display:block;font-weight:800;font-size:15px} .dark span{font-size:12px;opacity:.75}
+.go{width:30px;height:30px;border-radius:15px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;flex:none}
+.cap{font-weight:500;font-size:12px;color:var(--tsub);text-align:center;padding:6px 0}
+.lnA{display:flex;align-items:center;gap:10px;padding:10px 2px;border-top:1px solid var(--rule)} .lnA:first-of-type{border-top:0} .lnA .t{flex:1} .lnA b{display:block;font-weight:700;font-size:15px} .lnA span{font-size:12px;color:var(--tsub)}
+/* B · linhas finas na cor do tipo */
+.sl{border-radius:22px;padding:12px 16px;display:flex;align-items:center;gap:12px;min-height:56px}
+.sl .t{flex:1;min-width:0} .sl .t b{display:block;font-weight:800;font-size:16px;line-height:20px} .sl .t span{display:block;font-weight:500;font-size:12px;line-height:16px;opacity:.82}
+.sl.alert{background:var(--alert)} .sl.voo{background:var(--voo)} .sl.neutral{background:var(--neutral)} .sl.dk{background:var(--ink);color:#fff}
+.sl .go2{width:30px;height:30px;border-radius:15px;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;flex:none} .sl.neutral .go2{background:rgba(127,127,127,.18)} .sl.dk .go2{background:rgba(255,255,255,.22)}
+.sl .tm{font-weight:700;font-size:11px;opacity:.75;white-space:nowrap}
+.secB{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub);padding:8px 4px 0}
+/* os acertos */
+.dch{display:flex;flex-direction:column;gap:6px;margin:-4px 0 4px 48px}
+.dch div{display:flex;align-items:center;gap:8px;font-weight:600;font-size:12px} .dch s{text-decoration:line-through;color:var(--tsub)}
+.big{height:54px;border-radius:18px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;font-size:16px;flex:none;margin-top:auto}
+.sec{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub);padding:10px 4px 2px}
+.lC.dkr{background:var(--ink);color:#fff;border-radius:18px;padding:12px;border-top:0;margin-bottom:6px} .lC.dkr .t span{color:rgba(255,255,255,.75)} .lC.dkr .sq{background:rgba(255,255,255,.18)!important;color:#fff}
+.lC.open{background:var(--neutral);border-radius:18px;padding:12px;border-top:0;flex-wrap:wrap}
+.lC.open .dch{flex-basis:100%;margin:8px 0 0 48px}
+.grp{background:var(--neutral);border-radius:18px;padding:0 12px;flex:none} .grp .lC{border-top-color:rgba(127,127,127,.22)}
+.cap2{font-weight:500;font-size:12px;color:var(--tsub);padding:2px 4px}
+/* C · lista com o quadradinho do ícone */
+.lC{display:flex;align-items:center;gap:12px;padding:12px 4px;border-top:1px solid var(--rule);position:relative} .lC.f{border-top:0}
+.sq{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex:none;color:#141414}
+.lC .t{flex:1;min-width:0} .lC .t b{display:block;font-weight:800;font-size:15px;line-height:19px} .lC .t span{display:block;font-weight:500;font-size:12px;line-height:16px;color:var(--tsub)}
+.lC .tm{font-weight:600;font-size:11px;color:var(--tsub);align-self:flex-start;white-space:nowrap}
+.lC .nd{position:absolute;left:-6px;top:50%;width:7px;height:7px;border-radius:4px;background:var(--alert);transform:translateY(-50%)}
+.foot{display:flex;align-items:center;justify-content:center;gap:6px;font-weight:600;font-size:12px;color:var(--tsub);padding:10px 0}
+
+/* a janela de sincronizar */
+.pl.new{background:var(--voo)} .pl.chg2{background:var(--alert)} .pl.cx{background:var(--stop)}   /* as pílulas sólidas, como as que já estão nas notificações */
+.lead2{font-weight:500;font-size:12px;line-height:16px;color:var(--tsub);padding:0 4px 4px}
+.lC .eur{font-weight:700;font-size:15px;color:var(--gain);white-space:nowrap}
+.lC .fix{font-weight:800;font-size:13px;white-space:nowrap}
+.lC .t s{display:block;font-weight:600;font-size:12px;line-height:16px;color:var(--tsub);text-decoration:line-through}
+.chk{width:24px;height:24px;border-radius:12px;border:1.5px solid var(--ink);flex:none}
+.link{font-weight:700;font-size:12px;color:var(--tsub);text-align:center;padding:6px 0;text-decoration:underline;text-underline-offset:3px}
+.foot2{display:flex;align-items:center;justify-content:center;gap:6px;font-weight:600;font-size:12px;color:var(--tsub);padding:4px 0 8px}
+/* R2 · a data grande */
+.mo{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub);padding:6px 4px 0}
+.dR{display:flex;align-items:center;gap:12px;padding:10px 4px;border-top:1px solid var(--rule)} .dR.f{border-top:0}
+.dd{width:44px;flex:none;display:flex;flex-direction:column;align-items:center} .dd b{font-weight:800;font-size:26px;line-height:28px;letter-spacing:-.5px} .dd span{font-weight:700;font-size:11px;color:var(--tsub)}
+.dR .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px} .dR .t b{font-weight:800;font-size:15px;line-height:19px} .dR .t span{font-weight:500;font-size:12px;line-height:16px;color:var(--tsub)} .dR .t s{font-weight:600;font-size:12px;color:var(--tsub)}
+.dR .eur{font-weight:700;font-size:15px;color:var(--gain);white-space:nowrap}
+.strip{background:var(--neutral);border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:10px;font-weight:700;font-size:13px}
+.strip i{width:22px;height:22px;border-radius:7px;background:var(--alert);display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:800;font-size:13px;flex:none}
+/* R3 · o resumo primeiro */
+.sum{background:var(--neutral);border-radius:22px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.nums{display:flex;gap:8px} .nums div{flex:1;display:flex;flex-direction:column} .nums b{font-weight:800;font-size:30px;line-height:32px;letter-spacing:-.8px} .nums span{font-weight:600;font-size:11px;color:var(--tsub)}
+.sum .tot{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--rule);padding-top:8px;font-weight:600;font-size:12px;color:var(--tsub)} .sum .tot b{font-weight:800;font-size:17px;color:var(--gain)}
+.cd{border:1px solid var(--rule);border-radius:18px;padding:12px 14px;display:flex;align-items:center;gap:12px}
+.cd .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px} .cd .k{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub)} .cd b{font-weight:800;font-size:16px;line-height:20px} .cd span{font-weight:500;font-size:12px;color:var(--tsub)}
+.cd .eur{font-weight:700;font-size:15px;color:var(--gain);white-space:nowrap}
+.cd.warn{border-color:var(--alert);border-width:1.5px}
+/* o calendário */
+.dotc{width:14px;height:14px;border-radius:7px}
+.tick{width:24px;height:24px;border-radius:12px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;flex:none}
+
+
+.lst{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;scrollbar-width:none} .lst::-webkit-scrollbar{display:none}
+.body .big{margin-top:0}
+.mline{font-weight:700;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--tsub);padding:4px 4px 0 4px;opacity:.8}
+.hR{display:flex;align-items:center;gap:12px;padding:10px 4px;border-top:1px solid var(--rule)} .hR.f{border-top:0}
+.hR .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px} .hR .t b{font-weight:800;font-size:15px;line-height:19px} .hR .t span{font-weight:500;font-size:12px;line-height:16px;color:var(--tsub)} .hR .t s{font-weight:600;font-size:12px;line-height:16px;color:var(--tsub);text-decoration:line-through}
+.hR .t span.warn{color:var(--ink);font-weight:600}
+.hR .eur{font-weight:700;font-size:15px;color:var(--gain);white-space:nowrap}
+.hR .fix{font-weight:800;font-size:13px;white-space:nowrap}
+.d2{width:44px;height:48px;border-radius:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;color:#141414;position:relative} .d2 b{font-weight:800;font-size:20px;line-height:21px;letter-spacing:-.4px} .d2 span{font-weight:700;font-size:10px;line-height:12px;opacity:.82}
+/* V1 · o selo no canto */
+.bdg{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:10px;border:2px solid var(--sheet);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;color:#141414}
+/* V2 · o anel */
+.ring{box-shadow:0 0 0 2px var(--sheet),0 0 0 4.5px var(--rc)}
+/* V3 · a faixa no fundo */
+.d3{width:44px;height:52px;border-radius:13px;display:flex;flex-direction:column;flex:none;color:#141414;overflow:hidden}
+.d3 .top{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center} .d3 b{font-weight:800;font-size:19px;line-height:20px;letter-spacing:-.4px} .d3 .top span{font-weight:700;font-size:10px;line-height:11px;opacity:.82}
+.d3 .band{height:15px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:10px}
+
+.ph{height:1150px !important}   /* alongado para se ver a folha toda; no iPhone a folha desliza, como no Início */
+.sh{top:62px}
+.body{padding:2px 16px 12px;gap:10px}
+.hC h4{font-size:26px}
+.card{background:var(--neutral);border-radius:22px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.kd{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub)}
+.num{font-weight:700;font-size:34px;line-height:36px;letter-spacing:-1px}
+.num.gain{color:var(--gain)}
+.nsub{font-weight:500;font-size:12px;line-height:16px;color:var(--soft)}
+.txt{font-weight:500;font-size:14px;line-height:20px;color:var(--soft)}
+.ln{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:8px 0;border-top:1px solid var(--rule)} .ln.f{border-top:0;padding-top:2px}
+.ln span{font-weight:500;font-size:15px;line-height:20px} .ln b{font-weight:700;font-size:15px;line-height:20px;text-align:right}
+.act{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--rule);padding-top:10px;font-weight:700;font-size:14px}
+.note{font-weight:500;font-size:12px;line-height:16px;color:var(--tsub);padding:0 4px}
+.note b{color:var(--ink);font-weight:700}
+.steps{display:flex;flex-direction:column;gap:10px}
+.st{display:flex;gap:10px} .st i{width:24px;height:24px;border-radius:12px;background:var(--sheet);display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:800;font-size:12px;flex:none}
+.st p{font-weight:500;font-size:14px;line-height:20px;color:var(--soft)}
+.toprow{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.big{margin-top:auto}
+
+.ph{height:860px}
+.sh{top:150px}
+.body{padding:2px 16px 14px;gap:12px}
+.hC h4{font-size:26px}
+.stn{display:flex;align-items:center;gap:12px}
+.stq{width:44px;height:44px;border-radius:14px;background:var(--rest);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;letter-spacing:.4px;flex:none}
+.stn div b{display:block;font-weight:800;font-size:16px;line-height:20px} .stn div span{display:block;font-weight:500;font-size:12px;line-height:16px;color:var(--tsub)}
+.expl{font-weight:500;font-size:12px;line-height:16px;color:var(--tsub)}
+/* F1 · agrupados */
+.grp{background:var(--neutral);border-radius:24px;padding:4px 16px}
+.fr{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--rule)} .fr.f{border-top:0}
+.fi{width:36px;height:36px;border-radius:18px;background:var(--sheet);display:flex;align-items:center;justify-content:center;flex:none}
+.fr .t{flex:1;min-width:0} .fr .t small{display:block;font-weight:700;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--tsub)} .fr .t b{display:block;font-weight:700;font-size:16px;line-height:22px} .fr .t b.ph2{color:#9A9A92;font-weight:500}
+/* F2 · rótulo pequeno, valor grande, fio */
+.lf{padding:8px 2px 10px;border-bottom:1.5px solid var(--rule)} .lf small{display:block;font-weight:700;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--tsub)} .lf b{display:block;font-weight:700;font-size:20px;line-height:28px;letter-spacing:-.3px} .lf b.ph2{color:#9A9A92;font-weight:500}
+.lf.focus{border-bottom-color:var(--ink)}
+/* F3 · caixas */
+.bx small{display:block;font-weight:700;font-size:12px;color:var(--ink);margin:0 4px 6px} .bx div{background:var(--neutral);border-radius:16px;padding:14px 14px;font-weight:600;font-size:15px} .bx div.ph2{color:#9A9A92;font-weight:500}
+.priv{display:flex;align-items:center;justify-content:center;gap:6px;font-weight:600;font-size:12px;color:var(--tsub)}
+.big{margin-top:auto}
+
+.ph{height:900px}
+.desk{position:absolute;left:0;right:0;top:47px;bottom:0;background:#E3E1DB;display:flex;flex-direction:column}
+.topA{padding:8px 20px 14px}
+.pills{display:flex;align-items:center;gap:8px;min-height:44px}
+.pl2{height:38px;padding:0 14px;border-radius:19px;border:1.5px solid #141414;display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:13px;white-space:nowrap}
+.seg{display:inline-flex;background:rgba(127,127,127,.22);border-radius:19px;padding:3px;height:38px;align-items:center}
+.seg span{padding:0 14px;height:32px;border-radius:16px;display:flex;align-items:center;font-weight:700;font-size:13px;color:#3A3A36}
+.seg span.on{background:#141414;color:#E3E1DB}
+.what{font-weight:500;font-size:15px;color:#3A3A36;margin-top:10px}
+.giantRow{display:flex;align-items:flex-end;gap:14px;margin-top:2px}
+.giant{font-weight:700;font-size:56px;line-height:58px;letter-spacing:-2.6px;white-space:nowrap}
+.giant small{font-size:26px;letter-spacing:-.8px}
+.l2{font-weight:700;font-size:56px;line-height:52px;letter-spacing:-2.6px;color:rgba(20,20,20,.5)}
+.facts{border-left:1.5px solid #141414;padding-left:10px;display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+.facts b{display:block;font-weight:700;font-size:18px;line-height:20px;white-space:nowrap} .facts span{display:block;font-weight:500;font-size:11px;color:#3A3A36}
+.facts b.g{color:#0B6E43}
+.sheetN{flex:1;background:#fff;border-radius:32px 32px 0 0;padding:16px 16px 90px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.cardN{background:#F1EFEA;border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.kd{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8)}
+.stack{display:flex;height:14px;border-radius:7px;overflow:hidden;gap:2px}
+.stack i{display:block;height:100%}
+.ln{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:8px 0;border-top:1px solid rgba(127,127,127,.3)} .ln.f{border-top:0;padding-top:0}
+.ln .k{display:flex;align-items:center;gap:8px;font-weight:500;font-size:15px} .ln .k i{width:10px;height:10px;border-radius:3px;flex:none}
+.ln .k small{font-weight:500;font-size:11px;color:#5E5E57}
+.ln .v{font-weight:700;font-size:15px;white-space:nowrap} .ln .v small{font-size:12px;color:#5E5E57;font-weight:600}
+.ln .v.g{color:#0B6E43}
+.sub{padding:2px 0 6px 18px;display:flex;flex-direction:column;gap:4px} .sub div{display:flex;justify-content:space-between;font-weight:500;font-size:12px;color:#3A3A36}
+.lim{display:flex;flex-direction:column;gap:6px}
+.limTop{display:flex;justify-content:space-between;align-items:baseline} .limTop b{font-weight:700;font-size:20px} .limTop b small{font-weight:600;font-size:12px;color:#5E5E57} .limTop span{font-weight:700;font-size:12px}
+.limK{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:#5E5E57}
+.trk{height:8px;border-radius:4px;background:#fff;overflow:hidden} .trk i{display:block;height:100%;background:#141414;border-radius:4px}
+.cardN .trk{background:#fff}
+.more{font-weight:700;font-size:13px;display:flex;justify-content:space-between;border-top:1px solid rgba(127,127,127,.3);padding-top:10px}
+.slim{border-radius:22px;padding:12px 16px;display:flex;align-items:center;gap:12px;min-height:56px;background:#F1EFEA}
+.slim .t{flex:1;min-width:0} .slim .t b{display:block;font-weight:800;font-size:16px;line-height:20px} .slim .t span{display:block;font-weight:500;font-size:12px;line-height:16px;color:rgba(20,20,20,.82)}
+.slim .val{font-weight:800;font-size:18px;white-space:nowrap}
+.slim.alert{background:#F0854A}
+.go2{width:30px;height:30px;border-radius:15px;background:rgba(127,127,127,.2);display:flex;align-items:center;justify-content:center;flex:none}
+.legend{display:flex;flex-wrap:wrap;gap:6px}
+.lp{display:inline-flex;align-items:baseline;gap:5px;background:#fff;border-radius:14px;padding:6px 10px;font-weight:500;font-size:12px} .lp b{font-weight:800;font-size:14px}
+.lp i{width:8px;height:8px;border-radius:2px;align-self:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mini{background:#F1EFEA;border-radius:20px;padding:12px;display:flex;flex-direction:column;gap:6px} .mini b{font-weight:700;font-size:20px} .mini b small{font-size:11px;color:#5E5E57;font-weight:600} .mini span{font-weight:700;font-size:11px}
+.mv{display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid rgba(127,127,127,.25)} .mv.f{border-top:0}
+.d2{width:44px;height:48px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;color:#141414} .d2 b{font-weight:800;font-size:20px;line-height:21px;letter-spacing:-.4px} .d2 span{font-weight:700;font-size:11px;line-height:12px;opacity:.82}
+.mv .t{flex:1;min-width:0} .mv .t b{display:block;font-weight:800;font-size:15px;line-height:19px} .mv .t span{display:block;font-weight:500;font-size:12px;color:#5E5E57}
+.mv .v{font-weight:700;font-size:15px;color:#0B6E43;white-space:nowrap}
+.mlab{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:#5E5E57;padding-top:4px}
+.tabbar{position:absolute;left:12px;right:12px;bottom:22px;display:flex;gap:8px;align-items:center}
+.capN{flex:1;height:56px;border-radius:28px;background:#F1EFEA;display:flex;padding:4px;gap:2px}
+.capN div{flex:1;border-radius:28px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:#5E5E57}
+.capN div.on{background:#fff;color:#141414;box-shadow:0 1px 3px rgba(20,20,20,.14)}
+.simB{height:56px;border-radius:28px;background:#141414;color:#fff;display:flex;align-items:center;gap:6px;padding:0 16px;font-weight:700;font-size:13px}
+/* a folha dos limites */
+.shL{position:absolute;left:0;right:0;top:110px;bottom:0;background:#fff;border-radius:32px 32px 0 0;padding:10px 20px 20px;display:flex;flex-direction:column;gap:12px}
+.lf{padding:6px 0 10px;border-bottom:1.5px solid rgba(127,127,127,.3);display:flex;flex-direction:column;gap:6px}
+.lf .trk{background:#F1EFEA}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>Os Números</h1>
+    <p>O ecrã ainda era o antigo: um mostrador de percentagens à volta do total, três mosaicos (Segurança em %, Voo, Corpo) e notas soltas — e as folhas com as barras em percentagem. <b>As tuas imagens:</b> o € do mês numa <b>barra empilhada das parcelas</b>, cêntimos mais pequenos, nunca abreviar (3421 · 3449 · 3433 · 3440 · 3441) · o <b>limite com barra</b>: valor, máximo pequeno, barra e "faltam" — sem percentagem (3408 · 3415 · 3428 · 3431 · 3441 · 3462) · o seletor Mês | Ano em pílula (3412 · 3434) · os movimentos (3431) · o número em duas linhas (3424). <b>Mobbin:</b> <a href="https://mobbin.com/screens/7ec4aedc-65f6-46ff-a843-687f5999e017">Lloyds</a>, <a href="https://mobbin.com/screens/df67c6c0-b53d-4b3f-982a-e67f10409e4a">Turo</a>, <a href="https://mobbin.com/screens/ad693120-2347-403a-93a3-02d16aa2b614">Ubank</a>, <a href="https://mobbin.com/screens/9d57e1ee-0fd1-498c-b2b0-4ecf528e1f49">Monarch</a>. Em todas: o topo é o do Início (a mesma app); o dinheiro que se ganha a verde, o total a tinta com "estimado"; os extras vêm do calendário e aparecem aqui, com os dias. Dados de teste: primeiro-oficial easyJet, novembro de 2026. <b>Os telemóveis estão alongados para se ver a folha toda; no iPhone a folha desliza, como no Início.</b></p>
+  </div>
+  <div class="grid3" id="g1"></div>
+  <div class="lead"><h2>A folha dos limites (igual nas três)</h2><p>Na regra das folhas: cada janela num campo — o rótulo pequeno, o valor com o máximo pequeno, a barra a tinta (laranja aos 85 %, vermelho só quando passa) e "faltam" — <b>sem percentagem</b>.</p></div>
+  <div class="grid3" id="g2"></div>
+  <div class="card2"><h3>A minha recomendação: N1</h3><ul>
+    <li><b>N1</b> é o Início com outro número: o mesmo topo (a pílula do mês, o número em duas linhas, os dois factos) e, na folha, <b>um cartão "De onde vem"</b> com a barra empilhada e as linhas (base, per diem, pernoitas, extras — os extras abrem e mostram os dias, como o Lloyds), <b>um cartão dos limites</b> com os dois mais cheios em "faltam" e as linhas finas para o Voo, o Repouso e a Auditoria. Responde de cima para baixo: quanto, de onde, e se estou dentro dos limites.</li>
+    <li><b>N2</b> põe a barra empilhada no topo, com a legenda em pílulas número + palavra (3449) — vê-se a mistura de relance, mas o número grande perde o lugar e os limites ficam em mosaicos pequenos.</li>
+    <li><b>N3</b> conta o mês em <b>movimentos</b> datados (3431, Ubank) — cada per diem, pernoita e extra no seu dia; é a mais auditável, mas é uma lista comprida e o "de onde vem" no total perde-se.</li>
+    <li>Em todas: o Ano é o mesmo ecrã com o total do ano e o ano em meses (3407/3439) no lugar da barra; os limites do acordo da TAP ficam para a vez da TAP.</li></ul></div>
+</div>
+<script>
+var P = { x:'<path d="M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12 19 17.6 17.6 19 12 13.4 6.4 19 5 17.6 10.6 12 5 6.4z"/>', chev:'<path d="M8.6 4.2 16.4 12l-7.8 7.8-1.9-1.9 5.9-5.9-5.9-5.9z"/>',
+  sync:'<path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z"/>', plane:'<path d="M21 15.5v-2l-8-5V3.6a1.5 1.5 0 0 0-3 0V8.5l-8 5v2l8-2.5V18l-2 1.5V21l3.5-1 3.5 1v-1.5L13 18v-5z"/>',
+  doc:'<path d="M6 2h8l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7 1.5V8h4.5z"/>', cal:'<path d="M7 2h2.6v3H7V2zm7.4 0H17v3h-2.6V2zM4 5h16v3.6H4V5zm0 5h16v10a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 20V10z"/>',
+  lock:'<path d="M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1zm2 0h6V7a3 3 0 0 0-6 0v3z"/>', swap:'<path d="M7 7h11l-3-3 1.4-1.4L21.8 8l-5.4 5.4L15 12l3-3H7V7zm10 10H6l3 3-1.4 1.4L2.2 16l5.4-5.4L9 12l-3 3h11v2z"/>' };
+function ic(n, s){ return '<svg class="ic" width="' + s + '" height="' + s + '" viewBox="0 0 24 24">' + P[n] + '</svg>'; }
+function phone(head, body){ return '<div class="ph"><div class="status"><span>17:31</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="behind"></div><div class="sh"><div class="grab"><i></i></div>' + head + '<div class="body">' + body + '</div></div></div>'; }
+
+
+
+
+
+P.bed = '<path d="M3 6h2v7h7V8h6a3 3 0 0 1 3 3v7h-2v-2H5v2H3V6zm5 1.5A2.5 2.5 0 1 1 8 12.5a2.5 2.5 0 0 1 0-5z"/>';
+P.phone = '<path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/>';
+P.note = '<path d="M5 3h10l4 4v14H5V3zm9 1.5V8h3.5L14 4.5zM8 12h8v1.6H8V12zm0 3.5h6v1.6H8v-1.6z"/>';
+
+P.home = '<path d="M12 3 3 10.5V21h6v-6h6v6h6V10.5L12 3z"/>';
+P.cal2 = '<path d="M7 2h2.6v3H7V2zm7.4 0H17v3h-2.6V2zM4 5h16v3.6H4V5zm0 5h16v10a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 20V10z"/>';
+P.stats = '<path d="M4 20V10h3v10H4zm6.5 0V4h3v16h-3zM17 20v-7h3v7h-3z"/>';
+P.user = '<path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9zm-8 9a8 8 0 0 1 16 0H4z"/>';
+P.gauge = '<path d="M12 4a9 9 0 0 0-9 9 8.9 8.9 0 0 0 1.4 4.8l1.7-1A7 7 0 1 1 19 13a6.9 6.9 0 0 1-1.1 3.8l1.7 1A9 9 0 0 0 12 4zm4.2 4.4-5.3 4a1.6 1.6 0 1 0 2.2 2.2l3.1-6.2z"/>';
+var TAB = '<div class="tabbar"><div class="capN"><div>' + ic('home', 20) + 'Início</div><div>' + ic('cal2', 20) + 'Escala</div><div class="on">' + ic('stats', 20) + 'Números</div><div>' + ic('user', 20) + 'Perfil</div></div><div class="simB">' + ic('gauge', 18) + 'Simular</div></div>';
+var TOP = function(giant){ return '<div class="topA"><div class="pills"><span class="pl2">Novembro 2026 ▾</span><span class="seg"><span class="on">Mês</span><span>Ano</span></span></div>' + giant + '</div>'; };
+// € do mês (teste): base 5 059,26 · per diem 38 setores × 45,60 = 1 732,80 · pernoitas 2 × 91,20 = 182,40 · extras: SNC 60,00 → 7 034,46
+var GIANT1 = '<div class="what">Ganhos brutos de novembro</div><div class="giantRow"><div><div class="giant">7 034<small>,46 €</small></div><div class="l2">estimado</div></div><div class="facts"><div><b class="g">+1 975,20 €</b><span>acima da base</span></div><div><b>62 h</b><span>de voo · 38 setores</span></div></div></div>';
+var C = { base: '#141414', pd: '#6DBEFA', ns: '#B4C2A2', ex: 'repeating-linear-gradient(45deg,#9A9A92 0 3px,#C9C7C0 3px 6px)' };
+var STACK = '<div class="stack"><i style="width:71.9%;background:' + C.base + '"></i><i style="width:24.6%;background:' + C.pd + '"></i><i style="width:2.6%;background:' + C.ns + '"></i><i style="width:0.9%;background:' + C.ex + '"></i></div>';
+function eur(a, b, g){ return '<span class="v' + (g ? ' g' : '') + '">' + a + '<small>' + b + '</small></span>'; }
+var CARD_FROM = '<div class="cardN"><span class="kd">De onde vem · bruto</span>' + STACK
+  + '<div class="ln f"><span class="k"><i style="background:' + C.base + '"></i>Base</span>' + eur('5 059', ',26 €') + '</div>'
+  + '<div class="ln"><span class="k"><i style="background:' + C.pd + '"></i>Per diem <small>§ Art. 37.º</small></span>' + eur('+1 732', ',80 €', true) + '</div>'
+  + '<div class="ln"><span class="k"><i style="background:' + C.ns + '"></i>Pernoitas · 2 <small>§ Art. 39.º</small></span>' + eur('+182', ',40 €', true) + '</div>'
+  + '<div class="ln"><span class="k"><i style="background:' + C.ex + '"></i>Extras · 1 ▾</span>' + eur('+60', ',00 €', true) + '</div>'
+  + '<div class="sub"><div><span>SNC · sex 13 · do calendário</span><span>60,00 €</span></div></div></div>';
+function limBar(k, val, max, left, pct, warn){ return '<div class="lim"><span class="limK">' + k + '</span><div class="limTop"><b>' + val + '<small> / ' + max + '</small></b><span>' + left + '</span></div><div class="trk"><i style="width:' + pct + '%' + (warn ? ';background:#F0854A' : '') + '"></i></div></div>'; }
+var CARD_LIM = '<div class="cardN"><span class="kd">Limites · agora</span>' + limBar('Serviço · 7 dias', '52 h', '60 h', 'faltam 8 h', 86.7, true) + limBar('Voo · 28 dias', '62 h', '100 h', 'faltam 38 h', 62) + '<div class="more"><span>Os limites todos</span>' + ic('chev', 14) + '</div></div>';
+function slim(title, sub, val, cls){ return '<div class="slim' + (cls ? ' ' + cls : '') + '"><div class="t"><b>' + title + '</b><span>' + sub + '</span></div>' + (val ? '<span class="val">' + val + '</span>' : '') + '<span class="go2">' + ic('chev', 13) + '</span></div>'; }
+function N1(){ return '<div class="desk">' + TOP(GIANT1) + '<div class="sheetN">' + CARD_FROM + CARD_LIM + slim('Voo', '19 voos · 38 setores · LIS, OPO, FNC…', '62 h') + slim('Repouso', 'o mais curto · 0 abaixo do mínimo', '12:10') + slim('Auditoria do mês', '1 item por confirmar · ≈ 91,20 €', null, 'alert') + '</div>' + TAB + '</div>'; }
+function N2(){
+  var giant = '<div class="what">Ganhos brutos de novembro · estimado</div><div class="giant" style="font-size:52px;line-height:56px">7 034<small>,46 €</small></div><div style="margin-top:10px">' + STACK.replace('height:14px', 'height:22px') + '</div>'
+    + '<div class="legend" style="margin-top:10px"><span class="lp"><i style="background:' + C.base + '"></i><b>5 059,26 €</b>base</span><span class="lp"><i style="background:' + C.pd + '"></i><b>1 732,80 €</b>per diem</span><span class="lp"><i style="background:' + C.ns + '"></i><b>182,40 €</b>pernoitas</span><span class="lp"><i style="background:' + C.ex + '"></i><b>60,00 €</b>extras</span></div>';
+  return '<div class="desk">' + TOP(giant) + '<div class="sheetN"><span class="kd" style="padding:0 4px">Limites · agora</span><div class="grid2">'
+    + '<div class="mini"><span class="limK">Serviço · 7 d</span><b>52 h<small> / 60</small></b><div class="trk"><i style="width:86.7%;background:#F0854A"></i></div><span>faltam 8 h</span></div>'
+    + '<div class="mini"><span class="limK">Serviço · 28 d</span><b>152 h<small> / 190</small></b><div class="trk"><i style="width:80%"></i></div><span>faltam 38 h</span></div>'
+    + '<div class="mini"><span class="limK">Voo · 28 d</span><b>62 h<small> / 100</small></b><div class="trk"><i style="width:62%"></i></div><span>faltam 38 h</span></div>'
+    + '<div class="mini"><span class="limK">Voo · ano</span><b>640 h<small> / 900</small></b><div class="trk"><i style="width:71%"></i></div><span>faltam 260 h</span></div></div>'
+    + slim('Extras · 1', 'SNC · sex 13 · do calendário', '60,00 €') + slim('Voo', '19 voos · 38 setores', '62 h') + '</div>' + TAB + '</div>';
+}
+function mv(d, wd, bg, title, sub, v){ return '<div class="mv"><div class="d2" style="background:' + bg + '"><b>' + d + '</b><span>' + wd + '</span></div><div class="t"><b>' + title + '</b><span>' + sub + '</span></div><span class="v">' + v + '</span></div>'; }
+function N3(){
+  return '<div class="desk">' + TOP(GIANT1) + '<div class="sheetN"><div class="slim"><div class="t"><b>Base de novembro</b><span>primeiro-oficial · 12/12</span></div><span class="val">5 059,26 €</span></div>'
+    + '<span class="mlab">Movimentos · o que a escala rendeu</span>'
+    + mv('13', 'sex', '#6DBEFA', 'LIS → OPO → LIS', 'per diem · 2 setores', '+91,20 €').replace('class="mv"', 'class="mv f"')
+    + mv('13', 'sex', '#F1EFEA', 'SNC', 'alteração de escala · do calendário', '+60,00 €')
+    + mv('14', 'sáb', '#B4C2A2', 'Pernoita · Porto', 'Art. 39.º', '+91,20 €')
+    + mv('16', 'seg', '#6DBEFA', 'LIS → FNC → LIS', 'per diem · 2 setores', '+91,20 €')
+    + mv('18', 'qua', '#6DBEFA', 'LIS → LGW → LIS', 'per diem · 2 setores', '+91,20 €')
+    + '<div class="more"><span>Os limites · o mais cheio: serviço 7 d, faltam 8 h</span>' + ic('chev', 14) + '</div></div>' + TAB + '</div>';
+}
+var O = [['N1 · O topo do Início + cartões', true, 'O <b>topo do Início</b> com o total; na folha, o cartão <b>"De onde vem"</b> (a barra empilhada e as linhas; os extras abrem com os dias), o cartão <b>dos limites</b> (os dois mais cheios, em "faltam") e as linhas finas Voo, Repouso e Auditoria.', N1],
+         ['N2 · A barra como herói', false, '<b>A barra empilhada no topo</b>, com a legenda em pílulas número + palavra (3449); os limites em <b>mosaicos</b> de dois em dois.', N2],
+         ['N3 · Os movimentos', false, 'A base numa linha e, por baixo, <b>o mês em movimentos datados</b> (3431, Ubank): cada per diem, pernoita e extra no seu dia, com o €.', N3]];
+function phoneN(inner){ return '<div class="ph"><div class="status"><span>09:41</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>' + inner + '</div>'; }
+document.getElementById('g1').innerHTML = O.map(function(o){ return '<div class="opt"><h3>' + o[0] + (o[1] ? '<span class="rec">RECOMENDO</span>' : '') + '</h3><p>' + o[2] + '</p>' + phoneN(o[3]()) + '</div>'; }).join('');
+function lf(k, val, max, left, pct, warn){ return '<div class="lf"><span class="limK">' + k + '</span><div class="limTop"><b>' + val + '<small> / ' + max + '</small></b><span>' + left + '</span></div><div class="trk"><i style="width:' + pct + '%' + (warn ? ';background:#F0854A' : '') + '"></i></div></div>'; }
+var SHL = '<div class="desk" style="background:#BDBBB5"><div class="shL"><div class="grab" style="padding:0 0 4px"><i></i></div><div class="hC" style="padding:0 0 4px"><h4>Os limites</h4><span class="xC">Fechar</span></div>'
+  + '<span class="mlab">Serviço</span>' + lf('7 dias', '52 h', '60 h', 'faltam 8 h', 86.7, true) + lf('14 dias', '96 h', '110 h', 'faltam 14 h', 87.3, true) + lf('28 dias', '152 h', '190 h', 'faltam 38 h', 80)
+  + '<span class="mlab">Voo</span>' + lf('28 dias', '62 h', '100 h', 'faltam 38 h', 62) + lf('Ano civil', '640 h', '900 h', 'faltam 260 h', 71) + lf('12 meses', '702 h', '1000 h', 'faltam 298 h', 70.2)
+  + '<p class="note" style="padding:0">Os dias contam para trás a partir de hoje. § ORO.FTL.210</p></div></div>';
+document.getElementById('g2').innerHTML = '<div class="opt"><h3>A folha dos limites</h3>' + phoneN(SHL) + '</div>';
+</script>
+</body>
+</html>

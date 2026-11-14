@@ -4,7 +4,9 @@
  * piloto, base Lisboa; hoje = quarta 11 de novembro de 2026), e as REGRAS do esboço trancadas:
  *   nada se repete entre o topo e os cartões · nunca mais de dois cartões grandes · com um aviso o 2.º passa a linha fina ·
  *   o selo entre duas horas é o intervalo entre elas · todo o € com cêntimos · o total do mês "estimado · bruto" ·
- *   "Incerto" com o que falta (sem "Completar" no cartão de serviço — 2026-11-14) · o número gigante e os dois factos cabem lado a lado a 390 e a 375.
+ *   "Incerto" com o que falta (sem "Completar" no cartão de serviço — 2026-11-14) · O TOPO LADO A LADO E IGUAL NAS TRÊS ABAS (L1 de
+ *   design/topo-lado.html, 2026-11-14): o número no tamanho comum do Início, da Escala e dos Números (62 a 390, 58 a 375) e os
+ *   factos à direita, com o fio; os Números só com o total.
  * Diferenças ao esboço, de propósito (escritas em docs/decisoes.md): a folga a menos de 48 h conta em HORAS (regra da
  * auditoria do tripulante, 2026-11-04) · "Certificado médico caduca em" sem artigo (o artigo muda com o documento) ·
  * o standby diz que o PSV é uma estimativa a 1 setor (225) em vez de "não chamado até agora".
@@ -20,7 +22,7 @@ Module._extensions['.js'] = function (m, filename) {
   if (filename.includes('node_modules')) return origJs(m, filename);
   m._compile(babel.transformSync(fs.readFileSync(filename, 'utf8'), { filename, babelrc: false, configFile: false, plugins: [cjsPlugin] }).code, filename);
 };
-const { homeCards, fitGiant, fmt, toMin } = require(path.resolve('data/homeCards.js'));
+const { homeCards, topGiant, commonGiant, fmt, toMin } = require(path.resolve('data/homeCards.js'));
 
 let ok = 0, fail = 0;
 const eq = (label, got, exp) => {
@@ -60,7 +62,7 @@ S.vespera = { state: 'vespera', todayISO: D11, hero: { ...HERO, iso: D12 }, live
 // ── 5 · Pernoita (à noite) ──
 S.pernoita = { state: 'pernoita', todayISO: D11, rest: { signOff: '14:20', until: '00:20', minMin: 600, pct: 73, hotel: 'Hotel do aeroporto', pay: 45.4, station: 'LGW' },
   hero: { iso: D12, kind: 'flight', stations: ['LGW', 'LIS'], sectors: 1, report: '14:05', dep: '15:05', lastArr: '17:45', depStation: 'LGW', hasReg: true },
-  live: { cdMin: 985 }, wxTmw: { v: '7°', label: 'chuva' } };
+  live: { cdMin: 985 }, wx: { report: { c: 8, label: 'chuva', ic: 'rain', at: '14:05', st: 'LGW' } } };
 // ── 6 · Standby no aeroporto ──
 S.standby = { state: 'hoje', todayISO: D11, hero: { iso: D11, kind: 'standby_airport', kindLabel: 'Standby no aeroporto', report: '08:00', end: '12:00', station: 'LIS', pay: { eur: 38.76 }, hasReg: true },
   live: { cdMin: -50, remainingMin: 190, elapsedMin: 50, psvUntil: '18:45' }, next: NEXT_IV(D14) };
@@ -125,7 +127,7 @@ eq('véspera · cartões', R.vespera.cards.map(C), [
 
 // ═══ 5 · Pernoita — o repouso mínimo com o ponto no que já está cumprido; o voo de amanhã numa linha, sem repetir o report ═══
 eq('pernoita · topo', R.pernoita.top, { pill: { text: 'Pernoita', live: false }, pill2: { text: 'LGW', iso: D11 }, what: 'Report amanhã às',
-  giant: { l1: '14:05', unit: null, l2: 'LGW', l2Grey: false }, facts: [{ v: '16 h 25', l: 'falta', tone: null }, { v: '7°', l: 'amanhã · chuva', tone: null }] });
+  giant: { l1: '14:05', unit: null, l2: 'LGW', l2Grey: false }, facts: [{ v: '16 h 25', l: 'falta', tone: null }, { v: '8 °C', l: 'às 14:05 · chuva', tone: null }] });
 eq('pernoita · cartões', R.pernoita.cards.map(C), [
   { t: 'card', color: 'rest', kind: 'Repouso · fora da base', title: 'Hotel do aeroporto', sub: 'pernoita desta noite', gain: '+45,40 €', a: { v: '14:20', l: 'fim de serviço' }, dur: 'mínimo 10 h', b: { v: '00:20', l: 'cumprido' }, pct: 73, corner: 'chev', action: null },
   { t: 'slim', color: 'flight', title: 'LGW → LIS', sub: 'quinta 12 · parte 15:05 · chega 17:45', gain: false, value: null }]);
@@ -289,9 +291,9 @@ eq('Zulu · véspera', homeCards({ ...S.vespera, hero: { ...S.vespera.hero, repo
 eq('Zulu · pernoita em LGW', homeCards({ ...S.pernoita, hero: { ...S.pernoita.hero, reportZ: '14:05' } }).top.facts.length, 2);
 eq('Zulu · pernoita fora, fuso diferente', homeCards({ ...S.pernoita, hero: { ...S.pernoita.hero, reportZ: '13:05' } }).top.facts[2], { v: '13:05Z', l: 'report em UTC', tone: null });
 eq('Zulu · em voo não aparece (o número é a aterragem)', homeCards({ ...S.emVoo, hero: { ...S.emVoo.hero, reportZ: '04:15' } }).top.facts.length, 2);
-yes('Zulu · o número não encolhe com o 3.º facto (390 e 375)', fitGiant(zAntes.top, 350).size === 86 && fitGiant(zAntes.top, 335).size === 86);
+yes('Zulu · o número não encolhe com o 3.º facto e os três cabem ao lado (390 e 375)', topGiant(zAntes.top, 350).size === 62 && topGiant(zAntes.top, 335).size === 58 && topGiant(zAntes.top, 350).fits && topGiant(zAntes.top, 335).fits);
 const zPern = homeCards({ ...S.pernoita, hero: { ...S.pernoita.hero, reportZ: '13:05' } });
-yes('Zulu · pernoita em LGW: cabe a 86 em 390 e em 375', fitGiant(zPern.top, 350).size === 86 && fitGiant(zPern.top, 335).size === 86);
+yes('Zulu · pernoita em LGW: no tamanho comum e os três factos cabem ao lado (390 e 375)', topGiant(zPern.top, 350).size === 62 && topGiant(zPern.top, 335).size === 58 && topGiant(zPern.top, 350).fits && topGiant(zPern.top, 335).fits);
 
 // ═══ Estado que precisa de um serviço e não o tem (o iPhone com a véspera forçada e a escala vazia) → a folga honesta ═══
 for (const st of ['hoje', 'vespera', 'disrupcao', 'doenca', 'posvoo', 'pernoita']) {
@@ -343,15 +345,70 @@ for (const [k, r] of all) {
 yes('o total do mês diz sempre "estimado · bruto"', all.every(([, r]) => r.cards.filter((c) => c.id === 'month' && c.t === 'slim').every((c) => c.sub === 'estimado · bruto')));
 yes('o que um serviço rende vai sempre numa pílula (gain), nunca no título', all.every(([, r]) => r.cards.every((c) => !/^\+/.test(c.title || ''))));
 
-// ═══ O NÚMERO E OS DOIS FACTOS CABEM lado a lado (larguras da Hanken lidas do .ttf) — 390 (350 úteis) e 375 (335) ═══
+// ═══ O TOPO LADO A LADO E IGUAL NAS TRÊS ABAS (L1 de design/topo-lado.html, escolhida pelo Nuno a 2026-11-14) ═══
+// O número à esquerda (duas linhas) e os factos à direita, com o fio — como antes — mas com UM tamanho para o Início, a Escala e
+// os Números, o maior em que tudo cabe lado a lado: a Escala é a mais apertada ("serviços" e o per diem de quatro algarismos) e
+// os Números ficam só com o total (o "acima da base" passa para o cartão "De onde vem"; as horas estão na linha "Voo").
+// Larguras da Hanken lidas do .ttf; 390 (350 úteis) e 375 (335). O € nunca se corta. O mesmo tamanho nas duas línguas.
+// (Antes: H1 — os factos por baixo, a 82 — de que o Nuno não gostou; e antes disso cada aba no seu tamanho: 86 · 62 · 86.)
+eq('o tamanho comum: 62 a 390 e 58 a 375', [commonGiant(350), commonGiant(335)], [62, 58]);
 const sizes = [];
-for (const [k, r] of all) {
-  const a = fitGiant(r.top, 390 - 40), b = fitGiant(r.top, 375 - 40);
-  yes(`${k} · cabe a 390`, a.fits, `tamanho ${a.size}`);
-  yes(`${k} · cabe a 375`, b.fits, `tamanho ${b.size}`);
-  sizes.push(`${k} ${a.size}/${b.size}`);
+const sameTop = (label, t) => {
+  const a = topGiant(t, 350), b = topGiant(t, 335);
+  yes(`${label} · no tamanho comum, com os factos ao lado (390 e 375)`, a.size === commonGiant(350) && b.size === commonGiant(335) && a.fits && b.fits, `${a.size}/${b.size}`);
+  sizes.push(`${label} ${a.size}/${b.size}`);
+};
+for (const [k, r] of all) sameTop(`Início · ${k}`, r.top);
+for (const [k, v] of Object.entries(S)) sameTop(`Início en · ${k}`, homeCards({ ...v, lang: 'en' }).top);
+eq('en · antes de ligar a escala: "Link" (o "Connect" não cabia ao lado)', homeCards({ ...S.setup, lang: 'en' }).top.giant.l1, 'Link');
+// A Escala (o topo é feito em screens/EscalaScreen.js): os casos mais compridos — "serviços", o per diem de quatro algarismos.
+const ESC = {
+  '11 serviços':  { giant: { l1: '11', l2: 'serviços' }, facts: [{ v: '6', l: 'pernoitas' }, { v: '1 732,80 €', l: 'per diem · estimado' }] },
+  '31 serviços':  { giant: { l1: '31', l2: 'serviços' }, facts: [{ v: '15', l: 'pernoitas' }, { v: '4 999,99 €', l: 'per diem · estimado' }] },
+  '1 serviço':    { giant: { l1: '1', l2: 'serviço' }, facts: [{ v: '0', l: 'pernoitas' }] },
+  'en 31 duties': { giant: { l1: '31', l2: 'duties' }, facts: [{ v: '15', l: 'night stops' }, { v: '€4,999.99', l: 'per diem · estimated' }] },
+};
+for (const [k, t] of Object.entries(ESC)) sameTop(`Escala · ${k}`, t);
+// Os Números (screens/StatsScreen.js): SÓ o total no topo, sem factos.
+const NUM = {
+  'mês 15 137,64 €':  { giant: { l1: '15 137', unit: ',64 €', l2: 'estimado' }, facts: null },
+  'ano 127 912,70 €': { giant: { l1: '127 912', unit: ',70 €', l2: 'estimado' }, facts: null },
+  'ano 199 999,99 €': { giant: { l1: '199 999', unit: ',99 €', l2: 'incerto' }, facts: null },
+  'en €199,999.99':   { giant: { l1: '€199,999', unit: '.99', l2: 'uncertain' }, facts: null },
+  'incerto':          { giant: { l1: 'Incerto', unit: null, l2: null }, facts: null },
+  'horas do ano':     { giant: { l1: '612,5', unit: 'h', l2: null }, facts: null },
+};
+for (const [k, t] of Object.entries(NUM)) sameTop(`Números · ${k}`, t);
+
+// ═══ A METEOROLOGIA (M1 de design/meteo-inicio.html, escolhida pelo Nuno a 2026-11-14) ═══
+// O tempo no cartão do sítio a que se refere, À HORA que conta: a base à hora do report no cartão do dia (véspera, antes do
+// report); a cidade da pernoita no cartão da pernoita; o destino do setor à chegada (em terra antes de descolar e no ar — o pedido
+// faz-se em terra, o telemóvel voa em modo de voo); na pernoita, o facto do topo à hora do report. Com "°C". O crédito do MET
+// Norway (CC BY 4.0) aparece sempre que há tempo. Nas folgas, férias, baixa e standby não há tempo (a app do telemóvel já o faz).
+const WXR = { c: 4, label: 'nevoeiro', ic: 'fog', at: '05:15', st: 'LIS' };
+const WXN = { c: 12, label: 'chuva', ic: 'rain', st: 'LGW' };
+const WXA = { c: 12, label: 'chuva', ic: 'rain', st: 'LGW' };
+{
+  const v = homeCards({ ...S.vespera, wx: { report: WXR, night: WXN } });
+  eq('véspera · o tempo da base à hora do report no cartão do dia', v.cards.find((c) => c.id === 'day').wx, { ic: 'fog', txt: '4 °C · nevoeiro em LIS às 05:15' });
+  const n = v.cards.find((c) => c.id === 'night');
+  yes('véspera · o tempo da pernoita no cartão da pernoita', /· 12 °C, chuva à chegada$/.test(n.sub), n.sub);
+  eq('véspera · o crédito do MET Norway', v.credit, 'Meteorologia: MET Norway');
+  eq('véspera · o topo não muda (o tempo não é facto)', v.top.facts.length, 2);
+  eq('véspera sem tempo · sem linha e sem crédito', [homeCards(S.vespera).cards.find((c) => c.id === 'day').wx || null, homeCards(S.vespera).credit || null], [null, null]);
+  const a = homeCards({ ...S.antes, wx: { report: { ...WXR, at: '05:15' } } });
+  eq('antes do report · o tempo da base no cartão do dia', a.cards.find((c) => c.id === 'day').wx, { ic: 'fog', txt: '4 °C · nevoeiro em LIS às 05:15' });
+  const f = homeCards({ ...S.emVoo, wx: { arrival: WXA } });
+  eq('em voo · o tempo do destino à chegada no cartão do dia', f.cards.find((c) => c.id === 'day').wx, { ic: 'rain', txt: '12 °C · chuva em LGW à chegada' });
+  eq('em voo · o crédito', f.credit, 'Meteorologia: MET Norway');
+  eq('pernoita · o crédito (o facto do topo)', homeCards(S.pernoita).credit, 'Meteorologia: MET Norway');
+  for (const k of ['folga', 'ferias', 'baixa', 'standby', 'fecho', 'vazia']) {
+    const r = homeCards({ ...S[k], wx: { report: WXR, night: WXN, arrival: WXA } });
+    yes(`${k} · sem tempo nem crédito`, !r.credit && !r.cards.some((c) => c.wx) && !JSON.stringify(r.top).includes('°C'), JSON.stringify(r.credit));
+  }
+  const ve = homeCards({ ...S.vespera, lang: 'en', wx: { report: { ...WXR, label: 'fog' }, night: { ...WXN, label: 'rain' } } });
+  eq('en · véspera', [ve.cards.find((c) => c.id === 'day').wx.txt, ve.credit], ['4 °C · fog in LIS at 05:15', 'Weather data: MET Norway']);
 }
-yes('o tamanho máximo é 86 e o mínimo 60', all.every(([, r]) => { const z = fitGiant(r.top, 350).size; return z <= 86 && z >= 60; }));
 
 // ═══ EM INGLÊS — os mesmos estados, nada indefinido ═══
 for (const [k, v] of Object.entries(S)) {
@@ -359,6 +416,6 @@ for (const [k, v] of Object.entries(S)) {
   yes(`en · ${k} · nada indefinido`, !/undefined|NaN|\[object/.test(JSON.stringify(r)));
 }
 
-console.log(`homecards: ${ok} ok, ${fail} falhou · tamanho do número (390/375): ${sizes.join(' · ')}`);
+console.log(`homecards: ${ok} ok, ${fail} falhou · o topo das três abas: ${commonGiant(350)} a 390, ${commonGiant(335)} a 375 (${sizes.length} casos)`);
 module.exports = { S };   // os dados de teste dos 16 estados (o desenho feito a partir do código usa-os)
 if (require.main === module) process.exit(fail ? 1 : 0);

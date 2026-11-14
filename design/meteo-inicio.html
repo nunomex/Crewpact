@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · A meteorologia no Início</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* A METEOROLOGIA NO INÍCIO (2026-11-14). Hoje só aparece na PERNOITA, como 2.º facto do topo ("7° · amanhã · chuva" — a máxima
+   de amanhã, sem "°C"; a hora que interessa é a do report). Fonte: MET Norway (api.met.no) pela Edge `flight-status`, cache 45 min.
+   A licença (CC BY 4.0) pede o crédito «Data from MET Norway» — `WX_ATTRIBUTION` existe em data/weather.js mas não aparece em
+   nenhum ecrã. O Nuno: "onde achas que deve mostrar mais, em algum estado? e não podia vir do telemóvel?"
+   Em todas as opções: a previsão À HORA que interessa (a série do MET Norway é hora a hora até ~2 dias) e com "°C"; o crédito ao pé.
+   Imagens do Nuno: nenhuma de meteorologia no índice (referencias/Para a app/README). Mobbin: CLEAR ("61°F when you land" por baixo
+   da rota e a marca do tempo pequena no fundo), Air NZ (um cartão "Singapore weather" no início), Fly Delta (a temperatura à
+   chegada). Dados: os do golden do Início (easyJet, LIS → FNC → LIS → LGW, pernoita em LGW); o tempo é de TESTE. */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+.lead{max-width:940px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)} .lead a{color:var(--pfg)}
+.opt{display:flex;flex-direction:column;gap:10px}
+.opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:var(--muted);max-width:900px} .opt > p b{color:var(--pfg)}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.row{display:flex;flex-wrap:wrap;gap:20px}
+.cap{font-size:12px;font-weight:700;color:var(--muted);margin:0 0 6px 6px}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:940px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card2 li{font-size:13px;line-height:1.5;color:var(--muted)} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:var(--pfg)}
+
+.ph{display:flex;flex-direction:column;width:406px;height:800px;border:8px solid #04060A;border-radius:52px 52px 0 0;border-bottom:0;overflow:hidden;position:relative;background:#E3E1DB;color:#141414;max-width:100%}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.topA{padding:0 20px 32px;flex:none}
+.pills{display:flex;align-items:center;gap:8px;min-height:68px;padding:8px 0 16px}
+.pl{height:38px;padding:0 16px;border-radius:19px;border:1.5px solid #141414;display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:13px;white-space:nowrap}
+.pl.ink{background:#141414;color:#E3E1DB} .pl.ink i{width:7px;height:7px;border-radius:4px;background:#F0854A;display:block}
+.bell{width:44px;height:44px;border-radius:22px;background:rgba(127,127,127,.22);margin-left:auto;display:flex;align-items:center;justify-content:center}
+.what{font-weight:500;font-size:15px;line-height:20px;color:#3A3A36}
+.g{font-weight:700;white-space:nowrap;margin-top:4px;font-size:82px;line-height:90px;letter-spacing:-3.77px}
+.g div{margin-top:-8px} .g div + div{margin-top:-24px}
+.ic{display:block;fill:currentColor}
+.fv{display:block;font-weight:700;font-size:20px;line-height:22px;white-space:nowrap}
+.fl{display:block;font-weight:500;font-size:11px;line-height:15px;color:#3A3A36;white-space:nowrap}
+.facts{display:grid;gap:12px;margin-top:16px}
+.facts > div{display:flex;align-items:center;gap:6px;min-width:0}
+.sq{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:none;background:#6DBEFA}
+.sheetN{flex:1;background:#fff;border-radius:32px 32px 0 0;padding:12px 12px 0;display:flex;flex-direction:column;gap:8px}
+.cd{border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.kd{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8)}
+.ct{font-weight:800;font-size:22px;line-height:26px}
+.cs{font-weight:500;font-size:14px;line-height:19px;color:rgba(20,20,20,.82)}
+.ab{display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
+.ab b{display:block;font-weight:800;font-size:22px;line-height:24px} .ab span{display:block;font-weight:600;font-size:11px;color:rgba(20,20,20,.82)}
+.dur{background:#141414;color:#fff;border-radius:12px;padding:3px 9px;font-weight:700;font-size:12px;white-space:nowrap}
+.slim{border-radius:20px;padding:12px 14px;display:flex;align-items:center;gap:12px}
+.slim .t{flex:1;min-width:0} .slim .t b{display:block;font-weight:800;font-size:16px;line-height:20px} .slim .t span{display:block;font-weight:500;font-size:12px;line-height:16px;color:rgba(20,20,20,.82)}
+.chip{background:#fff;color:#0B6E43;border-radius:14px;padding:5px 10px;font-weight:700;font-size:13px;white-space:nowrap}
+/* a meteorologia */
+.wx{display:flex;align-items:center;gap:6px;font-weight:600;font-size:13px;color:#141414}
+.wx b{font-weight:800}
+.wxline{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.55);border-radius:12px;padding:7px 10px}
+.credit{font-weight:500;font-size:11px;color:#5E5E57;padding:2px 6px}
+.credit.top{padding:6px 0 0}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>A meteorologia no Início</h1>
+    <p><b>Hoje</b> só aparece na pernoita, como segundo facto do topo: "7° · amanhã · chuva". É a <b>máxima de amanhã</b>, sem "°C", quando o que interessa é o tempo à hora do report. E o crédito que a licença pede (<b>«Data from MET Norway»</b>) não aparece em lado nenhum.</p>
+    <p><b>Em todas as opções:</b> a previsão passa a ser a <b>da hora que interessa</b> (a série do MET Norway é hora a hora até cerca de dois dias), com "°C"; e o crédito <b>"Meteorologia: MET Norway"</b> aparece onde há tempo. Mostram-se três estados: a véspera (com pernoita fora), em voo e a pernoita. <b>As tuas imagens:</b> não há nenhuma de meteorologia no índice. <b>Mobbin:</b> <a href="https://mobbin.com/screens/771eb254-0744-4d99-a60f-167be281d12b">CLEAR</a> ("61°F when you land" por baixo da rota, com a marca do tempo pequena no fundo), <a href="https://mobbin.com/screens/8f87cb7a-1eaf-43a6-8198-c4d441faf151">Air NZ</a> (um cartão do tempo do destino no início), <a href="https://mobbin.com/screens/b47a73f5-765e-45cd-b548-7ef7a2a777fa">Fly Delta</a> (a temperatura à chegada).</p>
+  </div>
+  <div id="opts" style="display:flex;flex-direction:column;gap:36px"></div>
+  <div class="card2"><h3>A minha recomendação: M1</h3><ul>
+    <li><b>M1</b> põe o tempo <b>no cartão do sítio a que se refere</b>, à hora que conta: no cartão do dia, o tempo da base à hora do report (o caminho para o aeroporto, de madrugada: nevoeiro, gelo); no cartão da pernoita, o tempo da cidade onde vais dormir (o que levar na mala); em voo, o tempo do destino à chegada (a cabine anuncia-o aos passageiros). O topo fica só com o essencial. O crédito fica numa linha pequena por baixo dos cartões.</li>
+    <li><b>M2</b> faz do tempo um <b>facto do topo</b> em todos os estados de serviço. Vê-se primeiro, mas passam a ser três factos apertados, e quando há a hora UTC são quatro: um teria de sair.</li>
+    <li><b>M3</b> junta tudo <b>num cartão do tempo</b> (como a Air NZ): um sítio só, com o crédito lá dentro. Mas é mais um cartão, fica mais abaixo, e separa o tempo do serviço a que pertence.</li>
+    <li><b>Não mostro o tempo</b> nas folgas, férias, baixa nem standby: a app do tempo do telemóvel já faz isso, e aqui seria repetir. Só onde há um serviço, um sítio e uma hora.</li></ul></div>
+</div>
+<script>
+var P = { shield:'<path d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5l-8-3zm0 2.2 6 2.3V11c0 4-2.6 7.7-6 8.8-3.4-1.1-6-4.8-6-8.8V6.5l6-2.3z"/>',
+  fog:'<path d="M3 8h14v1.8H3zm4 4h14v1.8H7zm-4 4h14v1.8H3z"/>',
+  rain:'<path d="M7 15a5 5 0 0 1-.6-10A6 6 0 0 1 18 7a4 4 0 0 1-.5 8H7zm1 2 1.6 1-1.4 3-1.6-1zm4.5 0 1.6 1-1.4 3-1.6-1zm4.5 0 1.6 1-1.4 3-1.6-1z"/>',
+  clock:'<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2.2a7.8 7.8 0 1 1 0 15.6 7.8 7.8 0 0 1 0-15.6zM11 6.5v6.1l4.6 2.8 1-1.7-3.6-2.1V6.5z"/>' };
+function ic(n, s){ return '<svg class="ic" width="' + s + '" height="' + s + '" viewBox="0 0 24 24">' + P[n] + '</svg>'; }
+var CREDIT = '<div class="credit">Meteorologia: MET Norway</div>';
+function fact(v, l, typed){ return '<div>' + (typed ? '<span class="sq">' + ic('shield', 18) + '</span>' : '') + '<div style="min-width:0"><span class="fv">' + v + '</span><span class="fl">' + l + '</span></div></div>'; }
+function mkTop(pills, what, l1, l2, facts){
+  return '<div class="topA"><div class="pills">' + pills + '<span class="bell">' + ic('clock', 18) + '</span></div><div class="what">' + what + '</div><div class="g"><div>' + l1 + '</div><div>' + l2 + '</div></div>'
+    + '<div class="facts" style="grid-template-columns:repeat(' + facts.length + ',minmax(0,1fr))">' + facts.join('') + '</div></div>';
+}
+function dayCard(kind, title, sub, a, b, dur, extra){ return '<div class="cd" style="background:#6DBEFA"><span class="kd">' + kind + '</span><span class="ct">' + title + '</span><span class="cs">' + sub + '</span>' + (extra || '') + '<div class="ab"><div><b>' + a[0] + '</b><span>' + a[1] + '</span></div><span class="dur">' + dur + '</span><div style="text-align:right"><b>' + b[0] + '</b><span>' + b[1] + '</span></div></div></div>'; }
+function restCard(title, sub, extra){ return '<div class="cd" style="background:#B4C2A2"><span class="kd">Repouso · fora da base</span><span class="ct">' + title + '</span><span class="cs">' + sub + '</span>' + (extra || '') + '<div class="ab"><div><b>14:20</b><span>fim de serviço</span></div><span class="dur">mínimo 10 h</span><div style="text-align:right"><b>00:20</b><span>cumprido</span></div></div></div>'; }
+function slim(bg, title, sub, val){ return '<div class="slim" style="background:' + bg + '"><div class="t"><b>' + title + '</b><span>' + sub + '</span></div>' + (val ? '<span class="chip">' + val + '</span>' : '') + '</div>'; }
+function wxl(icn, txt){ return '<div class="wxline"><span class="wx">' + ic(icn, 16) + txt + '</span></div>'; }
+function phone(topH, sheet){ return '<div class="ph"><div class="status"><span>21:40</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>' + topH + '<div class="sheetN">' + sheet + '</div></div>'; }
+var V_PILLS = '<span class="pl ink"><i></i>Amanhã</span><span class="pl">quinta 12</span>';
+var A_PILLS = '<span class="pl ink"><i></i>Em voo</span><span class="pl">EJU7625</span>';
+var N_PILLS = '<span class="pl ink">Pernoita</span><span class="pl">LGW</span>';
+var N_FACT = fact('8 °C', 'às 14:05 · chuva');
+// M1 — no cartão do sítio
+function M1(st){
+  if (st === 'v') return phone(mkTop(V_PILLS, 'Report às', '05:15', 'LIS', [fact('7 h 35', 'falta'), fact('17:00', 'PSV até', 1)]),
+    dayCard('Dia de serviço · 3 setores', 'LIS → FNC → LIS → LGW', 'PSV 8:35 de 11:45 · repouso cumprido', ['06:15', 'parte'], ['13:50', 'última chegada'], '7 h 35', wxl('fog', '<b>4 °C</b> · nevoeiro em LIS às 05:15'))
+    + slim('#B4C2A2', 'Pernoita em LGW', 'fim de serviço 14:20 · Hotel do aeroporto · <b>12 °C, chuva à chegada</b>', '+45,40 €') + CREDIT);
+  if (st === 'a') return phone(mkTop(A_PILLS, 'Aterras às', '13:50', 'LGW', [fact('1 h 05', 'falta para aterrar'), fact('3:10', 'de margem no PSV', 1)]),
+    dayCard('Dia de serviço · setor 3 de 3', 'LIS → FNC → LIS → LGW', 'a horas', ['05:15', 'report'], ['17:00', 'limite'], 'PSV 7:30 de 11:45', wxl('rain', '<b>12 °C</b> · chuva em LGW à chegada'))
+    + slim('#B4C2A2', 'Pernoita em LGW', 'fim de serviço 14:20 · Hotel do aeroporto', '+45,40 €') + CREDIT);
+  return phone(mkTop(N_PILLS, 'Report amanhã às', '14:05', 'LGW', [fact('16 h 25', 'falta'), N_FACT]),
+    restCard('Hotel do aeroporto', 'pernoita desta noite') + slim('#6DBEFA', 'LGW → LIS', 'quinta 12 · parte 15:05 · chega 17:45') + CREDIT);
+}
+// M2 — um facto do topo
+function M2(st){
+  if (st === 'v') return phone(mkTop(V_PILLS, 'Report às', '05:15', 'LIS', [fact('7 h 35', 'falta'), fact('17:00', 'PSV até', 1), fact('4 °C', 'nevoeiro às 05:15')]) .replace('</div></div><div class="sheetN">', '</div></div>'),
+    dayCard('Dia de serviço · 3 setores', 'LIS → FNC → LIS → LGW', 'PSV 8:35 de 11:45 · repouso cumprido', ['06:15', 'parte'], ['13:50', 'última chegada'], '7 h 35')
+    + slim('#B4C2A2', 'Pernoita em LGW', 'fim de serviço 14:20 · Hotel do aeroporto', '+45,40 €') + CREDIT);
+  if (st === 'a') return phone(mkTop(A_PILLS, 'Aterras às', '13:50', 'LGW', [fact('1 h 05', 'falta para aterrar'), fact('3:10', 'de margem no PSV', 1), fact('12 °C', 'chuva em LGW')]),
+    dayCard('Dia de serviço · setor 3 de 3', 'LIS → FNC → LIS → LGW', 'a horas', ['05:15', 'report'], ['17:00', 'limite'], 'PSV 7:30 de 11:45')
+    + slim('#B4C2A2', 'Pernoita em LGW', 'fim de serviço 14:20 · Hotel do aeroporto', '+45,40 €') + CREDIT);
+  return phone(mkTop(N_PILLS, 'Report amanhã às', '14:05', 'LGW', [fact('16 h 25', 'falta'), N_FACT]),
+    restCard('Hotel do aeroporto', 'pernoita desta noite') + slim('#6DBEFA', 'LGW → LIS', 'quinta 12 · parte 15:05 · chega 17:45') + CREDIT);
+}
+// M3 — um cartão do tempo
+function wxCard(title, sub){ return '<div class="slim" style="background:#F1EFEA"><span class="sq" style="background:#fff">' + ic(title.indexOf('nevoeiro') > -1 ? 'fog' : 'rain', 18) + '</span><div class="t"><b>' + title + '</b><span>' + sub + '</span></div></div>'; }
+function M3(st){
+  if (st === 'v') return phone(mkTop(V_PILLS, 'Report às', '05:15', 'LIS', [fact('7 h 35', 'falta'), fact('17:00', 'PSV até', 1)]),
+    dayCard('Dia de serviço · 3 setores', 'LIS → FNC → LIS → LGW', 'PSV 8:35 de 11:45 · repouso cumprido', ['06:15', 'parte'], ['13:50', 'última chegada'], '7 h 35')
+    + slim('#B4C2A2', 'Pernoita em LGW', 'fim de serviço 14:20 · Hotel do aeroporto', '+45,40 €')
+    + wxCard('LIS 4 °C · LGW 12 °C', 'nevoeiro às 05:15 · chuva à chegada · Meteorologia: MET Norway'));
+  if (st === 'a') return phone(mkTop(A_PILLS, 'Aterras às', '13:50', 'LGW', [fact('1 h 05', 'falta para aterrar'), fact('3:10', 'de margem no PSV', 1)]),
+    dayCard('Dia de serviço · setor 3 de 3', 'LIS → FNC → LIS → LGW', 'a horas', ['05:15', 'report'], ['17:00', 'limite'], 'PSV 7:30 de 11:45')
+    + slim('#B4C2A2', 'Pernoita em LGW', 'fim de serviço 14:20 · Hotel do aeroporto', '+45,40 €')
+    + wxCard('LGW 12 °C à chegada', 'chuva · Meteorologia: MET Norway'));
+  return phone(mkTop(N_PILLS, 'Report amanhã às', '14:05', 'LGW', [fact('16 h 25', 'falta'), fact('LGW', 'até lá')]).replace(fact('LGW', 'até lá'), ''),
+    restCard('Hotel do aeroporto', 'pernoita desta noite') + slim('#6DBEFA', 'LGW → LIS', 'quinta 12 · parte 15:05 · chega 17:45')
+    + wxCard('LGW 8 °C às 14:05', 'chuva · Meteorologia: MET Norway'));
+}
+var O = [['M1 · No cartão do sítio', true, 'O tempo <b>no cartão do sítio a que se refere</b>, à hora que conta: a base à hora do report no cartão do dia, a cidade da pernoita no cartão da pernoita, o destino à chegada em voo. Na pernoita fica o facto do topo (à hora do report). O crédito numa linha pequena por baixo dos cartões.', M1],
+         ['M2 · Um facto do topo', false, 'O tempo é <b>um facto do topo</b> em todos os estados de serviço (o da base à hora do report, o do destino em voo). Com o PSV são três factos; com a hora UTC seriam quatro. <b>Em voo já não cabe</b>: o terceiro facto sobrepõe-se ao segundo (deixado assim de propósito, para se ver).', M2],
+         ['M3 · Um cartão do tempo', false, '<b>Um cartão só para o tempo</b>, por baixo dos do serviço (como a Air NZ), com os sítios do dia e o crédito lá dentro.', M3]];
+document.getElementById('opts').innerHTML = O.map(function(o){
+  return '<div class="opt"><h3>' + o[0] + (o[1] ? '<span class="rec">RECOMENDO</span>' : '') + '</h3><p>' + o[2] + '</p><div class="row">'
+    + [['v', 'Véspera · report amanhã às 05:15'], ['a', 'Em voo · aterras em LGW'], ['n', 'Pernoita em LGW']].map(function(s){ return '<div><div class="cap">' + s[1] + '</div>' + o[3](s[0]) + '</div>'; }).join('') + '</div></div>';
+}).join('');
+</script>
+</body>
+</html>

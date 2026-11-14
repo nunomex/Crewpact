@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · A F3 nos casos difíceis</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* A F3 NOS CASOS DIFÍCEIS (2026-11-14). O Nuno escolheu a F3 de design/topo-factos.html (um quadradinho com a cor do tipo por
+   facto) e perguntou "achas que fica bom?". Medido com as métricas da app (data/fontMetrics.js) em todos os factos que a app
+   mostra (os 18 estados do Início em português e em inglês, o 3.º facto da hora UTC, a Escala, os Números):
+   · com TRÊS factos (o report em UTC diferente da hora local) cada facto tem ~103 pt e o quadradinho de 40 + 10 come 50: não cabe;
+   · o € do ano ("+55 512,34 €", a foto do Nuno) não cabe a 375 ao lado de um quadradinho de 40;
+   · muitos factos do Início não têm tipo ("Em dia", "Só leitura", "Com o teu sim", "sexta 13 · até lá", "7° amanhã · chuva") —
+     levariam um quadradinho claro e um ícone só para encher; e o quadradinho claro (#F1EFEA) quase não se vê no fundo (#E3E1DB).
+   Três maneiras de guardar a ideia: A o quadradinho só onde há tipo (32) · B o quadradinho por cima do valor · C a cor no fio.
+   Tudo à largura mais apertada (375 → 335 úteis). Imagens 3409 · 3431 (o quadradinho com a cor do tipo), 3412 · 3442 (o ícone num
+   círculo branco), 3424; Mobbin Kit, Satispay, Shopee. A cor segue o mapa B (docs/design-system.md §14). */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+.lead{max-width:940px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)} .lead a{color:var(--pfg)}
+.cols{display:flex;flex-wrap:wrap;gap:24px}
+.col{display:flex;flex-direction:column;gap:10px;width:375px;max-width:100%}
+.col > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.col > p{font-size:13px;line-height:1.45;color:var(--muted);min-height:96px} .col > p b{color:var(--pfg)}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.cap{font-size:11px;font-weight:700;color:var(--muted);margin:0 0 4px 4px}
+.strip{width:375px;max-width:100%;background:#E3E1DB;border-radius:18px;padding:14px 20px 16px;color:#141414;overflow:hidden}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:940px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card2 li{font-size:13px;line-height:1.5;color:var(--muted)} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:var(--pfg)}
+.ic{display:block;fill:currentColor}
+.fv{display:block;font-weight:700;font-size:20px;line-height:22px;white-space:nowrap}
+.fl{display:block;font-weight:500;font-size:11px;line-height:15px;color:#3A3A36;white-space:nowrap}
+.gain{color:#0B6E43}
+.rowF{display:grid;gap:12px}
+/* A: o quadradinho só onde há tipo */
+.fa{display:flex;align-items:center;gap:8px;min-width:0}
+.sq{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:none}
+/* B: o quadradinho por cima */
+.fb{display:flex;flex-direction:column;gap:6px;min-width:0}
+.sqb{width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center}
+/* C: a cor no fio */
+.fc{border-left:4px solid #141414;border-radius:2px;padding-left:10px;min-width:0}
+.bad{outline:2px dashed #EC7A6C;outline-offset:2px}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>A F3 nos casos difíceis</h1>
+    <p>Escolheste a F3 (um quadradinho de cor por facto). Medi-a com <b>todos</b> os factos que a app mostra, e há três casos em que não fica bem: <b>três factos</b> (o report em UTC diferente da hora local) não cabem com o quadradinho de 40; <b>o € do ano</b> ("+55 512,34 €", a tua foto) não cabe a 375; e <b>muitos factos do Início não têm tipo</b> ("Em dia", "Só leitura", "Com o teu sim", "sexta 13 · até lá", "7° amanhã · chuva"), por isso levariam um quadradinho claro com um ícone só para encher. Além disso, o claro quase não se vê no fundo bege.</p>
+    <p>Três maneiras de guardar a ideia, nos cinco casos mais difíceis, à <b>largura mais apertada (375)</b>. Se cabe a 375, cabe a 390. <b>As tuas imagens:</b> 3409 e 3431 (o quadradinho com a cor do tipo), 3412 e 3442 (o ícone num círculo branco), 3424. <b>Mobbin:</b> <a href="https://mobbin.com/screens/c8ea1570-3987-42ea-9b0c-6d176a8f6d4f">Kit</a>, <a href="https://mobbin.com/screens/ce177872-c7d1-4652-9e16-73d84b649ec4">Satispay</a>, <a href="https://mobbin.com/screens/71277687-5000-4da7-a0b4-ac53fb7bd2c1">Shopee</a>. Um contorno vermelho tracejado marca o que não coubesse.</p>
+  </div>
+  <div class="cols" id="cols"></div>
+  <div class="card2"><h3>A minha recomendação: A</h3><ul>
+    <li><b>A</b> é a F3 honesta: o quadradinho aparece <b>só quando diz alguma coisa</b> (azul = voo, salva = repouso, verde = dinheiro, terra = solo). O tempo, as datas e as frases ficam só com o texto. Cabe em tudo, o topo não cresce (continua igual nas três abas), e quando aparece cor é porque significa algo. Na Escala e nos Números há quadradinhos nos dois factos; no Início, quase sempre há um (o PSV).</li>
+    <li><b>B</b> dá a todos os factos um quadradinho, por cima do valor. Cabe em tudo e fica muito arrumada, mas o topo cresce uns 34 pontos nas três abas. E os factos sem tipo precisam de um ícone inventado (relógio, cadeado, visto, nuvem): é mais desenho e menos informação.</li>
+    <li><b>C</b> põe a cor no fio, mais grosso (4 pontos). Cabe em tudo e não cresce nada, mas é a mais discreta: está mais perto de hoje do que da F3 que escolheste.</li></ul></div>
+</div>
+<script>
+var P = { plane:'<path d="M21 15.5v-2l-8-5V3.6a1.5 1.5 0 0 0-3 0V8.5l-8 5v2l8-2.5V18l-2 1.5V21l3.5-1 3.5 1v-1.5L13 18v-5z"/>',
+  clock:'<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2.2a7.8 7.8 0 1 1 0 15.6 7.8 7.8 0 0 1 0-15.6zM11 6.5v6.1l4.6 2.8 1-1.7-3.6-2.1V6.5z"/>',
+  shield:'<path d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5l-8-3zm0 2.2 6 2.3V11c0 4-2.6 7.7-6 8.8-3.4-1.1-6-4.8-6-8.8V6.5l6-2.3z"/>',
+  bed:'<path d="M3 6h2v7h7V8h6a3 3 0 0 1 3 3v7h-2v-2H5v2H3V6zm5 1.5A2.5 2.5 0 1 1 8 12.5a2.5 2.5 0 0 1 0-5z"/>',
+  eur:'<path d="M15 4.5c-3.2 0-5.9 2-6.9 4.9H5.5v1.8h2.2a7 7 0 0 0 0 1.6H5.5v1.8h2.6c1 2.9 3.7 4.9 6.9 4.9 1.5 0 2.9-.4 4-1.2l-.9-1.7c-.9.6-1.9.9-3.1.9-2.2 0-4.1-1.3-5-3H15v-1.7H9.3a5.5 5.5 0 0 1 0-1.6H15V9.4h-5c.9-1.8 2.8-3 5-3 1.2 0 2.2.3 3.1.9l.9-1.7a7.3 7.3 0 0 0-4-1.1z"/>',
+  globe:'<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm6.9 9h-3a15 15 0 0 0-1.3-5.6A8 8 0 0 1 18.9 11zM12 4.1c.9 1.2 1.8 3.6 1.9 6.9h-3.8c.1-3.3 1-5.7 1.9-6.9zM9.4 5.4A15 15 0 0 0 8.1 11h-3a8 8 0 0 1 4.3-5.6zM5.1 13h3a15 15 0 0 0 1.3 5.6A8 8 0 0 1 5.1 13zm6.9 6.9c-.9-1.2-1.8-3.6-1.9-6.9h3.8c-.1 3.3-1 5.7-1.9 6.9zm2.6-1.3a15 15 0 0 0 1.3-5.6h3a8 8 0 0 1-4.3 5.6z"/>',
+  lock:'<path d="M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1zm2 0h6V7a3 3 0 0 0-6 0v3z"/>',
+  check:'<path d="M9.5 16.2 5.3 12l-1.4 1.4 5.6 5.6L20.1 8.4 18.7 7z"/>' };
+function ic(n, s, c){ return '<svg class="ic" width="' + s + '" height="' + s + '" viewBox="0 0 24 24" style="color:' + c + '">' + P[n] + '</svg>'; }
+var KC = { voo: '#6DBEFA', rep: '#B4C2A2', din: '#0B6E43', neu: '#FFFFFF' };
+// k = o tipo do facto (mapa B): voo · rep · din · neu (sem tipo); b = o ícone que a B teria de inventar para os neutros
+var CASES = [
+  ['Início · antes do report, com a hora UTC (3 factos)', [{ v: '1 h 40', l: 'falta', k: 'neu', ic: 'clock' }, { v: '17:00', l: 'PSV até', k: 'voo', ic: 'shield' }, { v: '04:15Z', l: 'report em UTC', k: 'neu', ic: 'globe' }]],
+  ['Início · assistência', [{ v: '3 h 10', l: 'falta', k: 'neu', ic: 'clock' }, { v: '~18:45', l: 'PSV até, se chamarem já', k: 'voo', ic: 'shield' }]],
+  ['Início · antes de ligar a escala', [{ v: 'Só leitura', l: 'nada é alterado', k: 'neu', ic: 'lock' }, { v: 'Com o teu sim', l: 'é que se grava', k: 'neu', ic: 'check' }]],
+  ['Escala · 31 serviços', [{ v: '15', l: 'pernoitas', k: 'rep', ic: 'bed' }, { v: '4 999,99 €', l: 'per diem · estimado', k: 'din', ic: 'eur' }]],
+  ['Números · o ano da tua foto', [{ v: '+55 512,34 €', l: 'acima da base', k: 'din', ic: 'eur' }, { v: '612,5 h', l: 'de voo · ano civil', k: 'voo', ic: 'plane' }]],
+];
+var vc = function(f){ return 'fv' + (f.k === 'din' ? ' gain' : ''); };
+var txt = function(f){ return '<div style="min-width:0"><span class="' + vc(f) + '">' + f.v + '</span><span class="fl">' + f.l + '</span></div>'; };
+var A = function(fx){ return fx.map(function(f){ return f.k === 'neu' ? '<div class="fa">' + txt(f) + '</div>' : '<div class="fa"><span class="sq" style="background:' + KC[f.k] + '">' + ic(f.ic, 18, f.k === 'din' ? '#fff' : '#141414') + '</span>' + txt(f) + '</div>'; }).join(''); };
+var B = function(fx){ return fx.map(function(f){ return '<div class="fb"><span class="sqb" style="background:' + KC[f.k] + '">' + ic(f.ic, 16, f.k === 'din' ? '#fff' : '#141414') + '</span>' + txt(f) + '</div>'; }).join(''); };
+var C = function(fx){ return fx.map(function(f){ return '<div class="fc" style="border-left-color:' + (f.k === 'neu' ? '#141414' : f.k === 'din' ? '#0B6E43' : KC[f.k]) + '">' + txt(f) + '</div>'; }).join(''); };
+var O = [['A · O quadradinho só onde há tipo', true, 'O quadradinho (32) aparece <b>só quando o facto é de um tipo</b>: voo, repouso, dinheiro, solo. O tempo, as datas e as frases ficam só com o texto. O topo não cresce.', A],
+         ['B · O quadradinho por cima do valor', false, '<b>Todos os factos</b> com um quadradinho (28) por cima do valor; os sem tipo levam um quadradinho branco com um ícone. O topo cresce uns 34 pontos nas três abas.', B],
+         ['C · A cor no fio', false, 'Sem quadradinho: <b>o fio fica mais grosso (4) e leva a cor do tipo</b>; nos factos sem tipo fica a tinta. O topo não cresce.', C]];
+document.getElementById('cols').innerHTML = O.map(function(o){
+  return '<div class="col"><h3>' + o[0] + (o[1] ? '<span class="rec">RECOMENDO</span>' : '') + '</h3><p>' + o[2] + '</p>'
+    + CASES.map(function(c){ return '<div><div class="cap">' + c[0] + '</div><div class="strip"><div class="rowF" style="grid-template-columns:repeat(' + c[1].length + ',minmax(0,1fr))">' + o[3](c[1]) + '</div></div></div>'; }).join('') + '</div>';
+}).join('');
+// marca o que não coubesse: um texto mais largo do que a sua parte
+document.fonts.ready.then(function(){ document.querySelectorAll('.rowF > div').forEach(function(cell){
+  var r = cell.getBoundingClientRect(); cell.querySelectorAll('.fv, .fl').forEach(function(t){ if (t.getBoundingClientRect().right > r.right + 0.5) cell.classList.add('bad'); });
+}); });
+</script>
+</body>
+</html>

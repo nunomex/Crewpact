@@ -292,7 +292,9 @@ Ordem: o Início primeiro; depois os outros ecrãs, janelas e menus, um de cada 
 **No código (2026-11-11):** tokens `CARD` (cores de dia e de noite, tons sobre os cartões) e `TXT3` (os estilos de texto em
 Hanken) em `data/constants.js`, ao lado dos da 2.0 · `RADIUS.sheet` = 32 · o que vai para onde: `data/homeCards.js` (puro,
 golden `npm run test:homecards`, que tranca as regras de conteúdo de baixo) · o desenho: `components/HomeCards.js` · o tamanho
-do número gigante calcula-se com as larguras da Hanken lidas do `.ttf` (`data/fontMetrics.js`; 86 → 60 até os factos caberem)
+do número gigante calcula-se com as larguras da Hanken lidas do `.ttf` (`data/fontMetrics.js`) — **desde 2026-11-14 (L1 de
+`design/topo-lado.html`) é UM tamanho para o Início, a Escala e os Números, lado a lado: o maior em que tudo cabe com os factos à
+direita (a Escala é a mais apertada; os Números só com o total), 62 a 390 e 58 a 375, nas duas línguas; `topGiant`/`commonGiant`**
 · a barra: `components/TabBar.js`. Dois pares do esboço corrigidos por contraste: o rótulo do cartão passa de 72 % para 80 %
 de opacidade (no laranja dava 4,35) e as abas inativas de #77776F para #5E5E57 (3,93 → 5,68).
 
@@ -305,7 +307,8 @@ O que muda em relação à §2 ("branco · preto · amarelo, plana, hairline"):
   `TXT.num` e `TXT.numLg` passam a Hanken 700/800 **quando o ecrã migrar**; a Barlow Condensed sai de cada ecrã nessa
   altura (não se troca a família nos tokens de uma vez: a Hanken é mais larga e partia os ecrãs antigos). O número gigante
   do topo (86) continua fora da escala, afinado no `TUNE`.
-- **A anatomia do Início:** pílula do estado + número em duas linhas + dois factos ao lado de um fio; folha com o cartão do
+- **A anatomia do Início:** pílula do estado + número em duas linhas + os factos à direita de um fio (L1 de `design/topo-lado.html`,
+  2026-11-14, no tamanho comum das três abas; nos Números só o total); folha com o cartão do
   momento e o do que vem a seguir (nunca mais de dois grandes; com um aviso, o segundo passa a linha fina). Sem teclas.
 - **Raios:** cartão `RADIUS.xxl` (24); a folha pede um degrau novo, 32 (acrescentar à escala na construção); pílulas e a
   cápsula da barra = `pill`.

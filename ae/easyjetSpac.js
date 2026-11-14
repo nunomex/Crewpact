@@ -545,7 +545,7 @@ export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceSta
 export const CALCS = [
   { id: 'base',    group: 'Base',        linked: true,  label: 'Remuneração base',          sub: 'categoria × contrato ÷ 14' },
   { id: 'perdiem', group: 'Por voo',     linked: true,  label: 'Per diem',                  sub: 'Σ setores × nominal (Art. 37)' },
-  { id: 'night',   group: 'Por voo',     linked: true,  label: 'Paragem nocturna',          sub: '2 setores nominais (Art. 39)' },
+  { id: 'night',   group: 'Por voo',     linked: true,  label: 'Paragem noturna',           sub: '2 setores nominais (Art. 39)' },
   { id: 'vac',     group: 'Por voo',     linked: false, label: 'Dia de férias',             sub: '2 setores nominais (Art. 38)' },
   { id: 'adhoc',   group: 'Por voo',     linked: false, label: 'Dever ad-hoc',              sub: '3 setores nominais (Art. 43)' },
   { id: 'snc',     group: 'Perturbação', linked: false, label: 'Alteração de escala (SNC)', sub: '60 € por alteração · até 240 € de abril a outubro (Art. 65.º)' },

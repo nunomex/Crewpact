@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · O topo igual nas três abas</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* O TOPO IGUAL NAS TRÊS ABAS (2026-11-14). O Nuno: "a aba Início, a Escala e agora os Números, a parte de cima — o header — tem
+   tamanhos diferentes". Medido no código (components/HomeCards.js · HomeTop, data/homeCards.js · fitGiant), a 390:
+   Início 86 / topo 279 · Escala 62 / topo 236 ("serviços" é comprido e o per diem é largo: o número encolhe para os factos caberem
+   ao lado) · Números 86 (ano 82) / topo 332 (os factos por baixo desde a T1). A folha branca começa em três alturas.
+   O tamanho comum: o maior que cabe no número mais comprido das três abas (o € do ano, até 199 999,99 €) — 82 a 390, 78 a 375.
+   Imagens do Nuno (referencias/Para a app/README): 3416 (o mesmo topo nas abas: título à esquerda, um só botão à direita) · 3424
+   (o número em duas linhas, rótulo em cima) · 3440 (os subvalores por baixo do total) · 3412 · 3434 (o seletor em pílula).
+   Mobbin: Tonal (o número grande e o rótulo por baixo, sempre no mesmo sítio), Neo Financial (o mesmo topo em Spending, Cash Flow e
+   Credit Score), Copilot (dois valores lado a lado por baixo do título). Dados: os do golden do Início (estado "antes do voo",
+   easyJet, 11 de novembro de 2026) e os das fotos do Nuno nos Números. */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+.lead{max-width:940px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)} .lead a{color:var(--pfg)}
+.opt{display:flex;flex-direction:column;gap:10px}
+.opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:var(--muted);max-width:900px} .opt > p b{color:var(--pfg)}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.row{display:flex;flex-wrap:wrap;gap:20px}
+.cap{font-size:12px;font-weight:700;color:var(--muted);margin:0 0 6px 6px}
+.cap b{color:#C2410C}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:940px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card2 li{font-size:13px;line-height:1.5;color:var(--muted)} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:var(--pfg)}
+table.m{border-collapse:collapse;font-size:13px;max-width:940px;background:#fff;border-radius:12px;overflow:hidden}
+table.m th,table.m td{padding:8px 12px;border-bottom:1px solid #E4E2DC;text-align:left} table.m th{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
+
+/* o telemóvel: 390 de largura útil, só a parte de cima */
+.ph{display:flex;flex-direction:column;width:406px;height:560px;border:8px solid #04060A;border-radius:52px 52px 0 0;border-bottom:0;overflow:hidden;position:relative;background:#E3E1DB;color:#141414;max-width:100%}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.topA{padding:0 20px 32px;flex:none}
+.pills{display:flex;align-items:center;gap:8px;min-height:68px;padding:8px 0 16px}
+.pl{height:38px;padding:0 16px;border-radius:19px;border:1.5px solid #141414;display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:13px;white-space:nowrap}
+.pl.ink{background:#141414;color:#E3E1DB} .pl.ink i{width:7px;height:7px;border-radius:4px;background:#F0854A;display:block}
+.bell{width:44px;height:44px;border-radius:22px;background:rgba(127,127,127,.22);margin-left:auto;display:flex;align-items:center;justify-content:center}
+.ml{margin-left:auto}
+.seg{display:inline-flex;background:rgba(127,127,127,.22);border-radius:19px;padding:3px;height:38px;align-items:center;margin-left:auto}
+.seg span{padding:0 14px;height:32px;border-radius:16px;display:flex;align-items:center;font-weight:700;font-size:13px;color:#3A3A36}
+.seg span.on{background:#141414;color:#E3E1DB}
+.what{font-weight:500;font-size:15px;line-height:20px;color:#3A3A36}
+.hero{display:flex;align-items:stretch;gap:16px;margin-top:4px}
+.g{font-weight:700;white-space:nowrap}
+.g .l1{display:flex;align-items:baseline}
+.g small{font-size:34px;letter-spacing:-1px;margin-left:6px}
+.g .grey{color:rgba(20,20,20,.5)}
+.side{border-left:1.5px solid #141414;padding-left:16px;display:flex;flex-direction:column;justify-content:center;gap:12px;min-width:0}
+.fv{display:block;font-weight:700;font-size:20px;line-height:22px;white-space:nowrap}
+.fl{display:block;font-weight:500;font-size:11px;line-height:15px;color:#3A3A36;white-space:nowrap}
+.gain{color:#0B6E43}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.row2 > div{border-left:1.5px solid #141414;padding-left:12px;min-width:0}
+.sheetN{flex:1;background:#fff;border-radius:32px 32px 0 0;padding:16px 12px 0;position:relative}
+.sheetN::before{content:'';position:absolute;left:-8px;right:-8px;top:0;border-top:2px dashed #C2410C}
+.cardB{border-radius:24px;padding:16px;height:170px;display:flex;flex-direction:column;gap:10px}
+.kd{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8)}
+.ct{font-weight:800;font-size:22px;line-height:26px}
+.stack{display:flex;height:14px;border-radius:7px;overflow:hidden;gap:2px} .stack i{display:block;height:100%}
+.month{display:grid;grid-template-columns:repeat(7,1fr);gap:8px 4px;padding:4px 6px}
+.month span{font-weight:700;font-size:11px;color:#5E5E57;text-align:center}
+.month i{display:block;width:38px;height:38px;border-radius:19px;margin:0 auto;border:3px solid #6DBEFA}
+.month i.r{border-color:#B4C2A2} .month i.o{border-color:#E4E2DC}
+/* H3: os factos no topo da folha */
+.sfacts{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:4px 8px 14px}
+.sfacts > div{border-left:1.5px solid #141414;padding-left:12px;min-width:0}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>O topo igual nas três abas</h1>
+    <p><b>Hoje (medido no código, a 390):</b> no Início o número tem 86 e o topo 279; na Escala o número tem <b>62</b> e o topo <b>236</b> ("serviços" é comprido e o per diem é largo, e o número encolhe para os factos caberem ao lado); nos Números o número tem 86 (82 no ano) e o topo <b>332</b> (os factos por baixo, desde a T1). Por isso a folha branca começa em três alturas diferentes. A <span style="color:#C2410C;font-weight:700">linha tracejada</span> em cada telemóvel marca onde começa a folha.</p>
+    <p><b>O tamanho comum:</b> o maior que cabe no número mais comprido das três abas, o € do ano (até 199 999,99 €): <b>82 a 390, 78 a 375</b>. No Início, o número desce de 86 para 82 (−5 %); na Escala sobe de 62 para 82.</p>
+    <p><b>As tuas imagens:</b> 3416 (o mesmo topo nas abas: título à esquerda, um só botão à direita), 3424 (o número em duas linhas, rótulo em cima), 3440 (os subvalores por baixo do total), 3412 e 3434 (o seletor em pílula). <b>Mobbin:</b> <a href="https://mobbin.com/screens/e5dcd7a4-253e-4b0f-a487-7809db572ee8">Tonal</a> (o número grande com o rótulo por baixo, sempre no mesmo sítio), <a href="https://mobbin.com/screens/f99e4b29-6f21-4c88-8e80-2aa596db5911">Neo Financial</a> (o mesmo topo em todas as abas dos Insights), <a href="https://mobbin.com/screens/7eeae53b-0800-4b1e-9553-43f7eecb4dce">Copilot</a> (dois valores lado a lado por baixo do título).</p>
+  </div>
+  <table class="m">
+    <tr><th></th><th>Início</th><th>Escala</th><th>Números</th><th>A folha começa igual?</th></tr>
+    <tr><td><b>Hoje</b></td><td>86 · 279</td><td>62 · 236</td><td>86 · 332</td><td>não (três alturas)</td></tr>
+    <tr><td><b>H1</b> factos por baixo em todas</td><td>82 · 325</td><td>82 · 325</td><td>82 · 325</td><td><b>sim</b></td></tr>
+    <tr><td><b>H2</b> ao lado onde cabem</td><td>82 · 272</td><td>82 · 325</td><td>82 · 325</td><td>não (duas alturas)</td></tr>
+    <tr><td><b>H3</b> os factos descem para a folha</td><td>82 · 272</td><td>82 · 272</td><td>82 · 272</td><td><b>sim</b></td></tr>
+  </table>
+  <div id="opts" style="display:flex;flex-direction:column;gap:36px"></div>
+  <div class="card2"><h3>A minha recomendação: H1</h3><ul>
+    <li><b>H1</b> é a mesma peça nas três abas: as pílulas, a frase, o número em duas linhas no mesmo tamanho e os dois factos numa fila por baixo. A folha começa sempre no mesmo sítio, e trocar de aba não mexe em nada (é o que a Tonal e a Neo fazem). Nada se corta, nem o € do ano. Custa uns 46 pontos de folha no Início.</li>
+    <li><b>H2</b> deixa o Início como está (os factos ao lado) e só iguala o tamanho do número. Mas a folha continua a começar mais acima no Início do que nas outras duas. E alguns estados do próprio Início (depois do voo, antes de ligar a escala, um documento a caducar) não cabem ao lado a 82: teriam os factos por baixo, e o topo do Início mudaria de altura de estado para estado.</li>
+    <li><b>H3</b> dá o topo mais baixo e igual, mas tira os factos do relance. No Início, "1 h 40 falta" e "PSV até 17:00" passam para dentro da folha, e na Escala o per diem também. É o que se vê primeiro de manhã, e deixa de estar no topo.</li>
+    <li>Em todas: o tamanho é um só por largura de ecrã (82 a 390, 78 a 375), trancado por um golden com o número mais comprido de cada aba. Na Escala, com um dia aberto, fica só a fila das pílulas, como hoje.</li></ul></div>
+</div>
+<script>
+var Z = 82;
+var INI = { tab: 'Início', pills: '<span class="pl ink"><i></i>Hoje</span><span class="pl">EJU7601</span><span class="bell">🔔</span>', what: 'Report às', l1: '05:15', unit: '', l2: 'LIS', grey: false,
+  f: [['1 h 40', 'falta', 0], ['17:00', 'PSV até', 0]], sheet: '<div class="cardB" style="background:#6DBEFA"><span class="kd">Dia de serviço · 3 setores</span><span class="ct">LIS → FNC → LIS → OPO</span></div>' };
+var ESC = { tab: 'Escala', pills: '<span class="pl">Novembro 2026 ▾</span><span class="pl ml">Sincronizar</span>', what: 'A tua escala de novembro', l1: '11', unit: '', l2: 'serviços', grey: true,
+  f: [['6', 'pernoitas', 0], ['1 732,80 €', 'per diem · estimado', 0]], sheet: '<div class="month">' + ['S','T','Q','Q','S','S','D'].map(function(d){ return '<span>' + d + '</span>'; }).join('') + [1,0,1,2,1,0,2,1,1,0,1,2,0,1].map(function(k){ return '<i class="' + (k === 0 ? 'o' : k === 2 ? 'r' : '') + '"></i>'; }).join('') + '</div>' };
+var NUM = { tab: 'Números', pills: '<span class="pl">Novembro 2026 ▾</span><span class="seg"><span class="on">Mês</span><span>Ano</span></span>', what: 'Ganhos brutos de novembro', l1: '15 137', unit: ',64 €', l2: 'estimado', grey: true,
+  f: [['+5 170,12 €', 'acima da base', 1], ['78,5 h', 'de voo · 12 setores', 0]], sheet: '<div class="cardB" style="background:#F1EFEA"><span class="kd">De onde vem</span><div class="stack"><i style="flex:5059;background:#141414"></i><i style="flex:1733;background:#6DBEFA"></i><i style="flex:182;background:#B4C2A2"></i><i style="flex:60;background:#C3A1BE"></i></div></div>' };
+function giant(d, z){
+  var lh = Math.round(z * 1.1), tr = Math.round(z * 0.1), st = 'font-size:' + z + 'px;line-height:' + lh + 'px;letter-spacing:' + (z * -0.046).toFixed(2) + 'px';
+  return '<div class="g" style="margin:-' + tr + 'px 0 -' + tr + 'px"><div class="l1"><span style="' + st + '">' + d.l1 + '</span>' + (d.unit ? '<small>' + d.unit + '</small>' : '') + '</div>'
+    + '<div class="' + (d.grey ? 'grey' : '') + '" style="' + st + ';margin-top:-' + Math.round(z * 0.2) + 'px">' + d.l2 + '</div></div>';
+}
+function fact(f){ return '<div><span class="fv' + (f[2] ? ' gain' : '') + '">' + f[0] + '</span><span class="fl">' + f[1] + '</span></div>'; }
+function frame(d, hero, sheetTop){
+  return '<div class="ph"><div class="status"><span>09:41</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>'
+    + '<div class="topA"><div class="pills">' + d.pills + '</div><div class="what">' + d.what + '</div>' + hero + '</div>'
+    + '<div class="sheetN">' + (sheetTop || '') + d.sheet + '</div></div>';
+}
+var below = function(d){ return frame(d, '<div style="margin-top:4px">' + giant(d, Z) + '</div><div class="row2">' + d.f.map(fact).join('') + '</div>'); };
+var side = function(d){ return frame(d, '<div class="hero">' + giant(d, Z) + '<div class="side">' + d.f.map(fact).join('') + '</div></div>'); };
+var H1 = below;
+var H2 = function(d){ return d === INI ? side(d) : below(d); };
+var H3 = function(d){ return frame(d, '<div style="margin-top:4px">' + giant(d, Z) + '</div>', '<div class="sfacts">' + d.f.map(fact).join('') + '</div>'); };
+var O = [['H1 · Os factos por baixo nas três abas', true, 'A mesma peça em todas: o número em duas linhas no tamanho comum (<b>82</b>) e os dois factos numa fila por baixo (3440, Copilot). <b>Topo com 325 nas três</b>: a folha começa sempre no mesmo sítio.', H1],
+         ['H2 · O número igual; os factos ao lado onde cabem', false, 'O número com 82 nas três. No Início os factos ficam <b>ao lado</b>, como hoje (topo 272); na Escala e nos Números, onde não cabem, ficam <b>por baixo</b> (topo 325).', H2],
+         ['H3 · Os factos descem para a folha', false, 'O topo só com as pílulas, a frase e o número (<b>272 nas três</b>); os dois factos passam para o <b>princípio da folha</b>, na mesma letra e com o mesmo fio.', H3]];
+document.getElementById('opts').innerHTML = O.map(function(o){
+  return '<div class="opt"><h3>' + o[0] + (o[1] ? '<span class="rec">RECOMENDO</span>' : '') + '</h3><p>' + o[2] + '</p><div class="row">'
+    + [INI, ESC, NUM].map(function(d){ return '<div><div class="cap">' + d.tab + ' · <b class="hh"></b></div>' + o[3](d) + '</div>'; }).join('') + '</div></div>';
+}).join('');
+// mede onde começa a folha (a partir do fim da barra das horas) e escreve-o por cima de cada telemóvel
+document.fonts.ready.then(function(){ document.querySelectorAll('.ph').forEach(function(ph){
+  var top = ph.querySelector('.topA').getBoundingClientRect().height;
+  ph.parentNode.querySelector('.hh').textContent = 'topo ' + Math.round(top);
+}); });
+</script>
+</body>
+</html>

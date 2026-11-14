@@ -1,15 +1,20 @@
 import React, { useContext, useState, useMemo, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated, Dimensions } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { PELE, PELE_FONT, GUTTER, RADIUS, BRAND, SPACE, MONEY } from '../data/constants';
+import { PELE, RADIUS, SPACE, CARD, TXT, TXT3 } from '../data/constants';
 import Icon from '../components/Icon';
-import PeleSide from '../components/PeleSide';
 import PeleSheet from '../components/PeleSheet';
-import PeleHeader from '../components/PeleHeader';
-import CountUp from '../components/CountUp';
+import SheetHeader from '../components/SheetHeader';
+import IconButton from '../components/IconButton';
+import LineCard, { LineRows } from '../components/LineCard';
+import { Field } from '../components/Field';
+import { WideButton } from '../components/PillButton';
+import { HomeTop, HomeCards, pillWidth } from '../components/HomeCards';
+import { topGiant } from '../data/homeCards';
 import YearShareCard from '../components/YearShareCard';
 import useTabBarSpace from '../hooks/useTabBarSpace';
-import { useScrollToTop } from '@react-navigation/native';
+import { useScrollToTop, useIsFocused } from '@react-navigation/native';
 import useEnter from '../hooks/useEnter';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { yearStats, monthStats, availableYears, ANNUAL_FLIGHT_LIMIT_H, STAT_KINDS } from '../data/stats';
@@ -19,7 +24,7 @@ import { provaFor } from '../data/prova';
 import ProvaSheet from '../components/ProvaSheet';
 import { monthAudit } from '../data/audit';
 import AuditSheet from '../components/AuditSheet';
-import { yearCount } from '../data/aeEvents';
+import { yearCount, eventDateLabel } from '../data/aeEvents';
 import { computeFlightTime, computeDutyTime, sumCalendarYearMin } from '../ftl';
 import { t } from '../data/i18n';
 import { select } from '../data/haptics';
@@ -32,11 +37,7 @@ import AsyncStorage from '../data/secureStorage';
 // Cor do estado da janela FTL — o mapa das cores (design-system §14): PASSA o limite (> 100 %) vermelho · PERTO (≥ 85 %, a
 // mesma regra do Início e de data/today.js) laranja · DENTRO sem cor (tinta: cockpit escuro). Antes era vermelho aos 90 %,
 // antes de passar, e verde em tudo o resto — o verde é só do dinheiro. barColor pinta barras e círculos; pctColor o texto.
-const barColor = (r) => (r > 1 ? PELE.red : r >= 0.85 ? PELE.warn : PELE.ink);
-const pctColor = (r) => (r > 1 ? PELE.red : r >= 0.85 ? PELE.warnText : PELE.ink);
 
-// Curva do arco das bolas (translateX por índice) — recria o efeito do mockup para N opções.
-const arcX = (i, n) => { const mid = (n - 1) / 2; const tt = mid ? (i - mid) / mid : 0; return -Math.round(40 * (1 - Math.cos((tt * Math.PI) / 2))); };
 
 // Barra que enche de 0 → valor ao montar (mesma sensação das barras da Home).
 function GrowBar({ ratio, color, track, fill, delay = 200 }) {
@@ -73,13 +74,13 @@ export default function StatsScreen({ navigation }) {
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const tabSpace = useTabBarSpace();
+  const isFocused = useIsFocused();
   const statsScrollRef = useRef(null);
   useScrollToTop(statsScrollRef);   // re-tocar na aba Números → volta ao topo (convenção iOS)
   const seg = useEnter();
 
-  const [scope, setScope] = useState('year');   // 'year' | 'month'
+  const [scope, setScope] = useState('month');   // 'year' | 'month' — abre no mês (N1, 2026-11-14; era o ano)
   const isYear = scope === 'year';
-  const [dialSel, setDialSel] = useState(null);        // bola selecionada no dial (chave)
   const [sheet, setSheet] = useState(null);            // folha de detalhe aberta: 'seg' | 'voo' | 'corpo'
   const [prova, setProva] = useState(null);            // folha da PROVA ("a lei deste número")
   const provaCtx = { companySlug: company && company.slug, companyName: company && company.name, isPilot, lang };
@@ -166,7 +167,6 @@ export default function StatsScreen({ navigation }) {
     const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ');
     return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`;
   };
-  const fmtPc1 = (frac) => `${(Math.max(0, frac || 0) * 100).toLocaleString(locale, { maximumFractionDigits: 1 })}%`;
   const monthAbbr = (i) => new Date(2020, i, 1).toLocaleDateString(locale, { month: 'short' }).replace('.', '').slice(0, 3);
   const kindLabel = (k) => t('duties.kind.' + k, lang);
 
@@ -204,7 +204,7 @@ export default function StatsScreen({ navigation }) {
   const uncWhy = [reasons.some((r) => /^tap/.test(r) && r !== 'tapSick') ? whyTap : null, reasons.includes('tapSick') ? whySick : null, reasons.includes('admission') ? whyAdm : null,
     reasons.some((r) => !/^tap/.test(r) && r !== 'admission') ? whyAct : null].filter(Boolean).join('; ') || whyAct;
   const baseUnc = !isYear && A.baseRange ? ` · ${l('incerto', 'uncertain')}: ${fmtEur0(A.baseRange.min)} ${l('a', 'to')} ${fmtEur0(A.baseRange.max)} (${uncWhy})` : (isYear && A.uncertain ? ` · ${l('incerto', 'uncertain')} (${uncWhy})` : '');
-  const baseSub = (isYear ? `${l('salário base acumulado', 'accrued base salary')} · ${st.aeYtd?.monthsElapsed || 0} ${l('meses', 'months')}` : `${l('salário base', 'base salary')} · ${monthName}`) + baseUnc;
+  const baseSub = (isYear ? `${l('salário base acumulado', 'accrued base salary')} · ${st.aeYtd?.monthsElapsed || 0} ${l('meses', 'months')}` : `${l('salário base', 'base salary')} · ${l(monthName.toLowerCase(), monthName)}`) + baseUnc;
   // Mês sem tabela do acordo (antes da 1.ª tabela publicada, ou antes da admissão): não há € — diz-se porquê (bloco 5).
   // TAP: o subsídio de férias paga-se no mês antes das férias; sem férias registadas o mês não se sabe (fica fora da soma).
   const pendTxt = (isYear && A.pendingAnnual && A.pendingAnnual.length)
@@ -222,7 +222,7 @@ export default function StatsScreen({ navigation }) {
     { k: 'base', nm: l('Base', 'Base'), ic: 'wallet', val: A.base || 0, sub: baseSub },
     (A.perDiem > 0) && { k: 'diem', nm: l('Per diem', 'Per diem'), ic: 'plane', val: A.perDiem, sub: `${st.flights} ${l('voos', 'flights')} · ${st.sectors} ${l('setores', 'sectors')}` },
     // TAP: a estadia paga-se nos dias SEM voo (Cl. 7.ª/9.ª) — as noites fora não são o número de AC2/B (revisão do bloco 6).
-    (A.nightStops > 0) && { k: 'pern', nm: l('Pernoitas', 'Night stops'), ic: 'bed', val: A.nightStops, sub: (ae && ae.PER_DIEM_BY_DAY) ? (isPilot ? l('estadia nos dias sem voo (per diem B, RRRGS Cl. 9.ª)', 'stay on days without flights (per diem B, RRRGS Cl. 9)') : l('estadia nos dias sem voo (AC2, RRRGS Cl. 7.ª)', 'stay on days without flights (AC2, RRRGS Cl. 7)')) : `${st.nightStops} ${l('paragens nocturnas', 'night stops')}` },
+    (A.nightStops > 0) && { k: 'pern', nm: l('Pernoitas', 'Night stops'), ic: 'bed', val: A.nightStops, sub: (ae && ae.PER_DIEM_BY_DAY) ? (isPilot ? l('estadia nos dias sem voo (per diem B, RRRGS Cl. 9.ª)', 'stay on days without flights (per diem B, RRRGS Cl. 9)') : l('estadia nos dias sem voo (AC2, RRRGS Cl. 7.ª)', 'stay on days without flights (AC2, RRRGS Cl. 7)')) : `${st.nightStops} ${l('paragens noturnas', 'night stops')}` },
     // Posicionamento (bloco 6): pilotos pelos setores (Art. 44.º); cabine pela tabela do Anexo I.18 — o acordo não diz onde acaba
     // o curto, por isso conta o curto e diz-se até onde pode ir.
     (A.positioning > 0) && { k: 'pos', nm: l('Posicionamento', 'Positioning'), ic: 'plane', val: A.positioning, sub: (!isYear && A.positioningMax > A.positioning) ? l(`o curto; até ${fmtEur0(A.positioningMax)} conforme a duração da viagem (Anexo I.18)`, `short rate; up to ${fmtEur0(A.positioningMax)} by trip length (App. I.18)`) : l('posicionamentos do período', 'positioning in the period') },
@@ -330,374 +330,349 @@ export default function StatsScreen({ navigation }) {
   // A nota (partilhada pelos 2 modos): as palavras Amarelo/Vermelho pintadas nas próprias
   // cores; a última frase é a lei do consultivo (termos §3) a falar dentro da app.
   const baptismNote = alertBaptism ? (
-    <Text style={s.note}>
-      <Text style={s.noteInk}>{l('Primeira vez com cor? ', 'First time seeing colour? ')}</Text>
-      <Text style={[s.noteInk, { color: PELE.warnText }]}>{l('Laranja', 'Orange')}</Text>
-      {l(' = janela acima de 85% — atenção cedo, não é decisão. ', ' = a window above 85% — early attention, not a decision. ')}
-      <Text style={[s.noteInk, { color: PELE.red }]}>{l('Vermelho', 'Red')}</Text>
+    <Text style={[TXT3.cardSub, { color: CARD.day.tabSub }]}>
+      <Text style={[TXT3.dur, { color: CARD.day.ink }]}>{l('Primeira vez com cor? ', 'First time seeing colour? ')}</Text>
+      <Text style={{ color: CARD.day.alert }}>● </Text><Text style={[TXT3.dur, { color: CARD.day.ink }]}>{l('Laranja', 'Orange')}</Text>
+      {l(' = a partir de 85 % de um limite — atenção cedo, não é decisão. ', ' = from 85% of a limit — early attention, not a decision. ')}
+      <Text style={{ color: CARD.day.stop }}>● </Text><Text style={[TXT3.dur, { color: CARD.day.ink }]}>{l('Vermelho', 'Red')}</Text>
       {l(' = a estimativa passa o limite — confirma com o planeamento. Dentro do limite não há cor. A app estima, nunca declara legalidade.', ' = the estimate goes over the limit — check with crewing. Within the limit there is no colour. The app estimates, it never declares legality.')}
     </Text>
   ) : null;
 
-  // Opções e seleção corrente do dial (derivada — cai no default se a chave já não é visível)
-  const curOpts = mode === 'money' ? moneyOpts : safetyVis;
-  const defaultKey = mode === 'money' ? 'total' : (safetyVis.reduce((a, b) => (b.r > (a ? a.r : -1) ? b : a), null) || {}).k;
-  const selKey = curOpts.find((o) => o.k === dialSel) ? dialSel : defaultKey;
-  const selMoney = mode === 'money' ? (moneyOpts.find((o) => o.k === selKey) || moneyOpts[0]) : null;
-  const selSafe = mode === 'safety' ? (safetyVis.find((o) => o.k === selKey) || safetyVis[0]) : null;
-  // Mostrador à Stocks/Watch: o INTEIRO grande, os cêntimos+€ pequenos e cinza na mesma
-  // linha de base — a lei dos cêntimos intacta e o dado-estrela finalmente a mandar na página.
-  const selEur = selMoney ? (() => {
-    if (selMoney.val == null) return { big: '—', dec: '' };
-    const [i, d] = Number(selMoney.val).toFixed(2).split('.');
-    const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ');
-    return lang === 'en' ? { big: `€${g}`, dec: `.${d}` } : { big: g, dec: `,${d} €` };
-  })() : null;
-
-  const pickDial = (k) => { select(); setDialSel(k); };
   const openSheet = (id) => { select(); setSheet(id); };
 
-  // Índices dos cards/folhas (Segurança só existe como card no modo Ganhos)
-  const idx = mode === 'money' ? { seg: '01', voo: '02', corpo: '03' } : { voo: '01', corpo: '02' };
 
-  return (
-    <SafeAreaView style={s.safe} edges={['top']}>
-      <PeleSide label={l('ESTATÍSTICAS', 'STATISTICS')} accent={String(isYear ? year : ym.slice(0, 4))} />
-      {/* Header FIXO fora do scroll (género do Perfil/Validades, 2026-07-10): eyebrow NA linha
-          de topo à esquerda (padrão da saudação do Início) · fantasma = a ETIQUETA do âmbito
-          (ANO/MÊS — decisão do user; a palavra por baixo carrega o dado) · kick = retrato
-          físico do âmbito (voos·setores) · as ‹› do mês ficam sempre à mão, mesmo com scroll. */}
-      <View style={s.headWrap}>
-        <PeleHeader
-          eyebrowTop
-          eyebrow={`${l('Estatísticas', 'Statistics')} · ${[coView?.name, ae ? 'AE' : 'FTL'].filter(Boolean).join(' · ').toUpperCase()}`}
-          ghost={isYear ? l('ANO', 'YEAR') : l('MÊS', 'MONTH')}
-          word={isYear ? String(year) : monthName}
-          wordTrailing={!isYear ? (
-            <View style={s.mnav}>
-              <TouchableOpacity onPress={() => { select(); shiftMonth(-1); }} hitSlop={8} style={s.mnavBtn} activeOpacity={0.7}>
-                <Icon name="chevron" size={15} color={PELE.ink} rot={180} />
-              </TouchableOpacity>
-              <TouchableOpacity disabled={ym >= nowYm} onPress={() => { select(); shiftMonth(1); }} hitSlop={8} style={[s.mnavBtn, ym >= nowYm && s.mnavBtnOff]} activeOpacity={0.7}>
-                <Icon name="chevron" size={15} color={ym >= nowYm ? PELE.grey : PELE.ink} />
-              </TouchableOpacity>
-            </View>
-          ) : null}
-          kick={`${nf(st.flights || 0)} ${l(st.flights === 1 ? 'voo' : 'voos', st.flights === 1 ? 'flight' : 'flights')} · ${nf(st.sectors || 0)} ${l(st.sectors === 1 ? 'setor' : 'setores', st.sectors === 1 ? 'sector' : 'sectors')}`}
-        />
-      </View>
-      <ScrollView ref={statsScrollRef} style={{ flex: 1 }} contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} showsVerticalScrollIndicator={false}>
+  // ══ O DESENHO — N1 de design/numeros-3.html (escolhida pelo Nuno a 2026-11-14): o topo do Início (a pílula do período, o
+  // seletor Mês | Ano, o total em duas linhas e dois factos) e, na folha, o cartão "De onde vem" (a barra empilhada das parcelas e as
+  // linhas; os extras abrem com os dias, que vêm do calendário), o cartão "Limites · agora" (os dois mais cheios, em "faltam" — nunca
+  // percentagem) e as linhas finas Voo, Repouso, Auditoria e Partilhar. Imagens do Nuno: 3421 · 3449 · 3433 · 3440 · 3441 (o €),
+  // 3408 · 3415 · 3428 · 3431 · 3441 · 3462 (os limites), 3412 · 3434 (Mês | Ano), 3424 (o número em duas linhas). As contas não
+  // mudaram (data/stats.js, o motor FTL, o AE). ══
+  const C = CARD.day;
+  const periodLabel = isYear ? String(year) : `${monthName} ${ym.slice(0, 4)}`;
+  const eurParts = (n) => { const [i0, d0] = Number(Math.abs(n || 0)).toFixed(2).split('.'); const g = i0.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? [`€${g}`, `.${d0}`] : [g, `,${d0} €`]; };
+  const baseRangeUnc = !isYear && A.baseRange;
+  const gainAbove = Math.max(0, total - (A.base || 0));
+  const [bigI, bigD] = eurParts(total);
+  const top = mode === 'money' ? {
+    pill: null,
+    pill2: { text: periodLabel, iso: 'pick', chevron: true, hint: isYear ? l('Escolher o ano', 'Choose the year') : l('Escolher o mês', 'Choose the month') },
+    what: isYear ? l(`Ganhos brutos de ${year}`, `Gross earnings in ${year}`) : l(`Ganhos brutos de ${monthName.toLowerCase()}`, `Gross earnings in ${monthName}`),
+    giant: baseRangeUnc ? { l1: l('Incerto', 'Uncertain'), unit: null, l2: null, l2Grey: false }
+      : { l1: bigI, unit: bigD, l2: (isYear && A.uncertain) ? l('incerto', 'uncertain') : l('estimado', 'estimated'), l2Grey: true },
+    // SÓ o total (L1 de design/topo-lado.html): o € do ano não deixa factos ao lado no tamanho comum. O "acima da base" (ou, com a
+    // base incerta, as duas pontas do total) está no cartão "De onde vem", logo por baixo; as horas de voo na linha "Voo".
+    facts: null,
+  } : {
+    pill: null,
+    pill2: { text: periodLabel, iso: 'pick', chevron: true, hint: isYear ? l('Escolher o ano', 'Choose the year') : l('Escolher o mês', 'Choose the month') },
+    what: isYear ? l(`Horas de voo em ${year}`, `Flight hours in ${year}`) : l(`Horas de voo de ${monthName.toLowerCase()}`, `Flight hours in ${monthName}`),
+    giant: { l1: Number(flightShownH).toLocaleString(locale, { maximumFractionDigits: 1 }), unit: 'h', l2: null, l2Grey: false },
+    facts: null,   // os voos estão na linha "Voo" e o limite mais cheio no cartão "Limites · agora"
+  };
+  const { width: winW, height: winH } = Dimensions.get('window');
+  // O topo é o das três abas, lado a lado (L1; golden: test:homecards, "o topo lado a lado e igual nas três abas"); aqui só o total.
+  const giant = topGiant(top, winW - SPACE.lgPlus * 2);   // o tamanho comum das três abas, lado a lado (L1, design/topo-lado.html)
+  // O seletor Mês | Ano (3412 · 3434): a pílula de tinta no escolhido, como o "Hoje" do Início.
+  const segW = pillWidth(l('Mês', 'Month')) + pillWidth(l('Ano', 'Year')) - SPACE.lg;
+  const segRight = (
+    <View style={[s.seg, { backgroundColor: C.round }]} accessibilityRole="tablist">
+      {[['month', l('Mês', 'Month')], ['year', l('Ano', 'Year')]].map(([id, label]) => {
+        const on = scope === id;
+        return (
+          <TouchableOpacity key={id} onPress={() => { select(); setScope(id); }} activeOpacity={0.8} style={[s.segB, on ? { backgroundColor: C.ink } : null]}
+            accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={label}>
+            <Text style={[TXT3.pill, { color: on ? C.desk : C.soft }]} allowFontScaling={false}>{label}</Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+  // A escolha do período: o mês (os 12 do ano, com ‹ ›) ou o ano (os anos com escala).
+  const [pickOpen, setPickOpen] = useState(false);
+  const [pickY, setPickY] = useState(Number(ym.slice(0, 4)));
+  const openPicker = () => { select(); setPickY(Number(ym.slice(0, 4))); setPickOpen(true); };
+  const nowY = new Date().getFullYear();
 
-        {/* Segmento Mês ⇄ Ano */}
-        <View style={s.scoperow}>
-          <View style={s.segWrap}>
-            {[['month', l('Mês', 'Month')], ['year', l('Ano', 'Year')]].map(([id, label]) => {
-              const on = scope === id;
-              return (
-                <TouchableOpacity key={id} onPress={() => { select(); setScope(id); }} activeOpacity={0.85} style={[s.segb, on && s.segbOn]}>
-                  <Text style={[s.segTxt, on && s.segTxtOn]}>{label}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+  // O € de uma linha: os euros grandes e os cêntimos mais pequenos (nunca arredondar, nunca abreviar); o que se ganha a verde.
+  const Money = ({ val, gain }) => {
+    const [a, b] = eurParts(val);
+    const neg = val < 0;
+    const col = gain && !neg ? C.gainOut : C.ink;
+    return (
+      <Text style={[TXT3.lineVal, { color: col }]} allowFontScaling={false}>
+        {neg ? '−' : gain ? '+' : ''}{a}<Text style={[TXT3.cardSub, { color: gain && !neg ? C.gainOut : C.tabSub }]}>{b}</Text>
+      </Text>
+    );
+  };
+  // As cores das parcelas — o mapa B (frio = a escala): a base a tinta, o per diem a azul do voo, as pernoitas a salva do repouso, o
+  // posicionamento a lilás de terra; os subsídios e os extras em cinzentos (não são da escala).
+  const PART_C = { base: C.ink, diem: C.flight, pern: C.rest, pos: C.ground, subs: C.tabSub, extras: C.round };
+  const PART_LAW = { diem: 'perDiem', pern: 'pernoita' };
+  const parts = moneyOpts.filter((o) => o.k !== 'total');
+  const posSum = parts.reduce((a, o) => a + Math.max(0, o.val || 0), 0);
+  const [extrasOpen, setExtrasOpen] = useState(false);
+  const periodEvents = (aeEvents || []).filter((e) => e && String(e.date).startsWith(isYear ? String(year) : ym)).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  const extraName = (type) => { const k = ae && Array.isArray(ae.EXTRA_KINDS) ? ae.EXTRA_KINDS.find((x) => x.id === type) : null; return (k && k.label && (k.label[lang] || k.label.pt)) || type; };
+  const fromCard = mode === 'money' && total > 0 ? (
+    <LineCard kind={isYear ? l('De onde vem · bruto · no ano', 'Where it comes from · gross · this year') : l('De onde vem · bruto', 'Where it comes from · gross')}>
+      {/* com a base incerta, o topo diz "Incerto" e as duas pontas do total ficam aqui, em primeiro (saíram do topo — L1) */}
+      {baseRangeUnc ? (
+        <View accessible accessibilityLabel={`${l('O total fica entre', 'The total is between')} ${fmtEur0(total - (A.base || 0) + A.baseRange.min)} ${l('e', 'and')} ${fmtEur0(total - (A.base || 0) + A.baseRange.max)}`}>
+          <Text style={[TXT3.cardSub, { color: C.tabSub }]}>{l('O total fica entre', 'The total is between')}</Text>
+          <Text style={[TXT3.lineVal, { color: C.ink }]}>{`${fmtEur0(total - (A.base || 0) + A.baseRange.min)} ${l('e', 'and')} ${fmtEur0(total - (A.base || 0) + A.baseRange.max)}`}</Text>
         </View>
-
-        {/* Ano com escala em vários anos → chips */}
-        {isYear && years.length > 1 ? (
-          <View style={s.years}>
-            {years.map((y) => {
-              const on = y === year;
-              return (
-                <TouchableOpacity key={y} onPress={() => { select(); setYear(y); }} activeOpacity={0.85} style={[s.yChip, on && s.yChipOn]} hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
-                  <Text style={[s.yTxt, on && s.yTxtOn]}>{y}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        ) : null}
-
-        {empty && !moneyOnly ? (
-          <Animated.View style={[s.emptyWrap, seg(1)]}>
-            <Text style={s.emptyTxt}>{isYear ? l('Sem escala registada em ' + year + '.', 'No roster recorded in ' + year + '.') : l('Sem escala neste mês.', 'No roster this month.')}</Text>
-            <Text style={s.emptySub}>{l('Importa ou regista serviços para veres as tuas estatísticas.', 'Import or add duties to see your stats.')}</Text>
-            <TouchableOpacity onPress={() => { select(); navigation.navigate('Escala'); }} activeOpacity={0.85} style={s.emptyBtn}>
-              <Text style={s.emptyBtnTxt}>{l('Ir para a Escala', 'Go to roster')}</Text>
-              <Icon name="chevron" size={14} color={PELE.paper} />
-            </TouchableOpacity>
-          </Animated.View>
-        ) : (
-          <>
-            {/* Section eyebrow do dial */}
-            <View style={s.seybRow}>
-              {mode === 'safety' ? <View style={s.seybDot} /> : null}
-              <Text style={s.seyb}>{mode === 'money'
-                ? `${l('Os teus ganhos · estimados · brutos', 'Your earnings · estimated · gross')} ${isYear ? l('no ano', 'this year') : `${l('em', 'in')} ${monthName.toLowerCase()}`}`
-                : l('A tua segurança · janelas FTL · agora', 'Your safety · FTL windows · now')}</Text>
-            </View>
-            {mode === 'money' && noTableTxt ? <Text style={s.dsub}>{noTableTxt}</Text> : null}
-            {mode === 'money' && senTxt ? <Text style={s.dsub}>{senTxt}</Text> : null}
-            {mode === 'money' && pendTxt ? <Text style={s.dsub}>{pendTxt}</Text> : null}
-
-            {/* ── DIAL adaptativo ── */}
-            <Animated.View style={[s.money, seg(2)]}>
-              <View style={s.disp}>
-                {mode === 'money' ? (
-                  <>
-                    <Text style={[s.dval, selMoney.k !== 'base' && s.dvalGreen]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} allowFontScaling={false}>
-                      {selEur.big}<Text style={s.dvalDec}>{selEur.dec}</Text>
-                    </Text>
-                    {selMoney.k === 'total' ? (
-                      <View style={s.dsubBox}>
-                        <Text style={s.dsub}>{l('Base', 'Base')} · {isYear ? `${st.aeYtd?.monthsElapsed || 0} ${l('meses', 'months')}` : monthName} · <Text style={s.dsubB}>{fmtEur0(A.base || 0)}</Text></Text>
-                        <View style={s.gline}>
-                          <View style={s.gpill}><Text style={s.gpillTxt}>+{fmtEur0(Math.max(0, total - (A.base || 0)))}</Text></View>
-                          <Text style={s.dsub}>{l('ganho acima da base', 'earned above base')}</Text>
-                        </View>
-                      </View>
-                    ) : (
-                      <Text style={[s.dsub, s.dsubBox]}>{selMoney.sub}</Text>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <Text style={s.dlab}>{selSafe ? `${selSafe.w.grp === 'voo' ? l('Voo', 'Flight') : l('Serviço', 'Duty')} · ${limLabel(selSafe.w)}` : ''}</Text>
-                    <Text style={[s.dvalS, { color: pctColor(selSafe ? selSafe.r : 0) }]} allowFontScaling={false}>{Math.round((selSafe ? selSafe.r : 0) * 100)}%</Text>
-                    <Text style={s.dsub}>{selSafe ? `${doneTxt(selSafe.w)} / ${Math.round(selSafe.limit)} h · ` : ''}<Text style={s.dsubB}>{selSafe ? leftTxt(selSafe.w) : ''}</Text></Text>
-                  </>
-                )}
-              </View>
-
-              <View style={s.col}>
-                {mode === 'money' ? moneyOpts.map((o, i) => {
-                  const on = o.k === selKey;
-                  return (
-                    <TouchableOpacity key={o.k} onPress={() => pickDial(o.k)} activeOpacity={0.8} style={[s.opt, { transform: [{ translateX: arcX(i, moneyOpts.length) }] }]}>
-                      <Text style={[s.onm, on && s.onmOn]}>{o.nm}</Text>
-                      <View style={[s.cir, on && s.cirInk]}>
-                        {on ? <Text style={s.cirPc}>{fmtPc1(total ? o.val / total : 0)}</Text> : <Icon name={o.ic} size={17} color="#9E9C93" />}
-                      </View>
-                    </TouchableOpacity>
-                  );
-                }) : safetyVis.map((o, i) => {
-                  const on = o.k === selKey;
-                  const col = barColor(o.r);
-                  return (
-                    <TouchableOpacity key={o.k} onPress={() => pickDial(o.k)} activeOpacity={0.8} style={[s.opt, { transform: [{ translateX: arcX(i, safetyVis.length) }] }]}>
-                      <Text style={[s.onm, on && s.onmOn]}>{o.nm}</Text>
-                      <View style={[s.cirS, on && { backgroundColor: col }]}>
-                        <Text style={[s.cirPcS, { color: on ? PELE.paper : pctColor(o.r) }]}>{Math.round(o.r * 100)}%</Text>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </Animated.View>
-
-            {/* Notas AE (estimativa · IPC · acordo) — só no modo Ganhos */}
-            {mode === 'money' ? (
-              <View style={s.aeNotes}>
-                {A.missing ? <Text style={s.note}>{A.missing} {l('voo(s) sem rota completa não somam ao per diem.', 'flight(s) without full route not counted in per diem.')}</Text> : null}
-                {A.estimated ? <Text style={s.note}>{ae.indexNote ? ae.indexNote(isYear ? +year : +String(st.ym).slice(0, 4), lang) : l('Valores indexados · estimativa — IPC oficial por confirmar.', 'Indexed values · estimate — official CPI to be confirmed.')}</Text> : null}
-                {ae && ae.isAgreementExpired && ae.isAgreementExpired(nowD) ? <Text style={s.note}>{l('AE expirado · valores são referência até novo acordo.', 'Agreement expired · values are reference until a new agreement.')}</Text> : null}
-                {/* Radar: a linha só existe com itens (zero = zero mobília). */}
-                {audit && audit.count > 0 ? (
-                  <Text style={[s.note, s.noteInk]} onPress={() => { select(); setAuditOpen(true); }}>
-                    {l('Auditoria do mês', 'Month audit')} · {audit.count} {audit.count === 1 ? l('item por confirmar', 'item to confirm') : l('itens por confirmar', 'items to confirm')} ›
-                  </Text>
-                ) : null}
-              </View>
-            ) : null}
-            {/* Batismo das cores no modo FTL: a nota nasce SOB O DIAL (o elemento que pintou). */}
-            {mode !== 'money' && baptismNote ? <View style={s.aeNotes}>{baptismNote}</View> : null}
-
-            {moneyOnly ? (
-              <View style={[s.emptyWrap, s.emptyTight]}>
-                <Text style={s.emptyTxt}>{isYear ? l('Sem escala registada em ' + year + '.', 'No roster recorded in ' + year + '.') : l('Sem escala neste mês.', 'No roster this month.')}</Text>
-                <Text style={s.emptySub}>{l('O vencimento base paga-se na mesma. Importa ou regista serviços para veres as horas, os limites e o resto dos ganhos.', 'Base pay is paid anyway. Import or add duties to see hours, limits and the rest of your earnings.')}</Text>
-                <TouchableOpacity onPress={() => { select(); navigation.navigate('Escala'); }} activeOpacity={0.85} style={s.emptyBtn}>
-                  <Text style={s.emptyBtnTxt}>{l('Ir para a Escala', 'Go to roster')}</Text>
-                  <Icon name="chevron" size={14} color={PELE.paper} />
-                </TouchableOpacity>
-              </View>
-            ) : (<>
-            {/* ── Bento (cards → folhas) ── */}
-            <View style={s.div} />
-            <Text style={s.mais}>{l('Mais', 'More')}</Text>
-            <Animated.View style={[s.bento, seg(3)]}>
-              {mode === 'money' ? (
-                <TouchableOpacity style={[s.btile, s.btileWide]} activeOpacity={0.85} onPress={() => openSheet('seg')}>
-                  <View style={[s.btIc, s.btIcAlarm]}><Icon name="gauge" size={20} color={PELE.ink} /></View>
-                  <View style={s.btWt}>
-                    <View style={s.btNameWideRow}><Text style={s.btIdx}>{idx.seg}</Text><Text style={s.btNameWide}>{l('Segurança', 'Safety')}</Text></View>
-                    <View style={s.btCapRow}><View style={s.btDot} /><Text style={s.btCap}>{fullest ? `${fullest.w.grp === 'voo' ? l('Voo', 'Flight') : l('Serviço', 'Duty')} · ${limLabel(fullest.w)} · ${l('mais cheia', 'fullest')}` : l('sem janelas', 'no windows')}</Text></View>
-                  </View>
-                  <Text style={[s.btKeyWide, { color: pctColor(fullest ? fullest.r : 0) }]}>{Math.round((fullest ? fullest.r : 0) * 100)}%</Text>
-                </TouchableOpacity>
-              ) : null}
-              {/* Batismo das cores no modo AE: a nota nasce SOB O CARD Segurança (linha própria na grelha). */}
-              {mode === 'money' && baptismNote ? <View style={{ flexBasis: '100%' }}>{baptismNote}</View> : null}
-
-              <TouchableOpacity style={s.btile} activeOpacity={0.85} onPress={() => openSheet('voo')}>
-                <View style={s.btTop}><View style={s.btIc}><Icon name="plane" size={19} color={PELE.ink} /></View><Text style={s.btIdx}>{idx.voo}</Text></View>
-                <Text style={s.btName}>{l('Voo', 'Flight')}</Text>
-                <Text style={s.btKey}>{fmtH(flightShownH)}</Text>
-                <Text style={s.btCap}>{isYear ? `${flightPct}% ${l('do teto', 'of cap')}` : `${l('em', 'in')} ${monthName.toLowerCase()}`}</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={s.btile} activeOpacity={0.85} onPress={() => openSheet('corpo')}>
-                <View style={s.btTop}><View style={s.btIc}><Icon name="bed" size={19} color={PELE.ink} /></View><Text style={s.btIdx}>{idx.corpo}</Text></View>
-                <Text style={s.btName}>{l('Corpo', 'Body')}</Text>
-                <Text style={s.btKey}>{st.minRestH != null ? fmtH(st.minRestH) : '—'}</Text>
-                <Text style={s.btCap}>{l('repouso mín', 'min rest')} · {st.reducedRests || 0} {l('curtos', 'short')}{st.uncertainRests ? ` · ${st.uncertainRests} ${l('incertos', 'uncertain')}` : ''}</Text>
-              </TouchableOpacity>
-            </Animated.View>
-
-            {/* Limites do acordo (TAP) — por baixo de Voo e Corpo (esboço design/limites-ae.html) */}
-            {aeLim && aeLim.rules.length ? (
-              <View style={s.aeLim}>
-                <AeLimitsSection result={aeLim} crewType={isPilot ? 'pilot' : 'cabin'} lang={lang} todayIso={todayIso} onOpen={setAeRule} />
-              </View>
-            ) : null}
-
-            {/* Cards extra — Férias (Ano) + Partilhar (o que o mockup não cobre) */}
-            {isYear && hasVac ? (
-              <View style={s.card}>
-                <View style={s.aeHead}><View style={[s.aeDot, { backgroundColor: PELE.grey }]} /><Text style={s.cardTitle}>{l('Férias', 'Leave')} {year}</Text></View>
-                <View style={s.body3}>
-                  <View style={s.bcell}><Text style={s.bnum}>{vacTaken}</Text><Text style={s.blab}>{l('Gozados', 'Taken')}</Text></View>
-                  <View style={[s.bcell, s.bcellB]}><Text style={s.bnum}>{vacLeft}</Text><Text style={s.blab}>{l('Por marcar', 'To mark')}</Text></View>
-                  <View style={[s.bcell, s.bcellB]}><Text style={s.bnum}>{vacQuota}</Text><Text style={s.blab}>{l('Direito no ano', 'Annual right')}</Text></View>
-                </View>
-                {vacTaken > vacQuota ? <Text style={[s.note, { marginTop: 10 }]}>{l('Acima do plafond — podes ter dias reportados (Art. 240.º).', 'Over quota — you may have carried days over (Art. 240).')}</Text> : null}
-              </View>
-            ) : null}
-
-            {isYear && st.flightMin > 0 ? (
-              <TouchableOpacity onPress={() => { select(); setShareOpen(true); }} activeOpacity={0.85} style={s.shareBtn}
-                accessibilityRole="button" accessibilityLabel={l('Partilhar o meu ano de voo', 'Share my year in the air')}>
-                <Icon name="share" size={16} color={PELE.ink} />
-                <Text style={s.shareTxt}>{l('Partilhar o meu ano de voo', 'Share my year in the air')}</Text>
-              </TouchableOpacity>
-            ) : null}
-
-            <Text style={s.foot}>{l('Estimativa a partir da tua escala. Fim de serviço = sign-off; sem ele, on-block + débrief do perfil (só voos). Toca num tema para o detalhe.', 'Estimated from your roster. Duty end = sign-off; without it, on-block + your profile debrief (flights only). Tap a theme for detail.')}</Text>
-            </>)}
-          </>
-        )}
-      </ScrollView>
-
-      {/* ── Folha de uma regra do acordo ── */}
-      <AeLimitSheet visible={!!aeRule} onClose={() => setAeRule(null)} ruleId={aeRule} result={aeLim}
-        crewType={isPilot ? 'pilot' : 'cabin'} lang={lang} easa={easaFor(aeRule)} duties={duties} />
-
-      {/* ── Folha 01 · Segurança (só no modo Ganhos) ── */}
-      <PeleSheet visible={sheet === 'seg'} onClose={() => setSheet(null)}>
-        <View style={s.shead}>
-          <View style={[s.shIc, s.shIcAlarm]}><Icon name="gauge" size={19} color={PELE.ink} /></View>
-          <View style={s.shTt}>
-            <Text style={s.shName}><Text style={s.shNameX}>{idx.seg} </Text>· {l('Segurança', 'Safety')}</Text>
-            <Text style={s.shSub}>{safetyRows.length} {l('janelas FTL · a mais cheia', 'FTL windows · fullest')} <Text style={{ color: pctColor(fullest ? fullest.r : 0) }}>{Math.round((fullest ? fullest.r : 0) * 100)}%</Text>
-              <Text style={s.shLaw} onPress={() => { select(); setProva(provaFor('limites', provaCtx)); }}>  ·  <Text style={{ color: BRAND.signal }}>§</Text> ORO.FTL.210</Text>
-            </Text>
-          </View>
-          <TouchableOpacity style={s.sClose} onPress={() => setSheet(null)} hitSlop={6}><Icon name="minus" size={16} color={PELE.grey} /></TouchableOpacity>
+      ) : null}
+      {posSum > 0 ? (
+        <View style={s.stack} accessible accessibilityLabel={parts.filter((o) => o.val > 0).map((o) => `${o.nm} ${fmtEur0(o.val)}`).join(', ')}>
+          {parts.filter((o) => o.val > 0).map((o) => <View key={o.k} style={{ flex: o.val / posSum, backgroundColor: PART_C[o.k] || C.round }} />)}
         </View>
-        {['voo', 'serv'].map((g) => {
-          const rows = safetyRows.filter((o) => o.w.grp === g);
-          if (!rows.length) return null;
+      ) : null}
+      <View>
+        {parts.map((o, i) => {
+          const pv = PART_LAW[o.k] ? provaFor(PART_LAW[o.k], provaCtx) : null;
+          const isEx = o.k === 'extras';
+          const Row = (pv || isEx) ? TouchableOpacity : View;
+          const press = isEx ? () => { select(); setExtrasOpen((v) => !v); } : pv ? () => { select(); setProva({ ...pv, value: `${o.val < 0 ? '−' : '+'}${fmtEur0(Math.abs(o.val))}` }); } : undefined;
           return (
-            <View key={g}>
-              <View style={s.grp}><Icon name={g === 'voo' ? 'plane' : 'clock'} size={12} color={PELE.grey} /><Text style={s.grpTxt}>{g === 'voo' ? l('Voo', 'Flight') : l('Serviço', 'Duty')}</Text></View>
-              {rows.map((o, i) => (
-                <View key={o.k} style={s.win}>
-                  <View style={s.winHead}>
-                    <Text style={s.winName}>{limLabel(o.w)}</Text>
-                    <Text style={s.winVal}><Text style={s.winValB}>{doneTxt(o.w)}</Text> / {Math.round(o.limit)} h</Text>
-                  </View>
-                  <GrowBar ratio={o.r} color={barColor(o.r)} track={s.track} fill={s.fill} delay={100 + i * 40} />
-                  <View style={s.winFoot}>
-                    <Text style={[s.pct, { color: pctColor(o.r) }]}>{Math.round(o.r * 100)}%</Text>
-                    <Text style={s.lft}>{leftTxt(o.w)}</Text>
-                  </View>
+            <View key={o.k} style={[s.mRow, i === 0 ? s.mRowFirst : null]}>
+              <Row style={s.mMain} {...(press ? { onPress: press, activeOpacity: 0.7, accessibilityRole: 'button', accessibilityState: isEx ? { expanded: extrasOpen } : undefined } : {})}
+                accessibilityLabel={`${o.nm}: ${fmtEur0(o.val)}${o.sub ? `. ${o.sub}` : ''}`}>
+                <View style={[s.mSw, { backgroundColor: PART_C[o.k] || C.round }]} />
+                <View style={s.flex}>
+                  <Text style={[TXT3.line, { color: C.ink }]}>{o.nm}{isEx && periodEvents.length ? ` · ${periodEvents.length}` : ''}{pv ? <Text style={[TXT3.cardSub, { color: C.tabSub }]}>{`  § ${pv.art}`}</Text> : null}</Text>
+                  {o.sub ? <Text style={[TXT3.cardSub, { color: C.tabSub }]}>{o.sub}</Text> : null}
                 </View>
-              ))}
+                <Money val={o.val} gain={o.k !== 'base'} />
+                {isEx ? <Icon name="chevron" size={13} color={C.tabSub} rot={extrasOpen ? 270 : 90} /> : null}
+              </Row>
+              {isEx && extrasOpen ? (
+                <View style={s.exList}>
+                  {periodEvents.length ? periodEvents.map((e) => (
+                    <Text key={e.id || `${e.type}${e.date}`} style={[TXT3.cardSub, { color: C.soft }]}>{`${extraName(e.type)} · ${eventDateLabel(e.date, lang)}`}</Text>
+                  )) : <Text style={[TXT3.cardSub, { color: C.tabSub }]}>{l('Os extras deste período vêm da escala (papéis, escritório) e do calendário.', 'This period’s extras come from the roster (roles, office) and the calendar.')}</Text>}
+                </View>
+              ) : null}
             </View>
           );
         })}
-        <Text style={s.bnote}>{l('Os períodos de dias contam para trás a partir de hoje — ou de amanhã, quando o serviço de hoje passa a meia-noite (vale o mais carregado). O ano civil conta o ano inteiro, com o que já está na escala. ', 'Day periods count back from today — or from tomorrow when today’s duty runs past midnight (the heavier one applies). The calendar year counts the whole year, including what is already rostered. ')}<Text style={{ color: PELE.red, fontFamily: PELE_FONT.bodyBold }}>{l('≥ 90 %', '≥ 90%')}</Text>{l(' assinala atenção regulatória.', ' flags regulatory attention.')}</Text>
+        {/* o que se ganhou acima da base (era um facto do topo — L1) */}
+        {!baseRangeUnc && gainAbove > 0 ? (
+          <View style={[s.mRow, s.sumRow]} accessible accessibilityLabel={`${l('Acima da base', 'Above base')}: +${fmtEur0(gainAbove)}`}>
+            <Text style={[TXT3.line, s.flex, { color: C.ink }]}>{l('Acima da base', 'Above base')}</Text>
+            <Money val={gainAbove} gain />
+          </View>
+        ) : null}
+      </View>
+    </LineCard>
+  ) : null;
+
+  // O limite com barra (3408 · 3415 · 3428 · 3431 · 3441 · 3462): o rótulo, o valor com o máximo pequeno, "faltam" e a barra a tinta
+  // (laranja aos 85 %, vermelho só quando passa) — nunca percentagem.
+  const barColor3 = (r) => (r > 1 ? C.stop : r >= 0.85 ? C.alert : C.ink);
+  const LimitRow = ({ o, label, delay = 120 }) => (
+    <View style={s.lim} accessible accessibilityLabel={`${label}: ${doneTxt(o.w)} ${l('de', 'of')} ${Math.round(o.limit)} h, ${leftTxt(o.w)}`}>
+      <Text style={[TXT3.kind, { color: C.tabSub }]}>{label}</Text>
+      <View style={s.limTop}>
+        <Text style={[TXT3.fact, { color: C.ink }]} allowFontScaling={false}>{`${doneTxt(o.w)} h`}<Text style={[TXT3.cardSub, { color: C.tabSub }]}>{`  / ${Math.round(o.limit)} h`}</Text></Text>
+        <Text style={[TXT3.dur, { color: C.ink }]}>{leftTxt(o.w)}</Text>
+      </View>
+      <GrowBar ratio={o.r} color={barColor3(o.r)} track={[s.track, { backgroundColor: C.sheet }]} fill={s.fill} delay={delay} />
+    </View>
+  );
+  const grpName = (g) => (g === 'voo' ? l('Voo', 'Flight') : l('Serviço', 'Duty'));
+  const top2 = [...safetyRows].sort((a, b) => b.r - a.r).slice(0, 2);
+  const limitsCard = (
+    <LineCard kind={l('Limites · agora', 'Limits · now')}>
+      {limits.has ? top2.map((o, i) => <LimitRow key={o.k} o={o} label={`${grpName(o.w.grp)} · ${limLabel(o.w)}`} delay={120 + i * 60} />)
+        : <Text style={[TXT3.cardSub, { color: C.tabSub }]}>{l('Ainda sem horas para os limites.', 'No hours for the limits yet.')}</Text>}
+      <TouchableOpacity style={s.moreRow} onPress={() => openSheet('seg')} activeOpacity={0.7} accessibilityRole="button">
+        <Text style={[TXT3.act, { color: C.ink }]}>{l('Os limites todos', 'All the limits')}</Text>
+        <Icon name="chevron" size={14} color={C.ink} />
+      </TouchableOpacity>
+    </LineCard>
+  );
+  const slimCards = [
+    { t: 'slim', id: 'voo', color: 'neutral', title: l('Voo', 'Flight'), sub: `${st.flights || 0} ${l(st.flights === 1 ? 'voo' : 'voos', st.flights === 1 ? 'flight' : 'flights')} · ${st.sectors || 0} ${l(st.sectors === 1 ? 'setor' : 'setores', st.sectors === 1 ? 'sector' : 'sectors')}${st.topDest && st.topDest.length ? ` · ${st.topDest.slice(0, 3).map((d) => d.code).join(', ')}` : ''}`, value: fmtH(flightShownH), gain: false, open: { to: 'voo' } },
+    { t: 'slim', id: 'corpo', color: 'neutral', title: l('Repouso', 'Rest'), sub: `${l('o mais curto', 'the shortest')} · ${st.reducedRests || 0} ${l('abaixo do mínimo', 'below the minimum')}${st.uncertainRests ? ` · ${st.uncertainRests} ${l('incertos', 'uncertain')}` : ''}`, value: st.minRestH != null ? fmtH(st.minRestH) : '—', gain: false, open: { to: 'corpo' } },
+    audit && audit.count > 0 ? { t: 'slim', id: 'audit', color: 'alert', title: l('Auditoria do mês', 'Month audit'), sub: `${audit.count} ${audit.count === 1 ? l('item por confirmar', 'item to confirm') : l('itens por confirmar', 'items to confirm')}${audit.totalEur > 0 ? ` · ≈ ${fmtEur0(audit.totalEur)}` : ''}`, value: null, gain: false, open: { to: 'audit' } } : null,
+    isYear && st.flightMin > 0 ? { t: 'slim', id: 'share', color: 'neutral', title: l('Partilhar o meu ano de voo', 'Share my year in the air'), sub: l('um cartão com o teu ano, para enviar', 'a card with your year, to send'), value: null, gain: false, open: { to: 'share' } } : null,
+  ].filter(Boolean);
+  const onSlim = (o) => { select(); if (o.to === 'audit') setAuditOpen(true); else if (o.to === 'share') setShareOpen(true); else setSheet(o.to); };
+  const notes = mode === 'money' ? [
+    noTableTxt, senTxt, pendTxt,
+    A.missing ? l(`${A.missing} voo(s) sem rota completa não somam ao per diem.`, `${A.missing} flight(s) without a full route are not counted in per diem.`) : null,
+    A.estimated ? (ae.indexNote ? ae.indexNote(isYear ? +year : +String(st.ym).slice(0, 4), lang) : l('Valores indexados · estimativa — IPC oficial por confirmar.', 'Indexed values · estimate — official CPI not yet confirmed.')) : null,
+    ae && ae.isAgreementExpired && ae.isAgreementExpired(nowD) ? l('AE expirado · valores são referência até novo acordo.', 'Agreement expired · values are reference until a new agreement.') : null,
+  ].filter(Boolean) : [];
+  const toScale = (
+    <WideButton glyph="cal" label={l('Ir para a Escala', 'Go to roster')} onPress={() => { select(); navigation.navigate('Escala'); }} />
+  );
+
+  return (
+    <SafeAreaView style={[s.safe, { backgroundColor: C.desk }]} edges={['top']}>
+      {isFocused ? <StatusBar style="dark" /> : null}
+      <HomeTop top={top} C={C} size={giant.size} onPill2={openPicker} right={segRight} rightW={segW} l={l} />
+      <View style={[s.sheet, { backgroundColor: C.sheet }]}>
+        <ScrollView ref={statsScrollRef} style={s.flex} contentContainerStyle={[s.sheetIn, { paddingBottom: tabSpace + SPACE.lg }]} showsVerticalScrollIndicator={false}>
+          {notes.length ? <View style={s.notes}>{notes.map((n, i) => <Text key={i} style={[TXT3.cardSub, { color: C.tabSub }]}>{n}</Text>)}</View> : null}
+          {empty && !moneyOnly ? (
+            <View style={s.empty}>
+              <Text style={[TXT3.slimTitle, { color: C.ink }]}>{isYear ? l('Sem escala registada em ' + year + '.', 'No roster recorded in ' + year + '.') : l('Sem escala neste mês.', 'No roster this month.')}</Text>
+              <Text style={[TXT3.text, { color: C.soft }]}>{l('A escala vem do calendário. Assim que houver serviços, aparecem aqui as horas, os limites e os ganhos.', 'The roster comes from the calendar. Once there are duties, the hours, limits and earnings show up here.')}</Text>
+              {toScale}
+            </View>
+          ) : (
+            <>
+              {fromCard}
+              {moneyOnly ? (
+                <View style={s.empty}>
+                  <Text style={[TXT3.slimTitle, { color: C.ink }]}>{isYear ? l('Sem escala registada em ' + year + '.', 'No roster recorded in ' + year + '.') : l('Sem escala neste mês.', 'No roster this month.')}</Text>
+                  <Text style={[TXT3.text, { color: C.soft }]}>{l('O vencimento base paga-se na mesma. Com serviços na escala, aparecem aqui as horas, os limites e o resto dos ganhos.', 'Base pay is paid anyway. With duties on the roster, the hours, limits and the rest of the earnings show up here.')}</Text>
+                  {toScale}
+                </View>
+              ) : (
+                <>
+                  {limitsCard}
+                  {baptismNote ? <View style={s.notes}>{baptismNote}</View> : null}
+                  <HomeCards cards={slimCards} C={C} onOpen={onSlim} l={l} />
+                  {/* Limites do acordo (TAP) — fica como está até à vez da TAP. */}
+                  {aeLim && aeLim.rules.length ? (
+                    <View style={s.aeLim}>
+                      <AeLimitsSection result={aeLim} crewType={isPilot ? 'pilot' : 'cabin'} lang={lang} todayIso={todayIso} onOpen={setAeRule} />
+                    </View>
+                  ) : null}
+                  {isYear && hasVac ? (
+                    <LineCard kind={`${l('Férias', 'Leave')} ${year}`}>
+                      <LineRows rows={[{ k: l('Gozados', 'Taken'), v: String(vacTaken) }, { k: l('Por marcar', 'To mark'), v: String(vacLeft) }, { k: l('Direito no ano', 'Annual right'), v: String(vacQuota) }]} />
+                      {vacTaken > vacQuota ? <Text style={[TXT3.cardSub, { color: C.tabSub }]}>{l('Acima do plafond — podes ter dias reportados (Art. 240.º).', 'Over quota — you may have carried days over (Art. 240).')}</Text> : null}
+                    </LineCard>
+                  ) : null}
+                  <Text style={[TXT.caption, s.foot]}>{l('Estimativa a partir da tua escala. Fim de serviço = sign-off; sem ele, on-block + débrief do perfil (só voos).', 'Estimated from your roster. Duty end = sign-off; without it, on-block + your profile debrief (flights only). Tap a theme for detail.')}</Text>
+                </>
+              )}
+            </>
+          )}
+        </ScrollView>
+      </View>
+
+      {/* A escolha do período */}
+      <PeleSheet visible={pickOpen} onClose={() => setPickOpen(false)} bg={C.sheet}>
+        <SheetHeader card title={isYear ? l('Escolher o ano', 'Choose the year') : l('Escolher o mês', 'Choose the month')} onClose={() => setPickOpen(false)} closeLabel={l('Fechar', 'Close')} style={s.shHead} />
+        {isYear ? (
+          <View style={s.pickGrid}>
+            {years.map((y) => {
+              const on = String(y) === String(year);
+              return (
+                <TouchableOpacity key={y} onPress={() => { select(); setYear(y); setPickOpen(false); }} activeOpacity={0.8} style={[s.pickCell, on ? { backgroundColor: C.ink } : { backgroundColor: C.neutral }]} accessibilityRole="button" accessibilityState={{ selected: on }}>
+                  <Text style={[TXT3.lineVal, { color: on ? C.sheet : C.ink }]}>{y}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ) : (
+          <>
+            <View style={s.pickYear}>
+              <IconButton icon="back" onPress={() => setPickY((v) => v - 1)} label={l('Ano anterior', 'Previous year')} style={{ backgroundColor: C.round }} />
+              <Text style={[TXT3.cardTitle, { color: C.ink }]} allowFontScaling={false}>{pickY}</Text>
+              <IconButton icon="back" rot={180} onPress={() => setPickY((v) => Math.min(nowY, v + 1))} disabled={pickY >= nowY} label={l('Ano seguinte', 'Next year')} style={{ backgroundColor: C.round }} />
+            </View>
+            <View style={s.pickGrid}>
+              {Array.from({ length: 12 }, (_, i) => {
+                const k = `${pickY}-${String(i + 1).padStart(2, '0')}`;
+                const on = k === ym, off = k > nowYm;
+                const nm = new Date(pickY, i, 1).toLocaleDateString(locale, { month: 'long' });
+                return (
+                  <TouchableOpacity key={k} disabled={off} onPress={() => { select(); setYm(k); setPickOpen(false); }} activeOpacity={0.8}
+                    style={[s.pickCell, on ? { backgroundColor: C.ink } : { backgroundColor: C.neutral }, off ? s.off : null]} accessibilityRole="button" accessibilityState={{ selected: on, disabled: off }}>
+                    <Text style={[TXT3.line, { color: on ? C.sheet : C.ink }]}>{nm.charAt(0).toUpperCase() + nm.slice(1)}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </>
+        )}
       </PeleSheet>
 
-      {/* ── Folha · Voo ── */}
-      <PeleSheet visible={sheet === 'voo'} onClose={() => setSheet(null)}>
-        <View style={s.shead}>
-          <View style={s.shIc}><Icon name="plane" size={19} color={PELE.ink} /></View>
-          <View style={s.shTt}>
-            <Text style={s.shName}><Text style={s.shNameX}>{idx.voo} </Text>· {l('Voo', 'Flight')}</Text>
-            <Text style={s.shSub}>{l('horas de voo', 'flight hours')} · {isYear ? l('ano civil', 'calendar year') : monthName.toLowerCase()}</Text>
-          </View>
-          <TouchableOpacity style={s.sClose} onPress={() => setSheet(null)} hitSlop={6}><Icon name="minus" size={16} color={PELE.grey} /></TouchableOpacity>
-        </View>
-        <View style={s.vhero}>
-          <Text style={s.vbig}><CountUp value={flightShownH} format={(n) => n.toLocaleString(locale, { maximumFractionDigits: 1 })} style={s.vbig} delay={120} /><Text style={s.vbigU}> h</Text></Text>
-          {isYear ? <View style={s.vpct}><Text style={s.vpctN}>{flightPct}%</Text><Text style={s.vpctL}>{l('do teto', 'of cap')}</Text></View> : null}
-        </View>
-        {isYear ? <GrowBar ratio={flightRatio} color={PELE.ink} track={s.vbar} fill={s.vbarFill} /> : null}
-        <View style={s.vmeta}>
-          <Text style={s.lft}>{isYear ? leftTxt(yearFlightGap) : `${st.flights} ${l('voos', 'flights')} · ${st.sectors} ${l('setores', 'sectors')}`}</Text>
-          {isYear ? <Text style={s.lft}>{l('teto', 'cap')} {nf(ANNUAL_FLIGHT_LIMIT_H)} h · ORO.FTL.210 b</Text> : null}
-        </View>
+      {/* ── Folha de uma regra do acordo (TAP) ── */}
+      <AeLimitSheet visible={!!aeRule} onClose={() => setAeRule(null)} ruleId={aeRule} result={aeLim}
+        crewType={isPilot ? 'pilot' : 'cabin'} lang={lang} easa={easaFor(aeRule)} duties={duties} />
 
-        <View style={s.secH}><Icon name="stats" size={13} color={PELE.grey} /><Text style={s.secHTxt}>{isYear ? l('Voo por mês', 'Flight by month') : l('Voo por dia', 'Flight by day')}</Text></View>
-        <View style={s.chart}>
-          {chartData.map((m, i) => {
-            const r = m.flightMin / maxBar;
-            const isNow = isYear ? (+year === nowD.getFullYear() && i === nowD.getMonth()) : (st.ym === nowYm && (i + 1) === nowD.getDate());
-            const lbl = isYear ? monthAbbr(i) : (i === 0 || (i + 1) % 5 === 0 ? String(i + 1) : '');
+      {/* ── Os limites (a regra das folhas: cada janela num campo, sem percentagem) ── */}
+      <PeleSheet visible={sheet === 'seg'} onClose={() => setSheet(null)} bg={C.sheet}>
+        <SheetHeader card title={l('Os limites', 'The limits')} onClose={() => setSheet(null)} closeLabel={l('Fechar', 'Close')} style={s.shHead} />
+        <ScrollView style={{ maxHeight: Math.round(winH * 0.62) }} contentContainerStyle={s.shBody} showsVerticalScrollIndicator={false}>
+          {['serv', 'voo'].map((g) => {
+            const rows = safetyRows.filter((o) => o.w.grp === g);
+            if (!rows.length) return null;
             return (
-              <View key={i} style={s.chartCol}>
-                <View style={s.chartWrap}><MonthBar ratio={r} color={m.flightMin > 0 ? (isNow ? BRAND.signal : PELE.ink) : PELE.line} delay={120 + i * (isYear ? 30 : 12)} /></View>
-                <Text style={[s.chartLbl, isNow && { color: PELE.ink, fontFamily: PELE_FONT.bodyHeavy }]} numberOfLines={1}>{lbl}</Text>
+              <View key={g} style={s.shGroup}>
+                <Text style={[TXT3.kind, { color: C.tabSub }]}>{grpName(g)}</Text>
+                {rows.map((o, i) => <View key={o.k} style={s.limField}><LimitRow o={o} label={limLabel(o.w)} delay={100 + i * 40} /></View>)}
               </View>
             );
           })}
-        </View>
+        <Text style={[TXT3.cardSub, s.note]}>{l('Os períodos de dias contam para trás a partir de hoje — ou de amanhã, quando o serviço de hoje passa a meia-noite (vale o mais carregado). O ano civil conta o ano inteiro, com o que já está na escala. ', 'Day periods count back from today — or from tomorrow when today’s duty runs past midnight (the heavier one applies). The calendar year counts the whole year, including what is already rostered. ')}{l('A barra fica laranja a partir de 85 % de um limite e vermelha só quando o passa (o mapa das cores).', 'The bar turns orange from 85% of a limit and red only when it is exceeded (the colour map).')}</Text>
+          <Text style={[TXT3.dur, s.law]} onPress={() => { select(); setProva(provaFor('limites', provaCtx)); }} accessibilityRole="button">{l('§ ORO.FTL.210 — ver a lei', '§ ORO.FTL.210 — see the law')}</Text>
+        </ScrollView>
+      </PeleSheet>
 
-        <View style={s.two}>
+      {/* ── Voo ── */}
+      <PeleSheet visible={sheet === 'voo'} onClose={() => setSheet(null)} bg={C.sheet}>
+        <SheetHeader card title={l('Voo', 'Flight')} onClose={() => setSheet(null)} closeLabel={l('Fechar', 'Close')} style={s.shHead} />
+        <ScrollView style={{ maxHeight: Math.round(winH * 0.62) }} contentContainerStyle={s.shBody} showsVerticalScrollIndicator={false}>
+          <Field label={isYear ? l('Horas de voo · ano civil', 'Flight hours · calendar year') : l(`Horas de voo · ${monthName.toLowerCase()}`, `Flight hours · ${monthName}`)} value={fmtH(flightShownH)}>
+            <Text style={[TXT3.unit, { color: C.ink }]} allowFontScaling={false}>{fmtH(flightShownH)}</Text>
+            {isYear ? (
+              <>
+                <View style={s.limTop}>
+                  <Text style={[TXT3.cardSub, { color: C.tabSub }]}>{`${l('teto', 'cap')} ${nf(ANNUAL_FLIGHT_LIMIT_H)} h · ORO.FTL.210(b)`}</Text>
+                  <Text style={[TXT3.dur, { color: C.ink }]}>{leftTxt(yearFlightGap)}</Text>
+                </View>
+                <GrowBar ratio={flightRatio} color={barColor3(legalYearMin / (ANNUAL_FLIGHT_LIMIT_H * 60))} track={[s.track, { backgroundColor: C.neutral }]} fill={s.fill} />
+              </>
+            ) : null}
+          </Field>
+          <Field label={l('Voos e setores', 'Flights and sectors')} value={`${st.flights} ${l('voos', 'flights')} · ${st.sectors} ${l('setores', 'sectors')}`} />
+          <View style={s.shGroup}>
+            <Text style={[TXT3.kind, { color: C.tabSub }]}>{isYear ? l('Voo por mês', 'Flight by month') : l('Voo por dia', 'Flight by day')}</Text>
+            <View style={s.chart}>
+              {chartData.map((m, i) => {
+                const r = m.flightMin / maxBar;
+                const isNow = isYear ? (+year === nowD.getFullYear() && i === nowD.getMonth()) : (st.ym === nowYm && (i + 1) === nowD.getDate());
+                const lbl = isYear ? monthAbbr(i) : (i === 0 || (i + 1) % 5 === 0 ? String(i + 1) : '');
+                return (
+                  <View key={i} style={s.chartCol}>
+                    <View style={s.chartWrap}><MonthBar ratio={r} color={m.flightMin > 0 ? (isNow ? C.flight : C.ink) : C.neutral} delay={120 + i * (isYear ? 30 : 12)} /></View>
+                    <Text style={[TXT3.tab, { color: isNow ? C.ink : C.tabSub }]} numberOfLines={1}>{lbl}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
           {kindsPresent.length ? (
-            <View style={s.mini}>
-              <Text style={s.miniH}>{l('Por tipo', 'By type')}</Text>
-              {kindsPresent.slice(0, 4).map((k) => (
-                <View key={k} style={s.mrow2}><Text style={s.mrow2K} numberOfLines={1}>{kindLabel(k)}</Text><Text style={s.mrow2V}>{st.byKind[k]}</Text></View>
-              ))}
+            <View style={s.shGroup}>
+              <Text style={[TXT3.kind, { color: C.tabSub }]}>{l('Por tipo', 'By type')}</Text>
+              <LineRows rows={kindsPresent.map((k) => ({ k: kindLabel(k), v: String(st.byKind[k]) }))} />
             </View>
           ) : null}
           {st.topDest.length ? (
-            <View style={s.mini}>
-              <Text style={s.miniH}>{l('Destinos', 'Destinations')}</Text>
-              {st.topDest.slice(0, 4).map((d) => (
-                <View key={d.code} style={s.mrow2}><View style={s.mrow2KRow}><Icon name="pin" size={12} color={PELE.grey} /><Text style={s.mrow2K}>{d.code}</Text></View><Text style={s.mrow2V}>×{d.n}</Text></View>
-              ))}
+            <View style={s.shGroup}>
+              <Text style={[TXT3.kind, { color: C.tabSub }]}>{l('Destinos', 'Destinations')}</Text>
+              <LineRows rows={st.topDest.slice(0, 6).map((d) => ({ k: d.code, v: `×${d.n}` }))} />
             </View>
           ) : null}
-        </View>
-        <Text style={s.bnote}><Text style={s.bnoteB}>{st.flights}</Text> {l('voos', 'flights')} · <Text style={s.bnoteB}>{st.sectors}</Text> {l('setores', 'sectors')} {isYear ? l('no ano', 'this year') : l('no mês', 'this month')}.</Text>
+        <Text style={[TXT3.cardSub, s.note]}><Text style={[TXT3.dur, { color: C.ink }]}>{st.flights}</Text> {l('voos', 'flights')} · <Text style={[TXT3.dur, { color: C.ink }]}>{st.sectors}</Text> {l('setores', 'sectors')} {isYear ? l('no ano', 'this year') : l('no mês', 'this month')}.</Text>
+        </ScrollView>
       </PeleSheet>
 
-      {/* ── Folha · Corpo ── */}
-      <PeleSheet visible={sheet === 'corpo'} onClose={() => setSheet(null)}>
-        <View style={s.shead}>
-          <View style={s.shIc}><Icon name="bed" size={19} color={PELE.ink} /></View>
-          <View style={s.shTt}>
-            <Text style={s.shName}><Text style={s.shNameX}>{idx.corpo} </Text>· {l('Corpo', 'Body')}</Text>
-            <Text style={s.shSub}>{l('repouso & fadiga', 'rest & fatigue')} · {isYear ? l('o teu ano', 'your year') : l('o teu mês', 'your month')}</Text>
-          </View>
-          <TouchableOpacity style={s.sClose} onPress={() => setSheet(null)} hitSlop={6}><Icon name="minus" size={16} color={PELE.grey} /></TouchableOpacity>
-        </View>
-        <View style={s.body3}>
-          <View style={s.bcell}><Text style={s.bnum}>{st.minRestH != null ? st.minRestH.toLocaleString(locale, { maximumFractionDigits: 1 }) : '—'}<Text style={s.bnumU}>{st.minRestH != null ? 'h' : ''}</Text></Text><Text style={s.blab}>{l('Menor repouso entre serviços', 'Shortest rest between duties')}</Text></View>
-          <View style={[s.bcell, s.bcellB]}><Text style={s.bnum}>{st.reducedRests || 0}</Text><Text style={s.blab}>{l('Repousos abaixo do mínimo', 'Rests below the minimum')}</Text></View>
-          <View style={[s.bcell, s.bcellB]}><Text style={s.bnum}>{st.longestStreak}<Text style={s.bnumU}>d</Text></Text><Text style={s.blab}>{l('Sequência máx. de serviço', 'Longest duty streak')}</Text></View>
-        </View>
+      {/* ── Repouso ── */}
+      <PeleSheet visible={sheet === 'corpo'} onClose={() => setSheet(null)} bg={C.sheet}>
+        <SheetHeader card title={l('Repouso', 'Rest')} onClose={() => setSheet(null)} closeLabel={l('Fechar', 'Close')} style={s.shHead} />
+        <ScrollView style={{ maxHeight: Math.round(winH * 0.62) }} contentContainerStyle={s.shBody} showsVerticalScrollIndicator={false}>
+          <Field label={l('Repouso mais curto', 'Shortest rest')} value={st.minRestH != null ? fmtH(st.minRestH) : '—'} />
+          <Field label={l('Repousos abaixo do mínimo', 'Rests below the minimum')} value={String(st.reducedRests || 0)} />
+          <Field label={l('Sequência máxima de serviço', 'Longest duty streak')} value={`${st.longestStreak} ${l(st.longestStreak === 1 ? 'dia' : 'dias', st.longestStreak === 1 ? 'day' : 'days')}`} />
         {/* ── Radiação cósmica (v2 do mockup: linha achatada, SEM barra — número + âncora;
             zero voos com dose → a secção nem aparece; uma linha de contexto de cada vez). ── */}
         {radVisible ? (
@@ -705,7 +680,7 @@ export default function StatsScreen({ navigation }) {
             <TouchableOpacity style={s.radRow} activeOpacity={0.7}
               onPress={() => { select(); setProva({ ...provaFor('radiacao', provaCtx), value: `≈ ${fmtMsv(rad.mSv)} mSv` }); }}
               accessibilityRole="button" accessibilityLabel={l('Radiação cósmica — ver a lei', 'Cosmic radiation — see the law')}>
-              <Text style={s.radLab}>{l('Radiação cósmica · estimativa', 'Cosmic radiation · estimate')} <Text style={{ color: BRAND.signal }}>§</Text></Text>
+              <Text style={s.radLab}>{l('Radiação cósmica · estimativa', 'Cosmic radiation · estimate')} §</Text>
               <Text style={[s.radVal, radTone ? { color: radTone } : null]} allowFontScaling={false}>≈ {fmtMsv(rad.mSv)}<Text style={s.radValU}> mSv</Text></Text>
             </TouchableOpacity>
             <Text style={s.radCtx}>
@@ -726,7 +701,8 @@ export default function StatsScreen({ navigation }) {
             ) : null}
           </View>
         ) : null}
-        <Text style={s.bnote}><Text style={s.bnoteB}>{st.offDays}</Text> {l('dias de folga e', 'days off and')} <Text style={s.bnoteB}>{st.nightStops}</Text> {l('paragens noturnas', 'night stops')} {isYear ? l('no ano', 'this year') : l('no mês', 'this month')}.{st.reducedRests ? l(' Abaixo do mínimo = menos do que o serviço anterior ou 12 h na base / 10 h fora (ORO.FTL.235). A app estima: confirma com a companhia.', ' Below the minimum = less than the preceding duty or 12 h at base / 10 h away (ORO.FTL.235). The app estimates: confirm with the company.') : ''}{st.uncertainRests ? l(` ${st.uncertainRests} ${st.uncertainRests === 1 ? 'repouso incerto' : 'repousos incertos'}: a app não consegue dizer se cumprem — dependem de um facto que a escala não traz (se o voo foi atribuído durante uma assistência, se a companhia usa repouso reduzido, uma hora em falta no serviço anterior). O motivo de cada um está no serviço.`, ` ${st.uncertainRests} uncertain ${st.uncertainRests === 1 ? 'rest' : 'rests'}: the app cannot tell whether they comply — they depend on a fact the roster does not carry (whether the flight was assigned during a standby, whether the company uses reduced rest, a missing time in the previous duty). Each one's reason is in the duty.`) : ''}</Text>
+        <Text style={[TXT3.cardSub, s.note]}><Text style={[TXT3.dur, { color: C.ink }]}>{st.offDays}</Text> {l('dias de folga e', 'days off and')} <Text style={[TXT3.dur, { color: C.ink }]}>{st.nightStops}</Text> {l('paragens noturnas', 'night stops')} {isYear ? l('no ano', 'this year') : l('no mês', 'this month')}.{st.reducedRests ? l(' Abaixo do mínimo = menos do que o serviço anterior ou 12 h na base / 10 h fora (ORO.FTL.235). A app estima: confirma com a companhia.', ' Below the minimum = less than the preceding duty or 12 h at base / 10 h away (ORO.FTL.235). The app estimates: confirm with the company.') : ''}{st.uncertainRests ? l(` ${st.uncertainRests} ${st.uncertainRests === 1 ? 'repouso incerto' : 'repousos incertos'}: a app não consegue dizer se cumprem — dependem de um facto que a escala não traz (se o voo foi atribuído durante uma assistência, se a companhia usa repouso reduzido, uma hora em falta no serviço anterior). O motivo de cada um está no serviço.`, ` ${st.uncertainRests} uncertain ${st.uncertainRests === 1 ? 'rest' : 'rests'}: the app cannot tell whether they comply — they depend on a fact the roster does not carry (whether the flight was assigned during a standby, whether the company uses reduced rest, a missing time in the previous duty). Each one's reason is in the duty.`) : ''}</Text>
+        </ScrollView>
       </PeleSheet>
 
       <YearShareCard visible={shareOpen} onClose={() => setShareOpen(false)} st={isYear ? st : null} year={year} companyName={company?.name} />
@@ -738,173 +714,52 @@ export default function StatsScreen({ navigation }) {
   );
 }
 
+// N1 (2026-11-14): o topo do Início e a folha branca da 3.0; os cartões são o LineCard; as folhas na regra das folhas.
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: PELE.paper },
-  headWrap: { paddingHorizontal: GUTTER },   // herói fixo fora do scroll (género Perfil/Validades)
-  scroll: { paddingHorizontal: GUTTER },
-
-  // Nav de mês — vai no `wordTrailing` do PeleHeader (o resto do cabeçalho é do PeleHeader)
-  mnav: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 },
-  mnavBtn: { width: 30, height: 30, borderRadius: 15, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
-  mnavBtnOff: { opacity: 0.4 },
-
-  // Segmento Mês/Ano
-  scoperow: { marginBottom: 14 },
-  segWrap: { flexDirection: 'row', alignSelf: 'flex-start', backgroundColor: PELE.soft, borderRadius: RADIUS.pill, padding: 3, gap: 2 },
-  segb: { paddingHorizontal: 16, paddingVertical: 7, borderRadius: RADIUS.pill },
-  segbOn: { backgroundColor: PELE.ink },
-  segTxt: { fontSize: 12, fontFamily: PELE_FONT.bodyHeavy, color: PELE.grey },
-  segTxtOn: { color: PELE.paper },
-
-  years: { flexDirection: 'row', gap: 8, marginBottom: 14 },
-  yChip: { borderWidth: 1, borderColor: PELE.line, borderRadius: RADIUS.pill, paddingHorizontal: 15, paddingVertical: 7, backgroundColor: PELE.paper },
-  yChipOn: { backgroundColor: PELE.ink, borderColor: PELE.ink },
-  yTxt: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.grey },
-  yTxtOn: { color: PELE.paper },
-
-  // Empty
-  emptyWrap: { alignItems: 'center', gap: 8, paddingVertical: 64 },
-  emptyTight: { paddingVertical: SPACE.xxl },   // por baixo do bloco do dinheiro (mês sem serviços)
-  emptyTxt: { fontSize: 15, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, textAlign: 'center' },
-  emptySub: { fontSize: 12.5, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, textAlign: 'center', paddingHorizontal: 24, lineHeight: 18 },
-  emptyBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: PELE.ink, borderRadius: RADIUS.pill, paddingHorizontal: 18, paddingVertical: 11, marginTop: 8 },
-  emptyBtnTxt: { fontSize: 13, fontFamily: PELE_FONT.bodyBold, color: PELE.paper },
-
-  // Section eyebrow (dial)
-  seybRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
-  seybDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: PELE.ink },
-  seyb: { fontSize: 10.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1, textTransform: 'uppercase', color: PELE.grey },
-
-  // Dial
-  money: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 228 },
-  disp: { flex: 1, minWidth: 0 },
-  // Dado-estrela da página: maior que a palavra do topo (44) — a hierarquia manda (2026-07-10, user).
-  dval: { fontFamily: PELE_FONT.display, fontSize: 58, lineHeight: 56, color: PELE.ink },
-  dvalDec: { fontFamily: PELE_FONT.displaySemi, fontSize: 23, color: PELE.grey },
-  dvalGreen: { color: MONEY.gain },
-  dvalS: { fontFamily: PELE_FONT.display, fontSize: 60, lineHeight: 56, marginTop: 4 },
-  dlab: { fontSize: 10.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.6, textTransform: 'uppercase', color: PELE.grey },
-  dsubBox: { marginTop: 10 },
-  dsub: { fontSize: 12.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, lineHeight: 18 },
-  dsubB: { color: PELE.ink, fontFamily: PELE_FONT.bodyHeavy },
-  gline: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 7, flexWrap: 'wrap' },
-  gpill: { backgroundColor: MONEY.gainSoft, borderRadius: RADIUS.pill, paddingHorizontal: 9, paddingVertical: 3 },
-  gpillTxt: { color: MONEY.gain, fontSize: 11.5, fontFamily: PELE_FONT.bodyHeavy },
-
-  col: { alignItems: 'flex-end', gap: 9 },
-  opt: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-  onm: { fontSize: 12, fontFamily: PELE_FONT.bodyBold, color: PELE.grey },
-  onmOn: { color: PELE.ink, fontFamily: PELE_FONT.bodyHeavy },
-  cir: { minWidth: 40, height: 40, borderRadius: 20, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
-  cirInk: { backgroundColor: PELE.ink, paddingHorizontal: 11, shadowColor: '#141412', shadowOpacity: 0.26, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
-  cirPc: { fontSize: 12.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.paper },
-  cirS: { minWidth: 44, height: 33, borderRadius: RADIUS.pill, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10 },
-  cirPcS: { fontSize: 12, fontFamily: PELE_FONT.bodyHeavy },
-
-  aeNotes: { marginTop: 12, gap: 4 },
-  note: { fontSize: 11, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, lineHeight: 15 },
-  noteInk: { color: PELE.ink, fontFamily: PELE_FONT.bodyBold },
-  shLaw: { fontFamily: PELE_FONT.bodyBold, color: PELE.grey },   // § da PROVA no sub da folha (tocável)
-
-  // Radiação cósmica (folha Corpo, mockup radiacao-corpo v2): linha achatada na gramática
-  // da folha — hairline + rótulo/valor + contexto; batismo no âmbar-doc (1×-na-vida).
-  rad: { borderTopWidth: 1, borderTopColor: PELE.line, marginTop: 14, paddingTop: 12 },
-  radRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
-  radLab: { flex: 1, fontSize: 9.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.3, color: PELE.grey, textTransform: 'uppercase' },
-  radVal: { fontFamily: PELE_FONT.display, fontSize: 24, color: PELE.ink, fontVariant: ['tabular-nums'] },
-  radValU: { fontSize: 13, color: PELE.grey, fontFamily: PELE_FONT.bodyMed },
-  radCtx: { fontSize: 10.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, lineHeight: 15, marginTop: 5 },
-  radCtxB: { color: PELE.ink, fontFamily: PELE_FONT.bodyBold },
-  radBapt: { backgroundColor: '#FFF9E8', borderWidth: 1, borderColor: '#F2E2AC', borderRadius: 12, padding: 11, marginTop: 12, fontSize: 10.5, fontFamily: PELE_FONT.bodyMed, color: '#5C5232', lineHeight: 15, overflow: 'hidden' },
-  radBaptB: { color: PELE.ink, fontFamily: PELE_FONT.bodyBold },
-
-  div: { height: 1, backgroundColor: PELE.line, marginTop: 22, marginBottom: 16 },
-  mais: { fontSize: 10.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.1, textTransform: 'uppercase', color: PELE.grey, marginBottom: 12 },
-
-  // Bento
-  bento: { flexDirection: 'row', flexWrap: 'wrap', gap: 11 },
-  aeLim: { marginTop: SPACE.xxl },
-  btile: { width: '47%', flexGrow: 1, minHeight: 118, padding: 14, backgroundColor: PELE.paper, borderWidth: 1, borderColor: PELE.line, borderRadius: 16 },
-  btileWide: { width: '100%', flexBasis: '100%', flexDirection: 'row', alignItems: 'center', gap: 13, minHeight: 0, padding: 15 },
-  btWt: { flex: 1, minWidth: 0 },
-  btTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 11 },
-  btIc: { width: 38, height: 38, borderRadius: 11, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
-  btIcAlarm: { backgroundColor: PELE.soft },
-  btIdx: { fontFamily: PELE_FONT.displaySemi, fontSize: 15, letterSpacing: 1, color: BRAND.signal },
-  btName: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.grey, marginBottom: 5 },
-  btNameWideRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 3 },
-  btNameWide: { fontSize: 15, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
-  btKey: { fontFamily: PELE_FONT.display, fontSize: 29, lineHeight: 29, color: PELE.ink },
-  btKeyWide: { fontFamily: PELE_FONT.display, fontSize: 33, lineHeight: 33 },
-  btCap: { marginTop: 6, fontSize: 11, fontFamily: PELE_FONT.bodyMed, color: PELE.grey },
-  btCapRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  btDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: PELE.red },
-
-  // Cards extra
-  card: { backgroundColor: PELE.paper, borderWidth: 1, borderColor: PELE.line, borderRadius: RADIUS.lg, padding: 16, marginTop: 12 },
-  aeHead: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 12 },
-  aeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: PELE.red },
-  cardTitle: { fontSize: 11, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.8, textTransform: 'uppercase', color: PELE.grey },
-
-  shareBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderWidth: 1.5, borderColor: PELE.line, borderStyle: 'dashed', borderRadius: RADIUS.lg, paddingVertical: 12, marginTop: 12 },
-  shareTxt: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
-
-  foot: { fontSize: 11, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, lineHeight: 16, marginTop: 16, paddingHorizontal: 2, marginBottom: 6 },
-
-  // ── Folhas de detalhe ──
-  shead: { flexDirection: 'row', alignItems: 'center', gap: 11, marginBottom: 15 },
-  shIc: { width: 38, height: 38, borderRadius: 11, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
-  shIcAlarm: { backgroundColor: PELE.soft },
-  shTt: { flex: 1, minWidth: 0 },
-  shName: { fontSize: 11, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.8, textTransform: 'uppercase', color: PELE.grey },
-  shNameX: { fontFamily: PELE_FONT.displaySemi, color: BRAND.signal, fontSize: 13 },
-  shSub: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, marginTop: 2 },
-  sClose: { width: 32, height: 32, borderRadius: 16, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
-
-  grp: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, marginBottom: 9 },
-  grpTxt: { fontSize: 10, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.3, textTransform: 'uppercase', color: PELE.grey },
-  win: { marginBottom: 13 },
-  winHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginBottom: 6 },
-  winName: { fontSize: 12.5, fontFamily: PELE_FONT.bodyMed, color: PELE.ink },
-  winVal: { fontFamily: PELE_FONT.displayMed, fontSize: 14, color: PELE.grey },
-  winValB: { color: PELE.ink, fontFamily: PELE_FONT.displaySemi },
-  track: { height: 7, borderRadius: RADIUS.pill, backgroundColor: PELE.soft, overflow: 'hidden' },
+  safe: { flex: 1 },
+  flex: { flex: 1, minWidth: 0 },
+  sheet: { flex: 1, marginTop: -SPACE.lg, borderTopLeftRadius: RADIUS.sheet, borderTopRightRadius: RADIUS.sheet, overflow: 'hidden' },
+  sheetIn: { padding: SPACE.md, gap: SPACE.sm },
+  seg: { height: 38, borderRadius: RADIUS.pill, padding: 3, flexDirection: 'row', alignItems: 'center' },
+  segB: { height: 32, borderRadius: RADIUS.pill, paddingHorizontal: SPACE.md, alignItems: 'center', justifyContent: 'center' },
+  notes: { gap: SPACE.xs, paddingHorizontal: SPACE.xs },
+  empty: { gap: SPACE.md, padding: SPACE.lg },
+  stack: { flexDirection: 'row', height: 14, borderRadius: RADIUS.pill, overflow: 'hidden', gap: SPACE.xxs },
+  mRow: { borderTopWidth: 1, borderTopColor: CARD.rule },
+  mRowFirst: { borderTopWidth: 0 },
+  sumRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, paddingTop: SPACE.sm, minHeight: 44 },
+  mMain: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.sm, paddingVertical: SPACE.sm, minHeight: 44 },
+  mSw: { width: 10, height: 10, borderRadius: 3, marginTop: SPACE.s },
+  exList: { gap: SPACE.xs, paddingLeft: SPACE.lg + SPACE.xxs, paddingBottom: SPACE.sm },
+  lim: { gap: SPACE.xs },
+  limTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: SPACE.md },
+  track: { height: 8, borderRadius: RADIUS.pill, overflow: 'hidden' },
   fill: { height: '100%', borderRadius: RADIUS.pill },
-  winFoot: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 5 },
-  pct: { fontFamily: PELE_FONT.displaySemi, fontSize: 13 },
-  lft: { fontSize: 11, fontFamily: PELE_FONT.bodyMed, color: PELE.grey },
-  bnote: { marginTop: 15, paddingTop: 12, borderTopWidth: 1, borderTopColor: PELE.line, fontSize: 11, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, lineHeight: 17 },
-  bnoteB: { color: PELE.ink, fontFamily: PELE_FONT.bodyHeavy },
-
-  vhero: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginBottom: 10 },
-  vbig: { fontFamily: PELE_FONT.display, fontSize: 50, lineHeight: 44, color: PELE.ink },
-  vbigU: { fontSize: 20, color: PELE.grey, fontFamily: PELE_FONT.displayMed },
-  vpct: { alignItems: 'flex-end' },
-  vpctN: { fontFamily: PELE_FONT.display, fontSize: 24, lineHeight: 24, color: PELE.ink },
-  vpctL: { fontSize: 10.5, color: PELE.grey, fontFamily: PELE_FONT.bodyMed },
-  vbar: { height: 9, borderRadius: RADIUS.pill, backgroundColor: PELE.soft, overflow: 'hidden' },
-  vbarFill: { height: '100%', borderRadius: RADIUS.pill },
-  vmeta: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 7 },
-
-  secH: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 18, marginBottom: 11 },
-  secHTxt: { fontSize: 10, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1, textTransform: 'uppercase', color: PELE.grey },
-  chart: { flexDirection: 'row', alignItems: 'flex-end', height: 92, gap: 6 },
-  chartCol: { flex: 1, height: '100%', alignItems: 'center', justifyContent: 'flex-end', gap: 6 },
-  chartWrap: { flex: 1, width: '100%', alignItems: 'center', justifyContent: 'flex-end' },
-  chartLbl: { fontSize: 9, fontFamily: PELE_FONT.bodyBold, color: PELE.grey, textTransform: 'uppercase' },
-
-  two: { flexDirection: 'row', gap: 11, marginTop: 16 },
-  mini: { flex: 1, borderWidth: 1, borderColor: PELE.line, borderRadius: 14, padding: 12 },
-  miniH: { fontSize: 10, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.7, textTransform: 'uppercase', color: PELE.grey, marginBottom: 9 },
-  mrow2: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 7 },
-  mrow2KRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  mrow2K: { fontSize: 12.5, fontFamily: PELE_FONT.body, color: PELE.ink },
-  mrow2V: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.grey },
-
-  body3: { flexDirection: 'row' },
-  bcell: { flex: 1, paddingHorizontal: 8, paddingVertical: 4, alignItems: 'center' },
-  bcellB: { borderLeftWidth: 1, borderLeftColor: PELE.line },
-  bnum: { fontFamily: PELE_FONT.display, fontSize: 32, lineHeight: 34, color: PELE.ink, textAlign: 'center' },
-  bnumU: { fontSize: 15, color: PELE.grey, fontFamily: PELE_FONT.displayMed },
-  blab: { fontSize: 10, fontFamily: PELE_FONT.bodyBold, color: PELE.grey, lineHeight: 14, marginTop: 7, textAlign: 'center' },
+  moreRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: CARD.rule, paddingTop: SPACE.md, minHeight: 44 },
+  aeLim: { marginTop: SPACE.xs },
+  foot: { color: CARD.day.tabSub, textAlign: 'center', paddingHorizontal: SPACE.lg, marginTop: SPACE.sm },
+  // as folhas
+  shHead: { paddingHorizontal: 0, paddingTop: 0 },
+  shBody: { gap: SPACE.sm, paddingBottom: SPACE.lg },
+  shGroup: { gap: SPACE.xs, paddingTop: SPACE.sm },
+  limField: { paddingVertical: SPACE.sm, borderBottomWidth: 1.5, borderBottomColor: CARD.rule },
+  note: { color: CARD.day.tabSub, marginTop: SPACE.sm },
+  law: { color: CARD.day.ink, marginTop: SPACE.xs },
+  chart: { flexDirection: 'row', alignItems: 'flex-end', height: 120, gap: SPACE.xxs },
+  chartCol: { flex: 1, alignItems: 'center', gap: SPACE.xs },
+  chartWrap: { height: 96, width: '100%', justifyContent: 'flex-end', alignItems: 'center' },
+  pickYear: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: SPACE.sm },
+  pickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.sm, paddingBottom: SPACE.lg },
+  pickCell: { width: '31%', height: 48, borderRadius: RADIUS.lg, alignItems: 'center', justifyContent: 'center' },
+  off: { opacity: 0.35 },
+  // a radiação cósmica (na folha do Repouso)
+  rad: { gap: SPACE.xs, paddingTop: SPACE.md, borderTopWidth: 1.5, borderTopColor: CARD.rule },
+  radRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: SPACE.md, minHeight: 44 },
+  radLab: { ...TXT3.line, color: CARD.day.ink, flex: 1 },
+  radVal: { ...TXT3.fact, color: CARD.day.ink },
+  radValU: { ...TXT3.cardSub, color: CARD.day.tabSub },
+  radCtx: { ...TXT3.cardSub, color: CARD.day.tabSub },
+  radCtxB: { ...TXT3.dur, color: CARD.day.ink },
+  radBapt: { ...TXT3.cardSub, color: CARD.day.soft, marginTop: SPACE.xs },
+  radBaptB: { ...TXT3.dur, color: CARD.day.ink },
 });

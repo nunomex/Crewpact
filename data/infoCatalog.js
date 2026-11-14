@@ -32,7 +32,7 @@ export const AE_PILOT = { word: 'O teu AE', groups: [
   ] },
   { name: 'Por voo', items: [
     { v: '×NS', u: '·', name: 'Per diem', art: 'Art. 37', f: 'Σ setores voados × nominal. Bandas: curto 0,8 · médio 1,2 · longo 1,5 · extra 2,5.', ex: 'LIS-MAD-LIS: 2×0,8×45,60 = 72,96 €.' },
-    { v: '2', u: 'NS', name: 'Paragem nocturna', art: 'Art. 39', f: '2 setores nominais por noite fora da base, entre voos.', ex: 'FO: 91,20 €.' },
+    { v: '2', u: 'NS', name: 'Paragem noturna', art: 'Art. 39', f: '2 setores nominais por noite fora da base, entre voos.', ex: 'FO: 91,20 €.' },
     { v: '2', u: 'NS', name: 'Dia de férias', art: 'Art. 38', f: 'Pagamento fixo por dia de férias, além do salário.', ex: 'FO: 91,20 €/dia.' },
     { v: '0–2', u: 'NS', name: 'Serviço aeroporto (ADTY)', art: 'Anexo I.5', f: 'Não chamado: 1 setor nominal até 3h59, 2 a partir de 4h00. Chamado a voar: até 3h59 só os setores voados; a partir de 4h00, 2 setores nominais + os setores voados (Art. 40.º).' },
     { v: '×NS', u: '·', name: 'Posicionamento', art: 'Art. 44', f: 'Os setores do posicionamento pelas bandas do per diem, por distância de grande círculo. Não na formação inicial.', ex: 'FO LIS-CDG (médio): 1,2 × 45,60 = 54,72 €.', long: 'Posicionamento por ar/terra' },
@@ -71,7 +71,7 @@ export const AE_CABIN = { word: 'O teu AE', groups: [
   ] },
   { name: 'Por voo', items: [
     { v: '×NS', u: '·', name: 'Per diem', art: 'Cl. 53', f: 'Σ setores voados × nominal. Bandas 0,8 · 1,2 · 1,5 · 2,5.' },
-    { v: '46', u: '€', name: 'Pernoita', art: 'Cl. 56', f: 'Valor FIXO por noite fora da base (≠ pilotos, que é 2 NS).', ex: '46,00 €/noite.', long: 'Paragem nocturna' },
+    { v: '46', u: '€', name: 'Pernoita', art: 'Cl. 56', f: 'Valor FIXO por noite fora da base (≠ pilotos, que é 2 NS).', ex: '46,00 €/noite.', long: 'Paragem noturna' },
     { v: '2', u: 'NS', name: 'Dia de férias', art: 'Cl. 60', f: '2 setores nominais por dia de férias.', ex: 'CM: 65,00 €.' },
     { v: '0–2,4', u: 'NS', name: 'Assistência no aeroporto', art: 'Cl. 58', f: 'Em setores médios (1 setor médio = 1,2 NS). Não chamado: 1 setor médio até 3h59, 2 a partir de 4 h. Chamado: o per diem do voo, + 1 setor médio a partir de 4 h.' },
     { v: 'tabela', u: '·', name: 'Posicionamento', art: 'Anexo I.18', f: 'Pela duração da viagem, curto · médio · longo: FA 16,00 · 24,00 · 30,00 — CM 26,00 · 39,00 · 48,75 — FA1 10,50 · 15,74 · 19,68. O acordo não diz onde acaba cada um: a app conta o curto e mostra até onde pode ir.', long: 'Posicionamento' },

@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · O topo lado a lado</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* O TOPO LADO A LADO (2026-11-14). O Nuno: "o topo não estou a gostar. gostava de como estava antes, num lado esquerdo e outro no
+   lado direito. mas temos que ver como ajustar." Medido com as métricas da app (data/fontMetrics.js), em todos os estados:
+   · lado a lado com o MESMO tamanho nas três abas e os factos de hoje: 36 (32 a 375) — o € do ano nos Números não deixa mais;
+   · sem factos no topo dos Números (passam para o cartão "De onde vem"): duas linhas grandes com o fio 62 (58); com os
+     quadradinhos ao lado 50 (46) — a Escala trava ("serviços" e o per diem); uma linha grande + a 2.ª pequena, com os
+     quadradinhos, 66 (60) — o standby trava ("PSV até, se chamarem já").
+   Três maneiras: L1 como antes, tudo a 62 · L2 cada aba no seu tamanho, a folha no mesmo sítio · L3 uma linha grande a 66.
+   Imagens do Nuno: 3424 (o número em duas linhas, rótulo em cima), 3440 (os subvalores do total), 3416 (o mesmo topo nas abas).
+   Mobbin: Tonal (o número e o rótulo pequeno por baixo), Copilot (dois valores ao lado), Kit (o valor ao lado de um quadradinho). */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+.lead{max-width:940px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)} .lead a{color:var(--pfg)}
+.opt{display:flex;flex-direction:column;gap:10px}
+.opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:var(--muted);max-width:900px} .opt > p b{color:var(--pfg)}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.row{display:flex;flex-wrap:wrap;gap:20px}
+.cap{font-size:12px;font-weight:700;color:var(--muted);margin:0 0 6px 6px} .cap b{color:#C2410C}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:940px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card2 li{font-size:13px;line-height:1.5;color:var(--muted)} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:var(--pfg)}
+table.m{border-collapse:collapse;font-size:13px;max-width:940px;background:#fff;border-radius:12px;overflow:hidden}
+table.m th,table.m td{padding:8px 12px;border-bottom:1px solid #E4E2DC;text-align:left} table.m th{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
+
+.ph{display:flex;flex-direction:column;width:406px;height:560px;border:8px solid #04060A;border-radius:52px 52px 0 0;border-bottom:0;overflow:hidden;position:relative;background:#E3E1DB;color:#141414;max-width:100%}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.topA{padding:0 20px 32px;flex:none}
+.pills{display:flex;align-items:center;gap:8px;min-height:68px;padding:8px 0 16px}
+.pl{height:38px;padding:0 16px;border-radius:19px;border:1.5px solid #141414;display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:13px;white-space:nowrap}
+.pl.ink{background:#141414;color:#E3E1DB} .pl.ink i{width:7px;height:7px;border-radius:4px;background:#F0854A;display:block}
+.bell{width:44px;height:44px;border-radius:22px;background:rgba(127,127,127,.22);margin-left:auto}
+.ml{margin-left:auto}
+.seg{display:inline-flex;background:rgba(127,127,127,.22);border-radius:19px;padding:3px;height:38px;align-items:center;margin-left:auto}
+.seg span{padding:0 14px;height:32px;border-radius:16px;display:flex;align-items:center;font-weight:700;font-size:13px;color:#3A3A36}
+.seg span.on{background:#141414;color:#E3E1DB}
+.what{font-weight:500;font-size:15px;line-height:20px;color:#3A3A36}
+.hero{display:flex;align-items:stretch;gap:16px;margin-top:4px}
+.g{font-weight:700;white-space:nowrap}
+.g .l1{display:flex;align-items:baseline}
+.g small{letter-spacing:-1px;margin-left:5px}
+.grey{color:rgba(20,20,20,.5)}
+.sub2{font-weight:600;font-size:15px;line-height:20px;color:#3A3A36;margin-top:2px;white-space:nowrap}
+.side{border-left:1.5px solid #141414;padding-left:16px;display:flex;flex-direction:column;justify-content:center;gap:12px;min-width:0}
+.sideq{display:flex;flex-direction:column;justify-content:center;gap:10px;min-width:0}
+.sideq > div{display:flex;align-items:center;gap:6px}
+.sq{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:none}
+.ic{display:block;fill:currentColor}
+.fv{display:block;font-weight:700;font-size:20px;line-height:22px;white-space:nowrap}
+.fl{display:block;font-weight:500;font-size:11px;line-height:15px;color:#3A3A36;white-space:nowrap}
+.gain{color:#0B6E43}
+.sheetN{flex:1;background:#fff;border-radius:32px 32px 0 0;padding:16px 12px 0;position:relative}
+.sheetN::before{content:'';position:absolute;left:-8px;right:-8px;top:0;border-top:2px dashed #C2410C}
+.cardB{border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:10px;min-height:150px}
+.kd{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8)}
+.ct{font-weight:800;font-size:22px;line-height:26px}
+.stack{display:flex;height:14px;border-radius:7px;overflow:hidden;gap:2px} .stack i{display:block;height:100%}
+.ln{display:flex;justify-content:space-between;align-items:baseline;font-weight:500;font-size:15px;border-top:1px solid rgba(127,127,127,.3);padding-top:8px}
+.ln b{font-weight:700}
+.month{display:grid;grid-template-columns:repeat(7,1fr);gap:8px 4px;padding:4px 6px}
+.month span{font-weight:700;font-size:11px;color:#5E5E57;text-align:center}
+.month i{display:block;width:38px;height:38px;border-radius:19px;margin:0 auto;border:3px solid #6DBEFA}
+.month i.r{border-color:#B4C2A2} .month i.o{border-color:#E4E2DC}
+.bad{outline:2px dashed #EC7A6C;outline-offset:2px}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>O topo lado a lado</h1>
+    <p>Queres o número à esquerda e os factos à direita, como antes. Medi até onde isso dá com <b>o mesmo tamanho nas três abas</b>. Com os factos de hoje em todas, o número desce a <b>36</b>, porque o € do ano nos Números é muito comprido. Por isso, nas três maneiras, <b>os Números ficam só com o total no topo</b>, e o "acima da base" e as horas de voo passam para o primeiro cartão ("De onde vem"), logo por baixo.</p>
+    <p>Com os Números assim, o lado a lado aguenta <b>62</b> com duas linhas grandes e o fio (58 a 375). Com os quadradinhos ao lado aguenta só 50, porque a Escala trava. Com <b>uma linha grande e a segunda pequena</b>, com os quadradinhos, aguenta <b>66</b> (60 a 375). <b>As tuas imagens:</b> 3424 (o número em duas linhas, rótulo em cima), 3440 (os subvalores do total), 3416 (o mesmo topo nas abas). <b>Mobbin:</b> <a href="https://mobbin.com/screens/e5dcd7a4-253e-4b0f-a487-7809db572ee8">Tonal</a> (o número e o rótulo pequeno por baixo), <a href="https://mobbin.com/screens/7eeae53b-0800-4b1e-9553-43f7eecb4dce">Copilot</a> (dois valores ao lado), <a href="https://mobbin.com/screens/c8ea1570-3987-42ea-9b0c-6d176a8f6d4f">Kit</a> (o valor ao lado de um quadradinho).</p>
+  </div>
+  <table class="m">
+    <tr><th></th><th>Início</th><th>Escala</th><th>Números</th><th>Topo</th><th>Factos</th></tr>
+    <tr><td><b>Hoje (H1)</b></td><td>82</td><td>82</td><td>82</td><td>325 nas três</td><td>por baixo, com quadradinhos</td></tr>
+    <tr><td><b>L1</b> como antes, tudo a 62</td><td>62</td><td>62</td><td>62</td><td>236 nas três</td><td>ao lado, com o fio</td></tr>
+    <tr><td><b>L2</b> cada aba no seu tamanho</td><td>86</td><td>62</td><td>82</td><td>279 nas três</td><td>ao lado, com o fio</td></tr>
+    <tr><td><b>L3</b> uma linha grande</td><td>66</td><td>66</td><td>66</td><td>210 nas três</td><td>ao lado, com quadradinhos</td></tr>
+  </table>
+  <div id="opts" style="display:flex;flex-direction:column;gap:36px"></div>
+  <div class="card2"><h3>A minha recomendação: L3</h3><ul>
+    <li><b>L3</b> dá o lado a lado que querias e guarda os quadradinhos que escolheste. O número fica grande e igual nas três abas (66), numa linha. A segunda linha ("LIS", "serviços", "estimado") passa a texto pequeno por baixo, e na véspera e antes do report leva também a hora em UTC. O topo fica o mais baixo de todos (210), com mais folha para os cartões.</li>
+    <li><b>L1</b> é o mais parecido com antes (duas linhas grandes e o fio), mas o número desce para 62 em todas, e os quadradinhos saem do topo porque não cabem ao lado na Escala.</li>
+    <li><b>L2</b> é exatamente como antes (o Início a 86, a Escala a 62), e só iguala onde começa a folha. Mas os números voltam a ter tamanhos diferentes de aba para aba, que era a tua queixa. E na Escala fica um espaço vazio por cima do número.</li>
+    <li>Em todas: os Números ficam só com o total no topo; o "acima da base" e as horas de voo vão para o cartão "De onde vem", logo por baixo. Nada se corta, e o € nunca se abrevia.</li></ul></div>
+</div>
+<script>
+var P = { shield:'<path d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5l-8-3zm0 2.2 6 2.3V11c0 4-2.6 7.7-6 8.8-3.4-1.1-6-4.8-6-8.8V6.5l6-2.3z"/>',
+  bed:'<path d="M3 6h2v7h7V8h6a3 3 0 0 1 3 3v7h-2v-2H5v2H3V6zm5 1.5A2.5 2.5 0 1 1 8 12.5a2.5 2.5 0 0 1 0-5z"/>',
+  wallet:'<path d="M4 6h14a2 2 0 0 1 2 2v1h-5a3 3 0 0 0 0 6h5v1a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zm11 5h6v2h-6a1 1 0 0 1 0-2z"/>' };
+function ic(n, s, c){ return '<svg class="ic" width="' + s + '" height="' + s + '" viewBox="0 0 24 24" style="color:' + c + '">' + P[n] + '</svg>'; }
+var KC = { flight: '#6DBEFA', rest: '#B4C2A2', gain: '#0B6E43' };
+var INI = { tab: 'Início', pills: '<span class="pl ink"><i></i>Hoje</span><span class="pl">EJU7601</span><span class="bell"></span>', what: 'Report às', l1: '05:15', unit: '', l2: 'LIS', grey: false,
+  small: 'LIS · report 04:15 UTC', f: [{ v: '1 h 40', l: 'falta' }, { v: '17:00', l: 'PSV até', k: 'flight', ic: 'shield' }],
+  sheet: '<div class="cardB" style="background:#6DBEFA"><span class="kd">Dia de serviço · 3 setores</span><span class="ct">LIS → FNC → LIS → OPO</span></div>' };
+var ESC = { tab: 'Escala', pills: '<span class="pl">Novembro 2026 ▾</span><span class="pl ml">Sincronizar</span>', what: 'A tua escala de novembro', l1: '11', unit: '', l2: 'serviços', grey: true,
+  small: 'serviços', f: [{ v: '6', l: 'pernoitas', k: 'rest', ic: 'bed' }, { v: '1 732,80 €', l: 'per diem · estimado', k: 'gain', ic: 'wallet', gain: 1 }],
+  sheet: '<div class="month">' + ['S','T','Q','Q','S','S','D'].map(function(d){ return '<span>' + d + '</span>'; }).join('') + [1,0,1,2,1,0,2,1,1,0,1,2,0,1].map(function(k){ return '<i class="' + (k === 0 ? 'o' : k === 2 ? 'r' : '') + '"></i>'; }).join('') + '</div>' };
+var NUM = { tab: 'Números', pills: '<span class="pl">Novembro 2026 ▾</span><span class="seg"><span class="on">Mês</span><span>Ano</span></span>', what: 'Ganhos brutos de novembro', l1: '15 137', unit: ',64 €', l2: 'estimado', grey: true,
+  small: 'estimado', f: [],
+  sheet: '<div class="cardB" style="background:#F1EFEA"><span class="kd">De onde vem</span><div class="stack"><i style="flex:5059;background:#141414"></i><i style="flex:1733;background:#6DBEFA"></i><i style="flex:182;background:#B4C2A2"></i><i style="flex:60;background:#C3A1BE"></i></div>'
+    + '<div class="ln"><span>Acima da base</span><b class="gain">+5 170,12 €</b></div><div class="ln"><span>De voo · 12 setores</span><b>78,5 h</b></div></div>' };
+function big(d, z, twoBig){
+  var lh = Math.round(z * 1.1), tr = Math.round(z * 0.1), st = 'font-size:' + z + 'px;line-height:' + lh + 'px;letter-spacing:' + (z * -0.046).toFixed(2) + 'px';
+  var unit = d.unit ? '<small style="font-size:' + Math.round(z * 0.41) + 'px">' + d.unit + '</small>' : '';
+  return '<div class="g" style="margin:-' + tr + 'px 0 -' + tr + 'px"><div class="l1"><span style="' + st + '">' + d.l1 + '</span>' + unit + '</div>'
+    + (twoBig ? '<div class="' + (d.grey ? 'grey' : '') + '" style="' + st + ';margin-top:-' + Math.round(z * 0.2) + 'px">' + d.l2 + '</div>' : '') + '</div>';
+}
+function side(fx){ return fx.length ? '<div class="side">' + fx.map(function(f){ return '<div><span class="fv' + (f.gain ? ' gain' : '') + '">' + f.v + '</span><span class="fl">' + f.l + '</span></div>'; }).join('') + '</div>' : ''; }
+function sideQ(fx){ return fx.length ? '<div class="sideq">' + fx.map(function(f){ return '<div>' + (f.k ? '<span class="sq" style="background:' + KC[f.k] + '">' + ic(f.ic, 18, f.k === 'gain' ? '#fff' : '#141414') + '</span>' : '') + '<div><span class="fv' + (f.gain ? ' gain' : '') + '">' + f.v + '</span><span class="fl">' + f.l + '</span></div></div>'; }).join('') + '</div>' : ''; }
+function frame(d, hero, minH){
+  return '<div class="ph"><div class="status"><span>09:41</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>'
+    + '<div class="topA"><div class="pills">' + d.pills + '</div><div class="what">' + d.what + '</div><div style="' + (minH ? 'min-height:' + minH + 'px;display:flex;flex-direction:column;justify-content:flex-end' : '') + '">' + hero + '</div></div>'
+    + '<div class="sheetN">' + d.sheet + '</div></div>';
+}
+var L1 = function(d){ return frame(d, '<div class="hero">' + big(d, 62, true) + side(d.f) + '</div>'); };
+var L2 = function(d){ var z = d === INI ? 86 : d === ESC ? 62 : 82; return frame(d, '<div class="hero">' + big(d, z, true) + side(d.f) + '</div>', 159); };
+var L3 = function(d){ return frame(d, '<div class="hero" style="align-items:center;min-height:86px"><div>' + big(d, 66, false) + '<div class="sub2">' + d.small + '</div></div>' + sideQ(d.f) + '</div>'); };
+var O = [['L3 · Uma linha grande, a segunda pequena', true, 'O número <b>numa linha, a 66 nas três abas</b>; a segunda linha ("LIS", "serviços", "estimado") passa a <b>texto pequeno</b> por baixo (na véspera e antes do report leva a hora UTC); os factos <b>à direita, com os quadradinhos</b>. Topo 210 nas três.', L3],
+         ['L1 · Como antes, tudo a 62', false, 'Duas linhas grandes e <b>os factos à direita com o fio</b>, como antes, mas <b>a 62 nas três abas</b>. Os quadradinhos saem do topo (na Escala não cabem ao lado). Topo 236 nas três.', L1],
+         ['L2 · Cada aba no seu tamanho, a folha no mesmo sítio', false, 'Exatamente como antes: o Início a 86, a Escala a 62, os Números a 82; o topo tem sempre a altura do maior (279), e o número mais pequeno assenta em baixo.', L2]];
+document.getElementById('opts').innerHTML = O.map(function(o){
+  return '<div class="opt"><h3>' + o[0] + (o[1] ? '<span class="rec">RECOMENDO</span>' : '') + '</h3><p>' + o[2] + '</p><div class="row">'
+    + [INI, ESC, NUM].map(function(d){ return '<div><div class="cap">' + d.tab + ' · <b class="hh"></b></div>' + o[3](d) + '</div>'; }).join('') + '</div></div>';
+}).join('');
+document.fonts.ready.then(function(){ document.querySelectorAll('.ph').forEach(function(ph){
+  ph.parentNode.querySelector('.hh').textContent = 'topo ' + Math.round(ph.querySelector('.topA').getBoundingClientRect().height);
+  var lim = ph.getBoundingClientRect().right - 8 - 20;
+  ph.querySelectorAll('.topA .g span, .topA .g small, .fv, .fl, .sub2').forEach(function(t){ if (t.getBoundingClientRect().right > lim + 0.5) t.classList.add('bad'); });
+}); });
+</script>
+</body>
+</html>

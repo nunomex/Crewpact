@@ -14,7 +14,7 @@ import SheetHeader from '../components/SheetHeader';
 import PeleSheet from '../components/PeleSheet';
 import { HomeCards, HomeTop, pillWidth } from '../components/HomeCards';
 import { DutyDetailBody } from './DutyDetailScreen';
-import { fitGiant } from '../data/homeCards';
+import { topGiant } from '../data/homeCards';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
 import { AppContext, isoDay } from '../data/appContext';
@@ -421,7 +421,7 @@ export default function EscalaScreen({ navigation, route }) {
   };
   const cardsOf = (list, ctx) => <HomeCards cards={list} C={C} onOpen={(o) => onCardOpen(o, ctx)} l={l} />;
 
-  // ── O TOPO: o do Início ("11 serviços" em duas linhas e os factos ao lado do fio) ──
+  // ── O TOPO: o do Início ("11 serviços" em duas linhas e os factos à direita, com o fio — L1, design/topo-lado.html) ──
   const { width: winW } = Dimensions.get('window');
   const plural = (n, one, many) => `${n === 1 ? one : many}`;
   const top = {
@@ -431,10 +431,10 @@ export default function EscalaScreen({ navigation, route }) {
     giant: { l1: String(serviceCount), l2: plural(serviceCount, l('serviço', 'duty'), l('serviços', 'duties')), l2Grey: true },
     facts: [
       { v: String(nightCount), l: plural(nightCount, l('pernoita', 'night stop'), l('pernoitas', 'night stops')) },
-      perDiemTotal != null ? { v: fmtEur(perDiemTotal), l: l('per diem · estimado', 'per diem · estimated') } : null,
+      perDiemTotal != null ? { v: fmtEur(perDiemTotal), l: l('per diem · estimado', 'per diem · estimated'), tone: 'gain' } : null,   // o dinheiro a verde
     ].filter(Boolean),
   };
-  const giant = fitGiant(top, winW - SPACE.lgPlus * 2);
+  const giant = topGiant(top, winW - SPACE.lgPlus * 2);   // o tamanho comum das três abas, lado a lado (L1, design/topo-lado.html)
   // A pílula do mês nunca pode sair (é a maneira de mudar de mês): se a fila não couber, sai o "Hoje" (o mês atual fica no ano em meses).
   // O botão da direita é escrito (S1, esboço design/botoes-escritos.html, 2026-11-13): "Sincronizar" com o calendário ligado,
   // "Importar" sem ele — abre a janela do calendário. A contagem do que mudou e falta rever vai no círculo laranja do canto.

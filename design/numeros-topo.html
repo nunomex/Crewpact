@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · O topo dos Números</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* O TOPO DOS NÚMEROS (2026-11-14). No iPhone do Nuno, com totais de cinco e seis algarismos, os dois factos ao lado do número
+   saíram cortados ("+5 170,…", "de voo · 12 set…"; no ano "+5 5…") — dinheiro cortado, contra a regra. Medido com as métricas
+   da app (data/fontMetrics.js): lado a lado não cabem — no mês o número a 60 (243 px) + os factos (123 px) + 16 = 382 px para
+   350; no ano 423 px. Para caberem, o número teria de descer a 48 px no mês e 36 px no ano (o Início usa 86).
+   Imagens do Nuno (referencias/Para a app/README): 3440 (o total com as duas pílulas de subvalores POR BAIXO) · 3432 e 3430 (a
+   pílula por baixo do número) · 3433 (cêntimos mais pequenos) · 3424 (o número em duas linhas). Mobbin: Wise (Interest — o total
+   e uma pílula por baixo), Zopa (Growth Hub — "+£0.00 last month" por baixo), Crypto.com (Total balance), Stake (Accumulate).
+   Em todas as referências, os factos de um total comprido vão POR BAIXO.
+   Dados: os das fotos do Nuno (15 137,64 € no mês, 127 912,70 € no ano); os cêntimos dos factos e as horas são de TESTE. */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+.lead{max-width:940px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)} .lead a{color:var(--pfg)}
+.opt{display:flex;flex-direction:column;gap:10px}
+.opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:var(--muted);max-width:840px} .opt > p b{color:var(--pfg)}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.pair{display:flex;flex-wrap:wrap;gap:20px}
+.cap{font-size:12px;font-weight:700;color:var(--muted);margin:0 0 6px 6px}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:940px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card2 li{font-size:13px;line-height:1.5;color:var(--muted)} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:var(--pfg)}
+
+/* o telemóvel: 390 de largura útil, só a parte de cima */
+.ph{display:flex;flex-direction:column;width:406px;height:600px;border:8px solid #04060A;border-radius:52px 52px 0 0;border-bottom:0;overflow:hidden;position:relative;background:#E3E1DB;color:#141414;max-width:100%}
+.status{height:47px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.topA{padding:8px 20px 24px}
+.pills{display:flex;align-items:center;gap:8px;min-height:68px;padding:8px 0 16px}
+.pl2{height:38px;padding:0 14px;border-radius:19px;border:1.5px solid #141414;display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:13px;white-space:nowrap}
+.seg{display:inline-flex;background:rgba(127,127,127,.22);border-radius:19px;padding:3px;height:38px;align-items:center;margin-left:auto}
+.seg span{padding:0 14px;height:32px;border-radius:16px;display:flex;align-items:center;font-weight:700;font-size:13px;color:#3A3A36}
+.seg span.on{background:#141414;color:#E3E1DB}
+.what{font-weight:500;font-size:15px;line-height:20px;color:#3A3A36}
+.hero{display:flex;align-items:stretch;gap:16px;margin-top:4px}
+.g{font-weight:700;white-space:nowrap}
+.g .l1{display:flex;align-items:baseline}
+.g small{font-size:34px;letter-spacing:-1px;margin-left:6px}
+.g .l2{color:rgba(20,20,20,.5)}
+.side{border-left:1.5px solid #141414;padding-left:16px;display:flex;flex-direction:column;justify-content:center;gap:12px;min-width:0}
+.fv{display:block;font-weight:700;font-size:20px;line-height:22px;white-space:nowrap}
+.fl{display:block;font-weight:500;font-size:11px;line-height:15px;color:#3A3A36;white-space:nowrap}
+.gain{color:#0B6E43}
+/* T1: os dois factos numa fila por baixo */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px}
+.row2 > div{border-left:1.5px solid #141414;padding-left:12px;min-width:0}
+/* T2: pílulas por baixo */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.chip{height:34px;padding:0 12px;border-radius:17px;background:#fff;display:inline-flex;align-items:center;gap:5px;font-size:13px;white-space:nowrap}
+.chip b{font-weight:700} .chip span{font-weight:500;color:#3A3A36}
+.chip.n{background:rgba(127,127,127,.18)}
+/* a folha por baixo */
+.sheetN{flex:1;background:#fff;border-radius:32px 32px 0 0;padding:16px 16px 0}
+.cardN{background:#F1EFEA;border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:12px;height:200px}
+.kd{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8)}
+.stack{display:flex;height:14px;border-radius:7px;overflow:hidden;gap:2px} .stack i{display:block;height:100%}
+.cut{outline:2px dashed #EC7A6C;outline-offset:2px}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>O topo dos Números</h1>
+    <p>No teu iPhone, com <b>15 137,64 €</b> no mês e <b>127 912,70 €</b> no ano, os dois factos ao lado do número saíram cortados: "+5 170,…", "de voo · 12 set…" e, no ano, "+5 5…". <b>Medido com as métricas da app:</b> lado a lado não cabem. O número a 60 ocupa 243 px, os factos 123 px e o espaço entre eles 16 px: são 382 px, e há 350. Para caberem lado a lado, o número teria de descer a <b>48 px no mês e 36 px no ano</b> (o Início usa 86).</p>
+    <p><b>As tuas imagens:</b> 3440 (o total com as duas pílulas de subvalores <b>por baixo</b>), 3432 e 3430 (a pílula por baixo do número), 3433 (cêntimos mais pequenos), 3424 (o número em duas linhas). <b>Mobbin:</b> <a href="https://mobbin.com/screens/7e290de8-f26d-4c71-8f4b-0ed616345078">Wise</a> (o total e uma pílula por baixo), <a href="https://mobbin.com/screens/8f81276e-6c6a-4648-9c23-ce0585f5935a">Zopa</a> ("+£0.00 last month" por baixo), <a href="https://mobbin.com/screens/82434aa8-3646-47f3-8c93-8e7400515a3c">Crypto.com</a>, <a href="https://mobbin.com/screens/895fe4d6-dd21-4cdb-ba22-1c120c55a831">Stake</a>. Em todas, os factos de um total comprido vão <b>por baixo</b>. Os telemóveis mostram só a parte de cima, à largura real (390).</p>
+  </div>
+  <div id="opts" style="display:flex;flex-direction:column;gap:36px"></div>
+  <div class="card2"><h3>A minha recomendação: T1</h3><ul>
+    <li><b>T1</b> guarda o número no tamanho do Início (86 no mês, 82 no ano) e os dois factos <b>na mesma letra e com o mesmo fio</b>, só que numa fila por baixo. Nada se corta, nem com 199 999,99 €. Ao trocar Mês ↔ Ano, nada salta de sítio. Custa uns 50 px de altura: a folha começa um pouco mais abaixo, e desliza como no Início.</li>
+    <li><b>T2</b> põe os factos em pílulas (3440, Wise). As duas não cabem numa linha (no mês 180 + 176 px, no ano 187 + 170, para 350) e a segunda desce: ficam uma por cima da outra, de larguras diferentes, e o verde do ganho fica dentro de uma pílula branca, igual aos ganhos do Início.</li>
+    <li><b>T3</b> guarda o desenho de hoje, com o número a encolher até caber. Fica com 48 px no mês e 36 no ano, menos de metade do Início. O total, que é o mais importante da página, fica do tamanho dos factos.</li>
+    <li>Em todas: o dinheiro nunca se corta, os cêntimos ficam mais pequenos e "estimado" a cinzento. As Horas (o outro modo) seguem a mesma regra que se escolher.</li></ul></div>
+</div>
+<script>
+var MES = { per: 'Novembro 2026', mes: true, what: 'Ganhos brutos de novembro', l1: '15 137', unit: ',64 €', f: [['+5 170,12 €', 'acima da base', 1], ['78,5 h', 'de voo · 12 setores', 0]] };
+var ANO = { per: '2026', mes: false, what: 'Ganhos brutos de 2026', l1: '127 912', unit: ',70 €', f: [['+55 512,34 €', 'acima da base', 1], ['612,5 h', 'de voo · ano civil', 0]] };
+// tamanhos medidos com data/homeCards.js (fitGiant) a 390: sozinho 86 / 82; ao lado sem mínimo 48 / 36
+var SIZE_ALONE = { mes: 86, ano: 82 }, SIZE_SIDE = { mes: 48, ano: 36 };
+function giant(d, z, withL2){
+  var lh = Math.round(z * 1.1), tr = Math.round(z * 0.1), ls = (z * -0.046).toFixed(2);
+  var st = 'font-size:' + z + 'px;line-height:' + lh + 'px;letter-spacing:' + ls + 'px';
+  return '<div class="g" style="margin:-' + tr + 'px 0 -' + tr + 'px"><div class="l1"><span style="' + st + '">' + d.l1 + '</span><small' + (z < 50 ? ' style="font-size:' + Math.round(z * 0.4) + 'px"' : '') + '>' + d.unit + '</small></div>'
+    + (withL2 ? '<div class="l2" style="' + st + ';margin-top:-' + Math.round(z * 0.2) + 'px">estimado</div>' : '') + '</div>';
+}
+function fact(f){ return '<div><span class="fv' + (f[2] ? ' gain' : '') + '">' + f[0] + '</span><span class="fl">' + f[1] + '</span></div>'; }
+function frame(d, hero){
+  return '<div class="ph"><div class="status"><span>09:41</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>'
+    + '<div class="topA"><div class="pills"><span class="pl2">' + d.per + ' ▾</span><span class="seg"><span' + (d.mes ? ' class="on"' : '') + '>Mês</span><span' + (d.mes ? '' : ' class="on"') + '>Ano</span></span></div>'
+    + '<div class="what">' + d.what + '</div>' + hero + '</div>'
+    + '<div class="sheetN"><div class="cardN"><span class="kd">De onde vem</span><div class="stack"><i style="flex:5059;background:#141414"></i><i style="flex:1733;background:#6DBEFA"></i><i style="flex:182;background:#B4C2A2"></i><i style="flex:60;background:#C3A1BE"></i></div></div></div></div>';
+}
+function T1(d){ var z = SIZE_ALONE[d.mes ? 'mes' : 'ano']; return frame(d, '<div style="margin-top:4px">' + giant(d, z, true) + '</div><div class="row2">' + d.f.map(fact).join('') + '</div>'); }
+function T2(d){ var z = SIZE_ALONE[d.mes ? 'mes' : 'ano'];
+  return frame(d, '<div style="margin-top:4px">' + giant(d, z, true) + '</div><div class="chips">' + d.f.map(function(f){ return '<span class="chip' + (f[2] ? '' : ' n') + '"><b' + (f[2] ? ' class="gain"' : '') + '>' + f[0] + '</b><span>' + f[1] + '</span></span>'; }).join('') + '</div>'); }
+function T3(d){ var z = SIZE_SIDE[d.mes ? 'mes' : 'ano']; return frame(d, '<div class="hero">' + giant(d, z, true) + '<div class="side">' + d.f.map(fact).join('') + '</div></div>'); }
+var O = [['T1 · Os factos numa fila por baixo', true, 'O número sozinho na largura, no tamanho do Início (<b>86 no mês, 82 no ano</b>), com "estimado" por baixo; os dois factos <b>na mesma letra e com o mesmo fio</b> do Início, lado a lado numa fila por baixo (3440).', T1],
+         ['T2 · Os factos em pílulas por baixo', false, 'O mesmo número; os factos em <b>pílulas</b> por baixo (3440, 3432, Wise). O ganho a verde numa pílula branca, como no Início; as horas numa pílula cinzenta. As duas não cabem numa linha (180 + 176 px no mês, 187 + 170 no ano) e a segunda desce.', T2],
+         ['T3 · Lado a lado, o número encolhe', false, 'O desenho de hoje, sem o mínimo de 60: o número encolhe até os factos caberem ao lado — <b>48 px no mês, 36 px no ano</b>.', T3]];
+document.getElementById('opts').innerHTML = O.map(function(o){
+  return '<div class="opt"><h3>' + o[0] + (o[1] ? '<span class="rec">RECOMENDO</span>' : '') + '</h3><p>' + o[2] + '</p><div class="pair">'
+    + '<div><div class="cap">Mês · 15 137,64 €</div>' + o[3](MES) + '</div><div><div class="cap">Ano · 127 912,70 €</div>' + o[3](ANO) + '</div></div></div>';
+}).join('');
+</script>
+</body>
+</html>

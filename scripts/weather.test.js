@@ -19,7 +19,7 @@ Module._extensions['.js'] = function (m, filename) {
   m._compile(transform(fs.readFileSync(filename, 'utf8'), filename), filename);
 };
 
-const { wxDigest, wxSymbol } = require(path.resolve('data/weather.js'));
+const { wxDigest, wxSymbol, wxAt } = require(path.resolve('data/weather.js'));
 
 let ok = 0, fail = 0;
 const eq = (label, got, exp) => {
@@ -54,6 +54,14 @@ eq('chuva 6 h: dentro da janela', wxDigest(serie, '2026-07-04T08:00:00Z').rainNe
 // Robustez.
 eq('série vazia → null', wxDigest([], NOW), null);
 eq('série nula → null', wxDigest(null, NOW), null);
+
+// ── wxAt: o tempo À HORA que interessa (M1 de design/meteo-inicio.html, 2026-11-14): a entrada mais perto, até 3 h ──
+eq('wxAt · a hora certa', wxAt(serie, Date.parse('2026-07-04T12:00:00Z')), { c: 22, sym: 'rainshowers_day' });
+eq('wxAt · a mais perto (12:40 → a das 12)', wxAt(serie, Date.parse('2026-07-04T12:40:00Z')), { c: 22, sym: 'rainshowers_day' });
+eq('wxAt · entre duas, a mais perto (15:10 → a das 18, a 2 h 50)', wxAt(serie, Date.parse('2026-07-04T15:10:00Z')), { c: 21, sym: 'lightrain' });
+eq('wxAt · a mais de 3 h de todas → null (nunca se inventa)', wxAt(serie, Date.parse('2026-07-05T06:00:00Z')), null);
+eq('wxAt · série vazia → null', wxAt([], Date.parse(NOW)), null);
+eq('wxAt · sem hora → null', wxAt(serie, null), null);
 
 // ── Símbolos → emoji/rótulo (PT e EN); desconhecido não inventa ──
 eq('clearsky dia', wxSymbol('clearsky_day'), { emoji: '☀️', label: 'céu limpo' });

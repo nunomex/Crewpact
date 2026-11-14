@@ -94,6 +94,19 @@ export function wxDigest(series, now = new Date()) {
   };
 }
 
+// O tempo À HORA que interessa (M1 de design/meteo-inicio.html, 2026-11-14): a entrada da série mais perto de `ms` (UTC),
+// até `maxGapMin` (3 h — a série é hora a hora até ~2 dias e de 6 em 6 h depois). Mais longe → null (nunca se inventa tempo).
+export function wxAt(series, ms, maxGapMin = 180) {
+  if (!Array.isArray(series) || !series.length || ms == null || !Number.isFinite(+ms)) return null;
+  let best = null, gap = Infinity;
+  for (const e of series) {
+    if (e.c == null) continue;
+    const g = Math.abs(+new Date(e.t) - ms);
+    if (g < gap) { gap = g; best = e; }
+  }
+  return best && gap <= maxGapMin * 60000 ? { c: Math.round(best.c), sym: best.s || null } : null;
+}
+
 // Fetch — coords locais (airports.js, 5400+), Edge cacheia por IATA. null = sem
 // dados/offline/estação desconhecida (a UI esconde — nunca se inventa tempo).
 export async function fetchStationWx(iata) {

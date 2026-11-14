@@ -8,7 +8,7 @@ import NotificationsBell from '../components/NotificationsBell';
 import FlightShareCard from '../components/FlightShareCard';
 import { shareCardFor } from '../data/shareLeg';
 import { HomeTop, HomeCards, pillWidth } from '../components/HomeCards';
-import { homeCards, fitGiant } from '../data/homeCards';
+import { homeCards, topGiant } from '../data/homeCards';
 import { getUpcomingFlight } from '../data/calendar';
 import { catLabel } from '../data/extras';
 import { serviceMoney, aeIndex, annualLabel } from '../data/perdiem';
@@ -22,13 +22,13 @@ import { useFocusEffect, useScrollToTop, useIsFocused } from '@react-navigation/
 import { t } from '../data/i18n';
 import { select } from '../data/haptics';
 import { AppContext, toZulu } from '../data/appContext';
-import { airportZulu, legZulu, legsZulu } from '../data/zulu';
+import { airportZulu, airportUtcMs, legZulu, legsZulu } from '../data/zulu';
 import QuestionDetailSheet from '../components/QuestionDetailSheet';
 import { buildTodayItems } from './hojeItems';
 import { fdpForDuty, dayNum } from '../ae/tapLimits';
 import { fmtClock } from '../data/tapLimitsText';
 import { monthStats, monthSplit } from '../data/stats';
-import { fetchStationWx, wxDigest, wxIcon, wxSymbol } from '../data/weather';
+import { fetchStationWx, wxDigest, wxIcon, wxSymbol, wxAt } from '../data/weather';
 import { dutyLine } from '../data/dutyLine';
 import { crewState } from '../data/crewState';
 import { monthAudit } from '../data/audit';
@@ -166,7 +166,8 @@ function useStationWx(station) {
         setWx({ station, c: Math.round(dig.nowC), icon: wxIcon(dig.nowSym), sym: dig.nowSym, min: dig.todayMin, max: dig.todayMax,
           tmwMin: dig.tomorrowMin, tmwMax: dig.tomorrowMax, tmwSym: dig.tomorrowSym,
           wind: dig.windKt != null ? Math.round(dig.windKt) : null,             // para a VOZ (meteo-voz)
-          tmwRain: tmwIcon === 'rain' || tmwIcon === 'thunder' });
+          tmwRain: tmwIcon === 'rain' || tmwIcon === 'thunder',
+          series: raw.series });   // a série hora a hora: o tempo À HORA que interessa (wxAt)
       }
     })();
     return () => { alive = false; };
@@ -562,10 +563,18 @@ export default function HomeScreen({ navigation }) {
   const legDep = String((activeSector && activeSector.leg.dep) || (flight && flight.depAirport) || '').toUpperCase();
   const legArr = String((activeSector && activeSector.leg.arr) || (flight && flight.arrAirport) || '').toUpperCase();
 
-  // ── O TEMPO — só onde decide alguma coisa no 3.0: o de AMANHÃ na estação da pernoita (o facto "7° · amanhã · chuva").
-  // Nos outros estados não se pede (o esboço não mostra o tempo; poupa pedidos à rede).
-  const wxHereStation = homeState === 'pernoita' && closeNsStation ? String(closeNsStation).toUpperCase() : null;
-  const wxHere = useStationWx(wxHereStation);
+  // ── O TEMPO (M1 de design/meteo-inicio.html, 2026-11-14): no cartão do sítio a que se refere, À HORA que conta. No máximo três
+  // pedidos, cada um à cache de 45 min da Edge (por estação): a partida à hora do report (véspera e antes do report de um dia de
+  // voo; na pernoita, o report de amanhã), o destino do setor à chegada (pede-se em terra, antes de descolar — no ar o telemóvel voa
+  // em modo de voo e fica o que já veio) e a cidade da pernoita à chegada. Nas folgas, férias, baixa e standby não se pede.
+  const iata3 = (x) => (/^[A-Z]{3}$/.test(String(x || '').toUpperCase()) ? String(x).toUpperCase() : null);
+  const flightDay = !!(flight && !isNonFlight);
+  const wxRepStation = ((homeState === 'vespera' && flightDay) || (homeState === 'hoje' && phase === 'pre') || (homeState === 'pernoita' && flight && flight.report)) ? iata3(flight && flight.depAirport) : null;
+  const wxArrStation = (homeState === 'hoje' && (phase === 'duty' || phase === 'air')) ? iata3(legArr) : null;
+  const wxNsStation = ((homeState === 'vespera' && flightDay) || (homeState === 'hoje' && phase && phase !== 'landed')) && flight && flight.nightStop ? iata3(nsHotelStation) : null;
+  const wxRep = useStationWx(wxRepStation);
+  const wxArr = useStationWx(wxArrStation);
+  const wxNs = useStationWx(wxNsStation);
 
   // ── REPOUSO ATÉ (pós-voo/pernoita): a MESMA regra do restBetweenDuties (ORO.FTL.235 a/b). ──
   // A regra é a do motor (restAfterDuty): também as 14 h depois de repouso a bordo ou de fuso ≥ 4 h e as +2 h/+4 h
@@ -968,7 +977,16 @@ export default function HomeScreen({ navigation }) {
     closed: homeState === 'posvoo' && todayEnded ? { fdp: closeD && closeD.fdp ? closeD.fdp.actualFdpStr : null, over: !!(closeD && closeD.fdp && closeD.fdp.over),
       multi: closeMulti ? 1 + todayEnded.extra.length : null, signOffDone: !!todayEnded.signOff, gainToday: pdToday, kindLabel: todayEnded.kind ? t('duties.kind.' + todayEnded.kind, lang) : null } : null,
     week: hasLimitData && d7 && d7.limit ? { done: d7.done, limit: d7.limit } : null,
-    wxTmw: homeState === 'pernoita' && wxHere && wxHere.tmwSym ? { v: wxHere.tmwMax != null ? `${Math.round(wxHere.tmwMax)}°` : null, label: (wxSymbol(wxHere.tmwSym, lang).label || '').toLowerCase() } : null,
+    // O tempo à hora que conta (wxAt na série hora a hora), com o rótulo na língua e o ícone da casa; o homeCards põe-no no cartão
+    // do sítio e o crédito do MET Norway por baixo (golden test:homecards, "a meteorologia").
+    wx: (() => {
+      const lab = (sym) => (sym ? (wxSymbol(sym, lang).label || '').toLowerCase() : null);
+      const pack = (w, ms, extra) => { const a = w && w.series && ms != null ? wxAt(w.series, ms) : null; return a ? { c: a.c, label: lab(a.sym), ic: wxIcon(a.sym), ...extra } : null; };
+      const repMs = wxRepStation && flight && flight.report ? (airportUtcMs(flight.dateISO, flight.report, wxRepStation) ?? reportMs) : null;
+      const nsMs = wxNsStation && flight && flight.arrTime ? (() => { let ms = airportUtcMs(flight.dateISO, flight.arrTime, wxNsStation); if (ms != null && repMs != null && ms < repMs) ms += 86400000; return ms; })() : null;
+      const w = { report: pack(wxRep, repMs, { at: flight && flight.report, st: wxRepStation }), arrival: pack(wxArr, arrMs, { st: wxArrStation }), night: pack(wxNs, nsMs, {}) };
+      return (w.report || w.arrival || w.night) ? w : null;
+    })(),
     month: monthF, monthName: monthCap, fechoDays: fechoDaysLeft,
     dis: disF,
     vac: vacInfo ? { left: vacInfo.left, quota: vacInfo.quota, retIso: vacInfo.retISO, fromIso: vacInfo.fromIso, toIso: vacInfo.toIso } : null,
@@ -979,7 +997,7 @@ export default function HomeScreen({ navigation }) {
     warns: W,
   };
   const out = homeCards(H);
-  const giant = fitGiant(out.top, winW - SPACE.lgPlus * 2);
+  const giant = topGiant(out.top, winW - SPACE.lgPlus * 2);   // o tamanho comum das três abas, lado a lado (L1, design/topo-lado.html)
 
   // ── O QUE CADA TOQUE FAZ ──
   const goStats = () => { select(); navigation.navigate('Estatísticas'); };
@@ -1050,6 +1068,8 @@ export default function HomeScreen({ navigation }) {
             }} />}>
           {loadingFlight ? <SheetSkeleton /> : <HomeCards cards={out.cards} C={C} onOpen={onOpen} l={l} />}
           {!loadingFlight && out.caption ? <Text style={[TXT.caption, s.caption, { color: C.caption }]}>{out.caption}</Text> : null}
+          {/* o crédito do tempo (MET Norway, CC BY 4.0) — sempre que há tempo no ecrã */}
+          {!loadingFlight && out.credit ? <Text style={[TXT.caption, s.caption, { color: C.caption }]} accessibilityRole="text">{out.credit}</Text> : null}
         </ScrollView>
       </View>
 
