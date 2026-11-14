@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { RADIUS, SPACE, PELE, PELE_FONT, BRAND, CARD, TXT3 } from '../data/constants';
 import { buildNotifications } from '../data/notifications';
+import { prettyRoute, wdShort } from '../data/escalaDay';
 import { aeMonthTotal } from '../data/perdiem';
 import { eventCounts } from '../data/aeEvents';
 import { tenureAt } from '../data/crewHistory';
@@ -12,7 +13,7 @@ import { AppContext } from '../data/appContext';
 import Icon from './Icon';
 import SheetHeader from './SheetHeader';
 import PillButton, { WideButton } from './PillButton';
-import MarkRow, { MARK_INDENT } from './MarkRow';
+import MarkRow, { MARK_INDENT, DayTile } from './MarkRow';
 
 // Sino do cabeçalho + central de notificações em PÁGINA INTEIRA (Modal slide-up, no
 // estilo das páginas de duty/import). Partilhado pelo cabeçalho da pele (PeleHeader).
@@ -68,7 +69,7 @@ export default function NotificationsBell({ variant = 'bell', night = false }) {
     : null;
   // Detalhe por-dia do aviso de escala: data curta + rota/tipo + etiqueta de estado.
   const fmtDay = (iso) => { const d = new Date(`${iso}T00:00:00`); if (isNaN(d)) return iso; const x = d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric' }); return x.charAt(0).toUpperCase() + x.slice(1); };
-  const descOf = (it) => it.route || t('duties.kind.' + (it.kind || 'flight'), lang);
+  const descOf = (it) => (it.route ? prettyRoute(it.route) : null) || t('duties.kind.' + (it.kind || 'flight'), lang);
 
 
   const notifs = buildNotifications(profile, lang, { rosterChanges, validities, isPilot, dayLog, monthSummary, aeInfo });
@@ -105,9 +106,10 @@ export default function NotificationsBell({ variant = 'bell', night = false }) {
     if (n.action === 'legal') return { bg: W.neutral, icon: 'shield' };
     return { bg: W.neutral, icon: 'bell' };
   };
-  const chipOf = (status) => status === 'added' ? { txt: l('Nova', 'New'), bg: W.flight }
-    : status === 'removed' ? { txt: l('Cancelada', 'Cancelled'), bg: W.stop }
-    : { txt: l('Alterada', 'Changed'), bg: W.alert };
+  // Os dias que mudaram: o dia no quadradinho pequeno, na cor do tipo, como na "Rever a escala" (H2 + V1, 2026-11-14); o que foi
+  // cancelado leva o selo "✕"; a palavra diz o que aconteceu.
+  const wordOf = (status) => status === 'added' ? l('nova', 'new') : status === 'removed' ? l('cancelada', 'cancelled') : l('alterada', 'changed');
+  const wdOf = (iso) => wdShort(iso, lang === 'en' ? 'en' : 'pt');
   const renderRow = (n, first) => {
     const isNew = !readNotifIds.has(n.id);
     const mk = markOf(n);
@@ -120,19 +122,18 @@ export default function NotificationsBell({ variant = 'bell', night = false }) {
         a11yLabel={[isNew ? l('Nova', 'New') : null, n.title, sub, n.time].filter(Boolean).join('. ')}>
         {nDays ? (
           <View style={s.days}>
-            {n.days.map((it, di) => {
-              const chip = chipOf(it.status);
-              return (
-                <View key={di} style={s.day}>
-                  <View style={[s.dchip, { backgroundColor: chip.bg }]}><Text style={[TXT3.badge, { color: CARD.onCard }]} allowFontScaling={false}>{chip.txt}</Text></View>
-                  <Text style={[TXT3.cardSub, s.flex, { color: W.ink }]} numberOfLines={1} maxFontSizeMultiplier={1.2}>
-                    <Text style={TXT3.dur}>{fmtDay(it.date)}</Text>{' · '}
-                    {it.beforeRoute ? <Text style={[s.strike, { color: W.tabSub }]}>{it.beforeRoute}</Text> : null}{it.beforeRoute ? ' → ' : ''}
-                    {descOf(it)}{it.status === 'added' && it.sectors ? ` · ${it.sectors} ${t('duties.sectorsShort', lang)}` : ''}
-                  </Text>
+            {n.days.map((it, di) => (
+              <View key={di} style={s.day} accessible accessibilityLanguage={AL}
+                accessibilityLabel={[fmtDay(it.date), wordOf(it.status), it.beforeRoute ? `${l('antes', 'before')} ${it.beforeRoute}` : null, descOf(it)].filter(Boolean).join('. ')}>
+                <DayTile day={String(+String(it.date).slice(8, 10))} wd={wdOf(it.date)} bg={(it.kind || 'flight') === 'flight' ? W.flight : W.ground}
+                  badge={it.status === 'removed' ? 'stop' : null} />
+                <View style={s.flex}>
+                  {it.beforeRoute ? <Text style={[TXT3.slimSub, s.strike, { color: W.tabSub }]} numberOfLines={1} maxFontSizeMultiplier={1.2}>{prettyRoute(it.beforeRoute) || it.beforeRoute}</Text> : null}
+                  <Text style={[TXT3.lineVal, { color: W.ink }]} numberOfLines={1} maxFontSizeMultiplier={1.2}>{descOf(it)}</Text>
+                  <Text style={[TXT3.slimSub, { color: W.tabSub }]} numberOfLines={1} maxFontSizeMultiplier={1.2}>{wordOf(it.status)}{it.status === 'added' && it.sectors ? ` · ${it.sectors} ${it.sectors === 1 ? l('setor', 'sector') : l('setores', 'sectors')}` : ''}</Text>
                 </View>
-              );
-            })}
+              </View>
+            ))}
           </View>
         ) : null}
       </MarkRow>
@@ -209,9 +210,8 @@ const s = StyleSheet.create({
   empty: { color: CARD.day.tabSub, textAlign: 'center', paddingVertical: SPACE.xxl },
   sec: { color: CARD.day.tabSub, paddingTop: SPACE.md, paddingBottom: SPACE.xs },
   // os dias que mudaram, por baixo da linha, alinhados com o texto (36 do quadradinho + 12)
-  days: { marginLeft: MARK_INDENT, marginTop: SPACE.sm, gap: SPACE.s },
-  day: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm },
-  dchip: { height: 22, paddingHorizontal: SPACE.sm, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
+  days: { marginLeft: MARK_INDENT, marginTop: SPACE.md, gap: SPACE.md },
+  day: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md },
   strike: { textDecorationLine: 'line-through' },
   foot: { paddingHorizontal: SPACE.lgPlus, paddingTop: SPACE.sm },
 });

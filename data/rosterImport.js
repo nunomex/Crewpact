@@ -322,6 +322,51 @@ export const buildImportCandidates = ({ activities = [], nonflights = [], duties
 const CAND_PRIO = { removed: 0, conflict: 1, changed: 2, warn: 3, ok: 4, refresh: 5, same: 6 };
 export const sortCandidates = (list = []) => list.sort((a, b) => ((CAND_PRIO[a.status] ?? 9) - (CAND_PRIO[b.status] ?? 9)) || (a.duty.duty_date < b.duty.duty_date ? -1 : a.duty.duty_date > b.duty.duty_date ? 1 : 0));
 
+// As SECÇÕES da janela "Rever a escala" (R1, design/janela-sincronizar.html, 2026-11-14 — golden em scripts/import.test.js):
+// pelo que é preciso fazer. "A corrigir" primeiro (só entra depois de corrigido; ganha a qualquer estado) · o que mudou (alterado
+// e o que editaste) · o novo (com ou sem aviso) · o que deixou de aparecer · o relido com a regra nova. Os iguais não aparecem;
+// secções vazias também não. Dentro de cada uma, pela data. `multiMonth` (H2 + V1, design/janela-sincronizar-3.html): a secção
+// passa de um mês para o outro → a janela põe uma linha com o mês antes de cada mês (o dia vai dentro do quadradinho).
+const SECTION_OF = { changed: 'changed', conflict: 'changed', ok: 'new', warn: 'new', removed: 'removed', refresh: 'refresh' };
+const SECTION_ORDER = ['fix', 'changed', 'new', 'removed', 'refresh'];
+export const importSections = (cands = []) => {
+  const by = {};
+  for (const c of cands) {
+    if (!c || c.status === 'same') continue;
+    const key = candidateKind(c).kind === 'fix' ? 'fix' : (c.action === 'delete' ? 'removed' : SECTION_OF[c.status]);
+    if (!key) continue;
+    (by[key] = by[key] || []).push(c);
+  }
+  return SECTION_ORDER.filter((k) => by[k]).map((k) => {
+    const items = by[k].slice().sort((a, b) => (a.duty.duty_date < b.duty.duty_date ? -1 : a.duty.duty_date > b.duty.duty_date ? 1 : 0));
+    return { key: k, items, multiMonth: new Set(items.map((c) => String(c.duty.duty_date).slice(0, 7))).size > 1 };
+  });
+};
+
+// "O QUE A APP LEU DO CALENDÁRIO" (L1 com os números em cima, design/lista-calendario.html, 2026-11-14 — golden em
+// scripts/import.test.js): três números — voos · em terra (standby, escritório, formação, posicionamento: a cor lilás da Escala) ·
+// de fora (o que a app não reconhece, kind 'other') — mais a folga à parte; e os eventos por dia, pela data. Cada dia diz o tipo
+// principal (voo se houver um voo; senão em terra; senão folga; senão nada) e se tem alguma coisa de fora (o selo "!").
+// `items` = o que `diagnoseEvents` devolve ({ title, dateISO, kind, route }).
+export const diagSummary = (items = []) => {
+  const out = { total: items.length, flights: 0, ground: 0, unknown: 0, off: 0, days: [] };
+  const byDay = new Map();
+  for (const it of items) {
+    const k = it.kind;
+    if (k === 'flight') out.flights++; else if (k === 'other') out.unknown++; else if (k === 'off') out.off++; else out.ground++;
+    const iso = it.dateISO || '';
+    if (!byDay.has(iso)) byDay.set(iso, []);
+    byDay.get(iso).push(it);
+  }
+  out.days = [...byDay.keys()].sort().map((iso) => {
+    const ev = byDay.get(iso);
+    const has = (f) => ev.some(f);
+    const main = has((e) => e.kind === 'flight') ? 'flight' : has((e) => e.kind && !['other', 'off', 'flight'].includes(e.kind)) ? 'ground' : has((e) => e.kind === 'off') ? 'off' : null;
+    return { iso, events: ev, main, unknown: has((e) => e.kind === 'other') };
+  });
+  return out;
+};
+
 // A VERIFICAÇÃO cumulativa dos candidatos: a escala com tudo o que esta leitura aplica (o que não está igual, nem a corrigir,
 // nem é um cancelado). Escreve em cada candidato o `prospect` e, nos novos, o estado 'warn'/'ok'. Corre na leitura e OUTRA VEZ
 // quando um candidato é corrigido na folha (risco R8 do bloco 4: o corrigido entrava sem ser verificado com os outros, e os

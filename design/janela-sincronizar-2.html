@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · Rever a escala, R2 com R1</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* REVER A ESCALA · A R2 COM A ORGANIZAÇÃO DA R1 (2026-11-14). O Nuno: "gosto da R2 mas com a organização da R1?". Juntar as
+   duas: as secções da R1 ("A corrigir" primeiro, "Mudou", "Novo", "Deixou de aparecer") e a data grande da R2 (a imagem 3409).
+   Com secções, a pílula da R2 repete o título da secção, e a cor do tipo (voo azul, terra lilás) tem de ir para algum lado.
+   Três maneiras: H1 a data grande com um fio da cor do tipo · H2 a data DENTRO do quadradinho de cor (o quadradinho passa a dizer
+   o dia) · H3 a R2 tal e qual, dentro das secções. Mais um dia de dezembro, para se ver o mês quando a secção passa de um mês
+   para o outro. Dados de TESTE (inventados). */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+.lead{max-width:940px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px} .lead h2{font-weight:800;font-size:22px;margin-top:6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,406px),406px));gap:26px 24px;justify-content:center}
+.opt{display:flex;flex-direction:column;gap:10px;min-width:0}
+.opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:var(--muted);min-height:76px} .opt > p b{color:var(--pfg)}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:940px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card2 li{font-size:13px;line-height:1.5;color:var(--muted)} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:var(--pfg)}
+.refs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:10px}
+.refs div{background:#fff;border:1px solid #D6D4CD;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.4;color:var(--muted)} .refs b{color:var(--pfg)}
+
+.ph{width:406px;height:860px;border:8px solid #04060A;border-radius:52px;overflow:hidden;position:relative;background:#BDBBB5;
+  --desk:#E3E1DB;--ink:#141414;--soft:#3A3A36;--sheet:#FFFFFF;--neutral:#F1EFEA;--voo:#6DBEFA;--terra:#C3A1BE;--rest:#B4C2A2;--alert:#F0854A;--stop:#EC7A6C;--gain:#0B6E43;
+  --tsub:#5E5E57;--round:rgba(127,127,127,.22);--rule:rgba(127,127,127,.25);color:var(--ink)}
+.status{height:47px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.behind{position:absolute;left:10px;right:10px;top:47px;height:30px;border-radius:14px 14px 0 0;background:#D2D0CA}
+.sh{position:absolute;left:0;right:0;top:58px;bottom:0;background:var(--sheet);border-radius:14px 14px 0 0;display:flex;flex-direction:column}
+.grab{display:flex;justify-content:center;padding:7px 0 3px} .grab i{width:36px;height:5px;border-radius:3px;background:rgba(127,127,127,.35)}
+.body{flex:1;overflow:hidden;padding:4px 12px 20px;display:flex;flex-direction:column;gap:8px}
+.ic{display:inline-block;flex:none;fill:currentColor}
+/* os ✕ */
+.xA{width:44px;height:44px;border-radius:22px;background:var(--round);display:flex;align-items:center;justify-content:center;flex:none}
+.xB{width:30px;height:30px;border-radius:15px;background:var(--round);display:flex;align-items:center;justify-content:center;flex:none}
+.xC{height:38px;padding:0 16px;border-radius:19px;border:1.5px solid var(--ink);display:inline-flex;align-items:center;font-weight:700;font-size:13px;flex:none}
+/* cabeçalhos */
+.hA{display:flex;align-items:flex-start;gap:12px;padding:6px 16px 10px} .hA .t{flex:1} .hA .k{display:block;font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub)} .hA h4{font-weight:800;font-size:22px;line-height:26px;letter-spacing:-.4px;margin-top:2px}
+.hB{display:flex;align-items:center;justify-content:center;position:relative;padding:8px 16px 12px} .hB h4{font-weight:800;font-size:16px} .hB .xB{position:absolute;right:14px;top:4px}
+.hC{display:flex;align-items:center;gap:12px;padding:8px 16px 12px} .hC h4{flex:1;font-weight:800;font-size:26px;letter-spacing:-.5px}
+/* A · cartões neutros */
+.cA{background:var(--neutral);border-radius:22px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.cA .kk{display:flex;align-items:center;gap:6px;font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub)} .cA .kk i{width:8px;height:8px;border-radius:4px;background:var(--alert)}
+.cA b.tt{font-weight:800;font-size:16px;line-height:20px} .cA span.sb{font-weight:500;font-size:12px;line-height:16px;color:var(--soft)}
+.chg{display:flex;align-items:center;gap:8px;font-weight:600;font-size:12px} .chg s{text-decoration:line-through;color:var(--tsub)}
+.pl{height:22px;padding:0 9px;border-radius:11px;font-weight:800;font-size:11px;display:inline-flex;align-items:center;flex:none}
+.pl.new{background:#DCEFFD} .pl.chg2{background:#FCE1D2} .pl.cx{background:#FAD9D4}
+.dark{background:var(--ink);color:#fff;border-radius:18px;padding:12px 14px;display:flex;align-items:center;gap:10px} .dark .t{flex:1} .dark b{display:block;font-weight:800;font-size:15px} .dark span{font-size:12px;opacity:.75}
+.go{width:30px;height:30px;border-radius:15px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;flex:none}
+.cap{font-weight:500;font-size:12px;color:var(--tsub);text-align:center;padding:6px 0}
+.lnA{display:flex;align-items:center;gap:10px;padding:10px 2px;border-top:1px solid var(--rule)} .lnA:first-of-type{border-top:0} .lnA .t{flex:1} .lnA b{display:block;font-weight:700;font-size:15px} .lnA span{font-size:12px;color:var(--tsub)}
+/* B · linhas finas na cor do tipo */
+.sl{border-radius:22px;padding:12px 16px;display:flex;align-items:center;gap:12px;min-height:56px}
+.sl .t{flex:1;min-width:0} .sl .t b{display:block;font-weight:800;font-size:16px;line-height:20px} .sl .t span{display:block;font-weight:500;font-size:12px;line-height:16px;opacity:.82}
+.sl.alert{background:var(--alert)} .sl.voo{background:var(--voo)} .sl.neutral{background:var(--neutral)} .sl.dk{background:var(--ink);color:#fff}
+.sl .go2{width:30px;height:30px;border-radius:15px;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;flex:none} .sl.neutral .go2{background:rgba(127,127,127,.18)} .sl.dk .go2{background:rgba(255,255,255,.22)}
+.sl .tm{font-weight:700;font-size:11px;opacity:.75;white-space:nowrap}
+.secB{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub);padding:8px 4px 0}
+/* os acertos */
+.dch{display:flex;flex-direction:column;gap:6px;margin:-4px 0 4px 48px}
+.dch div{display:flex;align-items:center;gap:8px;font-weight:600;font-size:12px} .dch s{text-decoration:line-through;color:var(--tsub)}
+.big{height:54px;border-radius:18px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;font-size:16px;flex:none;margin-top:auto}
+.sec{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub);padding:10px 4px 2px}
+.lC.dkr{background:var(--ink);color:#fff;border-radius:18px;padding:12px;border-top:0;margin-bottom:6px} .lC.dkr .t span{color:rgba(255,255,255,.75)} .lC.dkr .sq{background:rgba(255,255,255,.18)!important;color:#fff}
+.lC.open{background:var(--neutral);border-radius:18px;padding:12px;border-top:0;flex-wrap:wrap}
+.lC.open .dch{flex-basis:100%;margin:8px 0 0 48px}
+.grp{background:var(--neutral);border-radius:18px;padding:0 12px;flex:none} .grp .lC{border-top-color:rgba(127,127,127,.22)}
+.cap2{font-weight:500;font-size:12px;color:var(--tsub);padding:2px 4px}
+/* C · lista com o quadradinho do ícone */
+.lC{display:flex;align-items:center;gap:12px;padding:12px 4px;border-top:1px solid var(--rule);position:relative} .lC.f{border-top:0}
+.sq{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex:none;color:#141414}
+.lC .t{flex:1;min-width:0} .lC .t b{display:block;font-weight:800;font-size:15px;line-height:19px} .lC .t span{display:block;font-weight:500;font-size:12px;line-height:16px;color:var(--tsub)}
+.lC .tm{font-weight:600;font-size:11px;color:var(--tsub);align-self:flex-start;white-space:nowrap}
+.lC .nd{position:absolute;left:-6px;top:50%;width:7px;height:7px;border-radius:4px;background:var(--alert);transform:translateY(-50%)}
+.foot{display:flex;align-items:center;justify-content:center;gap:6px;font-weight:600;font-size:12px;color:var(--tsub);padding:10px 0}
+
+/* a janela de sincronizar */
+.pl.new{background:var(--voo)} .pl.chg2{background:var(--alert)} .pl.cx{background:var(--stop)}   /* as pílulas sólidas, como as que já estão nas notificações */
+.lead2{font-weight:500;font-size:12px;line-height:16px;color:var(--tsub);padding:0 4px 4px}
+.lC .eur{font-weight:700;font-size:15px;color:var(--gain);white-space:nowrap}
+.lC .fix{font-weight:800;font-size:13px;white-space:nowrap}
+.lC .t s{display:block;font-weight:600;font-size:12px;line-height:16px;color:var(--tsub);text-decoration:line-through}
+.chk{width:24px;height:24px;border-radius:12px;border:1.5px solid var(--ink);flex:none}
+.link{font-weight:700;font-size:12px;color:var(--tsub);text-align:center;padding:6px 0;text-decoration:underline;text-underline-offset:3px}
+.foot2{display:flex;align-items:center;justify-content:center;gap:6px;font-weight:600;font-size:12px;color:var(--tsub);padding:4px 0 8px}
+/* R2 · a data grande */
+.mo{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub);padding:6px 4px 0}
+.dR{display:flex;align-items:center;gap:12px;padding:10px 4px;border-top:1px solid var(--rule)} .dR.f{border-top:0}
+.dd{width:44px;flex:none;display:flex;flex-direction:column;align-items:center} .dd b{font-weight:800;font-size:26px;line-height:28px;letter-spacing:-.5px} .dd span{font-weight:700;font-size:11px;color:var(--tsub)}
+.dR .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px} .dR .t b{font-weight:800;font-size:15px;line-height:19px} .dR .t span{font-weight:500;font-size:12px;line-height:16px;color:var(--tsub)} .dR .t s{font-weight:600;font-size:12px;color:var(--tsub)}
+.dR .eur{font-weight:700;font-size:15px;color:var(--gain);white-space:nowrap}
+.strip{background:var(--neutral);border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:10px;font-weight:700;font-size:13px}
+.strip i{width:22px;height:22px;border-radius:7px;background:var(--alert);display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:800;font-size:13px;flex:none}
+/* R3 · o resumo primeiro */
+.sum{background:var(--neutral);border-radius:22px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.nums{display:flex;gap:8px} .nums div{flex:1;display:flex;flex-direction:column} .nums b{font-weight:800;font-size:30px;line-height:32px;letter-spacing:-.8px} .nums span{font-weight:600;font-size:11px;color:var(--tsub)}
+.sum .tot{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--rule);padding-top:8px;font-weight:600;font-size:12px;color:var(--tsub)} .sum .tot b{font-weight:800;font-size:17px;color:var(--gain)}
+.cd{border:1px solid var(--rule);border-radius:18px;padding:12px 14px;display:flex;align-items:center;gap:12px}
+.cd .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px} .cd .k{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub)} .cd b{font-weight:800;font-size:16px;line-height:20px} .cd span{font-weight:500;font-size:12px;color:var(--tsub)}
+.cd .eur{font-weight:700;font-size:15px;color:var(--gain);white-space:nowrap}
+.cd.warn{border-color:var(--alert);border-width:1.5px}
+/* o calendário */
+.dotc{width:14px;height:14px;border-radius:7px}
+.tick{width:24px;height:24px;border-radius:12px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;flex:none}
+
+/* as três maneiras */
+.lst{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:0;scrollbar-width:none} .lst::-webkit-scrollbar{display:none}
+.body .big{margin-top:0}
+.mline{font-weight:700;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--tsub);padding:4px 4px 0 4px;opacity:.8}
+.hR{display:flex;align-items:center;gap:12px;padding:10px 4px;border-top:1px solid var(--rule)} .hR.f{border-top:0}
+.hR .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px} .hR .t b{font-weight:800;font-size:15px;line-height:19px} .hR .t span{font-weight:500;font-size:12px;line-height:16px;color:var(--tsub)} .hR .t s{font-weight:600;font-size:12px;line-height:16px;color:var(--tsub)}
+.hR .eur{font-weight:700;font-size:15px;color:var(--gain);white-space:nowrap}
+.hR .fix{font-weight:800;font-size:13px;white-space:nowrap}
+/* H1 · data grande + fio */
+.d1{display:flex;align-items:stretch;gap:10px;flex:none} .d1 i{width:4px;border-radius:2px;flex:none} .d1 div{width:36px;display:flex;flex-direction:column;align-items:center;justify-content:center} .d1 b{font-weight:800;font-size:24px;line-height:26px;letter-spacing:-.5px} .d1 span{font-weight:700;font-size:11px;color:var(--tsub)}
+/* H2 · a data dentro do quadradinho */
+.d2{width:44px;height:48px;border-radius:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;color:#141414} .d2 b{font-weight:800;font-size:20px;line-height:21px;letter-spacing:-.4px} .d2 span{font-weight:700;font-size:10px;line-height:12px;opacity:.82}
+/* H3 · a R2 dentro das secções */
+.d3{width:44px;flex:none;display:flex;flex-direction:column;align-items:center} .d3 b{font-weight:800;font-size:26px;line-height:28px;letter-spacing:-.5px} .d3 span{font-weight:700;font-size:11px;color:var(--tsub)}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>Rever a escala · a R2 com a organização da R1</h1>
+    <p>As <b>secções da R1</b> (o que pede a tua mão primeiro) com <b>a data grande da R2</b>. Com secções, a pílula da R2 (Alterada · Nova · Saiu) repete o título da secção, e a cor do tipo (voo azul, terra lilás) tem de ir para algum lado — três maneiras. O exemplo é o mesmo, com mais um dia de dezembro para se ver o mês quando uma secção passa de um mês para o outro.</p>
+  </div>
+  <div class="grid3" id="g1"></div>
+  <div class="card2"><h3>A minha recomendação: H2</h3><ul>
+    <li><b>H2</b> junta as duas sem perder nada: o quadradinho da R1 (a cor do tipo; laranja a corrigir; vermelho o que saiu) passa a <b>dizer o dia</b>, grande, como a R2. Lê-se de relance "dia 14, voo" e continua a ser a mesma peça das notificações, só que com a data dentro.</li>
+    <li><b>H1</b> dá a data mais limpa (o número solto, a cor num fio fino ao lado), mas o fio de 4 pt diz pouco: o laranja e o vermelho dos problemas quase desaparecem.</li>
+    <li><b>H3</b> é a R2 que gostaste, tal e qual, dentro das secções; mas a pílula repete a secção ("Mudou" → "Alterada") e a cor do tipo não aparece.</li>
+    <li>Em todas, quando uma secção passa de um mês para o outro, uma linha pequena com o mês ("DEZEMBRO") separa-os — num primeiro import com 12 meses, nunca há um "14" sem se saber de que mês.</li></ul></div>
+</div>
+<script>
+var P = { x:'<path d="M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12 19 17.6 17.6 19 12 13.4 6.4 19 5 17.6 10.6 12 5 6.4z"/>', chev:'<path d="M8.6 4.2 16.4 12l-7.8 7.8-1.9-1.9 5.9-5.9-5.9-5.9z"/>',
+  sync:'<path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z"/>', plane:'<path d="M21 15.5v-2l-8-5V3.6a1.5 1.5 0 0 0-3 0V8.5l-8 5v2l8-2.5V18l-2 1.5V21l3.5-1 3.5 1v-1.5L13 18v-5z"/>',
+  doc:'<path d="M6 2h8l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7 1.5V8h4.5z"/>', cal:'<path d="M7 2h2.6v3H7V2zm7.4 0H17v3h-2.6V2zM4 5h16v3.6H4V5zm0 5h16v10a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 20V10z"/>',
+  lock:'<path d="M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1zm2 0h6V7a3 3 0 0 0-6 0v3z"/>', swap:'<path d="M7 7h11l-3-3 1.4-1.4L21.8 8l-5.4 5.4L15 12l3-3H7V7zm10 10H6l3 3-1.4 1.4L2.2 16l5.4-5.4L9 12l-3 3h11v2z"/>' };
+function ic(n, s){ return '<svg class="ic" width="' + s + '" height="' + s + '" viewBox="0 0 24 24">' + P[n] + '</svg>'; }
+function phone(head, body){ return '<div class="ph"><div class="status"><span>17:31</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="behind"></div><div class="sh"><div class="grab"><i></i></div>' + head + '<div class="body">' + body + '</div></div></div>'; }
+
+
+function head(title){ return '<div class="hC"><h4>' + title + '</h4><span class="xC">Fechar</span></div>'; }
+var eur = function(v){ return '<span class="eur">+' + v + ' €</span>'; };
+var FIX = '<span class="fix">Corrigir ›</span>', CHK = '<span class="chk"></span>';
+var FOOT = '<div class="foot2">' + ic('lock', 13) + 'Nada entra sem ti · o passado só acrescenta</div><div class="big">Confirmar 3 serviços · +273,60 €</div>';
+var SRCH = '<svg class="ic" width="17" height="17" viewBox="0 0 24 24"><path d="M10 3a7 7 0 0 1 5.6 11.2l5.1 5.1-1.4 1.4-5.1-5.1A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg>';
+var DIAG = '<div class="lC" style="margin-top:4px"><span class="sq" style="background:var(--neutral)">' + SRCH + '</span><div class="t"><b>O que a app leu do calendário</b><span>cada evento até ao fim do próximo mês e como foi reconhecido</span></div>' + ic('chev', 14) + '</div>';
+// os dias: [secção, dia, semana, cor, título, linha de baixo, direita, antes riscado, pílula]
+var D = [
+  ['A corrigir', '23', 'seg', 'alert', 'LIS → XYZ', 'aeroporto «XYZ» não reconhecido', FIX, null, ['chg2', 'Corrigir']],
+  ['Mudou', '14', 'sáb', 'voo', 'LIS → LGW → LIS', 'report 06:10 · 2 setores', eur('91,20'), 'LIS → OPO → LIS', ['chg2', 'Alterada']],
+  ['Novos · 2', '18', 'qua', 'voo', 'LIS → FNC → LIS', 'report 07:40 · 2 setores', eur('91,20'), null, ['new', 'Nova']],
+  ['Novos · 2', '2', 'qua', 'voo', 'LIS → PDL → LIS', 'report 08:15 · 2 setores', eur('91,20'), null, ['new', 'Nova'], 'Dezembro'],
+  ['Deixou de aparecer', '22', 'dom', 'stop', 'LIS → BCN → LIS', 'pode ser atraso do calendário · toca para apagar', CHK, null, ['cx', 'Saiu']],
+];
+var COL = { voo: 'var(--voo)', terra: 'var(--terra)', alert: 'var(--alert)', stop: 'var(--stop)' };
+function build(v){
+  var out = '<p class="lead2">Li 5 dias do calendário · 3 prontos · 1 a corrigir · 1 deixou de aparecer.</p>', sec = null, first = true;
+  D.forEach(function(d){
+    if (d[0] !== sec) { sec = d[0]; out += '<div class="sec">' + sec + '</div>'; first = true; if (sec.indexOf('Novos') === 0) out += '<div class="mline">Novembro</div>'; }
+    if (d[9]) { out += '<div class="mline">' + d[9] + '</div>'; first = true; }
+    var date = v === 'H1' ? '<div class="d1"><i style="background:' + COL[d[3]] + '"></i><div><b>' + d[1] + '</b><span>' + d[2] + '</span></div></div>'
+      : v === 'H2' ? '<div class="d2" style="background:' + COL[d[3]] + '"><b>' + d[1] + '</b><span>' + d[2] + '</span></div>'
+      : '<div class="d3"><b>' + d[1] + '</b><span>' + d[2] + '</span></div>';
+    var top = v === 'H3' ? '<div style="display:flex;gap:6px;align-items:center"><span class="pl ' + d[8][0] + '">' + d[8][1] + '</span>' + (d[7] ? '<s>' + d[7] + '</s>' : '') + '</div>' : (d[7] ? '<s style="text-decoration:line-through">' + d[7] + '</s>' : '');
+    out += '<div class="hR' + (first ? ' f' : '') + '">' + date + '<div class="t">' + top + '<b>' + d[4] + '</b><span>' + d[5] + '</span></div>' + d[6] + '</div>';
+    first = false;
+  });
+  return '<div class="lst">' + out + DIAG + '</div>' + FOOT;   // a lista desliza; o botão fica no fundo, como na app
+}
+var O = [
+  ['H1', 'H1 · A data grande e um fio de cor', false, 'As secções da R1; em cada linha <b>a data grande, solta</b>, como a R2, com <b>um fio fino na cor do tipo</b> ao lado (azul voo, laranja a corrigir, vermelho o que saiu).'],
+  ['H2', 'H2 · A data dentro do quadradinho', true, 'As secções da R1; <b>o quadradinho de cor passa a dizer o dia</b> ("14 sáb"), grande. A cor continua a dizer o tipo ou o problema — a mesma peça das notificações, com a data dentro.'],
+  ['H3', 'H3 · A R2 dentro das secções', false, 'A R2 tal e qual (o dia grande, a pílula Alterada · Nova · Saiu · Corrigir, o antes riscado ao lado da pílula), <b>arrumada nas secções da R1</b>.']
+];
+document.getElementById('g1').innerHTML = O.map(function(o){ return '<div class="opt"><h3>' + o[1] + (o[2] ? '<span class="rec">RECOMENDO</span>' : '') + '</h3><p>' + o[3] + '</p>' + phone(head('Rever a escala'), build(o[0])) + '</div>'; }).join('');
+</script>
+</body>
+</html>

@@ -1,12 +1,12 @@
 {
- "gerado": "2026-11-13",
+ "gerado": "2026-11-14",
  "total": {
-  "tipoFora": 196,
-  "tipoMenor11": 93,
-  "espacoFora": 380,
-  "raioFora": 54,
-  "corSolta": 59,
-  "ionicons": 9,
+  "tipoFora": 190,
+  "tipoMenor11": 91,
+  "espacoFora": 355,
+  "raioFora": 48,
+  "corSolta": 54,
+  "ionicons": 7,
   "iconeNavSolto": 3,
   "amareloTexto": 4
  },
@@ -181,16 +181,6 @@
    "iconeNavSolto": 0,
    "amareloTexto": 0
   },
-  "components/CalendarPickerSheet.js": {
-   "tipoFora": 2,
-   "tipoMenor11": 0,
-   "espacoFora": 6,
-   "raioFora": 1,
-   "corSolta": 1,
-   "ionicons": 1,
-   "iconeNavSolto": 0,
-   "amareloTexto": 0
-  },
   "components/ConfirmDialog.js": {
    "tipoFora": 1,
    "tipoMenor11": 0,
@@ -348,16 +338,6 @@
    "raioFora": 0,
    "corSolta": 0,
    "ionicons": 0,
-   "iconeNavSolto": 0,
-   "amareloTexto": 0
-  },
-  "components/RosterImportSheet.js": {
-   "tipoFora": 4,
-   "tipoMenor11": 2,
-   "espacoFora": 19,
-   "raioFora": 5,
-   "corSolta": 4,
-   "ionicons": 1,
    "iconeNavSolto": 0,
    "amareloTexto": 0
   },

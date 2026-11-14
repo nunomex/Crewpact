@@ -55,6 +55,8 @@ export const prettyRoute = (route) => {
 const WD_SHORT = { pt: ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] };
 const WD_LONG = { pt: ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'], en: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] };
 const wdIdx = (iso) => new Date(`${iso}T00:00:00`).getDay();
+// O dia da semana curto da app ("sex"), o mesmo da Escala — as janelas usam-no no quadradinho do dia (o do iPhone em pt-PT diz "sexta").
+export const wdShort = (iso, lang = 'pt') => (WD_SHORT[lang] || WD_SHORT.pt)[wdIdx(iso)];
 
 // ── A ESCALA EM AGENDA (A2 em acordeão + os dias passados em D; esboços design/escala-agenda.html e escala-passado.html,
 // escolhidos pelo Nuno a 2026-11-13) ──

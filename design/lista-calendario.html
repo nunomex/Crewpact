@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · O que a app leu do calendário</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* O QUE A APP LEU DO CALENDÁRIO (2026-11-14). O Nuno, depois de ver no iPhone: "a lista 'O que a app leu do calendário', muda o
+   layout dessa parte, não achas?". Era uma lista corrida de texto ("EZY1009 LIS-OPO → Voo · LIS → OPO"), num painel cinzento.
+   A pergunta de quem a abre: "a app leu bem a minha escala? o que ficou de fora?". Três maneiras: L1 por dia, com o dia no
+   quadradinho (a regra da H2) · L2 duas colunas, o que está no calendário → o que a app leu · L3 o resumo por tipo primeiro e o que
+   ficou de fora em cima. Os títulos são os do iPhone do Nuno (de teste; os dias de exemplo) mais um que a app não reconhece. */
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+:root{--pg:#E8E7E2;--pfg:#141414;--muted:#55554F;--body:'Hanken','Helvetica Neue',Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pg);color:var(--pfg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+.lead{max-width:940px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px} .lead h2{font-weight:800;font-size:22px;margin-top:6px}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)} .lead b{color:var(--pfg)}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,406px),406px));gap:26px 24px;justify-content:center}
+.opt{display:flex;flex-direction:column;gap:10px;min-width:0}
+.opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:var(--muted);min-height:76px} .opt > p b{color:var(--pfg)}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:940px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.card2 li{font-size:13px;line-height:1.5;color:var(--muted)} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:var(--pfg)}
+.refs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:10px}
+.refs div{background:#fff;border:1px solid #D6D4CD;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.4;color:var(--muted)} .refs b{color:var(--pfg)}
+
+.ph{width:406px;height:860px;border:8px solid #04060A;border-radius:52px;overflow:hidden;position:relative;background:#BDBBB5;
+  --desk:#E3E1DB;--ink:#141414;--soft:#3A3A36;--sheet:#FFFFFF;--neutral:#F1EFEA;--voo:#6DBEFA;--terra:#C3A1BE;--rest:#B4C2A2;--alert:#F0854A;--stop:#EC7A6C;--gain:#0B6E43;
+  --tsub:#5E5E57;--round:rgba(127,127,127,.22);--rule:rgba(127,127,127,.25);color:var(--ink)}
+.status{height:47px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.behind{position:absolute;left:10px;right:10px;top:47px;height:30px;border-radius:14px 14px 0 0;background:#D2D0CA}
+.sh{position:absolute;left:0;right:0;top:58px;bottom:0;background:var(--sheet);border-radius:14px 14px 0 0;display:flex;flex-direction:column}
+.grab{display:flex;justify-content:center;padding:7px 0 3px} .grab i{width:36px;height:5px;border-radius:3px;background:rgba(127,127,127,.35)}
+.body{flex:1;overflow:hidden;padding:4px 12px 20px;display:flex;flex-direction:column;gap:8px}
+.ic{display:inline-block;flex:none;fill:currentColor}
+/* os ✕ */
+.xA{width:44px;height:44px;border-radius:22px;background:var(--round);display:flex;align-items:center;justify-content:center;flex:none}
+.xB{width:30px;height:30px;border-radius:15px;background:var(--round);display:flex;align-items:center;justify-content:center;flex:none}
+.xC{height:38px;padding:0 16px;border-radius:19px;border:1.5px solid var(--ink);display:inline-flex;align-items:center;font-weight:700;font-size:13px;flex:none}
+/* cabeçalhos */
+.hA{display:flex;align-items:flex-start;gap:12px;padding:6px 16px 10px} .hA .t{flex:1} .hA .k{display:block;font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub)} .hA h4{font-weight:800;font-size:22px;line-height:26px;letter-spacing:-.4px;margin-top:2px}
+.hB{display:flex;align-items:center;justify-content:center;position:relative;padding:8px 16px 12px} .hB h4{font-weight:800;font-size:16px} .hB .xB{position:absolute;right:14px;top:4px}
+.hC{display:flex;align-items:center;gap:12px;padding:8px 16px 12px} .hC h4{flex:1;font-weight:800;font-size:26px;letter-spacing:-.5px}
+/* A · cartões neutros */
+.cA{background:var(--neutral);border-radius:22px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.cA .kk{display:flex;align-items:center;gap:6px;font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub)} .cA .kk i{width:8px;height:8px;border-radius:4px;background:var(--alert)}
+.cA b.tt{font-weight:800;font-size:16px;line-height:20px} .cA span.sb{font-weight:500;font-size:12px;line-height:16px;color:var(--soft)}
+.chg{display:flex;align-items:center;gap:8px;font-weight:600;font-size:12px} .chg s{text-decoration:line-through;color:var(--tsub)}
+.pl{height:22px;padding:0 9px;border-radius:11px;font-weight:800;font-size:11px;display:inline-flex;align-items:center;flex:none}
+.pl.new{background:#DCEFFD} .pl.chg2{background:#FCE1D2} .pl.cx{background:#FAD9D4}
+.dark{background:var(--ink);color:#fff;border-radius:18px;padding:12px 14px;display:flex;align-items:center;gap:10px} .dark .t{flex:1} .dark b{display:block;font-weight:800;font-size:15px} .dark span{font-size:12px;opacity:.75}
+.go{width:30px;height:30px;border-radius:15px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;flex:none}
+.cap{font-weight:500;font-size:12px;color:var(--tsub);text-align:center;padding:6px 0}
+.lnA{display:flex;align-items:center;gap:10px;padding:10px 2px;border-top:1px solid var(--rule)} .lnA:first-of-type{border-top:0} .lnA .t{flex:1} .lnA b{display:block;font-weight:700;font-size:15px} .lnA span{font-size:12px;color:var(--tsub)}
+/* B · linhas finas na cor do tipo */
+.sl{border-radius:22px;padding:12px 16px;display:flex;align-items:center;gap:12px;min-height:56px}
+.sl .t{flex:1;min-width:0} .sl .t b{display:block;font-weight:800;font-size:16px;line-height:20px} .sl .t span{display:block;font-weight:500;font-size:12px;line-height:16px;opacity:.82}
+.sl.alert{background:var(--alert)} .sl.voo{background:var(--voo)} .sl.neutral{background:var(--neutral)} .sl.dk{background:var(--ink);color:#fff}
+.sl .go2{width:30px;height:30px;border-radius:15px;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;flex:none} .sl.neutral .go2{background:rgba(127,127,127,.18)} .sl.dk .go2{background:rgba(255,255,255,.22)}
+.sl .tm{font-weight:700;font-size:11px;opacity:.75;white-space:nowrap}
+.secB{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub);padding:8px 4px 0}
+/* os acertos */
+.dch{display:flex;flex-direction:column;gap:6px;margin:-4px 0 4px 48px}
+.dch div{display:flex;align-items:center;gap:8px;font-weight:600;font-size:12px} .dch s{text-decoration:line-through;color:var(--tsub)}
+.big{height:54px;border-radius:18px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;font-size:16px;flex:none;margin-top:auto}
+.sec{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub);padding:10px 4px 2px}
+.lC.dkr{background:var(--ink);color:#fff;border-radius:18px;padding:12px;border-top:0;margin-bottom:6px} .lC.dkr .t span{color:rgba(255,255,255,.75)} .lC.dkr .sq{background:rgba(255,255,255,.18)!important;color:#fff}
+.lC.open{background:var(--neutral);border-radius:18px;padding:12px;border-top:0;flex-wrap:wrap}
+.lC.open .dch{flex-basis:100%;margin:8px 0 0 48px}
+.grp{background:var(--neutral);border-radius:18px;padding:0 12px;flex:none} .grp .lC{border-top-color:rgba(127,127,127,.22)}
+.cap2{font-weight:500;font-size:12px;color:var(--tsub);padding:2px 4px}
+/* C · lista com o quadradinho do ícone */
+.lC{display:flex;align-items:center;gap:12px;padding:12px 4px;border-top:1px solid var(--rule);position:relative} .lC.f{border-top:0}
+.sq{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex:none;color:#141414}
+.lC .t{flex:1;min-width:0} .lC .t b{display:block;font-weight:800;font-size:15px;line-height:19px} .lC .t span{display:block;font-weight:500;font-size:12px;line-height:16px;color:var(--tsub)}
+.lC .tm{font-weight:600;font-size:11px;color:var(--tsub);align-self:flex-start;white-space:nowrap}
+.lC .nd{position:absolute;left:-6px;top:50%;width:7px;height:7px;border-radius:4px;background:var(--alert);transform:translateY(-50%)}
+.foot{display:flex;align-items:center;justify-content:center;gap:6px;font-weight:600;font-size:12px;color:var(--tsub);padding:10px 0}
+
+/* a janela de sincronizar */
+.pl.new{background:var(--voo)} .pl.chg2{background:var(--alert)} .pl.cx{background:var(--stop)}   /* as pílulas sólidas, como as que já estão nas notificações */
+.lead2{font-weight:500;font-size:12px;line-height:16px;color:var(--tsub);padding:0 4px 4px}
+.lC .eur{font-weight:700;font-size:15px;color:var(--gain);white-space:nowrap}
+.lC .fix{font-weight:800;font-size:13px;white-space:nowrap}
+.lC .t s{display:block;font-weight:600;font-size:12px;line-height:16px;color:var(--tsub);text-decoration:line-through}
+.chk{width:24px;height:24px;border-radius:12px;border:1.5px solid var(--ink);flex:none}
+.link{font-weight:700;font-size:12px;color:var(--tsub);text-align:center;padding:6px 0;text-decoration:underline;text-underline-offset:3px}
+.foot2{display:flex;align-items:center;justify-content:center;gap:6px;font-weight:600;font-size:12px;color:var(--tsub);padding:4px 0 8px}
+/* R2 · a data grande */
+.mo{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub);padding:6px 4px 0}
+.dR{display:flex;align-items:center;gap:12px;padding:10px 4px;border-top:1px solid var(--rule)} .dR.f{border-top:0}
+.dd{width:44px;flex:none;display:flex;flex-direction:column;align-items:center} .dd b{font-weight:800;font-size:26px;line-height:28px;letter-spacing:-.5px} .dd span{font-weight:700;font-size:11px;color:var(--tsub)}
+.dR .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px} .dR .t b{font-weight:800;font-size:15px;line-height:19px} .dR .t span{font-weight:500;font-size:12px;line-height:16px;color:var(--tsub)} .dR .t s{font-weight:600;font-size:12px;color:var(--tsub)}
+.dR .eur{font-weight:700;font-size:15px;color:var(--gain);white-space:nowrap}
+.strip{background:var(--neutral);border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:10px;font-weight:700;font-size:13px}
+.strip i{width:22px;height:22px;border-radius:7px;background:var(--alert);display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:800;font-size:13px;flex:none}
+/* R3 · o resumo primeiro */
+.sum{background:var(--neutral);border-radius:22px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.nums{display:flex;gap:8px} .nums div{flex:1;display:flex;flex-direction:column} .nums b{font-weight:800;font-size:30px;line-height:32px;letter-spacing:-.8px} .nums span{font-weight:600;font-size:11px;color:var(--tsub)}
+.sum .tot{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--rule);padding-top:8px;font-weight:600;font-size:12px;color:var(--tsub)} .sum .tot b{font-weight:800;font-size:17px;color:var(--gain)}
+.cd{border:1px solid var(--rule);border-radius:18px;padding:12px 14px;display:flex;align-items:center;gap:12px}
+.cd .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px} .cd .k{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub)} .cd b{font-weight:800;font-size:16px;line-height:20px} .cd span{font-weight:500;font-size:12px;color:var(--tsub)}
+.cd .eur{font-weight:700;font-size:15px;color:var(--gain);white-space:nowrap}
+.cd.warn{border-color:var(--alert);border-width:1.5px}
+/* o calendário */
+.dotc{width:14px;height:14px;border-radius:7px}
+.tick{width:24px;height:24px;border-radius:12px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;flex:none}
+
+
+.lst{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;scrollbar-width:none} .lst::-webkit-scrollbar{display:none}
+.body .big{margin-top:0}
+.mline{font-weight:700;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--tsub);padding:4px 4px 0 4px;opacity:.8}
+.hR{display:flex;align-items:center;gap:12px;padding:10px 4px;border-top:1px solid var(--rule)} .hR.f{border-top:0}
+.hR .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px} .hR .t b{font-weight:800;font-size:15px;line-height:19px} .hR .t span{font-weight:500;font-size:12px;line-height:16px;color:var(--tsub)} .hR .t s{font-weight:600;font-size:12px;line-height:16px;color:var(--tsub);text-decoration:line-through}
+.hR .t span.warn{color:var(--ink);font-weight:600}
+.hR .eur{font-weight:700;font-size:15px;color:var(--gain);white-space:nowrap}
+.hR .fix{font-weight:800;font-size:13px;white-space:nowrap}
+.d2{width:44px;height:48px;border-radius:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;color:#141414;position:relative} .d2 b{font-weight:800;font-size:20px;line-height:21px;letter-spacing:-.4px} .d2 span{font-weight:700;font-size:10px;line-height:12px;opacity:.82}
+/* V1 · o selo no canto */
+.bdg{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:10px;border:2px solid var(--sheet);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;color:#141414}
+/* V2 · o anel */
+.ring{box-shadow:0 0 0 2px var(--sheet),0 0 0 4.5px var(--rc)}
+/* V3 · a faixa no fundo */
+.d3{width:44px;height:52px;border-radius:13px;display:flex;flex-direction:column;flex:none;color:#141414;overflow:hidden}
+.d3 .top{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center} .d3 b{font-weight:800;font-size:19px;line-height:20px;letter-spacing:-.4px} .d3 .top span{font-weight:700;font-size:10px;line-height:11px;opacity:.82}
+.d3 .band{height:15px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:10px}
+
+.lst{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;scrollbar-width:none} .lst::-webkit-scrollbar{display:none}
+.tog{display:flex;align-items:center;gap:12px;padding:12px 4px;border-top:1px solid var(--rule)}
+.tog .sq{width:44px;height:44px;border-radius:14px}
+.tog .t{flex:1;min-width:0} .tog .t b{display:block;font-weight:800;font-size:16px;line-height:20px} .tog .t span{display:block;font-weight:500;font-size:12px;line-height:16px;color:var(--tsub)}
+.rot{transform:rotate(90deg)}
+.sumL{font-weight:700;font-size:15px;line-height:20px;padding:4px 4px 2px}
+.sumS{font-weight:500;font-size:12px;line-height:16px;color:var(--tsub);padding:0 4px 4px}
+/* L1 · por dia */
+.dy{display:flex;gap:12px;padding:10px 4px;border-top:1px solid var(--rule);align-items:flex-start} .dy.f{border-top:0}
+.d2{width:44px;height:48px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;color:#141414;position:relative} .d2 b{font-weight:800;font-size:20px;line-height:21px;letter-spacing:-.4px} .d2 span{font-weight:700;font-size:11px;line-height:12px;opacity:.82}
+.bdg{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:10px;border:2px solid var(--sheet);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;color:#141414}
+.evs{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;padding-top:2px}
+.ev b{display:block;font-weight:800;font-size:15px;line-height:19px} .ev span{display:block;font-weight:500;font-size:12px;line-height:16px;color:var(--tsub)} .ev span.no{color:var(--ink);font-weight:600}
+/* L2 · duas colunas */
+.hd2{display:grid;grid-template-columns:1fr 18px 1fr;gap:6px;font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub);padding:6px 4px}
+.dl{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub);padding:10px 4px 2px}
+.r2{display:grid;grid-template-columns:1fr 18px 1fr;gap:6px;align-items:center;padding:8px 4px;border-top:1px solid var(--rule)} .r2.f{border-top:0}
+.r2 .c{font-weight:700;font-size:14px;line-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r2 .ar{color:var(--tsub);font-weight:700;text-align:center}
+.tag{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:13px;font-weight:800;font-size:12px;white-space:nowrap;justify-self:start}
+.tag small{font-weight:600;font-size:12px;margin-left:5px;opacity:.85}
+/* L3 · o resumo primeiro */
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:2px 0 6px}
+.tl{border-radius:16px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;color:#141414} .tl b{font-weight:800;font-size:24px;line-height:26px;letter-spacing:-.5px} .tl span{font-weight:700;font-size:11px;line-height:14px;opacity:.82}
+.grpH{display:flex;align-items:center;gap:8px;padding:10px 4px 4px;font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tsub)} .grpH i{width:10px;height:10px;border-radius:5px}
+.r3{display:flex;justify-content:space-between;gap:10px;padding:7px 4px;border-top:1px solid var(--rule);font-size:14px} .r3.f{border-top:0} .r3 b{font-weight:700} .r3 span{color:var(--tsub);font-weight:500;font-size:12px;white-space:nowrap}
+.more{font-weight:700;font-size:12px;color:var(--tsub);padding:6px 4px}
+</style>
+<body>
+<div class="page">
+  <div class="lead">
+    <h1>O que a app leu do calendário</h1>
+    <p>Era uma lista corrida de texto num painel cinzento, e cada linha dizia quase o mesmo duas vezes ("EZY1009 LIS-OPO → Voo · LIS → OPO"). Quem a abre quer saber <b>se a app leu bem a escala e o que ficou de fora</b>. Três maneiras, abertas dentro da janela "Rever a escala". Os títulos dos eventos são os do teu iPhone (os dias são de exemplo), mais um que a app não reconhece ("SIM CHECK"), para se ver esse caso.</p>
+  </div>
+  <div class="grid3" id="g1"></div>
+  <div class="card2"><h3>A minha recomendação: L1</h3><ul>
+    <li><b>L1</b> lê-se como a Escala: um dia por linha, com o dia no quadradinho da cor do que foi lido (a regra da H2), e à direita o evento como está no calendário e, por baixo, como a app o leu. O que ficou de fora tem o selo "!" no dia e a frase do topo avisa logo. É a mesma peça das outras janelas.</li>
+    <li><b>L2</b> é a mais clara para comparar (à esquerda o calendário, à direita a leitura numa pílula de cor), mas as duas colunas apertam a 375 pt e os títulos compridos cortam-se.</li>
+    <li><b>L3</b> responde de relance ("9 voos, 12 standby, 1 de fora") e põe o que ficou de fora em cima, mas esconde o dia de cada evento — se a app leu um voo no dia errado, não se vê.</li>
+    <li>Em todas: a frase do topo responde à pergunta ("21 eventos · 1 ficou de fora"), os nomes são os da app em português, e o painel cinzento sai (a lista fica na folha, como as outras linhas).</li></ul></div>
+</div>
+<script>
+var P = { x:'<path d="M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12 19 17.6 17.6 19 12 13.4 6.4 19 5 17.6 10.6 12 5 6.4z"/>', chev:'<path d="M8.6 4.2 16.4 12l-7.8 7.8-1.9-1.9 5.9-5.9-5.9-5.9z"/>',
+  sync:'<path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z"/>', plane:'<path d="M21 15.5v-2l-8-5V3.6a1.5 1.5 0 0 0-3 0V8.5l-8 5v2l8-2.5V18l-2 1.5V21l3.5-1 3.5 1v-1.5L13 18v-5z"/>',
+  doc:'<path d="M6 2h8l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7 1.5V8h4.5z"/>', cal:'<path d="M7 2h2.6v3H7V2zm7.4 0H17v3h-2.6V2zM4 5h16v3.6H4V5zm0 5h16v10a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 20V10z"/>',
+  lock:'<path d="M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1zm2 0h6V7a3 3 0 0 0-6 0v3z"/>', swap:'<path d="M7 7h11l-3-3 1.4-1.4L21.8 8l-5.4 5.4L15 12l3-3H7V7zm10 10H6l3 3-1.4 1.4L2.2 16l5.4-5.4L9 12l-3 3h11v2z"/>' };
+function ic(n, s){ return '<svg class="ic" width="' + s + '" height="' + s + '" viewBox="0 0 24 24">' + P[n] + '</svg>'; }
+function phone(head, body){ return '<div class="ph"><div class="status"><span>17:31</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div><div class="behind"></div><div class="sh"><div class="grab"><i></i></div>' + head + '<div class="body">' + body + '</div></div></div>'; }
+
+
+
+
+function head(title){ return '<div class="hC"><h4>' + title + '</h4><span class="xC">Fechar</span></div>'; }
+var SRCH = '<svg class="ic" width="20" height="20" viewBox="0 0 24 24"><path d="M10 3a7 7 0 0 1 5.6 11.2l5.1 5.1-1.4 1.4-5.1-5.1A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg>';
+var TOP = '<div class="lst"><p class="lead2" style="text-align:center;padding:14px 4px 10px"><b style="color:var(--ink);font-size:16px">A escala está igual ao que tens.</b><br>Não há nada para rever.</p>'
+  + '<div class="tog"><span class="sq" style="background:var(--neutral)">' + SRCH + '</span><div class="t"><b>O que a app leu do calendário</b><span>até ao fim do próximo mês</span></div><span class="rot">' + ic('chev', 14) + '</span></div>';
+// [dia, semana, eventos: [título no calendário, lido como, tipo (voo|terra|no), rota]]
+var DAYS = [
+  ['13', 'sex', [['EZY1009 LIS-OPO', 'Voo', 'voo', 'LIS → OPO']]],
+  ['14', 'sáb', [['HSBY', 'Standby casa', 'terra']]],
+  ['15', 'dom', [['HSBY', 'Standby casa', 'terra']]],
+  ['16', 'seg', [['EZY1001 LIS-OPO', 'Voo', 'voo', 'LIS → OPO']]],
+  ['17', 'ter', [['SIM CHECK', null, 'no']]],
+  ['18', 'qua', [['EZY1002 LIS-OPO', 'Voo', 'voo', 'LIS → OPO']]],
+  ['19', 'qui', [['ADTY LIS', 'Standby aeroporto', 'terra']]],
+  ['20', 'sex', [['EZY1003 LIS-OPO', 'Voo', 'voo', 'LIS → OPO'], ['HSBY', 'Standby casa', 'terra']]],
+];
+var SUM = '<p class="sumL">22 eventos · 1 ficou de fora</p><p class="sumS">O que não reconheço fica de fora da escala e das contas.</p>';
+var COL = { voo: 'var(--voo)', terra: 'var(--terra)', no: 'var(--neutral)' };
+function L1(){
+  var out = SUM;
+  DAYS.forEach(function(d, i){
+    var hasNo = d[2].some(function(e){ return e[2] === 'no'; });
+    var main = d[2].find(function(e){ return e[2] !== 'no'; });
+    out += '<div class="dy' + (i === 0 ? ' f' : '') + '"><div class="d2" style="background:' + (main ? COL[main[2]] : COL.no) + '"><b>' + d[0] + '</b><span>' + d[1] + '</span>' + (hasNo ? '<i class="bdg" style="background:var(--alert)">!</i>' : '') + '</div><div class="evs">'
+      + d[2].map(function(e){ return '<div class="ev"><b>' + e[0] + '</b><span' + (e[2] === 'no' ? ' class="no"' : '') + '>' + (e[2] === 'no' ? 'não reconhecido · fica de fora' : 'lido como ' + e[1].toLowerCase() + (e[3] ? ' · ' + e[3] : '')) + '</span></div>'; }).join('') + '</div></div>';
+  });
+  return TOP + out + '<p class="more">+ 13 dias até 31 de dezembro</p></div>';
+}
+function L2(){
+  var out = SUM + '<div class="hd2"><span>No calendário</span><span></span><span>A app leu</span></div>';
+  DAYS.forEach(function(d){
+    out += '<div class="dl">' + d[1] + ' ' + d[0] + '</div>';
+    d[2].forEach(function(e, k){
+      var tag = e[2] === 'no' ? '<span class="tag" style="background:var(--alert)">não reconhecido</span>' : '<span class="tag" style="background:' + COL[e[2]] + '">' + e[1] + (e[3] ? '<small>' + e[3] + '</small>' : '') + '</span>';
+      out += '<div class="r2' + (k === 0 ? ' f' : '') + '"><span class="c">' + e[0] + '</span><span class="ar">→</span>' + tag + '</div>';
+    });
+  });
+  return TOP + out + '<p class="more">+ 13 dias até 31 de dezembro</p></div>';
+}
+function L3(){
+  var out = '<p class="sumL">22 eventos · 1 ficou de fora</p>'
+    + '<div class="tiles"><div class="tl" style="background:var(--voo)"><b>9</b><span>voos</span></div><div class="tl" style="background:var(--terra)"><b>12</b><span>standby</span></div><div class="tl" style="background:var(--alert)"><b>1</b><span>de fora</span></div></div>'
+    + '<div class="grpH"><i style="background:var(--alert)"></i>Ficou de fora · 1</div><div class="r3 f"><b>SIM CHECK</b><span>ter 17 · não reconhecido</span></div>'
+    + '<div class="grpH"><i style="background:var(--voo)"></i>Voos · 9</div>'
+    + [['EZY1009 LIS-OPO', 'sex 13'], ['EZY1001 LIS-OPO', 'seg 16'], ['EZY1002 LIS-OPO', 'qua 18'], ['EZY1003 LIS-OPO', 'sex 20']].map(function(r, i){ return '<div class="r3' + (i === 0 ? ' f' : '') + '"><b>' + r[0] + '</b><span>' + r[1] + ' · LIS → OPO</span></div>'; }).join('') + '<p class="more">+ 5 voos</p>'
+    + '<div class="grpH"><i style="background:var(--terra)"></i>Standby · 12</div>'
+    + [['HSBY', 'sáb 14 · standby casa'], ['HSBY', 'dom 15 · standby casa'], ['ADTY LIS', 'qui 19 · standby aeroporto']].map(function(r, i){ return '<div class="r3' + (i === 0 ? ' f' : '') + '"><b>' + r[0] + '</b><span>' + r[1] + '</span></div>'; }).join('') + '<p class="more">+ 9 standby</p>';
+  return TOP + out + '</div>';
+}
+var O = [
+  ['L1 · Por dia, com o dia no quadradinho', true, 'Como a Escala: <b>um dia por linha</b>, o dia no quadradinho da cor do que foi lido, e à direita <b>o evento como está no calendário</b> e, por baixo, como a app o leu. O que ficou de fora leva o selo "!".', L1],
+  ['L2 · Duas colunas: calendário → app', false, '<b>À esquerda o que está no calendário, à direita o que a app leu</b>, numa pílula da cor do tipo (laranja quando não reconheceu), arrumado por dia.', L2],
+  ['L3 · O resumo primeiro', false, '<b>Quantos de cada tipo</b> em três números, depois <b>o que ficou de fora em cima</b> e os outros agrupados por tipo (os primeiros e "+ 5 voos").', L3]
+];
+document.getElementById('g1').innerHTML = O.map(function(o){ return '<div class="opt"><h3>' + o[0] + (o[1] ? '<span class="rec">RECOMENDO</span>' : '') + '</h3><p>' + o[2] + '</p>' + phone(head('Rever a escala'), o[3]()) + '</div>'; }).join('');
+</script>
+</body>
+</html>

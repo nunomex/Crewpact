@@ -226,6 +226,10 @@ Cada ecrã migrado vê-se no iPhone antes de fechar — passar de 12,5 para 13 m
   A pílula do mês (M3): o mês por extenso e o ano só quando não é o deste ano ("Dezembro"; "Fevereiro 2027") — `monthPillLabel`.
 - **A ação principal de uma janela** vai num botão largo no fundo (`WideButton`), onde o polegar chega: "Fechar" em cima, a ação
   em baixo (C1).
+- **As linhas das janelas (`MarkRow`):** o quadradinho diz **o dia quando a linha é um dia** ("14 sáb", `DayTile`), o ícone quando
+  não é. O dia fica sempre na cor do tipo; um problema é **um selo no canto** ("!" laranja olhar · "✕" vermelho parar), nunca
+  outra cor no quadradinho (H2 + V1, 2026-11-14, `design/janela-sincronizar-3.html`). Uma lista de dias que passa de um mês para
+  o outro leva uma linha com o mês.
 - **Abrir/expandir uma secção:** a linha inteira é tocável, com um chevron à direita que roda.
 - **Guardar num formulário** (decidido 2026-11-02, opção 2 do Mobbin): **uma só ação principal, larga, no
   fundo** (`PrimaryButton`), que sobe com o teclado; **sair é o ✕ do cabeçalho** — sem "Cancelar" a competir

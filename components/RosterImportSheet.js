@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, ActivityIndicator, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { PELE, PELE_FONT, BRAND, MONEY } from '../data/constants';
+import { CARD, TXT, TXT3, SPACE, RADIUS } from '../data/constants';
 import { diagnoseEvents } from '../data/calendar';
 import { importWindow, readCalendarRoster, absenceSuggestions, baseOfFor } from '../data/rosterRead';
-import { buildImportCandidates, importSaveFields, candidateKind, promoteMissing, verifyCandidates, sortCandidates, storedFacts } from '../data/rosterImport';
+import { buildImportCandidates, importSaveFields, candidateKind, promoteMissing, verifyCandidates, sortCandidates, storedFacts, importSections, diagSummary } from '../data/rosterImport';
+import { prettyRoute, monthPillLabel, wdShort } from '../data/escalaDay';
 import { issueText } from '../data/simulation';
 import { parseEasyjetRoster, rosterLooksForeign } from '../data/pdfRoster';
 import * as DocumentPicker from 'expo-document-picker';
@@ -15,12 +15,13 @@ import * as FileSystem from 'expo-file-system/legacy';   // SDK 54: deleteAsync 
 import { airportCoord } from '../data/airports';
 import { serviceMoney } from '../data/perdiem';
 import DutyFormSheet from './DutyFormSheet';
-import Eyebrow from './Eyebrow';
 import SheetHeader from './SheetHeader';
-import PrimaryButton from './PrimaryButton';
+import { WideButton } from './PillButton';
+import MarkRow, { MARK_DAY_INDENT, DayTile } from './MarkRow';
+import Icon from './Icon';
 import { AppContext, isoDay } from '../data/appContext';
 import { t } from '../data/i18n';
-import { select, success } from '../data/haptics';
+import { success } from '../data/haptics';
 
 // JANELA ÚNICA e leitura: data/rosterRead.js (partilhadas com o 7.º passo da configuração, 2026-11-03).
 
@@ -38,9 +39,13 @@ const demoCands = () => {
   ];
 };
 
-// Importação de escala (calendário do telemóvel ou PDF): seletor de intervalo → página
-// "Confirmar import" à prova de falha (resumo li/prontas/a-corrigir + per-diem; corrigir
-// inline) → grava o que está pronto. Página inteira (Modal slide-up), estilo página de duty.
+// Importação de escala (calendário do telemóvel ou PDF) → a janela "Rever a escala" à prova de falha → grava o que está pronto.
+// Página inteira (Modal slide-up). DESENHO R1 (design/janela-sincronizar.html, escolhida a 2026-11-14), na linguagem das janelas
+// C1: "Fechar" escrito · folha branca · as secções pelo que é preciso fazer (`importSections`: "A corrigir" primeiro, depois
+// "Mudou", "Novo", "Deixou de aparecer", "Relido") · cada linha é um dia: H2 + V1 (design/janela-sincronizar-3.html) — o dia
+// DENTRO do quadradinho, sempre na cor do tipo, e o problema num selo no canto ("!" laranja a corrigir ou com aviso, "✕" vermelho
+// o que saiu); a linha do mês quando a secção passa de um mês para o outro · o antes riscado por cima · o per diem a verde, com
+// cêntimos · "Confirmar N serviços" largo no fundo. A escolha Calendário | PDF saiu do topo (escolhe-se na janela do calendário da Escala, antes de chegar aqui).
 export default function RosterImportSheet({ visible, onClose, onConnect, initialSource, onDone }) {
   const { lang, duties, dayLog, saveDuty, removeDuty, company, calendarId, isPilot, cabinGapMin, splitAdminMin, postFlightMin, ae, aeAt, crewAt, crewCategory, crewFleet, base, homeBaseAt, aeEvents, addAeEvents, addRosterLog } = useContext(AppContext);
   // Doença: o episódio inteiro, pilotos e cabine (bloco 5) — o motor paga os dias do acordo e tira a base dos dias de baixa.
@@ -82,8 +87,6 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
   // RGPD: ao fechar, descartar o que foi lido do PDF (não fica nada em memória).
   useEffect(() => { if (!visible) { setPasteDiag(null); } }, [visible]);
 
-  // Trocar de fonte limpa o preview (não misturar resultados de calendário e colado).
-  const switchSource = (id) => { if (id === source) return; select(); setSource(id); setCands([]); setDiag(null); setPasteDiag(null); setVacDates([]); setSickDates([]); };
 
   // PDF por UPLOAD de ficheiro: escolher → extrair texto ON-DEVICE (nativo PDFKit/PDFBox) →
   // APAGAR já a cópia local (RGPD: nada sai do telemóvel) → mesmos candidatos do calendário.
@@ -218,11 +221,6 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
     }), { duties, dayLog, base, baseAt: homeBaseAt, isPilot, cabinGapMin, splitAdminMin, postFlightMin })));
     setCorrecting(null);
   };
-  const fmtDay = (iso) => { const d = new Date(`${iso}T00:00:00`); if (isNaN(d)) return iso; const x = d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' }); return x.charAt(0).toUpperCase() + x.slice(1); };
-  const lineFor = (c) => (c.kind === 'flight' ? (c.duty.route || l('Voo', 'Flight')) : t('duties.kind.' + c.kind, lang));
-  const metaFor = (c) => [c.duty.report_time ? `Report ${c.duty.report_time}` : null, c.duty.sectors ? `${c.duty.sectors} ${t('duties.sectorsShort', lang)}` : null, c.multi > 1 ? l(`${c.multi} serviços`, `${c.multi} services`) : null].filter(Boolean).join(' · ');
-  // Linha "antes → depois" dos campos que mudaram (candidatos 'changed').
-  const diffLine = (c) => (c.diff || []).map((f) => `${f.label[lang === 'en' ? 'en' : 'pt']} ${f.before == null || f.before === '' ? '—' : f.before}→${f.after == null || f.after === '' ? '—' : f.after}`).join('  ·  ');
 
   const doImport = () => {
     const items = importable.map((x) => x.c);   // tudo o que não está "a corrigir" (sem checkbox)
@@ -293,195 +291,254 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
     } else run();
   };
 
+  // ── O desenho (R1) ──
+  const W = CARD.day;
+  const sections = importSections(shown);
+  const infoOf = new Map(infos.map((x) => [x.c, x.info]));
+  const plural = (n, one, many) => (n === 1 ? one : many);
+  const SEC_LABEL = {
+    fix: () => l('A corrigir', 'To fix'),
+    changed: (n) => plural(n, l('Mudou', 'Changed'), l('Mudaram', 'Changed')),
+    new: (n) => plural(n, l('Novo', 'New'), l('Novos', 'New')),
+    removed: (n) => plural(n, l('Deixou de aparecer', 'Stopped appearing'), l('Deixaram de aparecer', 'Stopped appearing')),
+    refresh: (n) => plural(n, l('Relido com a regra nova', 'Re-read with the new rule'), l('Relidos com a regra nova', 'Re-read with the new rule')),
+  };
+  const fmtDayShort = (iso) => { const d = new Date(`${iso}T00:00:00`); if (isNaN(d)) return iso; return d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' }).replace(/\./g, '').replace(',', ''); };
+  const wdOf = (iso) => wdShort(iso, lang === 'en' ? 'en' : 'pt');
+  const thisYear = new Date().getFullYear();
+  const monthOf = (iso) => monthPillLabel({ year: +iso.slice(0, 4), month0: +iso.slice(5, 7) - 1, todayYear: thisYear, locale });
+  const nameOf = (c) => (c.kind === 'flight' ? (prettyRoute(c.duty.route) || l('Voo', 'Flight')) : t('duties.kind.' + c.kind, lang));
+  // O antes riscado: a rota de antes (se mudou); as outras mudanças dizem-se na linha de baixo ("report 06:10 → 07:00").
+  const routeDiff = (c) => (c.diff || []).find((f) => f.key === 'route');
+  const otherDiff = (c) => (c.diff || []).filter((f) => f !== routeDiff(c)).map((f) => `${f.label[lang === 'en' ? 'en' : 'pt'].toLowerCase()} ${f.before == null || f.before === '' ? '—' : f.before} → ${f.after == null || f.after === '' ? '—' : f.after}`).join(' · ');
+  const metaLow = (c) => [c.duty.report_time ? `report ${c.duty.report_time}` : null, c.duty.sectors ? `${c.duty.sectors} ${plural(c.duty.sectors, l('setor', 'sector'), l('setores', 'sectors'))}` : null, c.multi > 1 ? l(`${c.multi} serviços no dia`, `${c.multi} duties that day`) : null].filter(Boolean).join(' · ');
+  const issueOf = (c, info) => {
+    const legsIssue = (c.action !== 'delete' && c.prospect) ? c.prospect.issues.find((x) => x.type === 'fdpUncertain' && (x.unknowns || []).includes('legTimes')) : null;
+    if (info.kind === 'fix') {
+      return { legsIssue, warn: true, text: info.badAp ? l(`aeroporto «${info.badAp}» não reconhecido`, `airport “${info.badAp}” not recognised`)
+        : info.reason === 'end' ? l('sem hora de fim — corrige para contar', 'no end time — fix to count')
+        : info.reason === 'start' ? l('sem hora de início — corrige para contar', 'no start time — fix to count')
+        : info.reason === 'times' ? l('horas das pernas por confirmar', 'leg times to confirm')
+        : l('sem rota — corrige para somar', 'no route — fix to count') };
+    }
+    if (c.prospect && c.prospect.verdict === 'bad') { const it = c.prospect.issues.find((x) => x.level === 'bad'); if (it) return { legsIssue, warn: true, text: issueText(it, lang, c.duty.duty_date) }; }
+    // O "incerto" também se diz (risco R6 do bloco 4): falta um facto que a lei precisa, ou o sítio não bate.
+    if (c.prospect && c.prospect.verdict === 'unc') {
+      const it = legsIssue || c.prospect.issues.find((x) => x.level === 'unc');
+      if (it) { const tx = String(issueText(it, lang, c.duty.duty_date)).replace(' — incerto: ', ': ').replace(' — uncertain: ', ': '); return { legsIssue, warn: true, text: l(`incerto — ${tx}${legsIssue ? ' · toca para corrigir' : ''}`, `uncertain — ${tx}${legsIssue ? ' · tap to fix' : ''}`) }; }
+    }
+    return { legsIssue, warn: false, text: null };
+  };
+  const tick = (on, label) => (
+    <View style={[s.chk, on ? { backgroundColor: W.ink, borderColor: W.ink } : { borderColor: W.ink }]} accessibilityLabel={label}>
+      {on ? <Icon name="check" size={13} color={W.sheet} /> : null}
+    </View>
+  );
+  const renderCand = (c, first) => {
+    const info = infoOf.get(c) || candInfo(c);
+    const iss = issueOf(c, info);
+    const removed = c.action === 'delete';
+    const rd = routeDiff(c);
+    // H2 + V1: o dia no quadradinho, sempre na cor do tipo; o problema é o selo do canto.
+    const iso = c.duty.duty_date;
+    const mark = { bg: c.kind === 'flight' ? W.flight : W.ground, day: String(+iso.slice(8, 10)), wd: wdOf(iso), badge: removed ? 'stop' : iss.warn ? 'alert' : null };
+    const sub = [
+      replacesManual(c) ? l('substitui o teu manual', 'replaces your manual entry') : null,
+      c.status === 'conflict' ? l('editaste este dia — o calendário sobrepõe', 'you edited this day — the calendar overrides') : null,
+      removed ? l('pode ser atraso do calendário · toca para apagar', 'may be a calendar delay · tap to delete')
+        : c.status === 'refresh' ? l('a escala não mudou', 'the roster did not change')
+        : iss.text || otherDiff(c) || metaLow(c) || null,
+    ].filter(Boolean).join(' · ');
+    const right = info.kind === 'fix' ? <Text style={[TXT3.act, { color: W.ink }]}>{l('Corrigir ›', 'Fix ›')}</Text>
+      : removed ? tick(c.selected, c.selected ? l('Marcado para apagar', 'Marked to delete') : l('Não marcado', 'Not marked'))
+      : (info.perDiem != null || info.nsEur != null) ? (
+        <View style={s.pay}>
+          {info.perDiem != null ? <Text style={[TXT3.lineVal, { color: W.gainOut }]}>+{fmtEur0n(info.perDiem)}</Text> : null}
+          {info.nsEur != null ? <Text style={[TXT3.cardSub, { color: W.gainOut }]}>{l('pernoita', 'night stop')} +{fmtEur0n(info.nsEur)}</Text> : null}
+        </View>
+      ) : null;
+    const onPress = (info.kind === 'fix' || iss.legsIssue) ? () => correct(c) : removed ? () => toggle(c) : undefined;
+    const legs = c.kind === 'flight' && Array.isArray(c.duty.legs) && c.duty.legs.length > 1
+      ? c.duty.legs.map((lg) => `${lg.dh ? 'DH ' : ''}${lg.dep || '?'}→${lg.arr || '?'} ${lg.off || '—'}–${lg.on || '—'}`).join('  ·  ') : null;
+    return (
+      <MarkRow key={c.duty.duty_date + c.kind} first={first} mark={mark} right={right} onPress={onPress}
+        a11yRole={removed ? 'checkbox' : 'button'} a11yState={removed ? { checked: !!c.selected } : undefined}
+        old={rd && rd.before ? prettyRoute(rd.before) || rd.before : null}
+        a11yLabel={[fmtDayShort(iso), nameOf(c), removed ? l('deixou de aparecer', 'stopped appearing') : iss.warn ? l('a corrigir', 'to fix') : null, sub].filter(Boolean).join('. ')}
+        title={nameOf(c)} sub={sub} subTone={iss.warn ? W.ink : undefined}>
+        {legs ? <Text style={[TXT3.cardSub, s.legs, { color: W.tabSub }]} numberOfLines={2}>{legs}</Text> : null}
+      </MarkRow>
+    );
+  };
+  // O QUE A APP LEU DO CALENDÁRIO — L1 com os números em cima (design/lista-calendario.html, escolhida pelo Nuno a 2026-11-14):
+  // três números (voos · em terra · de fora; `diagSummary`, golden em scripts/import.test.js) e, por baixo, um dia por linha com o
+  // dia no quadradinho da cor do que foi lido (a regra da H2) e, à direita, o evento como está no calendário e, por baixo, como a
+  // app o leu, em português ("lido como voo · LIS → OPO") — nunca o nome interno. O que ficou de fora leva o selo "!" no dia.
+  // "em terra" (não "standby"): conta também escritório e formação — a palavra da legenda da Escala. "de fora" só é laranja com > 0.
+  const kindName = (k) => {
+    if (k === 'off') return l('Folga', 'Day off');
+    const key = 'duties.kind.' + k, tx = t(key, lang);
+    return tx && tx !== key ? tx : k;
+  };
+  const renderDiag = () => {
+    const sm = diagSummary(diag.items || []);
+    const tile = (n, label, bg) => (
+      <View style={[s.numTile, { backgroundColor: bg }]} accessible accessibilityLabel={`${n} ${label}`}>
+        <Text style={[TXT3.cardNum, { color: CARD.onCard }]} allowFontScaling={false}>{n}</Text>
+        <Text style={[TXT3.tab, { color: CARD.onCardSub }]} numberOfLines={1}>{label}</Text>
+      </View>
+    );
+    const tileBg = { flight: W.flight, ground: W.ground };
+    return (
+      <View style={s.diagWrap2}>
+        {sm.total ? (
+          <>
+            <View style={s.numRow}>
+              {tile(sm.flights, plural(sm.flights, l('voo', 'flight'), l('voos', 'flights')), W.flight)}
+              {tile(sm.ground, l('em terra', 'on the ground'), W.ground)}
+              {tile(sm.unknown, l('de fora', 'left out'), sm.unknown ? W.alert : W.neutral)}
+            </View>
+            <Text style={[TXT3.slimSub, s.numCap]}>{[
+              l(`${sm.total} ${plural(sm.total, 'evento', 'eventos')} no calendário até ao fim do próximo mês`, `${sm.total} calendar ${plural(sm.total, 'event', 'events')} up to the end of next month`),
+              sm.off ? l(`${sm.off} ${plural(sm.off, 'folga', 'folgas')}`, `${sm.off} ${plural(sm.off, 'day off', 'days off')}`) : null,
+            ].filter(Boolean).join(' · ')}{sm.unknown ? l('. O que não reconheço fica de fora da escala e das contas.', '. What I don’t recognise stays out of the roster and the sums.') : '.'}</Text>
+            {sm.days.map((d, i) => (
+              <View key={d.iso || i} style={[s.dayRow, i === 0 ? null : s.dayRule]}
+                accessible accessibilityLabel={[fmtDayShort(d.iso), ...d.events.map((e) => `${e.title}: ${e.kind === 'other' ? l('não reconhecido', 'not recognised') : kindName(e.kind)}`)].join('. ')}>
+                <DayTile day={d.iso ? String(+d.iso.slice(8, 10)) : '?'} wd={d.iso ? wdOf(d.iso) : ''} bg={tileBg[d.main] || W.neutral} badge={d.unknown ? 'alert' : null} />
+                <View style={s.dayEvents}>
+                  {d.events.map((e, k) => (
+                    <View key={k}>
+                      <Text style={[TXT3.lineVal, { color: W.ink }]} numberOfLines={1}>{e.title}</Text>
+                      <Text style={[TXT3.slimSub, { color: e.kind === 'other' ? W.ink : W.tabSub }]} numberOfLines={1}>
+                        {e.kind === 'other' ? l('não reconhecido · fica de fora', 'not recognised · left out')
+                          : [l(`lido como ${kindName(e.kind).toLowerCase()}`, `read as ${kindName(e.kind).toLowerCase()}`), e.route ? prettyRoute(e.route) : null].filter(Boolean).join(' · ')}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ))}
+          </>
+        ) : <Text style={[TXT3.slimSub, s.numCap]}>{l('Não há eventos no calendário até ao fim do próximo mês.', 'No calendar events up to the end of next month.')}</Text>}
+      </View>
+    );
+  };
+  const todayISO = isoDay(new Date());
+  const pastCount = shown.filter((x) => x.duty.duty_date < todayISO).length;
+  const summary = [
+    l(`Li ${shown.length} ${plural(shown.length, 'dia', 'dias')} ${source === 'paste' ? 'do PDF' : 'do calendário'}`, `Read ${shown.length} ${plural(shown.length, 'day', 'days')} from the ${source === 'paste' ? 'PDF' : 'calendar'}`),
+    shown.length - fixCount ? l(`${shown.length - fixCount} ${plural(shown.length - fixCount, 'pronto', 'prontos')}`, `${shown.length - fixCount} ready`) : null,
+    fixCount ? l(`${fixCount} a corrigir`, `${fixCount} to fix`) : null,
+    sameCount ? l(`${sameCount} ${plural(sameCount, 'igual fica', 'iguais ficam')} como ${plural(sameCount, 'está', 'estão')}`, `${sameCount} unchanged stay as they are`) : null,
+  ].filter(Boolean).join(' · ') + '.';
+  const confirmLabel = `${saveCount ? l(`Confirmar ${saveCount} ${plural(saveCount, 'serviço', 'serviços')}`, `Confirm ${saveCount} ${plural(saveCount, 'duty', 'duties')}`) : l('Aplicar', 'Apply')}${selDelCount ? l(` · apagar ${selDelCount}`, ` · delete ${selDelCount}`) : ''}${payTotal ? ` · +${fmtEur0n(payTotal)}` : ''}`;
+  const footNote = [
+    nsTotal ? l(`per diem +${fmtEur0n(perDiemTotal)} · pernoitas +${fmtEur0n(nsTotal)}`, `per diem +${fmtEur0n(perDiemTotal)} · night stops +${fmtEur0n(nsTotal)}`) : null,
+    fixCount ? l(`${plural(fixCount, 'o que está', 'os que estão')} a corrigir só ${plural(fixCount, 'entra', 'entram')} depois de ${plural(fixCount, 'corrigido', 'corrigidos')}`, `the ones to fix only go in once fixed`) : null,
+  ].filter(Boolean).join(' · ');
+
   return (
     // Transparente (página opaca) — fullScreen abortava no iOS 26 (transição UIKit c/ teclado).
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} transparent>
-      <View style={[s.page, { paddingTop: Math.max(insets.top, 12), paddingBottom: insets.bottom }]}>
-        <SheetHeader eyebrow={l('Escala · Importar', 'Roster · Import')} title={l('Confirmar import', 'Confirm import')}
-          onClose={onClose} closeLabel={t('common.close', lang)} />
+      <View style={[s.page, { paddingTop: Math.max(insets.top, SPACE.md), paddingBottom: Math.max(insets.bottom, SPACE.lg) }]}>
+        <SheetHeader card title={l('Rever a escala', 'Review the roster')} onClose={onClose} closeLabel={t('common.close', lang)} />
 
-        {/* Fonte da escala: calendário do telemóvel ou texto colado do PDF */}
-        <View style={s.ranges}>
-          {[{ id: 'calendar', ic: 'calendar-outline', label: l('Calendário', 'Calendar') }, { id: 'paste', ic: 'document-outline', label: 'PDF' }].map((src) => {
-            const on = source === src.id;
-            return (
-              <TouchableOpacity key={src.id} onPress={() => switchSource(src.id)} activeOpacity={0.85} style={[s.rChip, s.srcChip, on && s.rChipOn]} hitSlop={{ top: 5, bottom: 5, left: 0, right: 0 }}>
-                <Ionicons name={src.ic} size={15} color={on ? PELE.paper : PELE.grey} />
-                <Text style={[s.rTxt, on && s.rTxtOn]}>{src.label}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {source === 'calendar' ? (
-          /* Janela ÚNICA (o seletor morreu): a nota diz o que se lê e a guarda do passado. */
-          <Text style={s.winNote}>{l('Lê os últimos 12 meses e o mês seguinte — o passado só acrescenta (nunca apaga nada teu).', 'Reads the last 12 months plus next month — the past only adds (it never deletes anything of yours).')}</Text>
-        ) : (
-          /* Upload do PDF — extração 100% LOCAL (nativo PDFKit/PDFBox). RGPD: o ficheiro é lido
-             no telemóvel e a cópia é APAGADA logo a seguir; nada sai do dispositivo. */
-          <View style={s.pasteWrap}>
-            <PrimaryButton onPress={pickPdf} icon="document-attach-outline" radius="lg" label={l('Escolher PDF da escala', 'Choose roster PDF')} />
-            <Text style={s.pasteNote}>{l('O PDF é lido no telemóvel e a cópia apagada logo a seguir: o ficheiro nunca sai do dispositivo. Precisa do dev build.', 'The PDF is read on your phone and the copy deleted right after: the file never leaves your device. Requires the dev build.')}</Text>
-          </View>
-        )}
-
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
-          {loading ? (
-            <View style={s.center}><ActivityIndicator color={PELE.grey} /><Text style={s.dim}>{source === 'paste' ? l('A ler o PDF…', 'Reading PDF…') : l('A ler o calendário…', 'Reading calendar…')}</Text></View>
+        <ScrollView style={s.flex} contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
+          {source === 'paste' && !shown.length && !loading ? (
+            /* Upload do PDF — extração 100% LOCAL (nativo PDFKit/PDFBox). RGPD: o ficheiro é lido no telemóvel e a cópia é APAGADA
+               logo a seguir; nada sai do dispositivo. */
+            <View style={s.center}>
+              <Text style={[TXT3.text, s.centerTxt]}>{l('Escolhe o PDF da escala. É lido no telemóvel e a cópia é apagada logo a seguir: o ficheiro nunca sai do dispositivo. Precisa do dev build.', 'Choose your roster PDF. It is read on your phone and the copy deleted right after: the file never leaves your device. Requires the dev build.')}</Text>
+              <WideButton glyph="doc" label={l('Escolher o PDF da escala', 'Choose the roster PDF')} onPress={pickPdf} style={s.centerBtn} />
+            </View>
+          ) : loading ? (
+            <View style={s.center}><ActivityIndicator color={W.tabSub} /><Text style={[TXT3.text, s.centerTxt]}>{source === 'paste' ? l('A ler o PDF…', 'Reading the PDF…') : l('A ler o calendário…', 'Reading the calendar…')}</Text></View>
           ) : denied && source === 'calendar' ? (
             <View style={s.center}>
-              <Ionicons name="calendar-outline" size={26} color={PELE.grey} />
-              <Text style={s.dim}>{l('Liga o calendário do telemóvel para importar a escala.', 'Connect your phone calendar to import the roster.')}</Text>
-              <PrimaryButton onPress={grant} label={l('Ligar ao calendário', 'Connect calendar')} style={{ marginTop: 6, paddingHorizontal: 18 }} />
+              <Text style={[TXT3.text, s.centerTxt]}>{l('Liga o calendário do telemóvel para trazer a escala.', 'Connect your phone calendar to bring in the roster.')}</Text>
+              <WideButton glyph="cal" label={l('Ligar ao calendário', 'Connect calendar')} onPress={grant} style={s.centerBtn} />
             </View>
           ) : !shown.length ? (
             <View style={s.center}>
-              <Ionicons name={cands.length ? 'checkmark-circle-outline' : (source === 'paste' ? 'clipboard-outline' : 'checkmark-done-outline')} size={26} color={cands.length ? PELE.ink : PELE.grey} />
-              <Text style={s.dim}>{cands.length
-                ? l('Sem alterações — a escala está igual ao guardado.', 'No changes — your roster matches what you have.')
-                : source === 'paste'
-                  ? l('Escolhe o PDF da escala em cima.', 'Choose your roster PDF above.')
-                  : l('Sem atividades no calendário neste intervalo.', 'No calendar activities in this range.')}</Text>
+              <Text style={[TXT3.lineVal, s.centerTxt, { color: W.ink }]}>{cands.length ? l('A escala está igual ao que tens.', 'Your roster matches what you have.') : l('Sem serviços no calendário.', 'No duties in the calendar.')}</Text>
+              <Text style={[TXT3.cardSub, s.centerTxt]}>{cands.length ? l('Não há nada para rever.', 'Nothing to review.') : l('Lê os últimos 12 meses e o mês seguinte.', 'It reads the last 12 months and next month.')}</Text>
             </View>
           ) : (
             <>
-              {/* Resumo "à prova de falha": leu X · Y prontas · Z a corrigir */}
-              <View style={[s.summ, fixCount ? s.summWarn : null]}>
-                <View style={s.summIc}><Ionicons name={fixCount ? 'alert-outline' : 'checkmark-circle-outline'} size={22} color={fixCount ? PELE.warn : PELE.ink} /></View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.summT}>{l(`Li ${shown.length} atividades`, `Read ${shown.length} activities`)}</Text>
-                  <Text style={[s.summS, fixCount ? { color: '#B07840' } : null]}>{l(`${shown.length - fixCount} prontas`, `${shown.length - fixCount} ready`)}{fixCount ? l(` · ${fixCount} a corrigir antes de somar ao per-diem`, ` · ${fixCount} to fix before they count`) : ''}{replaceCount ? l(` · substitui ${replaceCount} teu(s) manual(is)`, ` · replaces ${replaceCount} of yours`) : ''}</Text>
+              <Text style={[TXT3.cardSub, s.lead]}>{summary}</Text>
+              {pastCount ? (
+                /* O PASSADO (à Apple: uma vez, no momento certo): meses antigos entram com o € derivável; o que o calendário não
+                   conta não se inventa. */
+                <Text style={[TXT3.cardSub, s.lead]}>{l(`${pastCount} de meses anteriores: entra o € que a escala mostra (voos, pernoitas, escritório) e os acumulados FTL. O que o calendário não diz (DDO, WFLY, papéis pagos) não se inventa — regista-o como Evento.`, `${pastCount} from previous months: the roster-derived € (flights, night stops, office) and FTL totals come in. What the calendar can’t tell (DDO, WFLY, paid roles) is never invented — log it as an Event.`)}</Text>
+              ) : null}
+              {sections.map((sec) => (
+                <View key={sec.key}>
+                  <Text style={[TXT3.kind, s.sec]} accessibilityRole="header">{`${SEC_LABEL[sec.key](sec.items.length)}${sec.items.length > 1 ? ` · ${sec.items.length}` : ''}`}</Text>
+                  {sec.items.map((c, i) => {
+                    // A linha do mês quando a secção passa de um mês para o outro (o dia vai dentro do quadradinho).
+                    const ym = c.duty.duty_date.slice(0, 7);
+                    const newMonth = sec.multiMonth && (i === 0 || sec.items[i - 1].duty.duty_date.slice(0, 7) !== ym);
+                    return (
+                      <View key={c.duty.duty_date + c.kind}>
+                        {newMonth ? <Text style={[TXT3.tab, s.month]}>{monthOf(c.duty.duty_date).toUpperCase()}</Text> : null}
+                        {renderCand(c, i === 0 || newMonth)}
+                      </View>
+                    );
+                  })}
                 </View>
-              </View>
-              {/* FÉRIAS detetadas (LVE/ANL/VAC) → sugerir como EVENTOS (o € e o saldo 22
-                  nascem de registo). Toggle à vista — desligar = não regista nada. */}
-              {vacDates.length ? (
-                <TouchableOpacity style={s.vacRow} activeOpacity={0.75} onPress={() => setVacSel((v) => !v)}
-                  accessibilityRole="checkbox" accessibilityState={{ checked: vacSel }}>
-                  <View style={[s.vacTick, vacSel && s.vacTickOn]}>{vacSel ? <Ionicons name="checkmark" size={13} color={PELE.ink} /> : null}</View>
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={s.vacT}>{l(`Férias no calendário: ${vacDates.length} dia(s)`, `Leave in the calendar: ${vacDates.length} day(s)`)}</Text>
-                    <Text style={s.vacS} numberOfLines={1}>{`${vacDates[0]} → ${vacDates[vacDates.length - 1]}`} · {l('registar como eventos de férias (AE + saldo)', 'log as leave events (CLA + balance)')}</Text>
-                  </View>
-                </TouchableOpacity>
+              ))}
+              {/* FÉRIAS e DOENÇA no calendário → sugeridas como EVENTOS (o € e o saldo nascem de registo); marcadas por omissão,
+                  tocar desmarca (desligar = não regista nada). */}
+              {vacDates.length || sickDates.length ? (
+                <View>
+                  <Text style={[TXT3.kind, s.sec]} accessibilityRole="header">{l('Também no calendário', 'Also in the calendar')}</Text>
+                  {vacDates.length ? (
+                    <MarkRow first mark={{ icon: 'sun' }} onPress={() => setVacSel((v) => !v)} a11yRole="checkbox" a11yState={{ checked: vacSel }}
+                      title={l(`Férias · ${vacDates.length} ${plural(vacDates.length, 'dia', 'dias')}`, `Leave · ${vacDates.length} ${plural(vacDates.length, 'day', 'days')}`)}
+                      sub={`${fmtDayShort(vacDates[0])} → ${fmtDayShort(vacDates[vacDates.length - 1])} · ${l('registar como férias (acordo e saldo)', 'log as leave (agreement and balance)')}`}
+                      right={tick(vacSel)} />
+                  ) : null}
+                  {sickDates.length ? (
+                    <MarkRow first={!vacDates.length} mark={{ icon: 'medical' }} onPress={() => setSickSel((v) => !v)} a11yRole="checkbox" a11yState={{ checked: sickSel }}
+                      title={l(`Doença · ${sickDates.length} ${plural(sickDates.length, 'dia', 'dias')}`, `Sick · ${sickDates.length} ${plural(sickDates.length, 'day', 'days')}`)}
+                      sub={`${fmtDayShort(sickDates[0])} → ${fmtDayShort(sickDates[sickDates.length - 1])} · ${l('registar como episódio de doença', 'log as a sick episode')}`}
+                      right={tick(sickSel)} />
+                  ) : null}
+                </View>
               ) : null}
-              {/* DOENÇA (SICK) — a par das férias: sugerida como episódio; gravar é teu. */}
-              {sickDates.length ? (
-                <TouchableOpacity style={s.vacRow} activeOpacity={0.75} onPress={() => setSickSel((v) => !v)}
-                  accessibilityRole="checkbox" accessibilityState={{ checked: sickSel }}>
-                  <View style={[s.vacTick, sickSel && s.vacTickOn]}>{sickSel ? <Ionicons name="checkmark" size={13} color={PELE.ink} /> : null}</View>
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={s.vacT}>{l(`Doença no calendário: ${sickDates.length} dia(s)`, `Sick days in the calendar: ${sickDates.length} day(s)`)}</Text>
-                    <Text style={s.vacS} numberOfLines={1}>{`${sickDates[0]} → ${sickDates[sickDates.length - 1]}`} · {l('registar como episódio de doença', 'log as a sick episode')}</Text>
-                  </View>
-                </TouchableOpacity>
-              ) : null}
-              {/* Disclosure do PASSADO (à Apple: uma vez, no momento certo): meses antigos
-                  entram com o € DERIVÁVEL; o que o calendário não conta não se inventa. */}
-              {(() => {
-                const todayISO = isoDay(new Date());
-                const pastCount = shown.filter((x) => x.duty.duty_date < todayISO).length;
-                return pastCount ? (
-                  <View style={s.pastInfo}>
-                    <Ionicons name="information-circle-outline" size={15} color={PELE.grey} style={{ marginTop: 1 }} />
-                    <Text style={s.pastInfoTxt}>{l(`${pastCount} de meses anteriores — entra o € derivável da escala (voos · pernoitas · escritório) e os acumulados FTL. O que o calendário não conta — DDO, WFLY, papéis pagos — não se inventa: se os houve, regista-os como Eventos (aceitam qualquer data).`, `${pastCount} from previous months — the roster-derived € (flights · night stops · office) and FTL accumulators come in. What the calendar can’t tell — DDO, WFLY, paid roles — is never invented: if they happened, log them as Events (any date works).`)}</Text>
-                  </View>
-                ) : null;
-              })()}
-              {infos.map(({ c, info }) => {
-                const ic = info.kind === 'ready' ? { name: 'checkmark', bg: PELE.soft, fg: PELE.ink }
-                  : info.kind === 'removed' ? { name: 'close', bg: PELE.redSoft, fg: PELE.red }
-                  : { name: 'time-outline', bg: PELE.warnSoft, fg: PELE.warn };
-                // As horas das pernas não batem certo (ftl legsBroken): o dia ENTRA (a lei conta todo o serviço, ORO.FTL.210) e fica
-                // incerto — a linha diz o que falta e abre a correção ao toque.
-                const legsIssue = (c.action !== 'delete' && c.prospect) ? c.prospect.issues.find((x) => x.type === 'fdpUncertain' && (x.unknowns || []).includes('legTimes')) : null;
-                const issue = info.kind === 'fix'
-                  ? (info.badAp ? l(`Aeroporto "${info.badAp}" não reconhecido`, `Airport "${info.badAp}" not recognised`)
-                    : info.reason === 'end' ? l('Sem hora de fim — corrige para contar', 'No end time — fix to count')
-                    : info.reason === 'start' ? l('Sem hora de início — corrige para contar', 'No start time — fix to count')
-                    : info.reason === 'times' ? l('Horas das pernas por confirmar — corrige', 'Leg times to confirm — fix')
-                    : l('Sem rota — corrige para somar', 'No route — fix to count'))
-                  : c.status === 'refresh' ? l('Relido com a regra nova da importação — a escala não mudou', 'Re-read with the new import rule — the roster did not change')
-                  : (c.prospect && c.prospect.verdict === 'bad')
-                    ? (() => { const it = c.prospect.issues.find((x) => x.level === 'bad'); return it ? `⚠ ${issueText(it, lang, c.duty.duty_date)}` : null; })()
-                  // O "incerto" também se diz (risco R6 do bloco 4): falta um facto que a lei precisa, ou o sítio não bate.
-                  : (c.prospect && c.prospect.verdict === 'unc')
-                    ? (() => { const it = legsIssue || c.prospect.issues.find((x) => x.level === 'unc'); const fix = legsIssue ? l(' · toca para corrigir', ' · tap to fix') : ''; const tx = String(issueText(it, lang, c.duty.duty_date)).replace(' — incerto: ', ': ').replace(' — uncertain: ', ': '); return it ? l(`Incerto — ${tx}${fix}`, `Uncertain — ${tx}${fix}`) : null; })()
-                  : info.kind === 'info' ? l('Sem rota — não conta para per-diem', 'No route — no per-diem') : null;
-                const issueWarn = info.kind === 'fix' || !!(c.prospect && (c.prospect.verdict === 'bad' || c.prospect.verdict === 'unc'));
-                const tappable = info.kind === 'fix' || info.kind === 'removed' || !!legsIssue;
-                return (
-                  <TouchableOpacity key={c.duty.duty_date + c.kind} onPress={() => ((info.kind === 'fix' || legsIssue) ? correct(c) : info.kind === 'removed' ? toggle(c) : null)} activeOpacity={tappable ? 0.7 : 1} style={[s.crow, info.kind === 'fix' && s.crowFix, info.kind === 'removed' && c.selected && s.crowDel]}>
-                    <View style={[s.statIc, { backgroundColor: ic.bg }]}><Ionicons name={ic.name} size={18} color={ic.fg} /></View>
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <View style={s.cDayRow}>
-                        <Text style={s.cDay} numberOfLines={1}>{fmtDay(c.duty.duty_date)} · {lineFor(c)}</Text>
-                        {replacesManual(c) ? (
-                          <View style={s.mark}><Ionicons name="create-outline" size={10} color={PELE.ink} /><Text style={s.markTxt}>{l('Substitui o teu manual', 'Replaces your manual')}</Text></View>
-                        ) : null}
-                      </View>
-                      {(c.status === 'changed' || c.status === 'conflict') && c.diff?.length
-                        ? <Text style={s.cDiff} numberOfLines={2}>{(c.status === 'conflict' ? '✎ ' : '') + diffLine(c)}</Text>
-                        : issue ? <Text style={[s.cMeta, issueWarn && s.cIssue]} numberOfLines={issueWarn ? undefined : 1}>{issue}</Text>
-                          : c.status === 'removed' ? <Text style={s.cMeta} numberOfLines={2}>{l('Deixou de aparecer — pode ser atraso do feed. Toca para apagar.', 'Stopped appearing — may be a feed delay. Tap to delete.')}</Text>
-                            : metaFor(c) ? <Text style={s.cMeta} numberOfLines={1}>{metaFor(c)}</Text> : null}
-                      {/* off/on de CADA setor (lido do PDF/calendário) — só leitura */}
-                      {c.kind === 'flight' && Array.isArray(c.duty.legs) && c.duty.legs.length ? (
-                        <Text style={s.cLegs} numberOfLines={2}>{c.duty.legs.map((lg) => `${lg.dh ? 'DH ' : ''}${lg.dep || '?'}→${lg.arr || '?'} ${lg.off || '—'}-${lg.on || '—'}`).join('   ·   ')}</Text>
-                      ) : null}
-                    </View>
-                    {info.kind === 'fix' ? (
-                      <Text style={s.cFix}>{l('Corrigir', 'Fix')} ›</Text>
-                    ) : info.kind === 'removed' ? (
-                      <View style={[s.cChk, c.selected && s.cChkOn]}>{c.selected ? <Ionicons name="trash" size={13} color={PELE.paper} /> : null}</View>
-                    ) : (info.perDiem != null || info.nsEur != null) ? (
-                      <View style={s.cPay}>
-                        {info.perDiem != null ? <Text style={s.cEur}>+{fmtEur0n(info.perDiem)}</Text> : null}
-                        {info.nsEur != null ? <Text style={s.cNs}>🌙 +{fmtEur0n(info.nsEur)}</Text> : null}
-                      </View>
-                    ) : (
-                      <Text style={s.cEurMuted}>— €</Text>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
             </>
           )}
 
-          {/* Diagnóstico do calendário — o que o eCrew tem e como o parser o classifica */}
-          {source === 'calendar' ? (
-            <>
-              <TouchableOpacity onPress={runDiag} activeOpacity={0.8} style={s.diagBtn} hitSlop={{ top: 5, bottom: 5, left: 8, right: 8 }}>
-                <Ionicons name="construct-outline" size={14} color={PELE.grey} />
-                <Text style={s.diagBtnTxt}>{l('Ver o que está no meu calendário', 'See what is in my calendar')}</Text>
-              </TouchableOpacity>
-              {diag ? (
-                <View style={s.diagBox}>
-                  <Text style={s.diagHead}>{diag.total} {l('eventos', 'events')} · {diag.items.filter((i) => i.kind !== 'other').length} {l('reconhecidos', 'recognised')} · {diag.items.filter((i) => i.kind === 'other').length} {l('não reconhec.', 'unrecog.')}</Text>
-                  {diag.items.length ? diag.items.map((it, i) => (
-                    <Text key={i} style={s.diagItem} numberOfLines={1}>{it.kind === 'other' ? '—' : '•'}  {it.title} → {it.kind === 'other' ? '?' : it.kind === 'off' ? l('folga', 'off') : it.kind}{it.route ? ` · ${it.route}` : ''}</Text>
-                  )) : <Text style={s.diagItem}>{l('Sem eventos no intervalo.', 'No events in range.')}</Text>}
-                </View>
-              ) : null}
-            </>
+          {/* O que a app leu do calendário (era o link "Ver o que está no meu calendário" — o Nuno, 2026-11-14: "isso é tipo botão,
+              não é?"): uma linha como as outras, com a seta que roda; abre por baixo cada evento e como foi reconhecido. */}
+          {source === 'calendar' && !loading && !denied ? (
+            <View style={s.diagWrap}>
+              <MarkRow first mark={{ icon: 'search' }} onPress={() => (diag ? setDiag(null) : runDiag())}
+                title={l('O que a app leu do calendário', 'What the app read from the calendar')}
+                sub={l('cada evento até ao fim do próximo mês e como foi reconhecido', 'each event up to the end of next month and how it was read')}
+                right={<Icon name="chevron" size={14} color={W.tabSub} rot={diag ? 90 : 0} />} a11yState={{ expanded: !!diag }}>
+                {diag ? renderDiag() : null}
+              </MarkRow>
+            </View>
           ) : pasteDiag ? (
-            /* Diagnóstico da colagem — como cada dia do texto foi interpretado */
-            <View style={s.diagBox}>
-              <Text style={s.diagHead}>{pasteDiag.length} {l('dias lidos', 'days read')} · {pasteDiag.filter((d) => d.kind === 'flight').length} {l('voos', 'flights')} · {pasteDiag.filter((d) => d.kind === 'off').length} {l('folgas', 'off')} · {pasteDiag.filter((d) => d.kind === 'other').length} {l('não reconhec.', 'unrecog.')}</Text>
+            /* Como cada dia do PDF foi lido */
+            <View style={[s.diagBox, s.diagPaste]}>
+              <Text style={[TXT3.dur, { color: W.ink }]}>{pasteDiag.length} {l('dias lidos', 'days read')} · {pasteDiag.filter((d) => d.kind === 'flight').length} {l('voos', 'flights')} · {pasteDiag.filter((d) => d.kind === 'off').length} {l('folgas', 'off')} · {pasteDiag.filter((d) => d.kind === 'other').length} {l('não reconhecidos', 'not recognised')}</Text>
               {pasteDiag.map((d, i) => (
-                <Text key={i} style={s.diagItem} numberOfLines={1}>{d.kind === 'other' ? '—' : d.kind === 'off' ? '·' : '•'}  {d.iso.slice(8)}/{d.iso.slice(5, 7)} → {d.kind === 'other' ? '?' : d.kind === 'off' ? l('folga', 'off') : d.kind}{d.route ? ` · ${d.route}` : ''}{d.report ? ` · ${d.report}` : ''}{d.warn ? ` (${d.warn})` : ''}</Text>
+                <Text key={i} style={[TXT3.cardSub, { color: d.kind === 'other' ? W.tabSub : W.ink }]} numberOfLines={1}>{d.kind === 'other' ? '—' : d.kind === 'off' ? '·' : '•'}  {d.iso.slice(8)}/{d.iso.slice(5, 7)} → {d.kind === 'other' ? '?' : d.kind === 'off' ? l('folga', 'off') : d.kind}{d.route ? ` · ${d.route}` : ''}{d.report ? ` · ${d.report}` : ''}{d.warn ? ` (${d.warn})` : ''}</Text>
               ))}
             </View>
           ) : null}
         </ScrollView>
 
-        <View style={s.foot}>
-          <PrimaryButton onPress={doImport} disabled={!saveCount && !selDelCount}
-            label={`${saveCount ? l(`Confirmar ${saveCount} duties`, `Confirm ${saveCount} duties`) : l('Aplicar', 'Apply')}${selDelCount ? l(` · apagar ${selDelCount}`, ` · delete ${selDelCount}`) : ''}${payTotal ? `  ·  +${fmtEur0n(payTotal)}` : ''}`} />
-          {nsTotal ? <Text style={s.payBreak}>{l(`rota +${fmtEur0n(perDiemTotal)} · pernoita +${fmtEur0n(nsTotal)}`, `route +${fmtEur0n(perDiemTotal)} · night stop +${fmtEur0n(nsTotal)}`)}</Text> : null}
-          {delCount ? <Text style={s.fixHint}>{selDelCount ? l(`${selDelCount}/${delCount} cancelada(s) marcada(s) p/ apagar`, `${selDelCount}/${delCount} cancelled marked to delete`) : l(`${delCount} deixaram de aparecer — toca p/ apagar (ou ignora)`, `${delCount} stopped appearing — tap to delete (or ignore)`)}</Text> : null}
-          {fixCount ? <Text style={s.fixHint}>{l(`Corrige as ${fixCount} para somarem ao per-diem`, `Fix the ${fixCount} so they count`)}</Text> : null}
-        </View>
+        {shown.length && !loading ? (
+          <View style={s.foot}>
+            <View style={s.lock}><Icon name="lock" size={13} color={W.tabSub} /><Text style={[TXT.caption, { color: W.tabSub }]}>{l('Nada entra sem ti · o passado só acrescenta', 'Nothing goes in without you · the past only adds')}</Text></View>
+            {footNote ? <Text style={[TXT.caption, s.footNote]}>{footNote}</Text> : null}
+            <WideButton label={confirmLabel} onPress={doImport} disabled={!saveCount && !selDelCount} />
+          </View>
+        ) : null}
 
         {/* Correção no import — DutyFormSheet em modo CANDIDATO (devolve o corrigido, não grava). */}
         <DutyFormSheet visible={!!correcting} candidate={correcting ? seedCorrection(correcting) : null} onCandidate={applyCorrection} onClose={() => setCorrecting(null)} />
@@ -490,64 +547,32 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
   );
 }
 
-// PELE (2026-07-10, user: "essa página não está com a nova pele"): estilos ESTÁTICOS na
-// paleta/tipos da casa — Barlow no título e nos €, Hanken no corpo, hairlines, tons soft
-// com as bordas soft (nada de bordas puras a gritar). RE-SKIN: a lógica não mudou.
+// R1 (2026-11-14): a folha branca da 3.0, as linhas com o quadradinho (MarkRow) e o botão largo no fundo (WideButton).
 const s = StyleSheet.create({
-  page: { flex: 1, backgroundColor: PELE.paper },
-  ranges: { flexDirection: 'row', gap: 8, paddingHorizontal: 24, paddingBottom: 12 },
-  rChip: { flex: 1, borderWidth: 1, borderColor: PELE.line, borderRadius: 999, paddingVertical: 10, alignItems: 'center', backgroundColor: PELE.paper },
-  srcChip: { flexDirection: 'row', gap: 6, justifyContent: 'center' },
-  rChipOn: { backgroundColor: PELE.ink, borderColor: PELE.ink },
-  rTxt: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.grey },
-  rTxtOn: { color: PELE.paper },
-  winNote: { fontSize: 11, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, paddingHorizontal: 24, paddingBottom: 12, lineHeight: 16 },
-  pasteWrap: { paddingHorizontal: 24, paddingBottom: 12 },
-  pasteNote: { fontSize: 11, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, marginTop: 10, lineHeight: 16 },
-  body: { paddingHorizontal: 24, paddingBottom: 24 },
-  center: { alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 60 },
-  dim: { fontSize: 13, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, textAlign: 'center' },
-  diagBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 18, paddingVertical: 10 },
-  diagBtnTxt: { fontSize: 12, color: PELE.grey, fontFamily: PELE_FONT.bodyBold },
-  diagBox: { backgroundColor: PELE.soft, borderRadius: 12, padding: 12, marginTop: 4 },
-  diagHead: { fontSize: 11, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, marginBottom: 8 },
-  diagItem: { fontSize: 11, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, paddingVertical: 3 },
-  crow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: PELE.paper, borderWidth: 1, borderColor: PELE.line, borderRadius: 16, padding: 13, marginBottom: 11 },
-  crowFix: { backgroundColor: PELE.warnSoft, borderColor: PELE.warnSoftLine },
-  cDay: { fontSize: 13, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
-  cDayRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  mark: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: PELE.soft, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  markTxt: { fontSize: 9.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.3, textTransform: 'uppercase', color: PELE.ink },
-  cMeta: { fontSize: 11, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, marginTop: 2 },
-  cLegs: { fontSize: 11, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, marginTop: 3, fontVariant: ['tabular-nums'] },
-  cDiff: { fontSize: 11, color: '#B07840', fontFamily: PELE_FONT.body, marginTop: 2 },   // âmbar escuro ≥4.5:1 (warn puro dava 2.4:1)
-  // "à prova de falha" — ícone de estado + per-diem + resumo
-  statIc: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  cEur: { fontSize: 17, fontFamily: PELE_FONT.display, color: MONEY.gain, fontVariant: ['tabular-nums'] },
-  cPay: { alignItems: 'flex-end', gap: 1 },
-  cNs: { fontSize: 13, fontFamily: PELE_FONT.display, color: MONEY.gain, fontVariant: ['tabular-nums'] },
-  payBreak: { fontSize: 12, fontFamily: PELE_FONT.bodyMed, color: MONEY.gain, textAlign: 'center', marginTop: 8 },
-  cEurMuted: { fontSize: 15, fontFamily: PELE_FONT.display, color: PELE.ghost, fontVariant: ['tabular-nums'] },
-  cFix: { fontSize: 13, fontFamily: PELE_FONT.bodyHeavy, color: PELE.warn },
-  cIssue: { color: '#B07840', fontFamily: PELE_FONT.body },
-  // Cancelado: checkbox de opt-in p/ apagar (default vazio) + realce da linha quando marcada.
-  cChk: { width: 24, height: 24, borderRadius: 7, borderWidth: 1.5, borderColor: PELE.red, alignItems: 'center', justifyContent: 'center' },
-  cChkOn: { backgroundColor: PELE.red, borderColor: PELE.red },
-  crowDel: { backgroundColor: PELE.redSoft, borderColor: PELE.redSoftLine },
-  summ: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: PELE.soft, borderRadius: 16, padding: 13, marginBottom: 14 },
-  summWarn: { backgroundColor: PELE.warnSoft },
-  summIc: { width: 44, height: 44, borderRadius: 12, backgroundColor: PELE.paper, alignItems: 'center', justifyContent: 'center' },
-  summT: { fontSize: 15, fontFamily: PELE_FONT.bodyHeavy, color: PELE.ink },
-  summS: { fontSize: 12, fontFamily: PELE_FONT.body, color: PELE.grey, marginTop: 2, lineHeight: 17 },
-  fixHint: { fontSize: 12, fontFamily: PELE_FONT.bodyMed, color: '#B07840', textAlign: 'center', marginTop: 10 },
-  // Linha das FÉRIAS sugeridas (LVE do calendário → eventos): tick amarelo = a marca de escolha da pele.
-  vacRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: PELE.soft, borderRadius: 14, padding: 12, marginBottom: 10 },
-  vacTick: { width: 24, height: 24, borderRadius: 99, borderWidth: 1.5, borderColor: PELE.line, alignItems: 'center', justifyContent: 'center', backgroundColor: PELE.paper },
-  vacTickOn: { backgroundColor: BRAND.marker, borderColor: BRAND.marker },
-  vacT: { fontSize: 13.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
-  vacS: { fontSize: 11, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, marginTop: 1 },
-  // Disclosure do passado — informação calma (soft, cinza), não alarme.
-  pastInfo: { flexDirection: 'row', gap: 8, backgroundColor: PELE.soft, borderRadius: 12, padding: 11, marginBottom: 12 },
-  pastInfoTxt: { flex: 1, fontSize: 10.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, lineHeight: 15 },
-  foot: { paddingHorizontal: 24, paddingTop: 10, paddingBottom: 6, borderTopWidth: 1, borderTopColor: PELE.line, backgroundColor: PELE.paper },
+  flex: { flex: 1 },
+  page: { flex: 1, backgroundColor: CARD.day.sheet },
+  body: { paddingHorizontal: SPACE.lgPlus, paddingBottom: SPACE.xl },
+  lead: { color: CARD.day.tabSub, paddingBottom: SPACE.sm },
+  sec: { color: CARD.day.tabSub, paddingTop: SPACE.md, paddingBottom: SPACE.xs },
+  pay: { alignItems: 'flex-end' },
+  chk: { width: 24, height: 24, borderRadius: RADIUS.pill, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  legs: { marginLeft: MARK_DAY_INDENT, marginTop: SPACE.xs },
+  month: { color: CARD.day.tabSub, letterSpacing: 0.6, paddingTop: SPACE.xs },
+  center: { alignItems: 'center', justifyContent: 'center', gap: SPACE.md, paddingVertical: SPACE.xxl },
+  centerTxt: { color: CARD.day.tabSub, textAlign: 'center' },
+  centerBtn: { alignSelf: 'stretch' },
+  diagWrap: { marginTop: SPACE.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: CARD.rule },
+  diagBox: { marginTop: SPACE.md, gap: SPACE.s, backgroundColor: CARD.day.neutral, borderRadius: RADIUS.lg, padding: SPACE.lg },
+  // "O que a app leu do calendário" (L1 + os números): sem painel; os três números e os dias como as outras linhas
+  diagWrap2: { paddingTop: SPACE.sm },
+  numRow: { flexDirection: 'row', gap: SPACE.sm },
+  numTile: { flex: 1, borderRadius: RADIUS.lg, paddingVertical: SPACE.md, paddingHorizontal: SPACE.md, gap: SPACE.xxs },
+  numCap: { color: CARD.day.tabSub, paddingTop: SPACE.sm, paddingBottom: SPACE.xs },
+  dayRow: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.md, paddingVertical: SPACE.md },
+  dayRule: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: CARD.rule },
+  dayEvents: { flex: 1, gap: SPACE.sm, paddingTop: SPACE.xxs },
+  diagPaste: { marginLeft: 0, marginTop: SPACE.md },
+  foot: { paddingHorizontal: SPACE.lgPlus, paddingTop: SPACE.sm, gap: SPACE.sm },
+  lock: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACE.s },
+  footNote: { color: CARD.day.tabSub, textAlign: 'center' },
 });

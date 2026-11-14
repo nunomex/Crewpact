@@ -506,6 +506,80 @@ referência para o layout das páginas que faltam e para o sistema de desenho. *
   `data/escalaDay.js` (golden primeiro: 6 casos em `test:escala`, agora 123) — o mês por extenso e o ano só quando não é o deste
   ano ("Dezembro"; "Fevereiro 2027"; inglês igual). **Ver no iPhone:** a pílula do mês em novembro ("Novembro"), noutro mês deste
   ano com o "Hoje" e num mês de 2027.
+  **E o Nuno (2026-11-14): "a janela do sincronizar, falta essa também".** É a "Confirmar import" (`RosterImportSheet`: abre em
+  "Rever alterações", depois de sincronizar com mudanças e no primeiro import) — ainda 2.0 (papel, rótulo, `PrimaryButton` azul,
+  Ionicons, "Confirmar N duties" em inglês). E a "Escolher calendário" (`CalendarPickerSheet`, de "Mudar calendário"), também 2.0.
+  → esboço `design/janela-sincronizar.html`, na C1: **R1** por estado, como as notificações ("A corrigir" primeiro; o antes
+  riscado; Rocket Money) · **R2** a data grande à esquerda, pela ordem do calendário (a imagem 3409 do Nuno) · **R3** o resumo
+  primeiro (Formula 1, Deel). Em todas sai a escolha Calendário | PDF do topo (escolhe-se na janela do calendário). Recomendo
+  **R1**. A "Escolher calendário" vai na C1 sem escolha (linhas com a cor de cada calendário, visto a tinta, "Usar este
+  calendário" largo). **O Nuno escolheu a R1 — CONSTRUÍDO (por ver no iPhone; por gravar):**
+  - **`importSections`** em `data/rosterImport.js` (golden primeiro: 8 casos em `test:import`, agora 158): "A corrigir" (ganha a
+    qualquer estado) · "Mudou" (alterado e editado por ti) · "Novo" (com e sem aviso) · "Deixou de aparecer" · "Relido"; os
+    iguais não aparecem; dentro de cada secção, pela data.
+  - **`RosterImportSheet`** (a lógica não mudou): `SheetHeader card` "Rever a escala" · a linha do resumo ("Li 4 dias do
+    calendário · 2 prontos · 1 a corrigir · N iguais ficam como estão") · as secções com `MarkRow` (quadradinho da cor do tipo; "!"
+    laranja a corrigir ou com aviso; "✕" vermelho o que saiu, com o círculo de marcar para apagar) · o antes riscado por cima
+    (a rota de antes; as outras mudanças na linha de baixo, "report 06:10 → 07:00") · o per diem a verde à direita (e a pernoita
+    por baixo) · "Também no calendário": férias e doença com o círculo marcado · o cadeado "Nada entra sem ti · o passado só
+    acrescenta" e "Confirmar N serviços · +€" largo no fundo (era "Confirmar N duties", em inglês). Saiu a escolha
+    Calendário | PDF do topo; no PDF, a janela abre com "Escolher o PDF da escala".
+  - **O link "Ver o que está no meu calendário"** (o Nuno: "podes meter melhor? isso é tipo botão, não é?") → uma linha como as
+    outras, **"O que a app leu do calendário"** · "cada evento até ao fim do próximo mês e como foi reconhecido", com a lupa e a
+    seta que roda; abre a lista por baixo.
+  - **`CalendarPickerSheet`** na C1: "Escolher calendário" · cada calendário com a cor dele no quadradinho (`MarkRow mark.dot`) e
+    o visto a tinta · a dica numa linha neutra · "Usar este calendário" largo no fundo.
+  - `MarkRow` ganhou `old` (o antes riscado), `right` (um nó à direita) e `mark.dot`. Guardião (dívida desceu: cores soltas
+    59→55, Ionicons 9→8 e mais; chão novo) · pacote iOS gera.
+  **Ver no iPhone:** sincronizar com uma alteração (o antes riscado), um dia novo, um que deixou de aparecer (marcar para apagar)
+  e um a corrigir (abre a correção) · o primeiro import (muitos novos numa secção) · "O que a app leu do calendário" a abrir e
+  fechar · "Mudar calendário" (a cor de cada um, o visto) · o PDF (no Expo Go diz que precisa do dev build).
+  **Depois, o Nuno: "gosto da R2 mas com a organização da R1, que dizes?"** → esboço `design/janela-sincronizar-2.html`: as
+  secções da R1 com a data grande da R2 — **H1** a data solta + um fio da cor do tipo · **H2** a data DENTRO do quadradinho de
+  cor ("14 sáb"; a cor diz o tipo ou o problema) · **H3** a R2 tal e qual (com a pílula) dentro das secções. Em todas, uma linha
+  pequena com o mês quando a secção passa de um mês para o outro. Recomendo **H2**. **À espera da escolha** (a R1 já construída
+  muda pouco: o quadradinho ganha a data e as linhas do mês).
+  **O Nuno: "qual das 3 é a melhor para o utilizador?"** → a H2 (o dia, o tipo e o problema num só sítio). O único custo: um dia a
+  corrigir perdia a cor do tipo. **"Tens solução? quero que seja bom para o utilizador"** → esboço `design/janela-sincronizar-3.html`:
+  o quadradinho fica SEMPRE na cor do tipo e o problema diz-se com **V1** um selo no canto ("!" laranja a corrigir, "✕" vermelho o
+  que saiu — o sinal do número do "Notificações" e do ponto laranja da Escala; não depende só da cor) · **V2** um anel (mas o
+  contorno já é "o dia escolhido" na Escala) · **V3** uma faixa com a palavra (10 pt, pequeno). Recomendo **V1**.
+  **O Nuno: "sim" (H2 + V1) — CONSTRUÍDO (por ver no iPhone; por gravar):**
+  - **A regra das linhas das janelas:** o quadradinho diz **o dia quando a linha é um dia**, o ícone quando não é. O dia fica
+    SEMPRE na cor do tipo (azul voo, lilás terra) e o problema é um **selo no canto** ("!" laranja a corrigir ou com aviso; "✕"
+    vermelho o que saiu/cancelado). Peça: `DayTile` em `components/MarkRow.js` (44 × 48; o pequeno 34 × 38; o número sem
+    lineHeight, ao centro) e `MarkRow mark.day/wd/badge`.
+  - **"Rever a escala":** o dia no quadradinho, o título é só a rota (ou o tipo), a linha do mês quando a secção passa de um mês
+    para o outro (`importSections` devolve `multiMonth`; golden: 3 casos novos em `test:import`, agora 161).
+  - **Notificações:** os dias por baixo de "A escala mudou" passaram da pílula ao quadradinho pequeno com o dia (o cancelado com
+    o selo "✕") e a palavra a dizer o que aconteceu ("Alterada · LIS → LGW → LIS", o antes riscado por cima).
+  - Guardião passa · pacote iOS gera.
+  **Ver no iPhone:** o número ao centro do quadradinho (1, 14, 28) · o selo bem visível a deslizar · a linha do mês num primeiro
+  import · os dias da notificação da escala.
+  **Visto no iPhone (2026-11-14, o Nuno, 2 fotos): "não sei se parece muito pequeno, vê se está certo comparado com a Escala e o
+  Início; e na segunda, mete melhor a listagem".** Medido: as linhas das janelas tinham título 15 e quadradinho 36; a Escala e o
+  Início usam título 16 (`TXT3.slimTitle`) e 44 pt (os botões redondos do topo, o círculo do dia com o número a 20). **Corrigido:**
+  `MarkRow` com o quadradinho de 44 (ícone 20, "!" a 20), título `slimTitle` 16 e linha de baixo `slimSub` 12; os dias das
+  notificações com o quadradinho grande (44 × 48, número 20 — o mesmo da Escala), a rota a 15 e "alterada"/"nova" por baixo.
+  **E três erros objetivos:** o dia da semana dizia "sexta" (o do iPhone em pt-PT) → "sex", o da Escala (`wdShort` em
+  `data/escalaDay.js`); a rota dizia "LIS-OPO" → "LIS → OPO" (`prettyRoute`); **"O que a app leu do calendário" mostrava os nomes
+  internos em inglês** ("flight", "standby_home") → agora a frase-resumo ("21 eventos, todos reconhecidos" / "… · 2 não
+  reconhecidos (ficam de fora)"), os eventos por dia ("SEX 13"), o título do evento como está no calendário e por baixo como foi
+  lido em português ("→ Voo · LIS → OPO", "→ Standby Casa", "→ não reconhecido · fica de fora"), num painel com a largura toda.
+  Guardião (chão novo) · testes todos · pacote iOS gera. **Ver outra vez no iPhone.**
+  **O Nuno: "a lista 'O que a app leu do calendário', muda o layout dessa parte, não achas?"** → esboço
+  `design/lista-calendario.html`: **L1** por dia, com o dia no quadradinho da cor do que foi lido (a regra da H2), o evento como
+  está no calendário e por baixo "lido como voo · LIS → OPO"; o que ficou de fora com o selo "!" · **L2** duas colunas, calendário →
+  a leitura numa pílula de cor (aperta a 375) · **L3** o resumo por tipo (9 voos · 12 standby · 1 de fora) e o que ficou de fora em
+  cima (esconde o dia). Em todas: a frase do topo ("22 eventos · 1 ficou de fora") e sem o painel cinzento. Recomendo **L1**.
+  **O Nuno: "L1, com a descrição em cima — 9 voos · 12 standby · 1 de fora — que achas?" — CONSTRUÍDO (por ver no iPhone; por
+  gravar):** os três números em cima (azul voos · lilás **em terra** · laranja de fora, neutro quando é 0), uma linha com o total
+  até ao fim do próximo mês (e as folgas, se as houver), e um dia por linha com o dia no quadradinho da cor do que foi lido (selo
+  "!" se alguma coisa ficou de fora), o evento como está no calendário e "lido como voo · LIS → OPO" por baixo. **Dois acertos
+  meus:** "em terra" em vez de "standby" (conta também escritório e formação — a palavra da legenda da Escala; "standby" deixava de
+  ser verdade num dia de escritório) e o "de fora" só laranja com algum de fora. A contagem é `diagSummary` em
+  `data/rosterImport.js` (golden primeiro: 6 casos em `test:import`, agora 167). Sem o painel cinzento. Testes todos · guardião ·
+  pacote iOS gera.
   **Também gravado nesta ronda:** a centragem dos números nos círculos (`s.numTxt`, acima) e os esboços `janelas-3.html`,
   `janelas-c.html` e `botoes-escritos.html`.
   **E o Nuno: "depois vê os botões das notificações, o X para fechar e o de sincronizar — não estão com o layout novo, pois não?"**

@@ -30,7 +30,7 @@ Module._extensions['.js'] = function (m, filename) {
 const { mapFlight, mapNonFlight, mapNonFlightDays, buildDuties, classify, sickDatesFromEvent, vacationDatesFromEvent } = require(path.resolve('data/calendarParse.js'));
 const { codesFor } = require(path.resolve('data/rosterCodes.js'));
 const { parseEasyjetRoster } = require(path.resolve('data/pdfRoster.js'));
-const { dutyFromActivity, dutyFromNonFlight, buildImportCandidates, importSaveFields, candidateKind } = require(path.resolve('data/rosterImport.js'));
+const { dutyFromActivity, dutyFromNonFlight, buildImportCandidates, importSaveFields, candidateKind, importSections, diagSummary } = require(path.resolve('data/rosterImport.js'));
 const { classify: classify3 } = require(path.resolve('data/rosterDiff.js'));
 const { paidSickDays } = require(path.resolve('data/aeEvents.js'));
 const { dayFtlFromDuties } = require(path.resolve('ftl/index.js'));
@@ -648,6 +648,66 @@ EJU8013 [320] LIS - FNC A00:30 - A02:00`, 'easyjet');
   eq('repartido pela meia-noite: entra, sem a dúvida das horas', [cs2.length, candidateKind(cs2[0]).kind, missingOf({ ...cs2[0].duty, kind: 'flight' }), legTimes(cs2[0])], [1, 'ready', null, false]);
 }
 
+
+// ── R1 (design/janela-sincronizar.html, 2026-11-14): a janela "Rever a escala" arruma-se por secções, pelo que é preciso
+//    fazer: "A corrigir" primeiro (o que só entra depois de corrigido — ganha a qualquer estado), depois o que mudou (alterado e
+//    o que editaste), o novo (com ou sem aviso), o que deixou de aparecer e, por fim, o relido com a regra nova. Os iguais não
+//    aparecem. Dentro de cada secção, pela data. ──
+{
+  const fl = (date, route, extra = {}) => ({ duty: { duty_date: date, route, report_time: '06:10', block_off: '06:55', block_on: '12:30', sectors: 2 }, kind: 'flight', action: 'save', selected: true, ...extra });
+  const cands = [
+    fl('2026-11-23', 'LIS-XYZ', { status: 'ok' }),                                   // aeroporto que a app não conhece → corrigir
+    fl('2026-11-14', 'LIS-LGW-LIS', { status: 'changed', exists: true }),
+    fl('2026-11-16', 'LIS-OPO-LIS', { status: 'conflict', exists: true }),
+    fl('2026-11-18', 'LIS-FNC-LIS', { status: 'ok' }),
+    fl('2026-11-12', 'LIS-MAD-LIS', { status: 'warn' }),
+    { duty: { duty_date: '2026-11-22', route: 'LIS-BCN-LIS', kind: 'flight' }, kind: 'flight', status: 'removed', exists: true, action: 'delete', selected: false },
+    fl('2026-11-10', 'LIS-PDL-LIS', { status: 'refresh', exists: true }),
+    fl('2026-11-11', 'LIS-AGP-LIS', { status: 'same', exists: true }),             // igual → não aparece
+    fl('2026-11-20', 'LIS-QQQ-LIS', { status: 'changed', exists: true }),           // mudou MAS tem um aeroporto desconhecido → corrigir
+    { duty: { duty_date: '2026-11-19', report_time: '09:00', block_on: null }, kind: 'office', status: 'ok', action: 'save', selected: true },   // escritório sem fim → corrigir
+  ];
+  const secs = importSections(cands);
+  eq('R1: as secções e a ordem', secs.map((x) => x.key), ['fix', 'changed', 'new', 'removed', 'refresh']);
+  eq('R1: a corrigir, por data (ganha ao "mudou")', secs[0].items.map((c) => c.duty.duty_date), ['2026-11-19', '2026-11-20', '2026-11-23']);
+  eq('R1: mudou = alterado e editado por ti', secs[1].items.map((c) => c.duty.duty_date), ['2026-11-14', '2026-11-16']);
+  eq('R1: novo = com e sem aviso', secs[2].items.map((c) => c.duty.duty_date), ['2026-11-12', '2026-11-18']);
+  eq('R1: deixou de aparecer', secs[3].items.map((c) => c.duty.duty_date), ['2026-11-22']);
+  eq('R1: relido', secs[4].items.map((c) => c.duty.duty_date), ['2026-11-10']);
+  eq('R1: secções vazias não aparecem', importSections([fl('2026-11-18', 'LIS-FNC-LIS', { status: 'ok' })]).map((x) => x.key), ['new']);
+  eq('R1: só iguais = nada', importSections([fl('2026-11-11', 'LIS-AGP-LIS', { status: 'same', exists: true })]), []);
+  // H2 + V1 (design/janela-sincronizar-3.html): o dia vai dentro do quadradinho, por isso quando uma secção passa de um mês para
+  // o outro leva uma linha com o mês (num primeiro import com 12 meses nunca fica um "14" sem se saber de que mês).
+  eq('H2: secção num mês só = sem linha do mês', secs.map((x) => x.multiMonth), [false, false, false, false, false]);
+  const two = importSections([fl('2026-12-02', 'LIS-PDL-LIS', { status: 'ok' }), fl('2026-11-18', 'LIS-FNC-LIS', { status: 'ok' }), fl('2026-11-14', 'LIS-LGW-LIS', { status: 'changed', exists: true })]);
+  eq('H2: novembro e dezembro na mesma secção = com a linha do mês', two.map((x) => [x.key, x.multiMonth]), [['changed', false], ['new', true]]);
+  eq('H2: a linha do mês segue a data', two[1].items.map((c) => c.duty.duty_date), ['2026-11-18', '2026-12-02']);
+}
+
+// ── "O que a app leu do calendário" (L1 com os números em cima, design/lista-calendario.html, 2026-11-14): três números — voos,
+//    em terra (standby, escritório, formação, posicionamento… a cor lilás da Escala) e de fora (o que a app não reconhece) — e os
+//    eventos por dia, pela data. A folga conta à parte (não é serviço nem fica de fora). O dia: o tipo principal (voo se houver um
+//    voo; senão em terra; senão folga) e se há alguma coisa de fora nesse dia (o selo "!"). ──
+{
+  const items = [
+    { title: 'HSBY', dateISO: '2026-11-14', kind: 'standby_home' },
+    { title: 'EZY1009 LIS-OPO', dateISO: '2026-11-13', kind: 'flight', route: 'LIS-OPO' },
+    { title: 'SIM CHECK', dateISO: '2026-11-17', kind: 'other' },
+    { title: 'ADTY LIS', dateISO: '2026-11-19', kind: 'standby_airport' },
+    { title: 'EZY1003 LIS-OPO', dateISO: '2026-11-20', kind: 'flight', route: 'LIS-OPO' },
+    { title: 'HSBY', dateISO: '2026-11-20', kind: 'standby_home' },
+    { title: 'OFC LIS', dateISO: '2026-11-21', kind: 'office' },
+    { title: 'OFF', dateISO: '2026-11-22', kind: 'off' },
+    { title: 'MEETING', dateISO: '2026-11-21', kind: 'other' },
+  ];
+  const d = diagSummary(items);
+  eq('lido: os três números e a folga', [d.total, d.flights, d.ground, d.unknown, d.off], [9, 2, 4, 2, 1]);
+  eq('lido: os dias pela data', d.days.map((x) => x.iso), ['2026-11-13', '2026-11-14', '2026-11-17', '2026-11-19', '2026-11-20', '2026-11-21', '2026-11-22']);
+  eq('lido: o tipo principal de cada dia', d.days.map((x) => x.main), ['flight', 'ground', null, 'ground', 'flight', 'ground', 'off']);
+  eq('lido: o selo "!" nos dias com alguma coisa de fora', d.days.map((x) => x.unknown), [false, false, true, false, false, true, false]);
+  eq('lido: os eventos do dia pela ordem do calendário', d.days[4].events.map((e) => e.title), ['EZY1003 LIS-OPO', 'HSBY']);
+  eq('lido: sem eventos', diagSummary([]), { total: 0, flights: 0, ground: 0, unknown: 0, off: 0, days: [] });
+}
 
 console.log(`\nimportação (bloco 4) — ${ok} passou, ${fail} falhou (${ok + fail} asserções)`);
 if (fail) process.exit(1);
