@@ -483,6 +483,19 @@ cartão inteiro abre a revisão. O que se escreve decide-o `data/homeCards.js` (
 próxima primeiro; o campo que mais pesa — report > rota > tipo > off-block > on-block > setores). "Lido às" é a hora da deteção
 (a app não sabe quando a empresa mudou). Sem os dados do diff, fica a linha de antes.
 
+### A mudança de estado (M2, 2026-11-14 — `design/mudanca-estado.html`, escolhida pelo Nuno; no código)
+
+Quando o Início muda de estado sozinho (o report chega, o voo aterra, o dia fecha), **o painel de partidas**: o título sai para cima
+e o novo entra de baixo (16 pt, 220 ms); no número, **só os algarismos que mudam rolam** (o antigo sobe e desvanece, o novo entra de
+baixo, 0,45 em, 260 ms, 45 ms entre eles; os iguais ficam quietos — 05:15 → 06:15 rola um); a frase, os factos e a unidade aparecem
+(220 ms, só se mudaram); os cartões novos sobem 8 pt e aparecem enquanto os anteriores desvanecem por cima; **com a cor da M3**: o
+fundo e a folha passam de uma cor para a outra em 260 ms quando mudam (o dia passa a noite) e o cartão principal cruza da cor antiga
+para a nova. Com a tinta mudada (dia ↔ noite) rolam todos os algarismos. Só quando o estado muda com o ecrã à vista — nunca ao abrir;
+com os movimentos reduzidos a troca é imediata. A linha do número não muda de medidas: o algarismo que rola é uma cópia por cima,
+posta pelas larguras da Hanken (`data/fontMetrics.js`, os dígitos são tabulares), e o da linha fica transparente até ao fim. Peças:
+`hooks/useStateShift.js` (quando há passagem e a fotografia do estado anterior; `useColorPass`) e, em `components/HomeCards.js`,
+`ShiftView`/`ShiftText`/`GiantLine` (tempos em `SHIFT`). O movimento está no inventário (`docs/motion-design-system.md` §7).
+
 ### Peças escolhidas a 2026-11-13 (das 57 referências de `referencias/Para a app/`)
 
 **No código (2026-11-13, ainda mais tarde):** o "Ver tudo" (o corpo do Detalhe, `DutyDetailBody`) está no 3.0 — escolha B de `design/detalhe-3.html`: o cartão de cor do serviço com a perna B2 (DH marcado) e os cartões neutros (Limites com a barra B9, Completar, Horário com a régua B3, Pernoita com "Mapas ↗", Pagamento com o total em A1, Outros serviços com a linha B7). Serve a Escala e o ecrã do Detalhe.

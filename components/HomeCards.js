@@ -36,6 +36,77 @@ function toneOf(C, color) {
   return { bg: C[color], fg: CARD.onCard, sub: CARD.onCardSub, kind: CARD.onCardKind, go: CARD.go, line: CARD.onCard, track: CARD.onCardTrack };
 }
 
+// ── M2 · A MUDANÇA DE ESTADO (design/mudanca-estado.html, escolhida pelo Nuno a 2026-11-14, com a cor da M3 quando a cor muda) ──
+// Quando o Início muda de estado sozinho (o report chega, o voo aterra, o dia fecha), o "painel de partidas": o título sai para cima
+// e o novo entra de baixo; no número, só os algarismos que mudam rolam; a frase e os factos aparecem; os cartões cruzam e a cor do
+// fundo e da folha passa (estes dois no ecrã). Quem decide se há passagem é o ecrã (hooks/useStateShift.js: só quando o estado muda,
+// nunca ao abrir; com os movimentos reduzidos, nunca — a troca é imediata). `go` = o número da passagem em curso (0 = nenhuma).
+// Cada peça anima no thread nativo (transform e opacidade); o valor nasce já no início (o 1.º desenho do estado novo não mostra o
+// fim); interrompida, fica no fim — nada fica escondido. Tempos: motion §3 (220 ms a interface; 260 ms os algarismos, 45 ms entre eles).
+export const SHIFT = { dur: 220, delayIn: 40, roll: 260, stagger: 45, staggerMax: 6, title: 16, rise: 8, rollEm: 0.45 };
+function useShiftStyle(go, { dy = SHIFT.rise, delay = 0, dur = SHIFT.dur, out = false } = {}) {
+  const v = React.useMemo(() => new Animated.Value(go ? 0 : 1), [go]);
+  React.useEffect(() => {
+    if (!go) return undefined;
+    const a = Animated.timing(v, { toValue: 1, duration: dur, delay, easing: Easing.out(Easing.cubic), useNativeDriver: true });
+    a.start();
+    return () => { a.stop(); v.setValue(1); };
+  }, [v, go, dur, delay]);
+  if (!go) return null;
+  return {
+    opacity: out ? v.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) : v,
+    transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: out ? [0, -dy] : [dy, 0] }) }],
+  };
+}
+// uma caixa (ou um texto) que entra de `dy` abaixo e aparece — ou, com `out`, sobe `dy` e desvanece
+export function ShiftView({ go = 0, out = false, dy, delay, dur, style, children, ...rest }) {
+  const a = useShiftStyle(go, { dy, delay, dur, out });
+  return <Animated.View style={a ? [style, a] : style} {...rest}>{children}</Animated.View>;
+}
+function ShiftText({ go = 0, out = false, dy, delay, dur, style, children, ...rest }) {
+  const a = useShiftStyle(go, { dy, delay, dur, out });
+  return <Animated.Text style={a ? [style, a] : style} {...rest}>{children}</Animated.Text>;
+}
+const giantAt = (size) => ({ fontFamily: PELE_FONT.bodyBold, fontSize: size, lineHeight: Math.round(size * GIANT_LINE.lh), letterSpacing: size * GIANT.ls, paddingRight: Math.ceil(-size * GIANT.ls) });
+// A linha do número na passagem: a linha inteira fica onde está (as medidas não mudam — o `tail` e a unidade como sempre); os
+// algarismos que mudam ficam transparentes nela e um igual por cima, posto pela largura das letras (data/fontMetrics: os dígitos são
+// tabulares), entra de baixo; o antigo, no sítio onde estava, sobe e desvanece. Os iguais ficam quietos. `all`: a tinta mudou (o dia
+// passou a noite) — rolam todos (com o tamanho mudado também). `children`: o que vai ao lado na mesma linha (a unidade, a hora UTC).
+function GiantLine({ text, from, go, all, size, fromSize, base, deco, color, fromColor, rowStyle, children }) {
+  const t = String(text == null ? '' : text);
+  const f = go && from != null ? String(from) : null;
+  const fs = fromSize || size;
+  const every = all || fs !== size;
+  const diff = [];
+  if (f != null && (every || f !== t)) {
+    for (let i = 0; i < Math.max(f.length, t.length); i += 1) if (every || f[i] !== t[i]) diff.push(i);
+  }
+  const hide = new Set(diff.filter((i) => i < t.length));
+  const segs = [];
+  if (hide.size) {
+    let run = '';
+    t.split('').forEach((ch, i) => { if (!hide.has(i)) { run += ch; return; } if (run) segs.push(run); run = ''; segs.push(<Text key={i} style={s.rollHide}>{ch}</Text>); });
+    if (run) segs.push(run);
+  }
+  const fBase = fs === size ? base : { ...base, ...giantAt(fs) };
+  const at = (str, i, z) => textWidth(str.slice(0, i), z, 'b', z * GIANT.ls);
+  return (
+    <View style={rowStyle}>
+      <Text style={[base, deco, { color }]} numberOfLines={1} allowFontScaling={false}>{hide.size ? segs : t}</Text>
+      {children}
+      {diff.map((i, k) => {
+        const d = Math.min(k, SHIFT.staggerMax) * SHIFT.stagger;
+        return (
+          <React.Fragment key={i}>
+            {i < t.length ? <ShiftText go={go} dy={Math.round(size * SHIFT.rollEm)} delay={SHIFT.delayIn + d} dur={SHIFT.roll} style={[base, s.rollAt, { left: at(t, i, size), color }]} numberOfLines={1} allowFontScaling={false}>{t[i]}</ShiftText> : null}
+            {i < f.length ? <ShiftText go={go} out dy={Math.round(fs * SHIFT.rollEm)} delay={d} dur={SHIFT.roll} style={[fBase, s.rollAt, { left: at(f, i, fs), color: fromColor }]} numberOfLines={1} allowFontScaling={false}>{f[i]}</ShiftText> : null}
+          </React.Fragment>
+        );
+      })}
+    </View>
+  );
+}
+
 function GainChip({ text }) {
   return (
     <View style={s.chip}><Text style={[TXT3.chip, { color: CARD.gain }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{text}</Text></View>
@@ -55,7 +126,8 @@ function GainChip({ text }) {
 // "toca"); tocar abre a folha da Prova a começar pela conta desenhada (`onOpen({ to: 'prova', … calc, title })`). Na 1.ª vez, o balão
 // das guias aponta o primeiro número sublinhado (`guide` — quem guarda que já foi visto é o ecrã; `onGuideDone` ao fechar).
 const GUIDE_W = 280;
-export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l, compact = false, titled = false, why = null, onOpen = null, guide = false, onGuideDone = null }) {
+// `shift` (M2, o Início): { go, from } de hooks/useStateShift.js — durante uma passagem, o topo anterior para o título e os algarismos.
+export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l, compact = false, titled = false, why = null, onOpen = null, guide = false, onGuideDone = null, shift = null }) {
   const { width: winW } = useWindowDimensions();
   const AL = a11yLang(l);
   const [lay, setLay] = React.useState({});   // as medidas do herói, da coluna dos factos e do 1.º número com porquê (para o balão)
@@ -86,14 +158,30 @@ export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l, compact 
   // T2 (design/estados-s2.html, 2026-11-14): no Início o estado é o TÍTULO, na fila de cima ao lado das Notificações; a pílula do dia
   // (ou do voo) passa para a linha da frase, à direita, mais pequena — continua a abrir o dia na Escala.
   const head = titled && top.pill && !compact;
+  // M2 · o que mudou desde o estado anterior: só isso se mexe (com a tinta mudada — o dia passou a noite — mexe-se tudo)
+  const go = shift && shift.go && shift.from ? shift.go : 0;
+  const fT = go ? shift.from.top || {} : {};
+  const fC = go ? shift.from.C || C : C;
+  const fSize = go ? shift.from.size || size : size;
+  const fg = fT.giant || {};
+  const inkFlip = !!go && fC.ink !== C.ink;
+  const same = (a, b) => JSON.stringify(a == null ? null : a) === JSON.stringify(b == null ? null : b);
+  const goIf = (changed) => (go && (inkFlip || changed) ? go : 0);
+  const titleGo = head && fT.pill ? goIf(fT.pill.text !== top.pill.text) : 0;
+  const whatGo = goIf(fT.what !== top.what || !same(fT.pill2 && fT.pill2.text, top.pill2 && top.pill2.text));
+  const factsGo = goIf(!same(fT.facts, top.facts));
+  const l2Col = g.l2Grey ? C.grey : C.ink;
+  const fl2Col = fg.l2Grey ? fC.grey : fC.ink;
   return (
     <View style={[s.top, compact ? s.topCompact : null, guideOn ? s.topFront : null]}>
       <View style={s.pills}>
         {head ? (
           <View style={s.titleWrap} accessible accessibilityRole="header" accessibilityLanguage={AL} accessibilityLabel={top.pill.live ? `${top.pill.text}, ${l('agora', 'now')}` : top.pill.text}>
-            <Text style={[TXT3.stateTitle, s.titleTxt, { color: C.ink }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} maxFontSizeMultiplier={1.15}>{top.pill.text}</Text>
+            <ShiftText go={titleGo} dy={SHIFT.title} delay={SHIFT.delayIn} style={[TXT3.stateTitle, s.titleTxt, { color: C.ink }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} maxFontSizeMultiplier={1.15}>{top.pill.text}</ShiftText>
             {/* o ponto "ao vivo" com o aro de tinta de dia (S2, design/cores-decisoes.html): o amarelo sozinho dava 1,33:1 sobre a secretária */}
             {top.pill.live ? <View style={[s.stateDot, { backgroundColor: BRAND.signal }, C.liveRing ? [s.stateDotRing, { borderColor: C.liveRing }] : null]} /> : null}
+            {/* M2 · o título anterior sobe e desvanece no mesmo sítio, enquanto o novo entra de baixo */}
+            {titleGo ? <ShiftText go={titleGo} out dy={SHIFT.title} style={[TXT3.stateTitle, s.titleOld, { color: fC.ink }]} numberOfLines={1} maxFontSizeMultiplier={1.15}>{fT.pill.text}</ShiftText> : null}
           </View>
         ) : null}
         {top.pill && !titled ? (
@@ -112,36 +200,35 @@ export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l, compact 
         {right}
       </View>
       {compact ? null : head && top.pill2 ? (
-        <View style={s.whatRow}>
+        <ShiftView go={whatGo} style={s.whatRow}>
           <Text style={[TXT3.what, s.whatTxt, { color: C.soft }]} numberOfLines={1} maxFontSizeMultiplier={1.15}>{top.what}</Text>
           <P2 style={[s.pillSm, { borderColor: C.ink }]} {...p2Props}>
             <Text style={[TXT3.pill, { color: C.ink }]} numberOfLines={1} allowFontScaling={false}>{top.pill2.text}</Text>
             {top.pill2.iso ? <Icon name="chevron" size={11} color={C.ink} /> : null}
           </P2>
-        </View>
-      ) : <Text style={[TXT3.what, { color: C.soft }]} numberOfLines={1} maxFontSizeMultiplier={1.15}>{top.what}</Text>}
+        </ShiftView>
+      ) : <ShiftText go={whatGo} style={[TXT3.what, { color: C.soft }]} numberOfLines={1} maxFontSizeMultiplier={1.15}>{top.what}</ShiftText>}
       {compact ? null : <View style={s.hero} accessible={!hasWhy} accessibilityLanguage={AL} accessibilityLabel={heroA11y} onLayout={setL('hero')}>
         <TouchableOpacity disabled={!whyOf('g')} activeOpacity={0.7} onPress={() => openWhy(whyOf('g'))} onLayout={setL('giant')}
           style={{ marginTop: -Math.round(size * GIANT_LINE.trim), marginBottom: -Math.round(size * GIANT_LINE.trim) }}
           accessible={hasWhy} accessibilityRole={whyOf('g') ? 'button' : undefined} accessibilityLanguage={AL}
           accessibilityLabel={[top.what, `${g.l1 || ''}${g.unit ? ` ${g.unit}` : ''}`, g.l2].filter(Boolean).join('. ')}
           accessibilityHint={whyOf('g') ? l('Mostra de onde vem', 'Shows where it comes from') : undefined}>
-          <View style={s.l1Row}>
-            <Text style={[giantStyle, whyOf('g') ? [s.und, { textDecorationColor: C.soft }] : null]} numberOfLines={1} allowFontScaling={false}>{g.l1}</Text>
-            {g.unit ? <Text style={[TXT3.unit, { marginLeft: GIANT.unitGap - tail, color: C.ink }]} numberOfLines={1} allowFontScaling={false}>{g.unit}</Text> : null}
-          </View>
-          {g.l2 && g.zulu ? (
+          <GiantLine text={g.l1} from={fg.l1} go={go} all={inkFlip} size={size} fromSize={fSize} base={giantStyle}
+            deco={whyOf('g') ? [s.und, { textDecorationColor: C.soft }] : null} color={C.ink} fromColor={fC.ink} rowStyle={s.l1Row}>
+            {g.unit ? <ShiftText go={goIf(fg.unit !== g.unit)} style={[TXT3.unit, { marginLeft: GIANT.unitGap - tail, color: C.ink }]} numberOfLines={1} allowFontScaling={false}>{g.unit}</ShiftText> : null}
+          </GiantLine>
+          {g.l2 ? (
             // A hora UTC do report ao lado do sítio, na letra dos factos (a) de design/meteo-topo.html) — como a unidade na 1.ª linha.
-            <View style={[s.l1Row, { marginTop: -Math.round(size * (GIANT_LINE.lh - GIANT_LINE.lead)) }]}>
-              <Text style={[giantStyle, { color: g.l2Grey ? C.grey : C.ink }]} numberOfLines={1} allowFontScaling={false}>{g.l2}</Text>
-              <Text style={[TXT3.fact, { marginLeft: GIANT.zuluGap - tail, color: C.ink }]} numberOfLines={1} allowFontScaling={false}>{g.zulu}</Text>
-            </View>
-          ) : g.l2 ? (
-            <Text style={[giantStyle, { color: g.l2Grey ? C.grey : C.ink, marginTop: -Math.round(size * (GIANT_LINE.lh - GIANT_LINE.lead)) }]} numberOfLines={1} allowFontScaling={false}>{g.l2}</Text>
+            <GiantLine text={g.l2} from={fg.l2 || ''} go={go} all={inkFlip || fl2Col !== l2Col} size={size} fromSize={fSize} base={giantStyle}
+              color={l2Col} fromColor={fl2Col} rowStyle={[s.l1Row, { marginTop: -Math.round(size * (GIANT_LINE.lh - GIANT_LINE.lead)) }]}>
+              {g.zulu ? <ShiftText go={goIf(fg.zulu !== g.zulu)} style={[TXT3.fact, { marginLeft: GIANT.zuluGap - tail, color: C.ink }]} numberOfLines={1} allowFontScaling={false}>{g.zulu}</ShiftText> : null}
+            </GiantLine>
           ) : null}
         </TouchableOpacity>
         {top.facts && top.facts.length ? (
           <View style={[s.side, { borderLeftColor: C.ink }]} onLayout={setL('side')}>
+            <ShiftView go={factsGo} style={s.sideIn} onLayout={setL('sideIn')}>
             {top.facts.map((f, i) => (
               <TouchableOpacity key={`${f.v}-${f.l}`} disabled={!whyOf(i)} activeOpacity={0.7} onPress={() => openWhy(whyOf(i))} onLayout={i === firstFact ? setL('fact') : undefined}
                 accessible={hasWhy} accessibilityRole={whyOf(i) ? 'button' : undefined} accessibilityLanguage={AL}
@@ -158,13 +245,15 @@ export function HomeTop({ top, C, size, onPill2, right, rightW = 44, l, compact 
                 <Text style={[TXT3.factLbl, { color: C.soft }]} numberOfLines={1} allowFontScaling={false}>{f.l}</Text>
               </TouchableOpacity>
             ))}
+            </ShiftView>
           </View>
         ) : null}
       </View>}
       {guideOn ? (() => {
         // o balão por baixo do 1.º número sublinhado (o número grande, se for ele); a seta aponta-o
         const H0 = lay.hero; if (!H0) return null;
-        const tgt = firstFact >= 0 && lay.side && lay.fact ? { x: H0.x + lay.side.x + lay.fact.x, y: H0.y + lay.side.y + lay.fact.y, w: lay.fact.w, h: lay.fact.h }
+        const si = lay.sideIn || { x: 0, y: 0 };
+        const tgt = firstFact >= 0 && lay.side && lay.fact ? { x: H0.x + lay.side.x + si.x + lay.fact.x, y: H0.y + lay.side.y + si.y + lay.fact.y, w: lay.fact.w, h: lay.fact.h }
           : lay.giant ? { x: H0.x + lay.giant.x, y: H0.y + lay.giant.y, w: lay.giant.w, h: lay.giant.h } : null;
         if (!tgt) return null;
         const W = Math.min(GUIDE_W, winW - 2 * SPACE.lgPlus);
@@ -509,10 +598,11 @@ function CheckRing({ ok, T, i, reduce }) {
     </Svg>
   );
 }
-function Checks({ c, C, l }) {
+function Checks({ c, C, l, still = false }) {
   const AL = a11yLang(l);
   const T = toneOf(C, c.color);
-  const reduce = useReduceMotion();
+  const rm = useReduceMotion();
+  const reduce = rm || still;   // `still`: a cópia do estado anterior a sair (M2) — os anéis já estão fechados
   const a11y = [c.title, ...(c.items || []).map((x) => `${x.k}: ${x.v}`), c.seen].filter(Boolean).join('. ');
   // `plain` (a folga, F2): os três sinais pousam na folha, sem caixa, por baixo da voz — alinhados com o texto dos cartões
   return (
@@ -618,14 +708,15 @@ function TextCard({ c, C, onOpen, l }) {
   );
 }
 
-export function HomeCards({ cards, C, onOpen, l }) {
+// `still` (M2): a cópia dos cartões do estado anterior, a cruzar por cima dos novos — nada se volta a desenhar nela.
+export function HomeCards({ cards, C, onOpen, l, still = false }) {
   return (cards || []).map((c) => {
     const k = `${c.t}-${c.id}`;
     if (c.t === 'card') return <BigCard key={k} c={c} C={C} onOpen={onOpen} l={l} />;
     if (c.t === 'slim') return <Slim key={k} c={c} C={C} onOpen={onOpen} l={l} />;
     if (c.t === 'lines') return <Lines key={k} c={c} C={C} onOpen={onOpen} l={l} />;
     if (c.t === 'text') return <TextCard key={k} c={c} C={C} onOpen={onOpen} l={l} />;
-    if (c.t === 'checks') return <Checks key={k} c={c} C={C} l={l} />;
+    if (c.t === 'checks') return <Checks key={k} c={c} C={C} l={l} still={still} />;
     if (c.t === 'changes') return <Changes key={k} c={c} C={C} onOpen={onOpen} l={l} />;
     if (c.t === 'voice') return <Voice key={k} c={c} C={C} onOpen={onOpen} l={l} />;
     // o cabeçalho de secção (o próximo serviço noutro dia: "Amanhã · quinta 12") — mais ar por cima, junto da linha de baixo
@@ -681,7 +772,12 @@ const s = StyleSheet.create({
   // frase (E2 de design/topo-frase.html, 2026-11-14): com 4, no iPhone os pés do "p"/"g"/"ç" ficavam a ~5 pt dos algarismos (o iOS
   // corta por cima a linha de 1,1 em e o número sobe); com 12 ficam ~13, e por cima da frase continuam ~20 até às pílulas.
   hero: { flexDirection: 'row', alignItems: 'stretch', gap: SPACE.lg, marginTop: SPACE.md },
-  side: { borderLeftWidth: 1.5, paddingLeft: SPACE.lg, justifyContent: 'center', gap: SPACE.md, flexShrink: 1, minWidth: 0 },
+  side: { borderLeftWidth: 1.5, paddingLeft: SPACE.lg, justifyContent: 'center', flexShrink: 1, minWidth: 0 },
+  sideIn: { gap: SPACE.md },   // os factos numa caixa por dentro do fio: na passagem (M2) aparecem os factos e o fio fica quieto
+  // M2 · a passagem: o título anterior por cima do novo; os algarismos que rolam por cima da linha; o algarismo escondido na linha
+  titleOld: { position: 'absolute', left: 0, top: 0 },
+  rollAt: { position: 'absolute', top: 0 },
+  rollHide: { color: 'transparent' },
   // Q3 · os números com porquê: o sublinhado pontilhado (a cor vem da tinta suave do topo, de dia e de noite)
   und: { textDecorationLine: 'underline', textDecorationStyle: 'dotted' },
   was: { textDecorationLine: 'line-through', opacity: 0.5 },

@@ -209,8 +209,12 @@ O canon é `docs/motion-design-system.md` (os tokens de duração, o contrato do
 
 - **O anel da verificação desenha-se** quando o dado chega (700 ms, escalonado; o visto 220 ms); nunca a cada abertura; com os
   movimentos reduzidos aparece fechado.
-- **A mudança de estado** — a lei pede uma passagem curta (220 ms, sem saltos). **O Início 3.0 ainda não a tem** (verificado no
-  código a 2026-11-14: nenhuma animação liga a troca do estado). Por fazer, com esboço.
+- **A mudança de estado — o painel de partidas (M2, `design/mudanca-estado.html`, escolhida pelo Nuno a 2026-11-14; no código, por
+  ver no iPhone).** Quando o estado muda com o ecrã à vista, o título sai para cima e o novo entra de baixo; no número, só os
+  algarismos que mudam rolam (o olho vai direto ao que mudou: às 05:15 o "5" passa a "6" e percebe-se que já não é o report mas a
+  partida); a frase e os factos aparecem; os cartões cruzam; quando a cor muda (o dia passa a noite, o voo a repouso), o fundo, a
+  folha e o cartão principal passam de uma cor para a outra (260 ms). Nunca ao abrir; com os movimentos reduzidos, a troca é imediata.
+  Detalhe em `docs/design-system.md` §14 e no inventário do movimento.
 - Nada que atrase a leitura: o report e o PSV aparecem já; sem molas brincalhonas, sem vidro, sem partículas.
 
 ---
@@ -265,20 +269,19 @@ balões (o título do estado, o número, a cor dos cartões) está proposta.
 | As alterações da escala | `data/rosterDiff.js` | `test:diff` |
 | Todos os estados desenhados a partir do código | `design/estados-todos.html` (`node scripts/render-estados.js`) | — |
 | O visual (tokens, peças, a cor) | `docs/design-system.md` §14 | — |
-| O movimento | `docs/motion-design-system.md` | — |
+| O movimento | `docs/motion-design-system.md` · a mudança de estado: `hooks/useStateShift.js` + `components/HomeCards.js` (`GiantLine`) | `test:design` (o contrato dos movimentos reduzidos) |
 | As guias | `docs/guias.md` | — |
 | O guião de teste no iPhone | `docs/verificacao-device.md` ("testar os estados") — **por pôr em dia com a v3** | — |
 
 **Os esboços que mandam** (em `design/`, com o README): `inicio-cartoes.html` (a direção 3.0) · `estados-topo.html` + `estados-s2.html`
 (o título) · `cartoes-e3.html` + `cartoes-limite.html` (o cartão do voo e o limite) · `a-seguir-b3.html` (o próximo serviço) ·
 `cores-decisoes.html` (G1 · O2 · S2) · `calma-uau.html` (W1) · `escala-mudou.html` (E2) · `folga-1-2.html` (F2) · `voz.html` (V2) ·
-`topo-porque-2.html` (Q3) · `modo-noite.html` (N3, por construir).
+`topo-porque-2.html` (Q3) · `mudanca-estado.html` (M2) · `modo-noite.html` (N3, por construir).
 
 ---
 
 ## 10 · Por fazer
 
-- **A mudança de estado animada** (secção 5) — esboço primeiro.
 - **O modo noite N3** (a seguir o claro/escuro do iPhone) — a base do tema da app inteira.
 - **Tocar em "Avião"** na verificação para a linha da folga do avião (a W2 de `calma-uau.html`).
 - **A guia de três balões do Início** (proposta em `docs/guias.md`).
@@ -290,4 +293,4 @@ balões (o título do estado, o número, a cor dos cartões) está proposta.
 *v1 · 2026-07-03 · decidido peça a peça (a pele tipográfica). v2 · 2026-07-08 · alinhado com a construção (o FAB, a navegação
 estática, o motor `crewState`). v3 · 2026-11-14 · reescrita a partir do código do Início 3.0 "cartões de cor": o título do estado, o
 cartão do voo, a cor (G1 · O2 · S2), a calma verificada (W1), as alterações da escala (E2), a folga 1 + 2 (F2), a voz (V2), o porquê dos
-números (Q3) e a regra "só o calendário".*
+números (Q3) e a regra "só o calendário". No mesmo dia, a mudança de estado animada (M2, o painel de partidas).*

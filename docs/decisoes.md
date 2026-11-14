@@ -1241,6 +1241,25 @@ motor está na versão **21**. **O que falta, por ordem:**
   os 17 estados como estão; o que morreu da v2, com a data; onde está cada coisa; o que falta). **Achado ao escrever:** o Início 3.0
   **não anima a mudança de estado** (nenhuma animação no código) — o ponto 8 da LI ("ver no iPhone se anima") passa a "por fazer,
   com esboço". O guião `docs/verificacao-device.md` está por pôr em dia com a v3.
+  **A mudança de estado animada (ponto 8 da LI):** esboço `design/mudanca-estado.html` — M1 o cruzamento · **M2 o painel de partidas**
+  (recomendada: o título sai para cima e o novo entra de baixo; só os algarismos que mudam rolam — 05:15 → 06:15 rola um, 13:50 →
+  14:05 rolam três; com a passagem de cor da M3 quando a cor muda) · M3 a cor passa. **O Nuno escolheu a M2 — construída (por
+  gravar):** sem golden (só movimento: nenhum número nem conteúdo muda; o guardião `test:design` tranca o contrato dos movimentos
+  reduzidos). `hooks/useStateShift.js` decide quando há passagem — só quando o estado (`homeState` + a fase do dia) muda com o
+  Início à vista; nunca ao abrir nem no 1.º desenho depois de carregar; com os movimentos reduzidos, nunca — e guarda a fotografia do
+  estado anterior (o topo, os cartões, a paleta, o tamanho do número); `useColorPass` passa a cor do fundo e da folha em 260 ms.
+  `components/HomeCards.js`: o título anterior sobe e desvanece e o novo entra de baixo; `GiantLine` — só os algarismos que mudam
+  rolam, numa cópia por cima da linha (posta pelas larguras da Hanken; a linha não muda de medidas, o algarismo dela fica
+  transparente até ao fim); a frase, os factos, a unidade e a hora UTC aparecem só se mudaram; com a tinta mudada (dia ↔ noite)
+  rola tudo. `screens/HomeScreen.js`: os cartões novos sobem 8 e aparecem com uma cópia dos anteriores a desvanecer por cima (sem
+  toque nem leitura; os anéis da verificação não se redesenham nela) — o cartão principal cruza da cor antiga para a nova.
+  Guardião, 39 suites e o pacote iOS passam. **Ver no iPhone:** o report a chegar (o título "Dia de voo" → "Em serviço", o "5" a rolar
+  para "6"); o voo a aterrar fora da base à noite (o ecrã a escurecer, o cartão de azul a verde); que não anima ao abrir a app nem
+  ao voltar de outra aba (se o estado mudou lá, a troca já aconteceu); de volta do segundo plano com o estado mudado, anima (de
+  propósito: o ecrã muda à frente de quem olha); com os movimentos reduzidos ligados (troca seca); que nada salta nem fica cortado
+  no fim (a linha do número volta a ser uma só sem mexer). Para provocar sem esperar (na Expo Go, com o Início aberto): mudar a
+  constante `FORCE_HOME_STATE` em `screens/HomeScreen.js` (por exemplo `'vespera'` → `'pernoita'`) e gravar — o Fast Refresh guarda
+  o estado anterior e a passagem corre à frente; voltar a `null` no fim.
 - **Do dia 2026-11-14 (gravado e enviado até `81c2dfd`) — tudo por ver:** os Números (o total sozinho no topo; "Acima da base" no
   fim do "De onde vem"; com a base incerta, "O total fica entre"); o topo lado a lado igual no Início, na Escala e nos Números
   (o número do mesmo tamanho; a frase com ar por cima); a meteorologia (na véspera e antes do report, a base à hora do report no

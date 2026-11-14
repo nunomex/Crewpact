@@ -40,6 +40,7 @@ Formalizados do que a app já pratica (exemplos vivos citados). Animação nova 
 | Dados a crescer (barras, count-up) | 700–800 ms (+delay escalonado) | out(cubic) / linear | GrowBar 800 · MonthBar 700 |
 | Loops ambiente | 650–750 ms por perna | inOut(quad) | Skeleton 750 · pulse 650 |
 | **Morph pílula→cartão** (geometria contínua: o cartão nasce da pílula) | **360 ms** pequeno · **420 ms** grande (a duração escala com a DISTÂNCIA) | out(cubic), conteúdo assenta **+40 ms** | legenda da Escala 360 · família cheia 360 · poster Post⇄Story 420 |
+| **Mudança de estado** (o painel de partidas, M2) | título **220 ms** (16 pt) · algarismos **260 ms**, **45 ms** entre eles (até 6) · o que entra **+40 ms** · cor **260 ms** | out(cubic) | Início: título, algarismos, frase/factos, cartões, fundo e folha (`SHIFT` em `components/HomeCards.js`) |
 
 **Easing por defeito: `Easing.out(cubic)`** — chegada suave, arranque decidido. `in(cubic)` só em saídas.
 
@@ -96,6 +97,7 @@ Onde o movimento existe hoje — atualizar quando se adiciona/remove:
 - `screens/ValidadesScreen.js` — carteira de cartões (PanResponder + shuffle 260–280; reduce = assenta sem viagem)
 - `screens/StatsScreen.js` — GrowBar 800 / MonthBar 700 (reduce-aware)
 - `components/HomeCards.js` · `CheckRing` (2026-11-14, a verificação W1 antes do report) — o anel desenha-se (o traço do SVG, `useNativeDriver: false`: a propriedade obriga) 700 out(cubic), escalonado 180 depois de 250, e o visto assenta 220; só quando um sinal PASSA a certo (nunca a cada abertura); interrompido = fica no fim; reduce = já fechado
+- `hooks/useStateShift.js` + `components/HomeCards.js` · **a mudança de estado M2** (2026-11-14, `design/mudanca-estado.html`) — quando o Início muda de estado com o ecrã à vista: o título sai para cima e o novo entra de baixo (220) · só os algarismos que mudam rolam (a cópia por cima da linha, posta pelas larguras da Hanken; 260, escalonados 45) · a frase, os factos e a unidade aparecem só se mudaram (220) · os cartões novos sobem 8 e aparecem com os anteriores a desvanecer por cima (220) · o fundo e a folha passam de cor (260, `useNativeDriver: false`: a cor de fundo obriga) — o resto no thread nativo. Nunca ao abrir; o valor nasce no início (sem um desenho do fim antes); interrompida = fica no fim; reduce = troca imediata (o gancho não começa a passagem). Os anéis da verificação, se entram com a folga, desenham-se a seguir (250 ms de atraso) — fazem parte do mesmo momento
 - (2026-07-09: `SearchModal` apagado — saiu do inventário)
 
 ---

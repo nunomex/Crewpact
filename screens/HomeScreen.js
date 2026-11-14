@@ -1,13 +1,15 @@
 import { nightSectorIssues } from '../data/simulation';
 import React, { useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, AppState, RefreshControl, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, AppState, RefreshControl, useWindowDimensions, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { CARD, TXT, TXT3, SPACE, RADIUS, BRAND } from '../data/constants';
 import NotificationsBell from '../components/NotificationsBell';
 import FlightShareCard from '../components/FlightShareCard';
 import { shareCardFor } from '../data/shareLeg';
-import { HomeTop, HomeCards, pillWidth } from '../components/HomeCards';
+import { HomeTop, HomeCards, ShiftView, pillWidth } from '../components/HomeCards';
+import useReduceMotion from '../hooks/useReduceMotion';
+import useStateShift, { useColorPass } from '../hooks/useStateShift';
 import { homeCards, topGiant } from '../data/homeCards';
 import { stateVoice } from '../data/stateVoice';
 import { getUpcomingFlight } from '../data/calendar';
@@ -1095,6 +1097,14 @@ export default function HomeScreen({ navigation }) {
   }, [whyGuideKey, hasWhyOut, plusTip, welcomeOpen, isFocused]); // eslint-disable-line react-hooks/exhaustive-deps
   const doneWhyGuide = () => { setWhyGuide(false); if (whyGuideKey) AsyncStorage.setItem(whyGuideKey, '1').catch(() => {}); };
   const giant = topGiant(out.top, winW - SPACE.lgPlus * 2);   // o tamanho comum das três abas, lado a lado (L1, design/topo-lado.html)
+  // ── M2 · A MUDANÇA DE ESTADO (design/mudanca-estado.html, escolhida pelo Nuno a 2026-11-14) ──
+  // Quando o estado muda com o Início à vista (o report chega, o voo aterra, o dia fecha): o título e os algarismos que mudam rolam
+  // (HomeTop), os cartões novos entram por baixo dos antigos a sair e a cor do fundo e da folha passa em 260 ms quando muda (o dia
+  // passa a noite). Só nessa altura — nunca ao abrir; com os movimentos reduzidos, a troca é imediata (hooks/useStateShift.js).
+  const reduceMotion = useReduceMotion();
+  const shift = useStateShift(loadingFlight ? null : `${homeState}:${phase || ''}`, { top: out.top, cards: out.cards, C, size: giant.size }, { reduce: reduceMotion, on: isFocused });
+  const deskBg = useColorPass(shift.go, shift.from && shift.from.C.desk, C.desk);
+  const sheetBg = useColorPass(shift.go, shift.from && shift.from.C.sheet, C.sheet);
 
   // ── O QUE CADA TOQUE FAZ ──
   const goStats = () => { select(); navigation.navigate('Estatísticas'); };
@@ -1142,11 +1152,12 @@ export default function HomeScreen({ navigation }) {
   useEffect(() => { homeBusyRef.current = !!(detailItem || sendCard); }, [detailItem, sendCard]);
 
   return (
-    <SafeAreaView style={[s.safe, { backgroundColor: C.desk }]} edges={['top']} onTouchStart={plusTip ? dismissPlusTip : undefined}>
+    <Animated.View style={[s.safe, { backgroundColor: deskBg }]}>
+    <SafeAreaView style={s.safe} edges={['top']} onTouchStart={plusTip ? dismissPlusTip : undefined}>
       {/* A barra de estado do iPhone: escura sobre o fundo claro; clara à noite. Só com o ecrã à vista. */}
       {isFocused ? <StatusBar style={night ? 'light' : 'dark'} /> : null}
       {loadingFlight ? <HomeSkeleton /> : (
-        <HomeTop top={out.top} why={out.why} onOpen={onOpen} guide={whyGuide} onGuideDone={doneWhyGuide} C={C} size={giant.size} onPill2={openPill2} l={l} titled rightW={demoOn ? pillWidth(l('Exemplo · sair', 'Example · exit'), true) - SPACE.sm : pillWidth(l('Notificações', 'Notifications'))}
+        <HomeTop top={out.top} why={out.why} onOpen={onOpen} guide={whyGuide} onGuideDone={doneWhyGuide} shift={shift} C={C} size={giant.size} onPill2={openPill2} l={l} titled rightW={demoOn ? pillWidth(l('Exemplo · sair', 'Example · exit'), true) - SPACE.sm : pillWidth(l('Notificações', 'Notifications'))}
           right={demoOn ? (
             <TouchableOpacity style={[s.demo, { borderColor: C.ink }]} onPress={exitDemo} hitSlop={{ top: 3, bottom: 3 }}
               accessibilityRole="button" accessibilityLabel={l('Isto é um exemplo. Sair do exemplo', 'This is an example. Exit the example')}>
@@ -1156,7 +1167,7 @@ export default function HomeScreen({ navigation }) {
           ) : <NotificationsBell variant="written" night={night} />} />
       )}
       {/* A FOLHA: o cartão do momento e o do que vem a seguir. Num iPhone pequeno desliza; o topo e a barra ficam. */}
-      <View style={[s.sheet, { backgroundColor: C.sheet }]}>
+      <Animated.View style={[s.sheet, { backgroundColor: sheetBg }]}>
         <ScrollView ref={homeScrollRef} style={s.sheetScroll} contentContainerStyle={s.sheetIn} showsVerticalScrollIndicator={false} alwaysBounceVertical
           refreshControl={<RefreshControl refreshing={refreshing} tintColor={C.caption} colors={[C.caption]}
             onRefresh={async () => {
@@ -1166,12 +1177,25 @@ export default function HomeScreen({ navigation }) {
               const dt = Date.now() - t0; if (dt < 600) await new Promise((r) => setTimeout(r, 600 - dt));
               setRefreshing(false);
             }} />}>
-          {loadingFlight ? <SheetSkeleton /> : <HomeCards cards={out.cards} C={C} onOpen={onOpen} l={l} />}
+          {loadingFlight ? <SheetSkeleton /> : (
+            // M2 · na passagem, os cartões novos sobem 8 e aparecem enquanto os do estado anterior (uma cópia, sem toque nem leitura)
+            // desvanecem por cima, no mesmo sítio — como o cruzamento do esboço; a cor do cartão principal passa com eles
+            <View>
+              <ShiftView go={shift.go} style={s.cards}>
+                <HomeCards cards={out.cards} C={C} onOpen={onOpen} l={l} />
+              </ShiftView>
+              {shift.go ? (
+                <ShiftView go={shift.go} out dy={0} style={[s.cards, s.cardsOld]} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                  <HomeCards cards={shift.from.cards} C={shift.from.C} onOpen={() => {}} l={l} still />
+                </ShiftView>
+              ) : null}
+            </View>
+          )}
           {!loadingFlight && out.caption ? <Text style={[TXT.caption, s.caption, { color: C.caption }]}>{out.caption}</Text> : null}
           {/* o crédito do tempo (MET Norway, CC BY 4.0) — sempre que há tempo no ecrã */}
           {!loadingFlight && out.credit ? <Text style={[TXT.caption, s.caption, { color: C.caption }]} accessibilityRole="text">{out.credit}</Text> : null}
         </ScrollView>
-      </View>
+      </Animated.View>
 
       {/* Hotel da pernoita — registar/editar (estação derivada da escala). */}
       <HotelSheet visible={hotelOpen} onClose={() => setHotelOpen(false)} station={closeNsStation || nsHotelStation} />
@@ -1208,6 +1232,7 @@ export default function HomeScreen({ navigation }) {
         lang={lang} provaCtx={{ companySlug: company && company.slug, companyName: company && company.name, isPilot, lang }}
         onOpenDay={(iso) => openDayDetail(iso)} />
     </SafeAreaView>
+    </Animated.View>
   );
 }
 
@@ -1237,6 +1262,8 @@ const s = StyleSheet.create({
   sheet: { flex: 1, marginTop: -SPACE.lg, borderTopLeftRadius: RADIUS.sheet, borderTopRightRadius: RADIUS.sheet, overflow: 'hidden' },
   sheetScroll: { flex: 1 },
   sheetIn: { padding: SPACE.md, gap: SPACE.sm },
+  cards: { gap: SPACE.sm },   // os cartões numa caixa (a mesma distância entre eles); a cópia do estado anterior por cima (M2)
+  cardsOld: { position: 'absolute', top: 0, left: 0, right: 0 },
   caption: { paddingHorizontal: SPACE.xs, paddingTop: SPACE.xs },
   demo: { height: 38, paddingHorizontal: SPACE.md, borderRadius: RADIUS.pill, borderWidth: 1.5, flexDirection: 'row', alignItems: 'center', gap: SPACE.s },
   demoDot: { width: 7, height: 7, borderRadius: RADIUS.pill },
