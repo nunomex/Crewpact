@@ -1,6 +1,8 @@
 // Gestão de EXTRAS DO MÊS na pele nova — a vista que faltava quando a Cálculos (AeCalcs) saiu
 // da aba (agora INFO). Lista os eventos datados (aeEvents) com APAGAR + botão ADICIONAR (abre
 // o formulário existente ExtraEventSheet). Decisão: os extras vivem no mini-FAB. Ver [[ae-extras-events]].
+// 2026-11-14 (regra do Nuno: a app só lê o calendário e calcula — à mão só na Simulação): saiu o "adicionar extra" e o
+// formulário (ExtraEventSheet). A lista fica sem entrada até ganhar o seu lugar nos Números (com esboços); o € já está lá.
 import React, { useContext, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import PeleSheet from './PeleSheet';
@@ -11,7 +13,7 @@ import { extrasMonthEur } from '../data/perdiem';
 import { PELE as P, PELE_FONT as F } from '../data/constants';
 import { success, warning } from '../data/haptics';
 
-export default function ExtrasManager({ visible, onClose, onAdd }) {
+export default function ExtrasManager({ visible, onClose }) {
   const { lang, ae, aeAt, crewAt, aeEvents, duties, removeAeEvent, addAeEvents, notify } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
 
@@ -69,7 +71,7 @@ export default function ExtrasManager({ visible, onClose, onAdd }) {
 
       <ScrollView style={s.list} showsVerticalScrollIndicator={false}>
         {events.length === 0 ? (
-          <Text style={s.empty}>{l('Sem extras registados. Toca em “adicionar” para registar um.', 'No extras logged. Tap “add” to log one.')}</Text>
+          <Text style={s.empty}>{l('Sem extras neste período. Vêm do calendário (férias, doença, SNC…).', 'No extras in this period. They come from the calendar (leave, sick, SNC…).')}</Text>
         ) : (
           events.map((e, i) => (
             <View key={e.id} style={[s.row, i > 0 && s.rowB]}>
@@ -92,10 +94,6 @@ export default function ExtrasManager({ visible, onClose, onAdd }) {
         </View>
       ) : null}
 
-      <TouchableOpacity style={s.add} onPress={onAdd} activeOpacity={0.85} accessibilityRole="button">
-        <Icon name="plus" size={16} color={P.ink} />
-        <Text style={s.addT}>{l('adicionar extra', 'add extra')}</Text>
-      </TouchableOpacity>
     </PeleSheet>
   );
 }
@@ -112,6 +110,4 @@ const s = StyleSheet.create({
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', paddingVertical: 12, borderTopWidth: 1.5, borderTopColor: P.ink, marginTop: 2 },
   totalK: { fontFamily: F.bodyHeavy, fontSize: 11, letterSpacing: 0.5, textTransform: 'uppercase', color: P.grey },
   totalV: { fontFamily: F.display, fontSize: 22, color: P.ink },
-  add: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: P.soft, borderRadius: 14, paddingVertical: 14, marginTop: 14 },
-  addT: { fontFamily: F.bodyHeavy, fontSize: 13, color: P.ink },
 });

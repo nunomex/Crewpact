@@ -177,7 +177,7 @@ function useStationWx(station) {
 export default function HomeScreen({ navigation }) {
   const isFocused = useIsFocused();
   const { width: winW } = useWindowDimensions();
-  const { user, lang, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync, base, homeBaseAt, cabinGapMin, splitAdminMin, hotels, postFlightMin, vacationDaysYear, openSimulation, openExtra, setHomeNight, serviceStart, serviceStartExact, largada, rosterLog, notify, lifestyle } = useContext(AppContext);
+  const { user, lang, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync, base, homeBaseAt, cabinGapMin, splitAdminMin, hotels, postFlightMin, vacationDaysYear, openSimulation, setHomeNight, serviceStart, serviceStartExact, largada, rosterLog, notify, lifestyle } = useContext(AppContext);
   // O COMANDANTE (easyJet CPT · TAP CTE): a discrição do 205(f) é dele — para o FO e a cabine é informação (auditoria
   // do tripulante, 2026-11-04).
   const isCommander = !!isPilot && ['CPT', 'CTE'].includes(String(crewCategory || '').toUpperCase());
@@ -975,7 +975,7 @@ export default function HomeScreen({ navigation }) {
     sick: homeState === 'doenca' ? { day: sickDay, first3: sickFirst3, payText: sickState ? (sickDay <= 3 ? sickState.first : sickState.rest)[lang === 'en' ? 'en' : 'pt'] : null } : null,
     doc: docSoon, empty: { rosterOk: allOk && !calErr, lastRead: lastReadMs ? (() => { const d = new Date(lastReadMs); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; })() : null },
     wake: wakeAt && wakeMs > now ? { hm: wakeAt } : null, restOk: restVoice.restOk,
-    canExtra: !!(openExtra && ae && Array.isArray(ae.EXTRA_KINDS)), longHaul, shareClose: shareableClose,
+    longHaul, shareClose: shareableClose,
     warns: W,
   };
   const out = homeCards(H);
@@ -1005,7 +1005,6 @@ export default function HomeScreen({ navigation }) {
       case 'stats': goStats(); break;
       case 'review': openReview(); break;
       case 'audit': select(); setAuditOpen(true); break;
-      case 'extra': select(); if (openExtra) openExtra(); break;
       case 'item': { const it = o.id === 'extras' ? extrasItem : todayItems.find((x) => x.id === o.id); if (it) openItem(it); else goStats(); break; }
       case 'hotel': select(); setHotelOpen(true); break;
       case 'validades': select(); navigation.navigate('Perfil', { screen: 'Validades', initial: false }); break;
@@ -1087,7 +1086,7 @@ export default function HomeScreen({ navigation }) {
       {/* Auditoria do mês — a folha do radar (estado fecho). */}
       <AuditSheet visible={auditOpen} onClose={() => setAuditOpen(false)} audit={audit} monthName={monthName}
         lang={lang} provaCtx={{ companySlug: company && company.slug, companyName: company && company.name, isPilot, lang }}
-        onOpenDay={(iso) => openDayDetail(iso)} onRegister={() => { if (openExtra) openExtra(); }} />
+        onOpenDay={(iso) => openDayDetail(iso)} />
     </SafeAreaView>
   );
 }

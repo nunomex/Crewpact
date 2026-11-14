@@ -167,9 +167,10 @@ eq('fecho · "Como é calculado?"', par.link, { label: 'Como é calculado?', ope
 const num = (s) => Number(String(s).replace(/[^\d,]/g, '').replace(',', '.'));
 yes('fecho · as parcelas somam o total', Math.abs(par.rows.reduce((a, r) => a + num(r.v), 0) - MONTH.total) < 0.005);
 yes('fecho · já feito + ainda na escala = total', Math.abs(par.foot.reduce((a, r) => a + num(r.v), 0) - MONTH.total) < 0.005);
-eq('fecho · auditoria e extra a seguir às parcelas', R.fecho.cards.slice(1).map(C), [
-  { t: 'slim', color: 'alert', title: 'Auditoria do mês', sub: '2 itens por confirmar · ≈ 45,40 € em causa', gain: false, value: null },
-  { t: 'slim', color: 'neutral', title: 'Falta algum extra?', sub: 'regista antes do fecho', gain: false, value: null }]);
+// A regra do Nuno (2026-11-14): a app só lê o calendário e calcula — nada à mão, exceto na Simulação. O "Falta algum extra? regista
+// antes do fecho" saiu: os extras vêm do calendário (mesmo com canExtra, a linha não volta).
+eq('fecho · só a auditoria a seguir às parcelas (sem "Falta algum extra?")', R.fecho.cards.slice(1).map(C), [
+  { t: 'slim', color: 'alert', title: 'Auditoria do mês', sub: '2 itens por confirmar · ≈ 45,40 € em causa', gain: false, value: null }]);
 
 // ═══ 10 · Férias — só o regresso e o mês ═══
 eq('férias · topo', R.ferias.top, { pill: { text: 'Férias', live: false }, pill2: { text: 'quarta 11', iso: D11 }, what: 'Ficam no ano',

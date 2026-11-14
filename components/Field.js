@@ -44,6 +44,29 @@ export const FieldInput = forwardRef(function FieldInput({ label, error, style, 
   );
 });
 
+// Uma data em três campos (DD / MM / AAAA), na mesma gramática: rótulo pequeno, os valores grandes, um fio por baixo de cada.
+// Serve o Extra do mês e as Validades. `error` = a frase por baixo (o fio fica vermelho).
+export function DateField({ label, d, m, y, onD, onM, onY, error, a11y }) {
+  const box = (v, on, ph, w, max) => (
+    <TextInput value={v} onChangeText={(t) => on(t.replace(/\D/g, '').slice(0, max))} placeholder={ph} placeholderTextColor={W.caption}
+      keyboardType="number-pad" maxLength={max} accessibilityLabel={`${a11y || label} · ${ph}`}
+      style={[s.input, s.dateIn, { width: w }, error ? s.dateErr : null]} />
+  );
+  return (
+    <View style={s.dateWrap}>
+      <Text style={[TXT3.kind, s.label]}>{label}</Text>
+      <View style={s.dateRow}>
+        {box(d, onD, 'DD', 52, 2)}
+        <Text style={[TXT3.fact, { color: W.tabSub }]}>/</Text>
+        {box(m, onM, 'MM', 52, 2)}
+        <Text style={[TXT3.fact, { color: W.tabSub }]}>/</Text>
+        {box(y, onY, 'AAAA', 84, 4)}
+      </View>
+      {error ? <Text style={[TXT3.cardSub, s.errTxt]}>{error}</Text> : null}
+    </View>
+  );
+}
+
 export default Field;
 
 const s = StyleSheet.create({
@@ -56,4 +79,8 @@ const s = StyleSheet.create({
   text: { color: W.soft, marginTop: SPACE.xxs },
   input: { fontFamily: TXT3.fact.fontFamily, fontSize: TXT3.fact.fontSize, color: W.ink, paddingVertical: SPACE.xxs, paddingHorizontal: 0 },
   errTxt: { color: W.ink },
+  dateWrap: { paddingTop: SPACE.sm, paddingBottom: SPACE.sm, gap: SPACE.xs },
+  dateRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm },
+  dateIn: { textAlign: 'center', borderBottomWidth: 1.5, borderBottomColor: CARD.rule, fontVariant: ['tabular-nums'] },
+  dateErr: { borderBottomColor: W.stop },
 });

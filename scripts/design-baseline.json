@@ -1,14 +1,14 @@
 {
  "gerado": "2026-11-14",
  "total": {
-  "tipoFora": 178,
-  "tipoMenor11": 84,
-  "espacoFora": 343,
-  "raioFora": 44,
+  "tipoFora": 165,
+  "tipoMenor11": 77,
+  "espacoFora": 332,
+  "raioFora": 42,
   "corSolta": 53,
   "ionicons": 7,
   "iconeNavSolto": 3,
-  "amareloTexto": 3
+  "amareloTexto": 2
  },
  "ficheiros": {
   "App.js": {
@@ -151,16 +151,6 @@
    "iconeNavSolto": 1,
    "amareloTexto": 0
   },
-  "components/AuditSheet.js": {
-   "tipoFora": 8,
-   "tipoMenor11": 7,
-   "espacoFora": 5,
-   "raioFora": 1,
-   "corSolta": 0,
-   "ionicons": 0,
-   "iconeNavSolto": 0,
-   "amareloTexto": 1
-  },
   "components/Banner.js": {
    "tipoFora": 1,
    "tipoMenor11": 0,
@@ -201,20 +191,10 @@
    "iconeNavSolto": 1,
    "amareloTexto": 0
   },
-  "components/ExtraEventSheet.js": {
-   "tipoFora": 5,
-   "tipoMenor11": 0,
-   "espacoFora": 4,
-   "raioFora": 1,
-   "corSolta": 0,
-   "ionicons": 0,
-   "iconeNavSolto": 0,
-   "amareloTexto": 0
-  },
   "components/ExtrasManager.js": {
    "tipoFora": 1,
    "tipoMenor11": 0,
-   "espacoFora": 5,
+   "espacoFora": 3,
    "raioFora": 0,
    "corSolta": 0,
    "ionicons": 0,

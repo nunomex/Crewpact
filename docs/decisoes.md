@@ -639,8 +639,59 @@ referência para o layout das páginas que faltam e para o sistema de desenho. *
   por baixo), a escolha em linhas com o visto a tinta (o de "Escolher calendário"), as horas de assistência com o valor grande
   entre − e + (botões redondos de 44), a nota e "Guardar" largo no fundo · **"O calendário está errado?"** (a folha de corrigir do
   Detalhe): as duas portas nas linhas das janelas (`MarkRow`, relógio e calendário, com a seta) e a nota da fonte por baixo.
-  Guardião (chão novo) · testes todos · pacote iOS gera. **Por ver no iPhone (as quatro folhas: Prova, Hotel, facto, corrigir);
-  por gravar.**
+  Guardião (chão novo) · testes todos · pacote iOS gera. O Nuno: "estão bem" → **gravado em `7201a60`**.
+  **A Auditoria** (`components/AuditSheet.js`, na regra das folhas; imagens 3409/3435/3417): cada item no `MarkRow` — o dia no
+  quadradinho (a pernoita na cor do repouso) com o selo "!" de "por confirmar", vários dias com o ícone; o € a tinta (candidato) e
+  a ação à direita; o § por baixo abre a Prova; o total num `Field`. **Por ver no iPhone; por gravar.** `DateField` acrescentado ao
+  `components/Field.js` (para as Validades).
+
+**A REGRA NOVA DO NUNO (2026-11-14): A APP SÓ LÊ O CALENDÁRIO E CALCULA — NADA À MÃO, EXCETO NA SIMULAÇÃO.** ("os extras do mês
+não são para introduzir manualmente porque vem tudo do calendário … o completar também … outros serviços igual … só o botão da
+simulação é que podemos inserir para simular"). Parei a migração do "Extra do mês". Pesquisa (pedida por ele, "pesquisa na lei"):
+- **FTL:** o ORO.FTL.110(a) obriga a publicar a escala; o **ORO.FTL.245** obriga a companhia a guardar o início/fim REAIS de cada
+  serviço e PSV, os repousos e os relatórios dos PSV prolongados, e a dar cópia ao tripulante. A lei garante os dados, não diz que
+  vão no calendário. **O Nuno: "eles corrigem as horas depois, no calendário"** — mas convém registar como prova: a app já guarda
+  o arquivo das mudanças (antes → depois + quando a viu; o Detalhe mostra real vs prevista) → passa a registar a correção como
+  prova ("prevista 06:10 → real 06:55 · corrigida a 14/11 09:20"). **A acertar nas contas:** uma correção DEPOIS do serviço não é
+  SNC (o SNC é uma mudança antes do serviço) — separar pela hora a que foi vista.
+- **AE pilotos 2026 (BTE 29/2026):** SOC/EXPD = "por cada código SOC ou EXPD na escala" (Art. 37.º n.º 9); "dia WFLY" (Art. 61.º);
+  DDO/IDO calculam-se pelo tempo do serviço no dia de folga (Art. 54.º, Anexo I.12: < 90 min / ≥ 90 min); ad-hoc = escritório,
+  formação em terra, simulador (Art. 43.º); LTC 0,33 setor por dia (Art. 42.º); funções "devidamente registadas na escala" (OLAD/OLAC).
+  **A app hoje NÃO lê WFLY, SOC, EXPD nem LTC do calendário** (só HSBY/ADTY/DH/POS/OFC/SIM/folgas/SICK…). **O Nuno pediu a um colega
+  todos os códigos da easyJet** → acrescentar a `data/rosterCodes.js` (golden primeiro).
+- **Net:** o feed iCal da easyJet traz standby, standby de aeroporto e posicionamento (guia de terceiros); não encontrei prova de que
+  traga as horas reais (o Nuno confirmou que a companhia as corrige depois).
+- **Aeroportos (o Nuno):** "a app tem que reconhecer todos; o calendário vem sempre correto; se não, corrige-se no calendário" → o
+  catálogo (hoje 5 400 comerciais, OurAirports) passa a todos os que têm IATA (~9 000); sai o "Corrigir ›"; um aeroporto ainda
+  desconhecido = dia "incerto" com o aviso (o tripulante nunca escreve).
+- **O Nuno disse "sim" a tirar o "Evento", o "Completar" e o "Corrigir".** Plano desta sessão (só desenho, sem contas): (1) o botão
+  do centro passa a ser a Simulação → esboço `design/botao-simulacao.html` (**T1** ícone · **T2** "Simular" escrito, recomendada ·
+  **T3** aba) — **o Nuno escolheu a T2 — CONSTRUÍDA** (`components/TabBar.js`: o botão de tinta 56 com o ícone da Simulação e
+  "Simular" escrito; tocar abre a Simulação; saíram o speed-dial, o "Evento" e o clone ×; por ver no iPhone; por gravar); (2) sai o "adicionar extra" (os já registados continuam a contar); (3) saem o "Completar" e
+  os formulários do "O calendário está errado?" (golden do Início primeiro: fala na barra "Completar"); (4) sai o "Corrigir ›" da
+  "Rever a escala" + catálogo de aeroportos completo. **Depois:** os extras mostrados nos Números (esboços); a Simulação também com
+  extras (esboços); **as contas novas (DDO/IDO pelas horas reais, WFLY/SOC/EXPD/LTC pelos códigos, SNC vs correção, a assistência
+  anterior e o adiamento tirados do calendário) numa SESSÃO PRÓPRIA em Fable 5.2 (Alto)** — o método: regras de lei que o Nuno não
+  consegue conferir sozinho; quando os códigos chegarem.
+- **O SNC e a correção das horas (o Nuno: "sim, temos que corrigir isto"):** visto no código — o detetor do SNC JÁ só conta mudanças
+  vistas ANTES da hora planeada (nas 48 h antes; `data/disruption.js`), por isso uma correção depois do voo nunca é SNC (eu tinha dito
+  o contrário sem ver o código). **O risco está no RDP da cabine** (mudanças vistas NO DIA da operação, |Δ fim| ≥ 119 min): uma
+  correção das horas reais feita no mesmo dia, depois do voo, pode contar como RDP — se deve ou não depende da Cl. 67.ª (um atraso
+  real no dia pode ser RDP) → **para a sessão Fable, com o texto da Cl. 67.ª.**
+- **Os Relatórios (o Nuno: "não é onde ficam os registos?")** — sim: Registo ORO.FTL.245 (PDF), Disrupção (SNC/RDP do arquivo),
+  Estabilidade, Carreira (PDF para assinar), CSV. **Falta:** o 245 mostra as horas guardadas mas não "prevista → real · corrigida a
+  …" (o caderno de prova). Proposto e recomendado: **(a) a marca dentro do próprio Registo 245**, só nos serviços com diferença
+  (a prova ao lado da hora; o documento que a lei pede) — com 3 esboços quando lá chegarmos.
+- **Passo 2 — os extras à mão saíram (o Nuno: "sim"):** golden primeiro (`test:homecards`: no fecho do mês só a auditoria, sem "Falta
+  algum extra? regista antes do fecho") · `data/homeCards.js` sem a linha · `screens/HomeScreen.js` sem `canExtra` nem a ação 'extra'
+  · a Auditoria: o SNC/RDP passa de "Registar" a "Ver o dia" (a contagem automática destes candidatos fica para a sessão Fable) · a
+  lista dos extras (`ExtrasManager`) sem "adicionar extra" (fica sem entrada até ter o seu lugar nos Números, com esboços — o € já
+  está nas contas dos Números) · `components/ExtraEventSheet.js` APAGADO (no histórico do git) · `App.js` sem o formulário. Os extras
+  já registados continuam a contar. **Consequência aceite pelo Nuno:** até aos códigos e à sessão Fable, WFLY, SOC/EXPD, LTC, DDO/IDO
+  e os SNC/RDP candidatos não contam (a app não está nas mãos de ninguém; só dados de teste). Testes todos · guardião (chão novo) ·
+  pacote iOS gera. **Por ver no iPhone; por gravar.**
+- **O Nuno: "tenho que mudar o agente para o Fable 5.2 agora?"** → não: o que se faz agora (tirar o que é à mão, desenho) é Opus 5.5.
+  O Fable 5.2 entra numa SESSÃO NOVA (esforço Alto), quando os códigos do colega chegarem, para as contas novas (lista acima).
   **Também gravado nesta ronda:** a centragem dos números nos círculos (`s.numTxt`, acima) e os esboços `janelas-3.html`,
   `janelas-c.html` e `botoes-escritos.html`.
   **E o Nuno: "depois vê os botões das notificações, o X para fechar e o de sincronizar — não estão com o layout novo, pois não?"**

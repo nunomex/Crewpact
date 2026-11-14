@@ -34,7 +34,7 @@
 //   dis   — { mode:'delay'|'projection'|'cancelled'|'diverted', side, newHm, oldHm, delayMin, why, divertedTo,
 //             verdict:{ verdict, realStr, maxStr, projected }, commander, lastArr, end }
 //   vac   — { left, quota, retIso, fromIso, toIso } · sick — { day, first3, payText } · doc — { name, days, expiryIso, after }
-//   empty — { rosterOk, lastRead } · demo · wake — { hm } · canExtra · longHaul · restOk (véspera: true|false|null)
+//   empty — { rosterOk, lastRead } · demo · wake — { hm } · longHaul · restOk (véspera: true|false|null)
 //   warns — [{ id, title, sub, value, first, open }] (já escritos pelo ecrã, por ordem de prioridade; no máx. 2)
 //
 // SAÍDA: { state, top: { pill:{ text, live }, pill2:{ text, iso }|null, what, giant:{ l1, unit, l2, l2Grey }, facts[] },
@@ -326,7 +326,8 @@ export function homeCards(H = {}) {
     const m = H.month;
     const d = H.fechoDays;
     const closes = d === 0 ? l('fecha hoje', 'closes today') : d === 1 ? l('fecha amanhã', 'closes tomorrow') : l(`fecha em ${d} dias`, `closes in ${d} days`);
-    const extraSlim = H.canExtra ? { t: 'slim', id: 'extra', color: 'neutral', title: l('Falta algum extra?', 'Missing an extra?'), sub: l('regista antes do fecho', 'log it before the close'), value: null, gain: false, open: { to: 'extra' } } : null;
+    // O "Falta algum extra? regista antes do fecho" saiu (2026-11-14, regra do Nuno: a app só lê o calendário e calcula — à mão só na
+    // Simulação; golden scripts/homecards.test.js).
     if (m && m.total != null) {
       const unc = m.unc && m.unc.min != null && m.unc.max != null;
       const [ip, dp] = F.eurBare(m.total).split(lang === 'en' ? '.' : ',');
@@ -341,11 +342,11 @@ export function homeCards(H = {}) {
         { t: 'lines', id: 'parcelas', color: 'neutral', kind: l('As parcelas', 'The parts'), rows, foot,
           note: [unc ? m.unc.why : null, l('O recibo da companhia manda.', 'The company payslip rules.')].filter(Boolean).join(' '),
           link: { label: l('Como é calculado?', 'How is it calculated?'), open: { to: 'stats' } }, open: null },
-        ...wFirst, ...wLast, extraSlim,
+        ...wFirst, ...wLast,
       ].filter(Boolean);
     } else {
       T = top({ text: H.monthName || l('Mês', 'Month'), live: false }, null, l('O mês fecha em', 'The month closes in'), giantOf(d != null ? d : '—', d === 1 ? l('dia', 'day') : l('dias', 'days')), null);
-      cards = [...wFirst, ...wLast, extraSlim].filter(Boolean);
+      cards = [...wFirst, ...wLast].filter(Boolean);
     }
   } else if (state === 'posvoo') {
     const c = H.closed || {};

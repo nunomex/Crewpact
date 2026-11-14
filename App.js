@@ -41,7 +41,6 @@ import { buildIncoming } from './data/rosterImport';
 import { diffRoster } from './data/rosterDiff';
 import { dutyToFtlDay, dayFtlFromDuties, reconcileDayLog } from './ftl';
 import { countersToEvents } from './data/aeEvents';
-import ExtraEventSheet from './components/ExtraEventSheet';
 import ExtrasManager from './components/ExtrasManager';   // PORT pele: gestão de extras (ver/apagar) no mini-FAB
 import { syncReminders, notifyRosterChange, notifyLiveSync, cancelAllReminders, requestRemindersPermission, remindersUnavailableReason, clearWakeUp, validateWakeUp } from './data/reminders';
 import { legZulu } from './data/zulu';
@@ -245,7 +244,6 @@ export default function App() {
   const [rosterLog, setRosterLog] = useState([]);
   const addRosterLog = (list) => setRosterLog((prev) => [...prev, ...(list || [])].slice(-400));
   const [extraOpen, setExtraOpen] = useState(false);         // GESTÃO de extras (mini-FAB) — lista/apagar
-  const [addExtraOpen, setAddExtraOpen] = useState(false);   // formulário de ADICIONAR extra (aberto pela gestão)
   const addAeEvents = (list) => setAeEvents((prev) => [
     ...prev,
     ...(list || []).filter((e) => e && e.type && e.date).map((e, i) => ({ id: e.id || `ev${Date.now().toString(36)}${prev.length + i}`, date: e.date, type: e.type })),
@@ -1190,8 +1188,7 @@ export default function App() {
         {onboarded ? <SimulationFlow visible={simulateOpen} onClose={() => setSimulateOpen(false)} /> : null}
         {/* Dois Modais NÃO podem transicionar ao mesmo tempo (iOS trava): fecha um, espera a
             saída (~240ms), só depois abre o outro. */}
-        {onboarded ? <ExtrasManager visible={extraOpen} onClose={() => setExtraOpen(false)} onAdd={() => { setExtraOpen(false); setTimeout(() => setAddExtraOpen(true), 340); }} /> : null}
-        {onboarded ? <ExtraEventSheet visible={addExtraOpen} onClose={() => { setAddExtraOpen(false); setTimeout(() => setExtraOpen(true), 340); }} /> : null}
+        {onboarded ? <ExtrasManager visible={extraOpen} onClose={() => setExtraOpen(false)} /> : null}
         <Toast toast={toast} lang={lang} onHide={() => setToast(null)} />
         {/* Privacidade no multitarefas: tapa o conteúdo quando a app sai de 'active' (padrão banca).
             pointerEvents:none → nunca prende o utilizador; some assim que volta a 'active'. */}
