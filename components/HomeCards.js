@@ -375,7 +375,7 @@ function BigCard({ c, C, onOpen, l }) {
               // duas filas fixas: em cima o veredicto (e o repouso na véspera) e a margem; em baixo o PSV, em pequeno
               <View style={[s.quiet, { borderTopColor: CARD.rule }]}>
                 <View style={s.quietRow}>
-                  <Text style={[TXT3.dur, s.quietL, { color: T.fg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.quiet.rest ? `${c.quiet.l} · ${c.quiet.rest}` : c.quiet.l}</Text>
+                  <Text style={[TXT3.dur, s.quietL, { color: T.fg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.quiet.l}</Text>
                   <Text style={[TXT3.cardSub, { color: T.sub }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>
                     {`${c.quiet.r.k} `}<Text style={[TXT3.lineVal, { color: T.fg }]}>{c.quiet.r.v}</Text>
                   </Text>

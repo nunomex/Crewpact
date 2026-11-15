@@ -176,7 +176,8 @@ eq('o voo da véspera que acaba às 03:25 abre a régua e toca na WOCL deste dia
 // ════════ textos e cartões ════════
 eq('durações: 50 min · 4 h · 6 h 30 · 1 h 05', [E.fmtDur(50), E.fmtDur(240), E.fmtDur(390), E.fmtDur(65)], ['50 min', '4 h', '6 h 30', '1 h 05']);
 eq('repartido (220)', E.betweenText(gRest), { strong: '6 h 30 entre os dois', rest: 'um só serviço repartido (CS FTL.1.220)' });
-eq('repouso cumprido', E.betweenText({ gapMin: 780, requiredMin: 720, kind: 'rest', place: 'base' }), { strong: '13 h entre os dois', rest: 'repouso cumprido (mín. 12 h na base)' });
+eq('repouso acima do mínimo (R1, 2026-11-15: verdade também nos dias que vêm)', E.betweenText({ gapMin: 780, requiredMin: 720, kind: 'rest', place: 'base' }), { strong: '13 h entre os dois', rest: 'repouso acima do mínimo (12 h na base)' });
+eq('… fora da base, em inglês', E.betweenText({ gapMin: 700, requiredMin: 600, kind: 'rest', place: 'away' }, 'en'), { strong: '11 h 40 between them', rest: 'rest above the minimum (10 h away)' });
 eq('incerto (as duas leituras)', E.betweenText({ gapMin: 630, requiredMin: 720, kind: 'either', place: 'away' }), { strong: 'Incerto · 10 h 30 entre os dois', rest: 'serviço repartido ou repouso curto (mín. 12 h fora)' });
 eq('perto de mais', E.betweenText({ gapMin: 90, requiredMin: 720, kind: 'continuous', place: 'base' }).rest, 'perto de mais: é o mesmo serviço');
 eq('sem intervalo → sem texto', E.betweenText(null), null);

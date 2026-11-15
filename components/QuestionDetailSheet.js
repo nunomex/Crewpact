@@ -64,7 +64,7 @@ function detailFor(it, lang) {
       out.bars.push({ k: l('Repouso antes do report', 'Rest before report'),
         label: `${fmtMin(raw.actualMin)} / ${l('mín', 'min')} ${fmtMin(raw.requiredMin)}`,
         tone: under ? 'red' : 'green', fill: Math.min(100, ratio * 100),
-        tag: under ? `−${fmtMin(raw.requiredMin - raw.actualMin)}` : null, left: under ? null : l('cumprido', 'met') });
+        tag: under ? `−${fmtMin(raw.requiredMin - raw.actualMin)}` : null, left: under ? null : l('acima do mínimo', 'above the minimum') });   // R1 (2026-11-15): o repouso pode ainda estar a correr
       if (raw.prevDutyMin) out.rows.push({ k: l('Serviço anterior', 'Preceding duty'), v: fmtMin(raw.prevDutyMin) });
     }
   } else if (it.id === 'roster') {

@@ -1269,7 +1269,19 @@ motor está na versão **21**. **O que falta, por ordem:**
   (2) **os textos, escolhidos pelo Nuno** (golden primeiro, `test:homecards` 486): "o dia fechou **dentro dos** limites" ("nos
   limites" soava a "no limite", à justa) e o repouso **"cumpre-se"** enquanto não chega à hora — "cumprido" só depois (a barra a
   100 %); a mesma regra na frase do repouso incerto ("cumpre-se entre 12:00 e 14:00"). Fica um caso igual por decidir: **"repouso
-  cumprido" no cartão da véspera** (às 21:40 o repouso ainda está a correr).
+  cumprido" no cartão da véspera** (às 21:40 o repouso ainda está a correr). **2026-11-15:** a mesma frase está em três sítios —
+  o cartão da véspera, a folha "Tenho descanso?" (a barra diz "cumprido") e a Escala entre dois serviços (`betweenText`, também em
+  dias que vêm). Esboço `design/repouso-cumprido.html`: **R1 "acima do mínimo"** (recomendada) · R2 os números · R3 "cumpre-se às
+  03:00". Medido com as larguras da Hanken: na 1.ª fila do cartão, ao lado da margem, "acima do mínimo" e "cumpre-se às 03:00" não
+  cabem (335 e 348 pt para 319 a 375; 334 a 390) → nas três, o repouso desce para a fila do PSV. "Suficiente" fica de fora (lê-se
+  como sono, e a app estima a lei, não a fadiga). **O Nuno escolheu a R1 — construída (por gravar):** golden primeiro
+  (`test:homecards` 493 — o repouso na fila do PSV, em inglês, com o PSV por confirmar, o curto sem a frase; `test:escala` 124 — a
+  pílula entre dois serviços, na base e fora); `data/homeCards.js` (o campo `quiet.rest` saiu: "· repouso acima do mínimo" vai no
+  `sub`); `data/escalaDay.js` (`betweenText`: "repouso acima do mínimo (12 h na base)"); `components/QuestionDetailSheet.js` (a barra:
+  "acima do mínimo"); `components/HomeCards.js` e `scripts/render-estados.js` (a 1.ª fila só com o veredicto). **Sem cor**, a pedido
+  de opinião do Nuno: o mapa B diz dentro sem cor; o curto já sobe como aviso vermelho ("Tenho descanso?"), o incerto fica neutro.
+  40 suites e o pacote iOS passam. **Ver no iPhone:** a véspera (a fila de baixo "PSV … · repouso acima do mínimo" cabe a 375);
+  a folha "Tenho descanso?"; a pílula entre dois serviços na Escala.
   (3) **as durações com duas escritas** ("1:35 h" no topo, "2 h 35" no cartão): esboço `design/duracoes.html` — **D1 "1 h 35" em
   todo o lado** (recomendada: os dois pontos só para as horas do relógio; no número grande o "h" pequeno ao meio) · D2 "1:35" em todo
   o lado · D3 "1 h 35 min". Achado ao fazer o esboço: o facto da margem em voo também usa dois pontos ("3:10 de margem no PSV",

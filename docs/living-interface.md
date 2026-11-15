@@ -165,7 +165,7 @@ documentos, a auditoria do mês — que corre também na folga), o aviso é o pr
 válido, os serviços marcados depois · o cartão âmbar com "Registar a data nova", o próximo serviço.
 
 **Voo amanhã** (`vespera`, noturno) — "Report às · 05:15 LIS" · quanto falta, o "PSV até" (sublinhado), o tempo do report · o cartão do
-voo (com o repouso cumprido na linha do limite e o lembrete), a pernoita numa linha.
+voo (com "repouso acima do mínimo" na fila do PSV e o lembrete), a pernoita numa linha.
 
 **Dia de voo** (`hoje`, `pre`) — "Report às · 05:15 LIS" · quanto falta, o "PSV até" (sublinhado), o tempo do report · o cartão do voo,
 **"Tudo a horas"** (W1: o voo a horas, o avião já em LIS ou "chega 05:20", o aeroporto normal; sem um dado, "sem dados" e "Voo a horas";

@@ -373,7 +373,7 @@ export function betweenText(g, lang = 'pt') {
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const gap = fmtDur(g.gapMin), req = fmtDur(g.requiredMin);
   const place = g.place === 'away' ? l('fora', 'away') : l('na base', 'at base');
-  if (g.kind === 'rest') return { strong: l(`${gap} entre os dois`, `${gap} between them`), rest: l(`repouso cumprido (mín. ${req} ${place})`, `rest met (min ${req} ${place})`) };
+  if (g.kind === 'rest') return { strong: l(`${gap} entre os dois`, `${gap} between them`), rest: l(`repouso acima do mínimo (${req} ${place})`, `rest above the minimum (${req} ${place})`) };   // R1 (2026-11-15): verdade também nos dias que vêm
   if (g.kind === 'either') return { strong: l(`Incerto · ${gap} entre os dois`, `Uncertain · ${gap} between them`), rest: l(`serviço repartido ou repouso curto (mín. ${req} ${place})`, `split duty or short rest (min ${req} ${place})`) };
   if (g.kind === 'split') return { strong: l(`${gap} entre os dois`, `${gap} between them`), rest: l('um só serviço repartido (CS FTL.1.220)', 'one split duty (CS FTL.1.220)') };
   return { strong: l(`${gap} entre os dois`, `${gap} between them`), rest: l('perto de mais: é o mesmo serviço', 'too close: it is the same duty') };

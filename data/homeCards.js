@@ -338,9 +338,13 @@ export function homeCards(H = {}) {
     const sure = !!(d.legal && d.legal.status === 'ok');
     const span = `${F.dur(pm)} ${l('de', 'of')} ${F.dur(mx)}`;
     // Na véspera, o repouso verificado diz-se ("está verificado, dorme" — a ficha da Living Interface); o curto é o aviso por cima.
-    // Duas filas fixas no cartão (nunca se parte onde calha): em cima o veredicto e o repouso, à direita a margem; em baixo o PSV.
+    // R1 (design/repouso-cumprido.html, escolhida pelo Nuno a 2026-11-15): "repouso acima do mínimo" — o que a app sabe (o repouso
+    // que a escala dá passa o mínimo da lei, ORO.FTL.235) e é verdade a qualquer hora; "cumprido" dizia que já tinha acontecido,
+    // às 21:40 da véspera. Sem cor (dentro sem cor — o curto é que sobe como aviso). Duas filas fixas no cartão (nunca se parte onde
+    // calha): em cima o veredicto e, à direita, a margem; em baixo o PSV e o repouso (na de cima não cabia — medido a 375 e a 390).
+    const restT = rest ? ` · ${l('repouso acima do mínimo', 'rest above the minimum')}` : '';
     return { l: sure ? l('Dentro do limite', 'Within limits') : l('PSV dentro do limite', 'FDP within the limit'),
-      rest: rest ? l('repouso cumprido', 'rest met') : null, sub: sure ? `PSV ${span}` : span, r: { k: l('margem', 'margin'), v: F.dur(mx - pm) } };
+      sub: `${sure ? `PSV ${span}` : span}${restT}`, r: { k: l('margem', 'margin'), v: F.dur(mx - pm) } };
   };
   // O limite incerto num cartão à parte (L2): neutro e tracejado, a margem nas duas pontas quando as há, e o que falta.
   const limUncOf = (d, kindLbl) => {

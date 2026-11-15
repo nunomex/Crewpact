@@ -349,8 +349,10 @@ O que muda em relação à §2 ("branco · preto · amarelo, plana, hairline"):
   por baixo (só com o nome em português — `data/countries.js` ou aeroporto português; senão, nenhuma linha); o nº do voo num selo
   (1 setor) e o per diem com o nome ("per diem +154,51 €"); **a linha do dia** pela ordem em que acontece (report → parte → chega
   → fim, em 0 · 30 · 70 · 100 % — a 25 % o report e a partida ficavam a ~2 pt a 375; a parte preta é o voo; com 3 sítios ou mais, um traço por voo e os aeroportos por cima); **o
-  limite numa linha discreta** quando está dentro, em **duas filas fixas** (em cima "Dentro do limite" — e "· repouso cumprido" na
-  véspera — com a margem à direita; em baixo "PSV 1 h 35 de 12 h"; "PSV dentro do limite" quando só o PSV está verificado). Incerto → um cartão à parte, por cima, neutro e tracejado (`dashed`), com as duas
+  limite numa linha discreta** quando está dentro, em **duas filas fixas** (em cima "Dentro do limite", com a margem à direita; em baixo
+  "PSV 1 h 35 de 12 h" — e, na véspera, "· repouso acima do mínimo" (R1 de `design/repouso-cumprido.html`, 2026-11-15: verdade a
+  qualquer hora — "cumprido" dizia que já tinha acontecido; sem cor, dentro sem cor; a mesma frase na folha "Tenho descanso?" e na
+  Escala entre dois serviços); "PSV dentro do limite" quando só o PSV está verificado). Incerto → um cartão à parte, por cima, neutro e tracejado (`dashed`), com as duas
   pontas e o que falta; acima → o aviso vermelho com ✕ e o tema por cima ("O limite de hoje · Acima do limite · 45 min a mais").
   Sem o selo do meio. O cartão em voo e o da disrupção ficam como estavam (por desenhar). Golden `test:homecards`.
 - **A hora Zulu do report — junto do sítio** (a) de `design/meteo-topo.html`, 2026-11-14; era o 3.º facto, opção A de

@@ -149,7 +149,7 @@ function cardHTML(c, P = C, look = {}) {
     body += c.sub ? `<span class="cs">${esc(c.sub)}</span>` : '';
     body += (c.flightNo || c.gain) ? `<div class="badges">${c.flightNo ? `<span class="badge">${ic('plane', 12)}${esc(c.flightNo)}</span>` : '<span></span>'}${c.gain ? `<span class="pd">${esc(c.gainLbl || '')} <span class="chip">${esc(c.gain)}</span></span>` : ''}</div>` : '';
     body += lineHTML(c.line);
-    body += c.quiet ? `<div class="quiet2"><div class="qr"><b>${look.statusGreen ? '<i class="gdot"></i>' : ''}${esc(c.quiet.rest ? c.quiet.l + ' · ' + c.quiet.rest : c.quiet.l)}</b><span>${esc(c.quiet.r.k)} <b class="qv">${esc(c.quiet.r.v)}</b></span></div><span>${esc(c.quiet.sub)}</span></div>` : '';
+    body += c.quiet ? `<div class="quiet2"><div class="qr"><b>${look.statusGreen ? '<i class="gdot"></i>' : ''}${esc(c.quiet.l)}</b><span>${esc(c.quiet.r.k)} <b class="qv">${esc(c.quiet.r.v)}</b></span></div><span>${esc(c.quiet.sub)}</span></div>` : '';
   } else {
     body += (c.sub || c.gain) ? `<div class="subrow"><span class="cs">${look.statusGreen && /^a horas/.test(c.sub || '') ? `<span class="gbadge">A horas</span>${esc((c.sub || '').replace(/^a horas/, ''))}` : esc(c.sub || '')}</span>${c.gain ? `<span class="chip">${esc(c.gain)}</span>` : ''}</div>` : '';
     body += (c.a || c.dur || c.b) ? `<div class="ab"><div>${c.a ? `<b>${esc(c.a.v)}</b><span>${esc(c.a.l)}</span>` : ''}</div>${c.dur ? `<span class="dur">${esc(c.dur)}</span>` : ''}<div style="text-align:right">${c.b ? (c.b.gain ? `<span class="chip">${esc(c.b.v)}</span>` : `<b>${esc(c.b.v)}</b>`) + `<span>${esc(c.b.l)}</span>` : ''}</div></div>` : '';

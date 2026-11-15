@@ -146,6 +146,11 @@ combinações de letra e 924 espaçamentos fora da escala (medido a 2026-11-02).
   passa (o fundo, a folha e o cartão principal em 260 ms). Em duas passagens: Dia de voo → Em serviço (o report) e Aterrado →
   Pernoita (o dia fecha fora da base). Visto com e sem movimentos reduzidos. A imagem GIF 7EEA, o splash "painel de partidas", a
   transição de números da Apple; Mobbin Air NZ, American Airlines.
+- **`repouso-cumprido.html`** (2026-11-15, **R1 escolhida pelo Nuno — no código**, sem cor; gerado a partir do código) — o "repouso cumprido" que ainda está a correr
+  (a véspera às 21:40; a folha "Tenho descanso?"; a Escala entre dois serviços, também em dias que vêm): **R1 "acima do mínimo"**
+  (recomendada: verdade a qualquer hora, diz a lei e não o sono) · R2 os números ("repouso 14 h 15 (mín. 12 h)") · R3 a hora
+  ("cumpre-se às 03:00"). Medido com as larguras da Hanken: na 1.ª fila do cartão só cabe o "cumprido" de hoje → nas três, o
+  repouso desce para a fila do PSV (até 304 de 319 pt a 375). Imagens 3408, 3462, 3424, 3420; Mobbin The Outsiders, Eight Sleep.
 - **`duracoes.html`** (2026-11-14, **D1 escolhida pelo Nuno — no código, na app toda** (`data/duration.js`); gerado a partir do código) — uma escrita só para as durações (no iPhone, o mesmo
   ecrã tinha "1:35 h" no topo e "2 h 35 de 12 h 30" no cartão; a app usa as duas — com dois pontos no número grande, no PSV a correr,
   no facto "PSV de hoje" e no da margem em voo; com "h" no resto): **D1 "1 h 35" em todo o lado** — os dois pontos só para as horas do
