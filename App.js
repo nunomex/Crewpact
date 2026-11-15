@@ -88,8 +88,7 @@ import HotelDetailScreen  from './screens/HotelDetailScreen';
 import TabBar             from './components/TabBar';   // a navegação: barra convencional polida (padrão "melhores apps")
 import OfflineBanner      from './components/OfflineBanner';
 import Toast              from './components/Toast';
-import DutyFormSheet      from './components/DutyFormSheet';
-import SimulationResult   from './components/SimulationResult';
+import SimulationSheet    from './components/SimulationSheet';
 
 // Segura o splash nativo no arranque e esconde-o assim que a app está pronta
 // (sem animação — o splash estático nativo cobre a janela de auth + hidratação).
@@ -198,19 +197,12 @@ function RootNav() {
   );
 }
 
-// Fluxo de SIMULAÇÃO (global, fora das abas): form em modo `simulate` (não grava) → resultado
-// (perguntas/respostas). O form fica montado por baixo do resultado → "Editar" volta com os
-// dados intactos. Fechar/concluir desmonta tudo (reinicia para a próxima simulação).
+// A SIMULAÇÃO (global, fora das abas) — S1 de design/simulacao-3.html (2026-11-15): uma folha só, o cartão do dia constrói-se
+// enquanto se escreve e o resultado fica por baixo dos campos (components/SimulationSheet.js). Nada é guardado; fechar desmonta tudo
+// (a próxima começa limpa).
 function SimulationFlow({ visible, onClose }) {
-  const [simDuty, setSimDuty] = useState(null);
   if (!visible) return null;
-  const close = () => { setSimDuty(null); onClose(); };
-  return (
-    <>
-      <DutyFormSheet visible simulate onSimulate={setSimDuty} onClose={close} />
-      <SimulationResult visible={!!simDuty} duty={simDuty} onEdit={() => setSimDuty(null)} onClose={close} />
-    </>
-  );
+  return <SimulationSheet visible onClose={onClose} />;
 }
 
 export default function App() {

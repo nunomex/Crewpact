@@ -146,6 +146,12 @@ combinações de letra e 924 espaçamentos fora da escala (medido a 2026-11-02).
   passa (o fundo, a folha e o cartão principal em 260 ms). Em duas passagens: Dia de voo → Em serviço (o report) e Aterrado →
   Pernoita (o dia fecha fora da base). Visto com e sem movimentos reduzidos. A imagem GIF 7EEA, o splash "painel de partidas", a
   transição de números da Apple; Mobbin Air NZ, American Airlines.
+- **`simulacao-3.html`** (2026-11-15, **S1 escolhida pelo Nuno — no código**, com o resultado por baixo dos campos; os cartões e os topos gerados a partir do código) — a Simulação na linguagem 3.0
+  (hoje é a de julho: a lista dos 7 tipos com o "07", os passos em escada, o resultado em "poster"): **S1 o cartão constrói-se
+  enquanto escreves** — uma folha só, sem "Simular"; o cartão do dia do Início em cima, a fazer-se ao vivo, e os campos por baixo
+  (recomendada) · S2 passos com tracinhos → o veredicto no topo ("Dentro do limite", o PSV em grande) · S3 uma folha curta com os
+  campos num cartão → o dia como o Início o mostraria. O mesmo serviço nas três (quinta 19 · LIS–FNC–LIS · report 06:00 · 13 h pela
+  tabela 2 do 205(b)). Imagens 3417, 3460, 3442, 3454, 3462, 3408; Mobbin Jobber, Jira, Todoist, Toggl Track, X, Chime.
 - **`repouso-cumprido.html`** (2026-11-15, **R1 escolhida pelo Nuno — no código**, sem cor; gerado a partir do código) — o "repouso cumprido" que ainda está a correr
   (a véspera às 21:40; a folha "Tenho descanso?"; a Escala entre dois serviços, também em dias que vêm): **R1 "acima do mínimo"**
   (recomendada: verdade a qualquer hora, diz a lei e não o sono) · R2 os números ("repouso 14 h 15 (mín. 12 h)") · R3 a hora

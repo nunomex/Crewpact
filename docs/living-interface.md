@@ -25,7 +25,8 @@
 6. **Sem mascotes, sem fotos.** O carácter vem da tipografia e da cor dos cartões.
 7. **A app só lê o calendário e calcula** (regra do Nuno, 2026-11-14). Criar serviços à mão morreu; editar é corrigir o que foi
    importado; nada entra sem o "sim" do tripulante (detetar → confirmar → gravar). À mão, só a Simulação (o botão "Simular" da
-   barra de abas) e os dados do Perfil (hotel, validades).
+   barra de abas — S1 de `design/simulacao-3.html`, 2026-11-15: uma folha só, o cartão do dia do Início constrói-se enquanto se
+   escreve e "O resultado" fica por baixo dos campos) e os dados do Perfil (hotel, validades).
 8. **Tudo é do tripulante (2026-11-04).** Cada elemento passa as cinco perguntas:
    1. **Ajuda-o a decidir, agir ou ficar tranquilo agora?** Se não, sai.
    2. **Na língua dele** — report, calços, PSV, pernoita, folga — nunca a da app.

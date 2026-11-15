@@ -501,6 +501,24 @@ posta pelas larguras da Hanken (`data/fontMetrics.js`, os dígitos são tabulare
 `hooks/useStateShift.js` (quando há passagem e a fotografia do estado anterior; `useColorPass`) e, em `components/HomeCards.js`,
 `ShiftView`/`ShiftText`/`GiantLine` (tempos em `SHIFT`). O movimento está no inventário (`docs/motion-design-system.md` §7).
 
+### A Simulação (S1, 2026-11-15 — `design/simulacao-3.html`, escolhida pelo Nuno; no código)
+
+A pergunta é "se eu fizer este serviço, posso?" (muitas vezes ao telefone com a escala). **Uma folha só, sem "Simular"**
+(`components/SimulationSheet.js`): o topo como o do Início (o título "Simulação", "Fechar", a frase "nada fica na escala"); na folha,
+**em cima o cartão do dia do Início**, que se constrói enquanto se escreve — dentro, a linha do limite; fora, o vermelho com "✕" e o
+motivo por cima dele; incerto, neutro e tracejado; sem um dado, um cartão que diz qual falta. **No meio, os campos** (a regra das
+folhas: rótulo pequeno, valor grande, fio — `FieldInput`): o tipo em pílulas (uma fila que desliza), o dia com ‹ ›, o report e o
+último calço lado a lado, a partida e os setores com − / +, a rota (que manda nos setores). **Em baixo, "O resultado"** (no fim, para
+nada saltar por cima dos campos enquanto se escreve): os avisos que faltam (sem repetir o de cima), quanto recebes (com os cêntimos,
+o verde só no dinheiro), o repouso antes e o mínimo a seguir com a hora, os limites à volta, as validades no dia, a fadiga (sem cor) e,
+se nesse dia já há um serviço, que o simulado fica no lugar dele. Duas linhas: "Pormenores" (o formulário completo — as pernas, os
+casos especiais, o papel; o que devolve fica por cima) e "Calculadoras da lei" (`components/LawCalcsSheet.js`). O que se mostra
+decide-o `data/simSheet.js` (golden `test:simsheet`); o cartão do dia é o do Início (pedido ao `homeCards`), o motor é o
+`simulateDuty`. **O tempo de voo sem as horas das pernas não se sabe** (ORO.FTL.105(13): por setor, sem o tempo no solo): a conta
+corre com as duas pontas e, onde a resposta muda, o cartão diz "Incerto" com as duas e o motivo (`simFlightRange`). **Por fazer:**
+vários serviços de uma vez (a rotação, a troca de dois dias, o extra colado) e as calculadoras na
+linguagem 3.0.
+
 ### As durações (D1, 2026-11-14 — `design/duracoes.html`, escolhida pelo Nuno; no código do Início)
 
 **Os dois pontos são só das horas do relógio; uma duração escreve-se sempre com "h"**: "8 h 35", "12 h", "45 min" (o `F.dur` de

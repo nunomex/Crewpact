@@ -1,10 +1,10 @@
 {
- "gerado": "2026-11-14",
+ "gerado": "2026-11-15",
  "total": {
-  "tipoFora": 119,
+  "tipoFora": 117,
   "tipoMenor11": 59,
-  "espacoFora": 265,
-  "raioFora": 34,
+  "espacoFora": 255,
+  "raioFora": 33,
   "corSolta": 48,
   "ionicons": 7,
   "iconeNavSolto": 3,
@@ -290,16 +290,6 @@
    "raioFora": 0,
    "corSolta": 0,
    "ionicons": 1,
-   "iconeNavSolto": 0,
-   "amareloTexto": 0
-  },
-  "components/SimulationResult.js": {
-   "tipoFora": 2,
-   "tipoMenor11": 0,
-   "espacoFora": 10,
-   "raioFora": 1,
-   "corSolta": 0,
-   "ionicons": 0,
    "iconeNavSolto": 0,
    "amareloTexto": 0
   },

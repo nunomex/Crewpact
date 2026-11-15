@@ -1155,7 +1155,9 @@ motor está na versão **21**. **O que falta, por ordem:**
   **O modo noite (o Nuno: "a app vai ter modo noite… como fica a app"):** esboço `design/modo-noite.html` (N1 a paleta noturna que
   o Início já usa na véspera e na pernoita · N2 cartões escuros com a faixa da cor · N3 tons fundos com letra clara, os avisos
   vivos — recomendado). **O Nuno escolheu a N3 e "segue o iPhone".** Pergunta aberta: no modo claro, a véspera e a pernoita
-  continuam a escurecer sozinhas? (recomendação: não — ver a resposta de 2026-11-14). **Por construir:** é a base do tema (cada
+  continuam a escurecer sozinhas? (recomendação: não — ver a resposta de 2026-11-14). **Respondida a 2026-11-15: "concordo, segue o
+  iPhone"** — a véspera e a pernoita deixam de escurecer sozinhas; a passagem de cor dia → noite da M2 deixa de acontecer nelas. O
+  Nuno pediu antes a Simulação (`design/simulacao-3.html`) e a barra de abas. **Por construir:** é a base do tema (cada
   ecrã lê as cores de um sítio que muda com o iPhone) — Opus 5.5 Extra, pela tabela do método. **O Nuno pediu primeiro o resto da
   análise da Living Interface** (a N3 fica depois).
   **A tranquilidade antes do report (ponto 2 da LI):** esboço `design/tranquilidade.html` — T1 o selo "A horas" no cartão do voo ·
@@ -1307,6 +1309,36 @@ motor está na versão **21**. **O que falta, por ordem:**
   "10 h 15". 40 suites e o pacote iOS passam. **Ver no iPhone:** o número do dia fechado "1 h 35" (o "h" pequeno ao
   meio, o mesmo espaço dos dois lados) com os pontos finos por baixo do grupo todo; os pontos das "19 h" (só debaixo do texto); a
   folga "18 h 30"; em voo, "PSV 7 h 30 de 11 h 45" e "3 h 10 de margem"; "dentro dos limites"; "05:20 cumpre-se".
+  **2026-11-15 — a Simulação na linguagem 3.0 (pedido do Nuno, antes da N3):** hoje é a de julho (`DutyFormSheet` em modo
+  `simulate`: a lista dos 7 tipos com o "07" de fundo, os passos em escada; `SimulationResult`: o "poster"). Esboço
+  `design/simulacao-3.html`: **S1 o cartão constrói-se enquanto escreves** (recomendada: uma folha só, sem "Simular" — o cartão do
+  dia do Início em cima, ao vivo, e os campos por baixo; o motor `simulateDuty` já corre enquanto se escreve) · S2 passos com
+  tracinhos → o veredicto no topo · S3 uma folha curta → o dia como o Início o mostraria. Os "Casos especiais" (as calculadoras)
+  numa ronda à parte. **O Nuno escolheu a S1** e explicou o propósito: "inserir um serviço e ver se podes fazer ou não consoante o
+  teu calendário; no fim, os avisos, o que diz se posso ou não, o que recebo… a informação toda". **Acerto ao S1:** em cima só o
+  cartão do dia (o veredicto numa linha); o resultado completo **por baixo dos campos** (no fim, para nada saltar enquanto se
+  escreve). **Construída (por gravar):** golden primeiro — `test:simsheet` novo (45 casos, com resultados reais do motor: "PSV 5 h 20
+  de 13 h", margem 7 h 40, repouso 13 h antes e "até às 23:50" depois; o repouso curto com o "✕" e o 1.º motivo em cima; o que falta;
+  as validades; os títulos; a reserva) — 41 suites; `data/simSheet.js` (o formulário curto → o serviço do motor; **o tempo de voo
+  com as duas pontas** — o Nuno: "se está como a lei, ok"; a 1.ª versão contava da partida ao último calço "por excesso", e isso não
+  é a lei (ORO.FTL.105(13): o tempo de voo conta-se por setor, sem o tempo no solo; "o mais restritivo não é a lei") — sem as horas
+  das pernas, a conta corre com o máximo (da partida ao último calço; sem a partida, do report) e sem voo deste serviço, e onde a
+  resposta muda fica INCERTO com as duas pontas e o motivo ("Voo em 28 dias: 98 h a 102 h 20 de 100 h — faltam as horas das
+  pernas"; `simFlightRange`); a linha dos limites mostra as duas pontas; com as horas das pernas (Pormenores) é exato (**para a vez da TAP:** o limite de horas de bloco por mês do acordo também depende do tempo de voo e ainda não tem as duas pontas); a rota manda nos setores; acaba
+  fora da base → pernoita; o cartão do dia pedido ao `homeCards`, sem partilhar nem abrir; a reserva diz o que a lei diz — CS
+  FTL.1.230(a) e (b), conferido em `fontes/ftl/`); `components/SimulationSheet.js` (a folha); `components/LawCalcsSheet.js` (as
+  calculadoras, tiradas do resultado antigo sem mexer); `App.js` (o fluxo passa a uma folha só); **`components/SimulationResult.js`
+  apagado** (o "poster" — tudo o que fazia está na folha nova; fica no histórico do Git). O formulário antigo continua nos
+  "Pormenores" (as pernas, os casos especiais, o papel — o que devolve fica por cima; mudar uma hora depois tira as horas por perna,
+  o tempo de voo e a pernoita que vinham dele). A dívida do guardião desceu (tipo 119 → 117, espaço 265 → 255, raio 34 → 33).
+  **Ver no iPhone:** abrir a Simulação ("Simular"); escrever o report e o último calço e ver o cartão fazer-se; mudar o último calço e
+  ver a margem mudar; um repouso curto (o "✕" em cima); um dia que já tem serviço ("fica no lugar"); uma reserva; o teclado não
+  tapa o campo; "Pormenores" (o formulário completo por cima, e voltar); "Calculadoras da lei". **A seguir:** a barra de abas (3
+  esboços); depois os vários serviços de uma vez (golden primeiro; o caminho da importação, `scope: 'day'`, que já verifica vários
+  serviços novos juntos; revisão independente no fim) e as calculadoras na linguagem 3.0. **A barra de abas** (o Nuno: "não está a combinar com o layout novo") — medida no ecrã do
+  iPhone: a cápsula é o mesmo bege dos cartões neutros (#F1EFEA) e lê-se como mais um cartão; a aba ativa é uma mancha branca com
+  sombra (no 3.0, escolhido = tinta); ícones cheios genéricos; o "Simular" preto pesa mais do que tudo. **Esboços a seguir à
+  Simulação** (um de cada vez).
 - **Do dia 2026-11-14 (gravado e enviado até `81c2dfd`) — tudo por ver:** os Números (o total sozinho no topo; "Acima da base" no
   fim do "De onde vem"; com a base incerta, "O total fica entre"); o topo lado a lado igual no Início, na Escala e nos Números
   (o número do mesmo tamanho; a frase com ar por cima); a meteorologia (na véspera e antes do report, a base à hora do report no
