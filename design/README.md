@@ -146,6 +146,22 @@ combinações de letra e 924 espaçamentos fora da escala (medido a 2026-11-02).
   passa (o fundo, a folha e o cartão principal em 260 ms). Em duas passagens: Dia de voo → Em serviço (o report) e Aterrado →
   Pernoita (o dia fecha fora da base). Visto com e sem movimentos reduzidos. A imagem GIF 7EEA, o splash "painel de partidas", a
   transição de números da Apple; Mobbin Air NZ, American Airlines.
+- **`barra-abas-2.html`** (2026-11-15, **a N2 afinada escolhida pelo Nuno — no código**; 2.ª ronda — a B2 construída não ficou bem no iPhone) — o porquê não era a cor:
+  as formas não combinavam (o bloco quase quadrado dentro da cápsula redonda), dois contornos diferentes lado a lado e, por baixo,
+  falta de espaço (4 abas + um botão escrito de 105 pt = 55–62 pt por aba). Estas dão espaço primeiro: N1 cinco abas iguais (o
+  Simular uma delas, ao meio; a aberta a tinta com o ponto por baixo) · **N2 o botão redondo ao meio** — a estrutura de julho (a única
+  aprovada no iPhone, o ＋ ao centro) com o Simular no lugar do ＋, 34 pt por dentro do fio · **N2 afinada** (o Nuno gostou da N2 e
+  perguntou o que se podia melhorar): os nomes numa linha só (na N2 o "Simular" ficava 8 pt abaixo), o nome do Simular a cinzento
+  (na N2, "Início" e "Simular" estavam os dois a tinta), os ícones e o círculo centrados na mesma linha (a mesma caixa para todos),
+  a barra com 7 pt a mais (56 de altura útil) e o círculo de 32, 7 pt abaixo do fio; o toque é a aba inteira (recomendada) · N3 uma
+  cápsula só, com as cinco. A 375, cada aba com ~72 pt (N1, N2) ou 66 (N3). Mobbin Marriott, Expedia, GetYourGuide, Waymo, Tripadvisor; imagem 3412.
+- **`barra-abas.html`** (2026-11-15, B2 escolhida e construída, **depois substituída** — não ficou bem no iPhone → `barra-abas-2.html`; sem vidro; o Início gerado a partir do código, os ícones da app) — a barra de abas na linguagem
+  3.0 (medida no iPhone: a cápsula bege lê-se como mais um cartão; a ativa é uma mancha branca; o "Simular" preto pesa mais do que
+  tudo): B1 a cápsula branca do iOS (sombra leve, a escolhida numa pílula clara; o Simular branco à parte) · **B2 a escolhida a tinta**
+  — cápsula de contorno, a aba escolhida numa pílula preta, o Simular de contorno (recomendada) · B3 a barra plana (fio em cima, um
+  traço por cima da escolhida, o Simular numa pílula de tinta). De dia e de noite (o N3); a 375 cada aba tem 54–65 pt ("Números", 46,
+  cabe). O que não volta: a linha de palavras, o vidro, os ícones sem nome. Imagens 3412 (recusada), 3406, 3414; Mobbin Waymo,
+  Tripadvisor, Qantas, Apple Store, Marriott, Expedia, GetYourGuide.
 - **`simulacao-3.html`** (2026-11-15, **S1 escolhida pelo Nuno — no código**, com o resultado por baixo dos campos; os cartões e os topos gerados a partir do código) — a Simulação na linguagem 3.0
   (hoje é a de julho: a lista dos 7 tipos com o "07", os passos em escada, o resultado em "poster"): **S1 o cartão constrói-se
   enquanto escreves** — uma folha só, sem "Simular"; o cartão do dia do Início em cima, a fazer-se ao vivo, e os campos por baixo

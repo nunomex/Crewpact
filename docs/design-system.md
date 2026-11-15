@@ -313,7 +313,7 @@ O que muda em relação à §2 ("branco · preto · amarelo, plana, hairline"):
   momento e o do que vem a seguir (nunca mais de dois grandes; com um aviso, o segundo passa a linha fina). Sem teclas.
 - **Raios:** cartão `RADIUS.xxl` (24); a folha pede um degrau novo, 32 (acrescentar à escala na construção); pílulas e a
   cápsula da barra = `pill`.
-- **Barra de abas:** cápsula com as 4 abas (a ativa numa pílula clara) + o ＋ num botão redondo de 56.
+- **Barra de abas** (a N2 afinada de `design/barra-abas-2.html`, 2026-11-15 — depois da cápsula "A" e da B2, que não ficaram bem no iPhone): a barra **plana** de ponta a ponta, da cor da folha, com um fio em cima (`CARD.rule`); cinco lugares iguais (~72 pt a 375) — Início · Escala · **Simular** · Números · Perfil; a aba aberta **a tinta com um ponto** por baixo do nome, as outras a cinzento (`tabSub`); ao meio, o "Simular" num **botão redondo de tinta** (32) com o nome por baixo, a cinzento (a única forma cheia é a ação — o lugar do ＋ de julho); a mesma caixa de 32 para os ícones (os centros e os nomes numa linha só); altura útil 56; o toque é o lugar inteiro. Sem vidro (o 3.0 é plano).
 - **Regras de conteúdo** (estão escritas no esboço): nada se repete entre o topo e os cartões · o selo entre duas horas é
   o intervalo entre elas · PSV e limites em h:mm, o que falta em "1 h 40" · o que um serviço rende vai a verde numa pílula
   branca, o total do mês a tinta com "estimado · bruto" · "Incerto" no lugar do número quando falta um facto, com o que

@@ -1,20 +1,22 @@
-// A TAB BAR = a barra "A" da direção 3.0 "cartões de cor" (Nuno: "A.", 2026-11-11; esboço design/inicio-cartoes.html,
-// design-system §14; refs Fresha · Truecaller · Shop no Mobbin): uma CÁPSULA neutra com as 4 abas — a ativa numa pílula
-// clara, com o nome — e o ＋ num botão redondo de tinta, ao lado. A mesma frase do topo do Início (pílulas + botão redondo).
-// Sem fio: a barra é da cor da folha, que desce até ao fundo. Continua EM LAYOUT (o conteúdo acaba acima dela — nada fica
-// tapado) e com a MESMA altura de antes (49 + a margem de baixo do iPhone).
-// (Antes: a placa escura flutuante do Início v6, 2026-11-04; antes dela, a barra plana em papel com fio.)
+// A TAB BAR — a N2 afinada de design/barra-abas-2.html, escolhida pelo Nuno a 2026-11-15 ("gosto da N2. dá para melhorar algo?").
+// Duas rondas antes de chegar aqui: a cápsula bege "A" (2026-11-11) lia-se como mais um cartão e a B2 (a escolhida a tinta numa
+// cápsula de contorno) ficou forçada no iPhone — não era a cor: as formas não combinavam e faltava espaço (4 abas + um botão escrito
+// de 105 pt = 55–62 pt por aba). A N2 dá espaço primeiro e volta à estrutura de julho, a única aprovada no iPhone:
+//   • a barra PLANA de ponta a ponta, da cor da folha, com um FIO em cima (`CARD.rule`, igual de dia e de noite);
+//   • cinco lugares iguais (~72 pt a 375 — o "Números" respira): Início · Escala · [Simular] · Números · Perfil;
+//   • a aba aberta A TINTA (ícone e nome) com um PONTO por baixo do nome; as outras a cinzento (`tabSub`, 5,7:1);
+//   • ao meio, o "Simular" num BOTÃO REDONDO de tinta (32, o ícone da Simulação) com o nome por baixo, a cinzento como as abas — a
+//     única forma cheia da barra é a ação (o lugar do ＋ de julho). Abre a Simulação (uma folha por cima), não é uma aba.
+// Os acertos da "afinada": os nomes numa linha só e os ícones e o círculo centrados na mesma linha (a mesma caixa de 32 para todos);
+// a altura útil passou de 49 a 56 para o círculo ficar a ~7 pt do fio; o toque é o lugar inteiro (≥ 44 pt, a regra da Apple).
+// Continua EM LAYOUT (o conteúdo acaba acima dela — nada fica tapado). Sem vidro (o 3.0 é plano; por trás da barra só há a folha).
 //
 // O craft:
-// - Ativa: a pílula clara (sombra leve de dia; à noite um véu claro) e o ícone dá um POP subtil (spring curto — motion §4).
-// - Inativas: #5E5E57 sobre o neutro = 5,68 (o #77776F do esboço dava 3,93 — medido 2026-11-11).
-// - "Simular" (2026-11-14, T2 de design/botao-simulacao.html — era o ＋ com o speed-dial "Simulação · Evento"): a regra nova do
-//   Nuno — a app só lê o calendário e calcula; à mão SÓ na Simulação — tirou o "Evento" e o ＋ ("acrescentar") deixou de fazer
-//   sentido. O botão de tinta, 56 de alto, com o nome ESCRITO (como os botões escritos do topo, S1) e o ícone da Simulação; tocar
-//   abre-a logo. A 375 pt cada aba fica com 57 pt ("Números", 46 pt, passa). Encolhe ao toque (reduce-motion salta).
-// - Noturno herdado do Início (véspera/pernoita): a folha escura, a cápsula escura, a pílula ativa num véu claro.
-// - Sinal vivo com disciplina: só o ponto laranja da Escala (alterações por rever).
-// - Háptica · reduce-motion salta TUDO · rótulos sempre · accessibilityRole tab/expanded · maxFontSizeMultiplier.
+// - Ativa: o ícone dá um POP subtil ao ganhar o foco (spring curto — motion §4); o ponto aparece com ela.
+// - "Simular": encolhe ao toque (0,94); háptico `tap`. Abas: háptico `select`.
+// - Noturno herdado do Início (véspera/pernoita): a folha escura, a tinta clara (o círculo claro com o ícone escuro).
+// - Sinal vivo com disciplina: só o ponto âmbar da Escala (alterações por rever), com o aro da cor da folha.
+// - Reduce-motion salta TUDO · rótulos sempre · accessibilityRole tab/button · maxFontSizeMultiplier (e o nome encolhe se não couber).
 import React, { useContext, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, Animated, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,11 +28,11 @@ import { select, tap } from '../data/haptics';
 import useReduceMotion from '../hooks/useReduceMotion';
 
 const ICON = { 'Início': 'home', 'Escala': 'cal', 'Estatísticas': 'stats', 'Perfil': 'user' };
-const CONTENT_H = 49;   // altura útil = iOS NATIVO (a faixa da barra mantém-se: o Início e as listas medem-na)
-const CAP = 56;         // altura da cápsula e do botão "Simular" (esboço: 56)
+const CONTENT_H = 56;   // a altura útil (era 49): a caixa do ícone (32) + o nome + o ponto, com o círculo a ~7 pt do fio
+const BOX = 32;         // a caixa de cada ícone — e o diâmetro do botão do Simular (os centros numa linha só)
 
-// Um item da cápsula — a pílula clara marca a ativa; o ícone dá um pop curto quando ganha o foco.
-function TabItem({ focused, lbl, ic, badge, C, night, onPress, reduce, AL }) {
+// Um lugar da barra: a caixa do ícone, o nome, o ponto (só na aberta). O ícone dá um pop curto quando ganha o foco.
+function TabItem({ focused, lbl, ic, badge, C, onPress, reduce, AL }) {
   const pop = useRef(new Animated.Value(1)).current;
   const first = useRef(true);
   useEffect(() => {
@@ -42,13 +44,16 @@ function TabItem({ focused, lbl, ic, badge, C, night, onPress, reduce, AL }) {
   }, [focused, reduce]); // eslint-disable-line react-hooks/exhaustive-deps
   const fg = focused ? C.ink : C.tabSub;
   return (
-    <TouchableOpacity style={[s.item, focused ? [{ backgroundColor: C.tabOn }, night ? null : s.itemOnShadow] : null]} onPress={onPress} activeOpacity={0.65}
+    <TouchableOpacity style={s.item} onPress={onPress} activeOpacity={0.65}
       accessibilityRole="tab" accessibilityState={{ selected: focused }} accessibilityLanguage={AL} accessibilityLabel={lbl}>
-      <Animated.View style={{ transform: [{ scale: pop }] }}>
-        <Icon name={ic} size={22} color={fg} />
-        {badge ? <View style={[s.badge, { borderColor: C.neutral }]} /> : null}
-      </Animated.View>
-      <Text numberOfLines={1} maxFontSizeMultiplier={1.2} style={[TXT3.tab, { color: fg }]}>{lbl}</Text>
+      <View style={s.box}>
+        <Animated.View style={{ transform: [{ scale: pop }] }}>
+          <Icon name={ic} size={23} color={fg} />
+          {badge ? <View style={[s.badge, { borderColor: C.sheet }]} /> : null}
+        </Animated.View>
+      </View>
+      <Text numberOfLines={1} maxFontSizeMultiplier={1.2} adjustsFontSizeToFit minimumFontScale={0.8} style={[TXT3.tab, s.lbl, { color: fg }]}>{lbl}</Text>
+      <View style={[s.dot, focused ? { backgroundColor: C.ink } : null]} />
     </TouchableOpacity>
   );
 }
@@ -60,7 +65,7 @@ export default function TabBar({ state, navigation }) {
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const AL = l('pt-PT', 'en-GB');   // a língua do VoiceOver = a da app (na Expo Go o iOS usava a voz inglesa)
 
-  // O noturno é um estado do INÍCIO (véspera/pernoita) — as outras abas são sempre diurnas.
+  // O noturno é um estado do INÍCIO (véspera/pernoita) — as outras abas são sempre diurnas (o N3 vai seguir o iPhone em toda a app).
   const night = !!homeNight && state.routes[state.index]?.name === 'Início';
   const C = night ? CARD.night : CARD.day;
 
@@ -75,49 +80,51 @@ export default function TabBar({ state, navigation }) {
     if (!focused && !event.defaultPrevented) { select(); navigation.navigate(route.name); }
   };
 
-  // ── "Simular": encolhe ao toque e abre a Simulação ─────────────────────────
+  // ── "Simular": o botão redondo ao meio; encolhe ao toque e abre a Simulação ─────────────────────────
   const press = useRef(new Animated.Value(1)).current;
   const pressTo = (v) => Animated.spring(press, { toValue: v, friction: 6, tension: 300, useNativeDriver: true }).start();
   const simulate = () => { tap(); openSimulation && openSimulation(); };
 
   const padBottom = Math.max(insets.bottom, 8);
-  // A cápsula a 22 do fundo num iPhone com indicador de casa (34 − 12), como no esboço (5 em cima · 56 · 22 em baixo = 83).
-  const capBottom = Math.max(padBottom - SPACE.md, SPACE.sm);
-  const renderItem = (route, i) => (
+  const tab = (route, i) => (
     <TabItem key={route.key} focused={state.index === i}
       lbl={lblFor(route.name)} ic={ICON[route.name]}
-      badge={route.name === 'Escala' && escPending} C={C} night={night} reduce={reduce} AL={AL}
+      badge={route.name === 'Escala' && escPending} C={C} reduce={reduce} AL={AL}
       onPress={() => go(route, state.index === i)} />
   );
+  const sim = (
+    <TouchableOpacity key="sim" style={s.item} onPress={simulate} activeOpacity={1}
+      onPressIn={() => !reduce && pressTo(0.94)} onPressOut={() => !reduce && pressTo(1)}
+      accessibilityRole="button" accessibilityLanguage={AL} accessibilityLabel={l('Simular', 'Simulate')} accessibilityHint={l('Abre a simulação', 'Opens the simulation')}>
+      <View style={s.box}>
+        <Animated.View style={[s.round, { backgroundColor: C.ink }, { transform: [{ scale: press }] }]}>
+          <Icon name="gauge" size={19} color={C.sheet} />
+        </Animated.View>
+      </View>
+      <Text numberOfLines={1} maxFontSizeMultiplier={1.2} adjustsFontSizeToFit minimumFontScale={0.8} style={[TXT3.tab, s.lbl, { color: C.tabSub }]}>{l('Simular', 'Simulate')}</Text>
+      <View style={s.dot} />
+    </TouchableOpacity>
+  );
+  const r = state.routes;
+  // Início · Escala · [Simular] · Números · Perfil (o Simular ao meio, no lugar do ＋ de julho)
+  const items = [...r.slice(0, 2).map((x, i) => tab(x, i)), sim, ...r.slice(2).map((x, i) => tab(x, i + 2))];
 
   return (
-    <>
-      <View style={[s.bar, { height: CONTENT_H + padBottom, backgroundColor: C.sheet }]}>
-        <View style={[s.capRow, { bottom: capBottom }]}>
-          <View style={[s.cap, { backgroundColor: C.neutral }]}>
-            {state.routes.map((r, i) => renderItem(r, i))}
-          </View>
-          <TouchableOpacity onPress={simulate} activeOpacity={1}
-            onPressIn={() => !reduce && pressTo(0.94)} onPressOut={() => !reduce && pressTo(1)} hitSlop={6}
-            accessibilityRole="button" accessibilityLanguage={AL} accessibilityLabel={l('Simular', 'Simulate')} accessibilityHint={l('Abre a simulação', 'Opens the simulation')}>
-            <Animated.View style={[s.sim, { backgroundColor: C.ink }, { transform: [{ scale: press }] }]}>
-              <Icon name="gauge" size={18} color={C.sheet} />
-              <Text style={[TXT3.pill, { color: C.sheet }]} numberOfLines={1} maxFontSizeMultiplier={1.2}>{l('Simular', 'Simulate')}</Text>
-            </Animated.View>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </>
+    <View style={[s.bar, { height: CONTENT_H + padBottom, paddingBottom: padBottom, backgroundColor: C.sheet }]}>
+      <View style={s.row}>{items}</View>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
-  bar: { position: 'relative' },
-  // A cápsula + o "Simular" à parte (8 entre os dois), a 12 das margens do ecrã (esboço).
-  capRow: { position: 'absolute', left: SPACE.md, right: SPACE.md, flexDirection: 'row', alignItems: 'center', gap: SPACE.sm },
-  cap: { flex: 1, height: CAP, borderRadius: RADIUS.pill, flexDirection: 'row', alignItems: 'center', padding: SPACE.xs, gap: SPACE.xxs },
-  item: { flex: 1, alignSelf: 'stretch', borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center', gap: SPACE.xxs },
-  itemOnShadow: { shadowColor: CARD.onCard, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.14, shadowRadius: 3, elevation: 1 },
+  // A barra plana de ponta a ponta: o fio por cima (o mesmo de dia e de noite) e a fila dos cinco lugares na altura útil.
+  bar: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: CARD.rule },
+  row: { height: CONTENT_H, flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: SPACE.s },
+  // Um lugar inteiro é o toque (~72 × 56 pt ≥ 44); a caixa do ícone igual em todos (os centros numa linha só).
+  item: { flex: 1, alignSelf: 'stretch', alignItems: 'center', paddingTop: SPACE.s },
+  box: { height: BOX, alignItems: 'center', justifyContent: 'center' },
+  lbl: { alignSelf: 'stretch', textAlign: 'center', paddingHorizontal: SPACE.xxs, marginTop: SPACE.xxs },
+  dot: { width: 4, height: 4, borderRadius: RADIUS.pill, marginTop: SPACE.xxs },
+  round: { width: BOX, height: BOX, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
   badge: { position: 'absolute', top: -SPACE.xxs, right: -SPACE.s, width: 8, height: 8, borderRadius: RADIUS.pill, backgroundColor: PELE.warn, borderWidth: 1.5 },
-  sim: { height: CAP, borderRadius: RADIUS.pill, flexDirection: 'row', alignItems: 'center', gap: SPACE.s, paddingHorizontal: SPACE.lg },
 });

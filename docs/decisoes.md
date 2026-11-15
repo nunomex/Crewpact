@@ -1338,7 +1338,34 @@ motor está na versão **21**. **O que falta, por ordem:**
   serviços novos juntos; revisão independente no fim) e as calculadoras na linguagem 3.0. **A barra de abas** (o Nuno: "não está a combinar com o layout novo") — medida no ecrã do
   iPhone: a cápsula é o mesmo bege dos cartões neutros (#F1EFEA) e lê-se como mais um cartão; a aba ativa é uma mancha branca com
   sombra (no 3.0, escolhido = tinta); ícones cheios genéricos; o "Simular" preto pesa mais do que tudo. **Esboços a seguir à
-  Simulação** (um de cada vez).
+  Simulação** (um de cada vez). **Esboço `design/barra-abas.html`:** B1 a cápsula branca do iOS · **B2 a escolhida a tinta** (recomendada: cápsula
+  de contorno, a aba escolhida numa pílula preta, o Simular de contorno — a gramática do topo e dos chips) · B3 a barra plana. No
+  Início real de dia e de noite; a 375 cada aba tem 54–65 pt. O que não volta (julho): a linha de palavras, o vidro, os ícones sem
+  nome. **O Nuno escolheu a B2 — construída (por gravar):** só `components/TabBar.js` — a cápsula de contorno (`CARD.rule`, sem
+  bege nem sombra), a escolhida numa pílula de tinta (o ícone e o nome na cor da folha; o ponto âmbar da Escala com o aro da cor do
+  fundo), o Simular de contorno de tinta; o pop do ícone, o encolher do Simular e os movimentos reduzidos ficam. **O vidro** (o Nuno
+  perguntou): fica de fora — o 3.0 é plano (papel, tinta, cartões de cor) e o vidro é outro material: teria de ir para a app toda
+  (as pílulas do topo, as folhas, o Simular) e numa barra em layout só mostraria a folha branca por trás; já tinha sido recusado em
+  julho; se um dia se quiser o aspeto do iOS 26, é uma ronda própria para a app toda. **Depois, o Nuno no iPhone: "a aba Números, o nome
+  não fica direito dentro"** — medido: a aba é quase quadrada (55–62 × 45) e a cápsula arredondava o fundo onde está o nome; a 375
+  o "Números" (45 pt) tocava nas pontas e com a letra maior (1,2×) saía da pílula. Corrigido: canto de 16 (`RADIUS.lg`) em vez da
+  cápsula, e o nome com a largura da aba, a encolher se não couber (`adjustsFontSizeToFit`, até 0,8). Visto no navegador a 402 e a
+  375, com a letra normal e a maior: cabe nos quatro. **Ver no iPhone:** a barra de dia (a escolhida a tinta na aba aberta — o
+  "Números" dentro; o Simular de contorno) e de noite na véspera (a escolhida clara); o ponto âmbar da Escala. **Depois, o Nuno: "não gosto de como está, não fica bom a barra assim"** — a análise: não
+  era a cor — as formas não combinavam (um bloco quase quadrado dentro da cápsula redonda), dois contornos diferentes lado a lado
+  (cinzento e preto) e, por baixo, falta de espaço (4 abas + um botão escrito de 105 pt = 55–62 pt por aba; por isso a A e a B2
+  ficaram forçadas). **2.ª ronda, `design/barra-abas-2.html`:** N1 cinco abas iguais · **N2 o botão redondo ao meio** (recomendada:
+  a estrutura de julho, a única aprovada no iPhone, com o Simular no lugar do ＋; 34 pt, por dentro do fio) · N3 uma cápsula só.
+  **O Nuno gostou da N2 e perguntou o que se podia melhorar** → a **N2 afinada** no mesmo esboço (medida no navegador): os nomes
+  numa linha só (na N2 o "Simular" ficava 8 pt abaixo — as abas têm o ponto, o botão não), o nome do Simular a cinzento (na N2,
+  "Início" e "Simular" a tinta — de relance não se sabia onde se está), os ícones e o círculo centrados na mesma linha, a barra com
+  7 pt a mais (56 de altura útil) e o círculo de 32 a 7 pt do fio; o toque é a aba inteira (72 pt ≥ 44). **O Nuno: "sim" — construída (por gravar):** `components/TabBar.js` reescrito — a
+  barra plana com o fio em cima (`CARD.rule`, hairline), cinco lugares (Início · Escala · Simular · Números · Perfil), a aberta a
+  tinta com o ponto, o Simular num botão redondo de tinta (32, o ícone da Simulação) com o nome a cinzento, a mesma caixa de 32 para
+  todos os ícones, altura útil 56 (era 49); o pop do ícone, o encolher do botão, o háptico, o ponto âmbar da Escala e os movimentos
+  reduzidos ficam. A B2 saiu (estava por gravar). Nenhum ecrã mede a barra (está em layout). 41 suites e o pacote iOS passam.
+  **Ver no iPhone:** a barra de dia e na véspera; o círculo do Simular por dentro do fio; os nomes numa linha; o "Números" aberto;
+  tocar no Simular (abre a folha); o ponto âmbar da Escala. A B2 continua no código, por gravar, até à escolha.
 - **Do dia 2026-11-14 (gravado e enviado até `81c2dfd`) — tudo por ver:** os Números (o total sozinho no topo; "Acima da base" no
   fim do "De onde vem"; com a base incerta, "O total fica entre"); o topo lado a lado igual no Início, na Escala e nos Números
   (o número do mesmo tamanho; a frase com ar por cima); a meteorologia (na véspera e antes do report, a base à hora do report no

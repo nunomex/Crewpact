@@ -232,7 +232,7 @@ balões (o título do estado, o número, a cor dos cartões) está proposta.
 
 - **A Escala** (só o mês, com o dia num círculo; tocar num dia mostra os serviços por baixo; a folha do serviço com o Detalhe inteiro),
   **os Números** e **o Perfil** são referência estável — a mesma linguagem dos cartões, sem estados.
-- **A barra de abas:** Início · Escala · Números · Perfil e o botão **"Simular"** (abre a Simulação). Escurece com o Início na véspera e
+- **A barra de abas:** Início · Escala · Números · Perfil e o botão **"Simular"** (abre a Simulação) — a N2 afinada de `design/barra-abas-2.html` (2026-11-15): a barra plana com o fio em cima, a aba aberta a tinta com o ponto, o Simular num botão redondo ao meio. Escurece com o Início na véspera e
   na pernoita. O único sinal vivo é o ponto âmbar da Escala (alterações por rever).
 - **Superfícies irmãs:** a página da família (voo.crewpact.app) e, no dev build, a Live Activity.
 
