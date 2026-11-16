@@ -1,12 +1,12 @@
 // Construtor PARTILHADO dos itens do "Hoje" (pergunta → resposta + sugestão + raw).
 // Usado pela lista (HojeScreen) e pelo detalhe (HojeDetailScreen) para a resposta ser
 // EXATAMENTE a mesma nos dois sítios. Formata; o cálculo vive em data/today.js.
-import { catLabel } from '../data/extras';
-import { t } from '../data/i18n';
-import { legalStatus, headroomStatus, nextDutyStatus, restStatus, recoveryStatus, rosterStatus, payStatus } from '../data/today';
-import { unknownsText } from '../data/ftlUnknowns';
-import { validityLabel, sortValidities, validitySummary } from '../data/validities';
-import { durHM, durText } from '../data/duration';
+import { catLabel } from './extras';
+import { t } from './i18n';
+import { legalStatus, headroomStatus, nextDutyStatus, restStatus, recoveryStatus, rosterStatus, payStatus } from './today';
+import { unknownsText } from './ftlUnknowns';
+import { validityLabel, sortValidities, validitySummary } from './validities';
+import { durHM, durText } from './duration';
 
 // Rótulo de uma janela cumulativa a partir do seu id/days.
 export const winLbl = (id, days, lang) =>

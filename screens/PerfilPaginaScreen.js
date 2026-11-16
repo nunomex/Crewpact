@@ -34,7 +34,7 @@ export default function PerfilPaginaScreen({ route, navigation }) {
   const ctx = useContext(AppContext);
   const { lang, ae, company, crewCategory, crewContract, crewFleet, crewHistory, postFlightMin, postFlightSource,
     vacationDaysYear, vacationSource, employment, aeCovered, serviceStart, serviceStartExact, largada, base, bases, countries, lifestyle,
-    instructorRated, lockEnabled, remindersOn, toggleReminders, setLang, baseHistory, companyHistory, homeBaseAt, companyAt } = ctx;
+    instructorRated, baseHistory, companyHistory, homeBaseAt, companyAt } = ctx;
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const A = usePerfilActions();
   const reduce = useReduceMotion();
@@ -321,19 +321,7 @@ export default function PerfilPaginaScreen({ route, navigation }) {
       items: [{ id: true, label: l('Sim', 'Yes'), sub: l('o salário pelo AE', 'pay by the agreement') }, { id: false, label: l('Não', 'No'), sub: l('só os limites FTL', 'FTL limits only') }],
       value: aeCovered !== false, save: A.saveAeCovered,
     }),
-    idioma: () => ({
-      title: l('Idioma', 'Language'), lead: l('O idioma da app. Segue o do telemóvel até escolheres aqui.', 'The app language. It follows your phone until you choose here.'),
-      items: [{ id: 'pt', label: 'Português' }, { id: 'en', label: 'English' }], value: lang, save: setLang,
-    }),
-    lembretes: () => ({
-      title: l('Lembretes', 'Reminders'), lead: l('Avisos sobre validades a expirar, o próximo serviço e alterações à escala.', 'Alerts about expiring documents, your next duty and roster changes.'),
-      items: [{ id: true, label: l('Ligados', 'On') }, { id: false, label: l('Desligados', 'Off') }], value: !!remindersOn, save: toggleReminders,
-    }),
-    bloqueio: () => ({
-      title: l('Bloqueio com Face ID', 'Face ID lock'),
-      lead: l('A app abre com a tua cara (ou o código do telemóvel). Se alguém pegar no teu telemóvel, não vê a tua escala nem o teu salário.', 'The app opens with your face (or your phone passcode). If someone picks up your phone, they cannot see your roster or pay.'),
-      items: [{ id: true, label: l('Ligado', 'On') }, { id: false, label: l('Desligado', 'Off') }], value: !!lockEnabled, save: A.toggleLock, stay: true,
-    }),
+    // (idioma, lembretes e o bloqueio com Face ID são mini-cartões no próprio Perfil desde 2026-11-14 — os ramos daqui saíram a 2026-11-16)
   };
   const c = CHOICE[kind] ? CHOICE[kind]() : null;
   if (!c) return <Pagina {...back} title={l('Página não encontrada', 'Page not found')} />;

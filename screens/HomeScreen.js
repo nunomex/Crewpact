@@ -28,7 +28,7 @@ import { select } from '../data/haptics';
 import { AppContext, toZulu } from '../data/appContext';
 import { airportZulu, airportUtcMs, legZulu, legsZulu } from '../data/zulu';
 import QuestionDetailSheet from '../components/QuestionDetailSheet';
-import { buildTodayItems } from './hojeItems';
+import { buildTodayItems } from '../data/hojeItems';
 import { fdpForDuty, dayNum } from '../ae/tapLimits';
 import { fmtClock } from '../data/tapLimitsText';
 import { monthStats, monthSplit } from '../data/stats';

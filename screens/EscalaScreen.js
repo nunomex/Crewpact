@@ -142,9 +142,6 @@ export default function EscalaScreen({ navigation, route }) {
     if (route.params?.review) { navigation.setParams({ review: undefined }); setImportSource('calendar'); setImportOpen(true); }
   }, [route.params?.review]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    if (route.params?.hub) setHubOpen(true);
-  }, [route.params?.hub]);
 
   // Botão "Importar PDF" do Início-setup → abre a importação por PDF DIRETA.
   useEffect(() => {

@@ -207,12 +207,12 @@ eq('Repouso até: sem saber o repouso antes → +4 h (17:30)', restUntilAfter({
 // Sem próximo serviço futuro → neutro.
 eq('sem próximo → neutro', restStatus({ '2026-11-03': { report_time: '06:00', block_on: '14:00' } }, T, at(T, '20:00')).kind, 'noNext');
 
-// ── A RESPOSTA do "Tenho descanso?" (screens/hojeItems.js · restItem), visto no iPhone a 2026-11-14: o repouso mínimo
+// ── A RESPOSTA do "Tenho descanso?" (data/hojeItems.js · restItem), visto no iPhone a 2026-11-14: o repouso mínimo
 // cumprido (25:10 contra 10:30) e a regra da noite local falhada davam "Sim · 25 h 10 antes do report · de tardio/noturno
 // para matinal…" com o ✕ vermelho na folha. A 1.ª palavra é a do VEREDICTO: ✕ → "Não", incerto → "Incerto". O porquê
 // leva a linha da regra que falhou e a dica cita essa regra (CS FTL.1.235(a)(1); noite local = ORO.FTL.105(16)). ──
 {
-  const { restItem } = require(path.resolve('screens/hojeItems.js'));
+  const { restItem } = require(path.resolve('data/hojeItems.js'));
   const T4 = '2026-11-14';
   // 13/11 report 18:00, LIS→FNC→LIS, calços 04:30 de 14/11 (10:30, noturno) · 15/11 LIS→FNC report 05:40 (matinal). Das
   // 22:00 às 05:40 são 7:40 — nenhuma noite local de 8 h no repouso.

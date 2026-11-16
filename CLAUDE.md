@@ -60,6 +60,15 @@ fadiga (FTL — Reg. UE 83/2014 · CS-FTL.1) e a remuneração prevista pelos ac
 7. **Versões nativas = as que o `npx expo install` escolhe** (SDK 58: worklets 0.13.0, reanimated 4.7.1); nunca
    subir à mão, senão a Expo Go crasha no arranque. Expo Go não suporta Face ID (cai no código do telemóvel).
 8. **Deploy de Edge Functions só por CLI.**
+9. **As skills ao fazermos as coisas (o Nuno, 2026-11-16).** A skill certa no momento certo; as regras deste projeto ganham sempre
+   (a Hanken e não a SF, o português sem Title Case, os 3 esboços, o golden primeiro). Antes de mexer num ecrã: as regras de base da
+   **Impeccable** (`reference/craft-floor.md`). No fim de cada ecrã construído, antes do "ver no iPhone": a **crítica + auditoria
+   nativa da Impeccable** (corrigir os erros objetivos; o resto vai para escolha, com esboços). Com movimento: **animacoes** (as
+   regras, o Reanimated, os movimentos reduzidos, a verificação) e a **emil-design-eng** para o acabamento das interações (o toque, a
+   pressão, o tempo e a curva, de onde nasce uma folha, o arrastar — só o que se traduz para React Native; o que é de web fica). Na
+   verificação final: as **regras da Vercel** e a lista da **UI/UX Pro Max** só para a acessibilidade, com o Playwright nos esboços.
+   Correções pequenas (uma cor, um texto): nenhuma. Não guardar relatórios em `.impeccable/` sem o Nuno pedir; o gancho dela fica
+   desligado (só lê web). Porquê: no teste da Simulação a crítica da Impeccable deu os dois achados maiores.
 
 ## Frases-gatilho do Nuno
 - **"testar os estados"** → sessão guiada no device dos estados da Living Interface (`docs/verificacao-device.md`).

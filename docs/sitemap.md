@@ -107,7 +107,10 @@ PERFIL (SettingsScreen)
    desenho — 3 esboços).
 4. **A gestão dos extras não tem entrada** (já se sabia: espera o seu lugar nos Números, decisão de 2026-11-14). O € dos extras já
    está nos Números; a lista para ver e apagar é que não se abre.
-5. **Código sem uso** (arrumação):
+5. ✅ **FEITO a 2026-11-16:** apagados o `Banner`, o `DayBar` e o `Segmented`; saíram os ramos `idioma`, `lembretes` e `bloqueio` da
+   Página do perfil e o parâmetro `hub` da Escala; o `hojeItems.js` passou para `data/`. A dívida do guardião desceu (116 · 252 · 32 · 46
+   · 6) e a linha de base ficou trancada.
+   **Código sem uso** (arrumação):
    - os componentes `Banner`, `DayBar` e `Segmented`;
    - os ramos `idioma`, `lembretes` e `bloqueio` da Página do perfil (passaram a mini-cartões no Perfil);
    - o parâmetro `hub` da Escala, que ninguém manda;

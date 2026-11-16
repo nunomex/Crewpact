@@ -42,6 +42,12 @@ pilha do Início (o card, o "porquê" e o sino abrem-nas na aba onde se está). 
 outro serviço do mesmo dia dentro da folha; a Prova e o hotel dentro da folha; a Auditoria do mês → um dia (fecha e abre a folha sem
 prender o ecrã) no Início e nos Números; o cartão das Validades no Início → empilha-se, o ‹ volta ao Início; o sino → Validades no
 Início e no Perfil; a Escala continua igual.
+**Gravado `a5a418f` e ENVIADO** (o GitHub até `a5a418f`). **O 5 — FEITO (por gravar):** apagados `components/Banner.js`, `DayBar.js` e
+`Segmented.js` (ninguém os usava); os ramos idioma/lembretes/bloqueio da Página do perfil (são mini-cartões desde 2026-11-14); o
+parâmetro `hub` da Escala; `screens/hojeItems.js` → `data/hojeItems.js`. A dívida do guardião desceu e ficou trancada (`--atualizar`).
+**As skills (o Nuno: "devíamos usar as skills ao fazermos as coisas"):** regra 9 do `CLAUDE.md` — Impeccable (craft floor antes; crítica +
+auditoria nativa no fim de cada ecrã), animacoes + emil-design-eng com movimento, Vercel + Pro Max na verificação final. **Falta: o 4**
+(a lista dos extras nos Números — esboços).
 **2026-11-16:** testadas as skills novas na Simulação; o Nuno escolheu **C** (os erros objetivos já + os esboços do veredicto com o
 teclado). **Feitos os erros objetivos** (por gravar, por ver no iPhone — ver a entrada de 2026-11-16). **A seguir:** os 3 esboços, que
 passam a juntar o veredicto com o teclado e **várias simulações seguidas** (pergunta do Nuno; a recomendação está na entrada).
