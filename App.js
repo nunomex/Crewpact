@@ -72,7 +72,6 @@ import ReactivateScreen   from './screens/ReactivateScreen';
 import BiometricOfferScreen from './screens/BiometricOfferScreen';
 import HomeScreen         from './screens/HomeScreen';
 import EscalaScreen       from './screens/EscalaScreen';
-import DutyDetailScreen   from './screens/DutyDetailScreen';
 import InfoScreen         from './screens/InfoScreen';   // PORT pele: aba FTL/AE → INFO (incremental)
 import StatsScreen        from './screens/StatsScreen';
 import SettingsScreen     from './screens/SettingsScreen';
@@ -131,6 +130,8 @@ function HomeStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Home"      component={HomeScreen} />
+      {/* as Validades vindas do Início empilham-se aqui (o ‹ volta ao Início — F1 de design/abrir-dia.html, 2026-11-16) */}
+      <Stack.Screen name="Validades" component={ValidadesScreen} />
     </Stack.Navigator>
   );
 }
@@ -141,7 +142,6 @@ function EscalaStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="EscalaMain" component={EscalaScreen} />
-      <Stack.Screen name="DutyDetail" component={DutyDetailScreen} />
     </Stack.Navigator>
   );
 }

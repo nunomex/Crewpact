@@ -1,14 +1,11 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { PELE, PELE_FONT, GUTTER, BRAND, TXT, TXT3, SPACE, RADIUS, MONEY, CARD } from '../data/constants';
+import { PELE, PELE_FONT, BRAND, TXT, TXT3, SPACE, RADIUS, MONEY, CARD } from '../data/constants';
 import Icon from '../components/Icon';
-import IconButton from '../components/IconButton';
 import { HomeCards } from '../components/HomeCards';
 import DayRuler from '../components/DayRuler';
 import PeleSheet from '../components/PeleSheet';
 import { completeRows, plannedOf } from '../data/dutyComplete';
-import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t } from '../data/i18n';
 import { select, warning, success } from '../data/haptics';
 import { AppContext, isoDay, toZulu } from '../data/appContext';
@@ -541,7 +538,7 @@ export function DutyDetailBody({ date, idx: idxIn = 0, editReq = null, navigatio
         const psvX = (rr && rr.isFdp && rr.fdp.actualFdpStr) ? durText(rr.fdp.actualFdpStr) : null;   // só PSV de quem tem setores
         return (
           <TouchableOpacity key={`x${i}`} style={s.b7} activeOpacity={0.75} accessibilityRole="button" accessibilityLabel={lbl}
-            onPress={() => { select(); if (onOpenService) onOpenService(i + 1); else navigation.push('DutyDetail', { date, idx: i + 1 }); }}>
+            onPress={() => { select(); if (onOpenService) onOpenService(i + 1); }}>
             <View style={[s.b7Sq, { backgroundColor: fl ? C3.flight : C3.ground }]}><Icon name={fl ? 'plane' : 'home'} size={17} color={CARD.onCard} /></View>
             <View style={s.flex1}>
               <Text style={[TXT3.lineVal, { color: C3.ink }]} numberOfLines={1}>{lbl}</Text>
@@ -588,52 +585,11 @@ export function DutyDetailBody({ date, idx: idxIn = 0, editReq = null, navigatio
   );
 }
 
-// O ECRÃ do Detalhe (os caminhos de fora da Escala: o Início, as notificações, os outros serviços do dia): a moldura — a faixa
-// lateral, o voltar e o deslizar — à volta do corpo inteiro.
-export default function DutyDetailScreen({ route, navigation }) {
-  const { lang, duties } = useContext(AppContext);
-  const l = (pt, en) => (lang === 'en' ? en : pt);
-  const tabSpace = useTabBarSpace();
-  const [edited, setEdited] = useState(false);
-  const date = route.params?.date;
-  const idx = Math.max(0, Number(route.params?.idx) || 0);
-  const day = date ? duties[date] : null;
-  const duty = !day ? null : idx > 0 ? ((Array.isArray(day.extra) ? day.extra : [])[idx - 1] || null) : day;
-  const goBack = () => {
-    if (edited) navigation.navigate('EscalaMain', { flashDuty: date, flashTs: Date.now() });
-    else navigation.goBack();
-  };
-  const BackBtn = () => (
-    <View style={s.topbar}>
-      <IconButton icon="back" onPress={goBack} label={t('common.back', lang)} style={{ backgroundColor: C3.round }} />
-    </View>
-  );
-  if (!duty || (day && day.deleted)) {
-    return (
-      <SafeAreaView style={s.safe} edges={['top']}>
-        <BackBtn />
-        <View style={{ padding: GUTTER }}>
-          <Text style={s.muted}>{l('Serviço não encontrado.', 'Duty not found.')}</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-  return (
-    <SafeAreaView style={[s.safe, { backgroundColor: C3.sheet }]} edges={['top']}>
-      <BackBtn />
-      <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} showsVerticalScrollIndicator={false}>
-        <DutyDetailBody date={date} idx={idx} editReq={route.params?.edit} navigation={navigation} onEdited={() => setEdited(true)} />
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
+// O ecrã do Detalhe (a moldura com o ‹ à volta do corpo) saiu a 2026-11-16: o dia abre na folha do serviço em toda a app
+// (components/ServiceSheet.js — F1 de design/abrir-dia.html; antes, o Início e os Números abriam este ecrã dentro da aba Escala).
 
 const s = StyleSheet.create({
-  safe: { flex: 1 },
-  topbar: { flexDirection: 'row', paddingHorizontal: GUTTER, paddingTop: SPACE.sm, paddingBottom: SPACE.sm },
-  scroll: { paddingHorizontal: SPACE.md, paddingTop: SPACE.xs },
   flex1: { flex: 1, minWidth: 0 },
-  muted: { ...TXT.body, color: PELE.grey },
 
   // O "Ver tudo" no 3.0 (design/detalhe-3.html, B): os cartões neutros de cada tema, empilhados
   body: { gap: SPACE.sm },

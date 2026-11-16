@@ -24,6 +24,7 @@ import { provaFor } from '../data/prova';
 import ProvaSheet from '../components/ProvaSheet';
 import { monthAudit } from '../data/audit';
 import AuditSheet from '../components/AuditSheet';
+import ServiceSheet, { SHEET_AFTER_MS } from '../components/ServiceSheet';
 import { yearCount, eventDateLabel } from '../data/aeEvents';
 import { computeFlightTime, computeDutyTime, sumCalendarYearMin } from '../ftl';
 import { t } from '../data/i18n';
@@ -84,6 +85,7 @@ export default function StatsScreen({ navigation }) {
   const isYear = scope === 'year';
   const [sheet, setSheet] = useState(null);            // folha de detalhe aberta: 'seg' | 'voo' | 'corpo'
   const [prova, setProva] = useState(null);            // folha da PROVA ("a lei deste número")
+  const [daySvc, setDaySvc] = useState(null);          // a folha do serviço — por cima dos Números (F1 de design/abrir-dia.html)
   const provaCtx = { companySlug: company && company.slug, companyName: company && company.name, isPilot, lang };
   const [auditOpen, setAuditOpen] = useState(null);    // folha da AUDITORIA (radar) — guarda o ym auditado
   const [shareOpen, setShareOpen] = useState(false);   // cartão "Ano de voo" partilhável
@@ -710,7 +712,9 @@ export default function StatsScreen({ navigation }) {
       <ProvaSheet visible={!!prova} onClose={() => setProva(null)} prova={prova} lang={lang} />
       <AuditSheet visible={!!auditOpen} onClose={() => setAuditOpen(null)} audit={audit} monthName={monthName}
         lang={lang} provaCtx={provaCtx}
-        onOpenDay={(iso) => navigation.navigate('Escala', { screen: 'DutyDetail', initial: false, params: { date: iso } })} />
+        onOpenDay={(iso) => setTimeout(() => setDaySvc({ iso, idx: 0 }), SHEET_AFTER_MS)} />
+      <ServiceSheet svc={daySvc} onClose={() => setDaySvc(null)} navigation={navigation}
+        onPick={(i) => setDaySvc((cur) => (cur ? { ...cur, idx: i } : cur))} />
     </SafeAreaView>
   );
 }

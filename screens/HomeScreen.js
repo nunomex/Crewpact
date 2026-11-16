@@ -38,6 +38,7 @@ import { crewState } from '../data/crewState';
 import { monthAudit } from '../data/audit';
 import AuditSheet from '../components/AuditSheet';
 import ProvaSheet from '../components/ProvaSheet';
+import ServiceSheet, { SHEET_AFTER_MS } from '../components/ServiceSheet';
 import { provaFor } from '../data/prova';
 import { yearCount, eventCounts } from '../data/aeEvents';
 import { liveRdp } from '../data/disruption';
@@ -489,7 +490,10 @@ export default function HomeScreen({ navigation }) {
   const isNonFlight = !!(flight && flight.kind && flight.kind !== 'flight');
 
   // Abrir o detalhe de um dia (`initial: false` mete a EscalaMain POR BAIXO: o ‹ volta à Escala).
-  const openDayDetail = (iso, edit = false) => { select(); navigation.navigate('Escala', { screen: 'DutyDetail', initial: false, params: edit ? { date: iso, edit: Date.now() } : { date: iso } }); };
+  // um dia abre a folha do serviço AQUI, por cima do Início (F1 de design/abrir-dia.html, 2026-11-16) — antes ia para o Detalhe dentro
+  // da aba Escala (mudava de aba e o ‹ não voltava ao Início)
+  const [daySvc, setDaySvc] = useState(null);
+  const openDayDetail = (iso) => { select(); setDaySvc({ iso, idx: 0 }); };
   const hasReg = (iso) => !!(iso && duties[iso] && !duties[iso].deleted && duties[iso].report_time);
 
   // ── Hotel da pernoita (catálogo por estação) — a estação deriva da ESCALA, nunca de GPS.
@@ -1136,7 +1140,7 @@ export default function HomeScreen({ navigation }) {
       case 'audit': select(); setAuditOpen(true); break;
       case 'item': { const it = o.id === 'extras' ? extrasItem : todayItems.find((x) => x.id === o.id); if (it) openItem(it); else goStats(); break; }
       case 'hotel': select(); setHotelOpen(true); break;
-      case 'validades': select(); navigation.navigate('Perfil', { screen: 'Validades', initial: false }); break;
+      case 'validades': select(); navigation.navigate('Validades'); break;   // empilha-se no Início (o ‹ volta cá)
       case 'sync': select(); syncFlight(); break;
       case 'pdf': select(); navigation.navigate('Escala', { screen: 'EscalaMain', params: { pdf: Date.now() } }); break;
       case 'connect': requestAccess(); break;
@@ -1151,7 +1155,7 @@ export default function HomeScreen({ navigation }) {
   };
 
   // Palco do Início ocupado? (folha/cartão) — a dica do ＋ não entra por cima (TipKit).
-  useEffect(() => { homeBusyRef.current = !!(detailItem || sendCard); }, [detailItem, sendCard]);
+  useEffect(() => { homeBusyRef.current = !!(detailItem || sendCard || daySvc); }, [detailItem, sendCard, daySvc]);
 
   return (
     <Animated.View style={[s.safe, { backgroundColor: deskBg }]}>
@@ -1207,7 +1211,8 @@ export default function HomeScreen({ navigation }) {
         onClose={() => setDetailItem(null)}
         onNav={(dest) => {
           setDetailItem(null);
-          if (dest && dest.root) navigation.navigate(dest.root, dest.screen ? { screen: dest.screen } : undefined);
+          if (dest && dest.screen === 'Validades') navigation.navigate('Validades');   // empilha-se no Início (o ‹ volta cá)
+          else if (dest && dest.root) navigation.navigate(dest.root, dest.screen ? { screen: dest.screen } : undefined);
         }} />
 
       {/* Partilhar um voo — o MESMO cartão editorial da família (sem pessoa). */}
@@ -1232,7 +1237,10 @@ export default function HomeScreen({ navigation }) {
       <ProvaSheet visible={!!provaOpen} onClose={() => setProvaOpen(null)} prova={provaOpen} lang={lang} />
       <AuditSheet visible={auditOpen} onClose={() => setAuditOpen(false)} audit={audit} monthName={monthName}
         lang={lang} provaCtx={{ companySlug: company && company.slug, companyName: company && company.name, isPilot, lang }}
-        onOpenDay={(iso) => openDayDetail(iso)} />
+        onOpenDay={(iso) => setTimeout(() => openDayDetail(iso), SHEET_AFTER_MS)} />
+      {/* A folha do serviço — a mesma da Escala (components/ServiceSheet.js). */}
+      <ServiceSheet svc={daySvc} onClose={() => setDaySvc(null)} navigation={navigation}
+        onPick={(i) => setDaySvc((cur) => (cur ? { ...cur, idx: i } : cur))} />
     </SafeAreaView>
     </Animated.View>
   );

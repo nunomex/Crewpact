@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, RefreshControl, Linking, Platform, PanResponder, Dimensions, LayoutAnimation, PixelRatio, Animated, Easing, Modal, AccessibilityInfo } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, RefreshControl, Linking, Platform, PanResponder, Dimensions, LayoutAnimation, PixelRatio, Animated, Easing, AccessibilityInfo } from 'react-native';
 import Svg, { Circle as SvgCircle } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -13,7 +13,7 @@ import MarkRow from '../components/MarkRow';
 import SheetHeader from '../components/SheetHeader';
 import PeleSheet from '../components/PeleSheet';
 import { HomeCards, HomeTop, pillWidth } from '../components/HomeCards';
-import { DutyDetailBody } from './DutyDetailScreen';
+import ServiceSheet from '../components/ServiceSheet';
 import { topGiant } from '../data/homeCards';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
@@ -23,7 +23,7 @@ import { monthlyAe, serviceMoney, aeIndex, awayNights } from '../data/perdiem';
 import { sncToRegister } from '../data/disruption';
 import { nightStopStation, hotelMapsUrl } from '../data/hotels';
 import { baseCityName } from '../data/countries';
-import { monthCells, orderServices, dayCards, yearMonths, prettyRoute, legendTour, daySigns, monthPillLabel } from '../data/escalaDay';
+import { monthCells, orderServices, dayCards, yearMonths, legendTour, daySigns, monthPillLabel } from '../data/escalaDay';
 import HotelSheet from '../components/HotelSheet';
 import RosterImportSheet from '../components/RosterImportSheet';
 import CalendarPickerSheet from '../components/CalendarPickerSheet';
@@ -296,9 +296,6 @@ export default function EscalaScreen({ navigation, route }) {
   const pickSvc = (idx) => { if (!selRef.current) return; select(); setSvcSheet({ iso: selRef.current, idx }); };
   const closeSvc = () => setSvcSheet(null);
   // Enquanto a janela desce, continua a mostrar o serviço que tinha (senão descia vazia).
-  const lastSvcRef = useRef(null); if (svcSheet) lastSvcRef.current = svcSheet;
-  const svcShown = svcSheet || lastSvcRef.current;
-  const svcTitleOf = ({ iso, idx }) => { const sv = svcsAt(iso)[idx]; if (!sv) return ''; const k = sv.kind || 'flight'; return (k === 'flight' && prettyRoute(sv.route)) || kindLabel(k); };
   // Os serviços do dia à vista: depois de aparecerem, desliza-se o mínimo (o dia escolhido continua à vista no mês).
   const scrollToDay = () => {
     if (!wantScroll.current || !scrollRef.current) return;
@@ -669,26 +666,10 @@ export default function EscalaScreen({ navigation, route }) {
         )}
       </View>
 
-      {/* A FOLHA DO SERVIÇO: a janela nativa do iPhone (puxar para baixo fecha) com tudo o que é dele — o corpo do Detalhe. */}
-      <Modal visible={!!svcSheet} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeSvc}>
-        {svcShown ? (
-          <View style={[s.dsRoot, { backgroundColor: C.sheet }]}>
-            <View style={s.dsGrab}><View style={[s.dsGrabBar, { backgroundColor: C.round }]} /></View>
-            <View style={s.ssHead}>
-              <View style={[s.flex, s.dsTitle]}>
-                <Text style={[TXT3.slimTitle, { color: C.ink }]} numberOfLines={1} accessibilityRole="header">{svcTitleOf(svcShown)}</Text>
-                <Text style={[TXT3.cardSub, { color: C.tabSub }]} numberOfLines={1}>{dayTitleOf(svcShown.iso)}</Text>
-              </View>
-              <PillButton label={l('Fechar', 'Close')} onPress={closeSvc} ink={C.ink} />
-            </View>
-            <ScrollView style={s.flex} contentContainerStyle={s.dsBody} showsVerticalScrollIndicator={false}>
-              <DutyDetailBody date={svcShown.iso} idx={svcShown.idx} navigation={navigation}
-                onDeleted={() => { setSvcSheet(null); setSelIso(null); }}
-                onOpenService={(i) => setSvcSheet((cur) => (cur ? { ...cur, idx: i } : cur))} />
-            </ScrollView>
-          </View>
-        ) : null}
-      </Modal>
+      {/* A FOLHA DO SERVIÇO: a mesma em toda a app (components/ServiceSheet.js — F1 de design/abrir-dia.html, 2026-11-16). */}
+      <ServiceSheet svc={svcSheet} onClose={closeSvc} navigation={navigation}
+        onDeleted={() => { setSvcSheet(null); setSelIso(null); }}
+        onPick={(i) => setSvcSheet((cur) => (cur ? { ...cur, idx: i } : cur))} />
 
       <RosterImportSheet visible={importOpen} initialSource={importSource} onConnect={connectCalendar}
         onDone={({ saved, source }) => {
@@ -853,11 +834,6 @@ const s = StyleSheet.create({
   dsTitle: { minWidth: 0 },
   svcBlock: { gap: SPACE.sm },
   // A folha do serviço (a janela nativa do iPhone)
-  dsRoot: { flex: 1 },
-  dsGrab: { alignItems: 'center', paddingTop: SPACE.sm, paddingBottom: SPACE.s },
-  dsGrabBar: { width: 40, height: 5, borderRadius: RADIUS.pill },
-  ssHead: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, paddingHorizontal: SPACE.lg, paddingBottom: SPACE.md },
-  dsBody: { paddingHorizontal: SPACE.md, paddingBottom: SPACE.xxxl },
 
   // A1 · o ano em meses
   yHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.md },

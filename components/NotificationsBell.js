@@ -80,7 +80,8 @@ export default function NotificationsBell({ variant = 'bell', night = false }) {
   // Ação por notificação (doutrina: acionável — toca → o sítio onde se resolve/vê).
   const actionFor = (n) => {
     if (n.action === 'roster') return openRoster;
-    if (n.action === 'validades') return () => { close(); navigation.navigate('Perfil', { screen: 'Validades' }); };
+    // as Validades abrem na aba onde estás (o Início e o Perfil têm-nas na pilha — F1 de design/abrir-dia.html, 2026-11-16)
+    if (n.action === 'validades') return () => { close(); navigation.navigate('Validades'); };
     if (n.action === 'stats') return () => { close(); navigation.navigate('Estatísticas'); };
     if (n.action === 'library') return () => { close(); navigation.navigate('Perfil', { screen: 'Biblioteca' }); };
     if (n.action === 'legal') return () => { Linking.openURL('https://crewpact.app/termos').catch(() => {}); };

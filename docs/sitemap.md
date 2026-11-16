@@ -32,26 +32,26 @@ código, a aba Números chama-se `Estatísticas`.
 INÍCIO (HomeScreen)
   folhas: Porquê (QuestionDetailSheet) · Prova (ProvaSheet) · Auditoria do mês (AuditSheet) · Hotel da pernoita (HotelSheet)
           · Partilhar o voo (FlightShareCard) · Boas-vindas (WelcomeSheet, 1× na vida) · Notificações (NotificationsBell)
-  → Escala › Detalhe do serviço        tocar num dia (muda de aba — ver o achado 3)
+  folha: o serviço (ServiceSheet — a mesma da Escala)   tocar num dia; fecha e fica no Início (achado 3, feito)
+  └ Validades (ValidadesScreen)       empilha-se no Início (o ‹ volta cá)
   a dica da 1.ª visita (Tip) aponta para o Simular
   → Escala › rever alterações · ligar o calendário · ler o PDF
   → Números                            o mês, os extras
-  → Perfil · Perfil › Validades
+  → Perfil
 
 ESCALA (EscalaScreen) — o mês em círculos; tocar num dia mostra os serviços por baixo
-  folhas: o serviço (o Detalhe inteiro, DutyDetailBody) · Importar escala (calendário | PDF) · ler a escala (RosterImportSheet)
-          · escolher o calendário (CalendarPickerSheet) · Hotel (HotelSheet) · as guias da 1.ª vez (GuideBubble)
-  └ Detalhe do serviço (DutyDetailScreen) — só vindo do Início ou dos Números
-      folhas: Prova (ProvaSheet) · Hotel (HotelSheet)
-      → outro serviço do mesmo dia (empilha outro Detalhe) · → a Escala com o dia a piscar
+  folhas: o serviço (ServiceSheet — o Detalhe inteiro: a Prova, o hotel, os outros serviços do dia) · Importar escala (calendário |
+          PDF) · ler a escala (RosterImportSheet) · escolher o calendário (CalendarPickerSheet) · Hotel (HotelSheet) · as guias da
+          1.ª vez (GuideBubble)
 
 [SIMULAR] — a Simulação (SimulationSheet), por cima de tudo
   a linha do tempo: um cartão por dia, o repouso entre os dias, ＋ Juntar outro dia, o resultado, Limpar
   folhas: o dia (SimDaySheet) → Pormenores (DutyFormSheet) · Calculadoras da lei (LawCalcsSheet)
 
 NÚMEROS (StatsScreen)
-  folhas: Prova (ProvaSheet) · Auditoria do mês (AuditSheet) · um limite do acordo (AeLimitSheet) · o ano para partilhar (YearShareCard)
-  → Escala · Escala › Detalhe do serviço
+  folhas: Prova (ProvaSheet) · Auditoria do mês (AuditSheet) → o serviço (ServiceSheet) · um limite do acordo (AeLimitSheet)
+          · o ano para partilhar (YearShareCard)
+  → Escala ("Ir para a Escala")
 
 PERFIL (SettingsScreen)
   folhas: A tua conta → mudar o e-mail · apagar a conta · terminar sessão · Nome e nº (RecordIdentitySheet) · Notificações
@@ -99,7 +99,9 @@ PERFIL (SettingsScreen)
    **A dica da 1.ª visita ao Início está errada** (importante). Diz "Cria aqui. Serviços, simulações e eventos — tudo nasce no ＋", mas o
    ＋ já não existe (o meio da barra é o Simular, desde a N2), criar serviços à mão acabou ("só o calendário") e os eventos também.
    Corrigir: apontar para o Simular com um texto novo, ou tirar a dica.
-3. **Um dia abre de duas maneiras, e o "voltar" perde o sítio.** Na Escala, tocar num serviço abre a folha dele. No Início e nos
+3. ✅ **FEITO a 2026-11-16 (F1 de `design/abrir-dia.html`):** o dia abre na folha do serviço (`components/ServiceSheet.js`) em toda a app;
+   o ecrã do Detalhe dentro da Escala saiu; as Validades empilham-se na aba onde se está (também pelo sino).
+   **Um dia abre de duas maneiras, e o "voltar" perde o sítio.** Na Escala, tocar num serviço abre a folha dele. No Início e nos
    Números, abre o ecrã do Detalhe **dentro da aba Escala** — a app muda de aba, e o ‹ volta ao mês da Escala, não ao Início. O mesmo
    com as Validades vindas do Início, que levam ao Perfil. Corrigir: abrir a mesma folha do dia por cima de onde se está (escolha de
    desenho — 3 esboços).

@@ -46,7 +46,8 @@ fadiga (FTL — Reg. UE 83/2014 · CS-FTL.1) e a remuneração prevista pelos ac
    `data/homeCards.js` (golden `test:homecards`), o desenho é `components/HomeCards.js`, tokens `CARD`/`TXT3`. **A Escala
    também** (2026-11-13, por ver no iPhone): SÓ O MÊS, com o dia num círculo (o anel com uma fatia por serviço; esboço
    `design/escala-circulos.html`, A); tocar num dia mostra os serviços dele por baixo do mês (`design/escala-dia-por-baixo.html`,
-   V1) e tocar num serviço abre a folha dele com o Detalhe inteiro (`DutyDetailBody` em `screens/DutyDetailScreen.js`); a legenda:
+   V1) e tocar num serviço abre a folha dele com o Detalhe inteiro (`components/ServiceSheet.js`, com o `DutyDetailBody` de
+   `screens/DutyDetailScreen.js` — **a mesma folha no Início e nos Números**, F1 de `design/abrir-dia.html`, 2026-11-16); a legenda:
    na 1.ª vez a guiada, depois o dia escolhido explica os seus sinais (`design/escala-legenda-5.html`, P1). **As guias da app** (balões na 1.ª vez, só onde
    faz sentido): regras e sítios em `docs/guias.md`; a peça é `components/GuideBubble.js`; o piloto é a Escala;
    `data/escalaDay.js` (golden `test:escala`); o topo é o `HomeTop` do Início. Aplica-se ecrã a ecrã; o que ainda não migrou segue o 2.0. **Uma só app:** as

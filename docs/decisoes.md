@@ -29,6 +29,19 @@ só se vê no dev build (`docs/dev-build.md`); a dica da 1.ª visita e a folha d
 "Simula antes de aceitar"). **Decidido (o Nuno: "muda a frase, vê uma frase ótima"):** o 1.º ponto das boas-vindas dizia "sabes sempre se estás dentro deles"
 (a app estima, não declara legalidade) — passou a "Os limites FTL da lei europeia, contados ao minuto com a tua escala — e a lei de
 onde vêm, à distância de um toque." **A seguir:** o 3 (3 esboços: um dia abre por cima de onde se está), o 5 (arrumar) e o 4.
+**Gravado `e46548e`** (o mapa, o 1, o 2 e a frase das boas-vindas). **O 3 — esboço feito:** `design/abrir-dia.html` — F1 a mesma folha
+do serviço em todo o lado (por cima do Início e dos Números, como na Escala; "Fechar" volta onde estavas) — **recomendada** · F2 o
+Detalhe empilha-se na aba onde estás (a maneira do iOS, mas a Escala ficava diferente) · F3 meia folha que cresce. Nas três, as
+Validades vindas do Início empilham-se no Início. À espera da escolha do Nuno.
+**O Nuno: "F1" — FEITA (por gravar):** `components/ServiceSheet.js` (a folha do serviço, tirada da Escala) abre por cima do Início
+(tocar num dia, a Auditoria do mês) e dos Números (a Auditoria); a Escala usa a mesma peça. O ecrã do Detalhe dentro da Escala
+saiu (a rota `DutyDetail`, o `DutyDetailScreen` e o empurrar "outro serviço do dia" que só ele usava). As Validades estão também na
+pilha do Início (o card, o "porquê" e o sino abrem-nas na aba onde se está). A folha que abre depois da Auditoria espera
+`SHEET_AFTER_MS` (450 ms — o iOS bloqueia um Modal a abrir com outro a fechar). 41 suites + guardião + exportação iOS verdes.
+**Ver no iPhone:** no Início, tocar no cartão do dia → a folha sobe por cima, "Fechar" e puxar para baixo voltam ao Início; tocar num
+outro serviço do mesmo dia dentro da folha; a Prova e o hotel dentro da folha; a Auditoria do mês → um dia (fecha e abre a folha sem
+prender o ecrã) no Início e nos Números; o cartão das Validades no Início → empilha-se, o ‹ volta ao Início; o sino → Validades no
+Início e no Perfil; a Escala continua igual.
 **2026-11-16:** testadas as skills novas na Simulação; o Nuno escolheu **C** (os erros objetivos já + os esboços do veredicto com o
 teclado). **Feitos os erros objetivos** (por gravar, por ver no iPhone — ver a entrada de 2026-11-16). **A seguir:** os 3 esboços, que
 passam a juntar o veredicto com o teclado e **várias simulações seguidas** (pergunta do Nuno; a recomendação está na entrada).
