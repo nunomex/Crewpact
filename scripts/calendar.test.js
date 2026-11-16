@@ -22,7 +22,7 @@ Module._extensions['.js'] = function (m, filename) {
 };
 
 const { classify, mapFlight, mapNonFlight, isAllDayNoTime, vacationDatesFromEvent, sickDatesFromEvent, unknownOf } = require(path.resolve('data/calendarParse.js'));
-const { codesFor } = require(path.resolve('data/rosterCodes.js'));
+const { codesFor, withRemoteCodes, setRemoteCodes } = require(path.resolve('data/rosterCodes.js'));
 const codes = codesFor('easyjet');
 
 let ok = 0, fail = 0;
@@ -130,6 +130,27 @@ eq('dia inteiro sem horas → fora (o filtro do pessoal)', unknownOf(ev('ZZZ', {
 eq('um voo conhecido não é "código novo"', unknownOf(ev('EJU7625 LIS-FNC 06:40-08:15'), codes), null);
 eq('um standby conhecido não é "código novo"', unknownOf(ev('ADTY 0600-1400 LIS'), codes), null);
 eq('uma folga conhecida não é "código novo"', unknownOf(ev('GDO'), codes), null);
+
+// ── OS CÓDIGOS DO SUPABASE (2026-11-16): a tabela `roster_codes` (só leitura para a app) junta códigos aos que a app traz — nunca os
+// tira. Cada linha é um código como vem na escala (não uma fórmula: o ponto é um ponto) e um tipo; só os da companhia; um tipo que
+// a app não conhece não entra. Sem rede, a última cópia; sem cópia, os da app. ──
+const ROWS = [{ airline: 'easyjet', code: 'SBYX', kind: 'standby_airport' }, { airline: 'easyjet', code: 'WD/X', kind: 'off' },
+  { airline: 'easyjet', code: 'A.B', kind: 'office' }, { airline: 'easyjet', code: 'ZZZ', kind: 'naoexiste' }, { airline: 'tap', code: 'QQQ', kind: 'office' }];
+const RC = withRemoteCodes(codes, ROWS, 'easyjet');
+eq('remoto · um código novo passa a conhecer-se', classify('SBYX 0600-1400 LIS', RC), 'standby_airport');
+eq('remoto · com barra', classify('WD/X', RC), 'off');
+eq('remoto · só o código inteiro (SBYXZ não)', classify('SBYXZ 0600-1400', RC), 'other');
+eq('remoto · o ponto é um ponto, não uma fórmula (AXB não)', classify('AXB', RC), 'other');
+eq('remoto · A.B tal e qual', classify('A.B 0900-1700', RC), 'office');
+eq('remoto · um tipo que a app não conhece não entra', classify('ZZZ', RC), 'other');
+eq('remoto · só os da companhia', classify('QQQ', RC), 'other');
+eq('remoto · os de origem continuam', classify('ADTY 0600-1400 LIS', RC), 'standby_airport');
+eq('remoto · sem linhas, os de origem tal e qual', withRemoteCodes(codes, [], 'easyjet') === codes, true);
+eq('remoto · o código novo deixa de ser "código novo"', unknownOf(ev('SBYX 0600-1400 LIS'), RC), null);
+setRemoteCodes([{ airline: 'easyjet', code: 'SBYX', kind: 'standby_airport' }]);
+eq('codesFor · usa a cópia do Supabase', classify('SBYX', codesFor('easyjet')), 'standby_airport');
+setRemoteCodes([]);
+eq('codesFor · sem cópia, os da app', classify('SBYX', codesFor('easyjet')), 'other');
 
 console.log(`\ncalendar (parsing) — ${ok} passou, ${fail} falhou (${ok + fail} asserções)`);
 if (fail) process.exit(1);

@@ -59,6 +59,8 @@
     <tr><td><b>Escala / serviços</b></td><td>Datas, horas de report/voo, rotas, números de voo, tipo de serviço, pernoitas</td><td>Dispositivo + cópia sincronizada no servidor</td><td>Mostrar a tua escala em qualquer sessão; alimentar os cálculos no dispositivo</td></tr>
     <tr><td><b>Validades de documentos</b></td><td>Apenas campos-chave introduzidos por ti (tipo, datas, referência)</td><td>Dispositivo</td><td>Avisar de expirações. <b>Não guardamos ficheiros nem fotografias de documentos.</b></td></tr>
     <tr><td><b>Eventos de remuneração</b></td><td>Datas de férias, ausências (incluindo os dias de baixa por doença, só as datas), extras (ex.: dias de folga trabalhados)</td><td>Dispositivo</td><td>Estimativa salarial segundo o AE</td></tr>
+    <tr><td><b>Códigos da escala que a app não conhece</b></td><td>O código e as horas de um evento da tua escala que a app não reconhece (ex.: "SBYX 06:00–14:00"), para o mostrar no dia e marcar esse dia como incerto</td><td>Dispositivo</td><td>Não esconder nada da escala: os limites desse dia ficam "incertos" em vez de errados</td></tr>
+    <tr><td><b>Aviso de código novo (opcional)</b></td><td>Só o código (ex.: "SBYX"), a companhia, o mês e a versão da app — <b>sem ligação à tua conta</b>, sem o teu nome nem a tua escala. Só é enviado se tocares em "Avisar a CrewPact" e confirmares</td><td>Servidor (Supabase)</td><td>Ensinar à app os códigos novos da escala, para todos</td></tr>
     <tr><td><b>Hotéis de pernoita</b></td><td>Nome/nota/telefone do hotel por estação</td><td>Dispositivo</td><td>Conveniência nas pernoitas</td></tr>
     <tr><td><b>Partilha com família</b></td><td>Dados do voo partilhado (rota, horas, nº de voo) e a etiqueta que escolheres para a pessoa (ex.: "Mãe")</td><td>Servidor (página pública acessível por ligação)</td><td>Duas formas, ambas criadas por ti: ligação <b>pontual</b> (expira em 24 horas) e ligação <b>de família</b> (permanente até a revogares na app; mostra apenas a chegada do próprio dia — nunca a escala nem o histórico)</td></tr>
   </table>
@@ -103,6 +105,7 @@
   <ul>
     <li>Mantemos os dados enquanto a conta existir.</li>
     <li><b>Apagar conta</b> (na app: Perfil → Segurança): a eliminação é agendada com um <b>período de graça de 7 dias</b> (podes reativar entrando de novo); findo o prazo, a conta e os dados no servidor são eliminados, incluindo as ligações de partilha associadas. Os dados locais permanecem no teu dispositivo durante o período de graça (é o que permite a reativação sem perdas) e são removidos ao desinstalares a aplicação.</li>
+    <li>Findo o período de graça do <b>Apagar conta</b>, ao abrir a app os dados guardados <b>neste telemóvel</b> para essa conta são também apagados.</li>
     <li>Ligações de partilha <b>pontuais</b> expiram automaticamente em 24 horas. Ligações <b>de família</b> não expiram — duram até as revogares na app (a revogação é imediata) ou até a conta ser eliminada.</li>
     <li>Cópias de segurança técnicas são eliminadas nos ciclos normais do fornecedor.</li>
   </ul>

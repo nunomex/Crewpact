@@ -44,6 +44,7 @@ import { countersToEvents } from './data/aeEvents';
 import { syncReminders, notifyRosterChange, notifyLiveSync, cancelAllReminders, requestRemindersPermission, remindersUnavailableReason, clearWakeUp, validateWakeUp, onReminderTap } from './data/reminders';
 import { notifRoute } from './data/notifications';
 import { purgeDeletedAccounts, clearDeletionMark } from './data/accountPurge';
+import { loadRemoteCodes } from './data/remoteCodes';
 import { legZulu } from './data/zulu';
 import { storedMatchesReal } from './data/flightStatus';
 import { hotelSetCurrent, hotelUpdateAt, hotelAddAsCurrent, hotelMakeCurrent, hotelRemoveAt } from './data/hotels';
@@ -334,6 +335,8 @@ export default function App() {
   // login, trancada ou na entrada, espera; a Simulação, se estiver aberta, fecha-se para se ver o sítio.
   // RGPD art. 17.º: uma conta cujo apagamento já venceu (os 7 dias de graça) deixa de ter dados neste telemóvel (data/accountPurge.js)
   useEffect(() => { purgeDeletedAccounts(AsyncStorage); }, []);
+  // os códigos da escala que a CrewPact acrescentou no Supabase (a última cópia já; a tabela de 12 em 12 h) — data/remoteCodes.js
+  useEffect(() => { loadRemoteCodes(); }, []);
   const pendingTap = useRef(null);
   const goTap = () => {
     const r = pendingTap.current;

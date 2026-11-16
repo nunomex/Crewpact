@@ -27,8 +27,38 @@ export const ROSTER_CODES = {
   // jet2 / volotea / wizz / hifly → acrescentar aqui (com o diagnóstico).
 };
 
-// Códigos da companhia (string slug); default easyJet enquanto não houver outros.
-export const codesFor = (company) => ROSTER_CODES[String(company || '').toLowerCase()] || ROSTER_CODES.easyjet;
+// OS CÓDIGOS DO SUPABASE (2026-11-16; golden scripts/calendar.test.js). A tabela `roster_codes` (supabase/roster-codes.sql — só
+// leitura para a app; escreve-a a CrewPact no painel) JUNTA códigos aos de cima, nunca os tira: corrige-se em minutos para todos,
+// sem esperar pela revisão da loja. Cada linha é um código como vem na escala ("SBYX", "WD/O" — não uma fórmula: o ponto é um
+// ponto) e um tipo; só os da companhia; um tipo que a app não conhece não entra. A cópia guarda-se no telemóvel (data/remoteCodes.js).
+const KIND_FIELD = { standby_home: 'standbyHome', standby_airport: 'standbyAirport', positioning: 'positioning', training: 'training', office: 'office', off: 'dayOff' };
+const escRe = (x) => String(x).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+export function withRemoteCodes(codes, rows = [], airline = 'easyjet') {
+  const mine = (rows || []).filter((r) => r && String(r.airline || '').toLowerCase() === airline && KIND_FIELD[r.kind] && String(r.code || '').trim());
+  if (!mine.length) return codes;
+  const out = { ...codes };
+  for (const [kind, field] of Object.entries(KIND_FIELD)) {
+    const toks = [...new Set(mine.filter((r) => r.kind === kind).map((r) => String(r.code).trim().toUpperCase()))];
+    if (!toks.length) continue;
+    // o código inteiro: sem letra, algarismo ou "/" colado de nenhum lado (\b não serve aos códigos com "/")
+    const alt = toks.map((t) => `(?<![A-Za-z0-9/])${escRe(t)}(?![A-Za-z0-9/])`).join('|');
+    const base = codes[field];
+    out[field] = base ? new RegExp(`${base.source}|${alt}`, base.flags) : new RegExp(alt, 'i');
+  }
+  return out;
+}
+let REMOTE = [];
+let MEMO = new Map();
+export const setRemoteCodes = (rows) => { REMOTE = Array.isArray(rows) ? rows : []; MEMO = new Map(); };
+
+// Códigos da companhia (string slug); default easyJet enquanto não houver outros — com os do Supabase por cima, quando os há.
+export const codesFor = (company) => {
+  const slug = String(company || '').toLowerCase();
+  const key = ROSTER_CODES[slug] ? slug : 'easyjet';
+  if (!REMOTE.length) return ROSTER_CODES[key];
+  if (!MEMO.has(key)) MEMO.set(key, withRemoteCodes(ROSTER_CODES[key], REMOTE, key));
+  return MEMO.get(key);
+};
 
 // True quando o nº de voo NÃO parece da companhia — SÓ quando TEMOS os códigos dela
 // (modelada) E o nº não casa o seu `flightNo`. False se a companhia não está modelada

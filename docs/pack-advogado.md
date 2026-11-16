@@ -809,3 +809,11 @@ se as devo enviar e como.
    primeira hora adiada ou pela hora final?
 5. **Cabine com repouso a bordo (CS FTL.1.205(c)(3)).** O limite da tabela ("Not allowed" acima de um certo PSV)
    aplica-se ao PSV da própria cabine, já com a diferença de apresentação em relação aos pilotos?
+
+## Alterações à política de privacidade a rever (2026-11-16)
+- **Códigos da escala que a app não conhece** — guardados só no dispositivo (o código e as horas), para o dia ficar "incerto".
+- **Aviso de código novo (opcional)** — só o código, a companhia, o mês e a versão da app, SEM ligação à conta, enviado só quando o
+  tripulante toca em "Avisar a CrewPact" e confirma (tabela `code_reports` no Supabase; a base de dados recusa texto livre).
+  Pergunta: é suficiente para ser tratado como dado anónimo (o pedido chega com o IP ao fornecedor), ou pede outra base legal?
+- **Conservação** — findo o período de graça do "Apagar conta", os dados guardados no telemóvel para essa conta são apagados ao
+  abrir a app.

@@ -18,6 +18,19 @@ verificação (W2) · a guia de três balões do Início · o guião `docs/verif
 as horas do relógio à portuguesa nos resumos das cláusulas ("18h00" → "18:00"); o limite de horas de bloco do acordo com as
 duas pontas na Simulação; na troca, a folga num dia com dois serviços de voo desconta o per diem do dia duas vezes (na TAP é por dia
 de calendário — o `seqMoney` paga cada serviço sozinho; na easyJet está certo).
+**OS CÓDIGOS NO SUPABASE E O "AVISAR A CREWPACT" — FEITOS (2026-11-16, o Nuno: "vamos fazer estas"; por gravar):** (1) a tabela
+`roster_codes` (`supabase/roster-codes.sql`): a CrewPact acrescenta no painel um código como vem na escala e um tipo; a app lê-a
+(`data/remoteCodes.js` — a última cópia já, a tabela de 12 em 12 h, a cópia sem rede) e JUNTA-a aos seus códigos, nunca os tira
+(`withRemoteCodes`/`setRemoteCodes` em `data/rosterCodes.js`; o ponto é um ponto, não uma fórmula; só os da companhia; golden
+`test:calendar`, 12 casos). (2) o "Avisar a CrewPact": tocar no cartão "Código novo" da Escala → a pergunta → envia SÓ o código, a
+companhia, o mês e a versão da app para `code_reports`, SEM o id da conta (a base de dados recusa o que não tiver a forma de um código;
+os utilizadores enviam mas não leem); depois o cartão diz "avisaste a CrewPact" (`cp_reported_codes_<uid>`). (3) a política de
+privacidade: duas linhas novas e a frase da conservação; as perguntas para o advogado em `docs/pack-advogado.md`.
+**FALTA (o Nuno): correr `supabase/roster-codes.sql` no editor de SQL do Supabase (uma vez).** Sem as tabelas, a app segue com os seus
+códigos e o aviso diz "Não foi possível enviar agora". Para acrescentar um código: o exemplo de `insert` no fim do ficheiro; os avisos
+mais pedidos: a consulta logo a seguir.
+**Ver no iPhone:** com a tabela corrida e uma linha (ex.: SBYX → standby aeroporto), reabrir a app e importar — o SBYX deixa de ser
+"código novo"; um código novo → tocar → "Enviar" → "Obrigado" e "avisaste a CrewPact"; sem rede → "Não foi possível enviar agora".
 **Fable 5.2 → quarta-feira, 2026-11-18** (a lista no bloco "SESSÃO FABLE 5.2", agora com a camada 2 dos códigos novos, ponto 9).
 **2026-11-16 (fim):** gravado `0859035` (a V3 e os acertos; por enviar com `83c0bd7` e `bd2375f`). **O mapa da app:** `docs/sitemap.md`,
 verificado contra o código — tudo liga, mas 5 achados à espera da escolha do Nuno: (1) tocar numa notificação não abre nada ("Escala

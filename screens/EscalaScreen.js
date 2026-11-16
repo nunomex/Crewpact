@@ -5,6 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import GuideBubble from '../components/GuideBubble';
 import AsyncStorage from '../data/secureStorage';   // wrapper de cifra-em-repouso (flag OFF por agora = passthrough)
+import Constants from 'expo-constants';
+import { reportUnknownCode } from '../data/remoteCodes';
 import { RADIUS, GUTTER, SPACE, TXT, TXT3, TYPE, CARD, PELE, PELE_FONT, BRAND } from '../data/constants';
 import Icon from '../components/Icon';
 import IconButton from '../components/IconButton';
@@ -243,6 +245,13 @@ export default function EscalaScreen({ navigation, route }) {
   };
   // o € de um evento com as duas pontas, quando as há (a SNC de abril a outubro: 60 € certos, até 240 € com o regime reforçado; a
   // DDO/IDO/WFLY a tempo parcial) — { each, max }; a mesma conta do extraEur
+  // "Avisar a CrewPact" de um código novo (2026-11-16): os que este tripulante já avisou (por companhia e código) não se pedem outra vez
+  const [reportedCodes, setReportedCodes] = useState([]);
+  useEffect(() => {
+    if (!user?.id) { setReportedCodes([]); return; }
+    AsyncStorage.getItem(`cp_reported_codes_${user.id}`).then((v) => { try { setReportedCodes(v ? (JSON.parse(v) || []) : []); } catch (_e) { setReportedCodes([]); } }).catch(() => {});
+  }, [user?.id]);
+  const reportKey = (code) => `${(company && company.slug) || ''}|${code}`;
   const extraRange = (tp, cat, iso) => {
     if (tp === 'sickDays') return null;
     const ymX = iso ? String(iso).slice(0, 7) : undefined;
@@ -423,6 +432,22 @@ export default function EscalaScreen({ navigation, route }) {
     else if (o.to === 'importCal') openImport('calendar');
     else if (o.to === 'pdf') openImport('paste');
     else if (o.to === 'rmAbs') removeAeEvent(o.id);
+    // "Avisar a CrewPact": SÓ o código, a companhia e o mês (sem nome nem escala) — a app passa a conhecer o código (data/remoteCodes.js)
+    else if (o.to === 'reportCode') {
+      const coName = (company && (company.name || company.slug)) || '';
+      const mon = new Date(`${o.iso}T12:00:00`).toLocaleDateString(locale, { month: 'long', year: 'numeric' });
+      Alert.alert(l('Avisar a CrewPact', 'Tell CrewPact'),
+        l(`Envia só o código ${o.code}, a companhia (${coName}) e o mês (${mon}) — sem o teu nome nem a tua escala. Serve para a app passar a conhecer este código.`,
+          `Sends only the code ${o.code}, the airline (${coName}) and the month (${mon}) — not your name or your roster. It helps the app learn this code.`),
+        [{ text: l('Cancelar', 'Cancel'), style: 'cancel' }, { text: l('Enviar', 'Send'), onPress: async () => {
+          const r = await reportUnknownCode({ airline: company && company.slug, code: o.code, month: String(o.iso).slice(0, 7), appVersion: (Constants.expoConfig && Constants.expoConfig.version) || null });
+          if (!r.ok) { Alert.alert(l('Avisar a CrewPact', 'Tell CrewPact'), l('Não foi possível enviar agora. Tenta mais tarde.', 'Could not send right now. Try again later.')); return; }
+          const next = [...new Set([...reportedCodes, reportKey(o.code)])];
+          setReportedCodes(next);
+          if (user?.id) AsyncStorage.setItem(`cp_reported_codes_${user.id}`, JSON.stringify(next)).catch(() => {});
+          notify && notify(l('Obrigado — a CrewPact vai ver este código', 'Thanks — CrewPact will look at this code'), null, 'ok');
+        } }]);
+    }
     // uma SNC/RDP confirmada por engano (2026-11-16: a folha antiga dos extras saiu — o sítio de a tirar é o dia dela)
     else if (o.to === 'rmOvAsk') Alert.alert(l('Remover deste dia', 'Remove from this day'), l(`Tirar "${extraLabel(o.type)}" deste dia? Sai dos extras do mês.`, `Remove "${extraLabel(o.type)}" from this day? It leaves the month’s extras.`), [{ text: l('Cancelar', 'Cancel'), style: 'cancel' }, { text: l('Remover', 'Remove'), style: 'destructive', onPress: () => removeAeEvent(o.id) }]);
     else if (o.to === 'rmAbsAsk') Alert.alert(l('Apagar extra', 'Delete extra'), l('Apagar este dia dos extras do mês?', 'Remove this day from the month extras?'), [{ text: l('Cancelar', 'Cancel'), style: 'cancel' }, { text: l('Apagar', 'Delete'), style: 'destructive', onPress: () => removeAeEvent(o.id) }]);
@@ -534,8 +559,10 @@ export default function EscalaScreen({ navigation, route }) {
     // pode ser um serviço, e então os limites e o repouso deste dia não estão certos. Vem da leitura do calendário (unknownOf).
     const unk = ((rosterUnknown || {})[iso]) || [];
     if (unk.length) {
-      const unkCards = cardsOf(unk.map((u, i) => ({ t: 'slim', id: `unk${i}`, color: 'neutral', dashed: true, kind: l('Código novo', 'New code'), title: u.code,
-        sub: [u.start && u.end ? `${u.start}–${u.end}` : null, l('a app não conhece este código: os limites e o repouso deste dia ficam incertos', 'the app doesn’t know this code: this day’s limits and rest are uncertain')].filter(Boolean).join(' · ') })), { iso });
+      const unkCards = cardsOf(unk.map((u, i) => { const done = reportedCodes.includes(reportKey(u.code)); return { t: 'slim', id: `unk${i}`, color: 'neutral', dashed: true, kind: l('Código novo', 'New code'), title: u.code,
+        sub: [u.start && u.end ? `${u.start}–${u.end}` : null, l('a app não conhece este código: os limites e o repouso deste dia ficam incertos', 'the app doesn’t know this code: this day’s limits and rest are uncertain'),
+          done ? l('avisaste a CrewPact', 'you told CrewPact') : l('toca para avisar a CrewPact', 'tap to tell CrewPact')].filter(Boolean).join(' · '),
+        open: done ? null : { to: 'reportCode', code: u.code, iso } }; }), { iso });
       body = (<>{unkCards}{body}</>);
     }
     return (
