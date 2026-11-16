@@ -20,6 +20,7 @@ fadiga (FTL — Reg. UE 83/2014 · CS-FTL.1) e a remuneração prevista pelos ac
 - `screens/` 20 ecrãs · `components/` · `data/` motores puros e acesso a dados · `ftl/` motor FTL ·
   `ae/` acordos de empresa (easyJet SPAC/SNPVAC, TAP; pilotos easyJet = BTE 29/2026, com o de 2023 na linha do tempo — `docs/ae-easyjet-pilotos-2026.md`) · `supabase/` schema, SQL, Edge Functions ·
   `legal/` termos e privacidade (HTML) · `design/` mockups HTML (mandam à letra) · `scripts/` testes golden.
+- **O mapa da app** (ecrãs, folhas, ligações e o que foi verificado): `docs/sitemap.md` — atualizar quando um ecrã ou uma ligação mudar.
 - **Lei interna:** `docs/CONSTITUICAO.md` (Q1–Q5 trancadas, contrato AI §6, Carta de Design §11).
 - **Canon visual:** `docs/design-system.md` + `docs/motion-design-system.md` + `docs/living-interface.md`.
 - **Decisões e pendências:** `docs/decisoes.md` — ler PRIMEIRO em cada sessão nova.

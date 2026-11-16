@@ -233,3 +233,32 @@ export async function cancelAllReminders() {
     try { await n.cancelAllScheduledNotificationsAsync(); await rescheduleWakeUp(n, null); } catch { /* noop */ }
   }
 }
+
+// ── TOCAR NUMA NOTIFICAÇÃO (o mapa da app, achado 1, 2026-11-16) ──
+// Chama `cb(data)` com o `data` da notificação tocada: com a app aberta (o ouvinte) e quando o toque a abriu (a última resposta,
+// uma vez — depois limpa-se, para não voltar a abrir no próximo arranque). O sítio de cada uma decide-o `notifRoute`
+// (data/notifications.js). Sem o módulo nativo (Expo Go), não faz nada. Devolve a função para deixar de ouvir.
+let _lastTapId = null;
+export function onReminderTap(cb) {
+  const n = N();
+  if (!n || typeof cb !== 'function') return () => {};
+  const fire = (r) => {
+    const req = r && r.notification && r.notification.request;
+    if (!req || req.identifier === _lastTapId) return;
+    _lastTapId = req.identifier;
+    try { cb((req.content && req.content.data) || null); } catch { /* noop */ }
+  };
+  let sub = null;
+  try { sub = n.addNotificationResponseReceivedListener(fire); } catch { sub = null; }
+  try {
+    const p = n.getLastNotificationResponseAsync ? n.getLastNotificationResponseAsync() : null;
+    if (p && p.then) {
+      p.then((r) => {
+        if (!r) return;
+        fire(r);
+        if (n.clearLastNotificationResponseAsync) n.clearLastNotificationResponseAsync().catch(() => {});
+      }).catch(() => {});
+    }
+  } catch { /* noop */ }
+  return () => { try { if (sub) sub.remove(); } catch { /* noop */ } };
+}

@@ -17,7 +17,7 @@ Module._extensions['.js'] = function (m, filename) {
   if (filename.includes('node_modules')) return origJs(m, filename);
   m._compile(babel.transformSync(fs.readFileSync(filename, 'utf8'), { filename, babelrc: false, configFile: false, plugins: [cjsPlugin] }).code, filename);
 };
-const { buildNotifications } = require(path.resolve('data/notifications.js'));
+const { buildNotifications, notifRoute } = require(path.resolve('data/notifications.js'));
 
 let ok = 0, fail = 0;
 const eq = (label, got, exp) => {
@@ -49,6 +49,16 @@ eq('acordo atualizado = informação', levelOf(buildNotifications({}, 'pt', { ae
 
 // ── sem nada → lista vazia (a janela diz "Não há notificações.") ──
 eq('sem dados = lista vazia', buildNotifications({}, 'pt', {}).length, 0);
+
+// ── tocar numa notificação do telemóvel leva ao sítio dela (o mapa da app, achado 1, 2026-11-16: "Escala alterada · Toca para
+// rever" abria a app onde estava). O `data.kind` vem de data/reminders.js. ──
+const NOW = 1763300000000;
+eq('toque · a escala mudou → a revisão na Escala', notifRoute({ kind: 'roster' }, NOW), { root: 'Escala', screen: 'EscalaMain', params: { review: NOW } });
+eq('toque · sincroniza a escala → a Escala', notifRoute({ kind: 'livesync' }, NOW), { root: 'Escala', screen: 'EscalaMain', params: null });
+eq('toque · validade a expirar → as Validades (com o Perfil por baixo)', notifRoute({ kind: 'validity', type: 'medical' }, NOW), { root: 'Perfil', screen: 'Validades', params: null, initial: false });
+eq('toque · próximo serviço → o Início', notifRoute({ kind: 'report', iso: '2026-11-20' }, NOW), { root: 'Início', screen: null, params: null });
+eq('toque · acordar → o Início', notifRoute({ kind: 'wake', iso: '2026-11-20' }, NOW), { root: 'Início', screen: null, params: null });
+eq('toque · desconhecida ou sem dados → fica onde está', [notifRoute({ kind: 'outra' }, NOW), notifRoute(null, NOW)], [null, null]);
 
 console.log(`${fail ? '✗' : '✓'} notificações: ${ok} certos${fail ? `, ${fail} errados` : ''}`);
 process.exit(fail ? 1 : 0);

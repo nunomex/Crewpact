@@ -147,3 +147,18 @@ export function buildNotifications(profile, lang = 'pt', opts = {}) {
 
   return list;
 }
+
+// ── O TOQUE NUMA NOTIFICAÇÃO DO TELEMÓVEL (o mapa da app, achado 1, 2026-11-16) ──
+// As notificações locais (data/reminders.js) levam um `data.kind`; tocar numa delas abre o sítio dela — antes a app abria onde
+// estava (e a "Escala alterada" dizia "Toca para rever"). PURO; golden scripts/notifications.test.js. `now` só para os parâmetros
+// que se repetem (a Escala abre a revisão de cada vez que o valor muda).
+//   roster   → a revisão na Escala · livesync → a Escala (sincronizar pelo calendário) · validity → as Validades (o Perfil por baixo)
+//   report · wake → o Início (o próximo serviço e o lembrete para acordar vivem lá) · outra → null (fica onde está)
+export function notifRoute(data, now = Date.now()) {
+  const kind = data && data.kind;
+  if (kind === 'roster') return { root: 'Escala', screen: 'EscalaMain', params: { review: now } };
+  if (kind === 'livesync') return { root: 'Escala', screen: 'EscalaMain', params: null };
+  if (kind === 'validity') return { root: 'Perfil', screen: 'Validades', params: null, initial: false };
+  if (kind === 'report' || kind === 'wake') return { root: 'Início', screen: null, params: null };
+  return null;
+}

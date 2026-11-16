@@ -132,6 +132,9 @@
 ## Depois do primeiro build — checklist de validação
 
 - [ ] Lembretes: toggle liga + notificação chega
+- [ ] Tocar em cada notificação leva ao sítio dela (o mapa da app, achado 1, 2026-11-16 — `notifRoute` + `onReminderTap`): "Escala
+      alterada" → a revisão na Escala · "Sincroniza a escala" → a Escala · "Validade a expirar" → as Validades · "Próximo serviço" e o
+      lembrete para acordar → o Início. Com a app aberta, em segundo plano e FECHADA (e trancada: vai depois de desbloquear)
 - [ ] PDF: importar um roster real por ficheiro (e conferir a sugestão LVE quando feita)
 - [ ] Dynamic Island: voo ao vivo aparece/atualiza
 - [ ] Widget "próximo report": dados certos + atualiza à meia-noite/alteração de escala

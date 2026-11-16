@@ -41,14 +41,17 @@ export default function WelcomeSheet({ visible, onDone, lang = 'pt' }) {
 
   const first = String(user?.name || '').trim().split(/\s+/)[0] || '';
   const ROWS = [
-    { icon: 'gauge', t: l('Os limites, calculados', 'Your limits, computed'),
-      p: l('Os limites FTL da lei europeia, verificados ao minuto: sabes sempre se estás dentro deles e até que horas.', 'EU-law FTL limits, checked to the minute: you always know if you are within them, and until when.') },
+    { icon: 'clock', t: l('Os limites, calculados', 'Your limits, computed'),   // o relógio: o "gauge" é o do Simular na barra
+      // a app estima, nunca declara legalidade (2026-11-16, o Nuno: "vê uma frase ótima"): o que faz — contar ao minuto — e de onde vem
+      // cada número (a Prova: os números do Início, do Detalhe e dos Números abrem o artigo com um toque)
+      p: l('Os limites FTL da lei europeia, contados ao minuto com a tua escala — e a lei de onde vêm, à distância de um toque.', 'EU-law FTL limits, counted to the minute on your roster — and the law behind them, one tap away.') },
     { icon: 'wallet', t: l('O salário, pelo teu acordo', 'Your pay, by your agreement'),
       p: l('Ajudas de custo, pernoitas e extras pelo AE da tua companhia, ao cêntimo.', 'Per diems, night stops and extras by your airline’s agreement, to the cent.') },
     { icon: 'home', t: l('Um Início que vive o teu dia', 'A Home that lives your day'),
       p: l('Folga, véspera, voo, pernoita: a primeira página muda sozinha com a escala.', 'Day off, eve, flight, night stop: the first page changes with your roster.') },
-    { icon: 'plus', t: l('Cria com o +', 'Create with +'),
-      p: l('Serviços, simulações e eventos nascem no botão do meio.', 'Duties, simulations and events start from the middle button.') },
+    // o botão do meio da barra é o Simular (a N2, 2026-11-15); o ＋ e criar à mão acabaram ("só o calendário") — o mapa da app, achado 2
+    { icon: 'gauge', t: l('Simula antes de aceitar', 'Simulate before you accept'),
+      p: l('Um serviço ou uma troca, no botão do meio: a app faz as contas antes de dizeres que sim. Nada fica na escala.', 'A duty or a swap, in the middle button: the app does the maths before you say yes. Nothing goes on your roster.') },
   ];
 
   return (

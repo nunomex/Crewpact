@@ -18,6 +18,17 @@ verificação (W2) · a guia de três balões do Início · o guião `docs/verif
 as horas do relógio à portuguesa nos resumos das cláusulas ("18h00" → "18:00"); o limite de horas de bloco do acordo com as
 duas pontas na Simulação; na troca, a folga num dia com dois serviços de voo desconta o per diem do dia duas vezes (na TAP é por dia
 de calendário — o `seqMoney` paga cada serviço sozinho; na easyJet está certo).
+**2026-11-16 (fim):** gravado `0859035` (a V3 e os acertos; por enviar com `83c0bd7` e `bd2375f`). **O mapa da app:** `docs/sitemap.md`,
+verificado contra o código — tudo liga, mas 5 achados à espera da escolha do Nuno: (1) tocar numa notificação não abre nada ("Escala
+alterada · Toca para rever"); (2) a dica da 1.ª visita ao Início ainda aponta para o ＋ que já não existe; (3) do Início e dos Números,
+um dia abre o Detalhe dentro da aba Escala (muda de aba; o ‹ não volta ao Início) — na Escala abre numa folha; (4) os extras sem
+entrada (já se sabia); (5) código sem uso (Banner, DayBar, Segmented, ramos da Página do perfil, o parâmetro `hub`).
+**O Nuno: "vamos fazer todos, começamos pelo 1 e 2". FEITOS o 1 e o 2** (por gravar): o toque nas notificações leva ao sítio
+de cada uma (`notifRoute` com golden em `test:notifications`; `onReminderTap`; o `App.js` espera pelas portas e fecha a Simulação) —
+só se vê no dev build (`docs/dev-build.md`); a dica da 1.ª visita e a folha de boas-vindas apontam para o Simular ("Simula aqui" ·
+"Simula antes de aceitar"). **Decidido (o Nuno: "muda a frase, vê uma frase ótima"):** o 1.º ponto das boas-vindas dizia "sabes sempre se estás dentro deles"
+(a app estima, não declara legalidade) — passou a "Os limites FTL da lei europeia, contados ao minuto com a tua escala — e a lei de
+onde vêm, à distância de um toque." **A seguir:** o 3 (3 esboços: um dia abre por cima de onde se está), o 5 (arrumar) e o 4.
 **2026-11-16:** testadas as skills novas na Simulação; o Nuno escolheu **C** (os erros objetivos já + os esboços do veredicto com o
 teclado). **Feitos os erros objetivos** (por gravar, por ver no iPhone — ver a entrada de 2026-11-16). **A seguir:** os 3 esboços, que
 passam a juntar o veredicto com o teclado e **várias simulações seguidas** (pergunta do Nuno; a recomendação está na entrada).

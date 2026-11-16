@@ -8,7 +8,7 @@ Text.defaultProps = Text.defaultProps || {};
 Text.defaultProps.maxFontSizeMultiplier = 1.4;
 TextInput.defaultProps = TextInput.defaultProps || {};
 TextInput.defaultProps.maxFontSizeMultiplier = 1.4;
-import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, createNavigationContainerRef } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -42,7 +42,8 @@ import { detectWindow, diffUpcoming } from './data/rosterDiff';
 import { dutyToFtlDay, dayFtlFromDuties, reconcileDayLog } from './ftl';
 import { countersToEvents } from './data/aeEvents';
 import ExtrasManager from './components/ExtrasManager';   // PORT pele: gestão de extras (ver/apagar) no mini-FAB
-import { syncReminders, notifyRosterChange, notifyLiveSync, cancelAllReminders, requestRemindersPermission, remindersUnavailableReason, clearWakeUp, validateWakeUp } from './data/reminders';
+import { syncReminders, notifyRosterChange, notifyLiveSync, cancelAllReminders, requestRemindersPermission, remindersUnavailableReason, clearWakeUp, validateWakeUp, onReminderTap } from './data/reminders';
+import { notifRoute } from './data/notifications';
 import { legZulu } from './data/zulu';
 import { storedMatchesReal } from './data/flightStatus';
 import { hotelSetCurrent, hotelUpdateAt, hotelAddAsCurrent, hotelMakeCurrent, hotelRemoveAt } from './data/hotels';
@@ -96,6 +97,8 @@ import SimulationSheet    from './components/SimulationSheet';
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const Tab   = createBottomTabNavigator();
+// A navegação vista de fora dos ecrãs: tocar numa notificação leva ao sítio dela (o mapa da app, achado 1, 2026-11-16).
+const navRef = createNavigationContainerRef();
 const Stack = createStackNavigator();
 
 // AppContext / isoDay vivem em data/appContext (módulo-folha) para QUEBRAR o
@@ -319,6 +322,23 @@ export default function App() {
   // Toast global de feedback de sync (duties → Supabase). { kind: 'sync'|'warn', ts }.
   const [toast, setToast] = useState(null);
   const [simulateOpen, setSimulateOpen] = useState(false);   // fluxo de simulação aberto?
+  // Tocar numa notificação (data/reminders.js → notifRoute): guarda o sítio e vai lá quando a navegação existir — com a app no
+  // login, trancada ou na entrada, espera; a Simulação, se estiver aberta, fecha-se para se ver o sítio.
+  const pendingTap = useRef(null);
+  const goTap = () => {
+    const r = pendingTap.current;
+    if (!r || !navRef.isReady()) return;
+    pendingTap.current = null;
+    setSimulateOpen(false);
+    navRef.navigate(r.root, r.screen ? { screen: r.screen, ...(r.params ? { params: r.params } : {}), ...(r.initial === false ? { initial: false } : {}) } : undefined);
+  };
+  useEffect(() => onReminderTap((data) => { const r = notifRoute(data); if (r) { pendingTap.current = r; goTap(); } }), []); // eslint-disable-line react-hooks/exhaustive-deps
+  // passadas as portas (entrar, desbloquear, a entrada), a navegação aparece: vai-se então ao sítio que ficou à espera
+  useEffect(() => {
+    if (!pendingTap.current) return undefined;
+    const id = setTimeout(goTap, 300);
+    return () => clearTimeout(id);
+  }, [user, onboarded, locked]); // eslint-disable-line react-hooks/exhaustive-deps
   // Tema NOTURNO do Início (véspera/pernoita) — o HomeScreen publica-o aqui para a
   // TabBar herdar o tema quando o Início é a aba ativa.
   const [homeNight, setHomeNight] = useState(false);
@@ -1176,7 +1196,7 @@ export default function App() {
     <SafeAreaProvider>
       <AppContext.Provider value={ctx}>
         <StatusBar style={!splashHidden ? 'light' : 'dark'} />
-        <NavigationContainer theme={navTheme}>
+        <NavigationContainer ref={navRef} theme={navTheme} onReady={goTap} onStateChange={() => { if (pendingTap.current) goTap(); }}>
           {renderScreen()}
         </NavigationContainer>
         <OfflineBanner />

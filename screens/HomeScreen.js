@@ -292,8 +292,9 @@ export default function HomeScreen({ navigation }) {
   const homeScrollRef = useRef(null);
   useScrollToTop(homeScrollRef);   // re-tocar na aba Início → volta ao topo (convenção iOS)
 
-  // ── BOAS-VINDAS + DICA do ＋ (design/boas-vindas.html, 2026-07-10) ──
-  // Folha: 1× na vida, só nasce do funil ('pending' escrito no fim do onboarding). Dica do ＋: 1.ª visita
+  // ── BOAS-VINDAS + DICA do botão do meio (design/boas-vindas.html, 2026-07-10; desde 2026-11-16 aponta para o Simular — o ＋
+  // morreu com a barra N2) ──
+  // Folha: 1× na vida, só nasce do funil ('pending' escrito no fim do onboarding). Dica do Simular: 1.ª visita
   // DEPOIS da folha (nunca as duas juntas). Morre a qualquer toque. Flags por utilizador.
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   const [plusTip, setPlusTip] = useState(false);
@@ -313,7 +314,7 @@ export default function HomeScreen({ navigation }) {
   const closeWelcome = () => {
     setWelcomeOpen(false);
     if (user?.id) AsyncStorage.setItem(`cp_welcome_${user.id}`, 'seen').catch(() => {});
-    // Dica do ＋ na MESMA visita (padrão TipKit): 3 s de respiro, só com o Início em foco e o palco livre.
+    // Dica do Simular na MESMA visita (padrão TipKit): 3 s de respiro, só com o Início em foco e o palco livre.
     const uid = user?.id;
     if (!uid) return;
     if (plusTipTimer.current) clearTimeout(plusTipTimer.current);
@@ -1220,8 +1221,8 @@ export default function HomeScreen({ navigation }) {
 
       {/* Dica do ＋ (1.ª visita pós-folha) — flutua acima da tab bar, seta ao ＋. */}
       <Tip visible={plusTip} arrow="down" lang={lang} style={{ bottom: SPACE.md }}
-        bold={l('Cria aqui.', 'Create here.')}
-        tail={l('Serviços, simulações e eventos — tudo nasce no ＋.', 'Duties, simulations and events — all born in the ＋.')}
+        bold={l('Simula aqui.', 'Simulate here.')}
+        tail={l('Um serviço ou uma troca — as contas antes de dizeres que sim.', 'A duty or a swap — the maths before you say yes.')}
         onDismiss={dismissPlusTip} />
 
       {/* Folha de boas-vindas — 1× na vida, só nascida do funil (flag 'pending'). */}
