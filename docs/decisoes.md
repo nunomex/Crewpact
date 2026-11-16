@@ -61,6 +61,16 @@ e ficou trancada. Revisão da regra 9 (Impeccable, em contexto): sem achados obj
 (`SheetHeader card`) não segue a letra do sistema (peça partilhada, fora deste trabalho).
 **Pendente (exceção):** uma SNC confirmada por engano deixou de ter onde se tirar (só a folha antiga o fazia). Raro; se fizer falta, o
 sítio é o próprio dia na Escala, como as férias ("Remover deste dia").
+**Gravado e ENVIADO `485c24a`.** **O Nuno: "corrigir isto" (as duas notas) — FEITO (por gravar):** (1) na Escala, a SNC/RDP de um dia
+trabalhado passou ao cartão das ausências: o valor do dia (as duas pontas de abril a outubro), "Vem das mudanças da escala" e "Remover
+deste dia" com confirmação (`rmOvAsk`) — corrige o que a app detetou mal; (2) o título das folhas (`SheetHeader`, as duas variantes)
+cresce com a letra do sistema até 130 % e parte em duas linhas (estava desligado desde as janelas C1).
+**A doutrina, outra vez (o Nuno: "vem tudo da escala, não se mete nada à mão; sei que na escala faltam códigos de serviços e extras, mas
+vou arranjar"):** hoje a SNC/RDP é detetada pela app nas mudanças da escala porque a escala não traz o código dos extras. **Quando o
+Nuno trouxer os códigos (serviços e extras), os extras passam a vir SÓ da escala** — a deteção, a confirmação e o "Remover deste dia"
+deixam de fazer falta. Pendência no grupo 4 (à espera de documentos).
+**Ver no iPhone:** um dia com SNC na Escala (o cartão, as duas pontas num mês de abril a outubro, "Remover deste dia" → a pergunta →
+sai do dia e dos Números); o título de uma folha com a letra do sistema no máximo (parte em duas linhas, o "Fechar" no sítio).
 **Ver no iPhone:** Números → "Extras ›" num mês com SNC e doença (o € de cada um; a doença "no total do mês"); um mês de abril a
 outubro com SNC (as duas pontas e o "e até mais"); a vista do ano; a cabine com o abono para falhas; VoiceOver nas linhas.
 **2026-11-16:** testadas as skills novas na Simulação; o Nuno escolheu **C** (os erros objetivos já + os esboços do veredicto com o
@@ -1651,6 +1661,8 @@ motor está na versão **21**. **O que falta, por ordem:**
   E-A (perguntas para a ANAC). Depois da resposta: tirar a marca RASCUNHO da política e dos termos, preencher os 【…】, publicar.
 
 ### 4. À espera dos sindicatos, da empresa ou de documentos
+- **Os códigos da escala dos serviços e dos extras (o Nuno vai arranjar, 2026-11-16).** Com eles, os extras (SNC, RDP, DDO…) vêm só da
+  escala e sai a deteção da SNC/RDP com o "Remover deste dia" (entrada de 2026-11-16).
 - **SPAC e SNPVAC** (anexo D-A do pack): os dois números do Manual de Operações (desconto da pausa no repartido; diferença de
   apresentação pilotos/cabine), easyJet e TAP; **e uma pergunta nova (2026-11-11): a companhia tem repouso reduzido
   (ORO.FTL.235(c), com gestão do risco de fadiga)?** — com a resposta, o "incerto" do repouso abaixo do mínimo passa a

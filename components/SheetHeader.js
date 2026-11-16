@@ -14,6 +14,10 @@ import PillButton from './PillButton';
 import Eyebrow from './Eyebrow';
 import { PELE, TXT, TXT3, CARD, SPACE } from '../data/constants';
 
+// O título cresce com a letra do sistema até 130 % (como os cartões) e parte em duas linhas; antes não crescia (allowFontScaling
+// desligado desde as janelas C1) — a revisão da regra 9, 2026-11-16.
+const MAX_SCALE = 1.3;
+
 export default function SheetHeader({
   eyebrow, title, onClose, onBack,
   closeLabel = 'Fechar', backLabel = 'Voltar',
@@ -25,7 +29,7 @@ export default function SheetHeader({
     return (
       <View style={[s.head, s.headCard, style]}>
         {onBack ? <IconButton icon="back" onPress={onBack} label={backLabel} style={[s.back, { backgroundColor: CARD.day.round }]} /> : null}
-        <Text style={[TXT3.month, s.titleCard]} allowFontScaling={false} numberOfLines={2} accessibilityRole="header">{title}</Text>
+        <Text style={[TXT3.month, s.titleCard]} maxFontSizeMultiplier={MAX_SCALE} numberOfLines={2} accessibilityRole="header">{title}</Text>
         {right}
         {onClose ? <PillButton label={closeLabel} onPress={onClose} ink={CARD.day.ink} /> : null}
       </View>
@@ -41,7 +45,7 @@ export default function SheetHeader({
             <Eyebrow numberOfLines={1}>{eyebrow}</Eyebrow>
           </View>
         ) : null}
-        {title ? <Text style={s.h1} allowFontScaling={false} numberOfLines={2}>{title}</Text> : null}
+        {title ? <Text style={s.h1} maxFontSizeMultiplier={MAX_SCALE} numberOfLines={2} accessibilityRole="header">{title}</Text> : null}
       </View>
       {right}
       {onClose ? <PillButton label={closeLabel} onPress={onClose} ink={PELE.ink} /> : null}

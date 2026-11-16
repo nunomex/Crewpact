@@ -241,6 +241,17 @@ export default function EscalaScreen({ navigation, route }) {
     const it = aX.monthExtras(cat, { [tp]: 1 }, { ym: ymX, index: aX.indexFactor && ymX ? aX.indexFactor(ymX) : 1, contract: (ymX && crewAt(ymX).contract) || '12/12' }).items[0];
     return it && it.each != null ? it.total : null;
   };
+  // o € de um evento com as duas pontas, quando as há (a SNC de abril a outubro: 60 € certos, até 240 € com o regime reforçado; a
+  // DDO/IDO/WFLY a tempo parcial) — { each, max }; a mesma conta do extraEur
+  const extraRange = (tp, cat, iso) => {
+    if (tp === 'sickDays') return null;
+    const ymX = iso ? String(iso).slice(0, 7) : undefined;
+    const aX = ymX ? aeAt(ymX) : ae;
+    if (!(aX && aX.monthExtras && cat)) return null;
+    const it = aX.monthExtras(cat, { [tp]: 1 }, { ym: ymX, index: aX.indexFactor && ymX ? aX.indexFactor(ymX) : 1, contract: (ymX && crewAt(ymX).contract) || '12/12' }).items[0];
+    if (!it || it.each == null) return null;
+    return { each: it.each, max: it.eachMax != null && it.eachMax > it.each ? it.eachMax : null };
+  };
   const absCode = (tp) => (tp === 'vacDays' ? l('FÉR', 'LVE') : l('DOE', 'SCK'));
   const dayAbs = {};   // iso → 1.º evento de AUSÊNCIA desse dia
   const dayOv = {};    // iso → eventos de PAGAMENTO sobre um dia TRABALHADO (snc/rdp)
@@ -412,6 +423,8 @@ export default function EscalaScreen({ navigation, route }) {
     else if (o.to === 'importCal') openImport('calendar');
     else if (o.to === 'pdf') openImport('paste');
     else if (o.to === 'rmAbs') removeAeEvent(o.id);
+    // uma SNC/RDP confirmada por engano (2026-11-16: a folha antiga dos extras saiu — o sítio de a tirar é o dia dela)
+    else if (o.to === 'rmOvAsk') Alert.alert(l('Remover deste dia', 'Remove from this day'), l(`Tirar "${extraLabel(o.type)}" deste dia? Sai dos extras do mês.`, `Remove "${extraLabel(o.type)}" from this day? It leaves the month’s extras.`), [{ text: l('Cancelar', 'Cancel'), style: 'cancel' }, { text: l('Remover', 'Remove'), style: 'destructive', onPress: () => removeAeEvent(o.id) }]);
     else if (o.to === 'rmAbsAsk') Alert.alert(l('Apagar extra', 'Delete extra'), l('Apagar este dia dos extras do mês?', 'Remove this day from the month extras?'), [{ text: l('Cancelar', 'Cancel'), style: 'cancel' }, { text: l('Apagar', 'Delete'), style: 'destructive', onPress: () => removeAeEvent(o.id) }]);
   };
   const cardsOf = (list, ctx) => <HomeCards cards={list} C={C} onOpen={(o) => onCardOpen(o, ctx)} l={l} />;
@@ -508,8 +521,12 @@ export default function EscalaScreen({ navigation, route }) {
               {cardsOf([{ ...((sv && sv.nightStop && nsName) ? { ...c, sub: [c.sub, l(`pernoita em ${nsName}`, `night stop in ${nsName}`)].filter(Boolean).join(' · ') } : c), ring: c.color === 'flight' ? C.flight : C.ground }], ctx)}
             </View>
           ))}
-          {/* Extras PAGOS neste dia trabalhado (SNC/RDP) — compensações por cima do serviço. */}
-          {dayOv[iso] ? cardsOf(dayOv[iso].map((e) => { const v = extraEur(e.type, catD, iso); return { t: 'slim', id: `ov${e.id}`, color: 'neutral', title: extraLabel(e.type), sub: l('compensação deste dia', 'this day’s compensation'), value: v != null ? `+${fmtEur(v)}` : null, gain: v != null }; }), ctx) : null}
+          {/* Extras PAGOS neste dia trabalhado (SNC/RDP) — compensações por cima do serviço, no cartão das ausências: o valor do dia (as
+              duas pontas onde as há) e "Remover deste dia" (uma confirmada por engano tira-se aqui — 2026-11-16). */}
+          {dayOv[iso] ? cardsOf(dayOv[iso].map((e) => { const r = extraRange(e.type, catD, iso); return { t: 'lines', id: `ov${e.id}`, color: 'neutral', kind: extraLabel(e.type),
+            rows: r ? [{ k: l('Paga neste dia', 'Pays on this day'), v: r.max != null ? `${fmtEur(r.each)} ${l('a', 'to')} ${fmtEur(r.max)}` : `+${fmtEur(r.each)}` }] : [],
+            note: l('Vem das mudanças da escala (a escala ainda não traz o código dos extras).', 'Comes from the roster changes (the roster doesn’t carry the extras code yet).'),
+            link: { label: l('Remover deste dia', 'Remove from this day'), open: { to: 'rmOvAsk', id: e.id, type: e.type } } }; }), ctx) : null}
         </>
       );
     }
