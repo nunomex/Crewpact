@@ -48,6 +48,21 @@ parâmetro `hub` da Escala; `screens/hojeItems.js` → `data/hojeItems.js`. A d�
 **As skills (o Nuno: "devíamos usar as skills ao fazermos as coisas"):** regra 9 do `CLAUDE.md` — Impeccable (craft floor antes; crítica +
 auditoria nativa no fim de cada ecrã), animacoes + emil-design-eng com movimento, Vercel + Pro Max na verificação final. **Falta: o 4**
 (a lista dos extras nos Números — esboços).
+**Gravado `f8100d0`** (a arrumação e a regra 9). **O 4 — esboço feito:** `design/extras-mes.html` — X1 a linha "Extras" abre no cartão com
+o € e o "Apagar" em cada evento · **X2 uma folha "Os extras do mês" (o total em cima, cada evento num campo com "Apagar" e Desfazer) —
+recomendada** · X3 um cartão com o mês em pontos. Valores de exemplo (a base é a do BTE 29/2026); os nomes são os do acordo. À espera da
+escolha do Nuno.
+**O Nuno: "X2" — e "não faz sentido apagar os extras, vem tudo do calendário". FEITA, SÓ PARA VER (por gravar):**
+`components/ExtrasSheet.js` — a linha "Extras ›" dos Números (do mês ou do ano) abre a folha: o total (o mesmo da linha), cada evento num
+campo com o seu € (as **duas pontas** onde o motor as dá: a SNC de abril a outubro, 60 € a 240 €; a DDO/IDO/WFLY a tempo parcial), "e até
+mais X €" por baixo do total, e as partes que não são eventos (os papéis e o escritório, dos serviços; o abono para falhas). A lista
+que abria dentro do cartão saiu; o `ExtrasManager` (a folha antiga, sem entrada) e o `openExtra` saíram. A dívida do guardião desceu
+e ficou trancada. Revisão da regra 9 (Impeccable, em contexto): sem achados objetivos na folha; anotado — o título das folhas 3.0
+(`SheetHeader card`) não segue a letra do sistema (peça partilhada, fora deste trabalho).
+**Pendente (exceção):** uma SNC confirmada por engano deixou de ter onde se tirar (só a folha antiga o fazia). Raro; se fizer falta, o
+sítio é o próprio dia na Escala, como as férias ("Remover deste dia").
+**Ver no iPhone:** Números → "Extras ›" num mês com SNC e doença (o € de cada um; a doença "no total do mês"); um mês de abril a
+outubro com SNC (as duas pontas e o "e até mais"); a vista do ano; a cabine com o abono para falhas; VoiceOver nas linhas.
 **2026-11-16:** testadas as skills novas na Simulação; o Nuno escolheu **C** (os erros objetivos já + os esboços do veredicto com o
 teclado). **Feitos os erros objetivos** (por gravar, por ver no iPhone — ver a entrada de 2026-11-16). **A seguir:** os 3 esboços, que
 passam a juntar o veredicto com o teclado e **várias simulações seguidas** (pergunta do Nuno; a recomendação está na entrada).

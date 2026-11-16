@@ -49,7 +49,8 @@ ESCALA (EscalaScreen) — o mês em círculos; tocar num dia mostra os serviços
   folhas: o dia (SimDaySheet) → Pormenores (DutyFormSheet) · Calculadoras da lei (LawCalcsSheet)
 
 NÚMEROS (StatsScreen)
-  folhas: Prova (ProvaSheet) · Auditoria do mês (AuditSheet) → o serviço (ServiceSheet) · um limite do acordo (AeLimitSheet)
+  folhas: Prova (ProvaSheet) · Os extras do mês (ExtrasSheet — a linha "Extras ›"; só para ver) · Auditoria do mês (AuditSheet) →
+          o serviço (ServiceSheet) · um limite do acordo (AeLimitSheet)
           · o ano para partilhar (YearShareCard)
   → Escala ("Ir para a Escala")
 
@@ -69,7 +70,7 @@ PERFIL (SettingsScreen)
 
 - **A Simulação** (acima) e o **aviso no topo** (Toast, com "Desfazer" onde há apagar).
 - **Sem rede** (OfflineBanner).
-- **Gestão dos extras do mês** (ExtrasManager): montada, mas **sem entrada** desde 2026-11-14 (achado 4).
+- (A gestão dos extras, ExtrasManager, saiu a 2026-11-16 — os extras veem-se nos Números, achado 4.)
 - **Notificações locais** (`data/reminders.js`): o lembrete para acordar · "Escala alterada · Toca para rever" · "Sincroniza a escala".
   Tocar numa delas leva ao sítio dela (achado 1, feito): a revisão na Escala · a Escala · as Validades · o Início.
 - **Ligações de fora** (`crewpact://`): o esquema existe no `app.json`, mas nenhuma ligação abre um ecrã (não há ligações a usar por
@@ -105,7 +106,10 @@ PERFIL (SettingsScreen)
    Números, abre o ecrã do Detalhe **dentro da aba Escala** — a app muda de aba, e o ‹ volta ao mês da Escala, não ao Início. O mesmo
    com as Validades vindas do Início, que levam ao Perfil. Corrigir: abrir a mesma folha do dia por cima de onde se está (escolha de
    desenho — 3 esboços).
-4. **A gestão dos extras não tem entrada** (já se sabia: espera o seu lugar nos Números, decisão de 2026-11-14). O € dos extras já
+4. ✅ **FEITO a 2026-11-16 (X2 de `design/extras-mes.html`, só para ver):** a linha "Extras ›" dos Números abre a folha "Os extras do
+   mês" (`components/ExtrasSheet.js`): o total, cada evento com o seu € (as duas pontas onde as há) e as partes que não são eventos.
+   Sem apagar: vem tudo do calendário (uma férias ou doença a mais tira-se no dia, na Escala). Saiu o `ExtrasManager`.
+   **A gestão dos extras não tem entrada** (já se sabia: espera o seu lugar nos Números, decisão de 2026-11-14). O € dos extras já
    está nos Números; a lista para ver e apagar é que não se abre.
 5. ✅ **FEITO a 2026-11-16:** apagados o `Banner`, o `DayBar` e o `Segmented`; saíram os ramos `idioma`, `lembretes` e `bloqueio` da
    Página do perfil e o parâmetro `hub` da Escala; o `hojeItems.js` passou para `data/`. A dívida do guardião desceu (116 · 252 · 32 · 46

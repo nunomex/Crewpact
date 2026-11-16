@@ -41,7 +41,6 @@ import { buildIncoming } from './data/rosterImport';
 import { detectWindow, diffUpcoming } from './data/rosterDiff';
 import { dutyToFtlDay, dayFtlFromDuties, reconcileDayLog } from './ftl';
 import { countersToEvents } from './data/aeEvents';
-import ExtrasManager from './components/ExtrasManager';   // PORT pele: gestão de extras (ver/apagar) no mini-FAB
 import { syncReminders, notifyRosterChange, notifyLiveSync, cancelAllReminders, requestRemindersPermission, remindersUnavailableReason, clearWakeUp, validateWakeUp, onReminderTap } from './data/reminders';
 import { notifRoute } from './data/notifications';
 import { legZulu } from './data/zulu';
@@ -240,7 +239,6 @@ export default function App() {
   // a história; a prova só existe se alguém guardar as versões). Local, cap 400 entradas.
   const [rosterLog, setRosterLog] = useState([]);
   const addRosterLog = (list) => setRosterLog((prev) => [...prev, ...(list || [])].slice(-400));
-  const [extraOpen, setExtraOpen] = useState(false);         // GESTÃO de extras (mini-FAB) — lista/apagar
   const addAeEvents = (list) => setAeEvents((prev) => [
     ...prev,
     ...(list || []).filter((e) => e && e.type && e.date).map((e, i) => ({ id: e.id || `ev${Date.now().toString(36)}${prev.length + i}`, date: e.date, type: e.type })),
@@ -1115,7 +1113,6 @@ export default function App() {
     airlines, bases, countries, company, crewType, isPilot, cabinGapMin, splitAdminMin, crewCategory, crewContract, crewFleet, postFlightMin, postFlightSource, vacationDaysYear, vacationSource, employment, aeCovered: aeCoveredOverride, covered, crewHistory, crewAt, companyHistory, baseHistory, companyAt, aeAt, homeBaseAt, serviceStart, serviceStartExact, largada, serviceYears, base, baseObj, lifestyle, instructorRated, ae, caps, aeStatus,
     aeExtras, setAeExtras,
     aeEvents, addAeEvents, removeAeEvent,
-    openExtra: () => setExtraOpen(true),
     hotels, saveHotel, saveHotelAt, addHotelAlt, makeHotelCurrent, removeHotelAt, removeHotel,
     rosterLog, addRosterLog,
     validities: lawValidities, rawValidities: validities, addValidity, updateValidity, removeValidity,
@@ -1201,9 +1198,6 @@ export default function App() {
         </NavigationContainer>
         <OfflineBanner />
         {onboarded ? <SimulationFlow visible={simulateOpen} onClose={() => setSimulateOpen(false)} /> : null}
-        {/* Dois Modais NÃO podem transicionar ao mesmo tempo (iOS trava): fecha um, espera a
-            saída (~240ms), só depois abre o outro. */}
-        {onboarded ? <ExtrasManager visible={extraOpen} onClose={() => setExtraOpen(false)} /> : null}
         <Toast toast={toast} lang={lang} onHide={() => setToast(null)} />
         {/* Privacidade no multitarefas: tapa o conteúdo quando a app sai de 'active' (padrão banca).
             pointerEvents:none → nunca prende o utilizador; some assim que volta a 'active'. */}

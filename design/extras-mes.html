@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="pt"><meta charset="utf-8"><title>CrewPact · Os extras do mês</title><meta name="viewport" content="width=device-width, initial-scale=1">
+<style>/* OS EXTRAS DO MÊS NOS NÚMEROS (2026-11-16). */
+
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#E8E7E2;color:#141414;font-family:'Hanken','Helvetica Neue',Arial,sans-serif;padding:32px 16px 64px}
+.page{max-width:1760px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+.lead{max-width:960px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px} .lead p{font-size:14px;line-height:1.55;color:#55554F} .lead b{color:#141414}
+.grid{display:flex;flex-wrap:wrap;gap:20px}
+.cap{font-size:12px;font-weight:600;color:#55554F;margin:0 0 6px 6px;max-width:406px} .cap b{color:#141414;font-weight:800}
+.ph{position:relative;display:flex;flex-direction:column;width:406px;min-height:852px;border:8px solid #04060A;border-radius:52px 52px 0 0;border-bottom:0;overflow:hidden;background:var(--desk);color:var(--ink)}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.topA{padding:0 20px 28px;flex:none}
+.ttlRow{display:flex;align-items:center;gap:10px;min-height:68px;padding:8px 0 16px}
+.ttlRow .t{font-weight:800;font-size:34px;line-height:38px;letter-spacing:-.8px;display:flex;align-items:center;gap:12px;white-space:nowrap;min-width:0}
+.ttlRow .t i.dot{width:10px;height:10px;border-radius:5px;background:#F0C24A;display:block;flex:none}
+.pl{height:38px;padding:0 16px;border-radius:19px;border:1.5px solid var(--ink);display:inline-flex;align-items:center;font-weight:700;font-size:13px;white-space:nowrap;flex:none}
+.pl.sm{height:30px;padding:0 12px;border-radius:15px} .ml{margin-left:auto}
+.what{font-weight:500;font-size:15px;line-height:20px;color:var(--soft)} .what.inl{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.hero{display:flex;align-items:stretch;gap:16px;margin-top:12px}
+.g{font-weight:700;white-space:nowrap;flex:none} .g .l1,.g .l2{display:flex;align-items:baseline}
+.g .big{font-size:62px;line-height:62px;letter-spacing:-2.85px} .g small{font-size:34px;letter-spacing:-1px;margin-left:6px} .g .b2{margin-left:6px} .g .z{font-size:20px;margin-left:8px}
+.grey{color:var(--grey)}
+.side{border-left:1.5px solid var(--ink);padding-left:16px;display:flex;flex-direction:column;justify-content:center;gap:12px;min-width:0}
+.fv{display:flex;align-items:center;gap:4px;font-weight:700;font-size:20px;line-height:22px;white-space:nowrap} .fv.gain{color:var(--gain)} .fv.was{text-decoration:line-through;opacity:.5}
+.fl{display:block;font-weight:500;font-size:11px;line-height:15px;color:var(--soft);white-space:nowrap}
+.ic{display:block;fill:currentColor;flex:none}
+.sheetN{flex:1;background:var(--sheet);border-radius:32px 32px 0 0;padding:12px 12px 24px;display:flex;flex-direction:column;gap:8px}
+.cd{border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:10px;position:relative}
+.cd,.slim{color:#141414}   /* os cartões de cor: a tinta escura (CARD.onCard), de dia e de noite */
+.ck{border-radius:24px;padding:12px 16px;color:var(--ink);display:flex;flex-direction:column;gap:8px} .ck.plain{padding:0 16px 8px}
+.v2{display:flex;flex-direction:column;gap:2px;padding:4px 16px 8px} .v2 b{font-weight:800;font-size:20px;line-height:25px;letter-spacing:-.2px;color:var(--ink)} .v2 span{font-weight:500;font-size:17px;line-height:23px;color:var(--soft)} .ckH{display:flex;justify-content:space-between;align-items:baseline;gap:8px} .ckH b{font-weight:800;font-size:16px;line-height:20px} .ckH span{font-weight:500;font-size:11px;color:var(--sub)}
+.ckR{display:grid;grid-template-columns:repeat(3,1fr);gap:8px} .ci{display:grid;grid-template-columns:24px 1fr;column-gap:6px;min-width:0} .ci .rg{grid-row:1 / span 2;width:24px;height:24px;margin-top:2px} .ci b{font-weight:700;font-size:14px;line-height:18px} .ci span{font-weight:500;font-size:12px;line-height:16px;color:var(--sub)}
+.rc{border-radius:24px;padding:12px 16px;color:#141414;display:flex;flex-direction:column;gap:8px} .rcH{display:flex;align-items:center;gap:10px} .rcH .mark{position:static;flex:none} .rcT{display:flex;flex-direction:column;flex:1;min-width:0} .rcT .k{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8)} .rcT b{font-weight:800;font-size:16px;line-height:20px} .rcS{font-weight:500;font-size:11px;color:rgba(20,20,20,.82);align-self:flex-start;margin-top:2px}
+.rcL{display:flex;flex-direction:column;background:rgba(255,255,255,.55);border-radius:16px;padding:4px 12px} .rr{display:flex;gap:12px;align-items:center;padding:6px 0} .rr + .rr{border-top:1px solid rgba(20,20,20,.18)} .rd{width:32px;flex:none;display:flex;flex-direction:column;align-items:center} .rd b{font-weight:700;font-size:20px;line-height:22px} .rd span{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8)}
+.rx{display:flex;flex-direction:column;min-width:0} .rx b{font-weight:700;font-size:15px;line-height:20px} .rx span{font-weight:500;font-size:12px;line-height:16px;color:rgba(20,20,20,.82)} .rx s{font-weight:500;opacity:.75} .rmore{font-weight:500;font-size:12px;padding:6px 0;color:rgba(20,20,20,.82)}
+.rcA{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.62);border-radius:99px;padding:12px 16px;gap:8px} .rcA b{font-weight:700;font-size:14px} .rcA span{font-weight:500;font-size:11px;color:rgba(20,20,20,.82)}
+.und{text-decoration:underline dotted;text-decoration-thickness:1.5px;text-underline-offset:2px;text-decoration-color:var(--soft)} .fv.und{display:inline-block;padding-bottom:2px}
+.dk,.dk b{color:var(--sheet)} .ph .dk .st > span:not(.k){color:var(--sheet);opacity:.82} .dk .goS{background:rgba(127,127,127,.35);color:var(--sheet)}
+.lt,.lt .ct,.lt b,.lt .dpt b{color:#F4F2ED} .lt .kd,.lt .k,.lt .cs,.lt .cities,.lt .st > span:not(.k),.lt .ab span,.lt .dpt span:not(.dot2),.lt .quiet2,.lt .pd,.lt .dlc span{color:rgba(244,242,237,.8)}
+.lt .go,.lt .goS,.lt .badge,.lt .mark{background:rgba(255,255,255,.16);color:#F4F2ED} .lt .dot2{background:#F4F2ED} .lt .dot2.o{border-color:#F4F2ED;background:transparent} .lt .dls{background:#F4F2ED} .lt .dlt{background:rgba(244,242,237,.25)}
+.sqc{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:0}
+.neu .quiet2 .qr > b,.neu .quiet2 .qv,.neu .dpt b,.neu .ab b{color:var(--ink)} .neu .dpt span:not(.dot2),.neu .dlc span{color:var(--sub)} .neu .dot2{background:var(--ink)} .neu .dot2.o{border-color:var(--ink);background:transparent} .neu .dls{background:var(--ink)}
+.lt .quiet2 .qr > b,.lt .quiet2 .qv,.lt .ab b{color:#F4F2ED}
+.ph .lt .st > span:not(.k),.ph .lt .cs,.ph .lt .ab span{color:rgba(244,242,237,.8)} .ph .lt .dur,.ph .neu .dur{background:rgba(255,255,255,.16);color:var(--ink)} .ph .lt .dur{color:#F4F2ED}
+.ph .lt .prog{background:rgba(244,242,237,.25)} .ph .lt .prog i,.ph .lt .prog s{background:#F4F2ED} .ph .neu .prog{background:rgba(127,127,127,.3)} .ph .neu .prog i,.ph .neu .prog s{background:var(--ink)} .ph .neu .st > span:not(.k){color:var(--sub)}
+.slim .sqc{width:12px;height:12px;flex:none;margin:0}
+.ring .ttlRow .t i.dot{box-shadow:0 0 0 2px #141414} .night.ring .ttlRow .t i.dot{box-shadow:none}
+.minky .chip{color:#141414} .minky .fv.gain{color:var(--ink)}
+.gbadge{display:inline-block;background:#0B6E43;color:#fff;border-radius:6px;padding:1px 6px;font-weight:800;font-size:11px;margin-right:6px}
+.gdot{display:inline-block;width:8px;height:8px;border-radius:4px;background:#0B6E43;margin-right:6px;vertical-align:1px}
+.kd{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8);padding-right:44px}
+.ct{font-weight:800;font-size:22px;line-height:26px;letter-spacing:-.4px;margin-top:-6px;padding-right:44px}
+.cities{font-weight:500;font-size:12px;color:rgba(20,20,20,.82);margin-top:-8px}
+.cs{font-weight:500;font-size:12px;line-height:16px;color:rgba(20,20,20,.82)} .cs u{color:#141414}
+.subrow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:-6px}
+.go{position:absolute;right:14px;top:14px;width:36px;height:36px;border-radius:18px;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px}
+.chip{background:#fff;color:#0B6E43;border-radius:14px;padding:5px 10px;font-weight:800;font-size:14px;white-space:nowrap}
+.badges{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:-4px}
+.badge{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.55);border-radius:10px;padding:2px 8px;font-weight:800;font-size:11px}
+.pd{display:flex;align-items:center;gap:6px;font-weight:500;font-size:11px;color:rgba(20,20,20,.82)}
+.dl{margin-top:2px} .dlc{position:relative;height:16px;margin-bottom:2px} .dlc span{position:absolute;transform:translateX(-50%);font-weight:800;font-size:11px;letter-spacing:.8px;color:rgba(20,20,20,.8)}
+.dlp{position:relative;height:54px} .dlt{position:absolute;left:7px;right:7px;top:6px;height:2px;background:rgba(20,20,20,.18)}
+.dls{position:absolute;top:5px;height:4px;background:#141414;border-radius:2px}
+.dpt{position:absolute;top:0;display:flex;flex-direction:column;gap:2px}
+.dot2{width:14px;height:14px;border-radius:7px;background:#141414;box-shadow:0 0 0 3px var(--flight) inset} .dot2.o{background:var(--flight);border:3px solid #141414;box-shadow:none}
+.dpt b{font-weight:700;font-size:20px;line-height:22px;white-space:nowrap} .dpt span:not(.dot2){font-weight:500;font-size:11px;line-height:15px;color:rgba(20,20,20,.82);white-space:nowrap}
+.quiet{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;border-top:1px solid rgba(20,20,20,.14);padding-top:8px;font-weight:500;font-size:12px;color:rgba(20,20,20,.82)}
+.quiet b{font-weight:700;color:#141414} .quiet .qv{font-size:15px} .quiet > span:first-child{flex:1;min-width:0} .quiet > span:last-child{white-space:nowrap}
+.quiet2{border-top:1px solid rgba(20,20,20,.14);padding-top:8px;display:flex;flex-direction:column;gap:2px;font-weight:500;font-size:12px;color:rgba(20,20,20,.82)} .quiet2 .qr{display:flex;justify-content:space-between;align-items:baseline;gap:8px;white-space:nowrap} .quiet2 .qr > b{font-weight:700;color:#141414;overflow:hidden;text-overflow:ellipsis} .quiet2 .qv{font-weight:700;color:#141414;font-size:15px}
+.ab{display:flex;align-items:flex-end;justify-content:space-between;gap:8px} .ab b{display:block;font-weight:700;font-size:22px;line-height:24px} .ab span{display:block;font-weight:500;font-size:11px;color:rgba(20,20,20,.82)}
+.dur{background:rgba(255,255,255,.75);border-radius:14px;padding:5px 10px;font-weight:700;font-size:12px;white-space:nowrap}
+.prog{position:relative;height:6px;border-radius:3px;background:rgba(20,20,20,.18)} .prog i{position:absolute;left:0;top:0;bottom:0;background:#141414;border-radius:3px} .prog s{position:absolute;top:-4px;width:14px;height:14px;margin-left:-7px;border-radius:7px;background:#141414}
+.act{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.55);border-radius:14px;padding:10px 12px;font-weight:700;font-size:14px}
+.lr{display:flex;justify-content:space-between;gap:12px;font-size:15px;line-height:20px} .lr span{font-weight:500} .lr b{font-weight:700}
+.lfoot{border-top:1px solid rgba(20,20,20,.14);padding-top:8px;display:flex;flex-direction:column;gap:8px}
+.tx{font-weight:500;font-size:14px;line-height:20px}
+.slim{border-radius:20px;padding:12px 16px;display:flex;align-items:center;gap:12px;min-height:56px} .slim.dashed{border:1.5px dashed rgba(20,20,20,.55)}
+.slim .st{flex:1;min-width:0;display:flex;flex-direction:column} .slim .k{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8)}
+.slim b{font-weight:800;font-size:16px;line-height:20px} .slim .st > span:not(.k){font-weight:500;font-size:12px;line-height:16px;color:rgba(20,20,20,.82)}
+.slim .sv{font-weight:800;font-size:20px;white-space:nowrap}
+.mark{width:30px;height:30px;border-radius:15px;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex:none}
+.goS{width:34px;height:34px;border-radius:17px;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex:none}
+.credit{font-weight:500;font-size:12px;color:var(--caption);padding:2px 6px}
+.neu,.neu .ct,.neu b,.neu .lr b{color:var(--ink)} .neu .kd,.neu .k{color:var(--kind)} .neu .cs,.neu .cities,.neu .st > span:not(.k),.neu .lr span,.neu .ab span,.neu .tx,.neu .quiet2{color:var(--sub)} .neu .goS,.neu .go{background:rgba(127,127,127,.2)} .neu.dashed{border-color:var(--kind)}
+.hdr{font-weight:800;font-size:13px;color:var(--soft);padding:8px 6px 0} .hdr.near{padding:14px 16px 0;margin-bottom:-4px}
+.svl{display:flex;flex-direction:column;align-items:flex-end;flex:none} .svl b{font-weight:700;font-size:20px;line-height:22px} .svl span{font-weight:500;font-size:11px;line-height:15px;color:rgba(20,20,20,.82)}
+.fold{position:absolute;left:0;right:0;top:750px;border-top:2px dashed rgba(236,122,108,.9);pointer-events:none} .fold span{position:absolute;right:10px;top:2px;font-size:10px;font-weight:800;color:#C0503F;background:rgba(255,255,255,.85);padding:1px 6px;border-radius:6px}
+
+
+.ph{min-height:0;height:852px}
+.topA{padding:0 20px 28px} .ttlRow{display:flex;align-items:center;justify-content:space-between;min-height:68px}
+.gt{font-weight:700;font-size:62px;line-height:62px;letter-spacing:-2.8px;margin-top:8px} .gt small{font-size:34px;letter-spacing:-1px;color:var(--soft)}
+.sheetN{gap:8px}
+.lc{background:var(--neutral);border-radius:24px;padding:12px 16px;display:flex;flex-direction:column}
+.lk{font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--kind);padding-bottom:8px}
+.stk{display:flex;height:10px;border-radius:5px;overflow:hidden;gap:2px;margin:2px 0 6px} .stk i{display:block}
+.mr{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid rgba(20,20,20,.1)} .mr:first-of-type{border-top:0}
+.sw{width:10px;height:10px;border-radius:3px;flex:none}
+.mn{flex:1;min-width:0;display:flex;flex-direction:column} .mn b{font-size:15px;line-height:20px;font-weight:500} .mn span{font-size:12px;line-height:16px;color:var(--sub);font-weight:500}
+.mo{font-size:15px;font-weight:700;white-space:nowrap} .mo small{font-size:12px;color:var(--tab)} .mo.g small{color:var(--gain)}
+.chev{font-size:18px;font-weight:700;color:var(--tab);margin-left:4px} .chev.up{transform:rotate(-90deg);display:inline-block}
+.exl{padding:0 0 4px 20px;display:flex;flex-direction:column}
+.exr{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px dashed rgba(20,20,20,.14)}
+.exr .mn b{font-size:14px}
+.ap{height:30px;padding:0 12px;border-radius:15px;border:1.5px solid var(--ink);display:inline-flex;align-items:center;font-weight:700;font-size:12px;flex:none}
+.nv{font-size:12px;color:var(--sub);font-weight:500;text-align:right}
+.note{font-size:12px;line-height:16px;color:var(--sub);font-weight:500;padding-top:8px}
+.tb{position:absolute;left:0;right:0;bottom:0;height:90px;background:var(--sheet);border-top:1px solid rgba(20,20,20,.14);display:flex;justify-content:space-around;align-items:flex-start;padding-top:8px;z-index:3}
+.ti{display:flex;flex-direction:column;align-items:center;gap:3px;width:64px} .ic{width:23px;height:23px;border-radius:6px;background:rgba(20,20,20,.28)} .ti.on .ic{background:var(--ink)}
+.tl{font-size:11px;font-weight:700;color:rgba(20,20,20,.55)} .ti.on .tl{color:var(--ink)} .dot{width:4px;height:4px;border-radius:2px;background:var(--ink);margin-top:1px}
+.sim{width:32px;height:32px;border-radius:16px;background:var(--ink);display:block}
+.dim{position:absolute;inset:0;background:rgba(10,10,8,.42);z-index:4}
+.sheet{position:absolute;left:0;right:0;bottom:0;top:250px;background:#fff;border-radius:32px 32px 0 0;z-index:5;padding:0 22px;display:flex;flex-direction:column;overflow:hidden}
+.grab{width:38px;height:4px;border-radius:2px;background:rgba(20,20,20,.18);margin:10px auto 8px;flex:none}
+.sh{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 0 8px} .sh > div{display:flex;flex-direction:column}
+.shk{font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--kind)} .sht{font-size:22px;line-height:26px;font-weight:800;letter-spacing:-.4px}
+.big{display:flex;align-items:baseline;gap:10px;padding:6px 0 10px;border-bottom:1.5px solid rgba(127,127,127,.3)} .big .mo{font-size:34px;letter-spacing:-1px} .big .mo small{font-size:20px} .bl{font-size:13px;color:var(--sub);font-weight:500}
+.fd{display:flex;align-items:center;gap:12px;padding:8px 0 12px;border-bottom:1.5px solid rgba(127,127,127,.3)}
+.fdm{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px} .fl{font-size:11px;font-weight:800;letter-spacing:.8px;color:var(--tab)} .fv{font-size:20px;line-height:24px;font-weight:700}
+.fdr{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.mg{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:4px 0 10px} .mh{font-size:10px;font-weight:800;color:var(--tab);text-align:center}
+.md{height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--sub)}
+.md.on{background:#fff;color:var(--ink);font-weight:800;box-shadow:inset 0 0 0 1.5px rgba(20,20,20,.35)} .md.sel{background:var(--ink);color:#fff;box-shadow:none}
+.exr.sel{border-top:1px solid rgba(20,20,20,.1)} .scrolled{margin-top:-236px}
+.opt{display:flex;flex-direction:column;gap:10px} .opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:#55554F;max-width:960px} .opt > p b{color:#141414}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:960px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase} .card2 li{font-size:13px;line-height:1.5;color:#55554F} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:#141414}
+</style><body><div class="page"><div class="lead"><h1>Os extras do mês — onde se veem e se apagam</h1><p>O achado 4 do mapa da app (<code>docs/sitemap.md</code>): <b>a lista dos extras não tem entrada</b> desde 2026-11-14 (a regra "só o calendário" tirou o "adicionar"; a folha antiga ficou sem botão). Os extras vêm do calendário (a SNC, a doença, as férias…) e às vezes entra um mal — é preciso <b>ver o € de cada um e poder apagá-lo</b> (corrigir o que veio, nunca criar). Nos Números, a linha "Extras" do cartão "De onde vem" já abre e mostra os eventos, sem o € nem o apagar. Três maneiras. Dados de teste (piloto FO, novembro); <b>os valores são exemplo</b>, menos a base (BTE 29/2026). Apagar segue o padrão da app: apaga já, com 5 s de "Desfazer". <b>Referências:</b> nas tuas imagens, <b>3431</b> (a lista de movimentos → eventos e parcelas), <b>3435</b> (o quadradinho na cor do tipo), <b>3433</b> (os cêntimos mais pequenos), <b>3409</b> (a data à esquerda), <b>3411</b> (o mês em pontos), <b>3417</b> (os campos: rótulo pequeno, valor grande, fio). No Mobbin: <a href="https://mobbin.com/screens/7ec4aedc-65f6-46ff-a843-687f5999e017">Lloyds</a>, <a href="https://mobbin.com/screens/90101e7b-394d-4444-82c0-1be64965f525">DoorDash Dasher</a> e <a href="https://mobbin.com/screens/b929a71f-bc4d-4af9-8017-2a749468d4af">Formula 1</a> (a linha que abre no próprio cartão); <a href="https://mobbin.com/screens/4d2c1d40-bb19-4989-986d-e90f19bd5374">ANZ Plus</a>, <a href="https://mobbin.com/screens/e6dd24d6-2030-4ce3-903a-977a3e3bc6c6">Chime</a> e <a href="https://mobbin.com/screens/2b430509-592a-43ef-9e9e-683daf5d49e8">Satispay</a> (uma folha com o total em cima e os movimentos); <a href="https://mobbin.com/screens/a62d6a9f-94af-4e57-b0df-444edf90996f">Todoist</a> e <a href="https://mobbin.com/screens/aa4998b0-0771-4367-b2cb-c65e58d8c127">Tonal</a> (o mês com pontos e a lista por baixo).</p></div><div class="opt"><h3>X1 · Na própria linha</h3><p><b>A linha "Extras" abre no cartão, como hoje</b>, mas cada evento ganha o seu € e um "Apagar". Nada de novo para aprender; mas os botões de apagar ficam no meio do resumo do dinheiro, e com muitos eventos o cartão cresce muito.</p><div class="grid"><div class="cell"><div class="cap"><b>X1 · a linha "Extras" abre no cartão: o € e o "Apagar" em cada evento</b></div>
+  <div class="ph" style="--desk:#E3E1DB;--ink:#141414;--soft:#3A3A36;--sheet:#FFFFFF;--neutral:#F1EFEA;--sub:rgba(20,20,20,0.82);--kind:rgba(20,20,20,0.8);--gain:#0B6E43;--tab:#5E5E57">
+    <div class="status"><span>09:12</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>
+    <div class="topA"><div class="ttlRow"><span class="t">Números</span><span class="pl ml">Mês · Ano</span></div>
+      <div class="what">Novembro · bruto estimado · exemplo</div><div class="gt">6 596<small>,06 €</small></div></div>
+    <div class="sheetN"><div class="lc"><span class="lk">De onde vem · bruto</span>
+  <div class="stk"><i style="flex:5059;background:#141414"></i><i style="flex:1234;background:#6DBEFA"></i><i style="flex:182;background:#B4C2A2"></i><i style="flex:120;background:rgba(127,127,127,.35)"></i></div>
+  <div class="mr"><span class="sw" style="background:#141414"></span><div class="mn"><b>Base</b><span>tabela do AE · FO 12/12</span></div><span class="mo">5 059<small>,26 €</small></span></div>
+  <div class="mr"><span class="sw" style="background:#6DBEFA"></span><div class="mn"><b>Per diem</b><span>da escala · pela rota</span></div><span class="mo g">+1 234<small>,40 €</small></span></div>
+  <div class="mr"><span class="sw" style="background:#B4C2A2"></span><div class="mn"><b>Pernoitas</b><span>da escala</span></div><span class="mo g">+182<small>,40 €</small></span></div>
+  <div class="mr"><span class="sw" style="background:rgba(127,127,127,.35)"></span><div class="mn"><b>Extras · 3</b><span>os eventos do calendário</span></div><span class="mo g">+120<small>,00 €</small></span><span class="chev up">›</span></div>
+  <div class="exl"><div class="exr"><div class="mn"><b>Dias de doença</b><span>segunda 2 nov</span></div><span class="nv">no total do mês</span><span class="ap">Apagar</span></div><div class="exr"><div class="mn"><b>Alteração de escala (SNC)</b><span>sexta 13 nov</span></div><span class="mo g">+60<small>,00 €</small></span><span class="ap">Apagar</span></div><div class="exr"><div class="mn"><b>Alteração de escala (SNC)</b><span>terça 17 nov</span></div><span class="mo g">+60<small>,00 €</small></span><span class="ap">Apagar</span></div>
+  <div class="note">Os papéis no voo e o escritório vêm dos serviços — corrige-se no serviço.</div></div></div></div><div class="tb"><div class="ti"><span class="ic"></span><span class="tl">Início</span></div><div class="ti"><span class="ic"></span><span class="tl">Escala</span></div><div class="ti"><span class="sim"></span><span class="tl">Simular</span></div><div class="ti on"><span class="ic"></span><span class="tl">Números</span><i class="dot"></i></div><div class="ti"><span class="ic"></span><span class="tl">Perfil</span></div></div></div></div></div></div><div class="opt"><h3>X2 · Uma folha "Os extras do mês"<span class="rec">RECOMENDO</span></h3><p><b>A linha "Extras" leva-te a uma folha</b>: em cima o total do mês, por baixo cada evento num campo (o dia pequeno, o nome grande, o € à direita) com "Apagar". O cartão do dinheiro fica limpo; apagar fica num sítio próprio. É a regra das folhas (campos nas folhas, cartões nos ecrãs) e a maneira da ANZ e da Chime.</p><div class="grid"><div class="cell"><div class="cap"><b>X2 · a linha "Extras" com › — abre a folha dos extras</b></div>
+  <div class="ph" style="--desk:#E3E1DB;--ink:#141414;--soft:#3A3A36;--sheet:#FFFFFF;--neutral:#F1EFEA;--sub:rgba(20,20,20,0.82);--kind:rgba(20,20,20,0.8);--gain:#0B6E43;--tab:#5E5E57">
+    <div class="status"><span>09:12</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>
+    <div class="topA"><div class="ttlRow"><span class="t">Números</span><span class="pl ml">Mês · Ano</span></div>
+      <div class="what">Novembro · bruto estimado · exemplo</div><div class="gt">6 596<small>,06 €</small></div></div>
+    <div class="sheetN"><div class="lc"><span class="lk">De onde vem · bruto</span>
+  <div class="stk"><i style="flex:5059;background:#141414"></i><i style="flex:1234;background:#6DBEFA"></i><i style="flex:182;background:#B4C2A2"></i><i style="flex:120;background:rgba(127,127,127,.35)"></i></div>
+  <div class="mr"><span class="sw" style="background:#141414"></span><div class="mn"><b>Base</b><span>tabela do AE · FO 12/12</span></div><span class="mo">5 059<small>,26 €</small></span></div>
+  <div class="mr"><span class="sw" style="background:#6DBEFA"></span><div class="mn"><b>Per diem</b><span>da escala · pela rota</span></div><span class="mo g">+1 234<small>,40 €</small></span></div>
+  <div class="mr"><span class="sw" style="background:#B4C2A2"></span><div class="mn"><b>Pernoitas</b><span>da escala</span></div><span class="mo g">+182<small>,40 €</small></span></div>
+  <div class="mr"><span class="sw" style="background:rgba(127,127,127,.35)"></span><div class="mn"><b>Extras · 3</b><span>os eventos do calendário</span></div><span class="mo g">+120<small>,00 €</small></span><span class="chev">›</span></div></div></div><div class="tb"><div class="ti"><span class="ic"></span><span class="tl">Início</span></div><div class="ti"><span class="ic"></span><span class="tl">Escala</span></div><div class="ti"><span class="sim"></span><span class="tl">Simular</span></div><div class="ti on"><span class="ic"></span><span class="tl">Números</span><i class="dot"></i></div><div class="ti"><span class="ic"></span><span class="tl">Perfil</span></div></div></div></div><div class="cell"><div class="cap"><b>X2 · a folha: o total em cima e cada evento num campo, com "Apagar"</b></div>
+  <div class="ph" style="--desk:#E3E1DB;--ink:#141414;--soft:#3A3A36;--sheet:#FFFFFF;--neutral:#F1EFEA;--sub:rgba(20,20,20,0.82);--kind:rgba(20,20,20,0.8);--gain:#0B6E43;--tab:#5E5E57">
+    <div class="status"><span>09:12</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>
+    <div class="topA"><div class="ttlRow"><span class="t">Números</span><span class="pl ml">Mês · Ano</span></div>
+      <div class="what">Novembro · bruto estimado · exemplo</div><div class="gt">6 596<small>,06 €</small></div></div>
+    <div class="sheetN"><div class="lc"><span class="lk">De onde vem · bruto</span>
+  <div class="stk"><i style="flex:5059;background:#141414"></i><i style="flex:1234;background:#6DBEFA"></i><i style="flex:182;background:#B4C2A2"></i><i style="flex:120;background:rgba(127,127,127,.35)"></i></div>
+  <div class="mr"><span class="sw" style="background:#141414"></span><div class="mn"><b>Base</b><span>tabela do AE · FO 12/12</span></div><span class="mo">5 059<small>,26 €</small></span></div>
+  <div class="mr"><span class="sw" style="background:#6DBEFA"></span><div class="mn"><b>Per diem</b><span>da escala · pela rota</span></div><span class="mo g">+1 234<small>,40 €</small></span></div>
+  <div class="mr"><span class="sw" style="background:#B4C2A2"></span><div class="mn"><b>Pernoitas</b><span>da escala</span></div><span class="mo g">+182<small>,40 €</small></span></div>
+  <div class="mr"><span class="sw" style="background:rgba(127,127,127,.35)"></span><div class="mn"><b>Extras · 3</b><span>os eventos do calendário</span></div><span class="mo g">+120<small>,00 €</small></span><span class="chev">›</span></div></div></div><div class="tb"><div class="ti"><span class="ic"></span><span class="tl">Início</span></div><div class="ti"><span class="ic"></span><span class="tl">Escala</span></div><div class="ti"><span class="sim"></span><span class="tl">Simular</span></div><div class="ti on"><span class="ic"></span><span class="tl">Números</span><i class="dot"></i></div><div class="ti"><span class="ic"></span><span class="tl">Perfil</span></div></div><div class="dim"></div><div class="sheet"><div class="grab"></div>
+  <div class="sh"><div><span class="shk">Novembro · 3 eventos</span><b class="sht">Os extras do mês</b></div><span class="pl">Fechar</span></div>
+  <div class="big"><span class="mo g">+120<small>,00 €</small></span><span class="bl">no total do mês</span></div>
+  <div class="fd"><div class="fdm"><span class="fl">SEGUNDA 2 NOV</span><b class="fv">Dias de doença</b></div><div class="fdr"><span class="nv">no total<br>do mês</span><span class="ap">Apagar</span></div></div><div class="fd"><div class="fdm"><span class="fl">SEXTA 13 NOV</span><b class="fv">Alteração de escala (SNC)</b></div><div class="fdr"><span class="mo g">+60<small>,00 €</small></span><span class="ap">Apagar</span></div></div><div class="fd"><div class="fdm"><span class="fl">TERÇA 17 NOV</span><b class="fv">Alteração de escala (SNC)</b></div><div class="fdr"><span class="mo g">+60<small>,00 €</small></span><span class="ap">Apagar</span></div></div>
+  <div class="note">Vêm do calendário (SNC, doença, férias…). Apagar tem 5 s para desfazer. Os papéis no voo e o escritório vêm dos serviços — corrige-se no serviço.</div></div></div></div></div></div><div class="opt"><h3>X3 · O mês dos extras</h3><p><b>Um cartão novo nos Números com o mês em pontos</b> (a tua 3411): os dias com extras marcados; tocar num mostra o evento dele com o € e o "Apagar". Bonito e dá o relance do mês — mas é mais um cartão no ecrã para uma coisa que se usa pouco.</p><div class="grid"><div class="cell"><div class="cap"><b>X3 · o mês dos extras (deslizado): os dias em pontos e o evento do dia tocado</b></div>
+  <div class="ph" style="--desk:#E3E1DB;--ink:#141414;--soft:#3A3A36;--sheet:#FFFFFF;--neutral:#F1EFEA;--sub:rgba(20,20,20,0.82);--kind:rgba(20,20,20,0.8);--gain:#0B6E43;--tab:#5E5E57">
+    <div class="status"><span>09:12</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>
+    <div class="topA"><div class="ttlRow"><span class="t">Números</span><span class="pl ml">Mês · Ano</span></div>
+      <div class="what">Novembro · bruto estimado · exemplo</div><div class="gt">6 596<small>,06 €</small></div></div>
+    <div class="sheetN"><div class="scrolled"><div class="lc"><span class="lk">De onde vem · bruto</span>
+  <div class="stk"><i style="flex:5059;background:#141414"></i><i style="flex:1234;background:#6DBEFA"></i><i style="flex:182;background:#B4C2A2"></i><i style="flex:120;background:rgba(127,127,127,.35)"></i></div>
+  <div class="mr"><span class="sw" style="background:#141414"></span><div class="mn"><b>Base</b><span>tabela do AE · FO 12/12</span></div><span class="mo">5 059<small>,26 €</small></span></div>
+  <div class="mr"><span class="sw" style="background:#6DBEFA"></span><div class="mn"><b>Per diem</b><span>da escala · pela rota</span></div><span class="mo g">+1 234<small>,40 €</small></span></div>
+  <div class="mr"><span class="sw" style="background:#B4C2A2"></span><div class="mn"><b>Pernoitas</b><span>da escala</span></div><span class="mo g">+182<small>,40 €</small></span></div>
+  <div class="mr"><span class="sw" style="background:rgba(127,127,127,.35)"></span><div class="mn"><b>Extras · 3</b><span>os eventos do calendário</span></div><span class="mo g">+120<small>,00 €</small></span></div></div></div><div class="lc"><span class="lk">Os extras de novembro · 3</span>
+  <div class="mg"><span class="mh">S</span><span class="mh">T</span><span class="mh">Q</span><span class="mh">Q</span><span class="mh">S</span><span class="mh">S</span><span class="mh">D</span><span></span><span></span><span></span><span></span><span></span><span></span><span class="md">1</span><span class="md on">2</span><span class="md">3</span><span class="md">4</span><span class="md">5</span><span class="md">6</span><span class="md">7</span><span class="md">8</span><span class="md">9</span><span class="md">10</span><span class="md">11</span><span class="md">12</span><span class="md on sel">13</span><span class="md">14</span><span class="md">15</span><span class="md">16</span><span class="md on">17</span><span class="md">18</span><span class="md">19</span><span class="md">20</span><span class="md">21</span><span class="md">22</span><span class="md">23</span><span class="md">24</span><span class="md">25</span><span class="md">26</span><span class="md">27</span><span class="md">28</span><span class="md">29</span><span class="md">30</span></div>
+  <div class="exr sel"><div class="mn"><b>Alteração de escala (SNC)</b><span>sexta 13 nov</span></div><span class="mo g">+60<small>,00 €</small></span><span class="ap">Apagar</span></div>
+  <div class="note">Tocar num dia com ponto mostra o evento dele.</div></div></div><div class="tb"><div class="ti"><span class="ic"></span><span class="tl">Início</span></div><div class="ti"><span class="ic"></span><span class="tl">Escala</span></div><div class="ti"><span class="sim"></span><span class="tl">Simular</span></div><div class="ti on"><span class="ic"></span><span class="tl">Números</span><i class="dot"></i></div><div class="ti"><span class="ic"></span><span class="tl">Perfil</span></div></div></div></div></div></div><div class="card2"><h3>A minha recomendação: X2 — uma folha "Os extras do mês"</h3><ul>
+  <li><b>Para o tripulante:</b> os extras olham-se uma vez por mês e corrigem-se raramente — não precisam de ocupar o ecrã; o cartão do dinheiro fica a dizer quanto e de onde, e um toque abre o pormenor.</li>
+  <li><b>Apagar com calma:</b> numa folha própria, longe do resumo, com o "Desfazer" de 5 s. Na X1 o "Apagar" fica no meio dos números do mês.</li>
+  <li><b>Uma só app:</b> campos nas folhas (como o Hotel e a Prova), "Fechar" escrito; e a mesma folha pode abrir também do Início no fecho do mês (a linha "Extras" de lá).</li>
+  <li><b>Para construir:</b> a folha antiga (<code>ExtrasManager</code>) passa à linguagem 3.0 e ganha a entrada nos Números; os valores vêm das mesmas contas (<code>extrasMonthEur</code>, <code>monthExtras</code>) — sem números novos.</li></ul></div></div><script>document.fonts.ready.then(function(){ document.querySelectorAll('.ttlRow').forEach(function(r){ var t = r.querySelector('.t'), p = r.querySelector('.pl'); var room = r.clientWidth - p.offsetWidth - 10; var fs = 34; while (t.scrollWidth > room && fs > 24) { fs -= 1; t.style.fontSize = fs + 'px'; } }); });</script></body></html>

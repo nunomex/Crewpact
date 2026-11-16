@@ -1,9 +1,9 @@
 {
  "gerado": "2026-11-16",
  "total": {
-  "tipoFora": 116,
+  "tipoFora": 115,
   "tipoMenor11": 59,
-  "espacoFora": 252,
+  "espacoFora": 249,
   "raioFora": 32,
   "corSolta": 46,
   "ionicons": 6,
@@ -181,16 +181,6 @@
    "corSolta": 9,
    "ionicons": 0,
    "iconeNavSolto": 1,
-   "amareloTexto": 0
-  },
-  "components/ExtrasManager.js": {
-   "tipoFora": 1,
-   "tipoMenor11": 0,
-   "espacoFora": 3,
-   "raioFora": 0,
-   "corSolta": 0,
-   "ionicons": 0,
-   "iconeNavSolto": 0,
    "amareloTexto": 0
   },
   "components/FlightShareCard.js": {

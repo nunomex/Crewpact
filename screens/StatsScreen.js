@@ -25,7 +25,8 @@ import ProvaSheet from '../components/ProvaSheet';
 import { monthAudit } from '../data/audit';
 import AuditSheet from '../components/AuditSheet';
 import ServiceSheet, { SHEET_AFTER_MS } from '../components/ServiceSheet';
-import { yearCount, eventDateLabel } from '../data/aeEvents';
+import ExtrasSheet from '../components/ExtrasSheet';
+import { yearCount } from '../data/aeEvents';
 import { computeFlightTime, computeDutyTime, sumCalendarYearMin } from '../ftl';
 import { t } from '../data/i18n';
 import { select } from '../data/haptics';
@@ -414,9 +415,8 @@ export default function StatsScreen({ navigation }) {
   const PART_LAW = { diem: 'perDiem', pern: 'pernoita' };
   const parts = moneyOpts.filter((o) => o.k !== 'total');
   const posSum = parts.reduce((a, o) => a + Math.max(0, o.val || 0), 0);
-  const [extrasOpen, setExtrasOpen] = useState(false);
+  const [extrasOpen, setExtrasOpen] = useState(false);   // a folha "Os extras do mês" (X2 de design/extras-mes.html, só para ver)
   const periodEvents = (aeEvents || []).filter((e) => e && String(e.date).startsWith(isYear ? String(year) : ym)).sort((a, b) => String(a.date).localeCompare(String(b.date)));
-  const extraName = (type) => { const k = ae && Array.isArray(ae.EXTRA_KINDS) ? ae.EXTRA_KINDS.find((x) => x.id === type) : null; return (k && k.label && (k.label[lang] || k.label.pt)) || type; };
   const fromCard = mode === 'money' && total > 0 ? (
     <LineCard kind={isYear ? l('De onde vem · bruto · no ano', 'Where it comes from · gross · this year') : l('De onde vem · bruto', 'Where it comes from · gross')}>
       {/* com a base incerta, o topo diz "Incerto" e as duas pontas do total ficam aqui, em primeiro (saíram do topo — L1) */}
@@ -436,10 +436,10 @@ export default function StatsScreen({ navigation }) {
           const pv = PART_LAW[o.k] ? provaFor(PART_LAW[o.k], provaCtx) : null;
           const isEx = o.k === 'extras';
           const Row = (pv || isEx) ? TouchableOpacity : View;
-          const press = isEx ? () => { select(); setExtrasOpen((v) => !v); } : pv ? () => { select(); setProva({ ...pv, value: `${o.val < 0 ? '−' : '+'}${fmtEur0(Math.abs(o.val))}` }); } : undefined;
+          const press = isEx ? () => { select(); setExtrasOpen(true); } : pv ? () => { select(); setProva({ ...pv, value: `${o.val < 0 ? '−' : '+'}${fmtEur0(Math.abs(o.val))}` }); } : undefined;
           return (
             <View key={o.k} style={[s.mRow, i === 0 ? s.mRowFirst : null]}>
-              <Row style={s.mMain} {...(press ? { onPress: press, activeOpacity: 0.7, accessibilityRole: 'button', accessibilityState: isEx ? { expanded: extrasOpen } : undefined } : {})}
+              <Row style={s.mMain} {...(press ? { onPress: press, activeOpacity: 0.7, accessibilityRole: 'button', accessibilityHint: isEx ? l('Abre os extras do período', 'Opens the period’s extras') : undefined } : {})}
                 accessibilityLabel={`${o.nm}: ${fmtEur0(o.val)}${o.sub ? `. ${o.sub}` : ''}`}>
                 <View style={[s.mSw, { backgroundColor: PART_C[o.k] || C.round }]} />
                 <View style={s.flex}>
@@ -447,15 +447,8 @@ export default function StatsScreen({ navigation }) {
                   {o.sub ? <Text style={[TXT3.cardSub, { color: C.tabSub }]}>{o.sub}</Text> : null}
                 </View>
                 <Money val={o.val} gain={o.k !== 'base'} />
-                {isEx ? <Icon name="chevron" size={13} color={C.tabSub} rot={extrasOpen ? 270 : 90} /> : null}
+                {isEx ? <Icon name="chevron" size={13} color={C.tabSub} /> : null}
               </Row>
-              {isEx && extrasOpen ? (
-                <View style={s.exList}>
-                  {periodEvents.length ? periodEvents.map((e) => (
-                    <Text key={e.id || `${e.type}${e.date}`} style={[TXT3.cardSub, { color: C.soft }]}>{`${extraName(e.type)} · ${eventDateLabel(e.date, lang)}`}</Text>
-                  )) : <Text style={[TXT3.cardSub, { color: C.tabSub }]}>{l('Os extras deste período vêm da escala (papéis, escritório) e do calendário.', 'This period’s extras come from the roster (roles, office) and the calendar.')}</Text>}
-                </View>
-              ) : null}
             </View>
           );
         })}
@@ -710,6 +703,10 @@ export default function StatsScreen({ navigation }) {
 
       <YearShareCard visible={shareOpen} onClose={() => setShareOpen(false)} st={isYear ? st : null} year={year} companyName={company?.name} />
       <ProvaSheet visible={!!prova} onClose={() => setProva(null)} prova={prova} lang={lang} />
+      <ExtrasSheet visible={extrasOpen} onClose={() => setExtrasOpen(false)} events={periodEvents} total={extrasSum}
+        parts={{ events: A.events || 0, extras: A.extras || 0, cash: A.cash || 0 }}
+        title={isYear ? l(`Os extras de ${year}`, `${year} extras`) : l(`Os extras de ${monthName}`, `${monthName} extras`)}
+        periodLbl={isYear ? l('do ano', 'for the year') : l('do mês', 'for the month')} />
       <AuditSheet visible={!!auditOpen} onClose={() => setAuditOpen(null)} audit={audit} monthName={monthName}
         lang={lang} provaCtx={provaCtx}
         onOpenDay={(iso) => setTimeout(() => setDaySvc({ iso, idx: 0 }), SHEET_AFTER_MS)} />
@@ -735,7 +732,6 @@ const s = StyleSheet.create({
   sumRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, paddingTop: SPACE.sm, minHeight: 44 },
   mMain: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.sm, paddingVertical: SPACE.sm, minHeight: 44 },
   mSw: { width: 10, height: 10, borderRadius: 3, marginTop: SPACE.s },
-  exList: { gap: SPACE.xs, paddingLeft: SPACE.lg + SPACE.xxs, paddingBottom: SPACE.sm },
   lim: { gap: SPACE.xs },
   limTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: SPACE.md },
   track: { height: 8, borderRadius: RADIUS.pill, overflow: 'hidden' },
