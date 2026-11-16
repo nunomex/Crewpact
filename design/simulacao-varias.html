@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="pt"><meta charset="utf-8"><title>CrewPact · Várias simulações (uma troca)</title><meta name="viewport" content="width=device-width, initial-scale=1">
+<style>/* VÁRIAS SIMULAÇÕES SEGUIDAS + O VEREDICTO COM O TECLADO (2026-11-16). Os cartões do dia gerados a partir do código. */
+
+@font-face{font-family:'Hanken';font-weight:500;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/500Medium/HankenGrotesk_500Medium.ttf')}
+@font-face{font-family:'Hanken';font-weight:700;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/700Bold/HankenGrotesk_700Bold.ttf')}
+@font-face{font-family:'Hanken';font-weight:800;src:url('../node_modules/@expo-google-fonts/hanken-grotesk/800ExtraBold/HankenGrotesk_800ExtraBold.ttf')}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#E8E7E2;color:#141414;font-family:'Hanken','Helvetica Neue',Arial,sans-serif;padding:32px 16px 64px}
+.page{max-width:1760px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+.lead{max-width:960px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-weight:800;font-size:30px;letter-spacing:-.6px} .lead p{font-size:14px;line-height:1.55;color:#55554F} .lead b{color:#141414}
+.grid{display:flex;flex-wrap:wrap;gap:20px}
+.cap{font-size:12px;font-weight:600;color:#55554F;margin:0 0 6px 6px;max-width:406px} .cap b{color:#141414;font-weight:800}
+.ph{position:relative;display:flex;flex-direction:column;width:406px;min-height:852px;border:8px solid #04060A;border-radius:52px 52px 0 0;border-bottom:0;overflow:hidden;background:var(--desk);color:var(--ink)}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.topA{padding:0 20px 28px;flex:none}
+.ttlRow{display:flex;align-items:center;gap:10px;min-height:68px;padding:8px 0 16px}
+.ttlRow .t{font-weight:800;font-size:34px;line-height:38px;letter-spacing:-.8px;display:flex;align-items:center;gap:12px;white-space:nowrap;min-width:0}
+.ttlRow .t i.dot{width:10px;height:10px;border-radius:5px;background:#F0C24A;display:block;flex:none}
+.pl{height:38px;padding:0 16px;border-radius:19px;border:1.5px solid var(--ink);display:inline-flex;align-items:center;font-weight:700;font-size:13px;white-space:nowrap;flex:none}
+.pl.sm{height:30px;padding:0 12px;border-radius:15px} .ml{margin-left:auto}
+.what{font-weight:500;font-size:15px;line-height:20px;color:var(--soft)} .what.inl{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.hero{display:flex;align-items:stretch;gap:16px;margin-top:12px}
+.g{font-weight:700;white-space:nowrap;flex:none} .g .l1,.g .l2{display:flex;align-items:baseline}
+.g .big{font-size:62px;line-height:62px;letter-spacing:-2.85px} .g small{font-size:34px;letter-spacing:-1px;margin-left:6px} .g .b2{margin-left:6px} .g .z{font-size:20px;margin-left:8px}
+.grey{color:var(--grey)}
+.side{border-left:1.5px solid var(--ink);padding-left:16px;display:flex;flex-direction:column;justify-content:center;gap:12px;min-width:0}
+.fv{display:flex;align-items:center;gap:4px;font-weight:700;font-size:20px;line-height:22px;white-space:nowrap} .fv.gain{color:var(--gain)} .fv.was{text-decoration:line-through;opacity:.5}
+.fl{display:block;font-weight:500;font-size:11px;line-height:15px;color:var(--soft);white-space:nowrap}
+.ic{display:block;fill:currentColor;flex:none}
+.sheetN{flex:1;background:var(--sheet);border-radius:32px 32px 0 0;padding:12px 12px 24px;display:flex;flex-direction:column;gap:8px}
+.cd{border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:10px;position:relative}
+.cd,.slim{color:#141414}   /* os cartões de cor: a tinta escura (CARD.onCard), de dia e de noite */
+.ck{border-radius:24px;padding:12px 16px;color:var(--ink);display:flex;flex-direction:column;gap:8px} .ck.plain{padding:0 16px 8px}
+.v2{display:flex;flex-direction:column;gap:2px;padding:4px 16px 8px} .v2 b{font-weight:800;font-size:20px;line-height:25px;letter-spacing:-.2px;color:var(--ink)} .v2 span{font-weight:500;font-size:17px;line-height:23px;color:var(--soft)} .ckH{display:flex;justify-content:space-between;align-items:baseline;gap:8px} .ckH b{font-weight:800;font-size:16px;line-height:20px} .ckH span{font-weight:500;font-size:11px;color:var(--sub)}
+.ckR{display:grid;grid-template-columns:repeat(3,1fr);gap:8px} .ci{display:grid;grid-template-columns:24px 1fr;column-gap:6px;min-width:0} .ci .rg{grid-row:1 / span 2;width:24px;height:24px;margin-top:2px} .ci b{font-weight:700;font-size:14px;line-height:18px} .ci span{font-weight:500;font-size:12px;line-height:16px;color:var(--sub)}
+.rc{border-radius:24px;padding:12px 16px;color:#141414;display:flex;flex-direction:column;gap:8px} .rcH{display:flex;align-items:center;gap:10px} .rcH .mark{position:static;flex:none} .rcT{display:flex;flex-direction:column;flex:1;min-width:0} .rcT .k{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8)} .rcT b{font-weight:800;font-size:16px;line-height:20px} .rcS{font-weight:500;font-size:11px;color:rgba(20,20,20,.82);align-self:flex-start;margin-top:2px}
+.rcL{display:flex;flex-direction:column;background:rgba(255,255,255,.55);border-radius:16px;padding:4px 12px} .rr{display:flex;gap:12px;align-items:center;padding:6px 0} .rr + .rr{border-top:1px solid rgba(20,20,20,.18)} .rd{width:32px;flex:none;display:flex;flex-direction:column;align-items:center} .rd b{font-weight:700;font-size:20px;line-height:22px} .rd span{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8)}
+.rx{display:flex;flex-direction:column;min-width:0} .rx b{font-weight:700;font-size:15px;line-height:20px} .rx span{font-weight:500;font-size:12px;line-height:16px;color:rgba(20,20,20,.82)} .rx s{font-weight:500;opacity:.75} .rmore{font-weight:500;font-size:12px;padding:6px 0;color:rgba(20,20,20,.82)}
+.rcA{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.62);border-radius:99px;padding:12px 16px;gap:8px} .rcA b{font-weight:700;font-size:14px} .rcA span{font-weight:500;font-size:11px;color:rgba(20,20,20,.82)}
+.und{text-decoration:underline dotted;text-decoration-thickness:1.5px;text-underline-offset:2px;text-decoration-color:var(--soft)} .fv.und{display:inline-block;padding-bottom:2px}
+.dk,.dk b{color:var(--sheet)} .ph .dk .st > span:not(.k){color:var(--sheet);opacity:.82} .dk .goS{background:rgba(127,127,127,.35);color:var(--sheet)}
+.lt,.lt .ct,.lt b,.lt .dpt b{color:#F4F2ED} .lt .kd,.lt .k,.lt .cs,.lt .cities,.lt .st > span:not(.k),.lt .ab span,.lt .dpt span:not(.dot2),.lt .quiet2,.lt .pd,.lt .dlc span{color:rgba(244,242,237,.8)}
+.lt .go,.lt .goS,.lt .badge,.lt .mark{background:rgba(255,255,255,.16);color:#F4F2ED} .lt .dot2{background:#F4F2ED} .lt .dot2.o{border-color:#F4F2ED;background:transparent} .lt .dls{background:#F4F2ED} .lt .dlt{background:rgba(244,242,237,.25)}
+.sqc{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:0}
+.neu .quiet2 .qr > b,.neu .quiet2 .qv,.neu .dpt b,.neu .ab b{color:var(--ink)} .neu .dpt span:not(.dot2),.neu .dlc span{color:var(--sub)} .neu .dot2{background:var(--ink)} .neu .dot2.o{border-color:var(--ink);background:transparent} .neu .dls{background:var(--ink)}
+.lt .quiet2 .qr > b,.lt .quiet2 .qv,.lt .ab b{color:#F4F2ED}
+.ph .lt .st > span:not(.k),.ph .lt .cs,.ph .lt .ab span{color:rgba(244,242,237,.8)} .ph .lt .dur,.ph .neu .dur{background:rgba(255,255,255,.16);color:var(--ink)} .ph .lt .dur{color:#F4F2ED}
+.ph .lt .prog{background:rgba(244,242,237,.25)} .ph .lt .prog i,.ph .lt .prog s{background:#F4F2ED} .ph .neu .prog{background:rgba(127,127,127,.3)} .ph .neu .prog i,.ph .neu .prog s{background:var(--ink)} .ph .neu .st > span:not(.k){color:var(--sub)}
+.slim .sqc{width:12px;height:12px;flex:none;margin:0}
+.ring .ttlRow .t i.dot{box-shadow:0 0 0 2px #141414} .night.ring .ttlRow .t i.dot{box-shadow:none}
+.minky .chip{color:#141414} .minky .fv.gain{color:var(--ink)}
+.gbadge{display:inline-block;background:#0B6E43;color:#fff;border-radius:6px;padding:1px 6px;font-weight:800;font-size:11px;margin-right:6px}
+.gdot{display:inline-block;width:8px;height:8px;border-radius:4px;background:#0B6E43;margin-right:6px;vertical-align:1px}
+.kd{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8);padding-right:44px}
+.ct{font-weight:800;font-size:22px;line-height:26px;letter-spacing:-.4px;margin-top:-6px;padding-right:44px}
+.cities{font-weight:500;font-size:12px;color:rgba(20,20,20,.82);margin-top:-8px}
+.cs{font-weight:500;font-size:12px;line-height:16px;color:rgba(20,20,20,.82)} .cs u{color:#141414}
+.subrow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:-6px}
+.go{position:absolute;right:14px;top:14px;width:36px;height:36px;border-radius:18px;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px}
+.chip{background:#fff;color:#0B6E43;border-radius:14px;padding:5px 10px;font-weight:800;font-size:14px;white-space:nowrap}
+.badges{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:-4px}
+.badge{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.55);border-radius:10px;padding:2px 8px;font-weight:800;font-size:11px}
+.pd{display:flex;align-items:center;gap:6px;font-weight:500;font-size:11px;color:rgba(20,20,20,.82)}
+.dl{margin-top:2px} .dlc{position:relative;height:16px;margin-bottom:2px} .dlc span{position:absolute;transform:translateX(-50%);font-weight:800;font-size:11px;letter-spacing:.8px;color:rgba(20,20,20,.8)}
+.dlp{position:relative;height:54px} .dlt{position:absolute;left:7px;right:7px;top:6px;height:2px;background:rgba(20,20,20,.18)}
+.dls{position:absolute;top:5px;height:4px;background:#141414;border-radius:2px}
+.dpt{position:absolute;top:0;display:flex;flex-direction:column;gap:2px}
+.dot2{width:14px;height:14px;border-radius:7px;background:#141414;box-shadow:0 0 0 3px var(--flight) inset} .dot2.o{background:var(--flight);border:3px solid #141414;box-shadow:none}
+.dpt b{font-weight:700;font-size:20px;line-height:22px;white-space:nowrap} .dpt span:not(.dot2){font-weight:500;font-size:11px;line-height:15px;color:rgba(20,20,20,.82);white-space:nowrap}
+.quiet{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;border-top:1px solid rgba(20,20,20,.14);padding-top:8px;font-weight:500;font-size:12px;color:rgba(20,20,20,.82)}
+.quiet b{font-weight:700;color:#141414} .quiet .qv{font-size:15px} .quiet > span:first-child{flex:1;min-width:0} .quiet > span:last-child{white-space:nowrap}
+.quiet2{border-top:1px solid rgba(20,20,20,.14);padding-top:8px;display:flex;flex-direction:column;gap:2px;font-weight:500;font-size:12px;color:rgba(20,20,20,.82)} .quiet2 .qr{display:flex;justify-content:space-between;align-items:baseline;gap:8px;white-space:nowrap} .quiet2 .qr > b{font-weight:700;color:#141414;overflow:hidden;text-overflow:ellipsis} .quiet2 .qv{font-weight:700;color:#141414;font-size:15px}
+.ab{display:flex;align-items:flex-end;justify-content:space-between;gap:8px} .ab b{display:block;font-weight:700;font-size:22px;line-height:24px} .ab span{display:block;font-weight:500;font-size:11px;color:rgba(20,20,20,.82)}
+.dur{background:rgba(255,255,255,.75);border-radius:14px;padding:5px 10px;font-weight:700;font-size:12px;white-space:nowrap}
+.prog{position:relative;height:6px;border-radius:3px;background:rgba(20,20,20,.18)} .prog i{position:absolute;left:0;top:0;bottom:0;background:#141414;border-radius:3px} .prog s{position:absolute;top:-4px;width:14px;height:14px;margin-left:-7px;border-radius:7px;background:#141414}
+.act{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.55);border-radius:14px;padding:10px 12px;font-weight:700;font-size:14px}
+.lr{display:flex;justify-content:space-between;gap:12px;font-size:15px;line-height:20px} .lr span{font-weight:500} .lr b{font-weight:700}
+.lfoot{border-top:1px solid rgba(20,20,20,.14);padding-top:8px;display:flex;flex-direction:column;gap:8px}
+.tx{font-weight:500;font-size:14px;line-height:20px}
+.slim{border-radius:20px;padding:12px 16px;display:flex;align-items:center;gap:12px;min-height:56px} .slim.dashed{border:1.5px dashed rgba(20,20,20,.55)}
+.slim .st{flex:1;min-width:0;display:flex;flex-direction:column} .slim .k{font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(20,20,20,.8)}
+.slim b{font-weight:800;font-size:16px;line-height:20px} .slim .st > span:not(.k){font-weight:500;font-size:12px;line-height:16px;color:rgba(20,20,20,.82)}
+.slim .sv{font-weight:800;font-size:20px;white-space:nowrap}
+.mark{width:30px;height:30px;border-radius:15px;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex:none}
+.goS{width:34px;height:34px;border-radius:17px;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex:none}
+.credit{font-weight:500;font-size:12px;color:var(--caption);padding:2px 6px}
+.neu,.neu .ct,.neu b,.neu .lr b{color:var(--ink)} .neu .kd,.neu .k{color:var(--kind)} .neu .cs,.neu .cities,.neu .st > span:not(.k),.neu .lr span,.neu .ab span,.neu .tx,.neu .quiet2{color:var(--sub)} .neu .goS,.neu .go{background:rgba(127,127,127,.2)} .neu.dashed{border-color:var(--kind)}
+.hdr{font-weight:800;font-size:13px;color:var(--soft);padding:8px 6px 0} .hdr.near{padding:14px 16px 0;margin-bottom:-4px}
+.svl{display:flex;flex-direction:column;align-items:flex-end;flex:none} .svl b{font-weight:700;font-size:20px;line-height:22px} .svl span{font-weight:500;font-size:11px;line-height:15px;color:rgba(20,20,20,.82)}
+.fold{position:absolute;left:0;right:0;top:750px;border-top:2px dashed rgba(236,122,108,.9);pointer-events:none} .fold span{position:absolute;right:10px;top:2px;font-size:10px;font-weight:800;color:#C0503F;background:rgba(255,255,255,.85);padding:1px 6px;border-radius:6px}
+
+
+.ph{min-height:0;height:852px}
+.fT{padding-bottom:16px} .fS{flex:1;min-height:0;overflow:hidden;background:var(--sheet);border-radius:32px 32px 0 0;margin-top:-16px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.scr{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px;overflow:hidden} .bot .scr{justify-content:flex-end} .scr > *{flex:none} .pin{display:flex;flex-direction:column;gap:8px;flex:none;padding-bottom:4px;border-bottom:1.5px solid var(--rule)}
+.frm{padding:4px 16px 0;display:flex;flex-direction:column}
+.fk{font-size:12px;font-weight:600;color:var(--sub);padding-top:8px}
+.chips{display:flex;gap:6px;flex-wrap:nowrap;overflow:hidden;margin-right:-28px;padding:6px 0 12px;border-bottom:1.5px solid var(--rule)} .ch{flex:none}
+.ch{height:34px;padding:0 12px;border-radius:17px;border:1.5px solid var(--ink);display:inline-flex;align-items:center;font-weight:700;font-size:13px;white-space:nowrap}
+.ch.on{background:var(--ink);color:var(--sheet)}
+.fld{padding:8px 0 12px;border-bottom:1.5px solid var(--rule);display:flex;flex-direction:column;gap:2px;min-width:0} .fld.focus{border-bottom-color:var(--ink)}
+.fld.focus .fv2::after{content:'';display:inline-block;width:2px;height:22px;background:#2F7BF6;margin-left:2px;vertical-align:-3px}
+.fld.row{flex-direction:row;align-items:center;justify-content:space-between} .fld.row > div:first-child{display:flex;flex-direction:column;gap:2px}
+.fl2{font-size:12px;font-weight:600;color:var(--sub)} .fv2{font-size:20px;line-height:26px;font-weight:700}
+.two{display:flex;gap:16px} .two .fld{flex:1}
+.stp{display:flex;gap:8px} .stp span{width:40px;height:40px;border-radius:20px;border:1.5px solid var(--ink);display:inline-flex;align-items:center;justify-content:center;font-size:20px;font-weight:700}
+.stp.sm span{width:36px;height:36px;border:0;background:rgba(127,127,127,.22)}
+.kb{flex:none;height:291px;background:#D1D3D9;padding:8px 6px 34px;display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:7px}
+.kb span{background:#FFFFFF;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:25px;font-weight:500;box-shadow:0 1px 0 rgba(0,0,0,.28);line-height:1}
+.kb span small{font-size:9px;font-weight:700;letter-spacing:1.6px;margin-top:2px} .kb span.e{background:transparent;box-shadow:none} .kb span.dl{background:transparent;box-shadow:none;font-size:22px}
+.acc{flex:none;height:56px;display:flex;align-items:center;gap:10px;padding:0 12px 0 14px;border-top:1px solid rgba(20,20,20,.12);background:var(--sheet)}
+.acc.stop{background:#EC7A6C;border-top:0} .acc.neu{background:var(--neutral)} .acc .mark{position:static}
+.acc .at{flex:1;min-width:0;display:flex;flex-direction:column} .acc .at b{font-weight:800;font-size:15px;line-height:19px} .acc .at span{font-weight:500;font-size:12px;line-height:16px}
+.acc .pl{height:38px}
+.bar{border-radius:18px;padding:10px 12px 10px 10px;display:flex;align-items:center;gap:10px;min-height:56px}
+.bd{display:flex;flex-direction:column;align-items:center;width:34px;flex:none} .bd b{font-size:20px;line-height:22px;font-weight:800} .bd i{font-style:normal;font-size:10px;font-weight:800;letter-spacing:.8px}
+.bt{flex:1;min-width:0;display:flex;flex-direction:column} .bt b{font-size:16px;line-height:20px;font-weight:800} .bt span{font-size:12px;line-height:16px;font-weight:500;color:rgba(20,20,20,.82)}
+.br{font-size:15px;font-weight:700;white-space:nowrap} .chev{font-size:20px;font-weight:700;margin-left:2px}
+.gap{display:flex;justify-content:center;margin:-4px 0} .gap span{font-size:12px;font-weight:600;color:var(--sub);padding:2px 10px;border-left:1.5px dashed rgba(20,20,20,.3);border-right:1.5px dashed rgba(20,20,20,.3)}
+.add{border:1.5px dashed rgba(20,20,20,.45);border-radius:18px;min-height:52px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}
+.clr{text-align:center;font-weight:700;font-size:14px;padding:10px 0 4px;text-decoration:underline;text-underline-offset:3px}
+.tabs{display:flex;gap:6px;flex-wrap:nowrap;overflow:hidden;padding:2px 0 4px} .tabs span{flex:none;height:34px;padding:0 12px;border-radius:17px;border:1.5px solid var(--ink);display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:13px}
+.tabs span.on{background:var(--ink);color:var(--sheet)} .tabs span i{font-style:normal;width:18px;height:18px;border-radius:9px;background:#EC7A6C;color:#141414;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800}
+.tabs span.plus{width:34px;padding:0;justify-content:center;font-size:18px;border-style:dashed}
+.tr{display:flex;gap:10px;align-items:stretch} .td{width:34px;flex:none;display:flex;flex-direction:column;align-items:center;padding-top:10px} .td b{font-size:22px;line-height:24px;font-weight:800} .td span{font-size:10px;font-weight:800;letter-spacing:.8px;color:var(--sub)}
+.tc{flex:1;min-width:0;display:flex;flex-direction:column}
+.tg{margin:-2px 0 -2px 44px;padding:4px 0 4px 16px;border-left:1.5px dashed rgba(20,20,20,.3);margin-left:60px} .tg span{font-size:12px;font-weight:600;color:var(--sub)}
+.dim{position:absolute;inset:0;background:rgba(20,20,20,.32)}
+.ed{position:absolute;left:0;right:0;top:186px;bottom:291px;background:var(--sheet);border-radius:32px 32px 0 0;padding:16px 12px 0;display:flex;flex-direction:column;gap:8px;overflow:hidden;box-shadow:0 -8px 24px rgba(0,0,0,.12)}
+.eh{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 4px 4px 4px} .eh > div{display:flex;flex-direction:column} .ek{font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--kind)} .et{font-size:22px;line-height:26px;font-weight:800;letter-spacing:-.4px}
+.ph > .kb{position:relative;z-index:2}
+.opt{display:flex;flex-direction:column;gap:10px} .opt > h3{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opt > p{font-size:13px;line-height:1.45;color:#55554F;max-width:960px} .opt > p b{color:#141414}
+.rec{display:inline-block;background:#141414;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;letter-spacing:.8px;margin-left:6px;vertical-align:2px}
+.card2{background:#fff;border:1px solid #D6D4CD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:960px}
+.card2 h3{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase} .card2 li{font-size:13px;line-height:1.5;color:#55554F} .card2 ul{padding-left:18px;display:flex;flex-direction:column;gap:6px} .card2 b{color:#141414}
+</style><body><div class="page"><div class="lead"><h1>Várias simulações seguidas — uma troca</h1><p>O Nuno, a 2026-11-16: <b>"posso querer fazer várias simulações e no fim ver o resultado"</b> — seguidas, uma troca, e com a <b>Folga</b> nos tipos (dar um dia). E o achado maior da revisão das skills: <b>com o teclado aberto, o veredicto sai do ecrã</b> (o teclado numérico come 291 pt; o "✕ Acima do limite" é o primeiro a sair). Três maneiras de juntar as duas coisas. O mesmo exemplo nas três (dados de teste): <b>dás a quinta 19</b> (o teu LIS → OPO → LIS) e <b>ficas com a sexta 20</b> (LIS → FNC → LIS, 06:00–11:50) <b>e o sábado 21</b> (LIS → LGW → LIS, report 05:15). A escrever o sábado, o último calço às 18:10 dá um PSV de 12 h 55 (o PSV acaba no último calço, ORO.FTL.105(12)) para um máximo de 12 h 15 (ORO.FTL.205(b), tabela 2: início 05:15–05:29 com 2 setores) — o "✕"; com 13:50, fica dentro (8 h 35, margem 3 h 40). <b>Em todas:</b> cada dia conta com os anteriores como se já estivessem na escala (o repouso entre eles, os limites acumulados); um só resultado no fim (o pior veredicto, o repouso entre os dias, os limites à volta, o dinheiro somado com o que perdes no dia dado); a lista fica até "Limpar a simulação" ou ao fim do dia; nada vai para a escala. <b>O dinheiro e os limites acumulados são exemplo.</b> <b>Referências:</b> nas tuas imagens, <b>3450</b> (o dia aberto, os outros em barras na cor do tipo), <b>3410</b> (vários dias → o resultado), <b>3415</b> (a folga num cartão apagado), <b>3409</b> (a data grande à esquerda), <b>3422</b> (o intervalo deitado entre dois), <b>3417</b> (os campos), <b>3412</b> e <b>3434</b> (o seletor de pílulas). No Mobbin: <a href="https://mobbin.com/screens/e4483fff-e94a-499f-ad9e-02ffaa169f78">Alta</a> e <a href="https://mobbin.com/screens/6ea866d9-03f5-465b-8701-2c6300f88577">Expedia</a> (paragens numeradas e "juntar outro"), <a href="https://mobbin.com/screens/31b99c36-d20c-44e5-aad8-2e5b67af48cc">Skyscanner</a> (as pernas em filas curtas; o vazio diz o que falta), <a href="https://mobbin.com/screens/065ac6f5-9604-4699-a2e4-12f30b3263ec">Copilot</a> e <a href="https://mobbin.com/screens/985e4309-7c84-45c3-a422-6751d07ac350">bless.</a> (o resultado e a ação colados ao teclado), <a href="https://mobbin.com/screens/389a26f7-bc37-4490-9b56-ba39414e71d1">Polarsteps</a> e <a href="https://mobbin.com/screens/f82d0f7c-18f2-41b9-8b1b-6087c41734b6">Air NZ</a> (a viagem em linha, o intervalo entre as paragens).</p></div><div class="opt"><h3>V1 · A lista que cresce (o S1, dia a dia)</h3><p><b>O S1 de ontem, repetido por dia.</b> O dia que escreves está aberto (o cartão do dia constrói-se enquanto escreves, os campos por baixo); os outros fecham-se em <b>barras na cor do tipo</b> (a folga na cor do repouso), com <b>o repouso entre eles</b> no meio. "＋ Juntar outro dia" abre o seguinte. <b>O veredicto vai colado ao teclado</b>: uma barra por cima das teclas com o veredicto desse dia (vermelho com "✕" quando passa, neutro quando está dentro) e o "OK" que o teclado numérico não tem. No fim, "O resultado da troca".</p><div class="grid"><div class="cell"><div class="cap"><b>V1 · a escrever o sábado: o veredicto colado ao teclado</b></div>
+  <div class="ph" style="--desk:#E3E1DB;--ink:#141414;--soft:#3A3A36;--sheet:#FFFFFF;--neutral:#F1EFEA;--grey:rgba(20,20,20,0.5);--sub:rgba(20,20,20,0.82);--kind:rgba(20,20,20,0.8);--caption:#77776F;--gain:#0B6E43;--flight:#6DBEFA;--rule:rgba(20,20,20,.14)">
+    <div class="status"><span>09:12</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>
+    <div class="topA fT"><div class="ttlRow"><span class="t">Simulação</span><span class="pl ml">Fechar</span></div><div class="what">Um serviço ou uma troca · nada fica na escala</div></div>
+    <div class="fS bot"><div class="scr"><div class="cd" style="background:#6DBEFA"><span class="go">›</span><span class="kd">Dia de serviço · 2 setores</span><span class="ct">LIS → LGW → LIS</span><span class="cities">Lisboa → Londres Gatwick → Lisboa</span><div class="dl"><div class="dlc"><span style="left:30%">LIS</span><span style="left:50%">LGW</span><span style="left:70%">LIS</span></div>
+    <div class="dlp"><span class="dlt"></span><span class="dls" style="left:calc(30% + 0px);right:calc(50% + 4px)"></span><span class="dls" style="left:calc(50% + 4px);right:calc(30% + 0px)"></span>
+    <div class="dpt" style="left:0;align-items:flex-start"><span class="dot2 o"></span><b>05:15</b><span>report</span></div><div class="dpt" style="left:30%;transform:translateX(-50%);align-items:center;text-align:center"><span class="dot2"></span><b>06:15</b><span>parte</span></div><div class="dpt" style="left:70%;transform:translateX(-50%);align-items:center;text-align:center"><span class="dot2"></span><b>18:10</b><span>chega</span></div><div class="dpt" style="right:0;align-items:flex-end;text-align:right"><span class="dot2 o"></span><b>18:40</b><span>fim</span></div></div></div>
+    </div><div class="frm"><div class="fk">Tipo</div><div class="chips"><span class="ch on">Voo</span><span class="ch">Folga</span><span class="ch">Standby Aeroporto</span><span class="ch">Standby Casa</span><span class="ch">Reserva</span><span class="ch">Posicionamento</span><span class="ch">Formação</span><span class="ch">Escritório</span></div><div class="fld row"><div><span class="fl2">Dia</span><b class="fv2">sábado 21 nov</b></div><div class="stp sm"><span>‹</span><span>›</span></div></div><div class="two"><div class="fld"><span class="fl2">Report</span><b class="fv2">05:15</b></div><div class="fld focus"><span class="fl2">Último calço</span><b class="fv2">18:10</b></div></div></div></div></div>
+    <div class="acc stop"><span class="mark">✕</span><div class="at"><b>Acima do limite</b><span>PSV 12 h 55 de 12 h 15</span></div><span class="pl">OK</span></div><div class="kb"><span class="">1</span><span class="">2<small>ABC</small></span><span class="">3<small>DEF</small></span><span class="">4<small>GHI</small></span><span class="">5<small>JKL</small></span><span class="">6<small>MNO</small></span><span class="">7<small>PQRS</small></span><span class="">8<small>TUV</small></span><span class="">9<small>WXYZ</small></span><span class="e"></span><span class="">0</span><span class=" dl">⌫</span></div>
+  </div></div><div class="cell"><div class="cap"><b>V1 · a troca inteira: os dias em barras, o resultado no fim</b></div>
+  <div class="ph" style="--desk:#E3E1DB;--ink:#141414;--soft:#3A3A36;--sheet:#FFFFFF;--neutral:#F1EFEA;--grey:rgba(20,20,20,0.5);--sub:rgba(20,20,20,0.82);--kind:rgba(20,20,20,0.8);--caption:#77776F;--gain:#0B6E43;--flight:#6DBEFA;--rule:rgba(20,20,20,.14)">
+    <div class="status"><span>09:12</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>
+    <div class="topA fT"><div class="ttlRow"><span class="t">Simulação</span><span class="pl ml">Fechar</span></div><div class="what">Um serviço ou uma troca · nada fica na escala</div></div>
+    <div class="fS"><div class="scr"><div class="bar" style="background:#B4C2A2"><span class="bd"><b>19</b><i>QUI</i></span><span class="bt"><b>Folga</b><span>no lugar de LIS → OPO → LIS</span></span><span class="br"></span><span class="chev">›</span></div><div class="gap"><span>37 h de repouso</span></div>
+    <div class="bar" style="background:#6DBEFA"><span class="bd"><b>20</b><i>SEX</i></span><span class="bt"><b>LIS → FNC → LIS</b><span>margem 7 h 40</span></span><span class="br">06:00–11:50</span><span class="chev">›</span></div><div class="gap"><span>17 h 25 de repouso</span></div>
+    <div class="bar" style="background:#6DBEFA"><span class="bd"><b>21</b><i>SÁB</i></span><span class="bt"><b>LIS → LGW → LIS</b><span>margem 3 h 40</span></span><span class="br">05:15–14:20</span><span class="chev">›</span></div><div class="add">＋ Juntar outro dia</div>
+    <div class="hdr">O resultado da troca</div><div class="slim neu" style="background:#F1EFEA"><div class="st"><b>Dentro dos limites</b><span>nos 3 dias · o repouso entre eles acima do mínimo</span></div>
+      </div><div class="slim neu" style="background:#F1EFEA"><div class="st"><b>Quanto recebes · exemplo</b><span>sex +154,51 € · sáb +182,40 € · qui −98,40 €</span></div>
+      <span class="chip">+238,51 €</span></div><div class="cd neu" style="background:#F1EFEA"><span class="kd">O repouso entre os dias</span><div class="lr"><span>Qua → sex · acima do mínimo</span><b>37 h</b></div><div class="lr"><span>Sex → sáb · acima do mínimo</span><b>17 h 25</b></div>
+      
+      </div><div class="cd neu" style="background:#F1EFEA"><span class="kd">Os limites à volta · exemplo</span><div class="lr"><span>Serviço em 7 dias</span><b>41 h 15 de 60 h</b></div><div class="lr"><span>Voo em 28 dias</span><b>63 h de 100 h</b></div>
+      
+      </div><div class="clr">Limpar a simulação</div></div></div>
+    
+  </div></div></div></div><div class="opt"><h3>V2 · Os dias em separadores</h3><p><b>Um separador por dia</b> e um primeiro, "A troca", com o resultado. Em cima, pregados (não saem quando a folha desliza), os separadores e o veredicto do dia escolhido; por baixo, os campos desse dia. O "✕" aparece também no separador do dia que passa. Arrumado, mas <b>só se vê um dia de cada vez</b> — e numa troca o que importa é o que fica entre os dias.</p><div class="grid"><div class="cell"><div class="cap"><b>V2 · a escrever o sábado: o veredicto pregado em cima</b></div>
+  <div class="ph" style="--desk:#E3E1DB;--ink:#141414;--soft:#3A3A36;--sheet:#FFFFFF;--neutral:#F1EFEA;--grey:rgba(20,20,20,0.5);--sub:rgba(20,20,20,0.82);--kind:rgba(20,20,20,0.8);--caption:#77776F;--gain:#0B6E43;--flight:#6DBEFA;--rule:rgba(20,20,20,.14)">
+    <div class="status"><span>09:12</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>
+    <div class="topA fT"><div class="ttlRow"><span class="t">Simulação</span><span class="pl ml">Fechar</span></div><div class="what">Um serviço ou uma troca · nada fica na escala</div></div>
+    <div class="fS bot"><div class="pin"><div class="tabs"><span class="">A troca</span><span class="">Qui 19</span><span class="">Sex 20</span><span class="on">Sáb 21<i>✕</i></span><span class="plus">＋</span></div><div class="slim" style="background:#EC7A6C"><span class="mark">✕</span><div class="st"><b>Acima do limite</b><span>PSV 12 h 55 de 12 h 15</span></div>
+      </div></div><div class="scr"><div class="frm"><div class="fk">Tipo</div><div class="chips"><span class="ch on">Voo</span><span class="ch">Folga</span><span class="ch">Standby Aeroporto</span><span class="ch">Standby Casa</span><span class="ch">Reserva</span><span class="ch">Posicionamento</span><span class="ch">Formação</span><span class="ch">Escritório</span></div><div class="fld row"><div><span class="fl2">Dia</span><b class="fv2">sábado 21 nov</b></div><div class="stp sm"><span>‹</span><span>›</span></div></div><div class="two"><div class="fld"><span class="fl2">Report</span><b class="fv2">05:15</b></div><div class="fld focus"><span class="fl2">Último calço</span><b class="fv2">18:10</b></div></div></div></div></div>
+    <div class="acc plain"><div class="at"></div><span class="pl">OK</span></div><div class="kb"><span class="">1</span><span class="">2<small>ABC</small></span><span class="">3<small>DEF</small></span><span class="">4<small>GHI</small></span><span class="">5<small>JKL</small></span><span class="">6<small>MNO</small></span><span class="">7<small>PQRS</small></span><span class="">8<small>TUV</small></span><span class="">9<small>WXYZ</small></span><span class="e"></span><span class="">0</span><span class=" dl">⌫</span></div>
+  </div></div><div class="cell"><div class="cap"><b>V2 · "A troca": o resultado num separador</b></div>
+  <div class="ph" style="--desk:#E3E1DB;--ink:#141414;--soft:#3A3A36;--sheet:#FFFFFF;--neutral:#F1EFEA;--grey:rgba(20,20,20,0.5);--sub:rgba(20,20,20,0.82);--kind:rgba(20,20,20,0.8);--caption:#77776F;--gain:#0B6E43;--flight:#6DBEFA;--rule:rgba(20,20,20,.14)">
+    <div class="status"><span>09:12</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>
+    <div class="topA fT"><div class="ttlRow"><span class="t">Simulação</span><span class="pl ml">Fechar</span></div><div class="what">Um serviço ou uma troca · nada fica na escala</div></div>
+    <div class="fS"><div class="pin"><div class="tabs"><span class="on">A troca</span><span class="">Qui 19</span><span class="">Sex 20</span><span class="">Sáb 21</span><span class="plus">＋</span></div></div><div class="scr"><div class="slim neu" style="background:#F1EFEA"><div class="st"><b>Dentro dos limites</b><span>nos 3 dias · o repouso entre eles acima do mínimo</span></div>
+      </div><div class="slim neu" style="background:#F1EFEA"><div class="st"><b>Quanto recebes · exemplo</b><span>sex +154,51 € · sáb +182,40 € · qui −98,40 €</span></div>
+      <span class="chip">+238,51 €</span></div><div class="cd neu" style="background:#F1EFEA"><span class="kd">O repouso entre os dias</span><div class="lr"><span>Qua → sex · acima do mínimo</span><b>37 h</b></div><div class="lr"><span>Sex → sáb · acima do mínimo</span><b>17 h 25</b></div>
+      
+      </div><div class="cd neu" style="background:#F1EFEA"><span class="kd">Os limites à volta · exemplo</span><div class="lr"><span>Serviço em 7 dias</span><b>41 h 15 de 60 h</b></div><div class="lr"><span>Voo em 28 dias</span><b>63 h de 100 h</b></div>
+      
+      </div><div class="clr">Limpar a simulação</div></div></div>
+    
+  </div></div></div></div><div class="opt"><h3>V3 · A linha do tempo da troca<span class="rec">RECOMENDO</span></h3><p><b>A troca inteira à vista, como a Escala:</b> a data grande à esquerda, um cartão por dia na cor do tipo (a folga na cor do repouso, "no lugar de" o serviço que dás), e <b>entre os cartões o repouso</b> ("17 h 25 de repouso · mín. 12 h"). Em cima, o veredicto da troca; no fim, o dinheiro e os limites. <b>Tocar num dia abre a folha dele</b> por cima (a regra das folhas: nas folhas os campos, nos ecrãs os cartões), com <b>o veredicto desse dia no topo da folha</b> — fica sempre por cima do teclado, sem barra nova. Na primeira vez, a folha do 1.º dia já vem aberta.</p><div class="grid"><div class="cell"><div class="cap"><b>V3 · a escrever o sábado: a folha dele, com o veredicto no topo</b></div>
+  <div class="ph" style="--desk:#E3E1DB;--ink:#141414;--soft:#3A3A36;--sheet:#FFFFFF;--neutral:#F1EFEA;--grey:rgba(20,20,20,0.5);--sub:rgba(20,20,20,0.82);--kind:rgba(20,20,20,0.8);--caption:#77776F;--gain:#0B6E43;--flight:#6DBEFA;--rule:rgba(20,20,20,.14)">
+    <div class="status"><span>09:12</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>
+    <div class="topA fT"><div class="ttlRow"><span class="t">Simulação</span><span class="pl ml">Fechar</span></div><div class="what">Um serviço ou uma troca · nada fica na escala</div></div>
+    <div class="fS"><div class="scr"><div class="slim" style="background:#EC7A6C"><span class="mark">✕</span><div class="st"><b>A troca passa o limite no sábado</b><span>PSV 12 h 55 de 12 h 15</span></div>
+      </div>
+  <div class="tr"><div class="td"><b>19</b><span>QUI</span></div><div class="tc"><div class="slim" style="background:#B4C2A2"><div class="st"><span class="k">Folga</span><b>No lugar de LIS → OPO → LIS</b><span>o per diem desse dia sai da conta</span></div>
+      <span class="goS">›</span></div></div></div><div class="tg"><span>37 h de repouso</span></div>
+  <div class="tr"><div class="td"><b>20</b><span>SEX</span></div><div class="tc"><div class="slim" style="background:#6DBEFA"><div class="st"><span class="k">Voo · 2 setores</span><b>LIS → FNC → LIS</b><span>06:00 → 11:50 · margem 7 h 40</span></div>
+      <span class="goS">›</span></div></div></div><div class="tg"><span>17 h 25 de repouso · mín. 12 h</span></div>
+  <div class="tr"><div class="td"><b>21</b><span>SÁB</span></div><div class="tc"><div class="slim" style="background:#6DBEFA"><span class="mark">✕</span><div class="st"><span class="k">Voo · 2 setores</span><b>LIS → LGW → LIS</b><span>05:15 → 18:40 · PSV 12 h 55 de 12 h 15</span></div>
+      <span class="goS">›</span></div></div></div>
+  <div class="tr"><div class="td"></div><div class="tc"><div class="add">＋ Juntar outro dia</div></div></div>
+  <div class="slim neu" style="background:#F1EFEA"><div class="st"><b>Quanto recebes · exemplo</b><span>sex +154,51 € · sáb +182,40 € · qui −98,40 €</span></div>
+      <span class="chip">+238,51 €</span></div><div class="cd neu" style="background:#F1EFEA"><span class="kd">O repouso entre os dias</span><div class="lr"><span>Qua → sex · acima do mínimo</span><b>37 h</b></div><div class="lr"><span>Sex → sáb · acima do mínimo</span><b>17 h 25</b></div>
+      
+      </div><div class="cd neu" style="background:#F1EFEA"><span class="kd">Os limites à volta · exemplo</span><div class="lr"><span>Serviço em 7 dias</span><b>41 h 15 de 60 h</b></div><div class="lr"><span>Voo em 28 dias</span><b>63 h de 100 h</b></div>
+      
+      </div><div class="clr">Limpar a simulação</div></div></div>
+    <div class="kb"><span class="">1</span><span class="">2<small>ABC</small></span><span class="">3<small>DEF</small></span><span class="">4<small>GHI</small></span><span class="">5<small>JKL</small></span><span class="">6<small>MNO</small></span><span class="">7<small>PQRS</small></span><span class="">8<small>TUV</small></span><span class="">9<small>WXYZ</small></span><span class="e"></span><span class="">0</span><span class=" dl">⌫</span></div><div class="dim"></div><div class="ed"><div class="eh"><div><span class="ek">Sábado 21 nov · voo</span><b class="et">LIS → LGW → LIS</b></div><span class="pl">Fechar</span></div>
+  <div class="slim" style="background:#EC7A6C"><span class="mark">✕</span><div class="st"><b>Acima do limite</b><span>PSV 12 h 55 de 12 h 15</span></div>
+      </div>
+  <div class="frm"><div class="fk">Tipo</div><div class="chips"><span class="ch on">Voo</span><span class="ch">Folga</span><span class="ch">Standby Aeroporto</span><span class="ch">Standby Casa</span><span class="ch">Reserva</span><span class="ch">Posicionamento</span><span class="ch">Formação</span><span class="ch">Escritório</span></div><div class="two"><div class="fld"><span class="fl2">Report</span><b class="fv2">05:15</b></div><div class="fld focus"><span class="fl2">Último calço</span><b class="fv2">18:10</b></div></div></div></div>
+  </div></div><div class="cell"><div class="cap"><b>V3 · a troca inteira: a linha do tempo, o repouso entre os dias</b></div>
+  <div class="ph" style="--desk:#E3E1DB;--ink:#141414;--soft:#3A3A36;--sheet:#FFFFFF;--neutral:#F1EFEA;--grey:rgba(20,20,20,0.5);--sub:rgba(20,20,20,0.82);--kind:rgba(20,20,20,0.8);--caption:#77776F;--gain:#0B6E43;--flight:#6DBEFA;--rule:rgba(20,20,20,.14)">
+    <div class="status"><span>09:12</span><span style="font-size:12px;letter-spacing:1px">●●●● 5G ▮</span></div>
+    <div class="topA fT"><div class="ttlRow"><span class="t">Simulação</span><span class="pl ml">Fechar</span></div><div class="what">Um serviço ou uma troca · nada fica na escala</div></div>
+    <div class="fS"><div class="scr"><div class="slim neu" style="background:#F1EFEA"><div class="st"><b>A troca fica dentro dos limites</b><span>3 dias · o repouso entre eles acima do mínimo</span></div>
+      </div>
+  <div class="tr"><div class="td"><b>19</b><span>QUI</span></div><div class="tc"><div class="slim" style="background:#B4C2A2"><div class="st"><span class="k">Folga</span><b>No lugar de LIS → OPO → LIS</b><span>o per diem desse dia sai da conta</span></div>
+      <span class="goS">›</span></div></div></div><div class="tg"><span>37 h de repouso</span></div>
+  <div class="tr"><div class="td"><b>20</b><span>SEX</span></div><div class="tc"><div class="slim" style="background:#6DBEFA"><div class="st"><span class="k">Voo · 2 setores</span><b>LIS → FNC → LIS</b><span>06:00 → 11:50 · margem 7 h 40</span></div>
+      <span class="goS">›</span></div></div></div><div class="tg"><span>17 h 25 de repouso · mín. 12 h</span></div>
+  <div class="tr"><div class="td"><b>21</b><span>SÁB</span></div><div class="tc"><div class="slim" style="background:#6DBEFA"><div class="st"><span class="k">Voo · 2 setores</span><b>LIS → LGW → LIS</b><span>05:15 → 14:20 · margem 3 h 40</span></div>
+      <span class="goS">›</span></div></div></div>
+  <div class="tr"><div class="td"></div><div class="tc"><div class="add">＋ Juntar outro dia</div></div></div>
+  <div class="slim neu" style="background:#F1EFEA"><div class="st"><b>Quanto recebes · exemplo</b><span>sex +154,51 € · sáb +182,40 € · qui −98,40 €</span></div>
+      <span class="chip">+238,51 €</span></div><div class="cd neu" style="background:#F1EFEA"><span class="kd">O repouso entre os dias</span><div class="lr"><span>Qua → sex · acima do mínimo</span><b>37 h</b></div><div class="lr"><span>Sex → sáb · acima do mínimo</span><b>17 h 25</b></div>
+      
+      </div><div class="cd neu" style="background:#F1EFEA"><span class="kd">Os limites à volta · exemplo</span><div class="lr"><span>Serviço em 7 dias</span><b>41 h 15 de 60 h</b></div><div class="lr"><span>Voo em 28 dias</span><b>63 h de 100 h</b></div>
+      
+      </div><div class="clr">Limpar a simulação</div></div></div>
+    
+  </div></div></div></div><div class="card2"><h3>A minha recomendação: V3 — a linha do tempo</h3><ul>
+  <li><b>Para o tripulante:</b> numa troca, a pergunta é "fica dentro?" e a resposta está <b>entre os dias</b> — o repouso de sexta para sábado. A linha do tempo mostra-o sem abrir nada; na V1 vê-se nas barras, na V2 não se vê.</li>
+  <li><b>O teclado:</b> na V3 o veredicto está no topo da folha do dia, que nunca fica por baixo do teclado (a folha é curta: o veredicto, o tipo e as horas). Na V1 resolve-o uma barra nova colada ao teclado.</li>
+  <li><b>Uma só app:</b> no ecrã, cartões (como a Escala); os campos numa folha por cima (a regra das folhas, como o Hotel e a Prova). A V1 mistura os dois na mesma folha, como o S1.</li>
+  <li><b>O que custa:</b> um toque a mais para abrir um dia. Para um serviço só (o caso de todos os dias), a folha já vem aberta e fecha-se para ver o cartão.</li>
+  <li><b>Para construir:</b> o motor das várias simulações e a Folga levam o golden primeiro (cada dia conta com os anteriores; a folga tira o serviço desse dia da conta) e uma revisão independente no fim.</li></ul></div></div><script>document.fonts.ready.then(function(){ document.querySelectorAll('.ttlRow').forEach(function(r){ var t = r.querySelector('.t'), p = r.querySelector('.pl'); var room = r.clientWidth - p.offsetWidth - 10; var fs = 34; while (t.scrollWidth > room && fs > 24) { fs -= 1; t.style.fontSize = fs + 'px'; } }); });</script></body></html>

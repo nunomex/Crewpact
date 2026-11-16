@@ -344,7 +344,7 @@ export function homeCards(H = {}) {
     // calha): em cima o veredicto e, à direita, a margem; em baixo o PSV e o repouso (na de cima não cabia — medido a 375 e a 390).
     const restT = rest ? ` · ${l('repouso acima do mínimo', 'rest above the minimum')}` : '';
     return { l: sure ? l('Dentro do limite', 'Within limits') : l('PSV dentro do limite', 'FDP within the limit'),
-      sub: `${sure ? `PSV ${span}` : span}${restT}`, r: { k: l('margem', 'margin'), v: F.dur(mx - pm) } };
+      sub: `${sure ? `${l('PSV', 'FDP')} ${span}` : span}${restT}`, r: { k: l('margem', 'margin'), v: F.dur(mx - pm) } };
   };
   // O limite incerto num cartão à parte (L2): neutro e tracejado, a margem nas duas pontas quando as há, e o que falta.
   const limUncOf = (d, kindLbl) => {

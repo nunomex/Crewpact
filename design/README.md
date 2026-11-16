@@ -168,6 +168,7 @@ combinações de letra e 924 espaçamentos fora da escala (medido a 2026-11-02).
   (recomendada) · S2 passos com tracinhos → o veredicto no topo ("Dentro do limite", o PSV em grande) · S3 uma folha curta com os
   campos num cartão → o dia como o Início o mostraria. O mesmo serviço nas três (quinta 19 · LIS–FNC–LIS · report 06:00 · 13 h pela
   tabela 2 do 205(b)). Imagens 3417, 3460, 3442, 3454, 3462, 3408; Mobbin Jobber, Jira, Todoist, Toggl Track, X, Chime.
+- **`simulacao-varias.html`** (2026-11-16, **V3 escolhida pelo Nuno — no código**; os cartões do dia gerados a partir do código) — várias simulações seguidas (uma troca, com a Folga) e o veredicto à vista com o teclado aberto: V1 a lista que cresce (o veredicto colado ao teclado) · V2 os dias em separadores · **V3 a linha do tempo (recomendada)**, a folha de cada dia com o veredicto no topo
 - **`repouso-cumprido.html`** (2026-11-15, **R1 escolhida pelo Nuno — no código**, sem cor; gerado a partir do código) — o "repouso cumprido" que ainda está a correr
   (a véspera às 21:40; a folha "Tenho descanso?"; a Escala entre dois serviços, também em dias que vêm): **R1 "acima do mínimo"**
   (recomendada: verdade a qualquer hora, diz a lei e não o sono) · R2 os números ("repouso 14 h 15 (mín. 12 h)") · R3 a hora

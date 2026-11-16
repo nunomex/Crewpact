@@ -518,6 +518,24 @@ decide-o `data/simSheet.js` (golden `test:simsheet`); o cartão do dia é o do I
 corre com as duas pontas e, onde a resposta muda, o cartão diz "Incerto" com as duas e o motivo (`simFlightRange`). **Por fazer:**
 vários serviços de uma vez (a rotação, a troca de dois dias, o extra colado) e as calculadoras na
 linguagem 3.0.
+**Acertos da revisão de 2026-11-16 (erros objetivos, sem esboço):** todos os toques chegam aos 44 pt (as pílulas do tipo com 34 e o
+− + com 40 ganham área de toque, o desenho não muda); com a rota escrita, o − + sai e fica "pela rota" (era um botão que não fazia
+nada); nos limites (1 e 8 setores) o − ou o + apaga-se; para o VoiceOver, o dia e os setores são um só controlo que se ajusta e
+diz o valor novo, e **o veredicto anuncia-se quando muda** (assenta 0,8 s; o texto é o dos cartões — `voice` de `simCards`,
+golden `test:simsheet`); as pílulas seguem a letra do sistema até 130 %; a frase do topo passa a duas linhas em vez de se cortar.
+**V3 · um serviço ou uma troca (2026-11-16 — `design/simulacao-varias.html`, escolhida pelo Nuno; no código).** A Simulação passou a
+ser **a linha do tempo**: em cima o veredicto (da troca; com um dia só, o desse dia — o mesmo do S1); por baixo, como a Escala, **a
+data grande à esquerda e um cartão fino por dia** na cor do tipo (a **Folga** na cor do repouso, "No lugar de LIS → OPO → LIS"; o dia
+que passa leva o "✕" e o motivo) e, **entre os cartões, o repouso** ("17 h 25 de repouso · mín. 12 h", num fio tracejado — só quando
+vem do dia de cima); "＋ Juntar outro dia" (o dia a seguir ao último, tracejado); em baixo o resultado (os dias trocados, **o dinheiro
+da troca** — o que ganhas menos o que perdes, com os cêntimos —, o repouso antes de cada dia e o mínimo depois do último, os limites
+à volta, as validades, a fadiga do dia mais cansativo) e "Limpar a simulação" (com Desfazer). **Tocar num dia abre a folha dele**
+(`components/SimDaySheet.js`, sobre a `PeleSheet`): o dia e **o veredicto desse dia pregados em cima** — a parte de baixo desliza e
+encolhe com o teclado, para o veredicto nunca ficar tapado —; os campos do S1 (o tipo agora com a Folga, que só pede o dia). Na
+primeira vez a folha do 1.º dia já vem aberta. **Cada dia conta com os outros** como se já estivessem na escala (a folga tira o
+serviço desse dia e os outros serviços dele; um serviço simulado fica no lugar do guardado). A lista fica até "Limpar" ou ao fim do
+dia (no telemóvel); nada vai para a escala. O que se mostra: `simSequence`/`seqCards`/`seqDayCards`/`seqMoney` em `data/simSheet.js`
+(golden `test:simsheet`, secções 12–18).
 
 ### As durações (D1, 2026-11-14 — `design/duracoes.html`, escolhida pelo Nuno; no código do Início)
 

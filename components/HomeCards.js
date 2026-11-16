@@ -536,7 +536,8 @@ function Legs({ legs, T }) {
 function Slim({ c, C, onOpen, l }) {
   const AL = a11yLang(l);
   const T = toneOf(C, c.dark ? 'dark' : c.color);
-  const a11y = [c.kind, c.title, c.sub, c.valueLbl && c.value ? `${c.valueLbl} ${c.value}` : c.value].filter(Boolean).join('. ');
+  // `a11yPre` (a linha do tempo da Simulação, V3): o dia, que está fora do cartão (a data grande à esquerda), dito primeiro
+  const a11y = [c.a11yPre, c.kind, c.title, c.sub, c.valueLbl && c.value ? `${c.valueLbl} ${c.value}` : c.value].filter(Boolean).join('. ');
   const Box = c.open ? TouchableOpacity : View;
   // `longOpen` (a pernoita da Escala: o toque abre os mapas, o toque longo edita o hotel) — dito ao VoiceOver como ação à parte.
   const longP = c.open && c.longOpen ? { onLongPress: () => onOpen(c.longOpen), accessibilityActions: [{ name: 'longpress', label: l('Editar', 'Edit') }], onAccessibilityAction: (e) => { if (e.nativeEvent.actionName === 'longpress') onOpen(c.longOpen); } } : {};

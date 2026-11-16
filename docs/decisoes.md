@@ -6,7 +6,24 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 ---
 
-## O QUE FALTA (ler isto primeiro · lista única · atualizada 2026-11-14)
+## O QUE FALTA (ler isto primeiro · lista única · atualizada 2026-11-15)
+
+**ONDE FICÁMOS (2026-11-15, fim do dia — continua amanhã):** gravado no ramo `calculos-repouso-2`: as durações com "h" na app
+toda (D1), o repouso "acima do mínimo" (R1), a Simulação 3.0 (S1, `test:simsheet`) e a barra de abas (a N2 afinada). **Por
+enviar:** `83c0bd7` e `bd2375f` (o resto está no GitHub até `bedd4f1`). **Tudo por ver no iPhone** (as listas "Ver no iPhone" nas
+entradas de 2026-11-14/15, abaixo). **A seguir, por esta ordem:** o modo noite N3 (segue o iPhone — a véspera e a pernoita deixam
+de escurecer sozinhas; Opus 5.5 Extra, é a base do tema) · simular vários serviços de uma vez (golden primeiro; o caminho da
+importação, `scope: 'day'`; revisão independente no fim) · as calculadoras da lei na linguagem 3.0 · tocar em "Avião" na
+verificação (W2) · a guia de três balões do Início · o guião `docs/verificacao-device.md` em dia com a v3. **Para a vez da TAP:**
+as horas do relógio à portuguesa nos resumos das cláusulas ("18h00" → "18:00"); o limite de horas de bloco do acordo com as
+duas pontas na Simulação; na troca, a folga num dia com dois serviços de voo desconta o per diem do dia duas vezes (na TAP é por dia
+de calendário — o `seqMoney` paga cada serviço sozinho; na easyJet está certo).
+**2026-11-16:** testadas as skills novas na Simulação; o Nuno escolheu **C** (os erros objetivos já + os esboços do veredicto com o
+teclado). **Feitos os erros objetivos** (por gravar, por ver no iPhone — ver a entrada de 2026-11-16). **A seguir:** os 3 esboços, que
+passam a juntar o veredicto com o teclado e **várias simulações seguidas** (pergunta do Nuno; a recomendação está na entrada).
+**Respondido:** seguidas (uma troca) e com a **Folga** nos tipos. **O Nuno escolheu a V3 (a linha do tempo) — FEITA no código**
+(golden primeiro, revisão independente com 8 achados corrigidos; 41 suites + guardião + exportação iOS verdes). **Por gravar e por
+ver no iPhone** (a lista na entrada de 2026-11-16).
 
 Uma linha por pendência; o pormenor está na entrada indicada entre parênteses (as entradas ficam abaixo, como histórico).
 Quando uma coisa se fizer, sai daqui. **Regra do Nuno: "a lei é que manda"** — sem um facto, "incerto" com o que falta; nunca
@@ -1616,6 +1633,77 @@ motor está na versão **21**. **O que falta, por ordem:**
 - Face ID real, PDF por ficheiro, voo ao vivo nativo, compras (RevenueCat), login Apple e Google, widgets, Live Activities, alarme
   (AlarmKit), hotel pelo Apple Maps, passkeys; Android; iPhone pequeno e grande; beta com 2–3 tripulantes no TestFlight;
   declaração de dados nas lojas; Supabase/Resend pagos e limites (e-mails por hora, DMARC).
+---
+
+## 2026-11-16 — Teste das skills novas na Simulação (só revisão, nada mudou no código)
+
+O Nuno instalou três skills e pediu para as testar num ecrã: a **Impeccable** (crítica + auditoria nativa iOS), a **UI/UX Pro
+Max** (pesquisa para React Native + a lista para apps nativas) e as **regras da Vercel** (só as que valem numa app). Alvo:
+`components/SimulationSheet.js`, com o esboço S1 (`design/simulacao-3.html`) medido no navegador. A Impeccable descarregou o
+motor dela (autorizado). Não se guardou o relatório em `.impeccable/` (para não sujar o repo).
+
+**O que valem nesta app:** a Impeccable foi a única que leu o ecrã como um todo (deu os dois achados maiores); a Vercel é
+quase toda web, mas apanhou o anúncio ao VoiceOver; a base de dados da UI/UX Pro Max para React Native é genérica (o útil
+foi a lista final: toques de 44, contraste dos fios, modo escuro).
+
+**Os achados (candidatos; nada decidido):**
+- **O veredicto sai do ecrã enquanto se escrevem as horas** (medido no esboço: o teclado numérico deixa ~406 pt de folha; o
+  cartão + a fila do report pedem ~440 pt dentro do limite e ~520 pt fora) — escolha de desenho, 3 esboços.
+- **O VoiceOver não ouve o veredicto mudar** (já há precedente: `AccessibilityInfo.announceForAccessibility` no `Toast.js`).
+- Toques pequenos: os tipos com 34 pt e o − + com 40 pt, sem `hitSlop` (erro objetivo).
+- O + dos setores não faz nada quando a rota manda nos setores (erro objetivo).
+- 3 dos 7 tipos ficam fora do ecrã (só Voo, Standby Aeroporto e Standby Casa inteiros; o esboço S1 tinha 4) — escolha.
+- O dia só de um em um (sem calendário) — escolha.
+- Fechar perde a simulação toda (cada abertura começa limpa) — decisão do Nuno.
+- Uma hora trocada que passa da meia-noite vira um serviço de 23 h sem aviso "(+1)" ao lado do campo.
+- Menores: o tamanho de letra do sistema bloqueado nos tipos; o dia e os setores não dizem o número ao VoiceOver; o tema
+  escuro preso no dia (segue o N3); o fio dos campos a 1,41:1.
+
+**O Nuno escolheu C.** O gancho da Impeccable ficou desligado (`.impeccable/config.json`, `hook.enabled: false` — o detetor só lê
+web). **Feito (erros objetivos, sem esboço; 41 suites + guardião + exportação iOS verdes):** os toques de 44 (pílulas e − +, com área
+de toque); com a rota escrita o − + sai e fica "pela rota"; o − e o + apagam-se em 1 e 8; o dia e os setores são, para o VoiceOver,
+um controlo que se ajusta; **o veredicto anuncia-se ao VoiceOver quando muda** (golden primeiro: `voice` de `simCards`, 7 casos novos
+em `test:simsheet`); as pílulas seguem a letra do sistema; a frase do topo em duas linhas. **De caminho:** em inglês a linha do
+limite do Início dizia "PSV" — passou a "FDP" (golden novo em `test:homecards`).
+**Ver no iPhone:** tocar à volta das pílulas e do − +; escrever uma rota (o − + sai, "pela rota"); 1 e 8 setores; com o VoiceOver
+ligado, deslizar para cima e para baixo no dia e nos setores, e escrever as horas até o veredicto mudar (ouve-se uma vez, sem
+cortar a escrita); a letra do sistema no máximo (as pílulas crescem, a frase do topo em duas linhas).
+**Várias simulações (pergunta do Nuno, 2026-11-16) — a recomendação:** uma lista na mesma folha — o serviço que se escreve é um; "Juntar
+outro serviço" fecha-o numa linha curta (o dia, a rota, as horas e o veredicto dele) e abre o seguinte no dia a seguir; cada um conta
+com os anteriores como se já estivessem na escala (o repouso entre eles, os limites acumulados); no fim, um só resultado (o pior
+veredicto, o repouso entre os simulados, os limites à volta com todos, o dinheiro somado). A lista fica até "Limpar" ou ao fim do
+dia (resolve o "Fechar perde tudo"); nada vai para a escala. O motor: golden primeiro e revisão independente no fim. Por decidir:
+se "várias" é isto (seguidas, uma troca) ou comparar alternativas (A contra B); e se entra "Folga" nos tipos (dar um dia numa troca).
+**O Nuno respondeu:** seguidas, uma troca; e sim à Folga. **Esboço:** `design/simulacao-varias.html` — V1 a lista que cresce (o veredicto
+numa barra colada ao teclado) · V2 os dias em separadores (o veredicto pregado em cima) · **V3 a linha do tempo (recomendada):** a
+data grande à esquerda, um cartão por dia, o repouso entre os dias; tocar num dia abre a folha dele com o veredicto no topo (fica
+sempre por cima do teclado). Medido nos três: com o teclado aberto, o veredicto e o campo que se escreve ficam à vista. Exemplo com
+dados de teste; os máximos conferidos (ORO.FTL.205(b) tabela 2: 05:15–05:29 = 12:15); o dinheiro e os limites acumulados são exemplo.
+**Um erro meu no esboço, apanhado pelo motor:** o PSV acaba no último calço (ORO.FTL.105(12)), não no fim do serviço — o sábado dá
+8 h 35 (margem 3 h 40) e, com o último calço às 18:10, 12 h 55 (escrevi 9 h 05, 3 h 10 e 13 h 25). Corrigido no esboço.
+**A V3 no código (o Nuno: "V3"):** `data/simSheet.js` — `simSequence` (cada dia no `simulateDuty` numa escala com os outros dias da
+troca lá dentro: a folga tira o dia; o simulado fica no lugar do guardado; um dia por acabar deixa a escala; o registo desses dias
+sai; as duas pontas do voo com todos os voos sem pernas no máximo e sem voo; **uma memória das contas por dia e pelos outros dias** —
+a do motor guarda o que só depende da escala, e cada dia corre numa escala diferente), `seqCards` (o veredicto, a linha do tempo, o
+resultado), `seqDayCards`, `seqMoney`, `nextFreeDate`; `simCards` ganhou o `verdict` (o cartão do veredicto de um dia) e a Folga
+(`FOLGA`) entra no `simMissing`. Golden: secções 12–18 de `test:simsheet` (103). Ecrã: `components/SimulationSheet.js` reescrito (a
+linha do tempo, a lista guardada até "Limpar" ou ao fim do dia, Desfazer no Limpar e no Tirar) e `components/SimDaySheet.js` novo (a
+folha do dia, sobre a `PeleSheet`, com o veredicto pregado em cima). O cartão fino do Início ganhou `a11yPre` (o dia dito primeiro).
+**A revisão independente (Opus) achou 8 coisas, todas corrigidas com o golden primeiro:** a reserva passava a "dentro" com um voo
+sem pernas ao lado (o `simFlightRange` agora deixa o "sem veredicto"); o mesmo dia duas vezes (pelos Pormenores) verificava-se como
+se o outro não existisse (agora diz-se e espera-se que mude; os Pormenores não levam um dia para uma data já na troca); a folga num
+dia com dois serviços só tirava o dinheiro do principal; **faltava o "(+1)" no "até às" quando o serviço passa a meia-noite (também
+na Simulação de um serviço, desde o S1)**; o repouso entre duas linhas podia vir de um serviço teu que não está na troca (agora só se
+diz quando vem da linha de cima); um repouso curto entre dois dias contava como duas falhas; "o repouso entre eles" aparecia sem
+nada medido; e, no ecrã, a memória das contas renovava-se depois da conta. Na 2.ª passagem, mais dois: a folga repetida mostrava a chave do texto
+em bruto, e o "falta" com dois sábados não dizia qual — corrigidos. Confirmado: a memória entre teclas é segura (150
+mudanças ao acaso, com e sem TAP, deram sempre o mesmo que a conta de novo).
+**Ver no iPhone (a V3):** a 1.ª abertura (a folha do 1.º dia já aberta); escrever as horas com o teclado aberto — o veredicto do dia
+fica sempre à vista e o VoiceOver diz-o quando muda; fechar e ver o cartão na linha do tempo; "＋ Juntar outro dia"; a Folga num dia
+com serviço ("No lugar de…") e num dia sem; o repouso entre os dias; o dinheiro da troca; tocar num dia para o mudar; "Tirar este
+dia" e "Limpar a simulação" com o Desfazer; fechar a Simulação e voltar (a lista fica); no dia seguinte começa limpa; arrastar a folha
+para baixo; a letra do sistema no máximo.
+
 ---
 
 ## 2026-11-13 — O novo acordo dos pilotos da easyJet: BTE n.º 29 de 2026 (Fable 5.2, sessão própria)

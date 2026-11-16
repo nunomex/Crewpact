@@ -113,6 +113,8 @@ eq('antes · topo', R.antes.top, { pill: { text: 'Dia de voo', live: true }, pil
 // que acontece (report → parte → chega → fim) com as escalas por cima (V2) e o limite numa linha discreta (L2) — sem o selo do meio.
 eq('antes · o cartão do voo (E3)', E(R.antes.cards[0]), { t: 'card', color: 'flight', kind: 'Dia de serviço · 3 setores', title: 'LIS → LGW', cities: 'Lisboa → Londres Gatwick',
   flightNo: null, gain: null, gainLbl: null, line: { pts: [pt('05:15', 'report', true), pt('06:15', 'parte'), pt('13:50', 'chega'), pt('14:20', 'fim', true)], stops: ['LIS', 'FNC', 'LIS', 'LGW'] }, quiet: { l: 'Dentro do limite', sub: 'PSV 8 h 35 de 11 h 45', r: { k: 'margem', v: '3 h 10' } }, sub: null, a: null, dur: null, b: null, corner: 'share', action: null });
+// em inglês o limite diz FDP (era "PSV" — achado ao fazer a voz da Simulação, 2026-11-16)
+eq('antes · a linha do limite em inglês', homeCards({ ...S.antes, lang: 'en' }).cards[0].quiet, { l: 'Within limits', sub: 'FDP 8 h 35 of 11 h 45', r: { k: 'margin', v: '3 h 10' } });
 eq('antes · cartões', R.antes.cards.slice(1).map(C), [
   { t: 'card', color: 'neutral', swatch: 'rest', kind: 'A seguir', title: 'Pernoita em LGW', sub: 'Hotel do aeroporto · mínimo 10 h', gain: '+45,40 €', a: { v: '14:20', l: 'fim de serviço' }, dur: '23 h 45', b: { v: '14:05', l: 'report · qui 12' }, pct: null, corner: 'chev', action: null }]);
 
