@@ -43,6 +43,7 @@ import { dutyToFtlDay, dayFtlFromDuties, reconcileDayLog } from './ftl';
 import { countersToEvents } from './data/aeEvents';
 import { syncReminders, notifyRosterChange, notifyLiveSync, cancelAllReminders, requestRemindersPermission, remindersUnavailableReason, clearWakeUp, validateWakeUp, onReminderTap } from './data/reminders';
 import { notifRoute } from './data/notifications';
+import { purgeDeletedAccounts, clearDeletionMark } from './data/accountPurge';
 import { legZulu } from './data/zulu';
 import { storedMatchesReal } from './data/flightStatus';
 import { hotelSetCurrent, hotelUpdateAt, hotelAddAsCurrent, hotelMakeCurrent, hotelRemoveAt } from './data/hotels';
@@ -239,6 +240,15 @@ export default function App() {
   // a história; a prova só existe se alguém guardar as versões). Local, cap 400 entradas.
   const [rosterLog, setRosterLog] = useState([]);
   const addRosterLog = (list) => setRosterLog((prev) => [...prev, ...(list || [])].slice(-400));
+  // OS CÓDIGOS QUE A APP NÃO CONHECE, por dia (o mapa da app, 2026-11-16): cada leitura do calendário substitui os da sua janela.
+  // O dia mostra-os na Escala como "código novo" e o Início diz o limite desse dia incerto (unknownLegal).
+  const [rosterUnknown, setRosterUnknown] = useState({});
+  const saveRosterUnknown = (win, list) => setRosterUnknown((prev) => {
+    const o = {};
+    for (const k in prev) if (!win || k < win.start || k > win.end) o[k] = prev[k];
+    for (const u of list || []) if (u && u.dateISO) (o[u.dateISO] || (o[u.dateISO] = [])).push({ code: u.code, title: u.title, start: u.start || null, end: u.end || null });
+    return o;
+  });
   const addAeEvents = (list) => setAeEvents((prev) => [
     ...prev,
     ...(list || []).filter((e) => e && e.type && e.date).map((e, i) => ({ id: e.id || `ev${Date.now().toString(36)}${prev.length + i}`, date: e.date, type: e.type })),
@@ -322,6 +332,8 @@ export default function App() {
   const [simulateOpen, setSimulateOpen] = useState(false);   // fluxo de simulação aberto?
   // Tocar numa notificação (data/reminders.js → notifRoute): guarda o sítio e vai lá quando a navegação existir — com a app no
   // login, trancada ou na entrada, espera; a Simulação, se estiver aberta, fecha-se para se ver o sítio.
+  // RGPD art. 17.º: uma conta cujo apagamento já venceu (os 7 dias de graça) deixa de ter dados neste telemóvel (data/accountPurge.js)
+  useEffect(() => { purgeDeletedAccounts(AsyncStorage); }, []);
   const pendingTap = useRef(null);
   const goTap = () => {
     const r = pendingTap.current;
@@ -672,7 +684,10 @@ export default function App() {
     let cancelled = false;
     (async () => {
       try {
-        const [r, dl, fs, pf, al, ax, vd, rm, ci, cn, ev, ht, rlg] = await Promise.all([
+        // entrou com uma conta viva (sem apagamento agendado): uma marca antiga de apagamento deste utilizador já não vale — reativou-a
+        // (talvez noutro telemóvel); sem isto, passados os 7 dias apagava-se aqui uma conta que existe (data/accountPurge.js)
+        if (!user.deletionAt) clearDeletionMark(AsyncStorage, user.id);
+        const [r, dl, fs, pf, al, ax, vd, rm, ci, cn, ev, ht, rlg, runk] = await Promise.all([
           AsyncStorage.getItem(`cp_read_${user.id}`),
           AsyncStorage.getItem(`cp_daylog_${user.id}`),
           AsyncStorage.getItem(`cp_ftlsnap_${user.id}`),
@@ -686,6 +701,7 @@ export default function App() {
           AsyncStorage.getItem(`cp_ae_events_${user.id}`),
           AsyncStorage.getItem(`cp_hotels_${user.id}`),
           AsyncStorage.getItem(`cp_rosterlog_${user.id}`),
+          AsyncStorage.getItem(`cp_rosterunknown_${user.id}`),
         ]);
         if (cancelled) return;
         setCalendarId(ci || null);   // calendário do telemóvel escolhido (id) ou null = não ligado
@@ -709,6 +725,7 @@ export default function App() {
         } catch { setAeEvents([]); setAeExtras({}); }
         try { setHotels(ht ? (JSON.parse(ht) || {}) : {}); } catch { setHotels({}); }   // hotéis de pernoita
         try { setRosterLog(rlg ? (JSON.parse(rlg) || []) : []); } catch { setRosterLog([]); }  // arquivo de alterações (disrupção)
+        try { setRosterUnknown(runk ? (JSON.parse(runk) || {}) : {}); } catch { setRosterUnknown({}); }  // os códigos que a app não conhece
         try { setValidities(vd ? (JSON.parse(vd) || []) : []); } catch { setValidities([]); }  // validades & docs
         setRemindersOn(rm === '1');                                                          // lembretes opt-in
         // Catálogo de companhias (global): cache instantânea → refresca do servidor.
@@ -790,6 +807,7 @@ export default function App() {
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_ae_events_${user.id}`, JSON.stringify(aeEvents)).catch(() => {}); }, [aeEvents, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_hotels_${user.id}`, JSON.stringify(hotels)).catch(() => {}); }, [hotels, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_rosterlog_${user.id}`, JSON.stringify(rosterLog)).catch(() => {}); }, [rosterLog, user?.id]);
+  useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_rosterunknown_${user.id}`, JSON.stringify(rosterUnknown)).catch(() => {}); }, [rosterUnknown, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_validities_${user.id}`, JSON.stringify(validities)).catch(() => {}); }, [validities, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_reminders_${user.id}`, remindersOn ? '1' : '0').catch(() => {}); }, [remindersOn, user?.id]);
   useEffect(() => { if (!hydrated.current || !user?.id) return; if (calendarId) AsyncStorage.setItem(`cp_calendar_id_${user.id}`, calendarId).catch(() => {}); else AsyncStorage.removeItem(`cp_calendar_id_${user.id}`).catch(() => {}); }, [calendarId, user?.id]);
@@ -1114,7 +1132,7 @@ export default function App() {
     aeExtras, setAeExtras,
     aeEvents, addAeEvents, removeAeEvent,
     hotels, saveHotel, saveHotelAt, addHotelAlt, makeHotelCurrent, removeHotelAt, removeHotel,
-    rosterLog, addRosterLog,
+    rosterLog, addRosterLog, rosterUnknown, saveRosterUnknown,
     validities: lawValidities, rawValidities: validities, addValidity, updateValidity, removeValidity,
     remindersOn, toggleReminders,
     lockEnabled, setLockEnabled, locked, setLocked,
@@ -1152,7 +1170,7 @@ export default function App() {
     // cron correr) → oferece REATIVAR ou continuar a eliminação (sair). Camada por cima da app.
     if (user.deletionAt) {
       return <ReactivateScreen deletionAt={user.deletionAt} lang={lang}
-        onReactivated={(u) => handleSetUser(u || { ...user, deletionAt: null })}
+        onReactivated={(u) => { clearDeletionMark(AsyncStorage, user.id); handleSetUser(u || { ...user, deletionAt: null }); }}
         onDismiss={logout} />;
     }
     // Espera a resolução do perfil (profiles → cache → metadata) antes de decidir

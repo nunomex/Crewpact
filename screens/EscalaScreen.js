@@ -65,7 +65,7 @@ const isoOf = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(
 // A escala vem do calendário (criar à mão morreu 2026-07-10); o Detalhe só lê a escala e completa os factos que a lei precisa.
 export default function EscalaScreen({ navigation, route }) {
   const { lang, duties, dayLog, user, company, ae: aeNow, aeAt, homeBaseAt, crewAt, postFlightMin, rosterChanges, checkRosterChanges, liveSync, notify,
-    calendarId, setCalendarId, calendarName, setCalendarName, addAeEvents, aeEvents, removeAeEvent, hotels, rosterLog, isPilot,
+    calendarId, setCalendarId, calendarName, setCalendarName, addAeEvents, aeEvents, removeAeEvent, hotels, rosterLog, rosterUnknown, isPilot,
     companyAt, cabinGapMin, splitAdminMin } = useContext(AppContext);
   // O aviso de SNC corre DEPOIS de a importação gravar o arquivo: lê-se sempre a versão mais recente (não a do render).
   const sncSrc = useRef({ log: [], events: [] });
@@ -529,6 +529,14 @@ export default function EscalaScreen({ navigation, route }) {
             link: { label: l('Remover deste dia', 'Remove from this day'), open: { to: 'rmOvAsk', id: e.id, type: e.type } } }; }), ctx) : null}
         </>
       );
+    }
+    // O QUE A APP NÃO CONHECE neste dia (o mapa da app, 2026-11-16): o "código novo" fica à vista, neutro e tracejado (incerto) —
+    // pode ser um serviço, e então os limites e o repouso deste dia não estão certos. Vem da leitura do calendário (unknownOf).
+    const unk = ((rosterUnknown || {})[iso]) || [];
+    if (unk.length) {
+      const unkCards = cardsOf(unk.map((u, i) => ({ t: 'slim', id: `unk${i}`, color: 'neutral', dashed: true, kind: l('Código novo', 'New code'), title: u.code,
+        sub: [u.start && u.end ? `${u.start}–${u.end}` : null, l('a app não conhece este código: os limites e o repouso deste dia ficam incertos', 'the app doesn’t know this code: this day’s limits and rest are uncertain')].filter(Boolean).join(' · ') })), { iso });
+      body = (<>{unkCards}{body}</>);
     }
     return (
       <View style={s.day} onLayout={(e) => { const { y: by, height: bh } = e.nativeEvent.layout; dayBlockRef.current = { y: by, h: bh }; setTimeout(scrollToDay, 300); }}>

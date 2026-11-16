@@ -48,6 +48,27 @@ export function classify(text, codes) {
 }
 export const NONFLIGHT_KINDS = ['standby_airport', 'standby_home', 'positioning', 'office', 'training'];
 
+// O QUE NÃO SE CONHECE NUNCA DESAPARECE (o mapa da app, 2026-11-16; golden scripts/calendar.test.js). Um evento com horas que a app
+// não reconhece e cujo título tem a FORMA de um código da escala (2 a 6 maiúsculas, algarismos ou "/" no início: "SBYX", "OFC9",
+// "WD/O") fica no dia como "código novo" — e o dia passa a incerto (pode ser um serviço). Um título pessoal ("Dentista", "Aniversário
+// da Ana") e um evento de dia inteiro sem horas ficam de fora, como até aqui (o filtro do pessoal). Quando a escala trouxer os
+// códigos todos (o Nuno vai arranjá-los), os desconhecidos são raros — e dizem-se.
+export const RE_CODE_SHAPE = /^[A-Z0-9][A-Z0-9/]{1,5}(?![a-z])/;
+export function unknownOf(ev, codes) {
+  if (!ev) return null;
+  const title = String(ev.title || '').trim();
+  const text = eventText(ev);
+  if (isAllDayNoTime(ev, text)) return null;
+  if (classifyEvent(ev, codes) !== 'other') return null;
+  const m = title.match(RE_CODE_SHAPE);
+  if (!m) return null;
+  const tt = text.match(RE_TIMES);
+  const hm = (d) => { const x = new Date(d); return isNaN(+x) ? null : `${pad(x.getHours())}:${pad(x.getMinutes())}`; };
+  const start = tt ? `${pad(+tt[1])}:${tt[2]}` : ev.allDay ? null : hm(ev.startDate);
+  const end = tt ? `${pad(+tt[3])}:${tt[4]}` : ev.allDay ? null : hm(ev.endDate);
+  return { dateISO: isoLocal(new Date(ev.startDate)), code: m[0], title: title.slice(0, 40), start, end };
+}
+
 // O tipo de um EVENTO: decide o TÍTULO; só um título que não diz nada (sem código nem rota) olha para o local e as notas.
 // As notas falam de tudo — "DG on board", "GND time 00:45" — e transformavam um voo em formação ou escritório (A-238).
 export function classifyEvent(ev, codes) {

@@ -2,6 +2,8 @@ import React, { useContext, useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Animated, Share, Linking, Dimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Storage from '../data/secureStorage';
+import { markDeletion } from '../data/accountPurge';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useScrollToTop, useIsFocused } from '@react-navigation/native';
 import CenterDialog from '../components/CenterDialog';
@@ -94,8 +96,11 @@ export default function SettingsScreen({ navigation }) {
     // NÃO é o dono (telemóvel na mão). A graça de 7 dias continua a ser a rede de segurança.
     const re = await proveOwnership(user?.email, delProof, lang);
     if (!re.ok) { setDelBusy(false); setDelErr(re.error); return; }
+    const uidDel = user?.id;
     const res = await deleteAccount(lang);
     if (!res.ok) { setDelBusy(false); setDelErr(res.error); return; }
+    // passados os 7 dias, o telemóvel apaga também os dados locais desta conta (data/accountPurge.js); reativar antes tira a marca
+    await markDeletion(Storage, uidDel, res.scheduledAt || null);
     setDelBusy(false);
     setDelModal(false); setDelWord(''); setDelProof(PROOF0);
     success();

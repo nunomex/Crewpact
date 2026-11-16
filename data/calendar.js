@@ -5,7 +5,7 @@
 // Heurísticas pensadas para escalas easyJet e TAP — ver ./calendarParse.
 import * as Calendar from 'expo-calendar/legacy'; // SDK 57: API antiga (getEventsAsync etc.) vive em /legacy; a nova é orientada a objetos
 import { codesFor } from './rosterCodes';
-import { classifyEvent, mapFlight, mapNonFlightDays, buildDuties, isAllDayNoTime, eventText, isoLocal, RE_ROUTE, RE_TIMES, vacationDatesFromEvent, sickDatesFromEvent } from './calendarParse';
+import { classifyEvent, mapFlight, mapNonFlightDays, buildDuties, isAllDayNoTime, eventText, isoLocal, RE_ROUTE, RE_TIMES, vacationDatesFromEvent, sickDatesFromEvent, unknownOf } from './calendarParse';
 
 // Verifica a permissão SEM pedir (não dispara o prompt do sistema). As leituras de fundo
 // usam isto → nunca interrompem o utilizador. O prompt só acontece no botão "Ligar".
@@ -87,13 +87,14 @@ export async function getDutiesInRange(start, end, company, calendarId = null, o
 // aqui só se deteta, gravar é decisão do utilizador na folha).
 export async function getNonFlightInRange(start, end, company, calendarId = null) {
   const { ok, events } = await fetchEvents(start, end, calendarId);
-  if (!ok) return { ok: false, items: [], vacations: [], sicks: [] };
+  if (!ok) return { ok: false, items: [], vacations: [], sicks: [], unknown: [] };
   const codes = codesFor(company);
   const vacations = [...new Set(events.flatMap((ev) => vacationDatesFromEvent(ev, codes)))].sort();
   // Dias SICK → sugeridos como episódio de doença (Art. 48), a par das férias.
   const sicks = [...new Set(events.flatMap((ev) => sickDatesFromEvent(ev, codes)))].sort();
   // Um não-voo de vários dias num só evento dá um serviço por dia (auditoria A-229).
-  return { ok: true, items: events.flatMap((ev) => mapNonFlightDays(ev, codes)), vacations, sicks };
+  // O que a app não conhece (com horas e a forma de um código) não desaparece: fica no dia como "código novo" (unknownOf).
+  return { ok: true, items: events.flatMap((ev) => mapNonFlightDays(ev, codes)), vacations, sicks, unknown: events.map((ev) => unknownOf(ev, codes)).filter(Boolean) };
 }
 
 // Diagnóstico: TODOS os eventos no intervalo + como o parser os classifica. Para o utilizador

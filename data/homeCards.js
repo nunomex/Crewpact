@@ -103,6 +103,19 @@ const isFlightKind = (k) => !k || k === 'flight' || k === 'positioning';
 const colorOf = (k) => (isFlightKind(k) ? 'flight' : 'ground');
 const chain = (st) => (Array.isArray(st) ? st.filter(Boolean).join(' → ') : '');
 
+// UM CÓDIGO QUE A APP NÃO CONHECE no dia (o mapa da app, 2026-11-16; golden scripts/homecards.test.js): o limite desse dia deixa de
+// dizer "dentro" — fica incerto, com o que falta (o código pode ser um serviço). `list` = os desconhecidos do dia ({ code }).
+export function unknownLegal(list = [], lang = 'pt') {
+  const codes = [...new Set((list || []).map((u) => u && u.code).filter(Boolean))];
+  if (!codes.length) return null;
+  const en = lang === 'en';
+  const joinE = (xs, e) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} ${e} ${xs[xs.length - 1]}`);
+  const missing = codes.length === 1
+    ? (en ? `what code ${codes[0]} is (the app doesn’t know it)` : `saber o que é o código ${codes[0]} (a app não o conhece)`)
+    : (en ? `what codes ${joinE(codes, 'and')} are (the app doesn’t know them)` : `saber o que são os códigos ${joinE(codes, 'e')} (a app não os conhece)`);
+  return { status: 'uncertain', missing };
+}
+
 export function homeCards(H = {}) {
   const lang = H.lang === 'en' ? 'en' : 'pt';
   const F = fmt(lang);

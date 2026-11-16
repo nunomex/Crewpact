@@ -69,6 +69,38 @@ cresce com a letra do sistema até 130 % e parte em duas linhas (estava desligad
 vou arranjar"):** hoje a SNC/RDP é detetada pela app nas mudanças da escala porque a escala não traz o código dos extras. **Quando o
 Nuno trouxer os códigos (serviços e extras), os extras passam a vir SÓ da escala** — a deteção, a confirmação e o "Remover deste dia"
 deixam de fazer falta. Pendência no grupo 4 (à espera de documentos).
+**Gravado e ENVIADO `3ecfc15`.** **A API do eCrew? (o Nuno perguntou — só análise):** não há API pública; entrar com a palavra-passe da
+empresa do tripulante vai contra as regras da companhia e é um risco de segurança; uma API também muda. O calendário continua a fonte;
+o que resolve é a app dizer o que não conhece. Pelo caminho oficial, mais tarde: a licença com os sindicatos como alavanca para pedir à
+companhia um fornecimento autorizado dos dados.
+**O que não se conhece nunca desaparece — CAMADA 1 FEITA (o Nuno: "faz o primeiro ponto já"; por gravar):** um evento com horas que a app
+não reconhece e com a forma de um código da escala (2 a 6 maiúsculas, algarismos ou "/" no início) passa a ficar (`unknownOf` em
+`data/calendarParse.js`, golden `test:calendar`, 8 casos); um título pessoal ou um dia inteiro sem horas ficam de fora como antes. A leitura
+do calendário devolve-os (`getNonFlightInRange` → `readCalendarRoster`, na janela da leitura); a importação (e a entrada) gravam-nos com a
+escala (`saveRosterUnknown` substitui os da janela; `cp_rosterunknown_<uid>`). **A Escala** mostra no dia o cartão incerto "Código novo ·
+SBYX · 06:00–14:00 · a app não conhece este código: os limites e o repouso deste dia ficam incertos"; **o Início**, com um código
+desconhecido no dia em destaque, deixa de dizer "Dentro do limite" — "Limite incerto · falta saber o que é o código SBYX (a app não o
+conhece)" (`unknownLegal`, golden `test:homecards`, 5 casos); **a revisão da importação** diz "código novo · fica no dia, incerto".
+**CAMADA 2 (por fazer):** o motor contar o evento desconhecido com as duas pontas — no repouso (antes/depois incerto) e nos limites do
+ORO.FTL.210 (no mínimo nada, no máximo a duração) — e os dias à volta. Mexe nas contas da lei e na importação: pelo método, **sessão
+própria do Fable 5.2, Alto** (golden primeiro, revisão independente).
+**Achado de RGPD (já existia, por decidir):** apagar a conta não apaga do telemóvel as chaves locais por utilizador (`cp_hotels_`,
+`cp_ae_events_`, `cp_rosterlog_`, agora `cp_rosterunknown_`…). Proposta: apagá-las todas (por `_<uid>`) no fim do "Apagar conta".
+**O Nuno: "sim, faz" — FEITO (por gravar):** o "Apagar conta" agenda o apagamento com 7 dias de graça e de propósito não limpa o
+telemóvel logo (reativar dentro do prazo recupera tudo). Agora: ao pedir, fica a marca `cp_deletion_due_<uid>` com a data-limite
+(`markDeletion`); reativar, ou entrar com a conta viva (talvez reativada noutro telemóvel), tira-a (`clearDeletionMark`); em cada
+arranque, uma marca vencida apaga TODAS as chaves locais desse utilizador — as que acabam em `_<uid>` — e só essas
+(`purgeDeletedAccounts`; `data/accountPurge.js`, golden `test:export`, 4 casos). **De caminho, um erro meu:** a lista da Simulação V3
+estava guardada para o telemóvel inteiro (outra conta no mesmo telemóvel via-a) — passou a por utilizador. Caso de bordo aceite: reativada
+noutro telemóvel e este sem abrir durante 7 dias → aqui saem os dados locais (os do servidor voltam a sincronizar).
+**Os códigos para quando a app for vendida (o Nuno perguntou o que recomendo), por esta ordem:** (1) a tabela de códigos de cada
+companhia completa, com os códigos que o Nuno vai trazer e exemplos reais anonimizados como golden; (2) a camada 2 (o motor conta o
+código novo com duas pontas — sessão do Fable 5.2); (3) a tabela no Supabase (só leitura, com a do código como reserva e em cache sem
+rede) — corrige-se em minutos sem esperar pela loja; (4) "Avisar a CrewPact" opcional no cartão do código novo — só o código, a
+companhia e o mês (sem nome nem escala), dito na política de privacidade.
+**Ver no iPhone:** um calendário de teste com um evento "SBYX 0600-1400" (e um "Dentista 10:00"): na revisão, o SBYX "código novo · fica
+no dia" e o Dentista "fica de fora"; depois de gravar, o dia na Escala com o cartão "Código novo"; se for o dia em destaque, o Início com
+"Limite incerto · falta saber o que é o código SBYX".
 **Ver no iPhone:** um dia com SNC na Escala (o cartão, as duas pontas num mês de abril a outubro, "Remover deste dia" → a pergunta →
 sai do dia e dos Números); o título de uma folha com a letra do sistema no máximo (parte em duas linhas, o "Fechar" no sítio).
 **Ver no iPhone:** Números → "Extras ›" num mês com SNC e doença (o € de cada um; a doença "no total do mês"); um mês de abril a

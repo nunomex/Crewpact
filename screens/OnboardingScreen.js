@@ -44,7 +44,7 @@ const ADVANCE_MS = 280;   // o visto aparece e, só depois, passa à pergunta se
 
 export default function OnboardingScreen() {
   const { user, profile, airlines, bases, countries, setProfile, setOnboarded, setUser, logout, lang,
-    calendarId, setCalendarId, setCalendarName, duties, dayLog, aeEvents, saveDuty, addAeEvents, homeBaseAt } = useContext(AppContext);
+    calendarId, setCalendarId, setCalendarName, duties, dayLog, aeEvents, saveDuty, addAeEvents, saveRosterUnknown, homeBaseAt } = useContext(AppContext);
   // MUDAR DE COMPANHIA (2026-11-03, Perfil): a configuração reabre para quem JÁ tem companhia. Nesse modo
   // o canto diz "Cancelar" (volta à app sem mudar nada), as boas-vindas não voltam, e as respostas
   // JUNTAM-SE ao perfil (não o substituem: pós-voo, vínculo, férias… ficam).
@@ -306,6 +306,7 @@ export default function OnboardingScreen() {
     for (const c of quick) saveDuty(c.duty.duty_date, importSaveFields(c, 'calendar', duties[c.duty.duty_date]));
     if (addAeEvents && vacN) addAeEvents(rRes.vacDates.map((d) => ({ date: d, type: 'vacDays' })));
     if (addAeEvents && sickN) addAeEvents(rRes.sickDates.map((d) => ({ date: d, type: 'sickDays' })));
+    if (saveRosterUnknown && rRes.ok && rRes.window) saveRosterUnknown(rRes.window, rRes.unknown || []);   // os códigos que a app não conhece
     complete();
   };
   const endLabel = (() => { const e = importWindow().end; e.setDate(e.getDate() - 1); return e.toLocaleDateString(lang === 'en' ? 'en-GB' : 'pt-PT', { day: 'numeric', month: 'long' }); })();

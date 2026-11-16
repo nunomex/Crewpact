@@ -76,6 +76,19 @@ const round = JSON.parse(json);
 eq('JSON round-trip categoria', round.profile.category, 'CPT');
 eq('JSON indentado (2 espaços)', json.includes('\n  "app"'), true);
 
+// ── APAGAR A CONTA APAGA TAMBÉM O TELEMÓVEL (RGPD art. 17.º; o mapa da app, 2026-11-16): ao pedir "Apagar conta" fica a marca
+// `cp_deletion_due_<uid>` com a data-limite (os 7 dias de graça — reativar dentro do prazo tira a marca e não se perde nada); no arranque,
+// uma marca vencida apaga TODAS as chaves locais desse utilizador (as que acabam em `_<uid>`, a marca incluída) e só essas. ──
+{ const { purgePlan, DELETION_MARK } = require(path.resolve('data/accountPurge.js'));
+  const A = 'aaaa-1111', B = 'bbbb-2222';
+  const ALL = [`cp_duties_${A}`, `cp_hotels_${A}`, `crewpact.simulacao.v3_${A}`, `${DELETION_MARK}${A}`, `cp_duties_${B}`, `cp_lock_${B}`, 'cp_enckey', 'cp_pending_reset'];
+  const NOW = Date.parse('2026-11-30T12:00:00Z');
+  eq('apagar · a marca vencida apaga as chaves desse utilizador (e a marca)', purgePlan([[`${DELETION_MARK}${A}`, '2026-11-23T12:00:00Z']], ALL, NOW).sort(),
+    [`cp_duties_${A}`, `cp_hotels_${A}`, `crewpact.simulacao.v3_${A}`, `${DELETION_MARK}${A}`].sort());
+  eq('apagar · dentro dos 7 dias não se apaga nada (pode reativar)', purgePlan([[`${DELETION_MARK}${A}`, '2026-12-05T12:00:00Z']], ALL, NOW), []);
+  eq('apagar · os outros utilizadores e as chaves do telemóvel ficam', purgePlan([[`${DELETION_MARK}${A}`, '2026-11-23T12:00:00Z']], ALL, NOW).some((k) => k.endsWith(B) || !k.includes(A)), false);
+  eq('apagar · uma marca sem data não apaga', purgePlan([[`${DELETION_MARK}${A}`, null]], ALL, NOW), []); }
+
 console.log(`\nexport RGPD — ${pass} passou, ${fail} falhou (${pass + fail} asserções)`);
 if (fail) { console.log('\n' + fails.join('\n')); process.exit(1); }
 console.log('✓ Export de dados pessoais (perfil + escala + FTL + AE) consistente.');

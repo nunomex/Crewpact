@@ -50,7 +50,7 @@ const DATE_GAP = SPACE.sm + SPACE.xxs;   // 10, do esboço V3
 
 export default function SimulationSheet({ visible, onClose }) {
   const ctx = useContext(AppContext);
-  const { lang, dayLog, duties, ae: aeNow, aeAt, homeBaseAt, crewAt, crewFleet, postFlightMin, isPilot, cabinGapMin, splitAdminMin, base: baseNow, validities } = ctx;
+  const { user, lang, dayLog, duties, ae: aeNow, aeAt, homeBaseAt, crewAt, crewFleet, postFlightMin, isPilot, cabinGapMin, splitAdminMin, base: baseNow, validities } = ctx;
   const insets = useSafeAreaInsets();
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const F = fmt(lang);
@@ -67,7 +67,7 @@ export default function SimulationSheet({ visible, onClose }) {
     let alive = true;
     (async () => {
       let v = null;
-      try { const raw = await Storage.getItem(KEY); v = raw ? JSON.parse(raw) : null; } catch (_e) { v = null; }
+      try { const raw = user && user.id ? await Storage.getItem(`${KEY}_${user.id}`) : null; v = raw ? JSON.parse(raw) : null; } catch (_e) { v = null; }
       if (!alive) return;
       if (v && v.day === today() && Array.isArray(v.entries) && v.entries.length && v.entries.every((e) => e && e.id && e.form && e.form.date)) setEntries(v.entries);
       else setEditId(first.current.id);
@@ -77,7 +77,8 @@ export default function SimulationSheet({ visible, onClose }) {
   }, []);
   useEffect(() => {
     if (!loaded.current) return undefined;
-    const id = setTimeout(() => { Storage.setItem(KEY, JSON.stringify({ day: today(), entries })).catch(() => {}); }, 400);
+    // por utilizador (`_<uid>`: noutra conta no mesmo telemóvel não aparece; apagar a conta apaga-a — data/accountPurge.js)
+    const id = setTimeout(() => { if (user && user.id) Storage.setItem(`${KEY}_${user.id}`, JSON.stringify({ day: today(), entries })).catch(() => {}); }, 400);
     return () => clearTimeout(id);
   }, [entries]);
 

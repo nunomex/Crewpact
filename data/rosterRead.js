@@ -31,10 +31,12 @@ export async function readCalendarRoster({ companySlug, calendarId, duties = {},
     getDutiesInRange(start, end, companySlug, calendarId, { baseOf: baseOfFor(base, baseAt) }),
     getNonFlightInRange(start, end, companySlug, calendarId),
   ]);
-  if (!fl.ok && !nf.ok) return { ok: false, cands: [], vacDates: [], sickDates: [] };
+  if (!fl.ok && !nf.ok) return { ok: false, cands: [], vacDates: [], sickDates: [], unknown: [], window: null };
   const window = { start: isoDay(fwdStart), end: isoDay(end) };
   const cands = buildImportCandidates({ activities: fl.duties || [], nonflights: nf.items || [], duties, dayLog, window, base, baseAt, isPilot, cabinGapMin, splitAdminMin, postFlightMin });
-  return { ok: true, cands, ...absenceSuggestions(nf.vacations, nf.sicks, aeEvents, sickFirst3) };
+  // os códigos que a app não conhece, na janela da leitura (quem grava substitui os dessa janela — saveRosterUnknown)
+  const unknown = (nf.unknown || []).filter((u) => u.dateISO >= window.start && u.dateISO <= window.end);
+  return { ok: true, cands, ...absenceSuggestions(nf.vacations, nf.sicks, aeEvents, sickFirst3), unknown, window };
 }
 
 // Férias e doença lidas da escala (calendário ou PDF) → os dias a SUGERIR (só os que ainda não têm evento). A doença passa

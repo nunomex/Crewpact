@@ -40,7 +40,8 @@ INÍCIO (HomeScreen)
   → Perfil
 
 ESCALA (EscalaScreen) — o mês em círculos; tocar num dia mostra os serviços por baixo (e os extras desse dia: as férias e a doença, a
-  SNC/RDP de um dia trabalhado — "Remover deste dia" corrige o que a app detetou mal, até a escala trazer o código dos extras)
+  SNC/RDP de um dia trabalhado — "Remover deste dia" corrige o que a app detetou mal, até a escala trazer o código dos extras; e o
+  "Código novo" — um código que a app não conhece fica no dia, incerto)
   folhas: o serviço (ServiceSheet — o Detalhe inteiro: a Prova, o hotel, os outros serviços do dia) · Importar escala (calendário |
           PDF) · ler a escala (RosterImportSheet) · escolher o calendário (CalendarPickerSheet) · Hotel (HotelSheet) · as guias da
           1.ª vez (GuideBubble)

@@ -11,7 +11,7 @@ import { HomeTop, HomeCards, ShiftView, pillWidth } from '../components/HomeCard
 import useReduceMotion from '../hooks/useReduceMotion';
 import useStateShift, { useColorPass } from '../hooks/useStateShift';
 import { durHM } from '../data/duration';
-import { homeCards, topGiant } from '../data/homeCards';
+import { homeCards, topGiant, unknownLegal } from '../data/homeCards';
 import { stateVoice } from '../data/stateVoice';
 import { getUpcomingFlight } from '../data/calendar';
 import { catLabel } from '../data/extras';
@@ -185,7 +185,7 @@ function useStationWx(station) {
 export default function HomeScreen({ navigation }) {
   const isFocused = useIsFocused();
   const { width: winW } = useWindowDimensions();
-  const { user, lang, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync, base, homeBaseAt, cabinGapMin, splitAdminMin, hotels, postFlightMin, vacationDaysYear, openSimulation, setHomeNight, serviceStart, serviceStartExact, largada, rosterLog, notify, lifestyle } = useContext(AppContext);
+  const { user, lang, ftlSnap, dayLog, duties, rosterUnknown, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync, base, homeBaseAt, cabinGapMin, splitAdminMin, hotels, postFlightMin, vacationDaysYear, openSimulation, setHomeNight, serviceStart, serviceStartExact, largada, rosterLog, notify, lifestyle } = useContext(AppContext);
   // O COMANDANTE (easyJet CPT · TAP CTE): a discrição do 205(f) é dele — para o FO e a cabine é informação (auditoria
   // do tripulante, 2026-11-04).
   const isCommander = !!isPilot && ['CPT', 'CTE'].includes(String(crewCategory || '').toUpperCase());
@@ -846,7 +846,9 @@ export default function HomeScreen({ navigation }) {
       depStation: flight.depAirport || null, hasReg: false };
     if (!b) return null;
     const latest = psvLatest ? psvLatest.replace(/\s*\(\+1\)/, '') : null;
-    const legal = (() => {
+    // um código que a app não conhece nesse dia (o mapa da app, 2026-11-16): o limite deixa de dizer "dentro" — incerto, com o que falta
+    const unkLegal = unknownLegal(((rosterUnknown || {})[flight.dateISO]) || [], lang);
+    const legal = unkLegal || (() => {
       if (!isToday || !legalIt || !legalIt.raw) return null;
       const k = legalIt.raw.kind;
       if (k === 'psvUncertain' || k === 'nightUncertain') return { status: 'uncertain', missing: k === 'psvUncertain' && (legalIt.raw.unknowns || []).length ? unknownsText(legalIt.raw.unknowns, lang) : null };

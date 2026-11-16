@@ -3,6 +3,9 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, ActivityIn
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CARD, TXT, TXT3, SPACE, RADIUS } from '../data/constants';
 import { diagnoseEvents } from '../data/calendar';
+import { RE_CODE_SHAPE } from '../data/calendarParse';
+// um evento não reconhecido com horas e com a forma de um código da escala fica no dia ("código novo", unknownOf); o resto fica de fora
+const isNewCode = (e) => !!(e && e.kind === 'other' && !(e.allDay && !e.times) && RE_CODE_SHAPE.test(String(e.title || '').trim()));
 import { importWindow, readCalendarRoster, absenceSuggestions, baseOfFor } from '../data/rosterRead';
 import { buildImportCandidates, importSaveFields, candidateKind, promoteMissing, verifyCandidates, sortCandidates, storedFacts, importSections, diagSummary } from '../data/rosterImport';
 import { prettyRoute, monthPillLabel, wdShort } from '../data/escalaDay';
@@ -47,7 +50,7 @@ const demoCands = () => {
 // o que saiu); a linha do mês quando a secção passa de um mês para o outro · o antes riscado por cima · o per diem a verde, com
 // cêntimos · "Confirmar N serviços" largo no fundo. A escolha Calendário | PDF saiu do topo (escolhe-se na janela do calendário da Escala, antes de chegar aqui).
 export default function RosterImportSheet({ visible, onClose, onConnect, initialSource, onDone }) {
-  const { lang, duties, dayLog, saveDuty, removeDuty, company, calendarId, isPilot, cabinGapMin, splitAdminMin, postFlightMin, ae, aeAt, crewAt, crewCategory, crewFleet, base, homeBaseAt, aeEvents, addAeEvents, addRosterLog } = useContext(AppContext);
+  const { lang, duties, dayLog, saveDuty, saveRosterUnknown, removeDuty, company, calendarId, isPilot, cabinGapMin, splitAdminMin, postFlightMin, ae, aeAt, crewAt, crewCategory, crewFleet, base, homeBaseAt, aeEvents, addAeEvents, addRosterLog } = useContext(AppContext);
   // Doença: o episódio inteiro, pilotos e cabine (bloco 5) — o motor paga os dias do acordo e tira a base dos dias de baixa.
   const sickFirst3 = !ae || ae.SICK_FIRST3 !== false;
   const insets = useSafeAreaInsets();
@@ -70,6 +73,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
   const [sickDates, setSickDates] = useState([]);
   const [sickSel, setSickSel] = useState(true);
 
+  const unknownRead = useRef(null);
   const load = async () => {
     setLoading(true); setDenied(false);
     const r = await readCalendarRoster({ companySlug: company?.slug, calendarId, duties, dayLog, base, baseAt: homeBaseAt, aeEvents, isPilot, cabinGapMin, splitAdminMin, postFlightMin, sickFirst3 });
@@ -78,6 +82,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
     else if (!r.ok) setDenied(true);
     setVacDates(r.vacDates); setVacSel(true);
     setSickDates(r.sickDates); setSickSel(true);
+    unknownRead.current = r.ok ? { window: r.window, list: r.unknown || [] } : null;   // os códigos que a app não conhece (gravam-se com a escala)
     setCands(next);
     setLoading(false);
   };
@@ -252,6 +257,8 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
         });
       }
       if (logEntries.length && addRosterLog) addRosterLog(logEntries);
+      // o que a app não conhece fica no dia ("código novo", o dia incerto) — substitui os da janela desta leitura
+      if (src === 'calendar' && unknownRead.current && saveRosterUnknown) saveRosterUnknown(unknownRead.current.window, unknownRead.current.list);
       let warn = 0;
       for (const c of items) {
         // Cancelado: só apaga se TU o marcaste (ausência é sinal fraco). Não-marcado → fica como está.
@@ -401,7 +408,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
             <Text style={[TXT3.slimSub, s.numCap]}>{[
               l(`${sm.total} ${plural(sm.total, 'evento', 'eventos')} no calendário até ao fim do próximo mês`, `${sm.total} calendar ${plural(sm.total, 'event', 'events')} up to the end of next month`),
               sm.off ? l(`${sm.off} ${plural(sm.off, 'folga', 'folgas')}`, `${sm.off} ${plural(sm.off, 'day off', 'days off')}`) : null,
-            ].filter(Boolean).join(' · ')}{sm.unknown ? l('. O que não reconheço fica de fora da escala e das contas.', '. What I don’t recognise stays out of the roster and the sums.') : '.'}</Text>
+            ].filter(Boolean).join(' · ')}{sm.unknown ? l('. Um código que não reconheço fica no dia como "código novo" e o dia fica incerto; o que é pessoal fica de fora.', '. A code I don’t recognise stays on the day as a "new code" and the day becomes uncertain; personal items stay out.') : '.'}</Text>
             {sm.days.map((d, i) => (
               <View key={d.iso || i} style={[s.dayRow, i === 0 ? null : s.dayRule]}
                 accessible accessibilityLabel={[fmtDayShort(d.iso), ...d.events.map((e) => `${e.title}: ${e.kind === 'other' ? l('não reconhecido', 'not recognised') : kindName(e.kind)}`)].join('. ')}>
@@ -411,7 +418,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
                     <View key={k}>
                       <Text style={[TXT3.lineVal, { color: W.ink }]} numberOfLines={1}>{e.title}</Text>
                       <Text style={[TXT3.slimSub, { color: e.kind === 'other' ? W.ink : W.tabSub }]} numberOfLines={1}>
-                        {e.kind === 'other' ? l('não reconhecido · fica de fora', 'not recognised · left out')
+                        {e.kind === 'other' ? (isNewCode(e) ? l('código novo · fica no dia, incerto', 'new code · stays on the day, uncertain') : l('não reconhecido · fica de fora', 'not recognised · left out'))
                           : [l(`lido como ${kindName(e.kind).toLowerCase()}`, `read as ${kindName(e.kind).toLowerCase()}`), e.route ? prettyRoute(e.route) : null].filter(Boolean).join(' · ')}
                       </Text>
                     </View>

@@ -115,6 +115,15 @@ eq('antes · o cartão do voo (E3)', E(R.antes.cards[0]), { t: 'card', color: 'f
   flightNo: null, gain: null, gainLbl: null, line: { pts: [pt('05:15', 'report', true), pt('06:15', 'parte'), pt('13:50', 'chega'), pt('14:20', 'fim', true)], stops: ['LIS', 'FNC', 'LIS', 'LGW'] }, quiet: { l: 'Dentro do limite', sub: 'PSV 8 h 35 de 11 h 45', r: { k: 'margem', v: '3 h 10' } }, sub: null, a: null, dur: null, b: null, corner: 'share', action: null });
 // em inglês o limite diz FDP (era "PSV" — achado ao fazer a voz da Simulação, 2026-11-16)
 eq('antes · a linha do limite em inglês', homeCards({ ...S.antes, lang: 'en' }).cards[0].quiet, { l: 'Within limits', sub: 'FDP 8 h 35 of 11 h 45', r: { k: 'margin', v: '3 h 10' } });
+// um código que a app não conhece no dia (o mapa da app, 2026-11-16): o limite deixa de dizer "dentro" — incerto, com o que falta
+{ const { unknownLegal } = require(path.resolve('data/homeCards.js'));
+  eq('código novo · o que falta', unknownLegal([{ code: 'SBYX' }], 'pt'), { status: 'uncertain', missing: 'saber o que é o código SBYX (a app não o conhece)' });
+  eq('códigos novos · dois', (unknownLegal([{ code: 'SBYX' }, { code: 'XQT' }, { code: 'SBYX' }], 'pt') || {}).missing, 'saber o que são os códigos SBYX e XQT (a app não os conhece)');
+  eq('código novo · em inglês', (unknownLegal([{ code: 'SBYX' }], 'en') || {}).missing, 'what code SBYX is (the app doesn’t know it)');
+  eq('sem códigos novos → nada', unknownLegal([], 'pt'), null);
+  const U = homeCards({ ...S.antes, hero: { ...S.antes.hero, legal: unknownLegal([{ code: 'SBYX' }], 'pt') } });
+  const lim = U.cards.find((c) => c.id === 'limit');
+  eq('código novo · sem "Dentro do limite", o cartão incerto diz o que falta', [U.cards.some((c) => !!c.quiet), !!(lim && lim.dashed), !!(lim && /falta saber o que é o código SBYX/.test(lim.sub || ''))], [false, true, true]); }
 eq('antes · cartões', R.antes.cards.slice(1).map(C), [
   { t: 'card', color: 'neutral', swatch: 'rest', kind: 'A seguir', title: 'Pernoita em LGW', sub: 'Hotel do aeroporto · mínimo 10 h', gain: '+45,40 €', a: { v: '14:20', l: 'fim de serviço' }, dur: '23 h 45', b: { v: '14:05', l: 'report · qui 12' }, pct: null, corner: 'chev', action: null }]);
 

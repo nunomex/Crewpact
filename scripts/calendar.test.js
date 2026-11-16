@@ -21,7 +21,7 @@ Module._extensions['.js'] = function (m, filename) {
   m._compile(transform(fs.readFileSync(filename, 'utf8'), filename), filename);
 };
 
-const { classify, mapFlight, mapNonFlight, isAllDayNoTime, vacationDatesFromEvent, sickDatesFromEvent } = require(path.resolve('data/calendarParse.js'));
+const { classify, mapFlight, mapNonFlight, isAllDayNoTime, vacationDatesFromEvent, sickDatesFromEvent, unknownOf } = require(path.resolve('data/calendarParse.js'));
 const { codesFor } = require(path.resolve('data/rosterCodes.js'));
 const codes = codesFor('easyjet');
 
@@ -118,6 +118,18 @@ eq('voo mantido: flightNo extraído', mapFlight(ev('EJU7625 LIS-FNC 06:40-08:15'
   const far = mapFlight(ev('TP LIS-OPO', { start: '2026-11-16T08:00:00', end: '2026-11-16T09:00:00', notes: 'RP 23:00' }), codes);
   eq('RP 23:00 para uma saída às 08:00 (9 h antes, na véspera) não bate com o evento → apresentação por preencher', far && [far.report, far.dateISO], [null, '2026-11-16']);
 }
+
+// ── O QUE NÃO SE CONHECE NUNCA DESAPARECE (o mapa da app, 2026-11-16): um evento com horas e com a forma de um código da escala que
+// a app não conhece fica no dia como "código novo" (e o dia incerto); um título pessoal ou um evento de dia inteiro sem horas ficam
+// de fora, como até aqui (o filtro do pessoal). ──
+eq('código novo com horas no título → fica, com o código e as horas', unknownOf(ev('SBYX 0600-1400 LIS'), codes), { dateISO: '2026-07-01', code: 'SBYX', title: 'SBYX 0600-1400 LIS', start: '06:00', end: '14:00' });
+eq('código novo sem horas no título → as horas do evento', unknownOf(ev('XQT LGW', { start: '2026-07-01T22:00:00', end: '2026-07-02T06:30:00' }), codes), { dateISO: '2026-07-01', code: 'XQT', title: 'XQT LGW', start: '22:00', end: '06:30' });
+eq('código com barra ("AB/C")', (unknownOf(ev('AB/C'), codes) || {}).code, 'AB/C');
+eq('título pessoal → fora', unknownOf(ev('Dentista'), codes), null);
+eq('dia inteiro sem horas → fora (o filtro do pessoal)', unknownOf(ev('ZZZ', { allDay: true, start: '2026-07-01T00:00:00', end: '2026-07-02T00:00:00' }), codes), null);
+eq('um voo conhecido não é "código novo"', unknownOf(ev('EJU7625 LIS-FNC 06:40-08:15'), codes), null);
+eq('um standby conhecido não é "código novo"', unknownOf(ev('ADTY 0600-1400 LIS'), codes), null);
+eq('uma folga conhecida não é "código novo"', unknownOf(ev('GDO'), codes), null);
 
 console.log(`\ncalendar (parsing) — ${ok} passou, ${fail} falhou (${ok + fail} asserções)`);
 if (fail) process.exit(1);
