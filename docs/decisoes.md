@@ -18,6 +18,7 @@ verificação (W2) · a guia de três balões do Início · o guião `docs/verif
 as horas do relógio à portuguesa nos resumos das cláusulas ("18h00" → "18:00"); o limite de horas de bloco do acordo com as
 duas pontas na Simulação; na troca, a folga num dia com dois serviços de voo desconta o per diem do dia duas vezes (na TAP é por dia
 de calendário — o `seqMoney` paga cada serviço sozinho; na easyJet está certo).
+**Fable 5.2 → quarta-feira, 2026-11-18** (a lista no bloco "SESSÃO FABLE 5.2", agora com a camada 2 dos códigos novos, ponto 9).
 **2026-11-16 (fim):** gravado `0859035` (a V3 e os acertos; por enviar com `83c0bd7` e `bd2375f`). **O mapa da app:** `docs/sitemap.md`,
 verificado contra o código — tudo liga, mas 5 achados à espera da escolha do Nuno: (1) tocar numa notificação não abre nada ("Escala
 alterada · Toca para rever"); (2) a dica da 1.ª visita ao Início ainda aponta para o ＋ que já não existe; (3) do Início e dos Números,
@@ -182,6 +183,16 @@ O que fazer, cada coisa com golden primeiro e com o texto oficial aberto (`fonte
    "Tenho descanso?" diz "Incerto" com o motivo (falta como foste de OPO para LIS: um posicionamento é serviço e muda o serviço
    precedente e o repouso), pelo `placeGapIssues` que a importação e a Simulação já usam; e ver a regra da noite local ("planned at
    home base", CS FTL.1.235(a)(1)) no mesmo caso.
+9. **A camada 2 dos códigos novos (2026-11-16):** a camada 1 está feita (`00f4bb9`: um evento com horas e forma de código que a app não
+   conhece fica no dia — `unknownOf`, `rosterUnknown` em `cp_rosterunknown_<uid>`, o cartão "Código novo" na Escala, o Início com o limite
+   incerto via `unknownLegal`). Falta o MOTOR contá-lo com as duas pontas, sem nunca escolher: (a) o repouso antes e depois de um
+   código novo → incerto (ORO.FTL.235: pode ser um PSV, ou um serviço que muda o "serviço precedente"); (b) os limites do ORO.FTL.210 →
+   no mínimo nada, no máximo a duração do evento (a maquinaria de `doneMaxMin`/`uncertain` que os serviços sem apresentação já usam); (c)
+   os dias à volta (a recuperação, as noites seguidas) pelo mesmo princípio; (d) o "Dentro dos limites?" e a Escala a dizerem o mesmo.
+   Golden primeiro, com o texto oficial aberto (`fontes/ftl/`); `docs/sitemap.md` e `data/calendarParse.js` dizem onde está cada peça.
+**MARCADA PARA QUARTA-FEIRA, 2026-11-18 (o Nuno, 2026-11-16: "tudo o que é Fable 5.2 fica para quarta-feira").** Sem os códigos ainda
+podem fazer-se os pontos 3, 4, 7, 8 e 9; os 1, 2, 5 e 6 esperam pelos códigos. Abrir a sessão em Fable 5.2, esforço Alto, e dizer: "a
+sessão Fable 5.2 das decisões".
 Revisão independente no fim (Opus, só com o código, o diff e `fontes/`).
 
 **O ASPETO NOVO — ONDE ESTÁ (fim da sessão de 2026-11-14; gravado e enviado até `81c2dfd`).** Feitos: o Início, a Escala, os
