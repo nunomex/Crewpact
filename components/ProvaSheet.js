@@ -18,7 +18,7 @@ import { CARD, TXT3, SPACE, RADIUS } from '../data/constants';
 import { openLibraryLink } from '../data/library';
 import { select } from '../data/haptics';
 
-const W = CARD.day;
+const W = CARD.auto;
 
 export default function ProvaSheet({ visible, onClose, prova, lang = 'pt' }) {
   const { height: winH } = useWindowDimensions();

@@ -299,7 +299,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
   };
 
   // ── O desenho (R1) ──
-  const W = CARD.day;
+  const W = CARD.auto;
   const sections = importSections(shown);
   const infoOf = new Map(infos.map((x) => [x.c, x.info]));
   const plural = (n, one, many) => (n === 1 ? one : many);
@@ -391,8 +391,8 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
     const sm = diagSummary(diag.items || []);
     const tile = (n, label, bg) => (
       <View style={[s.numTile, { backgroundColor: bg }]} accessible accessibilityLabel={`${n} ${label}`}>
-        <Text style={[TXT3.cardNum, { color: CARD.onCard }]} allowFontScaling={false}>{n}</Text>
-        <Text style={[TXT3.tab, { color: CARD.onCardSub }]} numberOfLines={1}>{label}</Text>
+        <Text style={[TXT3.cardNum, { color: bg === W.neutral ? W.ink : CARD.onCard }]} allowFontScaling={false}>{n}</Text>
+        <Text style={[TXT3.tab, { color: bg === W.neutral ? W.neutralSub : CARD.onCardSub }]} numberOfLines={1}>{label}</Text>
       </View>
     );
     const tileBg = { flight: W.flight, ground: W.ground };
@@ -557,29 +557,29 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
 // R1 (2026-11-14): a folha branca da 3.0, as linhas com o quadradinho (MarkRow) e o botão largo no fundo (WideButton).
 const s = StyleSheet.create({
   flex: { flex: 1 },
-  page: { flex: 1, backgroundColor: CARD.day.sheet },
+  page: { flex: 1, backgroundColor: CARD.auto.sheet },
   body: { paddingHorizontal: SPACE.lgPlus, paddingBottom: SPACE.xl },
-  lead: { color: CARD.day.tabSub, paddingBottom: SPACE.sm },
-  sec: { color: CARD.day.tabSub, paddingTop: SPACE.md, paddingBottom: SPACE.xs },
+  lead: { color: CARD.auto.tabSub, paddingBottom: SPACE.sm },
+  sec: { color: CARD.auto.tabSub, paddingTop: SPACE.md, paddingBottom: SPACE.xs },
   pay: { alignItems: 'flex-end' },
   chk: { width: 24, height: 24, borderRadius: RADIUS.pill, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   legs: { marginLeft: MARK_DAY_INDENT, marginTop: SPACE.xs },
-  month: { color: CARD.day.tabSub, letterSpacing: 0.6, paddingTop: SPACE.xs },
+  month: { color: CARD.auto.tabSub, letterSpacing: 0.6, paddingTop: SPACE.xs },
   center: { alignItems: 'center', justifyContent: 'center', gap: SPACE.md, paddingVertical: SPACE.xxl },
-  centerTxt: { color: CARD.day.tabSub, textAlign: 'center' },
+  centerTxt: { color: CARD.auto.tabSub, textAlign: 'center' },
   centerBtn: { alignSelf: 'stretch' },
   diagWrap: { marginTop: SPACE.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: CARD.rule },
-  diagBox: { marginTop: SPACE.md, gap: SPACE.s, backgroundColor: CARD.day.neutral, borderRadius: RADIUS.lg, padding: SPACE.lg },
+  diagBox: { marginTop: SPACE.md, gap: SPACE.s, backgroundColor: CARD.auto.neutral, borderRadius: RADIUS.lg, padding: SPACE.lg },
   // "O que a app leu do calendário" (L1 + os números): sem painel; os três números e os dias como as outras linhas
   diagWrap2: { paddingTop: SPACE.sm },
   numRow: { flexDirection: 'row', gap: SPACE.sm },
   numTile: { flex: 1, borderRadius: RADIUS.lg, paddingVertical: SPACE.md, paddingHorizontal: SPACE.md, gap: SPACE.xxs },
-  numCap: { color: CARD.day.tabSub, paddingTop: SPACE.sm, paddingBottom: SPACE.xs },
+  numCap: { color: CARD.auto.tabSub, paddingTop: SPACE.sm, paddingBottom: SPACE.xs },
   dayRow: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.md, paddingVertical: SPACE.md },
   dayRule: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: CARD.rule },
   dayEvents: { flex: 1, gap: SPACE.sm, paddingTop: SPACE.xxs },
   diagPaste: { marginLeft: 0, marginTop: SPACE.md },
   foot: { paddingHorizontal: SPACE.lgPlus, paddingTop: SPACE.sm, gap: SPACE.sm },
   lock: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACE.s },
-  footNote: { color: CARD.day.tabSub, textAlign: 'center' },
+  footNote: { color: CARD.auto.tabSub, textAlign: 'center' },
 });

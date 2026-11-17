@@ -34,9 +34,9 @@ export default function LawCalcsSheet({ visible, duty, onClose }) {
 }
 
 const s = StyleSheet.create({
-  page: { flex: 1, backgroundColor: CARD.day.sheet },
+  page: { flex: 1, backgroundColor: CARD.auto.sheet },
   scroll: { flex: 1 },
   body: { paddingHorizontal: SPACE.xl, paddingTop: SPACE.xxs, paddingBottom: SPACE.xl },
-  intro: { color: CARD.day.soft, marginBottom: SPACE.md },
-  foot: { color: CARD.day.caption, marginTop: SPACE.lg },
+  intro: { color: CARD.auto.soft, marginBottom: SPACE.md },
+  foot: { color: CARD.auto.caption, marginTop: SPACE.lg },
 });

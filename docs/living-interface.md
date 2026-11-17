@@ -129,8 +129,10 @@ Dois andares fixos: **o topo** (sobre a secretária) e **a folha** (branca, sobe
   com **o quadradinho da sua cor**. Os avisos ficam cheios.
 - **Os avisos:** âmbar com "!" = olhar (cuidado, falta um dado, pede uma ação); vermelho com "✕" = fora do limite; a informação
   (as férias por gozar) fica neutra.
-- **A noite:** a véspera e a pernoita usam a paleta noturna (`CARD.night`) até chegar o modo noite (N3, a seguir o claro/escuro do
-  iPhone — por construir).
+- **A noite (o modo noite N3, no código a 2026-11-17):** segue o claro/escuro do iPhone, na app toda — a véspera e a pernoita já não
+  escurecem sozinhas. À noite os cartões de tipo descem ao tom fundo (azul-noite, ameixa, musgo) com a letra clara; os avisos ficam
+  vivos, com a tinta escura; o quadradinho e os sinais pequenos ficam na cor viva. Todos os estados à noite, desenhados a partir do
+  código: `design/estados-todos-noite.html`.
 
 ### 3.4 · A ordem da folha (1 principal + 2)
 
@@ -165,7 +167,7 @@ documentos, a auditoria do mês — que corre também na folga), o aviso é o pr
 **Atenção** (`documento`, na folga, um documento a 7 dias ou menos) — "Certificado médico caduca em · 6 dias / 17 nov" · o último dia
 válido, os serviços marcados depois · o cartão âmbar com "Registar a data nova", o próximo serviço.
 
-**Voo amanhã** (`vespera`, noturno) — "Report às · 05:15 LIS" · quanto falta, o "PSV até" (sublinhado), o tempo do report · o cartão do
+**Voo amanhã** (`vespera`) — "Report às · 05:15 LIS" · quanto falta, o "PSV até" (sublinhado), o tempo do report · o cartão do
 voo (com "repouso acima do mínimo" na fila do PSV e o lembrete), a pernoita numa linha.
 
 **Dia de voo** (`hoje`, `pre`) — "Report às · 05:15 LIS" · quanto falta, o "PSV até" (sublinhado), o tempo do report · o cartão do voo,
@@ -188,7 +190,7 @@ a barra da janela e o que rende se não chamarem), o próximo serviço com o cab
 **Atraso** (`disrupcao`) — "Nova partida às · 07:25 LIS" · a hora da escala riscada, os minutos de atraso · **"Limites com o atraso"**
 (âmbar, a projeção do PSV com o atraso, ORO.FTL.205), o dia de serviço com a causa ("o avião ainda vem a caminho"), a pernoita numa linha.
 
-**Pernoita** (`pernoita`, noturno) — "Report amanhã às · 14:05 LGW" · quanto falta, o tempo à hora do report · o repouso fora da base
+**Pernoita** (`pernoita`) — "Report amanhã às · 14:05 LGW" · quanto falta, o tempo à hora do report · o repouso fora da base
 (o hotel, o mínimo, a barra do repouso), o voo de amanhã numa linha.
 
 **Dia fechado** (`posvoo`) — "PSV de hoje · 8 h 35" (sublinhado) · os ganhos de hoje, as horas de 7 dias, o tempo de amanhã · o repouso
@@ -253,7 +255,8 @@ balões (o título do estado, o número, a cor dos cartões) está proposta.
 | v2 | a agenda da folga (os próximos serviços em linhas) | o próximo serviço numa linha com o dia (B3/F2); a lista vive na Escala | 2026-11-13 |
 | v2 | os avisos como linha por baixo do estado e a pílula vermelha no canto | os avisos como cartões (âmbar "!" / vermelho "✕"); "A escala mudou" com o quê e quando (E2) | 2026-11-13 · 2026-11-14 |
 | v2 | a tabela numérica de prioridades | a precedência do `crewState` e a ordem da folha (secção 3.4) | 2026-11-14 |
-| v2 | o tema noturno com o "candeeiro" | a paleta `CARD.night` na véspera e na pernoita (até ao modo noite N3) | 2026-11-11 |
+| v2 | o tema noturno com o "candeeiro" | a paleta `CARD.night` na véspera e na pernoita | 2026-11-11 |
+| v3 | a véspera e a pernoita escurecem sozinhas | o modo noite N3 segue o iPhone, na app toda | 2026-11-17 |
 
 ---
 
@@ -277,13 +280,12 @@ balões (o título do estado, o número, a cor dos cartões) está proposta.
 **Os esboços que mandam** (em `design/`, com o README): `inicio-cartoes.html` (a direção 3.0) · `estados-topo.html` + `estados-s2.html`
 (o título) · `cartoes-e3.html` + `cartoes-limite.html` (o cartão do voo e o limite) · `a-seguir-b3.html` (o próximo serviço) ·
 `cores-decisoes.html` (G1 · O2 · S2) · `calma-uau.html` (W1) · `escala-mudou.html` (E2) · `folga-1-2.html` (F2) · `voz.html` (V2) ·
-`topo-porque-2.html` (Q3) · `mudanca-estado.html` (M2) · `modo-noite.html` (N3, por construir).
+`topo-porque-2.html` (Q3) · `mudanca-estado.html` (M2) · `modo-noite.html` (N3) · `estados-todos-noite.html` (todos os estados à noite, gerado do código).
 
 ---
 
 ## 10 · Por fazer
 
-- **O modo noite N3** (a seguir o claro/escuro do iPhone) — a base do tema da app inteira.
 - **Tocar em "Avião"** na verificação para a linha da folga do avião (a W2 de `calma-uau.html`).
 - **A guia de três balões do Início** (proposta em `docs/guias.md`).
 - **Pôr em dia o guião `docs/verificacao-device.md`** com os estados e as peças desta versão.

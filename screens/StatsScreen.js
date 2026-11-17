@@ -334,11 +334,11 @@ export default function StatsScreen({ navigation }) {
   // A nota (partilhada pelos 2 modos): as palavras Amarelo/Vermelho pintadas nas próprias
   // cores; a última frase é a lei do consultivo (termos §3) a falar dentro da app.
   const baptismNote = alertBaptism ? (
-    <Text style={[TXT3.cardSub, { color: CARD.day.tabSub }]}>
-      <Text style={[TXT3.dur, { color: CARD.day.ink }]}>{l('Primeira vez com cor? ', 'First time seeing colour? ')}</Text>
-      <Text style={{ color: CARD.day.alert }}>● </Text><Text style={[TXT3.dur, { color: CARD.day.ink }]}>{l('Âmbar', 'Amber')}</Text>
+    <Text style={[TXT3.cardSub, { color: CARD.auto.tabSub }]}>
+      <Text style={[TXT3.dur, { color: CARD.auto.ink }]}>{l('Primeira vez com cor? ', 'First time seeing colour? ')}</Text>
+      <Text style={{ color: CARD.auto.alert }}>● </Text><Text style={[TXT3.dur, { color: CARD.auto.ink }]}>{l('Âmbar', 'Amber')}</Text>
       {l(' = a partir de 85 % de um limite — atenção cedo, não é decisão. ', ' = from 85% of a limit — early attention, not a decision. ')}
-      <Text style={{ color: CARD.day.stop }}>● </Text><Text style={[TXT3.dur, { color: CARD.day.ink }]}>{l('Vermelho', 'Red')}</Text>
+      <Text style={{ color: CARD.auto.stop }}>● </Text><Text style={[TXT3.dur, { color: CARD.auto.ink }]}>{l('Vermelho', 'Red')}</Text>
       {l(' = a estimativa passa o limite — confirma com o planeamento. Dentro do limite não há cor. A app estima, nunca declara legalidade.', ' = the estimate goes over the limit — check with crewing. Within the limit there is no colour. The app estimates, it never declares legality.')}
     </Text>
   ) : null;
@@ -352,7 +352,7 @@ export default function StatsScreen({ navigation }) {
   // percentagem) e as linhas finas Voo, Repouso, Auditoria e Partilhar. Imagens do Nuno: 3421 · 3449 · 3433 · 3440 · 3441 (o €),
   // 3408 · 3415 · 3428 · 3431 · 3441 · 3462 (os limites), 3412 · 3434 (Mês | Ano), 3424 (o número em duas linhas). As contas não
   // mudaram (data/stats.js, o motor FTL, o AE). ══
-  const C = CARD.day;
+  const C = CARD.auto;
   const periodLabel = isYear ? String(year) : `${monthName} ${ym.slice(0, 4)}`;
   const eurParts = (n) => { const [i0, d0] = Number(Math.abs(n || 0)).toFixed(2).split('.'); const g = i0.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? [`€${g}`, `.${d0}`] : [g, `,${d0} €`]; };
   const baseRangeUnc = !isYear && A.baseRange;
@@ -507,7 +507,7 @@ export default function StatsScreen({ navigation }) {
 
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: C.desk }]} edges={['top']}>
-      {isFocused ? <StatusBar style="dark" /> : null}
+      {isFocused ? <StatusBar style="auto" /> : null}
       <HomeTop top={top} C={C} size={giant.size} onPill2={openPicker} right={segRight} rightW={segW} l={l} />
       <View style={[s.sheet, { backgroundColor: C.sheet }]}>
         <ScrollView ref={statsScrollRef} style={s.flex} contentContainerStyle={[s.sheetIn, { paddingBottom: tabSpace + SPACE.lg }]} showsVerticalScrollIndicator={false}>
@@ -738,14 +738,14 @@ const s = StyleSheet.create({
   fill: { height: '100%', borderRadius: RADIUS.pill },
   moreRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: CARD.rule, paddingTop: SPACE.md, minHeight: 44 },
   aeLim: { marginTop: SPACE.xs },
-  foot: { color: CARD.day.tabSub, textAlign: 'center', paddingHorizontal: SPACE.lg, marginTop: SPACE.sm },
+  foot: { color: CARD.auto.tabSub, textAlign: 'center', paddingHorizontal: SPACE.lg, marginTop: SPACE.sm },
   // as folhas
   shHead: { paddingHorizontal: 0, paddingTop: 0 },
   shBody: { gap: SPACE.sm, paddingBottom: SPACE.lg },
   shGroup: { gap: SPACE.xs, paddingTop: SPACE.sm },
   limField: { paddingVertical: SPACE.sm, borderBottomWidth: 1.5, borderBottomColor: CARD.rule },
-  note: { color: CARD.day.tabSub, marginTop: SPACE.sm },
-  law: { color: CARD.day.ink, marginTop: SPACE.xs },
+  note: { color: CARD.auto.tabSub, marginTop: SPACE.sm },
+  law: { color: CARD.auto.ink, marginTop: SPACE.xs },
   chart: { flexDirection: 'row', alignItems: 'flex-end', height: 120, gap: SPACE.xxs },
   chartCol: { flex: 1, alignItems: 'center', gap: SPACE.xs },
   chartWrap: { height: 96, width: '100%', justifyContent: 'flex-end', alignItems: 'center' },
@@ -756,11 +756,11 @@ const s = StyleSheet.create({
   // a radiação cósmica (na folha do Repouso)
   rad: { gap: SPACE.xs, paddingTop: SPACE.md, borderTopWidth: 1.5, borderTopColor: CARD.rule },
   radRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: SPACE.md, minHeight: 44 },
-  radLab: { ...TXT3.line, color: CARD.day.ink, flex: 1 },
-  radVal: { ...TXT3.fact, color: CARD.day.ink },
-  radValU: { ...TXT3.cardSub, color: CARD.day.tabSub },
-  radCtx: { ...TXT3.cardSub, color: CARD.day.tabSub },
-  radCtxB: { ...TXT3.dur, color: CARD.day.ink },
-  radBapt: { ...TXT3.cardSub, color: CARD.day.soft, marginTop: SPACE.xs },
-  radBaptB: { ...TXT3.dur, color: CARD.day.ink },
+  radLab: { ...TXT3.line, color: CARD.auto.ink, flex: 1 },
+  radVal: { ...TXT3.fact, color: CARD.auto.ink },
+  radValU: { ...TXT3.cardSub, color: CARD.auto.tabSub },
+  radCtx: { ...TXT3.cardSub, color: CARD.auto.tabSub },
+  radCtxB: { ...TXT3.dur, color: CARD.auto.ink },
+  radBapt: { ...TXT3.cardSub, color: CARD.auto.soft, marginTop: SPACE.xs },
+  radBaptB: { ...TXT3.dur, color: CARD.auto.ink },
 });

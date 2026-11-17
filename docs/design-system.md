@@ -438,7 +438,37 @@ vermelhos da 2.0 revistos um a um, e o amarelo da marca (`BRAND.signal/marker`) 
   desceram a 0. A palavra nos ecrãs passou de "laranja" a "âmbar".
 - **N3 — o modo noite com a cor em tom fundo.** Os cartões de tipo ficam na mesma cor em tom fundo (azul-noite #1F4B6E, ameixa
   #4B3550, musgo #36452F) com letra clara; os avisos (âmbar, vermelho) ficam vivos. **Segue o claro/escuro do iPhone** (o Nuno,
-  2026-11-14). **Por construir** — é a base do tema: cada ecrã passa a ler as cores de um sítio que muda com o iPhone.
+  2026-11-14). **No código a 2026-11-17** (ver "O modo noite no código", logo abaixo).
+
+### O modo noite no código (N3, 2026-11-17 — segue o iPhone, na app toda)
+
+**Cores vivas.** Cada paleta tem duas versões em bruto, o dia e a noite (`PELE_DAY`/`PELE_DARK`, `CARD.day`/`CARD.night`,
+`BRAND_DAY`/`BRAND_DARK`, `MONEY_DAY`/`MONEY_DARK`, em `data/constants.js`), e uma **viva**, que é a que os ecrãs usam: `PELE`,
+`CARD.auto`, `BRAND`, `MONEY`. No iOS cada cor viva é uma `DynamicColorIOS` — o próprio iOS troca o claro pelo escuro quando o iPhone
+muda, também nas folhas de estilo fixas. Fora do iOS (o Android ainda não está montado; os testes) a viva é a do dia.
+**A paleta em bruto só com motivo**, e o guardião tranca-o: o Início e a barra de abas (pelo gancho `useDark()`, `hooks/useDark.js`:
+animam e comparam cores), o que é sempre igual nos dois modos (o balão das guias, o aviso, a placa da Porta, o poster do ano, que vai
+como imagem), a navegação e a carteira das Validades (anima as cores dos cartões). As barras de estado: `style="auto"`.
+
+**As regras da noite (todas medidas pelo guardião, de dia e de noite):**
+- **As superfícies da noite são as do 3.0:** o papel do 2.0 = a folha (#1F222A), o suave = o neutro (#2A2E38), a tinta = a clara
+  (#F4F2ED). Tinta sobre o papel 14,21 · o cinzento 6,30 · o âmbar de texto sobre o seu suave 5,43 · o vermelho sobre o seu suave ≥ 4,5.
+- **Os cartões de tipo pintam-se com o seu FUNDO** (`flightFill`/`groundFill`/`restFill`: de dia a própria cor; à noite o tom fundo)
+  e a letra `onFill*` (à noite a clara: 5,91 · 6,91 · 6,55 a 80 %). **`flight`/`ground`/`rest` ficam a cor VIVA** de dia e de noite,
+  para os sinais pequenos (o quadradinho, o anel do dia na Escala, as barras): um sinal no tom fundo não se via (1,5:1). Os avisos
+  (`alert`/`stop`) ficam vivos, com a tinta escura (`onCard*`), nos dois modos.
+- **A tinta inverte** (o que se toca: botões, escolhas, a linha da ação principal) — à noite é clara, com a letra escura por cima.
+- **A placa (`PELE.slab`) não inverte:** o que é sempre escuro com letra branca (o aviso, o balão das dicas e das guias, o resultado
+  das calculadoras, os cartões da Informação, a faixa sem rede, o disco das iniciais, o visto da conta criada). De dia é a tinta; à
+  noite sobe um degrau acima da folha (#383D48), para se destacar dela. A letra: `onSlab` · `onSlabSub`.
+- **A marca à noite:** a marcação desce a um amarelo baço (`rgba(255,184,0,.24)`; a tinta clara por cima 8,23); o botão principal
+  inverte e o ícone dele passa à letra do botão (`BRAND.onAction`). Os sinais e o painel ficam amarelos (já se veem no escuro).
+- **Uma superfície por cima de um cartão neutro** (o botão do hotel, o selo "real"): `CARD.*.raised` — de dia o branco, à noite um
+  degrau acima do neutro. A pílula do dinheiro (`CARD.chip`) fica branca nos dois.
+- **O interruptor ligado:** `PELE.toggle` — de dia a tinta; à noite um cinzento médio (a bolinha branca 3,1:1; a tinta clara dava 1,1).
+- **O dinheiro à noite:** `MONEY.gain` sobe de luz (#7BE3B0, 10,19 sobre o papel), como o `gainOut` do 3.0.
+- **Os ícones** nascem outra vez quando o iPhone muda de modo (`key` = o modo, `components/Icon.js`).
+- **Todos os estados do Início à noite**, desenhados a partir do código: `design/estados-todos-noite.html` (`node scripts/render-estados.js`).
 
 ### A verificação (W1, 2026-11-14 — `design/calma-uau.html`, escolhida pelo Nuno; no código antes do report)
 

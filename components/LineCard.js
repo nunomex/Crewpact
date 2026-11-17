@@ -10,7 +10,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { CARD, TXT3, SPACE, RADIUS } from '../data/constants';
 
-const W = CARD.day;
+const W = CARD.auto;
 
 export default function LineCard({ kind, src, children, style }) {
   return (

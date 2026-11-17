@@ -28,10 +28,10 @@ export default function SheetHeader({
   if (card) {
     return (
       <View style={[s.head, s.headCard, style]}>
-        {onBack ? <IconButton icon="back" onPress={onBack} label={backLabel} style={[s.back, { backgroundColor: CARD.day.round }]} /> : null}
+        {onBack ? <IconButton icon="back" onPress={onBack} label={backLabel} style={[s.back, { backgroundColor: CARD.auto.round }]} /> : null}
         <Text style={[TXT3.month, s.titleCard]} maxFontSizeMultiplier={MAX_SCALE} numberOfLines={2} accessibilityRole="header">{title}</Text>
         {right}
-        {onClose ? <PillButton label={closeLabel} onPress={onClose} ink={CARD.day.ink} /> : null}
+        {onClose ? <PillButton label={closeLabel} onPress={onClose} ink={CARD.auto.ink} /> : null}
       </View>
     );
   }
@@ -57,7 +57,7 @@ const s = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.md, paddingHorizontal: SPACE.xl, paddingTop: SPACE.s, paddingBottom: SPACE.md },
   back: { marginRight: SPACE.xs },
   headCard: { alignItems: 'center', paddingHorizontal: SPACE.lgPlus, paddingTop: SPACE.sm, paddingBottom: SPACE.md },
-  titleCard: { flex: 1, color: CARD.day.ink },
+  titleCard: { flex: 1, color: CARD.auto.ink },
   mid: { flex: 1, minHeight: 36, justifyContent: 'center' },
   eyeRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, marginBottom: SPACE.xs },
   dot: { width: 7, height: 7, borderRadius: 99 },

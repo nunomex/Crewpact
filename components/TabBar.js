@@ -26,6 +26,7 @@ import { PELE, CARD, TXT3, SPACE, RADIUS } from '../data/constants';
 import { t } from '../data/i18n';
 import { select, tap } from '../data/haptics';
 import useReduceMotion from '../hooks/useReduceMotion';
+import useDark from '../hooks/useDark';
 
 const ICON = { 'Início': 'home', 'Escala': 'cal', 'Estatísticas': 'stats', 'Perfil': 'user' };
 const CONTENT_H = 56;   // a altura útil (era 49): a caixa do ícone (32) + o nome + o ponto, com o círculo a ~7 pt do fio
@@ -60,13 +61,13 @@ function TabItem({ focused, lbl, ic, badge, C, onPress, reduce, AL }) {
 
 export default function TabBar({ state, navigation }) {
   const insets = useSafeAreaInsets();
-  const { lang, homeNight, rosterChanges, openSimulation } = useContext(AppContext);
+  const { lang, rosterChanges, openSimulation } = useContext(AppContext);
   const reduce = useReduceMotion();
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const AL = l('pt-PT', 'en-GB');   // a língua do VoiceOver = a da app (na Expo Go o iOS usava a voz inglesa)
 
-  // O noturno é um estado do INÍCIO (véspera/pernoita) — as outras abas são sempre diurnas (o N3 vai seguir o iPhone em toda a app).
-  const night = !!homeNight && state.routes[state.index]?.name === 'Início';
+  // O modo noite N3 segue o iPhone, em todas as abas (2026-11-17; antes só o Início escurecia, na véspera e na pernoita).
+  const night = useDark();
   const C = night ? CARD.night : CARD.day;
 
   // Rótulos reais (a rota fica, o rótulo traduz): Estatísticas mostra Números.

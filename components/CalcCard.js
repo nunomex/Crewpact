@@ -109,8 +109,9 @@ const c = StyleSheet.create({
   acc: { borderWidth: 1, borderColor: P.line, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: P.paper },
   accHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   accBody: { marginTop: 12 },
-  result: { marginTop: 12, backgroundColor: P.ink, borderRadius: 14, padding: 14 },
-  resLabel: { fontSize: 10, letterSpacing: 2, color: P.onInkSub, fontFamily: F.bodyHeavy, textTransform: 'uppercase' },
+  // a placa do resultado é SEMPRE escura (N3, 2026-11-17: `slab` — à noite um degrau acima da folha); tudo nela é branco ou amarelo
+  result: { marginTop: 12, backgroundColor: P.slab, borderRadius: 14, padding: 14 },
+  resLabel: { fontSize: 10, letterSpacing: 2, color: P.onSlabSub, fontFamily: F.bodyHeavy, textTransform: 'uppercase' },
   resVal: { color: BRAND.onDark, fontFamily: F.display, marginTop: 2, fontVariant: ['tabular-nums'] },
   resFoot: { fontSize: 11, color: 'rgba(255,255,255,0.6)', fontFamily: F.bodyMed, marginTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.12)', paddingTop: 8, lineHeight: 16 },
 

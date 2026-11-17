@@ -1,11 +1,11 @@
 {
- "gerado": "2026-11-16",
+ "gerado": "2026-11-17",
  "total": {
   "tipoFora": 115,
   "tipoMenor11": 59,
   "espacoFora": 249,
   "raioFora": 32,
-  "corSolta": 46,
+  "corSolta": 39,
   "ionicons": 6,
   "iconeNavSolto": 3,
   "amareloTexto": 0,
@@ -28,7 +28,7 @@
    "tipoMenor11": 5,
    "espacoFora": 12,
    "raioFora": 0,
-   "corSolta": 1,
+   "corSolta": 0,
    "ionicons": 0,
    "iconeNavSolto": 0,
    "amareloTexto": 0
@@ -38,7 +38,7 @@
    "tipoMenor11": 5,
    "espacoFora": 12,
    "raioFora": 0,
-   "corSolta": 1,
+   "corSolta": 0,
    "ionicons": 0,
    "iconeNavSolto": 0,
    "amareloTexto": 0
@@ -108,7 +108,7 @@
    "tipoMenor11": 0,
    "espacoFora": 8,
    "raioFora": 1,
-   "corSolta": 1,
+   "corSolta": 0,
    "ionicons": 0,
    "iconeNavSolto": 0,
    "amareloTexto": 0
@@ -128,7 +128,7 @@
    "tipoMenor11": 3,
    "espacoFora": 17,
    "raioFora": 3,
-   "corSolta": 12,
+   "corSolta": 10,
    "ionicons": 0,
    "iconeNavSolto": 0,
    "amareloTexto": 0
@@ -218,7 +218,7 @@
    "tipoMenor11": 0,
    "espacoFora": 0,
    "raioFora": 0,
-   "corSolta": 3,
+   "corSolta": 2,
    "ionicons": 0,
    "iconeNavSolto": 0,
    "amareloTexto": 0
@@ -228,7 +228,7 @@
    "tipoMenor11": 1,
    "espacoFora": 2,
    "raioFora": 0,
-   "corSolta": 1,
+   "corSolta": 0,
    "ionicons": 0,
    "iconeNavSolto": 0,
    "amareloTexto": 0

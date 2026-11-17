@@ -17,7 +17,7 @@ import { CARD, TXT3, SPACE, RADIUS } from '../data/constants';
 const H = 38;
 const SLOP = { top: (44 - H) / 2, bottom: (44 - H) / 2, left: SPACE.xxs, right: SPACE.xxs };
 
-export default function PillButton({ label, onPress, ink = CARD.day.ink, ring = null, badge = null, badgeBg = CARD.day.alert,
+export default function PillButton({ label, onPress, ink = CARD.auto.ink, ring = null, badge = null, badgeBg = CARD.auto.alert,
   a11yLabel, hint, a11yLanguage, style, disabled = false, testID }) {
   const n = typeof badge === 'number' ? badge : 0;
   return (
@@ -39,7 +39,7 @@ export default function PillButton({ label, onPress, ink = CARD.day.ink, ring = 
 // O botão largo no fundo das janelas (C1, 2026-11-13): a única coisa que se faz na janela, onde o polegar chega — "Fechar"
 // em cima, a ação larga em baixo. Tinta com a letra da folha; `glyph` = um ícone da casa à esquerda.
 //   <WideButton label="Rever 2 alterações" onPress={openRoster} />
-export function WideButton({ label, onPress, glyph, bg = CARD.day.ink, fg = CARD.day.sheet, a11yLabel, hint, a11yLanguage, disabled = false, style }) {
+export function WideButton({ label, onPress, glyph, bg = CARD.auto.ink, fg = CARD.auto.sheet, a11yLabel, hint, a11yLanguage, disabled = false, style }) {
   return (
     <TouchableOpacity onPress={onPress} disabled={disabled} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={a11yLabel || label}
       accessibilityHint={hint} accessibilityLanguage={a11yLanguage} accessibilityState={{ disabled }} style={[s.wide, { backgroundColor: bg }, disabled ? s.off : null, style]}>

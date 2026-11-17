@@ -13,7 +13,7 @@ import { AppContext } from '../data/appContext';
 import { eventDateLabel } from '../data/aeEvents';
 import { CARD, TXT3, SPACE } from '../data/constants';
 
-const C = CARD.day;
+const C = CARD.auto;
 const MAX_SCALE = 1.3;
 
 export default function ExtrasSheet({ visible, onClose, title, periodLbl, events = [], total = 0, parts = {} }) {

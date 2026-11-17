@@ -29,11 +29,17 @@ const MAX_SCALE = 1.3;
 const a11yLang = (l) => (l ? l('pt-PT', 'en-GB') : 'pt-PT');   // letra grande: os cartões crescem até 130 % (a folha desliza); o topo fica fixo
 
 // `line`/`track`: a tinta dos traços (a linha do dia, a barra, os fios das pernas) e a linha de fundo — seguem a tinta do cartão,
-// para um cartão neutro à noite (O2) não ficar com traços pretos sobre o escuro.
+// para um cartão neutro à noite (O2) não ficar com traços pretos sobre o escuro. `dur`/`durFg`: o selo entre as duas horas;
+// `act`/`actFg`: a barra de ação do cartão.
+// N3 (o modo noite, 2026-11-17): os cartões de TIPO (voo · terra · repouso) pintam-se com o seu FUNDO (`flightFill`…: de dia a
+// própria cor, à noite o tom fundo) e a letra `onFill*` (de dia a tinta dos cartões, à noite a clara); os AVISOS ficam vivos, com a
+// tinta escura, de dia e de noite. De dia, tudo sai igual ao que era.
+const TYPE_TONES = { flight: true, ground: true, rest: true };
 function toneOf(C, color) {
-  if (color === 'dark') return { bg: C.ink, fg: C.sheet, sub: C.darkSub, kind: C.darkSub, go: C.darkGo, line: C.sheet, track: C.darkGo };
-  if (color === 'neutral' || !C[color]) return { bg: C.neutral, fg: C.ink, sub: C.neutralSub, kind: C.neutralKind, go: C.neutralGo, line: C.ink, track: C.round };
-  return { bg: C[color], fg: CARD.onCard, sub: CARD.onCardSub, kind: CARD.onCardKind, go: CARD.go, line: CARD.onCard, track: CARD.onCardTrack };
+  if (color === 'dark') return { bg: C.ink, fg: C.sheet, sub: C.darkSub, kind: C.darkSub, go: C.darkGo, line: C.sheet, track: C.darkGo, dur: C.darkGo, durFg: C.sheet, act: C.darkGo, actFg: C.sheet };
+  if (color === 'neutral' || !C[color]) return { bg: C.neutral, fg: C.ink, sub: C.neutralSub, kind: C.neutralKind, go: C.neutralGo, line: C.ink, track: C.round, dur: C.onFillDur, durFg: C.ink, act: C.onFillAct, actFg: C.ink };
+  if (TYPE_TONES[color]) return { bg: C[`${color}Fill`], fg: C.onFill, sub: C.onFillSub, kind: C.onFillKind, go: C.onFillGo, line: C.onFill, track: C.onFillTrack, dur: C.onFillDur, durFg: C.onFill, act: C.onFillAct, actFg: C.onFill };
+  return { bg: C[color], fg: CARD.onCard, sub: CARD.onCardSub, kind: CARD.onCardKind, go: CARD.go, line: CARD.onCard, track: CARD.onCardTrack, dur: CARD.dur, durFg: CARD.onCard, act: CARD.act, actFg: CARD.onCard };
 }
 
 // ── Q3 · O SUBLINHADO PONTILHADO dos números com porquê, DESENHADO ──
@@ -397,7 +403,7 @@ function BigCard({ c, C, onOpen, l }) {
               {c.a ? <Text style={[TXT3.cardNum, { color: T.fg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.a.v}</Text> : null}
               {c.a ? <Text style={[TXT3.cardNumLbl, { color: T.sub }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.a.l}</Text> : null}
             </View>
-            {c.dur ? <View style={s.dur}><Text style={[TXT3.dur, { color: CARD.onCard }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.dur}</Text></View> : null}
+            {c.dur ? <View style={[s.dur, { backgroundColor: T.dur }]}><Text style={[TXT3.dur, { color: T.durFg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.dur}</Text></View> : null}
             <View style={[s.cdEnd, s.cdEndR]}>
               {c.b ? (c.b.gain ? <GainChip text={c.b.v} /> : <Text style={[TXT3.cardNum, { color: T.fg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.b.v}</Text>) : null}
               {c.b ? <Text style={[TXT3.cardNumLbl, { color: T.sub }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.b.l}</Text> : null}
@@ -424,9 +430,9 @@ function BigCard({ c, C, onOpen, l }) {
         </View>
       ) : null}
       {c.action ? (
-        <TouchableOpacity style={[s.act, { backgroundColor: CARD.act }]} onPress={() => onOpen(c.action.open)} activeOpacity={0.8} accessibilityRole="button" accessibilityLanguage={AL} accessibilityLabel={c.action.label}>
-          <Icon name={c.action.icon} size={16} color={CARD.onCard} />
-          <Text style={[TXT3.act, { color: CARD.onCard }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.action.label}</Text>
+        <TouchableOpacity style={[s.act, { backgroundColor: T.act }]} onPress={() => onOpen(c.action.open)} activeOpacity={0.8} accessibilityRole="button" accessibilityLanguage={AL} accessibilityLabel={c.action.label}>
+          <Icon name={c.action.icon} size={16} color={T.actFg} />
+          <Text style={[TXT3.act, { color: T.actFg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{c.action.label}</Text>
         </TouchableOpacity>
       ) : null}
     </View>
@@ -508,9 +514,9 @@ function Legs({ legs, T }) {
             <View style={s.legMid}>
               <View style={[s.legWire, { backgroundColor: T.track }]} />
               {g.dur ? (
-                <View style={[s.dur, s.legDur]}>
-                  <Icon name="plane" size={12} color={CARD.onCard} />
-                  <Text style={[TXT3.dur, { color: CARD.onCard }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{g.dur}</Text>
+                <View style={[s.dur, s.legDur, { backgroundColor: T.dur }]}>
+                  <Icon name="plane" size={12} color={T.durFg} />
+                  <Text style={[TXT3.dur, { color: T.durFg }]} numberOfLines={1} maxFontSizeMultiplier={MAX_SCALE}>{g.dur}</Text>
                 </View>
               ) : null}
             </View>

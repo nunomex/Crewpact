@@ -39,7 +39,7 @@ import useFamilyLinks from '../hooks/useFamilyLinks';
 
 // A linha da folha "A tua conta" (a REGRA DAS FOLHAS, design-system §11): rótulo pequeno, valor grande, fio; toca → a ação.
 function AccField({ label, value, sub, onPress, danger, last }) {
-  const W = CARD.day;
+  const W = CARD.auto;
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={[s.accField, last ? s.accLast : null]}
       accessibilityRole="button" accessibilityLabel={[label, value, sub].filter(Boolean).join(', ')}>
@@ -55,7 +55,7 @@ function AccField({ label, value, sub, onPress, danger, last }) {
 
 export default function SettingsScreen({ navigation }) {
   const { user, company, crewType, ae, caps, aeStatus, employment, aeCovered, duties, dayLog, crewCategory, crewContract, crewFleet, postFlightMin, postFlightSource, vacationDaysYear, vacationSource, crewHistory, companyHistory, baseHistory, serviceStart, largada, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, aeEvents, setProfile, lang, setLang, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout, setUser, setOnboarded, validities, airlines, isPilot } = useContext(AppContext);
-  const C = CARD.day;   // o Perfil no aspeto novo (W1 de design/perfil-6.html)
+  const C = CARD.auto;   // o Perfil no aspeto novo (W1 de design/perfil-6.html)
   const isFocused = useIsFocused();
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const tabSpace = useTabBarSpace();
@@ -267,7 +267,7 @@ export default function SettingsScreen({ navigation }) {
 
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: C.desk }]} edges={['top']}>
-      {isFocused ? <StatusBar style="dark" /> : null}
+      {isFocused ? <StatusBar style="auto" /> : null}
       <HomeTop top={top} C={C} size={giant.size} l={l} rightW={pillWidth(l('Notificações', 'Notifications'))} right={<NotificationsBell variant="written" />} />
       <View style={[s.sheet, { backgroundColor: C.sheet }]}>
         <ScrollView ref={perfilScrollRef} style={s.flex} contentContainerStyle={[s.sheetIn, { paddingBottom: tabSpace + SPACE.lg }]} showsVerticalScrollIndicator={false}>
@@ -438,13 +438,13 @@ const s = StyleSheet.create({
   sheet: { flex: 1, marginTop: -SPACE.lg, borderTopLeftRadius: RADIUS.sheet, borderTopRightRadius: RADIUS.sheet, overflow: 'hidden' },
   sheetIn: { paddingHorizontal: SPACE.md, paddingTop: SPACE.lg, gap: SPACE.md },
   legalRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACE.sm, paddingTop: SPACE.xs },
-  legalLink: { color: CARD.day.ink, textDecorationLine: 'underline', paddingVertical: SPACE.xs },
+  legalLink: { color: CARD.auto.ink, textDecorationLine: 'underline', paddingVertical: SPACE.xs },
   // a folha da conta (campos)
   accHead: { paddingHorizontal: 0, paddingTop: 0 },
-  accField: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingVertical: SPACE.md, borderBottomWidth: 1, borderBottomColor: CARD.day.round },
+  accField: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingVertical: SPACE.md, borderBottomWidth: 1, borderBottomColor: CARD.auto.round },
   accLast: { borderBottomWidth: 0 },
   accVal: { marginTop: 2 },
-  accStop: { width: 28, height: 28, borderRadius: RADIUS.pill, backgroundColor: CARD.day.stop, alignItems: 'center', justifyContent: 'center' },
+  accStop: { width: 28, height: 28, borderRadius: RADIUS.pill, backgroundColor: CARD.auto.stop, alignItems: 'center', justifyContent: 'center' },
   accOut: { marginTop: SPACE.lg },
 
   fieldLabel: { fontSize: 13, fontFamily: PELE_FONT.body, color: PELE.ink, marginBottom: 6 },
@@ -457,7 +457,7 @@ const s = StyleSheet.create({
   delBody: { fontSize: 14, color: PELE.ink, lineHeight: 20, marginBottom: 16 },
   delBtn: { backgroundColor: PELE.red, borderRadius: 14, paddingVertical: 15, alignItems: 'center', marginTop: 14 },
   delBtnOff: { opacity: 0.4 },
-  delBtnTxt: { color: '#fff', fontSize: 15, fontFamily: PELE_FONT.bodyBold },
+  delBtnTxt: { color: PELE.paper, fontSize: 15, fontFamily: PELE_FONT.bodyBold },   // sobre o vermelho: o papel (à noite o vermelho clareia e a letra escurece — N3)
   // Mudar e-mail
   emSub: { fontSize: 14, color: PELE.ink, lineHeight: 20, marginBottom: 16 },
   emErr: { color: PELE.red, fontSize: 13, marginTop: 8 },

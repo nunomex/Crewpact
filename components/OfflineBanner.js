@@ -15,7 +15,7 @@ export default function OfflineBanner() {
   if (!ctx || ctx.online) return null;
   return (
     <View pointerEvents="none" style={[styles.wrap, { paddingTop: insets.top + 5 }]}>
-      <Icon name="cloud" size={13} color={P.onInk} />
+      <Icon name="cloud" size={13} color={P.onSlab} />
       <Text style={styles.txt}>{t('common.offline', ctx.lang)}</Text>
     </View>
   );
@@ -25,7 +25,7 @@ const styles = StyleSheet.create({
   wrap: {
     position: 'absolute', top: 0, left: 0, right: 0, zIndex: 200,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 6, paddingBottom: 6, paddingHorizontal: 16, backgroundColor: P.ink,
+    gap: 6, paddingBottom: 6, paddingHorizontal: 16, backgroundColor: P.slab,   // a placa, sempre escura (N3): uma faixa clara no topo encandeava à noite
   },
-  txt: { color: P.onInk, fontSize: 11, fontFamily: F.body, letterSpacing: 0.2 },
+  txt: { color: P.onSlab, fontSize: 11, fontFamily: F.body, letterSpacing: 0.2 },
 });

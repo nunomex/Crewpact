@@ -1,7 +1,7 @@
 import React, { useState, useContext, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, TextInput, KeyboardAvoidingView, Platform, Animated, PanResponder, Easing } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { PELE, PELE_FONT, GUTTER, BRAND, SPACE } from '../data/constants';
+import { PELE, PELE_DAY, PELE_DARK, PELE_FONT, GUTTER, BRAND, SPACE, dyn } from '../data/constants';
 import Icon from '../components/Icon';
 import IconButton from '../components/IconButton';
 import PillButton from '../components/PillButton';
@@ -10,6 +10,7 @@ import PeleHeader from '../components/PeleHeader';
 import { t } from '../data/i18n';
 import { select, success, warning } from '../data/haptics';
 import useReduceMotion from '../hooks/useReduceMotion';
+import useDark from '../hooks/useDark';
 import { confirmDiscard } from '../data/confirmDiscard';
 import { AppContext } from '../data/appContext';
 import {
@@ -44,6 +45,12 @@ const slotFor = (i) => SLOTS[Math.min(Math.max(i, 0), SLOTS.length - 1)];
 // "Validades & Documentos" (premium) — CARTEIRA (deck) do que expira + FORMULÁRIO RICO por tipo.
 export default function ValidadesScreen({ navigation }) {
   const { validities, rawValidities, addValidity, updateValidity, removeValidity, isPilot, instructorRated, lang, notify } = useContext(AppContext);
+  // A carteira anima as cores de trás para a frente (cores escritas): à noite (N3, 2026-11-17) os de trás no suave da noite e o da
+  // frente na placa (`slab`), um degrau acima da folha — de dia, como sempre: os de trás claros, o da frente de tinta.
+  const dark = useDark();
+  const WAL = dark
+    ? { bg: [PELE_DARK.soft, PELE_DARK.slab], bd: [PELE_DARK.line, PELE_DARK.slab], name: ['rgba(244,242,237,0.5)', PELE_DARK.onSlab], ic: ['rgba(244,242,237,0.4)', 'rgba(255,255,255,0.85)'] }
+    : { bg: ['#E7E5DE', PELE_DAY.slab], bd: ['#DAD8D0', PELE_DAY.slab], name: ['#9C9A92', PELE_DAY.onSlab], ic: ['#B3B1A9', PELE_DAY.onInkFaint] };
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const insets = useSafeAreaInsets();
@@ -307,16 +314,16 @@ export default function ValidadesScreen({ navigation }) {
               const a = anims[it.id];
               if (!a) return null;
               const bg = cardBig(it, st), foot = cardFoot(it, st);
-              const bgC = a.act.interpolate({ inputRange: [0, 1], outputRange: ['#E7E5DE', '#141414'] });
-              const bdC = a.act.interpolate({ inputRange: [0, 1], outputRange: ['#DAD8D0', '#141414'] });
-              const nameC = a.act.interpolate({ inputRange: [0, 1], outputRange: ['#9C9A92', '#FFFFFF'] });
+              const bgC = a.act.interpolate({ inputRange: [0, 1], outputRange: WAL.bg });
+              const bdC = a.act.interpolate({ inputRange: [0, 1], outputRange: WAL.bd });
+              const nameC = a.act.interpolate({ inputRange: [0, 1], outputRange: WAL.name });
               return (
                 <Animated.View key={it.id} style={[s.dcard, isActive && s.dcardShadow, { zIndex: slotFor(slotIdx < 0 ? 99 : slotIdx).z, backgroundColor: bgC, borderColor: bdC, transform: [{ translateX: a.tx }, { translateY: a.ty }, { rotate: a.rot.interpolate({ inputRange: [-30, 30], outputRange: ['-30deg', '30deg'] }) }, { scale: a.sc }] }]}>
                   {/* faixa de estado (direita) — só no cartão da frente */}
                   <Animated.View style={[s.dAccent, { backgroundColor: bandColor(st.band), opacity: a.act }]} pointerEvents="none" />
                   <TouchableOpacity activeOpacity={0.92} onPress={() => (isActive ? openEdit(it) : bringToFront(i))} style={{ flex: 1 }}>
                     <View style={s.chead}>
-                      <Icon name={TYPE_IC[it.type] || 'doc'} size={15} color={isActive ? PELE.onInkFaint : '#B3B1A9'} />
+                      <Icon name={TYPE_IC[it.type] || 'doc'} size={15} color={isActive ? WAL.ic[1] : WAL.ic[0]} />
                       <Animated.Text style={[s.cheadTxt, { color: nameC }]} numberOfLines={1}>{validityLabel(it.type, isPilot, lang, it.program || null)}</Animated.Text>
                       <View style={[s.pill, { backgroundColor: pillBgC(st.band) }]}><Text style={[s.pillTxt, { color: bandTextColor(st.band) }]}>{statusShort(st)}</Text></View>
                     </View>
@@ -533,17 +540,17 @@ const s = StyleSheet.create({
   dAccent: { position: 'absolute', right: 0, top: 22, bottom: 22, width: 3, borderRadius: 3, zIndex: 2 },
   chead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   cheadTxt: { flex: 1, fontSize: 12.5, fontFamily: PELE_FONT.bodyHeavy, color: '#9C9A92' },
-  cheadTxtA: { color: PELE.onInk },
+  cheadTxtA: { color: PELE.onSlab },
   pill: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
   pillTxt: { fontSize: 8.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.6, textTransform: 'uppercase' },
   cbody: { flexDirection: 'row', alignItems: 'center', marginTop: 14, minHeight: 104 },
   cnum: { marginRight: 22, minWidth: 54 },
-  cbig: { fontFamily: PELE_FONT.display, fontSize: 52, lineHeight: 50, color: PELE.onInk, fontVariant: ['tabular-nums'] },
-  cbigUnit: { fontSize: 11.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.8, textTransform: 'uppercase', color: PELE.onInkSub, marginTop: 3 },
+  cbig: { fontFamily: PELE_FONT.display, fontSize: 52, lineHeight: 50, color: PELE.onSlab, fontVariant: ['tabular-nums'] },
+  cbigUnit: { fontSize: 11.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.8, textTransform: 'uppercase', color: PELE.onSlabSub, marginTop: 3 },
   cfoot: { flex: 1, flexDirection: 'row', gap: 18 },
   cfootCol: { flex: 1 },
-  cfootK: { fontSize: 8.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1, textTransform: 'uppercase', color: PELE.onInkSub },
-  cfootV: { fontSize: 13, fontFamily: PELE_FONT.bodyBold, color: PELE.onInk, marginTop: 3 },
+  cfootK: { fontSize: 8.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1, textTransform: 'uppercase', color: PELE.onSlabSub },
+  cfootV: { fontSize: 13, fontFamily: PELE_FONT.bodyBold, color: PELE.onSlab, marginTop: 3 },
 
   addWrap: { paddingHorizontal: GUTTER, paddingTop: 16 },
   addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderColor: PELE.ink, borderRadius: 14, paddingVertical: 14 },
@@ -575,7 +582,7 @@ const s = StyleSheet.create({
   tgt: { width: '31.5%', marginBottom: 8, borderWidth: 1, borderColor: PELE.line, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 6, alignItems: 'center', gap: 8, minHeight: 82 },
   tgtOn: { backgroundColor: PELE.ink, borderColor: PELE.ink },
   tgtIc: { width: 38, height: 38, borderRadius: 11, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
-  tgtIcOn: { backgroundColor: '#242320' },
+  tgtIcOn: { backgroundColor: dyn('#242320', '#D9D6CF') },   // o quadradinho do ícone na escolha a tinta (à noite a tinta é clara)
   tgtNm: { fontSize: 11, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, textAlign: 'center', lineHeight: 13.5 },
   tgtNmOn: { color: PELE.onInk },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

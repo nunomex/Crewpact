@@ -6,7 +6,7 @@ import * as Sharing from 'expo-sharing';
 import Icon from './Icon';
 import SheetHeader from './SheetHeader';
 import PrimaryButton from './PrimaryButton';
-import { PELE as P, PELE_FONT as F, BRAND } from '../data/constants';
+import { PELE as P, PELE_DAY as PD, PELE_FONT as F, BRAND } from '../data/constants';   // PD = o poster, sempre de dia (vai como imagem)
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
 import { AppContext } from '../data/appContext';
@@ -141,10 +141,10 @@ export default function YearShareCard({ visible, onClose, st, year, companyName 
             {/* o avião ink a subir na banda */}
             <View style={{ position: 'absolute', left: bandCX - px(10, k), top: M.planeTop, zIndex: 3 }}>
               {/* nariz para CIMA, na vertical da banda (user 2026-09-03; base do glifo = nariz-cima) */}
-              <Icon name="plane" size={px(19, k)} color={P.ink} />
+              <Icon name="plane" size={px(19, k)} color={PD.ink} />
             </View>
             {/* o TÍTULO gravado na banda: segmento ink + "O MEU ANO" rodado (lê de cima p/ baixo) */}
-            <View style={{ position: 'absolute', left: bandCX - 1.5, top: M.lblTop, width: 3, height: px(26, k), backgroundColor: P.ink, borderRadius: 2, zIndex: 3 }} />
+            <View style={{ position: 'absolute', left: bandCX - 1.5, top: M.lblTop, width: 3, height: px(26, k), backgroundColor: PD.ink, borderRadius: 2, zIndex: 3 }} />
             <View style={{ position: 'absolute', left: bandCX - LBL_LEN / 2, top: M.lblTop + px(31, k) + LBL_LEN / 2 - 8, width: LBL_LEN, height: 16, transform: [{ rotate: '90deg' }], zIndex: 3 }}>
               <Text style={[s.lbl, { fontSize: px(9.5, k), letterSpacing: px(2.2, k) }]} numberOfLines={1} allowFontScaling={false}>{l('O MEU ANO', 'MY YEAR')}</Text>
             </View>
@@ -230,23 +230,23 @@ const s = StyleSheet.create({
   // o poster (cores FIXAS)
   card: { backgroundColor: '#FFFFFF', overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(20,20,20,0.08)' },
   yband: { position: 'absolute', top: 0, bottom: 0, backgroundColor: BRAND.signal, zIndex: 2 },
-  lbl: { fontFamily: F.bodyHeavy, color: P.ink, textAlign: 'left' },
+  lbl: { fontFamily: F.bodyHeavy, color: PD.ink, textAlign: 'left' },
   pad: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, zIndex: 1 },
-  t2: { fontFamily: F.bodyHeavy, color: P.grey },
-  g: { fontFamily: F.displayHeavy, color: P.ghost, alignSelf: 'flex-end', includeFontPadding: false },
-  hk: { fontFamily: F.bodyHeavy, color: P.grey },
+  t2: { fontFamily: F.bodyHeavy, color: PD.grey },
+  g: { fontFamily: F.displayHeavy, color: PD.ghost, alignSelf: 'flex-end', includeFontPadding: false },
+  hk: { fontFamily: F.bodyHeavy, color: PD.grey },
   hrow: { flexDirection: 'row', alignItems: 'baseline', gap: 7 },
   under: { position: 'absolute', backgroundColor: BRAND.signal, opacity: 0.95 },
-  word: { fontFamily: F.displayHeavy, color: P.ink, includeFontPadding: false },
-  un: { fontFamily: F.displaySemi, color: P.grey },
+  word: { fontFamily: F.displayHeavy, color: PD.ink, includeFontPadding: false },
+  un: { fontFamily: F.displaySemi, color: PD.grey },
   trans: { fontFamily: F.hand, color: 'rgba(20,20,20,0.72)', transform: [{ rotate: '-1.5deg' }] },
   strip: { flexDirection: 'row', gap: 8, borderTopWidth: 1, borderTopColor: 'rgba(20,20,20,0.14)' },
-  cellK: { fontFamily: F.bodyHeavy, color: P.grey },
-  cellV: { fontFamily: F.display, color: P.ink },
+  cellK: { fontFamily: F.bodyHeavy, color: PD.grey },
+  cellV: { fontFamily: F.display, color: PD.ink },
   dest: { borderTopWidth: 1, borderTopColor: 'rgba(20,20,20,0.14)' },
-  destLine: { fontFamily: F.display, color: P.ink, letterSpacing: 0.4 },
-  destN: { color: P.grey, fontFamily: F.displaySemi },
+  destLine: { fontFamily: F.display, color: PD.ink, letterSpacing: 0.4 },
+  destN: { color: PD.grey, fontFamily: F.displaySemi },
   foot: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   fdot: { width: 7, height: 7, borderRadius: 2.5, backgroundColor: BRAND.signal },
-  footTxt: { fontFamily: F.bodyHeavy, color: P.grey },
+  footTxt: { fontFamily: F.bodyHeavy, color: PD.grey },
 });

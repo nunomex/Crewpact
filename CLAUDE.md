@@ -41,6 +41,9 @@ fadiga (FTL — Reg. UE 83/2014 · CS-FTL.1) e a remuneração prevista pelos ac
    **Cores: o mapa B "frio e quente" (2026-11-13, `docs/design-system.md` §14, esboço `design/cores.html`)** — frio = a escala
    (`CARD.flight/ground/rest`), quente = olhar (`alert` com "!", `stop` com "✕"), dentro sem cor, incerto neutro, verde só no
    dinheiro (`CARD.gain`/`MONEY`; o guardião tranca o verde da PELE).
+   **O modo noite N3 segue o iPhone (no código a 2026-11-17):** os ecrãs usam as cores VIVAS (`PELE`, `CARD.auto`, `BRAND`, `MONEY`),
+   que o iOS troca sozinho; a paleta em bruto (`CARD.day`, `PELE_DAY`…) só com motivo — o guardião tranca-o (`docs/design-system.md`
+   §14, "O modo noite no código"); o que é sempre escuro com letra branca usa a placa (`PELE.slab`).
    **Direção 3.0 "cartões de cor" (aprovada 2026-11-11):** esboço `design/inicio-cartoes.html`, regras em `docs/design-system.md`
    §14. **O Início e a barra de abas já estão no código** (2026-11-11, por ver no iPhone): o que vai para onde decide-o
    `data/homeCards.js` (golden `test:homecards`), o desenho é `components/HomeCards.js`, tokens `CARD`/`TXT3`. **A Escala

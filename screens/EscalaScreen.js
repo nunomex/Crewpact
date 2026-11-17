@@ -48,7 +48,7 @@ const ROW_GAP = SPACE.xs;
 const TOUR_W = 260;              // o balão da guiada
 const TOUR_H = 140;              // a altura que o balão costuma ter (para a folha deslizar até ele)
 const GAP = SPACE.xs;
-const C = CARD.day;   // a barra de abas só escurece no Início; a Escala fica de dia como o resto (design-system §14)
+const C = CARD.auto;   // a barra de abas só escurece no Início; a Escala fica de dia como o resto (design-system §14)
 const valid = (d) => !!(d && !d.deleted);
 const isoOf = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
 
@@ -753,13 +753,13 @@ export default function EscalaScreen({ navigation, route }) {
       {/* A janela do calendário (C1, esboço design/janelas-c.html, 2026-11-13): "Fechar" escrito em cima · as linhas com o quadradinho
           (laranja "!" = rever as alterações; neutro = o resto) · a ação principal num botão largo no fundo ("Sincronizar agora"; sem
           calendário, "Ligar ao calendário"). */}
-      <PeleSheet visible={hubOpen} onClose={() => setHubOpen(false)} bg={CARD.day.sheet}>
+      <PeleSheet visible={hubOpen} onClose={() => setHubOpen(false)} bg={CARD.auto.sheet}>
         <SheetHeader card title={calendarId ? l('Calendário', 'Calendar') : l('Importar escala', 'Import roster')} onClose={() => setHubOpen(false)}
           closeLabel={l('Fechar', 'Close')} style={s.hubHead} />
         {calendarId ? (
           <>
             {rcCounts?.total ? (
-              <MarkRow first isNew mark={{ bg: CARD.day.alert, glyph: '!' }} chevron
+              <MarkRow first isNew mark={{ bg: CARD.auto.alert, glyph: '!' }} chevron
                 title={rcCounts.total === 1 ? l('Rever 1 alteração', 'Review 1 change') : l(`Rever ${rcCounts.total} alterações`, `Review ${rcCounts.total} changes`)}
                 sub={l('a escala mudou · confirma antes de aplicar', 'the roster changed · confirm before applying')}
                 onPress={() => { setHubOpen(false); setImportSource('calendar'); setTimeout(() => setImportOpen(true), 320); }} />
@@ -779,7 +779,7 @@ export default function EscalaScreen({ navigation, route }) {
               onPress={() => { setHubOpen(false); setImportSource('paste'); setTimeout(() => setImportOpen(true), 320); }} />
           </>
         )}
-        <View style={s.hubNote}><Icon name="lock" size={13} color={CARD.day.tabSub} /><Text style={[TXT.caption, { color: CARD.day.tabSub }]}>{l('Lido no telemóvel · confirmas antes de gravar', 'Read on your phone · you confirm before saving')}</Text></View>
+        <View style={s.hubNote}><Icon name="lock" size={13} color={CARD.auto.tabSub} /><Text style={[TXT.caption, { color: CARD.auto.tabSub }]}>{l('Lido no telemóvel · confirmas antes de gravar', 'Read on your phone · you confirm before saving')}</Text></View>
         {calendarId ? (
           <WideButton glyph="sync" label={l('Sincronizar agora', 'Sync now')} onPress={() => { setHubOpen(false); onSync(); }} />
         ) : (
@@ -894,7 +894,7 @@ const s = StyleSheet.create({
 
   // Folhas (hub de importar · seletor de mês) — por migrar, seguem a 2.0
   hubHead: { paddingHorizontal: 0, paddingTop: 0 },
-  hubLead: { color: CARD.day.soft, paddingBottom: SPACE.sm },
+  hubLead: { color: CARD.auto.soft, paddingBottom: SPACE.sm },
   hubNote: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACE.s, paddingVertical: SPACE.md },
   mpYear: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACE.lgPlus, marginBottom: SPACE.md },
   mpYearTxt: { ...TXT.title, color: PELE.ink, minWidth: 76, textAlign: 'center' },

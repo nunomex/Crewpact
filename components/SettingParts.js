@@ -12,7 +12,7 @@ import { WideButton } from './PillButton';
 import MonthYearWheel from './MonthYearWheel';
 import { CARD, TXT3, SPACE, RADIUS } from '../data/constants';
 
-const C = CARD.day;
+const C = CARD.auto;
 const MAX = 1.3;
 
 // ── As opções num só cartão: título (o código, quando há), a explicação, o chip "ATUAL" e o ✓ a tinta ──

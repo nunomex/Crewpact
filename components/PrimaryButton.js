@@ -8,7 +8,8 @@ import { RADIUS, PELE, PELE_FONT, BRAND } from '../data/constants';
 // ink + texto papel + spinner AMARELO (a marca), Hanken pesado. A API não mudou (label,
 // onPress, icon Ionicons, disabled, loading, tone 'ink'|'danger', radius 'pill'|'lg',
 // style, ...rest) → os 9 consumidores rendem pele sem tocar em nenhum call-site.
-// `glyph` (2026-11-02) = ícone da casa (components/Icon), a amarelo `onDark` sobre a tinta — preferir ao
+// `glyph` (2026-11-02) = ícone da casa (components/Icon), a amarelo `onAction` sobre a tinta (à noite o botão inverte e o ícone
+// passa à letra do botão — N3, 2026-11-17) — preferir ao
 // `icon` (Ionicons, legado) em código novo.
 export default function PrimaryButton({ label, onPress, icon, glyph, disabled = false, loading = false, tone = 'ink', radius = 'pill', elevated = false, style, ...rest }) {
   const bg = disabled ? PELE.soft : tone === 'danger' ? PELE.red : BRAND.action;   // edições: o azul do sindicato
@@ -18,9 +19,9 @@ export default function PrimaryButton({ label, onPress, icon, glyph, disabled = 
     <TouchableOpacity onPress={onPress} disabled={disabled || loading} activeOpacity={0.85}
       accessibilityRole="button" accessibilityState={{ disabled: disabled || loading, busy: loading }} accessibilityLabel={label}
       style={[s.base, { backgroundColor: bg, borderRadius: radius === 'lg' ? RADIUS.lg : RADIUS.pill }, style]} {...rest}>
-      {loading ? <ActivityIndicator color={tone === 'ink' && !disabled ? BRAND.onDark : fg} /> : (
+      {loading ? <ActivityIndicator color={tone === 'ink' && !disabled ? BRAND.onAction : fg} /> : (
         <>
-          {glyph ? <Icon name={glyph} size={18} color={disabled ? fg : BRAND.onDark} /> : null}
+          {glyph ? <Icon name={glyph} size={18} color={disabled ? fg : BRAND.onAction} /> : null}
           {icon ? <Ionicons name={icon} size={17} color={fg} /> : null}
           <Text style={[s.txt, { color: fg }]}>{label}</Text>
         </>

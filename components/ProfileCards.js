@@ -14,9 +14,9 @@ import Icon from './Icon';
 import CountUp from './CountUp';
 import PillButton from './PillButton';
 import useReduceMotion from '../hooks/useReduceMotion';
-import { CARD, TXT3, SPACE, RADIUS } from '../data/constants';
+import { CARD, PELE, TXT3, SPACE, RADIUS } from '../data/constants';
 
-const C = CARD.day;
+const C = CARD.auto;
 const MAX = 1.3;   // letra grande: os cartões crescem até 130 %
 
 // Um cartão neutro (o LineCard de sempre), tocável quando abre alguma coisa.
@@ -138,21 +138,21 @@ export function CareerCard({ leg, l, companyName, base, catLabel }) {
     + `${leg.stops.map((st) => `, ${st.year} ${st.category}`).join('')}; ${l('hoje', 'today')} ${leg.to.category || ''}. ${leg.text}.`;
   const planeX = v.interpolate({ inputRange: [0, 1], outputRange: [-Math.max(0, w - 24), 0] });
   return (
-    <Card a11y={a11y} style={{ backgroundColor: C.flight }}>
+    <Card a11y={a11y} style={{ backgroundColor: C.flightFill }}>
       <View accessible accessibilityLabel={a11y}>
-        <Head color={CARD.onCardKind} kind={`${l('A tua carreira', 'Your career')}${companyName ? ` · ${companyName}` : ''}`}
-          right={base ? <Text style={[TXT3.kind, { color: CARD.onCardKind }]} maxFontSizeMultiplier={MAX}>{base}</Text> : null} />
+        <Head color={C.onFillKind} kind={`${l('A tua carreira', 'Your career')}${companyName ? ` · ${companyName}` : ''}`}
+          right={base ? <Text style={[TXT3.kind, { color: C.onFillKind }]} maxFontSizeMultiplier={MAX}>{base}</Text> : null} />
         <View style={s.leg}>
           <View>
             <Text style={[TXT3.cardTitle, { color: C.ink }]} maxFontSizeMultiplier={MAX}>{leg.from.year}</Text>
-            <Text style={[TXT3.cardNumLbl, { color: CARD.onCardSub }]} maxFontSizeMultiplier={MAX}>{leg.from.category || '—'}</Text>
+            <Text style={[TXT3.cardNumLbl, { color: C.onFillSub }]} maxFontSizeMultiplier={MAX}>{leg.from.category || '—'}</Text>
           </View>
           <View style={s.trackLeg} onLayout={(e) => setW(Math.round(e.nativeEvent.layout.width))}>
             <View style={s.legBase} />
             <Animated.View style={[s.legFill, { transform: [{ scaleX: v }] }]} />
             {leg.stops.map((st) => (
               <View key={st.ym} style={[s.stopWrap, { left: `${Math.round(st.pct * 100)}%` }]}>
-                <Text style={[TXT3.cardNumLbl, s.stopLbl, { color: CARD.onCard }]} numberOfLines={1} allowFontScaling={false}>{`${st.year} · ${st.category}`}</Text>
+                <Text style={[TXT3.cardNumLbl, s.stopLbl, { color: C.onFill }]} numberOfLines={1} allowFontScaling={false}>{`${st.year} · ${st.category}`}</Text>
                 <View style={s.stop} />
               </View>
             ))}
@@ -160,7 +160,7 @@ export function CareerCard({ leg, l, companyName, base, catLabel }) {
           </View>
           <View style={s.legEnd}>
             <Text style={[TXT3.cardTitle, { color: C.ink }]} maxFontSizeMultiplier={MAX}>{leg.label}</Text>
-            <Text style={[TXT3.cardNumLbl, { color: CARD.onCardSub }]} numberOfLines={1} maxFontSizeMultiplier={MAX}>{catLabel || leg.to.category || '—'}</Text>
+            <Text style={[TXT3.cardNumLbl, { color: C.onFillSub }]} numberOfLines={1} maxFontSizeMultiplier={MAX}>{catLabel || leg.to.category || '—'}</Text>
           </View>
         </View>
         <View style={s.selo}><Text style={[TXT3.dur, s.seloTxt]} maxFontSizeMultiplier={MAX}>{leg.text}</Text></View>
@@ -269,7 +269,7 @@ export function FamilyCard({ fam, total, l, onAdd, onOpen }) {
 // ── OS MINI-CARTÕES DAS DEFINIÇÕES (a imagem "Settings" do Nuno · 3442 · 3426) ──
 export function QuickSettings({ l, lang, lockOn, onLock, remindersOn, onReminders, onLang }) {
   const sw = (on, fn, label) => (
-    <Switch value={!!on} onValueChange={fn} trackColor={{ true: C.ink, false: C.round }} thumbColor={C.sheet} ios_backgroundColor={C.round} accessibilityLabel={label} />
+    <Switch value={!!on} onValueChange={fn} trackColor={{ true: PELE.toggle, false: C.round }} thumbColor={CARD.chip} ios_backgroundColor={C.round} accessibilityLabel={label} />
   );
   return (
     <View style={s.minis}>
@@ -353,7 +353,7 @@ const s = StyleSheet.create({
   leg: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md },
   legEnd: { alignItems: 'flex-end', maxWidth: 112 },
   trackLeg: { flex: 1, height: 44, justifyContent: 'center' },
-  legBase: { position: 'absolute', left: 0, right: 0, top: 23, borderTopWidth: 2, borderStyle: 'dashed', borderColor: CARD.onCardSub },
+  legBase: { position: 'absolute', left: 0, right: 0, top: 23, borderTopWidth: 2, borderStyle: 'dashed', borderColor: C.onFillSub },
   legFill: { position: 'absolute', left: 0, right: 0, top: 22, height: 4, borderRadius: RADIUS.pill, backgroundColor: C.ink, transformOrigin: 'left' },
   stopWrap: { position: 'absolute', top: 0, alignItems: 'center', transform: [{ translateX: -40 }], width: 80 },
   stopLbl: { height: 16 },

@@ -63,7 +63,7 @@ export default function HotelSheet({ visible, onClose, station = null, idx = 0, 
     onClose && onClose();
   };
 
-  const W = CARD.day;
+  const W = CARD.auto;
   const city = (airportInfo(st) || {}).city || '';
   return (
     <PeleSheet visible={visible} onClose={onClose} bg={W.sheet}>
@@ -142,8 +142,8 @@ const s = StyleSheet.create({
   stn: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md },
   stq: { width: 44, height: 44, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },
   stqSm: { width: 36, height: 36, borderRadius: RADIUS.sm },
-  expl: { color: CARD.day.tabSub },
-  drop: { borderRadius: RADIUS.lg, backgroundColor: CARD.day.neutral, paddingHorizontal: SPACE.md },
+  expl: { color: CARD.auto.tabSub },
+  drop: { borderRadius: RADIUS.lg, backgroundColor: CARD.auto.neutral, paddingHorizontal: SPACE.md },
   dOpt: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingVertical: SPACE.sm },
   dOptRule: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: CARD.rule },
   priv: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACE.s, paddingVertical: SPACE.sm },

@@ -24,11 +24,11 @@ import { durHM } from '../data/duration';
 // "N novidades" que SÓ EXISTE quando há por ler — o botão desaparece quando não tem nada
 // para dizer, à Apple/Living Interface) · 'written' (Início 3.0: o botão ESCRITO "Notificações" ao lado das pílulas — S1, esboço
 // design/botoes-escritos.html, 2026-11-13; era um redondo com o sino —, sempre presente, com a contagem por ler num círculo laranja
-// no canto). `night` = tema noturno do Início.
+// no canto). As cores seguem o iPhone (o modo noite N3, 2026-11-17).
 // A JANELA (C1, esboço design/janelas-c.html, 2026-11-13): "Fechar" escrito em cima · as novas separadas das antigas ("Novas" ·
 // "Antes") · cada uma com o quadradinho do que é (laranja "!" = olhar · vermelho "✕" = parar · neutro = informação, o mapa B) ·
 // os dias que mudaram À VISTA por baixo da linha · a única ação (rever as alterações) num botão largo no fundo.
-export default function NotificationsBell({ variant = 'bell', night = false }) {
+export default function NotificationsBell({ variant = 'bell' }) {
   const { profile, lang, readNotifIds, setReadNotifIds, rosterChanges, validities, isPilot, dayLog, duties, ae, aeAt, crewAt, crewFleet, aeEvents, serviceStart, serviceStartExact, largada, crewHistory, companyHistory, lifestyle, homeBaseAt } = useContext(AppContext);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
@@ -98,7 +98,7 @@ export default function NotificationsBell({ variant = 'bell', night = false }) {
   const rosterN = (rosterChanges && rosterChanges.counts && rosterChanges.counts.total) || 0;
   // O quadradinho diz o que é, pelo mapa das cores B (design-system §14): quente = olhar ("!" laranja) · parar ("✕" vermelho, um
   // limite ultrapassado ou um documento caducado) · neutro = informação (o ícone do sítio para onde leva).
-  const W = CARD.day;
+  const W = CARD.auto;
   const markOf = (n) => {
     if (n.level === 'stop') return { bg: W.stop, glyph: '✕' };
     if (n.level === 'alert') return { bg: W.alert, glyph: '!' };
@@ -149,14 +149,14 @@ export default function NotificationsBell({ variant = 'bell', night = false }) {
     <>
       {/* O leitor de ecrã DIZ quantas há por ler (o ponto visual era mudo p/ VoiceOver/TalkBack). */}
       {variant === 'written' ? (
-        <PillButton label={t('home.notifsTitle', lang)} onPress={() => setOpen(true)} ink={(night ? CARD.night : CARD.day).ink}
-          ring={(night ? CARD.night : CARD.day).desk} badgeBg={(night ? CARD.night : CARD.day).alert} badge={unread || null} a11yLanguage={AL}
+        <PillButton label={t('home.notifsTitle', lang)} onPress={() => setOpen(true)} ink={CARD.auto.ink}
+          ring={CARD.auto.desk} badgeBg={CARD.auto.alert} badge={unread || null} a11yLanguage={AL}
           a11yLabel={`${t('home.notifsAria', lang)}${unread > 0 ? ` · ${unread} ${l('por ler', 'unread')}` : ''}`} />
       ) : variant === 'pill' ? (
-        <TouchableOpacity style={[s.pill, night && s.pillNight]} onPress={() => setOpen(true)} activeOpacity={0.8} hitSlop={8}
+        <TouchableOpacity style={s.pill} onPress={() => setOpen(true)} activeOpacity={0.8} hitSlop={8}
           accessibilityRole="button" accessibilityLanguage={AL} accessibilityLabel={`${t('home.notifsAria', lang)} · ${unread} ${l('por ler', 'unread')}`}>
           <View style={s.pillDot} />
-          <Text style={[s.pillTxt, night && s.pillTxtNight]} numberOfLines={1}>
+          <Text style={s.pillTxt} numberOfLines={1}>
             {unread} {unread === 1 ? l('novidade', 'update') : l('novidades', 'updates')}
           </Text>
         </TouchableOpacity>
@@ -200,17 +200,15 @@ const s = StyleSheet.create({
   dot: { position: 'absolute', top: -1, right: -1, width: 11, height: 11, borderRadius: RADIUS.pill, backgroundColor: PELE.red, borderWidth: 2, borderColor: PELE.paper },
   // Pílula do Início — "● N novidades": só existe com por-ler; ponto amarelo = marca.
   pill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: PELE.soft, borderRadius: RADIUS.pill, paddingVertical: 5, paddingHorizontal: 11 },
-  pillNight: { backgroundColor: 'rgba(244,242,237,0.10)' },
   pillDot: { width: 6, height: 6, borderRadius: 99, backgroundColor: BRAND.signal },
   pillTxt: { fontSize: 10.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.ink },
-  pillTxtNight: { color: '#F4F2ED' },
 
   // A janela (C1): a folha branca da 3.0, a lista com o quadradinho e o botão largo no fundo.
   flex: { flex: 1 },
-  page: { flex: 1, backgroundColor: CARD.day.sheet },
+  page: { flex: 1, backgroundColor: CARD.auto.sheet },
   body: { paddingHorizontal: SPACE.lgPlus, paddingBottom: SPACE.xl },
-  empty: { color: CARD.day.tabSub, textAlign: 'center', paddingVertical: SPACE.xxl },
-  sec: { color: CARD.day.tabSub, paddingTop: SPACE.md, paddingBottom: SPACE.xs },
+  empty: { color: CARD.auto.tabSub, textAlign: 'center', paddingVertical: SPACE.xxl },
+  sec: { color: CARD.auto.tabSub, paddingTop: SPACE.md, paddingBottom: SPACE.xs },
   // os dias que mudaram, por baixo da linha, alinhados com o texto (36 do quadradinho + 12)
   days: { marginLeft: MARK_INDENT, marginTop: SPACE.md, gap: SPACE.md },
   day: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md },

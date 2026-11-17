@@ -20,7 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import Icon from './Icon';
 import IconButton from './IconButton';
-import { PELE, PELE_NIGHT, PELE_FONT, BRAND, TXT, SPACE, RADIUS } from '../data/constants';
+import { PELE, PELE_DAY, PELE_NIGHT, PELE_FONT, BRAND, TXT, SPACE, RADIUS } from '../data/constants';
 import { reduceMotionNow } from '../hooks/useReduceMotion';
 
 const PLATE = { half: 0.417, tall: 0.71 };   // fração do ecrã (= 352 e 600 pt num iPhone de 844)
@@ -127,10 +127,12 @@ export const portaTxt = StyleSheet.create({
   center: { textAlign: 'center' },
 });
 
+// A PLACA é sempre de tinta, de dia e de noite (N3, 2026-11-17): o que está nela usa as cores em bruto do dia e as da noite; a
+// folha por baixo segue o iPhone (a `PELE` viva).
 const s = StyleSheet.create({
-  root:      { flex: 1, backgroundColor: PELE.ink },
+  root:      { flex: 1, backgroundColor: PELE_DAY.ink },
   flex:      { flex: 1 },
-  plate:     { backgroundColor: PELE.ink, paddingHorizontal: SPACE.xl, paddingBottom: RADIUS.xxl },
+  plate:     { backgroundColor: PELE_DAY.ink, paddingHorizontal: SPACE.xl, paddingBottom: RADIUS.xxl },
   brandArea: { flex: 1, justifyContent: 'center' },
   corner:    { position: 'absolute', right: SPACE.xl, zIndex: 1 },
   // A folha sobrepõe a placa pelo raio do canto (os cantos arredondados assentam na tinta).
@@ -143,13 +145,13 @@ const s = StyleSheet.create({
   eye:       { ...TXT.eyebrow, letterSpacing: 3, color: PELE_NIGHT.grey, marginBottom: SPACE.md },
   rule:      { width: 120, height: 4, backgroundColor: BRAND.onDark, marginBottom: SPACE.md },
   ruleSm:    { width: 64, marginBottom: SPACE.sm },
-  name:      { fontSize: 48, lineHeight: 50, letterSpacing: 3, color: PELE.paper },
+  name:      { fontSize: 48, lineHeight: 50, letterSpacing: 3, color: PELE_DAY.paper },
   nameSm:    { fontSize: 28, lineHeight: 30, letterSpacing: 2 },
   light:     { fontFamily: PELE_FONT.displayMed },
   heavy:     { fontFamily: PELE_FONT.displayHeavy },
 
   progTxt:   { ...TXT.eyebrow, color: PELE_NIGHT.grey, marginBottom: SPACE.md },
-  progStrong:{ color: PELE.paper },
+  progStrong:{ color: PELE_DAY.paper },
   track:     { height: 4, borderRadius: 2, backgroundColor: PELE_NIGHT.line, overflow: 'hidden' },
   fill:      { height: 4, borderRadius: 2, backgroundColor: BRAND.onDark },
 });

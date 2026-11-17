@@ -11,7 +11,7 @@ import Porta, { portaTxt as P } from './Porta';
 import PrimaryButton from './PrimaryButton';
 import Icon from './Icon';
 import { AppContext } from '../data/appContext';
-import { PELE, TXT, SPACE } from '../data/constants';
+import { PELE, PELE_DAY, TXT, SPACE } from '../data/constants';
 import useReduceMotion from '../hooks/useReduceMotion';
 
 export default function WelcomeSheet({ visible, onDone, lang = 'pt' }) {
@@ -79,7 +79,7 @@ export default function WelcomeSheet({ visible, onDone, lang = 'pt' }) {
 }
 
 const s = StyleSheet.create({
-  full:    { flex: 1, backgroundColor: PELE.ink },
+  full:    { flex: 1, backgroundColor: PELE_DAY.ink },   // a placa da Porta, sempre de tinta (N3)
   lead:    { marginBottom: SPACE.lg },
   row:     { flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.md, paddingVertical: SPACE.md, borderBottomWidth: 1, borderBottomColor: PELE.line },
   rowLast: { borderBottomWidth: 0 },

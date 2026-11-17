@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from './Icon';
-import { PELE as P, PELE_FONT as F } from '../data/constants';
+import { PELE as P, PELE_FONT as F, dyn } from '../data/constants';
 import { searchAirports, airportInfo } from '../data/airports';
 import { AppContext } from '../data/appContext';
 import { select, success } from '../data/haptics';
@@ -101,7 +101,8 @@ const s = StyleSheet.create({
   arrow: { color: P.grey, fontSize: 13 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 32, backgroundColor: P.ink, borderRadius: 11, paddingLeft: 11, paddingRight: 8 },
   chipTxt: { color: P.onInk, fontFamily: F.display, fontSize: 15, letterSpacing: 0.8 },
-  chipX: { width: 18, height: 18, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
+  chipX: { width: 18, height: 18, borderRadius: 99, backgroundColor: dyn('rgba(255,255,255,0.18)', 'rgba(31,34,42,0.14)'),   // sobre a tinta (à noite clara — N3)
+    alignItems: 'center', justifyContent: 'center' },
   input: { flex: 1, minWidth: 100, height: 32, fontFamily: F.body, fontSize: 14, color: P.ink, padding: 0, includeFontPadding: false, textAlignVertical: 'center' },
   ok: { width: 36, height: 32, borderRadius: 10, backgroundColor: P.ink, alignItems: 'center', justifyContent: 'center', marginLeft: 'auto' },
 

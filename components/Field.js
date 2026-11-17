@@ -14,7 +14,7 @@ import React, { forwardRef, useState } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { CARD, TXT3, SPACE } from '../data/constants';
 
-const W = CARD.day;
+const W = CARD.auto;
 
 // Ler. `big` = o número da folha (34, `TXT3.unit`); `text` = um parágrafo (a regra) no lugar do valor; `children` = um valor feito
 // à mão (o dinheiro com os cêntimos mais pequenos).

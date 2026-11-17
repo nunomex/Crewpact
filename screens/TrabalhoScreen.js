@@ -19,7 +19,7 @@ import { select } from '../data/haptics';
 import { t } from '../data/i18n';
 import { CARD, TXT3, SPACE, RADIUS } from '../data/constants';
 
-const C = CARD.day;
+const C = CARD.auto;
 
 // Uma linha: o rótulo, o valor (com o ponto laranja quando falta confirmar) e ›.
 function Row({ label, value, dot, onPress, first }) {
@@ -69,7 +69,7 @@ export default function TrabalhoScreen({ navigation }) {
 
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: C.desk }]} edges={['top']}>
-      <StatusBar style="dark" />
+      <StatusBar style="auto" />
       <View style={s.top}>
         <IconButton icon="back" onPress={() => navigation.goBack()} label={t('common.back', lang)} style={{ backgroundColor: C.round }} />
         <Text style={[TXT3.month, s.title, { color: C.ink }]} accessibilityRole="header">{l('O teu trabalho', 'Your job')}</Text>

@@ -31,7 +31,7 @@ export default function CalendarPickerSheet({ visible, onClose, onSelect, curren
 
   const confirm = () => { if (!sel) return; success(); const c = (cals || []).find((x) => x.id === sel); onSelect && onSelect(sel, c ? c.title : null); onClose && onClose(); };
 
-  const W = CARD.day;
+  const W = CARD.auto;
   return (
     // Superfície LEVE (uma escolha): pageSheet no iOS (gesto de arrasto do sistema).
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'}>
@@ -68,11 +68,11 @@ export default function CalendarPickerSheet({ visible, onClose, onSelect, curren
 // C1 (2026-11-14): a folha branca da 3.0, as linhas com o quadradinho (MarkRow) e o botão largo no fundo (WideButton).
 const s = StyleSheet.create({
   flex: { flex: 1 },
-  page: { flex: 1, backgroundColor: CARD.day.sheet },
+  page: { flex: 1, backgroundColor: CARD.auto.sheet },
   body: { paddingHorizontal: SPACE.lgPlus, paddingBottom: SPACE.xl },
-  lead: { color: CARD.day.tabSub, paddingBottom: SPACE.sm },
+  lead: { color: CARD.auto.tabSub, paddingBottom: SPACE.sm },
   center: { alignItems: 'center', justifyContent: 'center', paddingVertical: SPACE.xxl },
-  centerTxt: { color: CARD.day.tabSub, textAlign: 'center' },
+  centerTxt: { color: CARD.auto.tabSub, textAlign: 'center' },
   tick: { width: 24, height: 24, borderRadius: RADIUS.pill, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   foot: { paddingHorizontal: SPACE.lgPlus, paddingTop: SPACE.sm },
 });

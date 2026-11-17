@@ -10,6 +10,7 @@ import { shareCardFor } from '../data/shareLeg';
 import { HomeTop, HomeCards, ShiftView, pillWidth } from '../components/HomeCards';
 import useReduceMotion from '../hooks/useReduceMotion';
 import useStateShift, { useColorPass } from '../hooks/useStateShift';
+import useDark from '../hooks/useDark';
 import { durHM } from '../data/duration';
 import { homeCards, topGiant, unknownLegal } from '../data/homeCards';
 import { stateVoice } from '../data/stateVoice';
@@ -185,7 +186,7 @@ function useStationWx(station) {
 export default function HomeScreen({ navigation }) {
   const isFocused = useIsFocused();
   const { width: winW } = useWindowDimensions();
-  const { user, lang, ftlSnap, dayLog, duties, rosterUnknown, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync, base, homeBaseAt, cabinGapMin, splitAdminMin, hotels, postFlightMin, vacationDaysYear, openSimulation, setHomeNight, serviceStart, serviceStartExact, largada, rosterLog, notify, lifestyle } = useContext(AppContext);
+  const { user, lang, ftlSnap, dayLog, duties, rosterUnknown, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync, base, homeBaseAt, cabinGapMin, splitAdminMin, hotels, postFlightMin, vacationDaysYear, openSimulation, serviceStart, serviceStartExact, largada, rosterLog, notify, lifestyle } = useContext(AppContext);
   // O COMANDANTE (easyJet CPT · TAP CTE): a discrição do 205(f) é dele — para o FO e a cabine é informação (auditoria
   // do tripulante, 2026-11-04).
   const isCommander = !!isPilot && ['CPT', 'CTE'].includes(String(crewCategory || '').toUpperCase());
@@ -526,10 +527,10 @@ export default function HomeScreen({ navigation }) {
   const todayEnded = cs.ended ? (duties[todayISO] || null) : null;
   const closeMulti = cs.closeMulti;
   const closeNsStation = cs.nsStation;
-  // Tema NOTURNO (véspera/pernoita) — publica-se ao contexto para a TabBar herdar.
-  const night = homeState === 'vespera' || homeState === 'pernoita';
+  // O MODO NOITE N3 segue o iPhone (o Nuno, 2026-11-14/15): a véspera e a pernoita já não escurecem sozinhas — a noite é a do
+  // iPhone, na app toda. A paleta em bruto (não a viva): o Início anima as cores na mudança de estado (M2/M3, useColorPass).
+  const night = useDark();
   const C = night ? CARD.night : CARD.day;   // os cartões de cor (design-system §14)
-  useEffect(() => { setHomeNight && setHomeNight(night); }, [night, setHomeNight]);
   const inDuty = isToday && cdMin != null && cdMin <= 0;
   const kindLabel = flight && flight.kind ? t('duties.kind.' + flight.kind, lang) : '';
   const hm = (x) => (x ? String(x).slice(11, 16) : null);
@@ -1172,7 +1173,7 @@ export default function HomeScreen({ navigation }) {
               <View style={[s.demoDot, { backgroundColor: BRAND.signal }]} />
               <Text style={[TXT3.pill, { color: C.ink }]} allowFontScaling={false}>{l('Exemplo · sair', 'Example · exit')}</Text>
             </TouchableOpacity>
-          ) : <NotificationsBell variant="written" night={night} />} />
+          ) : <NotificationsBell variant="written" />} />
       )}
       {/* A FOLHA: o cartão do momento e o do que vem a seguir. Num iPhone pequeno desliza; o topo e a barra ficam. */}
       <Animated.View style={[s.sheet, { backgroundColor: sheetBg }]}>

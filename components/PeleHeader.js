@@ -98,7 +98,8 @@ const s = StyleSheet.create({
   // Linha reservada VAZIA (reserveTop): 12 de padding + 36 do disco (sino/avatar) = 48, a
   // mesma cota das filas reais — o herói não salta entre abas.
   hdrRes: { minHeight: 48 },
-  av: { width: 36, height: 36, borderRadius: 18, backgroundColor: P.ink, alignItems: 'center', justifyContent: 'center' },
+  av: { width: 36, height: 36, borderRadius: 18, backgroundColor: P.slab,   // as iniciais amarelas pedem o escuro (N3: a placa)
+    alignItems: 'center', justifyContent: 'center' },
   avNight: { backgroundColor: 'rgba(244,242,237,0.14)' },   // disco claro-translúcido sobre o papel noturno; iniciais amarelas ficam
   avTxt: { color: BRAND.onDark, fontFamily: F.bodyHeavy, fontSize: 14 },
   eyb: { fontSize: 11, fontFamily: F.bodyHeavy, letterSpacing: 1.4, textTransform: 'uppercase', color: P.grey, marginTop: 8 },

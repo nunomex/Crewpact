@@ -28,7 +28,7 @@ import { fmt } from '../data/homeCards';
 import { select } from '../data/haptics';
 import Storage from '../data/secureStorage';
 
-const C = CARD.day;   // a Simulação é uma ferramenta: o tema de dia (o modo noite N3 seguirá o iPhone em toda a app)
+const C = CARD.auto;   // a Simulação é uma ferramenta: o tema de dia (o modo noite N3 seguirá o iPhone em toda a app)
 const MAX_SCALE = 1.3;
 const SAY_MS = 800;      // o veredicto anuncia-se ao VoiceOver quando assenta, não a cada tecla
 const KEY = 'crewpact.simulacao.v3';

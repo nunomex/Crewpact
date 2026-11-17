@@ -12,18 +12,19 @@
 // linha é um dia, o ícone quando não é.
 // Usada nas notificações (NotificationsBell) e na janela do calendário da Escala — uma peça só.
 //
-//   <MarkRow mark={{ bg: CARD.day.alert, glyph: '!' }} title="A escala mudou" sub="2 dias · toca para rever" time="Calendário" isNew onPress={…} />
+//   <MarkRow mark={{ bg: CARD.auto.alert, glyph: '!' }} title="A escala mudou" sub="2 dias · toca para rever" time="Calendário" isNew onPress={…} />
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from './Icon';
 import { CARD, TXT3, SPACE, RADIUS } from '../data/constants';
 
-const W = CARD.day;
+const W = CARD.auto;
 
 export default function MarkRow({ mark = {}, title, sub, old, time, chevron = false, right = null, isNew = false, onPress, first = false,
   a11yLabel, a11yLanguage, hint, a11yRole, a11yState, subTone, children }) {
   const Row = onPress ? TouchableOpacity : View;
-  const fg = mark.fg || (mark.bg === W.ink ? W.sheet : CARD.onCard);
+  // a tinta do quadradinho: sobre a tinta, a folha · sobre o neutro, a tinta do modo (à noite, clara — N3) · sobre uma cor, a dos cartões
+  const fg = mark.fg || (mark.bg === W.ink ? W.sheet : (!mark.bg || mark.bg === W.neutral) ? W.ink : CARD.onCard);
   return (
     <View style={[s.item, first ? null : s.rule]}>
       <Row style={s.row} {...(onPress ? { onPress, activeOpacity: 0.7, accessibilityRole: a11yRole || 'button', accessibilityHint: hint, accessibilityState: a11yState } : { accessible: true })}
@@ -56,10 +57,11 @@ export const MARK_DAY_INDENT = 56;
 // O DIA NO QUADRADINHO (H2 + V1): o número e o dia da semana a tinta sobre a cor do tipo (tinta sobre voo 9,12 · terra 8,04 ·
 // atenção 7,16 · passa 6,64), e o selo no canto quando há um problema. `small` = o das notificações (por baixo de uma linha).
 export function DayTile({ day, wd, bg = W.neutral, badge = null, small = false }) {
+  const neutral = bg === W.neutral;   // o dia sem cor: a tinta do modo (à noite o neutro é escuro — N3)
   return (
     <View style={[small ? s.tileSm : s.tile, { backgroundColor: bg }]}>
-      <Text style={[small ? s.tileNumSm : s.tileNum, { color: CARD.onCard }]} allowFontScaling={false}>{day}</Text>
-      {wd ? <Text style={[TXT3.tab, { color: CARD.onCardSub }]} allowFontScaling={false}>{wd}</Text> : null}
+      <Text style={[small ? s.tileNumSm : s.tileNum, { color: neutral ? W.ink : CARD.onCard }]} allowFontScaling={false}>{day}</Text>
+      {wd ? <Text style={[TXT3.tab, { color: neutral ? W.neutralSub : CARD.onCardSub }]} allowFontScaling={false}>{wd}</Text> : null}
       {badge ? (
         <View style={[s.badge, { backgroundColor: badge === 'stop' ? W.stop : W.alert, borderColor: W.sheet }]}>
           <Text style={[TXT3.badge, { color: CARD.badgeFg }]} allowFontScaling={false}>{badge === 'stop' ? '✕' : '!'}</Text>

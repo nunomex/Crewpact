@@ -20,7 +20,7 @@ import { maskClock } from '../ftl';
 import { t } from '../data/i18n';
 import { select } from '../data/haptics';
 
-const C = CARD.day;
+const C = CARD.auto;
 const MAX_SCALE = 1.3;
 const SECTORS = [1, 8];
 // os toques chegam aos 44 pt da Apple sem mudar o desenho: os tipos têm 34 de altura, o − + tem 40

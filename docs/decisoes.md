@@ -6,7 +6,44 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 ---
 
-## O QUE FALTA (ler isto primeiro · lista única · atualizada 2026-11-16)
+## O QUE FALTA (ler isto primeiro · lista única · atualizada 2026-11-17)
+
+**ONDE FICÁMOS (2026-11-17):** o "ONDE FICÁMOS" de ontem gravado (`6ab5ff8`); **o modo noite N3 construído** (gravado e enviado; a
+entrada logo abaixo) — a app segue o claro/escuro do iPhone, na app toda. **Por ver no iPhone:** o N3 (a lista na entrada) e tudo de
+2026-11-16. **Quarta-feira, 2026-11-18: a sessão Fable 5.2** (o bloco "SESSÃO FABLE 5.2", 9 pontos). **À espera do Nuno:** os códigos
+da escala dos serviços e dos extras. **A seguir (Opus):** as calculadoras da lei na linguagem 3.0 · o "Avião" na verificação (W2) ·
+a guia de três balões do Início · o guião `docs/verificacao-device.md` em dia com a v3 (com a noite).
+
+**O MODO NOITE N3 — CONSTRUÍDO (2026-11-17, o Nuno: "avança para o N3"; gravado e enviado):** a escolha era de 2026-11-14 (N3 de
+`design/modo-noite.html`, "segue o iPhone"; 2026-11-15: a véspera e a pernoita deixam de escurecer sozinhas). **A base do tema:**
+cada paleta tem o dia e a noite em bruto e uma versão VIVA (`PELE`, `CARD.auto`, `BRAND`, `MONEY` — `data/constants.js`): no iOS cada
+cor viva é uma `DynamicColorIOS` e o próprio iOS troca o claro pelo escuro, também nas folhas de estilo fixas (o React Native 0.88
+redesenha as vistas quando o modo muda; os ícones nascem outra vez, `components/Icon.js`). O Início, a barra de abas e o sino escolhem
+a paleta em bruto pelo gancho `useDark()` (`hooks/useDark.js`), porque animam e comparam cores. Fora do iOS fica de dia (o Android
+ainda não está montado: quando estiver, o tema dele entra no gancho e nas cores vivas ao mesmo tempo). **A noite das páginas 2.0**
+(`PELE_DARK`) usa as superfícies da noite do 3.0 (o papel = a folha #1F222A, o suave = o neutro #2A2E38). **N3 nos cartões:** os de
+tipo pintam-se com o seu FUNDO (`flightFill`…: de dia a própria cor, à noite o tom fundo) e a letra clara (`onFill*`); os avisos
+ficam vivos, com a tinta escura; o quadradinho, o anel do dia e as barras ficam na cor viva (no tom fundo não se viam: 1,5:1).
+**Derivado das regras, sem esboço** (erros objetivos ou o N3 aplicado — se quiseres ver alternativas, faço os 3 esboços): a TINTA
+inverte (os botões e as escolhas ficam claros à noite, com a letra escura); a PLACA (`PELE.slab`) não inverte — o que é sempre
+escuro com letra branca (o aviso, os balões, o resultado das calculadoras, os cartões da Informação, a faixa sem rede, o disco das
+iniciais) sobe à noite um degrau acima da folha (#383D48); a marcação amarela desce a um amarelo baço; o ícone do botão principal
+passa à letra do botão (`BRAND.onAction`); o interruptor ligado à noite num cinzento médio (a bolinha branca sumia na tinta clara:
+1,1:1); as pílulas brancas com tinta por cima passaram a `raised` (à noite a tinta clara ficava sobre o branco); o dia sem cor nos
+quadradinhos (notificações, importação) com a tinta do modo; a carteira das Validades com cores da noite; o selo âmbar da
+Disrupção e da Estabilidade passou ao âmbar de texto (o #B07840 dava 3,4:1 também de dia). **Sempre de dia:** o poster do ano
+(vai como imagem) e a placa da Porta (é sempre de tinta; a folha por baixo segue o iPhone). **O guardião** (`test:design`): mede os
+dois modos, par a par (a pele 2.0, o N3, a placa, o dinheiro), e uma regra dura nova — nenhum ecrã preso ao dia (`CARD.day`,
+`PELE_DAY`… só nos sítios com motivo) e nenhuma barra de estado presa ao escuro; a dívida das cores soltas desceu de 46 para 38
+(linha de base fixada). **Todos os estados do Início à noite**, desenhados a partir do código: `design/estados-todos-noite.html`
+(`node scripts/render-estados.js` — também deixou de escurecer a véspera e a pernoita na página do dia). Regras em
+`docs/design-system.md` §14 ("O modo noite no código"); `docs/living-interface.md` em dia. 41 suites + guardião + exportação iOS verdes.
+**Ver no iPhone** (Definições → Ecrã e brilho → Escuro, e de volta, COM A APP ABERTA — a troca tem de ser imediata): o Início em
+cada estado (os cartões de tipo no tom fundo, os avisos vivos, a barra de abas escura); a Escala (o mês, os círculos, a folha de um
+serviço); os Números (os extras); o Perfil (o cartão da carreira no azul-noite, os interruptores); a Simulação; as folhas (o sino, a
+Prova, o hotel); as páginas 2.0 (Validades com a carteira, Disrupção, Hotéis, Definições); o aviso com "Desfazer"; a Porta (a placa
+escura, a folha escura); o teclado; **a troca a meio, com uma folha aberta** (os textos e os ícones mudam sem fechar nada?). Se
+alguma coisa ficar na cor do modo antigo depois da troca, diz-me qual: é o sinal de que essa peça precisa do gancho.
 
 **ONDE FICÁMOS (2026-11-16, fim do dia — continua amanhã):** tudo gravado e ENVIADO no ramo `calculos-repouso-2` (o GitHub até
 `35b8bad`). Feito hoje: o teste das skills na Simulação e a regra 9 (as skills ao fazermos as coisas); a **Simulação V3** (um serviço
@@ -1299,7 +1336,7 @@ motor está na versão **21**. **O que falta, por ordem:**
   iPhone"** — a véspera e a pernoita deixam de escurecer sozinhas; a passagem de cor dia → noite da M2 deixa de acontecer nelas. O
   Nuno pediu antes a Simulação (`design/simulacao-3.html`) e a barra de abas. **Por construir:** é a base do tema (cada
   ecrã lê as cores de um sítio que muda com o iPhone) — Opus 5.5 Extra, pela tabela do método. **O Nuno pediu primeiro o resto da
-  análise da Living Interface** (a N3 fica depois).
+  análise da Living Interface** (a N3 fica depois). **CONSTRUÍDA a 2026-11-17** (a entrada no topo).
   **A tranquilidade antes do report (ponto 2 da LI):** esboço `design/tranquilidade.html` — T1 o selo "A horas" no cartão do voo ·
   **T2 a linha calma no lugar do aviso** (recomendada: "Tudo a horas" · "o avião já está em LIS · aeroporto normal" · "visto 03:33";
   a pernoita passa a linha fina, como com um aviso) · T3 a frase por baixo do título. Regras em todas: só o que os dados dizem ("a

@@ -72,7 +72,8 @@ const SVG = {
   edit: '<path d="M3 17.3V21h3.7L17.8 9.9l-3.7-3.7zM20.7 7a1 1 0 0 0 0-1.4l-2.3-2.3a1 1 0 0 0-1.4 0l-1.8 1.8 3.7 3.7z"/>' };
 const ic = (n, s) => `<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24">${SVG[n] || SVG.cloud}</svg>`;
 const NEUTRAL = (color) => !color || color === 'neutral' || !CARD.day[color] || ['desk', 'sheet', 'ink', 'soft'].includes(color);
-const bgOf = (P, color) => (color === 'dark' ? P.ink : (!NEUTRAL(color) ? P[color] : P.neutral));
+// os de TIPO pintam-se com o seu FUNDO (N3: à noite o tom fundo — `flightFill`…), como o `toneOf` da app; os avisos com a própria cor
+const bgOf = (P, color) => (color === 'dark' ? P.ink : (!NEUTRAL(color) ? (P[`${color}Fill`] || P[color]) : P.neutral));
 const vars = (P) => `--desk:${P.desk};--ink:${P.ink};--soft:${P.soft};--sheet:${P.sheet};--neutral:${P.neutral};--grey:${P.grey};--sub:${P.neutralSub};--kind:${P.neutralKind};--caption:${P.caption};--gain:${P.gainOut};--flight:${P.flight}`;
 
 // `why` (Q3): os números com porquê levam o sublinhado pontilhado, como na app
@@ -116,7 +117,8 @@ function cardHTML(c, P = C, look = {}) {
   // a linha ESCURA (a ação principal: ligar o calendário, ler a escala) — a letra da folha sobre a tinta, como `toneOf` 'dark' na app
   const dk = c.color === 'dark' ? ' dk' : '';
   const neu = !dk && (NEUTRAL(c.color) || toNeutral) ? ' neu' : '';
-  const lt = !toNeutral && (look.light || []).includes(c.color) ? ' lt' : '';
+  // a letra clara sobre o tom fundo (N3): à noite, nos de tipo — como a app (`onFill`)
+  const lt = !toNeutral && ((look.light || []).includes(c.color) || (typeCol && P.onFill === CARD.night.onFill)) ? ' lt' : '';
   const accentStyle = toNeutral ? `;border-left:6px solid ${P[c.color]}` : '';
   // o quadradinho da cor (O2, como a app: `swatch` vem de data/homeCards.js); `_neutralize` fica para os esboços antigos
   const sq = c.swatch && P[c.swatch] ? `<span class="sqc" style="background:${P[c.swatch]}"></span>`
@@ -159,9 +161,10 @@ function cardHTML(c, P = C, look = {}) {
     ${c.action ? `<div class="act">${ic(c.action.icon || 'bell', 16)}${esc(c.action.label)}</div>` : ''}</div>`;
 }
 // Um telemóvel a partir da SAÍDA do homeCards (os esboços podem mexer num cartão e desenhar o resto como a app).
-// `night`: a paleta noturna (CARD.night). Sem dizer, como a app: noturna na véspera e na pernoita.
+// `night`: a paleta da noite (CARD.night, o modo noite N3). Sem dizer, de dia: desde 2026-11-17 a noite é a do iPhone (a véspera e a
+// pernoita já não escurecem sozinhas) — a página da noite desenha todos os estados com `night: true`.
 function phoneOut(name, note, out, clock, { night, look = {} } = {}) {
-  const nt = night != null ? night : ['vespera', 'pernoita'].includes(out.state);
+  const nt = !!night;
   const P = { ...(nt ? CARD.night : CARD.day), ...(look.palette || {}) };
   // budget 'principal': só o 1.º cartão grande de tipo fica cheio; os outros de tipo passam a neutros com o quadradinho da cor
   let firstDone = false;
@@ -222,7 +225,7 @@ body{background:#E8E7E2;color:#141414;font-family:'Hanken','Helvetica Neue',Aria
 .sqc{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:0}
 .neu .quiet2 .qr > b,.neu .quiet2 .qv,.neu .dpt b,.neu .ab b{color:var(--ink)} .neu .dpt span:not(.dot2),.neu .dlc span{color:var(--sub)} .neu .dot2{background:var(--ink)} .neu .dot2.o{border-color:var(--ink);background:transparent} .neu .dls{background:var(--ink)}
 .lt .quiet2 .qr > b,.lt .quiet2 .qv,.lt .ab b{color:#F4F2ED}
-.ph .lt .st > span:not(.k),.ph .lt .cs,.ph .lt .ab span{color:rgba(244,242,237,.8)} .ph .lt .dur,.ph .neu .dur{background:rgba(255,255,255,.16);color:var(--ink)} .ph .lt .dur{color:#F4F2ED}
+.ph .lt .st > span:not(.k),.ph .lt .cs,.ph .lt .ab span{color:rgba(244,242,237,.8)} .ph .lt .dur,.ph.night .neu .dur{background:rgba(255,255,255,.16);color:var(--ink)} .ph .lt .dur{color:#F4F2ED}
 .ph .lt .prog{background:rgba(244,242,237,.25)} .ph .lt .prog i,.ph .lt .prog s{background:#F4F2ED} .ph .neu .prog{background:rgba(127,127,127,.3)} .ph .neu .prog i,.ph .neu .prog s{background:var(--ink)} .ph .neu .st > span:not(.k){color:var(--sub)}
 .slim .sqc{width:12px;height:12px;flex:none;margin:0}
 .ring .ttlRow .t i.dot{box-shadow:0 0 0 2px #141414} .night.ring .ttlRow .t i.dot{box-shadow:none}
@@ -252,6 +255,8 @@ body{background:#E8E7E2;color:#141414;font-family:'Hanken','Helvetica Neue',Aria
 .dur{background:rgba(255,255,255,.75);border-radius:14px;padding:5px 10px;font-weight:700;font-size:12px;white-space:nowrap}
 .prog{position:relative;height:6px;border-radius:3px;background:rgba(20,20,20,.18)} .prog i{position:absolute;left:0;top:0;bottom:0;background:#141414;border-radius:3px} .prog s{position:absolute;top:-4px;width:14px;height:14px;margin-left:-7px;border-radius:7px;background:#141414}
 .act{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.55);border-radius:14px;padding:10px 12px;font-weight:700;font-size:14px}
+.lt .act{background:rgba(255,255,255,.16);color:#F4F2ED}   /* N3: a barra de ação sobre o tom fundo, como onFillAct */
+.lt .svl b{color:#F4F2ED} .lt .svl span{color:rgba(244,242,237,.8)}   /* a hora e o que é, à direita da linha fina */
 .lr{display:flex;justify-content:space-between;gap:12px;font-size:15px;line-height:20px} .lr span{font-weight:500} .lr b{font-weight:700}
 .lfoot{border-top:1px solid rgba(20,20,20,.14);padding-top:8px;display:flex;flex-direction:column;gap:8px}
 .tx{font-weight:500;font-size:14px;line-height:20px}
@@ -282,8 +287,23 @@ ${css}</style>
     <p>Dados de teste (easyJet, a semana de 11 de novembro de 2026; o tempo como no iPhone). Para regenerar: <b>node scripts/render-estados.js</b>.</p></div>
   <div class="grid">${STATES.map(([n, note, h, clock]) => phone(n, note, h, clock)).join('')}</div>
 </div><script>${fit}</script></body></html>`;
+// A NOITE (o modo noite N3, que segue o iPhone — 2026-11-17): os mesmos estados, com a paleta da noite.
+const htmlNight = `<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<title>CrewPact · Todos os estados à noite</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* GERADO por scripts/render-estados.js a partir de data/homeCards.js e dos dados de teste do golden — não editar à mão. */
+${css}</style>
+<body><div class="page">
+  <div class="lead"><h1>Todos os estados do Início, à noite</h1>
+    <p><b>O modo noite N3</b> (design/modo-noite.html, escolhida a 2026-11-14; no código a 2026-11-17): segue o claro/escuro do iPhone, na app toda — a véspera e a pernoita já não escurecem sozinhas. Os cartões de tipo descem ao <b>tom fundo</b> (azul-noite, ameixa, musgo) com a letra clara; os avisos (âmbar, vermelho) ficam vivos, com a tinta escura; o quadradinho e os sinais pequenos ficam na cor viva. Desenhado a partir do código (${new Date().toISOString().slice(0, 10)}), como a página do dia (<b>design/estados-todos.html</b>).</p></div>
+  <div class="grid">${STATES.map(([n, note, h, clock]) => phone(n, note, h, clock, { night: true })).join('')}</div>
+</div><script>${fit}</script></body></html>`;
 module.exports = { phoneOut, css, fit, esc, homeCards, S, CARD };
 if (require.main === module) {
   fs.writeFileSync(path.resolve('design/estados-todos.html'), html);
-  console.log(`design/estados-todos.html — ${STATES.length} estados`);
+  fs.writeFileSync(path.resolve('design/estados-todos-noite.html'), htmlNight);
+  console.log(`design/estados-todos.html + design/estados-todos-noite.html — ${STATES.length} estados`);
 }

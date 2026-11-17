@@ -17,7 +17,7 @@ import { provaFor } from '../data/prova';
 import { wdShort } from '../data/escalaDay';
 import { select } from '../data/haptics';
 
-const W = CARD.day;
+const W = CARD.auto;
 const KIND_META = {
   nightstop: { icon: 'bed', bg: W.rest, act: { pt: 'Marcar', en: 'Mark' } },
   route: { icon: 'plane', bg: W.flight, act: { pt: 'Completar', en: 'Complete' } },

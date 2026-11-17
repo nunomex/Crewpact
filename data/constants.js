@@ -128,10 +128,35 @@ export const WEIGHT = {
 // (FONT/TRACK_DISPLAY — Inter + Space Grotesk — EXTINTOS 2026-07-10: o tema antigo
 // morreu e as famílias saíram do useFonts. A pele usa PELE_FONT abaixo.)
 
+// ─── O TEMA SEGUE O IPHONE (modo noite N3, escolhido pelo Nuno a 2026-11-14; construído a 2026-11-17) ───────────────
+// Cada paleta tem DUAS versões em bruto (o dia e a noite, cores escritas — leem-nas os testes, os cartões de partilha, o PDF) e
+// uma versão VIVA, que é a que os ecrãs usam: no iOS, cada cor viva é uma `DynamicColorIOS` — o próprio iOS troca o claro pelo
+// escuro quando o iPhone muda, também nas folhas de estilo fixas (`StyleSheet.create`), sem a app voltar a desenhar. Fora do iOS
+// (o Android ainda não está montado; os testes no Node) a cor viva é a do dia.
+//   • `PELE` · `BRAND` · `MONEY` · `CARD.auto` — vivas (os ecrãs).   • `PELE_DAY` · `PELE_DARK` · `CARD.day` · `CARD.night` — em bruto.
+//   • As peças que precisam da cor ESCRITA (animar uma cor, comparar, desenhar à mão) leem a paleta em bruto pelo gancho
+//     `useDark()` (hooks/useDark.js): o Início, a barra de abas, o sino.
+// O `require` fica num try: no Node (os testes) não há react-native, e a paleta viva cai na do dia.
+const RN = (() => { try { return require('react-native'); } catch (e) { return null; } })();
+const DYN = !!(RN && RN.Platform && RN.Platform.OS === 'ios' && typeof RN.DynamicColorIOS === 'function');
+// Uma cor viva a partir das duas em bruto. `null` à noite (o aro do "ao vivo", que de noite não existe) passa a transparente.
+export const dyn = (light, dark) => {
+  if (dark === null) dark = 'transparent';
+  if (!DYN || typeof light !== 'string' || typeof dark !== 'string' || light === dark) return light;
+  return RN.DynamicColorIOS({ light, dark });
+};
+// A paleta viva: chave a chave, o dia e a noite (a chave que a noite não tem fica a do dia).
+export function skin(day, dark) {
+  const o = {};
+  for (const k of Object.keys(day)) o[k] = dyn(day[k], k in dark ? dark[k] : day[k]);
+  return Object.freeze(o);
+}
+
 // ─── Pele nova (2026) — branco·preto·amarelo, plana, hairline ────────────────
 // Adicionada AO LADO da paleta antiga (não a substitui): porta-se ecrã a ecrã, os
 // ecrãs por converter continuam a usar PALETTE_LIGHT. Cores 1:1 com `design/*.html`.
-export const PELE = {
+// (2026-11-17) Esta é a pele do DIA, em bruto; os ecrãs usam a `PELE` viva, mais abaixo, que troca para a `PELE_DARK` à noite.
+export const PELE_DAY = {
   paper: '#FFFFFF', ink: '#141414', ghost: '#E2E1DC', grey: '#77776F', line: '#ECEAE4',
   soft: '#F4F2ED', soft2: '#EFEDE7', yellow: '#FFB800',
   ok: '#118A55', warn: '#E86A10', red: '#C6362B', info: '#EAF2F7',
@@ -151,7 +176,35 @@ export const PELE = {
   // sobre o papel (componentes tocáveis pedem 3:1; o #A8A69E dava 2,44).
   warnText: '#9A4508', affordance: '#86847D',
   plate: '#141414',   // a placa do painel de partidas (ao vivo) — de dia é a tinta
+  // A PLACA ESCURA (2026-11-17, N3): o que é SEMPRE escuro com letra branca por cima — os avisos que flutuam (Toast, Tip), o
+  // resultado das calculadoras, os cartões escuros da Informação. De dia é a tinta; à noite NÃO inverte como a tinta (que passa a
+  // clara): sobe um degrau acima da folha, para se destacar dela. O que se TOCA a tinta (botões, escolhas) inverte — é a `ink`.
+  slab: '#141414', onSlab: '#FFFFFF', onSlabSub: '#8F8F88',   // a letra sobre a placa (a secundária: 5,6:1 de dia)
+  // O interruptor LIGADO (2026-11-17): de dia a tinta; à noite a tinta é clara e a bolinha branca sumia nela (1,1:1) — passa a um
+  // cinzento médio (a bolinha 3,2:1; o desligado fica no fio, escuro). A bolinha é sempre branca.
+  toggle: '#141414',
 };
+// A pele da NOITE (o modo escuro do iPhone, N3 — 2026-11-17): a mesma gramática, nas superfícies da noite do 3.0 (`CARD.night`):
+// o papel é a folha (#1F222A), o suave é o neutro (#2A2E38), a tinta é a clara. Os estados sobem de luz para se lerem no escuro.
+// Medido (WCAG 2.1, sobre o papel #1F222A): tinta 14,21 · cinzento 6,30 (sobre o suave 5,68) · âmbar 7,34 (sobre o seu suave 5,43) ·
+// vermelho 6,4 (sobre o seu suave 4,9) · verde 5,79 · a tinta sobre a marcação amarela 8,23 · o branco a 60 % sobre a placa 5,09.
+// O guardião (`npm run test:design`) volta a medir tudo isto a cada teste.
+export const PELE_DARK = {
+  paper: '#1F222A', ink: '#F4F2ED', ghost: '#30343D', grey: 'rgba(244,242,237,0.62)', line: '#383C46',
+  soft: '#2A2E38', soft2: '#30343E', yellow: '#FFB800',
+  ok: '#46C98A', warn: '#EDA03A', red: '#F08A7E', info: '#24313D',
+  okSoft: 'rgba(70,201,138,0.14)', warnSoft: 'rgba(237,160,58,0.16)', redSoft: 'rgba(240,138,126,0.16)', yellowSoft: 'rgba(255,184,0,0.12)',
+  okSoftLine: 'rgba(70,201,138,0.35)', warnSoftLine: 'rgba(237,160,58,0.35)', redSoftLine: 'rgba(240,138,126,0.35)',
+  placeholder: 'rgba(244,242,237,0.40)',
+  onInk: '#1F222A', onInkSub: '#5E5E57', onInkFaint: '#3A3A36',
+  greyOnSoft: 'rgba(244,242,237,0.66)', okText: '#46C98A',
+  warnText: '#EDA03A', affordance: 'rgba(244,242,237,0.5)',
+  plate: '#18212D',
+  slab: '#383D48', onSlab: '#FFFFFF', onSlabSub: 'rgba(255,255,255,0.62)',   // 5,25:1 sobre a placa da noite
+  toggle: '#8E929C',
+};
+// A pele VIVA — a que os ecrãs usam (no iOS troca sozinha com o iPhone).
+export const PELE = skin(PELE_DAY, PELE_DARK);
 // A PLACA do painel de partidas (Início v6, estados ao vivo): é sempre escura, de dia e de noite, por isso
 // os tons por cima dela são os do escuro. Medidos (2026-11-03, dia · noite): rótulos 7,25 · 6,37 · hora amarela
 // 10,62 · 9,36 · pílula verde 6,29 · 5,40 · laranja 5,29 · 4,64 · vermelha 5,78 · 5,07 (o #E57368 dava 4,04 à noite).
@@ -188,16 +241,23 @@ export const PELE_NIGHT = {
 //   panel  — a HORA e as linhas do painel de partidas do Início (v6). FIXA no amarelo em TODAS as edições
 //            (convenção dos painéis de aeroporto, 10,6:1 sobre a placa · 9,4 à noite) — decisão do Nuno,
 //            opção 2, 2026-11-03. Só se usa sobre a placa escura.
-export const BRAND = {
+//   onAction — o ícone e o indicador de espera DENTRO do botão principal (2026-11-17): de dia, a marca sobre a tinta; à noite o
+//            botão inverte (claro) e o amarelo não se leria nele (1,6:1) — passa à letra do botão.
+// À noite (N3, 2026-11-17): a marcação desce a um amarelo baço (a tinta clara por cima, 8,23:1) — um amarelo cheio do tamanho de
+// uma pílula encandeia às 04:00; o botão principal inverte como a tinta. Os sinais e o painel ficam (já se veem no escuro).
+export const BRAND_DAY = {
   signal: '#FFB800',
   marker: '#FFB800',
   onDark: '#FFB800',
   action: '#141414',
+  onAction: '#FFB800',
   panel: '#FFB800',
 };
+export const BRAND_DARK = { marker: 'rgba(255,184,0,0.24)', action: '#F4F2ED', onAction: '#1F222A' };
+export const BRAND = skin(BRAND_DAY, BRAND_DARK);
 // Referência para as edições (só se ligam com autorização escrita de cada sindicato — docs/decisoes.md):
-// SNPVAC { signal:'#005EB8', marker:'#C7DCEF', onDark:'#6FAAE3', action:'#005EB8', panel:'#FFB800' }
-// SPAC   { signal:'#0097D4', marker:'#C7E8F6', onDark:'#0097D4', action:'#0077A8', panel:'#FFB800' }
+// SNPVAC { signal:'#005EB8', marker:'#C7DCEF', onDark:'#6FAAE3', action:'#005EB8', onAction:'#FFFFFF', panel:'#FFB800' }
+// SPAC   { signal:'#0097D4', marker:'#C7E8F6', onDark:'#0097D4', action:'#0077A8', onAction:'#FFFFFF', panel:'#FFB800' }
 
 // Famílias da pele — Barlow Condensed (display/números/fantasma/palavra condensada) +
 // Hanken Grotesk (corpo/rótulos). Estáticas: a FAMÍLIA carrega o peso (não o fontWeight).
@@ -245,7 +305,8 @@ export const TXT = {
 // para isto: alert = perto do limite, falta um dado, pede uma ação (laranja, sempre com "!" e a palavra) · stop = passa o
 // limite (vermelho, sempre com "✕" e a palavra). Dentro do limite não tem cor (cockpit escuro); incerto é neutro e tracejado.
 // O verde é só do dinheiro que se ganha (CARD.gain, MONEY). O amarelo da marca é só do "ao vivo" (painel, ponto da pílula).
-// O texto sobre os cartões de cor é sempre a tinta #141414 (também à noite: as cores descem um tom).
+// O texto sobre os cartões de cor é a tinta #141414; à noite (N3, 2026-11-17) os de TIPO passam ao tom fundo com a letra clara
+// (`onFill*`) e os avisos ficam vivos, com a tinta escura (`onCard*`).
 // O TOM (escolhido pelo Nuno a 2026-11-13, tom 2 de design/cores.html §4, procurado entre milhares de tons frios): céu vivo
 // #6DBEFA + lilás-rosado #C3A1BE. Medido (ΔE normal · deuteranopia · protanopia; < ~15 confunde-se de relance): voo × atenção
 // 97 · 92 · 80 (a areia dava 33 · 12 · 16) · voo × terra 37 · 31 · 23 · pior par de todos repouso × passa 19. Tinta sobre voo
@@ -263,6 +324,15 @@ export const CARD = {
     tabSub: '#5E5E57', tabOn: '#FFFFFF', round: 'rgba(127,127,127,0.22)', caption: '#77776F',
     neutralSub: 'rgba(20,20,20,0.82)', neutralKind: 'rgba(20,20,20,0.8)', neutralGo: 'rgba(127,127,127,0.2)',
     darkSub: 'rgba(255,255,255,0.82)', darkGo: 'rgba(255,255,255,0.2)',   // a linha fina ESCURA (a ação principal: ligar, ler a escala)
+    // O FUNDO de um cartão de tipo (N3, 2026-11-17): de dia é a própria cor; à noite desce ao tom fundo (abaixo). `flight`/`ground`/
+    // `rest` ficam a cor VIVA, de dia e de noite, para os sinais pequenos (o quadradinho, o anel do dia na Escala, as barras) — um
+    // sinal no tom fundo não se via no escuro (1,5:1). A letra sobre o fundo de tipo: `onFill*` (de dia, a tinta dos cartões).
+    flightFill: '#6DBEFA', groundFill: '#C3A1BE', restFill: '#B4C2A2',
+    onFill: '#141414', onFillSub: 'rgba(20,20,20,0.82)', onFillKind: 'rgba(20,20,20,0.8)', onFillTrack: 'rgba(20,20,20,0.18)',
+    onFillGo: 'rgba(255,255,255,0.55)', onFillDur: 'rgba(255,255,255,0.85)', onFillAct: 'rgba(255,255,255,0.62)',
+    // Uma superfície POR CIMA de um cartão neutro, com a tinta do modo por cima (o botão do hotel, o selo "real"): de dia o branco;
+    // à noite um degrau acima do neutro (no escuro, o que está por cima é mais claro). A pílula do dinheiro (`chip`) fica branca.
+    raised: '#FFFFFF',
   },
   night: {
     desk: '#14161B', ink: '#F4F2ED', soft: 'rgba(244,242,237,0.7)', sheet: '#1F222A', neutral: '#2A2E38',
@@ -272,6 +342,13 @@ export const CARD = {
     tabSub: 'rgba(244,242,237,0.62)', tabOn: 'rgba(244,242,237,0.16)', round: 'rgba(127,127,127,0.22)', caption: 'rgba(244,242,237,0.62)',
     neutralSub: 'rgba(244,242,237,0.82)', neutralKind: 'rgba(244,242,237,0.8)', neutralGo: 'rgba(127,127,127,0.2)',
     darkSub: 'rgba(31,34,42,0.82)', darkGo: 'rgba(31,34,42,0.15)',       // à noite a linha "escura" inverte: tinta clara, letra da folha
+    // N3 (design/modo-noite.html, escolhida pelo Nuno a 2026-11-14): os cartões de tipo no tom fundo — azul-noite, ameixa, musgo —
+    // com a letra clara; os avisos (âmbar, vermelho) ficam vivos, com a tinta escura. Medido: a letra a 80 % sobre o tom fundo
+    // 5,91 (voo) · 6,91 (terra) · 6,55 (repouso); a 100 % 8,20 · 9,75 · 9,16. O fundo das pílulas e da seta: branco a 16 %.
+    flightFill: '#1F4B6E', groundFill: '#4B3550', restFill: '#36452F',
+    onFill: '#F4F2ED', onFillSub: 'rgba(244,242,237,0.8)', onFillKind: 'rgba(244,242,237,0.8)', onFillTrack: 'rgba(244,242,237,0.25)',
+    onFillGo: 'rgba(255,255,255,0.16)', onFillDur: 'rgba(255,255,255,0.16)', onFillAct: 'rgba(255,255,255,0.16)',
+    raised: '#363A45',
   },
   // Sobre os cartões de COR (voo · terra · repouso · atenção · passa), de dia e de noite:
   onCard: '#141414', onCardSub: 'rgba(20,20,20,0.82)', onCardKind: 'rgba(20,20,20,0.8)', onCardTrack: 'rgba(20,20,20,0.18)',
@@ -280,9 +357,15 @@ export const CARD = {
   rule: 'rgba(127,127,127,0.3)',                        // o fio por cima do pé das parcelas
   badgeFg: '#141414',
 };
+// A paleta 3.0 VIVA (2026-11-17): a do dia ou a da noite conforme o iPhone — a dos ecrãs com folhas de estilo fixas. O Início, a
+// barra e o sino escolhem a paleta em bruto pelo gancho `useDark()` (animam e comparam cores).
+CARD.auto = skin(CARD.day, CARD.night);
 // O DINHEIRO nos ecrãs que ainda seguem a 2.0 (os da 3.0 usam CARD.gain/gainOut): o verde é SÓ do que se ganha (+€),
 // nunca "está tudo bem" nem "toca aqui" — regra dura do guardião (o verde da PELE fica fora das páginas). 6,31 na folha.
-export const MONEY = { gain: '#0B6E43', gainSoft: '#E7F3EC', gainNight: '#46C98A' };
+// À noite (2026-11-17) o verde sobe de luz, como o `gainOut` do 3.0: 10,19 sobre o papel da noite.
+export const MONEY_DAY = { gain: '#0B6E43', gainSoft: '#E7F3EC', gainNight: '#46C98A' };
+export const MONEY_DARK = { gain: '#7BE3B0', gainSoft: 'rgba(123,227,176,0.14)' };
+export const MONEY = skin(MONEY_DAY, MONEY_DARK);
 // Texto da direção 3.0 — Hanken Grotesk em tudo (decisão do Nuno, 2026-11-11). Tamanhos da escala (§9); o número gigante (86)
 // fica fora dela, no TUNE do Início. Os TXT da 2.0 não mudam (a Hanken é mais larga e partia os ecrãs antigos).
 export const TXT3 = {

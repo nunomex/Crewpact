@@ -9,7 +9,9 @@
 // `color` alimenta o currentColor (amarelo sobre placa preta, ink sobre papel).
 // Nome inválido → quadrado laranja visível (erro que se vê, não falha silenciosa).
 import React from 'react';
+import { useColorScheme } from 'react-native';
 import { SvgXml } from 'react-native-svg';
+import { PELE } from '../data/constants';
 
 const PLANE = 'M21 16v-2l-8-5V3.5C13 2.7 12.33 2 11.5 2S10 2.7 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z';
 
@@ -97,12 +99,16 @@ const MISSING = '<path fill="#E8482C" d="M2 2h20v20H2z"/><path fill="#fff" d="M1
 
 export const ICON_NAMES = Object.keys(ICONS);
 
-function Icon({ name, size = 20, color = '#141414', rot = 0, style }) {
+// A cor por omissão é a tinta VIVA (N3, 2026-11-17: à noite, clara). `key` = o modo do iPhone: quando o iPhone muda de claro para
+// escuro, o desenho nasce outra vez com a cor do modo novo — garantia de que nenhum ícone fica com a cor do modo antigo (as cores
+// vivas são do iOS; um desenho em SVG não tem de se redesenhar sozinho).
+function Icon({ name, size = 20, color = PELE.ink, rot = 0, style }) {
+  const scheme = useColorScheme();
   let inner = ICONS[name];
   if (inner == null) inner = MISSING;
   if (rot) inner = '<g transform="rotate(' + rot + ' 12 12)">' + inner + '</g>';
   const xml = '<svg viewBox="0 0 24 24" fill="currentColor">' + inner + '</svg>';
-  return <SvgXml xml={xml} width={size} height={size} color={color} style={style} />;
+  return <SvgXml key={scheme || 'light'} xml={xml} width={size} height={size} color={color} style={style} />;
 }
 
 export default React.memo(Icon);

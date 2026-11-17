@@ -25,7 +25,7 @@ import { companyStartYm } from '../data/crewHistory';
 import { select } from '../data/haptics';
 import { CARD, TXT3, SPACE, RADIUS } from '../data/constants';
 
-const W = CARD.day;
+const W = CARD.auto;
 
 const BACK_MS = 280;   // o visto aparece e, só depois, volta ao índice
 

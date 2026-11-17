@@ -8,7 +8,7 @@ import Icon from './Icon';
 import IconButton from './IconButton';
 import PillButton from './PillButton';
 import PeleSide from './PeleSide';
-import { RADIUS, GUTTER, PELE, PELE_FONT, BRAND, SPACE, MONEY } from '../data/constants';
+import { RADIUS, GUTTER, PELE, PELE_FONT, BRAND, SPACE, MONEY, dyn } from '../data/constants';
 import { isNightStop } from '../data/rosterImport';
 import { simulateDuty, issueText } from '../data/simulation';
 import { detectLeg, aggregateLegs, normFlightNo, isCompleteFlightNo } from '../data/flightDetect';
@@ -660,7 +660,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
           placeholder={l('Nº de voo · ex. EJU7625', 'Flight no. · e.g. EJU7625')}
           placeholderTextColor={C.sub} autoCapitalize="characters" autoCorrect={false} maxLength={8} style={[s.input, { flex: 1 }, flightErr && s.inputErr]} />
         <TouchableOpacity onPress={onDetect} disabled={!legInput || detecting} style={[s.detectBtn, (!legInput || detecting) && s.detectBtnOff]} activeOpacity={0.85}>
-          {detecting ? <ActivityIndicator size="small" color="#fff" /> : <Text style={s.detectBtnTxt}>{l('Detetar', 'Detect')}</Text>}
+          {detecting ? <ActivityIndicator size="small" color={PELE.onInk} /> : <Text style={s.detectBtnTxt}>{l('Detetar', 'Detect')}</Text>}
         </TouchableOpacity>
       </View>
       {flightErr ? <Text style={s.errTxt}>{l('Falta o número do voo (sigla + nº, ex. EJU7625).', 'Flight number missing (code + no., e.g. EJU7625).')}</Text> : null}
@@ -781,7 +781,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                   <Text style={s.advSub}>ORO.FTL.225(e)</Text>
                 </View>
                 <Switch value={accOn === true} onValueChange={(v) => { select(); setAccOn(v); }}
-                  trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
+                  trackColor={{ true: PELE.toggle, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
               </View>
               <Text style={s.routeHint}>{accOn
                 ? l('É standby: conta 100% como serviço (210/235) e a tabela do PSV não o julga.', 'It is standby: counts 100% as duty (210/235) and the FDP table does not judge it.')
@@ -815,7 +815,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
           </View>
           {manualNs && nsEur != null ? <Text style={s.nsEur}>+{fmtPd(nsEur)}</Text> : null}
           <Switch value={!!form.nightStop} onValueChange={(v) => { select(); setForm((f) => ({ ...f, nightStop: v })); }}
-            trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
+            trackColor={{ true: PELE.toggle, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
         </View>
       ) : null}
       {form.kind === 'office' && ae && ae.OFFICE8_SECTORS ? (
@@ -864,7 +864,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
             <Text style={s.nsHint}>{l('Liga se não viajaste em C/CL — 20 % da AC1, pago no mês seguinte (RRRGS Cl. 12.ª, n.º 4).', 'Turn on if you did not travel in C/CL — 20% of AC1, paid the next month (RRRGS Cl. 12(4)).')}</Text>
           </View>
           <Switch value={!!form.dhcEconomy} onValueChange={(v) => { select(); setForm((f) => ({ ...f, dhcEconomy: v })); }}
-            trackColor={{ true: C.ink, false: C.line }} thumbColor={PELE.paper} ios_backgroundColor={C.line} />
+            trackColor={{ true: PELE.toggle, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
         </View>
       ) : null}
       {form.kind === 'training' && !form.role && ae && ae.GROUND_PER_DIEM ? (
@@ -952,7 +952,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                   <Text style={s.advSub}>CS FTL.1.205(c)</Text>
                 </View>
                 <Switch value={augOn} onValueChange={(v) => { select(); layoutAnim(); setAugOn(v); }}
-                  trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
+                  trackColor={{ true: PELE.toggle, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
               </View>
               {augOn ? (
                 <View style={s.advInset}>
@@ -998,7 +998,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                   <Text style={s.advSub}>205(g)</Text>
                 </View>
                 <Switch value={delOn} onValueChange={(v) => { select(); layoutAnim(); setDelOn(v); }}
-                  trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
+                  trackColor={{ true: PELE.toggle, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
               </View>
               {delOn ? (
                 <View style={s.advInset}>
@@ -1019,7 +1019,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                   <Text style={s.advSub}>225</Text>
                 </View>
                 <Switch value={sbOn} onValueChange={(v) => { select(); layoutAnim(); setSbOn(v); }}
-                  trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
+                  trackColor={{ true: PELE.toggle, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
               </View>
               {sbOn ? (
                 <View style={s.advInset}>
@@ -1064,7 +1064,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                   <Text style={s.advSub}>ORO.FTL.205(d)</Text>
                 </View>
                 <Switch value={extOn} onValueChange={(v) => { select(); setExtOn(v); }}
-                  trackColor={{ true: C.ink, false: C.line }} thumbColor={PELE.paper} ios_backgroundColor={C.line} />
+                  trackColor={{ true: PELE.toggle, false: C.line }} thumbColor={PELE.paper} ios_backgroundColor={C.line} />
               </View>
               {extOn ? (
                 <View style={s.advInset}>
@@ -1077,7 +1077,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                   <Text style={s.advSub}>205(f)</Text>
                 </View>
                 <Switch value={discOn} onValueChange={(v) => { select(); setDiscOn(v); }}
-                  trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
+                  trackColor={{ true: PELE.toggle, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
               </View>
               {discOn ? (
                 <View style={s.advInset}>
@@ -1190,7 +1190,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                           {!last ? (
                             <TouchableOpacity style={s.contBtn} activeOpacity={0.85} onPress={() => { select(); setStep(i + 1); }}>
                               <Text style={s.contBtnTxt}>{l('Continuar', 'Continue')}</Text>
-                              <Icon name="arrow-r" size={15} color={BRAND.onDark} />
+                              <Icon name="arrow-r" size={15} color={BRAND.onAction} />
                             </TouchableOpacity>
                           ) : null}
                         </View>
@@ -1259,8 +1259,8 @@ const s = StyleSheet.create({
   dayWd: { fontSize: 9.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.6, textTransform: 'uppercase', color: PELE.grey },
   dayDn: { fontFamily: PELE_FONT.display, fontSize: 30, lineHeight: 30, color: PELE.ink, fontVariant: ['tabular-nums'] },
   dayOn: { backgroundColor: PELE.ink, borderColor: PELE.ink },
-  dayWdOn: { color: 'rgba(255,255,255,0.65)' },
-  dayDnOn: { color: BRAND.onDark },
+  dayWdOn: { color: dyn('rgba(255,255,255,0.65)', 'rgba(31,34,42,0.65)') },   // sobre a tinta (à noite a tinta é clara — N3)
+  dayDnOn: { color: BRAND.onAction },   // sobre a tinta: o amarelo de dia; à noite a tinta é clara e o número passa à letra dela (N3)
   dayDot: { position: 'absolute', bottom: -8, width: 5, height: 5, borderRadius: 3, backgroundColor: BRAND.signal },
 
   // Campos

@@ -180,7 +180,7 @@ const s = StyleSheet.create({
   cTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   cDay: { fontSize: 12.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.ink, flexShrink: 1 },
   cBadge: { backgroundColor: PELE.warnSoft, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
-  cBadgeTxt: { fontSize: 8.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.6, color: '#B07840', textTransform: 'uppercase' },
+  cBadgeTxt: { fontSize: 8.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.6, color: PELE.warnText, textTransform: 'uppercase' },   // o âmbar de texto do modo (sobre o suave âmbar)
   cDiff: { fontSize: 11.5, fontFamily: PELE_FONT.bodyBold, color: PELE.warn, marginTop: 7 },
   cWhen: { fontSize: 9.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, marginTop: 4, lineHeight: 15 },
   cWhenB: { fontFamily: PELE_FONT.bodyHeavy, color: PELE.ink },

@@ -30,7 +30,7 @@ const clkMin = (str) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(str || ''); ret
 const hm = (m) => (m == null ? '—' : durHM(m));
 const addDayIso = (iso, n) => { const x = new Date(`${iso}T12:00:00`); x.setDate(x.getDate() + n); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
 const hasNs = (dd) => !!(dd && !dd.deleted && (dd.nightStop || (Array.isArray(dd.extra) && dd.extra.some((x) => x && x.nightStop))));
-const C3 = CARD.day;   // o "Ver tudo" no 3.0: de dia, como a Escala
+const C3 = CARD.auto;   // o "Ver tudo" no 3.0: de dia, como a Escala
 
 // Detalhe de um serviço — o "Ver tudo" da folha do dia. Fiel a design/detalhe-servico.html (v2, aprovado 2026-11-08):
 // herói (rota + FANTASMA=FDP + estado FTL) + Horário · Setores (vêm do calendário: SÓ SE LEEM — regra 4) · FTL/Segurança ·
@@ -335,7 +335,7 @@ export function DutyDetailBody({ date, idx: idxIn = 0, editReq = null, navigatio
 
 
   const fatPill = fat ? (
-    <View style={[s.fatPill, { backgroundColor: fat.band === 'high' ? PELE.warnSoft : CARD.chip }]}>
+    <View style={[s.fatPill, { backgroundColor: fat.band === 'high' ? PELE.warnSoft : C3.raised }]}>
       <View style={[s.fatDot, { backgroundColor: fatDotC(fat.band) }]} />
       <Text style={[TXT3.dur, { color: fatTxtC(fat.band) }]}>{fatLabel(fat.band)}</Text>
     </View>
@@ -382,7 +382,7 @@ export function DutyDetailBody({ date, idx: idxIn = 0, editReq = null, navigatio
           </Text>
         ) : null}
       </View>
-      <View style={[s.b9Track, { backgroundColor: CARD.onCardTrack }]}>
+      <View style={[s.b9Track, { backgroundColor: C3.round }]}>
         <View style={[s.b9Fill, { width: `${psv.act != null && psv.hi ? Math.min(100, (psv.act / psv.hi) * 100) : 0}%`, backgroundColor: psv.over ? C3.stop : C3.ink }]} />
       </View>
     </View>
@@ -474,7 +474,7 @@ export function DutyDetailBody({ date, idx: idxIn = 0, editReq = null, navigatio
   const nightStop = duty.nightStop ? (
     <Card kind={`${l('Pernoita', 'Night stop')}${nsSt ? ` · ${cityOfD(nsSt) || nsSt}` : ''}`}>
       {nsHotel ? (
-        <TouchableOpacity style={[s.hotel, { backgroundColor: CARD.chip }]} activeOpacity={0.85}
+        <TouchableOpacity style={[s.hotel, { backgroundColor: C3.raised }]} activeOpacity={0.85}
           onPress={() => { select(); Linking.openURL(hotelMapsUrl(nsHotel.name, nsSt, Platform.OS)).catch(() => {}); }}
           onLongPress={() => { select(); setHotelOpen(true); }}
           accessibilityRole="button" accessibilityLabel={`${l('Hotel', 'Hotel')} ${nsHotel.name}`}
@@ -608,7 +608,7 @@ const s = StyleSheet.create({
   rowVZ: { ...TXT.caption, color: C3.tabSub, fontVariant: ['tabular-nums'], textAlign: 'right', marginTop: SPACE.xxs },
   // hora real ao lado da prevista
   realLine: { flexDirection: 'row', alignItems: 'center', gap: SPACE.s },
-  realTag: { backgroundColor: CARD.chip, borderRadius: RADIUS.xs, paddingHorizontal: SPACE.s, paddingVertical: SPACE.xxs },
+  realTag: { backgroundColor: C3.raised, borderRadius: RADIUS.xs, paddingHorizontal: SPACE.s, paddingVertical: SPACE.xxs },
   realTagT: { ...TXT.tag, color: C3.ink },
   // B9 · a barra do limite
   b9: { gap: SPACE.s, paddingBottom: SPACE.md, borderBottomWidth: 1 },
@@ -648,5 +648,5 @@ const s = StyleSheet.create({
   foot: { paddingHorizontal: SPACE.xs },
 
   // A nota da fonte no fim (2026-11-14: a escala só se lê; corrige-se no calendário)
-  srcNote: { color: CARD.day.tabSub, marginTop: SPACE.sm },
+  srcNote: { color: CARD.auto.tabSub, marginTop: SPACE.sm },
 });

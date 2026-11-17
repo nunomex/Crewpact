@@ -7,16 +7,18 @@
 // (quem o usa anuncia o texto) · sem animação (nada a respeitar nos movimentos reduzidos).
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { CARD, TXT, TXT3, SPACE, RADIUS, SHADOW } from '../data/constants';
+import { CARD, PELE, TXT, TXT3, SPACE, RADIUS, SHADOW } from '../data/constants';
 
-const INK = CARD.day.ink, PAPER = CARD.day.sheet, SOFT = CARD.night.soft;   // o balão é sempre escuro, de dia e de noite
+// O balão é sempre escuro, de dia e de noite: a placa (`PELE.slab` — de dia a tinta, à noite um degrau acima da folha, para se
+// destacar dela; N3, 2026-11-17), a letra branca, o botão branco com a tinta do dia.
+const BG = PELE.slab, INK = CARD.day.ink, PAPER = CARD.day.sheet, SOFT = CARD.night.soft;
 const ARROW = 14;
 
 export default function GuideBubble({ text, step, total, onNext, onSkip, width, arrowX = SPACE.xl, above = false, style, l }) {
   const last = step >= total;
   return (
-    <View style={[s.box, { width, backgroundColor: INK }, style]} accessibilityLiveRegion="polite">
-      <View style={[s.arrow, { left: Math.max(SPACE.md, Math.min(width - ARROW - SPACE.md, arrowX - ARROW / 2)), backgroundColor: INK }, above ? s.arrowDown : s.arrowUp]} pointerEvents="none" />
+    <View style={[s.box, { width, backgroundColor: BG }, style]} accessibilityLiveRegion="polite">
+      <View style={[s.arrow, { left: Math.max(SPACE.md, Math.min(width - ARROW - SPACE.md, arrowX - ARROW / 2)), backgroundColor: BG }, above ? s.arrowDown : s.arrowUp]} pointerEvents="none" />
       <Text style={[TXT3.text, { color: PAPER }]}>{text}</Text>
       <View style={s.bar}>
         <Text style={[TXT.caption, s.flex, { color: SOFT }]} allowFontScaling={false}>{`${step} ${l('de', 'of')} ${total}`}</Text>

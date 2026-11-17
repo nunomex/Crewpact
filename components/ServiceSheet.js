@@ -17,7 +17,7 @@ import { CARD, TXT3, SPACE, RADIUS } from '../data/constants';
 import { prettyRoute } from '../data/escalaDay';
 import { t } from '../data/i18n';
 
-const C = CARD.day;
+const C = CARD.auto;
 export const SHEET_AFTER_MS = 450;   // a PeleSheet fecha em 240 ms + a folga do iOS (140 ms) — e um pouco de margem
 const valid = (d) => !!(d && !d.deleted);
 

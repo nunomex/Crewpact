@@ -38,12 +38,12 @@ export default function Tip({ visible, bold, tail, onDismiss, style, arrow = 'do
 
 const s = StyleSheet.create({
   wrap: { position: 'absolute', alignSelf: 'center', alignItems: 'center', zIndex: 30 },
-  card: { backgroundColor: PELE.ink, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 14, maxWidth: 240,
+  card: { backgroundColor: PELE.slab, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 14, maxWidth: 240,
     shadowColor: '#14161A', shadowOpacity: 0.25, shadowRadius: 13, shadowOffset: { width: 0, height: 8 }, elevation: 8 },
-  tx: { fontSize: 11.5, fontFamily: PELE_FONT.body, color: PELE.paper, lineHeight: 17 },
+  tx: { fontSize: 11.5, fontFamily: PELE_FONT.body, color: PELE.onSlab, lineHeight: 17 },   // sempre sobre a placa escura (N3): o branco de dia e de noite
   bold: { fontFamily: PELE_FONT.bodyHeavy, color: BRAND.onDark },
   ok: { fontSize: 9, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.4, textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', marginTop: 7 },
   tri: { width: 0, height: 0, borderLeftWidth: 7, borderRightWidth: 7, borderLeftColor: 'transparent', borderRightColor: 'transparent' },
-  triDown: { borderTopWidth: 7, borderTopColor: PELE.ink },
-  triUp: { borderBottomWidth: 7, borderBottomColor: PELE.ink },
+  triDown: { borderTopWidth: 7, borderTopColor: PELE.slab },
+  triUp: { borderBottomWidth: 7, borderBottomColor: PELE.slab },
 });

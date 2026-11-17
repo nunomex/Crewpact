@@ -223,14 +223,15 @@ const s = StyleSheet.create({
   searchInput: { flex: 1, fontFamily: F.body, fontSize: 12.5, color: P.ink, padding: 0 },
 
   deck: { paddingHorizontal: 22, paddingTop: 2 },
-  card: { minHeight: 150, backgroundColor: P.ink, borderRadius: 20, padding: 18, marginRight: 12, overflow: 'hidden' },
+  // os cartões grandes são placas SEMPRE escuras (N3, 2026-11-17): à noite um cartão claro deste tamanho encandeava
+  card: { minHeight: 150, backgroundColor: P.slab, borderRadius: 20, padding: 18, marginRight: 12, overflow: 'hidden' },
   edge: { position: 'absolute', left: 0, top: 16, bottom: 16, width: 4, borderTopRightRadius: 4, borderBottomRightRadius: 4 },
   ctop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 },
-  cname: { fontFamily: F.display, fontSize: 23, color: P.onInk, letterSpacing: -0.3 },
-  csub: { fontFamily: F.bodyHeavy, fontSize: 10, letterSpacing: 0.5, color: P.onInkSub, marginTop: 3 },
-  cstat: { fontFamily: F.display, fontSize: 38, color: P.onInk, letterSpacing: -0.5 },
-  cstatU: { fontFamily: F.display, fontSize: 17, color: P.onInkSub },
-  cks: { fontFamily: F.bodyBold, fontSize: 10, color: P.onInkSub, marginTop: 3 },
+  cname: { fontFamily: F.display, fontSize: 23, color: P.onSlab, letterSpacing: -0.3 },
+  csub: { fontFamily: F.bodyHeavy, fontSize: 10, letterSpacing: 0.5, color: P.onSlabSub, marginTop: 3 },
+  cstat: { fontFamily: F.display, fontSize: 38, color: P.onSlab, letterSpacing: -0.5 },
+  cstatU: { fontFamily: F.display, fontSize: 17, color: P.onSlabSub },
+  cks: { fontFamily: F.bodyBold, fontSize: 10, color: P.onSlabSub, marginTop: 3 },
 
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 13, marginBottom: 4 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: P.line },
@@ -264,7 +265,8 @@ const s = StyleSheet.create({
   libFoot: { fontFamily: F.bodyMed, fontSize: 10, color: P.grey, lineHeight: 15, marginTop: 16, marginBottom: 6 },
   src: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13 },
   srcB: { borderTopWidth: 1, borderTopColor: P.line },
-  srcIc: { width: 32, height: 32, borderRadius: 10, backgroundColor: P.ink, alignItems: 'center', justifyContent: 'center' },
+  srcIc: { width: 32, height: 32, borderRadius: 10, backgroundColor: P.slab,   // a marca amarela pede o escuro (N3: a placa)
+    alignItems: 'center', justifyContent: 'center' },
   srcNm: { fontFamily: F.bodyBold, fontSize: 12.5, color: P.ink },
   srcSub: { fontFamily: F.bodyMed, fontSize: 10.5, color: P.grey, marginTop: 2 },
 

@@ -11,14 +11,14 @@ import IconButton from './IconButton';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { CARD, TXT3, SPACE, RADIUS } from '../data/constants';
 
-const C = CARD.day;
+const C = CARD.auto;
 
 export default function Pagina3({ title, lead, onBack, backLabel = 'Voltar', footer, children }) {
   const insets = useSafeAreaInsets();
   const tabSpace = useTabBarSpace();
   return (
     <View style={[s.root, { paddingTop: insets.top, backgroundColor: C.desk }]}>
-      <StatusBar style="dark" />
+      <StatusBar style="auto" />
       <View style={s.top}>
         {onBack ? <IconButton icon="back" onPress={onBack} label={backLabel} style={{ backgroundColor: C.round }} /> : null}
         {title ? <Text style={[TXT3.month, s.title, { color: C.ink }]} accessibilityRole="header">{title}</Text> : null}

@@ -86,7 +86,7 @@ function detailFor(it, lang) {
   return out;
 }
 
-const W = CARD.day;
+const W = CARD.auto;
 // O sinal do mapa B: "!" laranja = olhar · "✕" vermelho = parar; dentro não tem sinal.
 const Mark = ({ tone }) => (tone === 'bad' || tone === 'warn' ? (
   <View style={[st.mark, { backgroundColor: tone === 'bad' ? W.stop : W.alert }]}>

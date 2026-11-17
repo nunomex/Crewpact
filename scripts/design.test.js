@@ -139,6 +139,25 @@ for (const f of ['App.js', ...MARCA_DIRS.flatMap((d) => fs.readdirSync(d).filter
   });
 }
 
+// Regra DURA (2026-11-17, o modo noite N3 segue o iPhone): nenhum ecrã fica preso ao dia. Os ecrãs usam as cores VIVAS (`PELE`,
+// `CARD.auto`, `BRAND`, `MONEY`), que o iOS troca sozinho; a paleta em BRUTO só onde a cor tem de ser escrita, e por um motivo:
+//   • `night ? CARD.night : CARD.day` — o Início e a barra de abas (pelo gancho useDark: animam as cores);
+//   • o que é sempre igual nos dois modos: o balão das guias, o aviso (Toast), a placa da Porta, o poster do ano (vai como imagem),
+//     a navegação (o tema do React Navigation faz contas com as cores), a carteira das Validades (anima as cores dos cartões).
+// E nenhuma barra de estado presa ao escuro ou ao claro sem motivo: `style="auto"` (a Porta é clara sobre a placa: "light").
+{
+  const BRUTO_OK = new Set(['components/GuideBubble.js', 'components/Toast.js', 'components/Porta.js', 'components/WelcomeSheet.js', 'components/YearShareCard.js', 'App.js', 'screens/ValidadesScreen.js']);
+  for (const f of FILES) {
+    const src = fs.readFileSync(f, 'utf8');
+    src.split(/\r?\n/).forEach((line, i) => {
+      if (/^\s*\/\//.test(line)) return;
+      const l2 = line.replace(/\?\s*CARD\.night\s*:\s*CARD\.day\b/g, '');
+      if (!BRUTO_OK.has(f) && /\bCARD\.day\b|\b(PELE|BRAND|MONEY)_DAY\b|\bPELE_DARK\b/.test(l2)) duras.push(`${f}:${i + 1}: paleta presa ao dia — usar a viva (PELE · CARD.auto · BRAND · MONEY), que segue o iPhone (N3)`);
+      if (/<StatusBar\s+style="dark"/.test(line)) duras.push(`${f}:${i + 1}: barra de estado presa ao escuro — style="auto" (segue o iPhone, N3)`);
+    });
+  }
+}
+
 // ── AS CORES, MEDIDAS (o capítulo "Cor" de docs/design-system.md, 2026-11-14) ──
 // Regra dura: todo o TEXTO tem 4,5:1 sobre o seu fundo (WCAG AA), de dia e de noite. Dívida (só pode descer): os sinais sem texto
 // abaixo de 3:1 (o ponto "ao vivo") e o laranja e o vermelho que se confundem para quem não distingue o vermelho do verde
@@ -160,7 +179,9 @@ for (const f of ['App.js', ...MARCA_DIRS.flatMap((d) => fs.readdirSync(d).filter
   const cores = { sinalFraco: 0, laranjaVermelho: 0 };
   const texto = (nome, fg, bg) => { const r = ratio(fg, bg); if (r < 4.5) duras.push(`cores: ${nome} tem ${r.toFixed(2)}:1 — o texto pede 4,5:1`); };
   for (const [modo, P] of [['dia', CARD.day], ['noite', CARD.night]]) {
-    for (const k of ['flight', 'ground', 'rest', 'alert', 'stop']) texto(`(${modo}) a tinta dos cartões sobre "${k}"`, CARD.onCardSub, P[k]);
+    // os de TIPO no seu fundo (à noite o tom fundo da N3, com a letra clara) · os avisos vivos com a tinta escura, de dia e de noite
+    for (const k of ['flight', 'ground', 'rest']) { texto(`(${modo}) a letra sobre o fundo "${k}"`, P.onFillSub, P[`${k}Fill`]); texto(`(${modo}) o rótulo sobre o fundo "${k}"`, P.onFillKind, P[`${k}Fill`]); }
+    for (const k of ['alert', 'stop']) texto(`(${modo}) a tinta dos cartões sobre "${k}"`, CARD.onCardSub, P[k]);
     for (const k of ['desk', 'sheet', 'neutral']) texto(`(${modo}) a tinta sobre "${k}"`, P.ink, P[k]);
     texto(`(${modo}) o texto secundário sobre o neutro`, P.neutralSub, P.neutral);
     texto(`(${modo}) o ganho fora da pílula sobre a folha`, P.gainOut, P.sheet);
@@ -169,6 +190,27 @@ for (const f of ['App.js', ...MARCA_DIRS.flatMap((d) => fs.readdirSync(d).filter
     if (dE(deut(P.alert), deut(P.stop)) < 20) cores.laranjaVermelho++;
   }
   texto('o ganho na pílula branca', CARD.gain, CARD.chip);
+  // AS PÁGINAS 2.0 NOS DOIS MODOS (o modo noite N3 segue o iPhone, 2026-11-17): a pele do dia e a da noite, par a par, e o que
+  // é sempre escuro (a placa) com a letra branca. Os fundos com transparência medem-se sobre o papel do seu modo.
+  const { PELE_DAY, PELE_DARK, MONEY_DAY, MONEY_DARK, BRAND_DAY, BRAND_DARK } = require(path.resolve('data/constants.js'));
+  const sobre = (c, papel) => { const f = rgba(c); if (f[3] === 1) return c; const b = rgba(papel); const v = f.slice(0, 3).map((x, i) => Math.round((x * f[3] + b[i] * (1 - f[3])) * 255)); return `rgb(${v.join(',')})`; };
+  for (const [modo, P, M, B] of [['dia', PELE_DAY, MONEY_DAY, BRAND_DAY], ['noite', { ...PELE_DAY, ...PELE_DARK }, { ...MONEY_DAY, ...MONEY_DARK }, { ...BRAND_DAY, ...BRAND_DARK }]]) {
+    const f = (c) => sobre(c, P.paper);
+    for (const k of ['paper', 'soft', 'soft2']) texto(`(${modo}, 2.0) a tinta sobre "${k}"`, P.ink, f(P[k]));
+    if (modo === 'noite') {   // o cinzento do dia (#77776F, 4,48 sobre o branco) é dívida antiga do 2.0, fora deste capítulo
+      texto(`(${modo}, 2.0) o cinzento sobre o papel`, P.grey, f(P.paper));
+      texto(`(${modo}, 2.0) o cinzento sobre o suave`, P.grey, f(P.soft));
+      texto(`(${modo}, 2.0) o vermelho sobre o papel`, P.red, f(P.paper));
+      texto(`(${modo}, 2.0) o vermelho sobre o seu suave`, P.red, f(P.redSoft));
+      texto(`(${modo}, 2.0) o branco a 60 % sobre a placa`, 'rgba(255,255,255,0.6)', P.slab);
+    }
+    texto(`(${modo}, 2.0) o cinzento do suave`, P.greyOnSoft, f(P.soft));
+    texto(`(${modo}, 2.0) a letra do botão de tinta`, P.onInk, f(P.ink));
+    texto(`(${modo}, 2.0) o âmbar de texto sobre o seu suave`, P.warnText, f(P.warnSoft));
+    texto(`(${modo}, 2.0) a tinta sobre a marcação`, P.ink, f(B.marker));
+    texto(`(${modo}, 2.0) o branco sobre a placa`, '#FFFFFF', P.slab);
+    texto(`(${modo}, 2.0) o ganho sobre o papel`, M.gain, f(P.paper));
+  }
   atual['data/constants.js (cores)'] = cores;
 }
 

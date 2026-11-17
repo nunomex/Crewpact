@@ -12,7 +12,7 @@ const OUT = Dimensions.get('window').height;
 
 // `onClosed`: chamado DEPOIS de a folha sair e o Modal desmontar. Para abrir outra folha a seguir a esta: no iOS, apresentar um
 // Modal com o anterior ainda a fechar bloqueia o ecrã (visto no iPhone a 2026-11-11, com um temporizador de 280 ms).
-// `bg`: a cor da folha — a 2.0 é o papel; as janelas da 3.0 passam CARD.day.sheet (branca, C1 2026-11-13), e então os cantos
+// `bg`: a cor da folha — a 2.0 é o papel; as janelas da 3.0 passam CARD.auto.sheet (branca, C1 2026-11-13), e então os cantos
 // são os da folha da 3.0 (32, RADIUS.sheet — design-system §14).
 export default function PeleSheet({ visible, onClose, onClosed, children, bg }) {
   const closedRef = useRef(onClosed);

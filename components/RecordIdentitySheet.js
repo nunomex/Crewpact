@@ -19,7 +19,7 @@ export default function RecordIdentitySheet({ visible, onClose, form = {}, setFo
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const set = (k) => (v) => setForm && setForm((f) => ({ ...f, [k]: v }));
   return (
-    <PeleSheet visible={visible} onClose={onClose} bg={CARD.day.sheet}>
+    <PeleSheet visible={visible} onClose={onClose} bg={CARD.auto.sheet}>
       <SheetHeader card title={title || t('duties.recTitle', lang)} onClose={onClose} closeLabel={l('Fechar', 'Close')} style={s.head} />
       <Text style={[TXT3.cardSub, s.sub]}>{sub || t('duties.recSub', lang)}</Text>
       <FieldInput label={t('duties.recName', lang)} value={form.name || ''} onChangeText={set('name')} placeholder={t('duties.recNamePh', lang)}
@@ -34,7 +34,7 @@ export default function RecordIdentitySheet({ visible, onClose, form = {}, setFo
 
 const s = StyleSheet.create({
   head: { paddingHorizontal: 0, paddingTop: 0 },
-  sub: { color: CARD.day.tabSub, marginBottom: SPACE.xs },
+  sub: { color: CARD.auto.tabSub, marginBottom: SPACE.xs },
   btn: { marginTop: SPACE.lg },
-  hint: { color: CARD.day.tabSub, textAlign: 'center', marginTop: SPACE.sm },
+  hint: { color: CARD.auto.tabSub, textAlign: 'center', marginTop: SPACE.sm },
 });

@@ -8,7 +8,8 @@ Text.defaultProps = Text.defaultProps || {};
 Text.defaultProps.maxFontSizeMultiplier = 1.4;
 TextInput.defaultProps = TextInput.defaultProps || {};
 TextInput.defaultProps.maxFontSizeMultiplier = 1.4;
-import { NavigationContainer, DefaultTheme, createNavigationContainerRef } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme, createNavigationContainerRef } from '@react-navigation/native';
+import useDark from './hooks/useDark';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -25,7 +26,7 @@ import { HankenGrotesk_500Medium, HankenGrotesk_600SemiBold, HankenGrotesk_700Bo
 import { Caveat_600SemiBold } from '@expo-google-fonts/caveat';   // a VOZ manuscrita (o bilhete pessoal do Início — escolha final do user)
 import { getLocales } from 'expo-localization';
 import * as LocalAuthentication from 'expo-local-authentication';
-import { TYPE, PELE, PELE_FONT } from './data/constants';
+import { TYPE, PELE, PELE_DAY, PELE_DARK, PELE_FONT } from './data/constants';
 import { AppContext, isoDay } from './data/appContext';
 import { t } from './data/i18n';
 import { supabase } from './data/supabase';
@@ -352,9 +353,8 @@ export default function App() {
     const id = setTimeout(goTap, 300);
     return () => clearTimeout(id);
   }, [user, onboarded, locked]); // eslint-disable-line react-hooks/exhaustive-deps
-  // Tema NOTURNO do Início (véspera/pernoita) — o HomeScreen publica-o aqui para a
-  // TabBar herdar o tema quando o Início é a aba ativa.
-  const [homeNight, setHomeNight] = useState(false);
+  // O modo noite N3 segue o iPhone (2026-11-17): a navegação e a barra de estado escolhem a pele do modo.
+  const dark = useDark();
   // Toast de AÇÃO genérico (confirma guardar/apagar/aplicar) — exposto via contexto.
   // `action` (mockup desfazer, 2026-07-15): { label, onPress } — o toast ganha a pílula
   // "Desfazer" (5 s fixos, box-none). Sem ação, o toast continua puramente informativo.
@@ -1147,7 +1147,6 @@ export default function App() {
     notify,
     rosterChanges, checkRosterChanges,
     liveSync, markLiveSync, dismissLiveSync,
-    homeNight, setHomeNight,
     openSimulation: () => setSimulateOpen(true),
     calendarId, setCalendarId,
     calendarName, setCalendarName,
@@ -1191,12 +1190,12 @@ export default function App() {
     return <RootNav />;
   };
 
-  // Navegação sempre na pele (paper) — o tema antigo morreu (o noturno da LI é
-  // por-estado, não global; theme/setTheme extintos 2026-07-10).
+  // Navegação na pele do modo do iPhone (N3, 2026-11-17) — as cores em bruto: a navegação faz contas com elas.
+  const NP = dark ? PELE_DARK : PELE_DAY;
   const navTheme = {
-    ...DefaultTheme,
-    dark: false,
-    colors: { ...DefaultTheme.colors, background: PELE.paper, card: PELE.paper, text: PELE.ink, border: PELE.line, primary: PELE.ink },
+    ...(dark ? DarkTheme : DefaultTheme),
+    dark,
+    colors: { ...(dark ? DarkTheme : DefaultTheme).colors, background: NP.paper, card: NP.paper, text: NP.ink, border: NP.line, primary: NP.ink },
   };
 
   // Pronto = o renderScreen mostraria um ecrã REAL (não o spinner de carga). O
@@ -1213,7 +1212,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AppContext.Provider value={ctx}>
-        <StatusBar style={!splashHidden ? 'light' : 'dark'} />
+        <StatusBar style={!splashHidden ? 'light' : 'auto'} />
         <NavigationContainer ref={navRef} theme={navTheme} onReady={goTap} onStateChange={() => { if (pendingTap.current) goTap(); }}>
           {renderScreen()}
         </NavigationContainer>

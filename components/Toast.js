@@ -2,7 +2,9 @@ import React, { useEffect, useRef, useContext } from 'react';
 import { Animated, View, Text, TouchableOpacity, StyleSheet, AccessibilityInfo, Easing } from 'react-native';
 import Icon from './Icon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { PELE as P, PELE_NIGHT as N, PELE_FONT as F, SHADOW, BRAND } from '../data/constants';
+// O aviso é SEMPRE escuro, de dia e de noite (N3, 2026-11-17): a placa (`PELE.slab` — à noite um degrau acima da folha) e, por cima,
+// sempre as mesmas cores — as do dia em bruto (`PELE_DAY`, `BRAND_DAY`), que foram medidas sobre o escuro.
+import { PELE, PELE_DAY as P, PELE_NIGHT as N, PELE_FONT as F, SHADOW, BRAND_DAY as BRAND } from '../data/constants';
 import { AppContext } from '../data/appContext';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { t } from '../data/i18n';
@@ -116,7 +118,7 @@ export default function Toast({ toast, lang, onHide }) {
 
 const s = StyleSheet.create({
   toast: { position: 'absolute', left: 16, right: 16, zIndex: 100, flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: P.ink, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 14,
+    backgroundColor: PELE.slab, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 14,
     ...SHADOW.md },
   toastAction: { paddingBottom: 14, overflow: 'hidden' },   // espaço p/ a barra de tempo (fica dentro do raio)
   icon: { width: 34, height: 34, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },

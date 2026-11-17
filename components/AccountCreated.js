@@ -68,7 +68,8 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: PELE.paper },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
   ring: {
-    width: 96, height: 96, borderRadius: 48, backgroundColor: PELE.ink,
+    width: 96, height: 96, borderRadius: 48, backgroundColor: PELE.slab,   // o visto amarelo pede o escuro (N3: a placa)
+   
     alignItems: 'center', justifyContent: 'center', marginBottom: 28,
   },
   title: { fontFamily: PELE_FONT.display, fontSize: 30, letterSpacing: 0.4, textTransform: 'uppercase', color: PELE.ink, textAlign: 'center' },
