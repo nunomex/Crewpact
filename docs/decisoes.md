@@ -6,7 +6,19 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 ---
 
-## O QUE FALTA (ler isto primeiro · lista única · atualizada 2026-11-15)
+## O QUE FALTA (ler isto primeiro · lista única · atualizada 2026-11-16)
+
+**ONDE FICÁMOS (2026-11-16, fim do dia — continua amanhã):** tudo gravado e ENVIADO no ramo `calculos-repouso-2` (o GitHub até
+`35b8bad`). Feito hoje: o teste das skills na Simulação e a regra 9 (as skills ao fazermos as coisas); a **Simulação V3** (um serviço
+ou uma troca, na linha do tempo, com a Folga); **o mapa da app** (`docs/sitemap.md`) e os seus 5 achados (o toque nas notificações,
+a dica do Simular, **um dia abre sempre na mesma folha (F1)**, os extras numa folha nos Números (X2, só para ver), o código sem uso);
+a SNC detetada por engano tira-se no dia; o título das folhas cresce; **o que a app não conhece não desaparece** (camada 1: o
+"Código novo" no dia e o Início incerto); apagar a conta limpa o telemóvel passados os 7 dias; **os códigos no Supabase e o "Avisar
+a CrewPact"** (as tabelas JÁ CORRIDAS e verificadas: leitura sim, escrita pela app não). **Tudo por ver no iPhone** (as listas "Ver no
+iPhone" nas entradas de 2026-11-16, abaixo; o toque nas notificações só no dev build). **Quarta-feira, 2026-11-18: a sessão Fable 5.2**
+(o bloco "SESSÃO FABLE 5.2", 9 pontos — o 9 é a camada 2 dos códigos novos). **À espera do Nuno:** os códigos da escala dos serviços e
+dos extras. **A seguir (Opus):** o modo noite N3 · as calculadoras da lei na linguagem 3.0 · o "Avião" na verificação (W2) · a guia
+de três balões do Início · o guião `docs/verificacao-device.md` em dia com a v3.
 
 **ONDE FICÁMOS (2026-11-15, fim do dia — continua amanhã):** gravado no ramo `calculos-repouso-2`: as durações com "h" na app
 toda (D1), o repouso "acima do mínimo" (R1), a Simulação 3.0 (S1, `test:simsheet`) e a barra de abas (a N2 afinada). **Por
