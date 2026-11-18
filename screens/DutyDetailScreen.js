@@ -197,7 +197,7 @@ export function DutyDetailBody({ date, idx: idxIn = 0, editReq = null, navigatio
   const routeStr = stations.length > 1 ? stations.join(' → ') : (duty.route || l('Voo', 'Flight'));
   const headMain = isFlight
     ? routeStr
-    : (duty.block_on && duty.block_on !== duty.report_time ? `${duty.report_time} – ${duty.block_on}` : (duty.report_time || '—'));
+    : (duty.block_on && duty.block_on !== duty.report_time ? `${duty.report_time || '—'} – ${duty.block_on}` : (duty.report_time || '—'));   // (um serviço em terra sem hora de início: "— – 17:00")
 
   // ── Herói (mockup): fantasma = FDP realizado (ou duty hours); kick = nº de voo · setores · pernoita ──
   const heroGhost = durText((d && hasEnd && d.fdp && d.fdp.actualFdpStr) || (d && d.dutyPeriodStr) || '');

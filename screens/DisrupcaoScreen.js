@@ -59,7 +59,7 @@ export default function DisrupcaoScreen({ navigation }) {
     const eur = ae && ae.rdp ? ae.rdp(catYm, ym) : null;
     return { eur, label: l('1 setor nominal ou o mínimo do Anexo I — o maior', '1 nominal sector or the Annex I floor — whichever is higher') };
   };
-  const totalEur = cands.reduce((a, c) => a + (valueOf(c).eur || 0), 0);
+  const totalEur = cands.reduce((a, c) => a + (c.uncertain ? 0 : (valueOf(c).eur || 0)), 0);   // o candidato incerto não é dinheiro certo (2.ª revisão, achado 10)
 
   // Declarações (o visto amarelo): default DESLIGADO — declarar é um ato teu, não da app.
   const [declared, setDeclared] = useState({});
@@ -95,7 +95,9 @@ export default function DisrupcaoScreen({ navigation }) {
             afterLine: disruptionDelta(c, lang),
             detectedAt: fmtDet(c.detectedAt),
             lawLine: c.type === 'rdp'
-              ? l('AE easyJet×SNPVAC (BTE 8/2024), Cl. 67.ª: alteração ≥119 min no dia da operação · Anexo I/11', 'easyJet×SNPVAC CLA (BTE 8/2024), Cl. 67: change ≥119 min on the day of operation · Annex I/11')
+              ? (c.uncertain
+                ? l('AE easyJet×SNPVAC (BTE 8/2024), Cl. 67.ª: alteração ≥119 min — INCERTO: a app não viu a alteração no dia da operação, ou o fim real ficou abaixo dos 119 min · Anexo I/11', 'easyJet×SNPVAC CLA (BTE 8/2024), Cl. 67: change ≥119 min — UNCERTAIN: the app did not see the change on the day of operation, or the real end was under 119 min · Annex I/11')
+                : l('AE easyJet×SNPVAC (BTE 8/2024), Cl. 67.ª: alteração ≥119 min no dia da operação · Anexo I/11', 'easyJet×SNPVAC CLA (BTE 8/2024), Cl. 67: change ≥119 min on the day of operation · Annex I/11'))
               : isPilot
                 ? (String(c.dutyDate || '') >= '2026-06-26'
                   ? l('AE easyJet×SPAC (BTE 29/2026), Art. 65.º: SNC nas 48h (início −2h / fim +2h) · Anexo I/11', 'easyJet×SPAC CLA (BTE 29/2026), Art. 65: SNC within 48h (start −2h / end +2h) · Annex I/11')
@@ -115,7 +117,7 @@ export default function DisrupcaoScreen({ navigation }) {
         notify && notify(l('Prova gerada', 'Evidence generated'));
         // O € nasce de REGISTO: os tipos snc/rdp JÁ existem no sistema de eventos do AE
         // (entram no mês como os DDO/WFLY). Sugere-se — registo deliberado, nunca automático.
-        const toLog = confirmed.filter((c) => !(aeEvents || []).some((e) => e && e.date === c.dutyDate && e.type === c.type));
+        const toLog = confirmed.filter((c) => !c.uncertain && !(aeEvents || []).some((e) => e && e.date === c.dutyDate && e.type === c.type));   // o incerto não se regista como dinheiro
         if (toLog.length && addAeEvents) {
           setTimeout(() => {
             Alert.alert(
@@ -176,13 +178,13 @@ export default function DisrupcaoScreen({ navigation }) {
             <View key={c.id} style={s.cand}>
               <View style={s.cTop}>
                 <Text style={s.cDay} numberOfLines={1}>{fmtDay(c.dutyDate)}{c.route ? ` · ${c.route}` : ''}</Text>
-                <View style={s.cBadge}><Text style={s.cBadgeTxt} allowFontScaling={false}>{c.type.toUpperCase()} · {c.type === 'rdp' ? l('no dia', 'day-of') : '48h'}</Text></View>
+                <View style={s.cBadge}><Text style={s.cBadgeTxt} allowFontScaling={false}>{c.type.toUpperCase()} · {c.type === 'rdp' ? (c.uncertain ? l('incerto', 'uncertain') : l('no dia', 'day-of')) : '48h'}</Text></View>
               </View>
               <Text style={s.cDiff} numberOfLines={2}>{disruptionDelta(c, lang)}</Text>
               <Text style={s.cWhen} numberOfLines={2}>{l('alteração detetada', 'change detected')}: <Text style={s.cWhenB}>{fmtDet(c.detectedAt)}</Text> ({l('sincronização', 'sync')})</Text>
               <View style={s.cLaw}>
                 <Text style={s.cLawTxt}>
-                  {c.clause}{c.type === 'rdp' ? l(' — ≥119 min no dia da operação → ', ' — ≥119 min on the day → ') : l(' — ≥2h nas 48h antes → ', ' — ≥2h within 48h → ')}
+                  {c.clause}{c.type === 'rdp' ? (c.uncertain ? l(' — ≥119 min, se foi no dia da operação → até ', ' — ≥119 min, if on the day → up to ') : l(' — ≥119 min no dia da operação → ', ' — ≥119 min on the day → ')) : l(' — ≥2h nas 48h antes → ', ' — ≥2h within 48h → ')}
                   <Text style={s.cEur}>{v.eur != null ? fmtEur(v.eur, lang) : l('Anexo I', 'Annex I')}</Text>
                   {v.label ? <Text style={s.cLawSub}> · {v.label}</Text> : null}
                 </Text>

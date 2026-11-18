@@ -251,5 +251,122 @@ eq('sem próximo → neutro', restStatus({ '2026-11-03': { report_time: '06:00',
   eq('só o repouso ✓ → "Sim"', restItem(rOk, { status: 'ok', issues: [] }, 'pt').answer, 'Sim · 25 h 10 antes do report');
 }
 
-console.log(`\nrestStatus — ${ok} passou, ${fail} falhou (${ok + fail} asserções)`);
+// ── O PISO DO REPOUSO COM UM BURACO DE SÍTIO (sessão Fable 5.2, ponto 8; visto no iPhone a 2026-11-14) ──
+// "The minimum rest period provided before undertaking an FDP starting at home base … 12 hours" / "… starting away from home
+// base … 10 hours" (ORO.FTL.235(a)(1)/(b)): o piso é do sítio onde COMEÇA o PSV seguinte. Numa escala sem buracos é o sítio onde
+// o anterior acabou. Com um buraco (acaba em OPO, o seguinte parte de LIS, nada pelo meio) falta um facto: a viagem. "All time
+// spent on positioning shall count as duty period" (ORO.FTL.215(b)) — um posicionamento à parte muda o serviço precedente e
+// encurta o repouso; dentro do PSV seguinte ("positioning after reporting but prior to operating shall be counted as FDP",
+// 215(a)) o PSV começa mais cedo e noutro sítio. A app não escolhe: incerto, com o que falta; curto só abaixo das 10 h (o
+// mínimo de todas as leituras; o intervalo que se vê é o MÁXIMO do repouso que houve).
+{
+  const { restItem } = require(path.resolve('data/hojeItems.js'));
+  const { restVerdicts, restAround } = require(path.resolve('data/today.js'));
+  const C = { base: 'LIS', postFlightMin: 30 };
+  const gapD = {
+    '2026-11-13': { report_time: '21:00', block_on: '04:00', route: 'LIS-OPO', sectors: 1 },   // acaba às 04:30 de 14/11, no Porto
+    '2026-11-15': { report_time: '05:40', block_on: '09:00', route: 'LIS-FNC', sectors: 1 },   // parte de Lisboa
+  };
+  const pk = (r) => ({ status: r.status, kind: r.kind || null, actualMin: r.actualMin, requiredMin: r.requiredMin, hi: r.requiredHiMin == null ? null : r.requiredHiMin, from: r.gapFrom || null, dep: r.gapDep || null, prev: r.gapPrevIso || null });
+  const rs = restStatus(gapD, '2026-11-14', at('2026-11-14', '12:00'), C);
+  eq('buraco de sítio: acaba em OPO, parte de LIS → incerto, sem teto (25 h 10 é o máximo que houve)', pk(rs),
+    { status: 'warn', kind: 'placeGap', actualMin: 1510, requiredMin: 600, hi: null, from: 'OPO', dep: 'LIS', prev: '2026-11-13' });
+  // Com o posicionamento na escala não há buraco: o repouso conta do fim dele, e o piso é o da base (o PSV começa em LIS).
+  const withPos = { ...gapD, '2026-11-14': { kind: 'positioning', report_time: '10:00', block_on: '11:00', route: 'OPO-LIS', sectors: 0, flight_minutes: 0 } };
+  eq('com o posicionamento na escala → certo, 12 h (na base), do fim dele', pk(restStatus(withPos, '2026-11-14', at('2026-11-14', '12:00'), C)),
+    { status: 'ok', kind: null, actualMin: 1120, requiredMin: 720, hi: null, from: null, dep: null, prev: null });
+  // Sem buraco (o seguinte parte de onde este acabou): como sempre — fora da base, 10 h.
+  const noGap = { ...gapD, '2026-11-15': { report_time: '05:40', block_on: '09:00', route: 'OPO-LIS', sectors: 1 } };
+  eq('sem buraco (parte de OPO) → certo, 10 h (fora)', pk(restStatus(noGap, '2026-11-14', at('2026-11-14', '12:00'), C)),
+    { status: 'ok', kind: null, actualMin: 1510, requiredMin: 600, hi: null, from: null, dep: null, prev: null });
+  // Abaixo das 10 h é curto em qualquer leitura (o mínimo do 235(b) e do repouso reduzido, CS FTL.1.235(c)(1)).
+  const short = {
+    '2026-11-13': { report_time: '08:00', block_on: '19:30', route: 'LIS-OPO', sectors: 1 },   // 12 h de serviço, acaba às 20:00
+    '2026-11-14': { report_time: '05:00', block_on: '09:00', route: 'LIS-FNC', sectors: 1 },   // 9 h depois
+  };
+  eq('buraco de sítio com menos de 10 h → curto (o mínimo de todas as leituras: 10 h)', pk(restStatus(short, '2026-11-13', at('2026-11-13', '21:00'), C)),
+    { status: 'bad', kind: null, actualMin: 540, requiredMin: 600, hi: null, from: null, dep: null, prev: null });
+  // Entre as 10 h e o mínimo do motor (12 h: o serviço anterior): já não é "curto" de certeza — incerto.
+  const mid = { ...short, '2026-11-14': { report_time: '07:00', block_on: '11:00', route: 'LIS-FNC', sectors: 1 } };
+  eq('buraco de sítio com 11 h (o motor pedia 12 h) → incerto', pk(restStatus(mid, '2026-11-13', at('2026-11-13', '21:00'), C)),
+    { status: 'warn', kind: 'placeGap', actualMin: 660, requiredMin: 600, hi: null, from: 'OPO', dep: 'LIS', prev: '2026-11-13' });
+  // Mais de 7 dias depois (férias, folgas): já não se avisa — a regra do sítio da importação e da Simulação.
+  const far = { '2026-11-05': gapD['2026-11-13'], '2026-11-15': gapD['2026-11-15'] };
+  eq('buraco com mais de 7 dias → como antes', pk(restStatus(far, '2026-11-14', at('2026-11-14', '12:00'), C)).status, 'ok');
+  // Um posicionamento SEM rota pelo meio: a viagem está na escala, não se avisa.
+  const posNoRoute = { ...gapD, '2026-11-14': { kind: 'positioning', report_time: '10:00', block_on: '11:00', route: null, sectors: 0, flight_minutes: 0 } };
+  eq('posicionamento sem rota pelo meio → sem o aviso do sítio', pk(restStatus(posNoRoute, '2026-11-14', at('2026-11-14', '12:00'), C)).kind, null);
+  // As Estatísticas e a Simulação dizem o mesmo (a mesma linha).
+  eq('Estatísticas: o mesmo veredicto', restVerdicts(gapD, C).map((v) => [v.status, v.kind]), [['unc', 'placeGap']]);
+  const ra = restAround(gapD, (s2, iso) => iso === '2026-11-15', C);
+  eq('à volta do serviço (Simulação): antes incerto pelo sítio', [ra.before.status, ra.before.kind, ra.before.gapFrom], ['unc', 'placeGap', 'OPO']);
+  const ra13 = restAround(gapD, (s2, iso) => iso === '2026-11-13', C);
+  eq('à volta do serviço (Simulação): depois incerto pelo sítio', [ra13.after.status, ra13.after.kind, ra13.after.gapDep], ['unc', 'placeGap', 'LIS']);
+  // "Repouso até" depois do serviço que acaba em OPO: o mínimo de quem começa o PSV seguinte AQUI (10 h 00, fora), sem teto.
+  const ru = restUntilAfter(gapD, '2026-11-13', C);
+  eq('"Repouso até" com o buraco à frente → incerto, só a ponta de baixo', [ru.uncertain, ru.why, ru.requiredLoMin, ru.requiredHiMin, ru.untilHiMs, ru.gapFrom, ru.gapDep, ru.untilLoMs === +at('2026-11-14', '14:30')],
+    [true, 'placeGap', 600, null, null, 'OPO', 'LIS', true]);
+  const ruNo = restUntilAfter(noGap, '2026-11-13', C);
+  eq('"Repouso até" sem buraco → certo, como antes', [!!ruNo.uncertain, ruNo.requiredMin], [false, 600]);
+  // A resposta do "Tenho descanso?".
+  const it = restItem(rs, { status: 'ok', issues: [] }, 'pt');
+  eq('"Tenho descanso?" · a resposta', [it.status, it.answer], ['warn', 'Incerto · no máximo 25 h 10 antes do report']);
+  eq('"Tenho descanso?" · a dica diz o que falta e a lei', it.suggestion, 'O serviço de 13/11 acabou em OPO e este parte de LIS: falta na escala como foste de um sítio ao outro. Um posicionamento é serviço (ORO.FTL.215) e muda o repouso que tiveste e o mínimo: 12 h antes de um PSV que começa na base, 10 h fora (ORO.FTL.235(a)/(b)). Tem de vir do calendário.');
+  eq('"Tenho descanso?" · EN', restItem(rs, { status: 'ok', issues: [] }, 'en').answer, 'Uncertain · at most 25 h 10 before report');
+
+  // A NOITE LOCAL DO TARDIO/NOTURNO PARA O MATINAL — "is planned at home base" (CS FTL.1.235(a)(1)): com o buraco não se sabe
+  // se a passagem é na base → incerto ('place'); sem buraco, como antes.
+  const N = (route) => ({ report_time: '20:00', block_on: '02:30', route, sectors: 1 });   // noturno (02:00–04:59), acaba às 03:00
+  const E = (route) => ({ report_time: '05:30', block_on: '09:00', route, sectors: 1 });   // matinal nos dois tipos de horário
+  const tn = (a, b) => recoveryStatus({ '2026-11-10': N(a), '2026-11-12': E(b) }, '2026-11-11', { base: 'LIS', postFlightMin: 30, disruptiveType: 'early' });
+  const one = (r) => r.issues.filter((x) => x.type === 'transitionNight').map((x) => [x.date, !!x.uncertain, x.why || null]);
+  eq('noite local: na base, sem buraco → falta (certo)', [tn('FNC-LIS', 'LIS-FNC').status, one(tn('FNC-LIS', 'LIS-FNC'))], ['bad', [['2026-11-12', false, null]]]);
+  eq('noite local: fora da base, sem buraco → a regra não se aplica', one(tn('LIS-OPO', 'OPO-LIS')), []);
+  eq('noite local: acaba fora e o matinal parte da base (buraco) → incerto', [tn('LIS-OPO', 'LIS-FNC').status, one(tn('LIS-OPO', 'LIS-FNC'))], ['warn', [['2026-11-12', true, 'place']]]);
+  eq('noite local: acaba na base e o matinal parte de fora (buraco) → incerto', one(tn('FNC-LIS', 'OPO-LIS')), [['2026-11-12', true, 'place']]);
+  eq('noite local: buraco entre dois sítios fora da base → a regra não se aplica', one(tn('LIS-OPO', 'FNC-LIS')), []);
+}
+
+// ── REVISÃO INDEPENDENTE do ponto 8 (2026-11-18) ──
+{
+  const { restAround } = require(path.resolve('data/today.js'));
+  const C = { base: 'LIS', postFlightMin: 30 };
+  const sb = (rep, end, extra) => ({ kind: 'standby_home', report_time: rep, block_on: end, sectors: 0, flight_minutes: 0, route: null, ...(extra ? { extra } : {}) });
+  // Achado 1: buraco de sítio + assistência em casa + voo 30 min depois dela. Na leitura da chamada (CS FTL.1.225(b)(5)) o
+  // repouso que conta é o de ANTES da assistência (11 h) — e com o buraco pode ter sido fora da base (mínimo 10 h): não é curto
+  // em todas as leituras → incerto. (Antes: "curto", pelos 30 min.)
+  const fork = { '2026-07-01': { report_time: '12:00', block_on: '20:00', route: 'FNC-LIS', sectors: 1 }, '2026-07-02': sb('07:30', '15:30', [{ report_time: '16:00', block_on: '18:00', route: 'OPO-LIS', sectors: 1 }]) };
+  const r1 = restStatus(fork, '2026-07-02', at('2026-07-02', '15:45'), C);
+  eq('revisão 1: buraco de sítio com assistência e chamada possível → incerto', [r1.status, r1.kind], ['warn', 'placeGap']);
+  // … mas com menos de 10 h também antes da assistência é curto em todas as leituras.
+  const fork2 = { ...fork, '2026-07-01': { report_time: '15:00', block_on: '23:00', route: 'FNC-LIS', sectors: 1 } };   // acaba às 23:30: 8 h antes da assistência
+  eq('revisão 1: … com 8 h antes da assistência → curto', restStatus(fork2, '2026-07-02', at('2026-07-02', '15:45'), C).status, 'bad');
+  // Achado 6: o anterior acabou NA BASE (o motor pede 12 h) e o seguinte parte de fora: a ponta de baixo do "Repouso até" é o
+  // que todas as leituras pedem — 10 h, como no "Tenho descanso?" (que só diz curto abaixo das 10 h).
+  const hb = { '2026-07-01': { report_time: '08:00', block_on: '16:00', route: 'FNC-LIS', sectors: 1 }, '2026-07-02': { report_time: '03:30', block_on: '07:00', route: 'LGW-LIS', sectors: 1 } };
+  const ru = restUntilAfter(hb, '2026-07-01', C);
+  eq('revisão 6: "Repouso até" com o buraco, vindo da base → a ponta de baixo é 10 h', [ru.uncertain, ru.why, ru.requiredLoMin, ru.requiredHiMin], [true, 'placeGap', 600, null]);
+  eq('revisão 6: … e o "Tenho descanso?" com 11 h diz incerto (a mesma ponta)', restStatus(hb, '2026-07-01', at('2026-07-01', '17:00'), C).status, 'warn');
+  // Achado 4: o mínimo a seguir que a Simulação mostra (`need`) é o mesmo do "Repouso até".
+  const nd = restAround(hb, (s2, iso) => iso === '2026-07-01', C).need;
+  eq('revisão 4: o mínimo a seguir da Simulação com o buraco à frente', [nd.uncertain, nd.why, nd.requiredLoMin, nd.requiredHiMin, nd.gapFrom, nd.gapDep], [true, 'placeGap', 600, null, 'LIS', 'LGW']);
+  // Achado 7: com o buraco, o repouso que se vê é só o MÁXIMO — uma noite local contada pode não ter existido (o tardio com um
+  // posicionamento no fim acaba mais tarde). Se um dos lados é a base, a noite do tardio/noturno → matinal fica incerta também
+  // com 1 noite à vista (CS FTL.1.235(a)(1)); com 2 ou mais já não.
+  const N = (route) => ({ report_time: '20:00', block_on: '02:30', route, sectors: 1 });   // noturno, acaba às 03:00 do dia seguinte
+  const E = (route) => ({ report_time: '06:30', block_on: '10:00', route, sectors: 1 });   // matinal no tipo "tardio" (05:00–06:59)
+  const tn = (a, b, d3 = '2026-07-03') => recoveryStatus({ '2026-07-01': N(a), [d3]: E(b) }, '2026-07-02', { base: 'LIS', postFlightMin: 30, disruptiveType: 'late' }).issues.filter((x) => x.type === 'transitionNight').map((x) => [x.date, !!x.uncertain, x.why || null]);
+  eq('revisão 7: 1 noite à vista, sem buraco → sem aviso', tn('FNC-LIS', 'LIS-FNC'), []);
+  eq('revisão 7: 1 noite à vista, com buraco e a base num dos lados → incerto', tn('LIS-LGW', 'LIS-FNC'), [['2026-07-03', true, 'place']]);
+  eq('revisão 7: 2 noites à vista, com buraco → sem aviso', tn('LIS-LGW', 'LIS-FNC', '2026-07-04'), []);
+}
+
+// ── 2.ª REVISÃO INDEPENDENTE (2026-11-18) ──
+{
+  // Achado 16: sem a base conhecida não se sabe se algum dos lados é a base — o buraco de sítio não tira o aviso que já havia.
+  const N = { report_time: '20:00', block_on: '02:30', route: 'LIS-OPO', sectors: 1 }, E = { report_time: '05:30', block_on: '09:00', route: 'LIS-FNC', sectors: 1 };
+  eq('revisão 2/16: noite local com buraco e sem base conhecida → como antes (falta)', recoveryStatus({ '2026-11-10': N, '2026-11-12': E }, '2026-11-11', { postFlightMin: 30, disruptiveType: 'early' }).issues.filter((x) => x.type === 'transitionNight').map((x) => [x.date, !!x.uncertain]), [['2026-11-12', false]]);
+}
+
+console.log(`\nrestStatus —${ok} passou, ${fail} falhou (${ok + fail} asserções)`);
 if (fail) process.exit(1);

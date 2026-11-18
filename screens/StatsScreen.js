@@ -73,7 +73,7 @@ function MonthBar({ ratio, color, delay }) {
 // Estatísticas (PELE) — dial adaptativo no topo (Ganhos com AE · Segurança sem AE) + cards que
 // abrem folhas de detalhe. Re-skin: TODOS os cálculos (data/stats.js · ftl · AE) ficam intactos.
 export default function StatsScreen({ navigation }) {
-  const { lang, duties, dayLog, ae: aeNow, aeAt, crewAt, companyHistory, companyAt, airlines, homeBaseAt, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, company, aeEvents, vacationDaysYear, user, isPilot, base, rosterLog, serviceStart, serviceStartExact, largada, lifestyle } = useContext(AppContext);
+  const { lang, duties, dayLog, rosterUnknown, ae: aeNow, aeAt, crewAt, companyHistory, companyAt, airlines, homeBaseAt, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, company, aeEvents, vacationDaysYear, user, isPilot, base, rosterLog, serviceStart, serviceStartExact, largada, lifestyle } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const tabSpace = useTabBarSpace();
@@ -132,9 +132,9 @@ export default function StatsScreen({ navigation }) {
   })();
   const st = useMemo(
     () => isYear
-      ? yearStats(duties, { year, ae, aeAt, category: crewCategory, contract: crewContract || '12/12', crewHistory, companyHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt, serviceStart, startExact: serviceStartExact, largada, lifestyle, isPilot })
-      : monthStats(duties, { ym, ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, companyHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt, serviceStart, startExact: serviceStartExact, largada, lifestyle, isPilot }),
-    [isYear, duties, year, ym, ae, aeNow, companyHistory, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, serviceStart, serviceStartExact, homeBaseAt, largada, lifestyle, isPilot], // eslint-disable-line react-hooks/exhaustive-deps
+      ? yearStats(duties, { unknown: rosterUnknown, year, ae, aeAt, category: crewCategory, contract: crewContract || '12/12', crewHistory, companyHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt, serviceStart, startExact: serviceStartExact, largada, lifestyle, isPilot })
+      : monthStats(duties, { unknown: rosterUnknown, ym, ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, companyHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt, serviceStart, startExact: serviceStartExact, largada, lifestyle, isPilot }),
+    [isYear, duties, rosterUnknown, year, ym, ae, aeNow, companyHistory, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, serviceStart, serviceStartExact, homeBaseAt, largada, lifestyle, isPilot], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   // Saldo de férias do ANO (direito anual, Art. 238.º CT) — HONESTO: só dias efetivamente gozados
@@ -158,6 +158,8 @@ export default function StatsScreen({ navigation }) {
   const doneTxt = (w) => (w.over && Math.round(w.done) <= w.limit) ? hmS(w.doneMin) : String(Math.round(w.done));
   const leftTxt = (w) => (w.over
     ? `${l('excede', 'over by')} ${hmS(w.overMin)}`
+    // (revisão independente, achado 9) o máximo possível passa o limite — códigos que a app não conhece, serviços a que faltam horas: a folga não se afirma
+    : w.uncertain ? `${l('incerto · até', 'uncertain · up to')} ${hmS(w.doneMaxMin)}`
     : `${l('faltam', 'left')} ${w.headroomMin >= 60 ? `${Math.floor(w.headroomMin / 60)} h` : hmS(w.headroomMin)}`);
   const limLabel = (w) => w.id === 'year' ? l('Ano civil', 'Calendar year') : w.id === '12m' ? l('12 meses', '12 months') : `${w.days} ${l('dias', 'days')}`;
   const shortLim = (w) => `${w.grp === 'voo' ? l('Voo', 'Flt') : l('Serv', 'Duty')} ${w.id === 'year' ? l('ano', 'yr') : w.id === '12m' ? '12m' : `${w.days}d`}`;

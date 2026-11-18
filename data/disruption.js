@@ -63,9 +63,20 @@ export const evaluateDisruption = (entry, { isPilot = false, sncEnhanced } = {})
 
   // RDP (SÓ cabine, Cl. 67.ª/1): alteração NO DIA DA OPERAÇÃO com |Δ fim do tempo de
   // serviço| ≥ 119 min — "e também incluirá perda ou ganho de setores".
+  // A CORREÇÃO DAS HORAS REAIS (sessão Fable 5.2, ponto 4, 2026-11-17; a cláusula relida no BTE 8/2024, p. 304). O n.º 1 mede
+  // "o término do tempo de serviço (calços mais 30 (trinta) minutos …)" contra "a escala de serviço programada": é o fim REAL,
+  // e nada o limita às mudanças avisadas antes do voo (o n.º 3 fala de "atraso"). A companhia corrige as horas no calendário
+  // depois do voo — essa correção, vista no dia da operação (ou enquanto o serviço ainda corre, se passa a meia-noite), é um
+  // candidato como qualquer outra mudança do dia. Vista só em dia posterior, os factos são os mesmos mas a app não viu QUANDO
+  // as horas mudaram ("alterado, no dia da operação"): fica o candidato, INCERTO (`uncertain`, `why` 'seenLater') — antes
+  // perdia-se em silêncio. Quem decide é a empresa (RDF, n.º 7).
   const detDate = String(entry.detectedAt).slice(0, 10);
-  if (!isPilot && detDate === entry.dutyDate && ((dEnd != null && Math.abs(dEnd) >= 119) || sectorsChanged)) {
-    return { type: 'rdp', clause: 'Cl. 67.ª', dStartMin: dStart, dEndMin: dEnd, sectorsChanged };
+  // (2.ª revisão independente, achado 1.) Sem horas do lado de depois (um serviço a que faltam horas) a entrada não prova nada.
+  if (!isPilot && aStart != null && aEnd != null && ((dEnd != null && Math.abs(dEnd) >= 119) || sectorsChanged)) {
+    const day0 = new Date(`${entry.dutyDate}T00:00:00`).getTime();
+    const running = aEnd != null && det.getTime() <= day0 + aEnd * 60000;   // o serviço ainda corre (o fim real, calços + 30)
+    if (detDate === entry.dutyDate || (detDate > entry.dutyDate && running)) return { type: 'rdp', clause: 'Cl. 67.ª', dStartMin: dStart, dEndMin: dEnd, sectorsChanged };
+    if (detDate > entry.dutyDate) return { type: 'rdp', clause: 'Cl. 67.ª', uncertain: true, why: 'seenLater', dStartMin: dStart, dEndMin: dEnd, sectorsChanged };
   }
 
   // SNC (Cl. 66.ª cabine · Art. 63.º pilotos): alteração NAS 48h ANTES do início planeado
@@ -140,12 +151,26 @@ export const disruptionsByDuty = (log = [], { isPilot = false, duties = null } =
     }
     if (!isPilot) {
       const rdpList = list.filter(sameDay);
+      // As correções vistas DEPOIS do dia (as horas reais, ver evaluateDisruption): o plano contra o fim real.
+      const laterList = list.filter((e) => sameDay(e) || String(e.detectedAt).slice(0, 10) > date);
+      const fin = laterList.length > rdpList.length ? merge(laterList) : null;
+      const vf = fin ? evaluateDisruption(fin, { isPilot }) : null;
+      let gotRdp = false;
       if (rdpList.length) {
         const m = merge(rdpList);
         const v = evaluateDisruption(m, { isPilot });
-        if (v && v.type === 'rdp') { if (!(duties && rdpBarredBy(duties[date]))) out.push({ ...m, ...v }); }
-        else if (v && v.type === 'snc' && !out.some((c) => c.dutyDate === date && c.type === 'snc')) out.push({ ...m, ...v });   // antecipação ≥ 2 h no próprio dia (dentro das 48 h)
+        if (v && v.type === 'rdp') {
+          gotRdp = true;
+          if (!(duties && rdpBarredBy(duties[date]))) {
+            // (2.ª revisão independente, achado 8.) A cláusula pede as duas coisas: alterado no dia em 119 min ou mais, E o
+            // término a mais de 119 min do programado. Se a correção vista depois põe o fim REAL abaixo disso, o candidato do
+            // dia deixa de ser certo → incerto ('realBelow'), com o fim real.
+            out.push(fin && !(vf && vf.type === 'rdp') ? { ...m, ...v, uncertain: true, why: 'realBelow', realEnd: fin.after.end || null, realSeenAt: fin.detectedAt } : { ...m, ...v });
+          }
+        } else if (v && v.type === 'snc' && !out.some((c) => c.dutyDate === date && c.type === 'snc')) out.push({ ...m, ...v });   // antecipação ≥ 2 h no próprio dia (dentro das 48 h)
       }
+      // … se as mudanças do dia não chegam sozinhas aos 119 min, junta-se-lhes o que se viu depois; o candidato sai incerto ('seenLater').
+      if (!gotRdp && fin && vf && vf.type === 'rdp' && !(duties && rdpBarredBy(duties[date]))) out.push({ ...fin, ...vf });
     }
   }
   return out.sort((a, b) => String(a.dutyDate).localeCompare(String(b.dutyDate)));
@@ -232,14 +257,26 @@ export const stabilityDelta = (c, lang = 'pt') => {
 export const disruptionDelta = (c, lang = 'pt') => {
   const en = lang === 'en';
   if (c.type === 'rdp' && c.sectorsChanged && !(c.dEndMin != null && Math.abs(c.dEndMin) >= 119)) {
-    return en ? `sectors ${c.before.sectors} → ${c.after.sectors}` : `setores ${c.before.sectors} → ${c.after.sectors}`;
+    return (en ? `sectors ${c.before.sectors} → ${c.after.sectors}` : `setores ${c.before.sectors} → ${c.after.sectors}`) + seenLaterNote(c, lang);
   }
   if (c.type === 'snc' && c.dStartMin != null && c.dStartMin <= -120) {
     return en ? `report ${c.before.report} → ${c.after.report} · brought forward ${fmtDelta(c.dStartMin).slice(1)}`
       : `report ${c.before.report} → ${c.after.report} · antecipado ${fmtDelta(c.dStartMin).slice(1)}`;
   }
-  return en ? `end of duty ${c.before.end}+30 → ${c.after.end}+30 · ${fmtDelta(c.dEndMin)}`
-    : `fim do serviço ${c.before.end}+30 → ${c.after.end}+30 · ${fmtDelta(c.dEndMin)}`;
+  return (en ? `end of duty ${c.before.end}+30 → ${c.after.end}+30 · ${fmtDelta(c.dEndMin)}`
+    : `fim do serviço ${c.before.end}+30 → ${c.after.end}+30 · ${fmtDelta(c.dEndMin)}`) + seenLaterNote(c, lang);
+};
+// O candidato incerto (a correção vista depois do dia do serviço, evaluateDisruption 'seenLater'): diz-se sempre.
+const seenLaterNote = (c, lang) => {
+  if (!c || !c.uncertain) return '';
+  if (c.why === 'realBelow') {
+    const r = String(c.realSeenAt || '').slice(0, 10), rd = r ? `${r.slice(8, 10)}/${r.slice(5, 7)}` : '';
+    return lang === 'en' ? ` · the real end, seen on ${rd}, was ${c.realEnd}+30: less than 119 min from the programmed one` : ` · o fim real, visto a ${rd}, ficou às ${c.realEnd}+30: a menos de 119 min do programado`;
+  }
+  if (c.why !== 'seenLater') return '';
+  const d = String(c.detectedAt || '').slice(0, 10), dd = d ? `${d.slice(8, 10)}/${d.slice(5, 7)}` : '';
+  return lang === 'en' ? ` · seen on ${dd}, after the day of the duty: it counts if the times changed on the day of operation`
+    : ` · vista a ${dd}, depois do dia do serviço: conta se as horas mudaram no dia da operação`;
 };
 
 // ── PDF-PROVA (mockup design/disrupcao.html frame ③) — a mesma fábrica do 245 ──

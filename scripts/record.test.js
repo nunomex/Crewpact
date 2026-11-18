@@ -77,6 +77,52 @@ eq('245: extra sem horas é ignorado → 1 linha, data limpa', [m3.rows.length, 
   eq('Sem report: a linha existe e conta o voo', [mn.rows.length, mn.totals.flightMin, mn.rows[0].fdp], [1, 120, '—']);
 }
 
-console.log(`\nregisto 245 — ${pass} passou, ${fail} falhou (${pass + fail} asserções)`);
+// ── O ARQUIVO COMO PROVA (sessão Fable 5.2, ponto 7, 2026-11-17) ──
+// A companhia corrige as horas no calendário depois do voo, e a app guarda a mudança no arquivo (antes → depois + quando a viu).
+// O Registo 245 mostra as horas REAIS (as que ficaram na escala); a correção vai com a linha, como prova: prevista → real ·
+// vista a … Só conta como correção o que a app viu DEPOIS de o serviço começar (a hora de apresentação prevista): antes disso é
+// uma mudança de escala, não as horas reais.
+{
+  const { hourCorrections } = require(path.resolve('data/ftlRecord.js'));
+  const svc = { duty_date: '2026-07-14', report_time: '09:30', block_off: '10:00', block_on: '19:35', sectors: 2, flight_minutes: 300 };
+  const E = (o) => ({ id: 'x', dutyDate: '2026-07-14', source: 'calendar', before: { report: '09:30', end: '17:30', sectors: 2, kind: 'flight' }, after: { report: '09:30', end: '19:35', sectors: 2, kind: 'flight' }, ...o });
+  const run = (log) => buildRecordModel({ duties: { '2026-07-14': svc }, dayLog: {}, rosterLog: log });
+  const c1 = run([E({ detectedAt: '2026-07-14T21:40' })]).rows[0].corrected;
+  eq('correção vista depois do voo: prevista → real, com a hora em que a app a viu', c1, { plannedReport: '09:30', plannedEnd: '17:30', realReport: '09:30', realEnd: '19:35', seenAt: '2026-07-14T21:40' });
+  eq('mudança vista ANTES de o serviço começar: é escala, não correção', run([E({ detectedAt: '2026-07-14T08:00' })]).rows[0].corrected, undefined);
+  eq('sem arquivo: a linha não muda', run([]).rows[0].corrected, undefined);
+  // Duas correções depois do voo: a prevista é a da 1.ª, a real a da última, e a hora a da última.
+  const two = run([E({ detectedAt: '2026-07-14T20:00', after: { report: '09:30', end: '19:00', sectors: 2, kind: 'flight' } }),
+    E({ detectedAt: '2026-07-15T07:10', before: { report: '09:30', end: '19:00', sectors: 2, kind: 'flight' } })]).rows[0].corrected;
+  eq('duas correções: a prevista da 1.ª, a real da última', two, { plannedReport: '09:30', plannedEnd: '17:30', realReport: '09:30', realEnd: '19:35', seenAt: '2026-07-15T07:10' });
+  // Uma mudança de escala antes e a correção depois: a "prevista" é a que estava na escala quando o serviço começou.
+  const mix = run([E({ detectedAt: '2026-07-13T10:00', before: { report: '08:00', end: '16:00', sectors: 2, kind: 'flight' }, after: { report: '09:30', end: '17:30', sectors: 2, kind: 'flight' } }),
+    E({ detectedAt: '2026-07-14T21:40' })]).rows[0].corrected;
+  eq('mudança de escala antes + correção depois: a prevista é a do início do serviço', [mix.plannedReport, mix.plannedEnd, mix.realEnd], ['09:30', '17:30', '19:35']);
+  // Só os setores mudaram (as horas iguais): não é uma correção de horas.
+  eq('horas iguais: sem correção', run([E({ detectedAt: '2026-07-14T21:40', after: { report: '09:30', end: '17:30', sectors: 4, kind: 'flight' } })]).rows[0].corrected, undefined);
+  // A lista pura (para os outros relatórios): por dia.
+  eq('hourCorrections: por dia', Object.keys(hourCorrections([E({ detectedAt: '2026-07-14T21:40' }), E({ dutyDate: '2026-07-20', detectedAt: '2026-07-19T10:00' })])), ['2026-07-14']);
+  // O modelo diz quantas linhas levam correção (o PDF decide como as mostra).
+  eq('modelo: a conta das linhas corrigidas', run([E({ detectedAt: '2026-07-14T21:40' })]).header.corrected, 1);
+}
+
+// ── 2.ª REVISÃO INDEPENDENTE (2026-11-18) ──
+{
+  // Achado 9: a apresentação adiada das 11:00 para as 15:00, vista às 12:00 — o serviço ainda não tinha começado (a apresentação
+  // nova é às 15:00): é uma mudança de escala, não uma correção das horas.
+  const svc = { duty_date: '2026-07-14', report_time: '15:00', block_off: '15:30', block_on: '21:30', sectors: 2, flight_minutes: 300 };
+  const log = [{ id: 'x', dutyDate: '2026-07-14', detectedAt: '2026-07-14T12:00', source: 'calendar', before: { report: '11:00', end: '17:30', sectors: 2, kind: 'flight' }, after: { report: '15:00', end: '21:30', sectors: 2, kind: 'flight' } }];
+  eq('revisão 2/9: adiada antes de começar (a nova apresentação ainda não passou) → não é correção', buildRecordModel({ duties: { '2026-07-14': svc }, dayLog: {}, rosterLog: log }).rows[0].corrected, undefined);
+  // Achado 7: um serviço sem horas tem a sua linha (com "—"), e o repouso de antes dele não se afirma por cima dele.
+  const A = { duty_date: '2026-07-01', report_time: '06:00', block_off: '06:30', block_on: '10:00', sectors: 1, flight_minutes: 180 };
+  const B = { duty_date: '2026-07-02', kind: 'flight', report_time: null, block_off: null, block_on: null, route: 'LIS-FNC-LIS', sectors: 2, flight_minutes: 0 };
+  const C4 = { duty_date: '2026-07-04', report_time: '06:00', block_off: '06:30', block_on: '10:00', sectors: 1, flight_minutes: 180 };
+  const m = buildRecordModel({ duties: { '2026-07-01': A, '2026-07-02': B, '2026-07-04': C4 }, dayLog: {} });
+  eq('revisão 2/7: o serviço sem horas tem linha; o repouso antes dele fica em aberto', [m.rows.length, m.rows[0].rest, m.rows[1].report, m.rows[1].duty, m.rows[1].rest], [3, '—', '—', '—', '—']);
+  eq('revisão 2/7: sem ele, o repouso é o que houve', buildRecordModel({ duties: { '2026-07-01': A, '2026-07-04': C4 }, dayLog: {} }).rows[0].rest, '68 h');
+}
+
+console.log(`\nregisto 245 —${pass} passou, ${fail} falhou (${pass + fail} asserções)`);
 if (fail) { console.log('\n' + fails.join('\n')); process.exit(1); }
 console.log('✓ Uma linha por período de serviço (ORO.FTL.245) — dias com 2 serviços contam os dois.');

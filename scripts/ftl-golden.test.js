@@ -586,8 +586,8 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   // início ou fim, também fica a corrigir (antes entrava "pronto" e saía dos 210).
   const T = { report_time: '06:00', block_off: '07:00', block_on: '10:00' };
   eq('Candidato: voo com rota conhecida = pronto', candidateKind({ kind: 'flight', duty: { ...T, route: 'LIS-OPO-LIS' } }).kind, 'ready');
-  eq('Candidato: voo sem rota = a corrigir', candidateKind({ kind: 'flight', duty: { ...T, route: null } }).kind, 'fix');
-  eq('Candidato: aeroporto desconhecido = a corrigir', candidateKind({ kind: 'flight', duty: { ...T, route: 'LIS-ZZZ' } }).kind, 'fix');
+  eq('Candidato: voo sem rota = entra incerto', candidateKind({ kind: 'flight', duty: { ...T, route: null } }).kind, 'unc');
+  eq('Candidato: aeroporto desconhecido = entra incerto', candidateKind({ kind: 'flight', duty: { ...T, route: 'LIS-ZZZ' } }).kind, 'unc');
   eq('Candidato: aeroporto desconhecido identificado', candidateKind({ kind: 'flight', duty: { ...T, route: 'LIS-ZZZ' } }).badAp, 'ZZZ');
   eq('Candidato: voo sem as horas das pernas = a corrigir', candidateKind({ kind: 'flight', duty: { report_time: '06:00', block_on: null, route: 'LIS-OPO-LIS' } }).reason, 'times');
   eq('Candidato: não-voo = informativo (entra, sem per-diem)', candidateKind({ kind: 'standby_airport', duty: { report_time: '06:00', block_on: '10:00' } }).kind, 'info');
@@ -674,7 +674,9 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('reconcile: 11 derivada (src duty)', (r1['2026-06-11'] || {}).src, 'duty');
   eq('reconcile: voo 10 (240→4h)', r1['2026-06-10'].voo, 4);
   eq('reconcile: ignora apagada 12', r1['2026-06-12'], undefined);
-  eq('reconcile: ignora sem horas 13', r1['2026-06-13'], undefined);
+  // (Sessão Fable 5.2, ponto 3, 2026-11-18.) Um serviço sem horas já não se perde: entra nos limites com as duas pontas — no
+  // mínimo nada, no máximo o dia inteiro (convenção dita no ecrã: a lei não dá um teto ao período de serviço). Antes: fora dos 210.
+  eqj('reconcile: o dia sem horas (13) entra — nada certo, no máximo o dia', [(r1['2026-06-13'] || {}).src, (r1['2026-06-13'] || {}).servicoMin, (r1['2026-06-13'] || {}).servicoMaxMin, (r1['2026-06-13'] || {}).missN], ['unknown', 0, 1440, 1]);
   // fill-only: não toca em registos existentes + devolve a MESMA ref quando nada falta
   const manual = { '2026-06-10': { src: 'manual', psv: { result: '10:00' } } };
   const oneDuty = { '2026-06-10': duties['2026-06-10'] };

@@ -498,6 +498,9 @@ export function homeCards(H = {}) {
     reducedRestAfter: l('aumenta se o repouso anterior foi reduzido', 'longer if the previous rest was reduced'),
     noReport: l(`falta a hora de apresentação do serviço de ${u.estDay || '…'}`, `the duty on ${u.estDay || '…'} has no report time`),
     noEnd: l(`falta a hora de fim do serviço de ${u.estDay || '…'}`, `the duty on ${u.estDay || '…'} has no end time`),
+    unknownCode: u.unkWhy === 'noStart' ? l('há um serviço sem hora de início', 'a duty has no start time') : u.unkWhy === 'noTimes' ? l('há um serviço sem horas', 'a duty has no times') : u.unkWhy === 'noEnd' ? l('há um serviço sem hora de fim', 'a duty has no end time')
+      : l(`a escala tem um código que a app não conhece (${u.unkCode || '…'})`, `the roster has a code the app does not know (${u.unkCode || '…'})`),
+    placeGap: l(`falta na escala a viagem de ${u.gapFrom || '…'} para ${u.gapDep || '…'}`, `the trip from ${u.gapFrom || '…'} to ${u.gapDep || '…'} is not on the roster`),
   }[u.why] || l('falta um dado', 'a fact is missing'));
   const minRange = (lo, hi) => (hi != null && hi !== lo ? `${l('mínimo', 'minimum')} ${F.dur(lo)} ${l('a', 'to')} ${F.dur(hi)}` : `${l('mínimo', 'minimum')} ${F.dur(lo)} ${l('ou mais', 'or more')}`);
   const minChip = (lo, hi) => (hi != null && hi !== lo ? `${l('mín.', 'min')} ${F.dur(lo)}–${F.dur(hi)}` : `${l('mín.', 'min')} ${F.dur(lo)} ${l('ou mais', 'or more')}`);

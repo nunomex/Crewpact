@@ -212,13 +212,13 @@ export default function HomeScreen({ navigation }) {
   const nightToday = useMemo(() => {
     const dt = duties && duties[todayISO];
     if (!dt || dt.deleted) return null;
-    const is = nightSectorIssues(duties, todayISO, { postFlightMin, isPilot, cabinGapMin, splitAdminMin }, homeBaseAt, (f) => f.iso === todayISO)
+    const is = nightSectorIssues(duties, todayISO, { postFlightMin, isPilot, cabinGapMin, splitAdminMin }, homeBaseAt, (f) => f.iso === todayISO, rosterUnknown)
       .filter((x) => x.it.date === todayISO);
     return is.find((x) => x.level === 'bad') || is[0] || null;
-  }, [duties, todayISO, postFlightMin, isPilot, cabinGapMin, splitAdminMin, homeBaseAt]);
+  }, [duties, todayISO, postFlightMin, isPilot, cabinGapMin, splitAdminMin, homeBaseAt, rosterUnknown]);
   const todayItems = useMemo(
-    () => buildTodayItems({ ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, crewHistory, serviceStart, serviceStartExact, largada, lifestyle, aeEvents, validities, isPilot, todayISO, aeToday, nightToday, postFlightMin, baseAt: homeBaseAt, companySlug: company && company.slug }, lang),
-    [ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, crewHistory, serviceStart, serviceStartExact, largada, lifestyle, aeEvents, validities, isPilot, todayISO, aeToday, nightToday, postFlightMin, homeBaseAt, company, lang],
+    () => buildTodayItems({ ftlSnap, dayLog, duties, unknown: rosterUnknown, rosterChanges, ae, crewCategory, crewContract, crewFleet, crewHistory, serviceStart, serviceStartExact, largada, lifestyle, aeEvents, validities, isPilot, todayISO, aeToday, nightToday, postFlightMin, baseAt: homeBaseAt, companySlug: company && company.slug }, lang),
+    [ftlSnap, dayLog, duties, rosterUnknown, rosterChanges, ae, crewCategory, crewContract, crewFleet, crewHistory, serviceStart, serviceStartExact, largada, lifestyle, aeEvents, validities, isPilot, todayISO, aeToday, nightToday, postFlightMin, homeBaseAt, company, lang],
   );
   const questionItems = todayItems.filter((it) =>
     (it.id === 'legal' && it.status !== 'neutral')
@@ -598,14 +598,14 @@ export default function HomeScreen({ navigation }) {
   // depois de um PSV prolongado (auditoria A-145/A-150/A-169). Sem localização fiável, o estado diz onde se repousa.
   const restUntil = (todayEnded && !closeMulti && (homeState === 'posvoo' || homeState === 'pernoita')) ? (() => {
     // A MESMA regra da pílula do repouso (restUntilAfter = restStatus): +2 h ou +4 h depois de um prolongamento.
-    const ru = restUntilAfter(duties || {}, todayISO, { inBase: homeState === 'posvoo', baseAt: homeBaseAt, postFlightMin: postFlightMin || 0, isPilot });
+    const ru = restUntilAfter(duties || {}, todayISO, { inBase: homeState === 'posvoo', baseAt: homeBaseAt, postFlightMin: postFlightMin || 0, isPilot, unknown: rosterUnknown });
     if (!ru) return null;
     const u = new Date(ru.untilMs);
     const uIso = `${u.getFullYear()}-${String(u.getMonth() + 1).padStart(2, '0')}-${String(u.getDate()).padStart(2, '0')}`;
     // O mínimo depende de uma leitura que a lei não fecha: as duas pontas e o motivo (restUntilAfter; "a lei é que manda").
     const hmOf = (ms) => { const x = new Date(ms); return `${String(x.getHours()).padStart(2, '0')}:${String(x.getMinutes()).padStart(2, '0')}`; };
     const unc = ru.uncertain ? { lo: hmOf(ru.untilLoMs), hi: ru.untilHiMs != null ? hmOf(ru.untilHiMs) : null, minLo: Math.round((ru.untilLoMs - ru.endMs) / 60000), minHi: ru.untilHiMs != null ? Math.round((ru.untilHiMs - ru.endMs) / 60000) : null,
-      why: ru.why || null, estDay: ru.estIso ? `${ru.estIso.slice(8, 10)}/${ru.estIso.slice(5, 7)}` : null } : null;
+      why: ru.why || null, gapFrom: ru.gapFrom || null, gapDep: ru.gapDep || null, unkCode: ru.unkCode || null, unkWhy: ru.unkWhy || null, estDay: ru.estIso ? `${ru.estIso.slice(8, 10)}/${ru.estIso.slice(5, 7)}` : null } : null;
     return { hm: `${String(u.getHours()).padStart(2, '0')}:${String(u.getMinutes()).padStart(2, '0')}`, nextDay: uIso > todayISO, untilIso: uIso, untilMs: ru.untilMs, endMs: ru.endMs, unc };
   })() : null;
 
@@ -618,7 +618,7 @@ export default function HomeScreen({ navigation }) {
     // "Verificado" só com a pergunta inteira a verde — também a recuperação (ORO.FTL.235(d)).
     // Incerto (as pernas do serviço anterior não batem certo, 'legTimes'; ou dois serviços que podem ser um PSV repartido ou dois,
     // 'breakOrRest'): nem "verificado" nem "curto" — sem saber.
-    if (r.kind === 'legTimes' || r.kind === 'breakOrRest' || r.kind === 'reducedRest' || r.kind === 'reducedRestAfter' || r.kind === 'noReport' || r.kind === 'noEnd' || r.kind === 'standbyHome' || r.kind === 'extAfterStandby' || r.kind === 'extPreRest' || r.kind === 'rotationNights' || r.kind === 'standbyCall' || r.kind === 'groundBetween') return { restOk: null };
+    if (r.kind === 'legTimes' || r.kind === 'breakOrRest' || r.kind === 'reducedRest' || r.kind === 'reducedRestAfter' || r.kind === 'noReport' || r.kind === 'noEnd' || r.kind === 'placeGap' || r.kind === 'unknownCode' || r.kind === 'standbyHome' || r.kind === 'extAfterStandby' || r.kind === 'extPreRest' || r.kind === 'rotationNights' || r.kind === 'standbyCall' || r.kind === 'groundBetween') return { restOk: null };
     return { restOk: rI.status === 'ok', restHave: r.actualMin != null ? hm(r.actualMin) : null, restNeed: r.requiredMin != null ? hm(r.requiredMin) : null };
   })();
   // ── PÓS-VOO: o balanço do dia fechado (motor computeDuty, o MESMO dos golden) ──
@@ -681,10 +681,10 @@ export default function HomeScreen({ navigation }) {
   const monthSt = useMemo(() => {
     if (!ae || !crewCategory) return null;
     try {
-      const st0 = monthStats(duties, { ym: todayISO.slice(0, 7), ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, serviceStart, startExact: serviceStartExact, largada, lifestyle, baseAt: homeBaseAt, isPilot });
+      const st0 = monthStats(duties, { unknown: rosterUnknown, ym: todayISO.slice(0, 7), ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, serviceStart, startExact: serviceStartExact, largada, lifestyle, baseAt: homeBaseAt, isPilot });
       return st0 || null;
     } catch { return null; }
-  }, [duties, ae, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, todayISO, serviceStart, serviceStartExact, largada, lifestyle, homeBaseAt, isPilot]);
+  }, [duties, rosterUnknown, ae, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, todayISO, serviceStart, serviceStartExact, largada, lifestyle, homeBaseAt, isPilot]);
   const monthAe = monthSt && monthSt.aeMonth ? monthSt.aeMonth : null;
   const monthNightStops = monthSt && typeof monthSt.nightStops === 'number' ? monthSt.nightStops : null;
   const monthMoney = monthAe ? monthAe.total : null;
@@ -852,6 +852,8 @@ export default function HomeScreen({ navigation }) {
     const legal = unkLegal || (() => {
       if (!isToday || !legalIt || !legalIt.raw) return null;
       const k = legalIt.raw.kind;
+      // um período do 210 que só passa o limite no máximo possível (serviços sem apresentação; códigos que a app não conhece)
+      if (k === 'limitUncertain' || k === 'unknownToday') { const cs = legalIt.raw.unkCodes || []; return { status: 'uncertain', missing: cs.length ? unknownLegal(cs.map((code) => ({ code })), lang).missing : null }; }
       if (k === 'psvUncertain' || k === 'nightUncertain') return { status: 'uncertain', missing: k === 'psvUncertain' && (legalIt.raw.unknowns || []).length ? unknownsText(legalIt.raw.unknowns, lang) : null };
       return legalIt.status === 'bad' ? { status: 'bad' } : legalIt.status === 'ok' ? { status: 'ok' } : null;
     })();
@@ -859,7 +861,7 @@ export default function HomeScreen({ navigation }) {
       try { const o = serviceMoney(ae, crewCategory, svc, { date: flight.dateISO, fleet: crewFleet, baseAt: homeBaseAt, duties }).other; return o && o.eur > 0 ? { eur: o.eur, lbl: o.lbl ? (o.lbl[lang] || o.lbl.pt) : null } : null; } catch { return null; }
     })() : null;
     const restAfterMin = (svc && flight.nightStop) ? (() => {
-      try { const r = restUntilAfter(duties || {}, flight.dateISO, { inBase: false, baseAt: homeBaseAt, postFlightMin: postFlightMin || 0, isPilot }); return r ? { min: r.requiredMin, lo: r.uncertain ? r.requiredLoMin : null, open: !!(r.uncertain && r.requiredHiMin == null) } : null; } catch { return null; }
+      try { const r = restUntilAfter(duties || {}, flight.dateISO, { inBase: false, baseAt: homeBaseAt, postFlightMin: postFlightMin || 0, isPilot, unknown: rosterUnknown }); return r ? { min: r.requiredMin, lo: r.uncertain ? r.requiredLoMin : null, open: !!(r.uncertain && r.requiredHiMin == null) } : null; } catch { return null; }
     })() : null;
     return { ...b,
       flightNo: flightNo ? String(flightNo).toUpperCase() : (flight.flightNo ? String(flight.flightNo).toUpperCase() : null),

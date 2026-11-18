@@ -77,6 +77,7 @@ import { standbySeries, standbyBefore, standbyReading, standbyCountMin, seriesEn
 // seu pedaço, até à apresentação quando a chamada é certa; a declarada à mão que não bate com a da escala → as duas leituras.
 // v21 (2026-11-13, visto no iPhone): a lista de intervalos do dia (`between`) já não chama "repartido" ao tempo entre uma
 // assistência e outro serviço — os registos guardados recalculam-se.
+import { unknownDayMax } from './unknownCodes';
 export const ENGINE_VERSION = 21;
 
 // Uma atividade (manual ou da escala) → PSV + repouso + legalidade num só objeto.
@@ -1766,19 +1767,40 @@ const nbrSig = (duties, date) => {
 // Idempotente: devolve a MESMA referência se nada mudar (não dispara re-render).
 // `baseAt(date)` (linha do tempo do contrato, 2026-11-03) = a base EM VIGOR nesse dia — uma
 // transferência não muda o "na base / fora" (12 h / 10 h, ORO.FTL.235) dos dias antigos.
-export const reconcileDayLog = (duties = {}, dayLog = {}, { postFlightMin = 0, isPilot = false, base = null, baseAt = null, cabinGapMin, splitAdminMin } = {}) => {
+export const reconcileDayLog = (duties = {}, dayLog = {}, { postFlightMin = 0, isPilot = false, base = null, baseAt = null, cabinGapMin, splitAdminMin, unknown = null } = {}) => {
   let next = dayLog, changed = false;
   const put = (date, entry) => { if (!changed) { next = { ...dayLog }; changed = true; } if (entry) next[date] = entry; else delete next[date]; };
+  // OS CÓDIGOS QUE A APP NÃO CONHECE (camada 2, sessão Fable 5.2, 2026-11-17 — ftl/unknownCodes.js). Um evento com horas que a
+  // app não sabe ler pode ser um serviço: para o ORO.FTL.210 conta, no mínimo, nada e, no máximo, a sua duração fora do que já
+  // é serviço. Vai no `servicoMaxMin` do dia local (a maquinaria dos serviços sem apresentação: só o máximo passa → "incerto"),
+  // com `unkMin`/`unkCodes` para se dizer de onde vem. Um dia SÓ com códigos novos fica com uma entrada própria (src 'unknown':
+  // 0 de serviço e de voo), que sai quando o código deixa de vir. `unknown` = { 'AAAA-MM-DD': [{ code, start, end }] }.
+  // … e OS SERVIÇOS A QUE FALTAM HORAS (ponto 3 — sem fim, sem início, sem horas): o dia já não se perde. Contam do mesmo modo
+  // (`missN` = quantos nesse dia), e o tempo de voo que a escala não diz vai em `vooMaxMin` (um código pode ser um voo).
+  const unk = unknownDayMax(unknown, duties, { postFlightMin });
+  const uSig = (date) => (unk[date] ? `|u${djb2(JSON.stringify([unk[date].min, unk[date].codes, !!unk[date].spill, unk[date].miss || 0, unk[date].voo || 0]))}` : '');
+  const withUnk = (entry, u) => {
+    if (!u) return entry;
+    const o = { ...entry };
+    if (u.min > 0) { o.servicoMaxMin = (typeof entry.servicoMaxMin === 'number' ? entry.servicoMaxMin : entryMin(entry, 'servico')) + u.min; o.unkMin = u.min; }
+    if (u.codes.length) o.unkCodes = u.codes;
+    if (u.miss) o.missN = u.miss;
+    if (u.voo) o.vooMaxMin = entryMin(entry, 'voo') + u.voo;
+    if (u.spill) o.unkSpill = true;
+    return o;
+  };
+  const done = new Set();
   for (const date in duties) {
     const d = duties[date];
     if (!d || d.deleted) continue;
     const cur = dayLog[date];
-    if (cur && cur.src !== 'duty') continue;          // manual → nunca se toca
+    if (cur && cur.src !== 'duty' && cur.src !== 'unknown') continue;          // manual → nunca se toca
     const baseD = typeof baseAt === 'function' ? baseAt(date) : base;
-    const sig = dayLogSig(d, { postFlightMin, isPilot, base: baseD, cabinGapMin, splitAdminMin });
+    const sig = dayLogSig(d, { postFlightMin, isPilot, base: baseD, cabinGapMin, splitAdminMin }) + uSig(date);
     // Um prolongamento (205(d)) depende também dos 6 dias antes (os "2 em 7 dias"): recalcula se eles mudarem.
     const nsig = nbrSig(duties, date);
-    if (cur && cur.sig === sig && cur.nsig === nsig) continue;   // já em dia
+    done.add(date);
+    if (cur && cur.src === 'duty' && cur.sig === sig && cur.nsig === nsig) continue;   // já em dia
     // Um dia pode ter N períodos de serviço (210 conta por serviço): primária + `extra`.
     const primary = {
       report_time: d.report_time, block_off: d.block_off, block_on: d.block_on,
@@ -1787,11 +1809,21 @@ export const reconcileDayLog = (duties = {}, dayLog = {}, { postFlightMin = 0, i
       snap: d.snap || null,                                           // a escala publicada: o plano do 205(d)
     };
     const entry = dayFtlFromDuties([primary, ...((d.extra && d.extra.length) ? d.extra : [])], { postFlightMin, isPilot, base: baseD, date, cabinGapMin, splitAdminMin, duties });
-    if (!entry) { if (cur) put(date, null); continue; }   // já não há nada para contar → sai a derivada antiga
+    if (!entry) { done.delete(date); if (cur && cur.src === 'duty') put(date, null); continue; }   // já não há nada para contar → sai a derivada antiga
     // Depende dos dias antes (prolongamento: os 2 em 7; aclimatação: o Quadro 1; a assistência da véspera, que pode entrar na
     // escala depois deste dia já estar calculado) → guarda-se sempre a assinatura deles.
-    put(date, { ...entry, sig, nsig });
+    put(date, withUnk({ ...entry, sig, nsig }, unk[date]));
   }
+  // Os dias só com códigos novos (sem serviço que se conte), e os que deixaram de os ter.
+  for (const date in unk) {
+    if (done.has(date)) continue;
+    const cur = dayLog[date], u = unk[date];
+    if (cur && cur.src !== 'duty' && cur.src !== 'unknown') continue;          // manual
+    const sig = `unk${ENGINE_VERSION}${uSig(date)}`;
+    if (cur && cur.src === 'unknown' && cur.sig === sig) continue;
+    put(date, withUnk({ src: 'unknown', engineVer: ENGINE_VERSION, servicoMin: 0, servico: 0, vooMin: 0, voo: 0, sig }, u));
+  }
+  for (const date in dayLog) { const cur = dayLog[date]; if (cur && cur.src === 'unknown' && !unk[date] && !done.has(date)) put(date, null); }
   return next;
 };
 

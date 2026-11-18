@@ -66,7 +66,12 @@ export function unknownOf(ev, codes) {
   const hm = (d) => { const x = new Date(d); return isNaN(+x) ? null : `${pad(x.getHours())}:${pad(x.getMinutes())}`; };
   const start = tt ? `${pad(+tt[1])}:${tt[2]}` : ev.allDay ? null : hm(ev.startDate);
   const end = tt ? `${pad(+tt[3])}:${tt[4]}` : ev.allDay ? null : hm(ev.endDate);
-  return { dateISO: isoLocal(new Date(ev.startDate)), code: m[0], title: title.slice(0, 40), start, end };
+  // Um evento que acaba noutro dia (passa a meia-noite, ou dura vários dias) leva o dia do fim — sem ele, três dias de formação
+  // contavam como um (revisão independente, achado 11). Com as horas escritas no texto não se sabe o dia do fim: fica o do início.
+  const dateISO = isoLocal(new Date(ev.startDate));
+  const endD = !tt && !ev.allDay && ev.endDate ? new Date(ev.endDate) : null;
+  const endISO = endD && !isNaN(+endD) && isoLocal(endD) > dateISO ? isoLocal(endD) : null;
+  return { dateISO, code: m[0], title: title.slice(0, 40), start, end, ...(endISO ? { endISO } : {}) };
 }
 
 // O tipo de um EVENTO: decide o TÍTULO; só um título que não diz nada (sem código nem rota) olha para o local e as notas.

@@ -44,7 +44,8 @@ function detailFor(it, lang) {
       k: `${w.key === 'voo' ? l('Voo', 'Flight') : l('Serviço', 'Duty')} · ${w.days} d`,
       label: `${over && w.doneMin != null ? hmQ(w.doneMin) : r0(w.done)} / ${r0(w.limit)} h`, tone: over ? 'red' : ratioTone(ratio), fill: Math.min(100, ratio * 100),
       tag: over ? (w.overMin != null ? `+${hmQ(w.overMin)}` : `+${r0(w.done - w.limit)} h`) : null,
-      left: !over && w.limit ? l(`faltam ${r0(w.limit - w.done)} h`, `${r0(w.limit - w.done)} h left`) : null,
+      // (2.ª revisão, achado 12) um período que só passa o limite no máximo possível: a folga não se afirma
+      left: !over && w.uncertain && w.doneMaxMin != null ? l(`incerto · até ${hmQ(w.doneMaxMin)}`, `uncertain · up to ${hmQ(w.doneMaxMin)}`) : !over && w.limit ? l(`faltam ${r0(w.limit - w.done)} h`, `${r0(w.limit - w.done)} h left`) : null,
     };
   };
   if (it.id === 'legal' || it.id === 'headroom') {
@@ -56,10 +57,14 @@ function detailFor(it, lang) {
         left: !raw.psv.over && act != null && max != null ? l(`faltam ${fmtMin(max - act)}`, `${fmtMin(max - act)} left`) : null });
     }
     const wins = raw.windows || [];
-    const sel = wins.filter((w) => w.id === '28d' || w.over);
+    const sel = wins.filter((w) => w.id === '28d' || w.over || w.uncertain);   // o período incerto também se mostra (revisão, achado 14)
     (sel.length ? sel : wins).slice(0, 4).forEach((w) => out.bars.push(winBar(w)));
   } else if (it.id === 'rest') {
-    if (raw.actualMin != null && raw.requiredMin != null) {
+    // O repouso incerto pelo que a escala não diz (um código novo, um serviço a que faltam horas, o buraco de sítio): o que se
+    // vê é o MÁXIMO que houve e o mínimo não se sabe — sem barra verde "acima do mínimo" (revisão independente, achado 14).
+    if (raw.kind === 'unknownCode' || raw.kind === 'placeGap') {
+      if (raw.actualMin != null) out.rows.push({ k: (raw.unkGlued || raw.unkPrev || raw.unkExact) ? l('Repouso antes do report', 'Rest before report') : raw.unkAtLeast ? l('Repouso antes do report · pelo menos', 'Rest before report · at least') : l('Repouso antes do report · no máximo', 'Rest before report · at most'), v: fmtMin(raw.actualMin) });
+    } else if (raw.actualMin != null && raw.requiredMin != null) {
       const ratio = raw.requiredMin ? raw.actualMin / raw.requiredMin : 0, under = raw.actualMin < raw.requiredMin;
       out.bars.push({ k: l('Repouso antes do report', 'Rest before report'),
         label: `${fmtMin(raw.actualMin)} / ${l('mín', 'min')} ${fmtMin(raw.requiredMin)}`,

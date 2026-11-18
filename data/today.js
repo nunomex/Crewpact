@@ -7,6 +7,8 @@ import { computeDutyTime, computeFlightTime, restAfterDuty, computeRecovery, com
 import { standbySeries, standbyReading, seriesEntry, standbyTypeOf, SB_MAX_OTHER_MIN } from '../ftl/standbySeries';
 import { monthlyAe, aeMonthTotal } from './perdiem';
 import { eventCounts } from './aeEvents';
+import { placeGaps, apsOfSvc } from './placeGap';
+import { unknownSpans, incompleteSpans, hasUnknown, withUnknownAs } from '../ftl/unknownCodes';
 
 const hasFtlData = (dayLog) =>
   Object.values(dayLog || {}).some((d) => (d?.voo > 0) || (d?.servico > 0) || (d?.vooMin > 0) || (d?.servicoMin > 0));
@@ -30,6 +32,10 @@ export function legalStatus(ftlSnap = {}, dayLog = {}, ref = new Date()) {
   if (overWin) return { id: 'legal', status: 'bad', kind: 'limitOver', cat: overWin.key, windowId: overWin.id, days: overWin.days, psv: psvData, windows };
   // "A lei é que manda": falta um facto de que a lei precisa e o PSV fica entre o garantido e o possível → incerto.
   if (psv && psv.uncertain) return { id: 'legal', status: 'warn', kind: 'psvUncertain', unknowns: psv.unknowns || [], psv: psvData, windows };
+  // Um período do ORO.FTL.210 que só passa o limite no MÁXIMO possível (serviços sem apresentação; códigos que a app não
+  // conhece — camada 2, sessão Fable 5.2): nem "dentro" nem "excede" → incerto, com as duas pontas.
+  const uncWin = windows.find((w) => w.uncertain);
+  if (uncWin) return { id: 'legal', status: 'warn', kind: 'limitUncertain', cat: uncWin.key, windowId: uncWin.id, days: uncWin.days, doneMin: uncWin.doneMin, doneMaxMin: uncWin.doneMaxMin, limitMin: uncWin.limitMin, estDays: uncWin.estDays || 0, readDays: uncWin.readDays || 0, unkDays: uncWin.unkDays || 0, unkCodes: uncWin.unkCodes || [], missDays: uncWin.missDays || 0, psv: psvData, windows };
   if (!hasFtlData(dayLog) && !psv) return { id: 'legal', status: 'neutral', kind: 'noData', psv: psvData, windows };
   return { id: 'legal', status: 'ok', kind: 'legal', psv: psvData, windows };
 }
@@ -42,9 +48,11 @@ export function headroomStatus(dayLog = {}, ref = new Date()) {
     .map((w) => ({ ...w, headroom: w.headroomMin / 60 }));
   if (!hasFtlData(dayLog)) return { id: 'headroom', status: 'neutral', kind: 'noData', windows };
   const w = worstByRatio(windows);
-  const status = w.over ? 'bad' : w.ratio >= 0.85 ? 'warn' : 'ok';
+  // (Revisão independente, achado 9.) Um período que só passa o limite no máximo possível: a folga é incerta — diz-se.
+  const u = w.uncertain ? w : windows.find((x) => x.uncertain) || null;
+  const status = w.over ? 'bad' : (u || w.ratio >= 0.85) ? 'warn' : 'ok';
   return {
-    id: 'headroom', status, cat: w.key, windowId: w.id, days: w.days,
+    id: 'headroom', status, ...(u && !w.over ? { uncertain: true, uncWindowId: u.id, uncDays: u.days, uncCat: u.key, doneMaxMin: u.doneMaxMin, uncLimitMin: u.limitMin, unkCodes: u.unkCodes || [], unkDays: u.unkDays || 0, missDays: u.missDays || 0 } : {}), cat: w.key, windowId: w.id, days: w.days,
     done: w.done, doneMin: w.doneMin, limit: w.limit, headroom: w.headroomMin / 60, headroomMin: w.headroomMin, overMin: w.overMin, ratio: w.ratio, windows,
   };
 }
@@ -227,6 +235,9 @@ const buildLine = (duties = {}, ctx = {}, call = false) => {
 const restServices = (duties = {}, ctx = {}) => {
   const svcs = buildLine(duties, ctx, false);
   svcs.src = { duties, ctx };
+  // O tempo que pode ser serviço e a escala não diz (ver unkVerdict): os códigos que a app não conhece e os serviços a que
+  // faltam horas que não estão na linha (sem início, sem horas — ftl/unknownCodes.js incompleteSpans).
+  svcs.unk = [...(ctx && ctx.unknown ? unknownSpans(ctx.unknown) : []), ...incompleteSpans(duties, ctx || {}).filter((u) => u.rest)].sort((a, b) => +a.start - +b.start);
   if (svcs.some((v) => v.callFork)) {
     const alt = buildLine(duties, ctx, true);
     if (alt.length === svcs.length) { svcs.alt = alt; for (let i = 0; i < svcs.length; i++) svcs[i].alt = alt[i]; }
@@ -872,7 +883,184 @@ const forkCallBad = (svcs, a, b) => {
 // FTL.1.225 (b): só não conta se for um repouso mínimo) e ela passa das 16 h ((b)(1)). O veredicto é "curto" e leva o motivo
 // certo ('standbyOver16', com as horas de assistência que teriam sido), para o ecrã não afirmar só a 1.ª.
 const over16 = (b, v) => ((v && v.status === 'bad' && b && b.sbOver16) ? { ...v, kind: 'standbyOver16', standbyMin: b.sbOver16 } : v);
-const pairBoth = (svcs, a, b) => {
+// O BURACO DE SÍTIO ANTES DO BLOCO DE `b` (sessão Fable 5.2, ponto 8, 2026-11-17). O piso do repouso é do sítio onde COMEÇA o
+// PSV seguinte: "before undertaking an FDP starting at home base" — 12 h; "starting away from home base" — 10 h (ORO.FTL.235
+// (a)(1)/(b)). Numa escala sem buracos esse sítio é o mesmo onde o serviço anterior acabou (é dele que a app tira o piso). Quando
+// o 1.º serviço com sítio do bloco parte de um aeroporto diferente da última chegada e não há nada pelo meio, falta um facto: a
+// viagem. "All time spent on positioning shall count as duty period" (ORO.FTL.215(b)): à parte, é um serviço — muda o "serviço
+// precedente" e encurta o repouso; depois da apresentação e antes de operar "shall be counted as FDP" (215(a)) — o PSV começou
+// mais cedo e noutro sítio. O intervalo que se vê é então o MÁXIMO do repouso que houve, e o mínimo não se sabe: curto só
+// abaixo das 10 h (o mínimo de todas as leituras: ORO.FTL.235(b); também o do repouso reduzido, CS FTL.1.235(c)(1)); acima
+// disso, incerto ('placeGap'), sem teto — a app não inventa a viagem. A regra do sítio é a da importação e da Simulação
+// (data/placeGap.js): até 7 dias; um posicionamento sem rota pelo meio não avisa.
+const gapBefore = (svcs, b) => {
+  const src = svcs && svcs.src;
+  if (!src || !src.duties || !b) return null;
+  for (const x of svcs.filter((y) => y.blk === b.blk)) {
+    for (const m of (x.members || [{ iso: x.iso, s: x.s }])) {
+      if (!apsOfSvc(m.s)) continue;
+      return placeGaps(src.duties, m.iso, [m.s]).find((g) => !g.next) || null;   // só o 1.º serviço com sítio do bloco
+    }
+  }
+  return null;
+};
+const withGap = (svcs, b, out) => {
+  const g = gapBefore(svcs, b);
+  if (!g) return out;
+  const low = REDUCED_REST_AWAY_MIN;
+  const unc = { ...out, v: { status: 'unc', kind: 'placeGap', requiredMin: low, gapFrom: g.from, gapDep: g.dep, gapPrevIso: g.prevIso } };
+  if (!(out.v.status === 'bad' && out.actualMin < low)) return unc;
+  // (Revisão independente, achado 1.) Uma assistência logo antes do voo: na leitura da chamada (CS FTL.1.225(b)(5); no
+  // aeroporto, (a)(2)) o repouso que conta é o de ANTES da assistência — e com o buraco pode ter sido noutro sítio (10 h).
+  // "Curto" só se também esse ficar abaixo das 10 h; sem nada antes dela, não se sabe.
+  if (svcs.alt && b.alt && isFork(svcs, b)) {
+    const hC = headOf(svcs.alt, b.alt), pC = before(svcs.alt, hC.start)[0] || null;
+    if (!pC || !pC.end || minsBetween(pC.end, hC.start) >= low) return unc;
+  }
+  return { ...out, v: { ...out.v, requiredMin: Math.min(out.v.requiredMin != null ? out.v.requiredMin : low, low) } };
+};
+// UM CÓDIGO QUE A APP NÃO CONHECE À VOLTA DE UM REPOUSO (camada 2, sessão Fable 5.2, ponto 9, 2026-11-17). Pode ser um serviço
+// (um PSV, um serviço em terra, uma assistência) ou não ser nada; a app não escolhe. O veredicto só fica como está quando é o
+// mesmo em todas as leituras:
+//   · o código ENTRE o serviço anterior e o bloco seguinte —
+//       "curto" fica curto se, depois do código, há menos de 10 h (o mínimo de todas as leituras, ORO.FTL.235(b); com o código
+//       como serviço à parte o repouso mede-se do fim dele; sem ele já era curto);
+//       "certo" fica certo se o código está LONGE dos dois: antes dele houve o mínimo do serviço anterior (se for um PSV, o
+//       repouso antes dele cumpre) e depois dele há o mais que um serviço com a sua duração pode pedir — a duração ou 14 h (os
+//       pisos da CS FTL.1.235(b)(3)(ii) e da CS FTL.1.205(c)(6)), mais 4 h de um prolongamento (ORO.FTL.205(d)(1));
+//       senão → incerto ('unknownCode'), com o código e o dia.
+//   · o código COLADO antes do bloco do serviço anterior (menos de 12 h antes dele, sem outro serviço pelo meio): pode ser o
+//     início do mesmo período de serviço ("começa quando o tripulante se apresenta", ORO.FTL.105(11)) — o "serviço precedente"
+//     seria mais longo. Certo só com o mais que esse período pode pedir (a mesma conta); curto fica curto.
+// Antes de um serviço que não é PSV a lei não fixa mínimo — mas o código pode ser um PSV: incerto se antes dele não houve o
+// mínimo do serviço anterior (`st` = 'na').
+const UNK_GLUE_MIN = 720;
+const unkCap = (spanMin) => Math.max(spanMin, 840) + 240;
+const minsBetween = (a, b) => Math.round((+b - +a) / 60000);
+// (Revisão independente, 2026-11-18 — achados 2, 8 e 13, e o ponto 3.)
+//   · As NOITES LOCAIS: depois de uma rotação com fuso o repouso na base conta-se em noites (CS FTL.1.235(b)(3)(i)), e têm de
+//     caber num só repouso: com um código pelo meio só estão dadas se couberem ANTES dele (`nReq`).
+//   · Vários códigos no mesmo intervalo: entre dois seguidos tem de haver o mais que o anterior pode pedir, senão o repouso
+//     entre eles pode ser curto (o 1.º um serviço, o 2.º um PSV) → incerto.
+//   · O código colado antes do bloco vê-se SEMPRE, mesmo com outro código pelo meio (acrescentar dúvida não tira dúvida).
+//   · Um serviço a que faltam horas que se sabe NÃO ser PSV (`fdp` false: um escritório sem hora de início) não pede repouso
+//     antes dele (ORO.FTL.235(a)/(b): "antes de um PSV"); o que conta é o repouso depois.
+// Devolve null (nada muda) ou { u (o evento que faz a dúvida), glued }.
+// (2.ª revisão independente, 2026-11-18.)
+//   · Achado 3: um evento ANTES do bloco e NÃO colado (12 h ou mais antes dele). Se for um serviço, o repouso entre ele e o
+//     bloco pode ter sido um REPOUSO REDUZIDO (CS FTL.1.235(c)(1)), e então o repouso depois do bloco "is extended by the
+//     difference" ((c)(3)): o teto sobe pelo que faltou para o mais que esse serviço podia pedir (`prev`). Só antes de um PSV.
+//   · Achado 5: o repouso que HOUVE. Um código pelo meio: o que se vê é o máximo. Um serviço CERTO com o fim conhecido (sem hora
+//     de início) pelo meio: o repouso conta do fim dele — é exato (`last`; salvo se o fim pode ser o da madrugada seguinte).
+// O evento que está antes do bloco de `v`, sem outro serviço pelo meio: colado (`glued`) ou o último antes dele (`p`).
+const unkBeforeBlock = (svcs, v) => {
+  const bs = +(v.bStart || v.start);
+  const B = svcs.unk.filter((u) => +u.start < bs && !svcs.some((x) => x.blk !== v.blk && x.end && +x.end > +u.start && +x.end <= bs));
+  const glued = B.find((u) => +u.end > bs - UNK_GLUE_MIN * 60000) || null;
+  const p = glued ? null : B.filter((u) => +u.end <= bs).reduce((m, u) => (!m || +u.end > +m.end ? u : m), null);
+  return { bs, glued, p };
+};
+const unkVerdict = (svcs, a, b, st, hiA, nReq = 0) => {
+  const unk = svcs && svcs.unk;
+  if (!unk || !unk.length || !a || !a.end || !b) return null;
+  const U = unk.filter((u) => +u.end > +a.end && +u.start < +b.start);
+  if (U.length) {
+    const first = U[0], last = U.reduce((m, u) => (+u.end > +m.end ? u : m), U[0]);
+    if (st === 'bad') { if (minsBetween(last.end, b.start) >= REDUCED_REST_AWAY_MIN) return { u: first, last }; }
+    else {
+      const nightsOk = !nReq || localNightsIn(a.end, first.start) >= nReq;
+      let ok = nightsOk && (!first.fdp || minsBetween(a.end, first.start) >= hiA);
+      let cs = +first.start, ce = +first.end;
+      for (const u of U.slice(1)) {
+        if (!ok) break;
+        if (+u.start <= ce) { ce = Math.max(ce, +u.end); continue; }
+        if (minsBetween(ce, u.start) >= unkCap(minsBetween(cs, ce))) { cs = +u.start; ce = +u.end; } else ok = false;
+      }
+      if (ok && st !== 'na') ok = minsBetween(ce, b.start) >= unkCap(minsBetween(cs, ce));
+      if (!ok) return { u: first, last };
+    }
+  }
+  if (st === 'bad' || st === 'na') return null;
+  const { bs, glued, p } = unkBeforeBlock(svcs, a);
+  const actual = minsBetween(a.end, b.start);
+  if (glued) return actual >= unkCap(minsBetween(glued.start, a.end)) ? null : { u: glued, glued: true };
+  if (!p || !blockHasFdp(svcs, a)) return null;
+  const rb = minsBetween(p.end, bs), cap = unkCap(minsBetween(p.start, p.end));
+  return rb < cap && actual < hiA + (cap - rb) ? { u: p, prev: true } : null;
+};
+// O veredicto incerto: o código (ou o serviço a que faltam horas: `unkWhy`), o dia, e o que o número do repouso é —
+// `unkGlued` (colado antes do serviço) e `unkPrev` (antes dele): o repouso que houve é exato, o que muda é o mínimo;
+// `unkExact`: conta do fim de um serviço certo; `unkAtLeast`: é o mínimo que houve (conta do fim do evento, se ele for um
+// serviço); sem nenhum: é o máximo.
+const unkTag = (u, f = {}) => ({ unkCode: u.code || null, unkIso: u.iso, ...(u.why ? { unkWhy: u.why } : {}), ...(f.glued ? { unkGlued: true } : {}), ...(f.prev ? { unkPrev: true } : {}), ...(f.exact ? { unkExact: true } : {}), ...(f.atLeast ? { unkAtLeast: true } : {}) });
+const unkUnc = (h, lowMin = REDUCED_REST_AWAY_MIN) => ({ status: 'unc', kind: 'unknownCode', requiredMin: Math.min(lowMin, REDUCED_REST_AWAY_MIN), ...unkTag(h.u, h) });
+const withUnknown = (svcs, a, b, out) => {
+  if (!svcs.unk || !svcs.unk.length) return out;
+  const st = out.v.status;
+  const h = unkVerdict(svcs, a, b, st, st === 'ok' ? out.v.requiredMin : out.req.hiMin, (out.x && out.x.nightsRequired) || 0);
+  if (!h) return out;
+  const L = h.last && h.last.why === 'noStart' ? h.last : null;   // um serviço certo, com o fim conhecido
+  return { ...out, actualMin: L ? minsBetween(L.endLo, b.start) : out.actualMin, v: unkUnc({ ...h, exact: !!(L && !L.amb) }, out.req.loMin) };
+};
+// Antes de um bloco que não é PSV (ver unkVerdict, 'na'): o veredicto incerto, ou null.
+const unkBeforeNotFdp = (svcs, a, b) => {
+  if (!svcs.unk || !svcs.unk.length || !a || !a.end) return null;
+  const h = unkVerdict(svcs, a, b, 'na', requirementAfter(svcs, a, null).hiMin, rotationNightsInfo(svcs, a, null).n);
+  return h ? unkUnc(h) : null;
+};
+// SEM SERVIÇO ANTERIOR NA LINHA, mas com um código que a app não conhece (ou um serviço a que faltam horas) antes do bloco de
+// `b` (ponto 3: um escritório sem hora de início não está na linha — e não pode ficar invisível). Se for um serviço, o repouso
+// antes do PSV conta do fim dele: certo só com o mais que um serviço com essa duração pode pedir (unkCap); senão incerto.
+// Eventos com menos do que isso entre eles contam como um só período (o lado que pede mais). Até 7 dias para trás.
+const unkAlone = (svcs, b) => {
+  const unk = svcs && svcs.unk;
+  if (!unk || !unk.length || !b || !blockHasFdp(svcs, b)) return null;
+  const U = unk.filter((u) => +u.start < +b.start && +u.end > +b.start - 7 * 86400000);
+  if (!U.length) return null;
+  let first = U[0], last = U[0], cs = +first.start, ce = +first.end;
+  for (const u of U.slice(1)) {
+    if (+u.start > ce && minsBetween(ce, u.start) >= unkCap(minsBetween(cs, ce))) { first = u; last = u; cs = +u.start; ce = +u.end; } else if (+u.end > ce) { ce = +u.end; last = u; }
+  }
+  if (Math.max(0, minsBetween(ce, b.start)) >= unkCap(minsBetween(cs, ce))) return null;
+  // O repouso conta do fim do evento SE ele for um serviço: é o mínimo que houve (2.ª revisão, achado 5) — salvo um serviço
+  // certo com o fim conhecido (sem hora de início): aí é exato.
+  const sure = last.why === 'noStart' && !last.amb;
+  const actualMin = Math.max(0, minsBetween(last.why === 'noStart' ? last.endLo : ce, b.start));
+  return { ...unkUnc({ u: first, exact: sure, atLeast: !sure && !(last.why === 'noStart') }), actualMin, prevIso: first.iso, nextIso: b.iso };
+};
+// O código novo primeiro: se há um entre os dois serviços, pode ser ele a viagem que falta (o buraco de sítio).
+const pairBoth = (svcs, a, b) => { const w = withUnknown(svcs, a, b, pairBothRaw(svcs, a, b)); return w.v.kind === 'unknownCode' ? w : withGap(svcs, b, w); };
+// O MÍNIMO A SEGUIR COM O QUE VEM À FRENTE — o "Repouso até" do Início e o `need` da Simulação, a MESMA regra (revisão
+// independente, achado 4: só o "Repouso até" a tinha).
+//   · Um código que a app não conhece (ou um serviço sem hora de início) que começa antes de o mínimo se cumprir pode ser um
+//     serviço que o corta → só a ponta de baixo, sem teto. Colado antes do bloco, o "serviço precedente" pode ser mais longo →
+//     o teto é o mais que esse período pode pedir.
+//   · O serviço seguinte parte de outro aeroporto e a viagem não está na escala (o buraco de sítio): o mínimo é do sítio onde
+//     COMEÇA o PSV seguinte, e não se sabe → a ponta de baixo é o que todas as leituras pedem (no máximo as 10 h do 235(b) —
+//     achado 6: vindo da base ficavam 12 h), sem teto.
+// `nightEndMs` = o fim das noites locais pedidas (0 se não há).
+const needAhead = (svcs, last, nd, nightEndMs = 0) => {
+  const lo0 = nd.uncertain ? nd.requiredLoMin : nd.requiredMin, hi0 = nd.uncertain ? nd.requiredHiMin : nd.requiredMin;
+  const nextHead = svcs.find((v) => v.blk !== last.blk && +v.start > +last.start && +v.start >= +last.end) || null;
+  if (svcs.unk && svcs.unk.length) {
+    const hiMs = hi0 != null ? Math.max(+last.end + hi0 * 60000, nightEndMs || 0) : null;
+    const ahead = svcs.unk.find((u) => +u.end > +last.end && (hiMs == null || +u.start < hiMs) && (!nextHead || +u.start < +nextHead.start)) || null;
+    if (ahead) return { ...nd, requiredMin: lo0, requiredLoMin: lo0, requiredHiMin: null, uncertain: true, why: 'unknownCode', ...unkTag(ahead) };
+    const { bs, glued, p } = unkBeforeBlock(svcs, last);
+    if (glued) {
+      const hi = hi0 != null ? Math.max(hi0, unkCap(minsBetween(glued.start, last.end))) : null;
+      if (hi == null || hi > lo0) return { ...nd, requiredMin: hi != null ? hi : lo0, requiredLoMin: lo0, requiredHiMin: hi, uncertain: true, why: 'unknownCode', ...unkTag(glued, { glued: true }) };
+    } else if (p && hi0 != null && blockHasFdp(svcs, last)) {
+      // … ou antes dele, não colado: o repouso entre os dois pode ter sido reduzido → este aumenta pela diferença (unkVerdict).
+      const rb = minsBetween(p.end, bs), cap = unkCap(minsBetween(p.start, p.end));
+      if (rb < cap) { const hi = hi0 + (cap - rb); return { ...nd, requiredMin: hi, requiredLoMin: lo0, requiredHiMin: hi, uncertain: true, why: 'unknownCode', ...unkTag(p, { prev: true }) }; }
+    }
+  }
+  const g = nextHead ? gapBefore(svcs, nextHead) : null;
+  if (g) { const lo = Math.min(lo0, REDUCED_REST_AWAY_MIN); return { ...nd, requiredMin: lo, requiredLoMin: lo, requiredHiMin: null, uncertain: true, why: 'placeGap', gapFrom: g.from, gapDep: g.dep, gapNextIso: nextHead.iso }; }
+  return nd;
+};
+const pairBothRaw = (svcs, a, b) => {
   const one = pairOne(svcs, a, b);
   let out;
   if (!svcs.alt || !a.alt || !b.alt) out = one;
@@ -902,7 +1090,7 @@ const pairBoth = (svcs, a, b) => {
 const ebBoth = (svcs, eb, a, b) => {
   if (eb && eb.status === 'bad' && isFork(svcs, b) && !forkCallBad(svcs, a, b)) return { ...eb, status: 'unc', kind: 'standbyCall' };
   if (eb && eb.status === 'bad' && a && a.end && isHomeSb(a)) {
-    const pb = pairBoth(svcs, a, b);
+    const pb = pairBothRaw(svcs, a, b);
     if (pb.v.status === 'unc' && pb.v.kind === 'standbyCall') return { ...eb, status: 'unc', kind: 'standbyCall' };
   }
   return over16(b, eb);
@@ -961,14 +1149,28 @@ export function restStatus(duties = {}, todayISO, ref = new Date(), ctx = {}) {
   const refMs = +ref;
   let next = null;
   for (const v of svcs) { if (v.iso < todayISO || +v.start <= refMs || +v.bStart !== +v.start) continue; if (!next || +v.start < +next.start) next = v; }
-  if (!next) return { id: 'rest', status: 'neutral', kind: 'noNext' };
+  if (!next) {
+    // Sem serviço seguinte, mas com um código que a app não conhece à frente: se for um PSV, o repouso antes dele conta — as
+    // horas e, depois de uma rotação com fuso, as noites locais (como o "Repouso até").
+    const u = (svcs.unk || []).find((x) => +x.start > refMs && x.fdp !== false);
+    const p = u ? before(svcs, u.start)[0] || null : null;
+    if (u && p && p.end && +p.end <= +u.start) {
+      const act = minsBetween(p.end, u.start), nR = rotationNightsInfo(svcs, p, null).n;
+      if (act < requirementAfter(svcs, p, null).hiMin || (nR && localNightsIn(p.end, u.start) < nR)) return { id: 'rest', ...unkUnc({ u, atLeast: !!u.why }), status: 'warn', actualMin: act, toCode: true, prevIso: p.iso, nextIso: u.iso };
+    }
+    return { id: 'rest', status: 'neutral', kind: 'noNext' };
+  }
   // O ANTERIOR: o último a começar antes do próximo (a adjacência importa p/ o repouso).
   const prev = before(svcs, next.start)[0] || null;
-  if (!prev) return { id: 'rest', status: 'neutral', kind: 'noPrev', nextIso: next.iso };
+  if (!prev) { const h0 = unkAlone(svcs, next); return h0 ? { id: 'rest', ...h0, status: 'warn' } : { id: 'rest', status: 'neutral', kind: 'noPrev', nextIso: next.iso }; }
   if (!prev.end) return { id: 'rest', status: 'neutral', kind: 'noPrevEnd', prevIso: prev.iso, nextIso: next.iso };
   const actualMin = Math.round((+next.start - +prev.end) / 60000);
   // Antes de um serviço que não é PSV a lei não fixa mínimo (ORO.FTL.235(a)/(b): "antes de um PSV").
-  if (!blockHasFdp(svcs, next)) return { id: 'rest', status: 'ok', kind: 'notFdp', actualMin, requiredMin: null, prevIso: prev.iso, nextIso: next.iso };
+  if (!blockHasFdp(svcs, next)) {
+    const uv = unkBeforeNotFdp(svcs, prev, next);
+    if (uv) return { id: 'rest', ...uv, status: 'warn', actualMin, prevIso: prev.iso, nextIso: next.iso };
+    return { id: 'rest', status: 'ok', kind: 'notFdp', actualMin, requiredMin: null, prevIso: prev.iso, nextIso: next.iso };
+  }
   const eb = ebBoth(svcs, estBefore(svcs.est, svcs, prev, next), prev, next);
   if (eb) return { id: 'rest', ...eb, status: eb.status === 'unc' ? 'warn' : eb.status };
   const pr = pairBoth(svcs, prev, next), v = pr.v;
@@ -1022,9 +1224,15 @@ export const restTimeline = (duties = {}, ctx = {}) => ({ svcs: restServices(dut
 export const restVerdicts = (duties = {}, ctx = {}) => {
   const svcs = restServices(duties, ctx), est = svcs.est;
   const out = [];
+  { const h0 = svcs.length ? unkAlone(svcs, svcs[0]) : null; if (h0) out.push(h0); }   // antes do 1.º serviço da linha
   for (let i = 1; i < svcs.length; i++) {
     const b = svcs[i], a = before(svcs, b.start)[0] || svcs[i - 1];   // o mesmo "anterior" do restStatus e do restAround
-    if (b.blk !== i || !a.end || !blockHasFdp(svcs, b)) continue;   // só à entrada de um bloco com PSV
+    if (b.blk !== i || !a.end) continue;
+    if (!blockHasFdp(svcs, b)) {   // só à entrada de um bloco com PSV — salvo se um código novo pelo meio pode ser um
+      const uv = unkBeforeNotFdp(svcs, a, b);
+      if (uv) out.push({ prevIso: a.iso, nextIso: b.iso, actualMin: minsBetween(a.end, b.start), ...uv });
+      continue;
+    }
     const eb = ebBoth(svcs, estBefore(est, svcs, a, b), a, b);
     if (eb) { out.push(eb); continue; }
     const pr = pairBoth(svcs, a, b);
@@ -1045,20 +1253,21 @@ export function restAround(duties = {}, pick, ctx = {}) {
     const base = { prevIso: a.iso, nextIso: b.iso, place: a.ra ? (a.ra.inBase ? 'base' : 'away') : null };
     if (!a.end) return { ...base, status: 'unc', kind: 'noPrevEnd' };
     const actualMin = Math.round((+b.start - +a.end) / 60000);
-    if (!blockHasFdp(svcs, b)) return { ...base, status: 'na', kind: 'notFdp', actualMin, requiredMin: null };
+    if (!blockHasFdp(svcs, b)) { const uv = unkBeforeNotFdp(svcs, a, b); return uv ? { ...base, ...uv, actualMin } : { ...base, status: 'na', kind: 'notFdp', actualMin, requiredMin: null }; }
     // 'unc' + kind 'legTimes': as pernas do serviço anterior não batem certo e o mínimo depende das horas certas.
     const pr = pairBoth(svcs, a, b);
     return { ...base, place: pr.x.place, ...pr.v, actualMin: pr.actualMin, floorMin: pr.x.floorMin, prevDutyMin: pr.x.prevDutyMin, reason: pr.x.reason, extOption: pr.x.extOption, nightsRequired: pr.x.nightsRequired, nightsActual: pr.x.nightsActual };
   };
   let need = null;
-  if (last.end) { const nI = rotationNightsInfo(svcs, last, null); need = { ...needAfter(svcs, last), nightsRequired: nI.n || null, ...(nI.n && !nI.sure ? { nightsUncertain: true } : {}) }; }
-  let beforeR = prev ? pair(prev, first) : null, afterR = next ? pair(last, next) : null;
+  if (last.end) { const nI = rotationNightsInfo(svcs, last, null), nEnd = nI.n ? nthLocalNightEnd(last.end, nI.n) : null; need = { ...needAhead(svcs, last, needAfter(svcs, last), nEnd ? +nEnd : 0), nightsRequired: nI.n || null, ...(nI.n && !nI.sure ? { nightsUncertain: true } : {}) }; }
+  let beforeR = prev ? pair(prev, first) : unkAlone(svcs, first), afterR = next ? pair(last, next) : null;
   // Um serviço SEM apresentação entre este e o vizinho (bloco 4): o repouso fica incerto — ou curto, se nem o mínimo mais
   // baixo possível cabe. Antes: o repouso real é conhecido (do fim dele à apresentação), o mínimo é o serviço dele (≥ o que se
   // vê) ou o piso. Depois: a apresentação dele vem antes dos calços, logo o repouso é no máximo até aos calços.
   const est = (ctx && ctx.est) || estServices(duties, ctx);
   const ebR = prev ? ebBoth(svcs, estBefore(est, svcs, prev, first), prev, first) : estBefore(est, svcs, prev, first);
-  if (ebR) beforeR = ebR;
+  // (Revisão independente, achado 5.) Antes de um serviço que não é PSV, a dúvida de um código novo não se troca por "sem mínimo".
+  if (ebR && !(ebR.status === 'na' && beforeR && beforeR.kind === 'unknownCode')) beforeR = ebR;
   const lastEnd = last.end || last.start;
   const ea = est.filter((e) => +e.off >= +lastEnd && (!next || +e.off < +next.start)).sort((a, b) => +a.off - +b.off)[0];
   if (ea && last.end) {
@@ -1092,11 +1301,12 @@ export function restUntilAfter(duties = {}, iso, ctx = {}) {
   const blkAll = svcs.filter((v) => v.blk === ofDay.blk && v.end);
   const cut = (sb) => isHomeSb(sb) && blkAll.some((x) => !isHomeSb(x) && +x.start >= +sb.start && +x.start < +sb.end);
   const mine = blkAll.filter((v) => !cut(v)).sort((a, b) => +b.end - +a.end)[0] || ofDay;
-  const nd = needAfter(svcs, mine);
-  const { requiredMin } = nd;
   // Noites locais na base depois de uma rotação com fuso (CS 235(b)(3)(i)): o repouso só acaba quando as tiver.
   const nI = rotationNightsInfo(svcs, mine, null), nights = nI.n;
   const nightEnd = nights ? nthLocalNightEnd(mine.end, nights) : null;
+  // … e o que vem à frente (um código que a app não conhece, o buraco de sítio): needAhead, a mesma regra da Simulação.
+  const nd = needAhead(svcs, mine, needAfter(svcs, mine), nightEnd ? +nightEnd : 0);
+  const { requiredMin } = nd;
   // As noites locais valem em todas as leituras quando são certas; incertas (um serviço em terra desde o regresso da rotação,
   // ver rotationNightsInfo) só entram na ponta de cima.
   const until = (min, withNights = true) => Math.max(+mine.end + min * 60000, nightEnd && withNights ? +nightEnd : 0);
@@ -1125,7 +1335,28 @@ export function restUntilAfter(duties = {}, iso, ctx = {}) {
 // PSV), uma vez por serviço e reutilizado nas corridas. Com a aclimatação X ou por saber há duas leituras (hora da base e hora
 // local): 'lo' (o que as duas dão) e 'hi' (o que alguma dá). Um aviso é CERTO se todas as corridas o dão; senão é incerto,
 // com o motivo `why`: 'type' (tipo de horário), 'acclim' (aclimatação) ou 'both'.
+// OS CÓDIGOS QUE A APP NÃO CONHECE (camada 2, sessão Fable 5.2): as três leituras — a escala como está (o código não é nada),
+// o código como um serviço em terra, e como um PSV. Um aviso que não aparece nas três fica INCERTO (`why` 'unknown', com o
+// código mais perto): o código pode partir uma recuperação ao meio, ou ser o 4.º serviço irregular, ou pôr um serviço entre
+// dois PSV. Sem códigos novos, nada muda.
 export function recoveryIssues(duties = {}, ctx = {}) {
+  const base = recoveryIssuesCore(duties, ctx);
+  const unknown = ctx && ctx.unknown;
+  if (!hasUnknown(unknown)) return base;
+  const spans = unknownSpans(unknown);
+  if (!spans.length) return base;
+  const key = (x) => `${x.type}|${x.date || ''}|${x.month || ''}`;
+  const reads = ['office', 'flight'].map((kind) => recoveryIssuesCore(withUnknownAs(duties, unknown, kind), ctx));
+  const sets = reads.map((r) => new Set(r.map(key)));
+  const dayN = (iso) => Math.round(+new Date(`${String(iso).slice(0, 10).padEnd(10, '-15').slice(0, 10)}T12:00:00`) / 86400000);
+  const near = (x) => { const d = dayN(x.date || `${x.month}-15`); let best = spans[0]; for (const u of spans) if (Math.abs(dayN(u.iso) - d) < Math.abs(dayN(best.iso) - d)) best = u; return best.code; };
+  const doubt = (x) => ({ ...x, uncertain: true, why: x.uncertain && x.why ? x.why : 'unknown', unkCode: near(x) });   // (a dúvida que já lá estava não se apaga)
+  const out = base.map((x) => (sets.every((s) => s.has(key(x))) ? x : doubt(x)));
+  const seen = new Set(base.map(key));
+  for (const r of reads) for (const x of r) { const k = key(x); if (seen.has(k)) continue; seen.add(k); out.push(doubt(x)); }
+  return out;
+}
+function recoveryIssuesCore(duties = {}, ctx = {}) {
   const { postFlightMin = 0, base = null, baseAt = null, disruptiveType = null } = ctx || {};
   const known = disruptiveType === 'early' || disruptiveType === 'late' ? disruptiveType : null;
   const baseOf = (iso) => (typeof baseAt === 'function' ? baseAt(iso) : base) || null;
@@ -1145,7 +1376,8 @@ export function recoveryIssues(duties = {}, ctx = {}) {
   for (const r of runs) for (const x of [...r.lo, ...r.hi]) if (!seen.has(key(x))) seen.set(key(x), x);
   const out = [];
   for (const [k, x] of seen) {
-    if (runs.every((r) => r.loK.has(k))) { out.push({ ...x, uncertain: false }); continue; }
+    // (O buraco de sítio na passagem para o matinal — `place`, ver computeRecovery: não se sabe se é "na base".)
+    if (runs.every((r) => r.loK.has(k))) { out.push(x.place ? { ...x, uncertain: true, why: 'place' } : { ...x, uncertain: false }); continue; }
     const acclimDiff = runs.some((r) => r.hiK.has(k) && !r.loK.has(k));
     const typeDiff = runs.length > 1 && (runs[0].loK.has(k) !== runs[1].loK.has(k) || runs[0].hiK.has(k) !== runs[1].hiK.has(k));
     out.push({ ...x, uncertain: true, why: acclimDiff && typeDiff ? 'both' : acclimDiff ? 'acclim' : 'type' });

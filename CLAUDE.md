@@ -27,7 +27,7 @@ fadiga (FTL — Reg. UE 83/2014 · CS-FTL.1) e a remuneração prevista pelos ac
 - **Guiões de verificação no device:** `docs/verificacao-device.md` · `docs/verificacao-calendario.md`.
 
 ## Regras do projeto (resumo; detalhe na Constituição)
-1. **Golden-first.** Nenhum número FTL/AE muda sem o teste golden mudar antes. `npm test` corre 41 suites (contadas a 2026-11-15; a 2.ª, `test:ftl-fontes`, confere cada número FTL no texto oficial de `fontes/ftl/`; a última é o guardião do design);
+1. **Golden-first.** Nenhum número FTL/AE muda sem o teste golden mudar antes. `npm test` corre 43 suites (contadas a 2026-11-18; a 2.ª, `test:ftl-fontes`, confere cada número FTL no texto oficial de `fontes/ftl/`; `test:unknown` e `test:incomplete` são as do que a escala não diz — os códigos que a app não conhece e os serviços a que faltam horas; a última é o guardião do design);
    o `pre-push` bloqueia se falhar.
 2. **Citar a lei.** Onde é lei, o artigo; onde é convenção, dizê-lo e escolher o conservador.
 3. **Dinheiro sem arredondar.** Todo o € mostra cêntimos.

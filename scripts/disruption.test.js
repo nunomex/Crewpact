@@ -94,6 +94,63 @@ eq('SNC: 3 dias antes → fora da janela', type(mk({ detectedAt: '2026-07-11T08:
 // deteção DEPOIS do início planeado (não é "antes do serviço") e não é no-dia p/ pilotos… cabine: no dia + ≥119 → RDP já coberto; aqui piloto detetado após início → nada
 eq('pilotos: detetado após o início → nada', type(mk({ detectedAt: '2026-07-14T11:00' }), { isPilot: true }), null);
 
+// ── A CORREÇÃO DAS HORAS REAIS (sessão Fable 5.2, ponto 4, 2026-11-17) ──
+// Cl. 67.ª, n.º 1 (BTE 8/2024, p. 304): "quando o seu tempo de serviço programado tiver sido alterado, no dia da operação, em 119
+// (…) minutos ou mais. Esta alteração desencadeará um pagamento se o término do tempo de serviço (calços mais 30 (trinta)
+// minutos …) for superior a 119 (…) antes ou depois (…) de acordo com a escala de serviço programada." Mede-se o fim REAL do
+// serviço contra o programado; nada o limita às mudanças avisadas antes do voo (o n.º 3 fala de "atraso"). A companhia corrige
+// as horas no calendário depois do voo: essa correção, vista no dia da operação, é um candidato a RDP como qualquer outra.
+{
+  const { disruptionsByDuty, disruptionDelta } = require(path.resolve('data/disruption.js'));
+  const pk = (v) => (v ? [v.type, !!v.uncertain, v.why || null] : null);
+  eq('RDP: correção depois do voo, vista no próprio dia às 21:40 → candidato certo', pk(evaluateDisruption(mk({ detectedAt: '2026-07-14T21:40' }), { isPilot: false })), ['rdp', false, null]);
+  // Vista só no dia seguinte: os factos são os mesmos, mas a app não viu QUANDO as horas mudaram — se foi no dia da operação é RDP
+  // (n.º 1); se foi antes, não é. Antes desta sessão o candidato perdia-se em silêncio: agora fica, incerto, com o motivo.
+  eq('RDP: correção vista no dia seguinte → candidato incerto ("seenLater")', pk(evaluateDisruption(mk({ detectedAt: '2026-07-15T08:10' }), { isPilot: false })), ['rdp', true, 'seenLater']);
+  eq('RDP: … três dias depois, igual', pk(evaluateDisruption(mk({ detectedAt: '2026-07-17T10:00' }), { isPilot: false })), ['rdp', true, 'seenLater']);
+  eq('… abaixo dos 119 min não é candidato, visto quando for', pk(evaluateDisruption(mk({ detectedAt: '2026-07-15T08:10', after: { report: '09:30', end: '19:10', sectors: 2, kind: 'flight' } }), { isPilot: false })), null);
+  // O serviço que acaba depois da meia-noite: vista a mudança enquanto o serviço ainda corre (fim real 00:50 + 30 = 01:20 de
+  // dia 15), é do dia da operação — certo. Depois do fim, já noutro dia: incerto.
+  const late = { before: { report: '15:00', end: '22:30', sectors: 2, kind: 'flight' }, after: { report: '15:00', end: '00:50', sectors: 2, kind: 'flight' } };
+  eq('RDP: passa a meia-noite, vista à 01:10 (o serviço ainda corre) → certo', pk(evaluateDisruption(mk({ ...late, detectedAt: '2026-07-15T01:10' }), { isPilot: false })), ['rdp', false, null]);
+  eq('RDP: passa a meia-noite, vista às 09:00 do dia seguinte → incerto', pk(evaluateDisruption(mk({ ...late, detectedAt: '2026-07-15T09:00' }), { isPilot: false })), ['rdp', true, 'seenLater']);
+  // Pilotos não têm RDP, e o SNC só conta mudanças vistas antes do início: uma correção depois do voo não é nada.
+  eq('pilotos: correção vista no dia seguinte → nada', pk(evaluateDisruption(mk({ detectedAt: '2026-07-15T08:10' }), { isPilot: true })), null);
+  // Por serviço: a mudança vista no dia (pequena) e a correção vista no dia seguinte juntam-se — o plano contra o fim real.
+  const small = mk({ id: 'a', detectedAt: '2026-07-14T08:00', after: { report: '09:30', end: '18:00', sectors: 2, kind: 'flight' } });                    // +30 min, no dia
+  const real = mk({ id: 'b', detectedAt: '2026-07-15T07:30', before: { report: '09:30', end: '18:00', sectors: 2, kind: 'flight' }, after: { report: '09:30', end: '19:40', sectors: 2, kind: 'flight' } });   // +100 min, vista depois
+  const by = disruptionsByDuty([small, real], { isPilot: false });
+  eq('por serviço: +30 no dia e +100 vista depois = +130 contra o plano → um candidato, incerto', by.map((c) => [c.type, c.dEndMin, !!c.uncertain, c.before.end, c.after.end]), [['rdp', 130, true, '17:30', '19:40']]);
+  // Com as mudanças do dia a chegarem sozinhas aos 119 min, o candidato é certo (a correção de depois não o torna incerto).
+  const big = mk({ id: 'c', detectedAt: '2026-07-14T12:00' });   // +125 no dia
+  const tweak = mk({ id: 'd', detectedAt: '2026-07-15T07:30', before: { report: '09:30', end: '19:35', sectors: 2, kind: 'flight' }, after: { report: '09:30', end: '19:45', sectors: 2, kind: 'flight' } });
+  eq('por serviço: as mudanças do dia chegam aos 119 min → certo', disruptionsByDuty([big, tweak], { isPilot: false }).map((c) => [c.type, c.dEndMin, !!c.uncertain]), [['rdp', 125, false]]);
+  // A frase diz a dúvida.
+  eq('a frase do candidato incerto', disruptionDelta(by[0], 'pt'), 'fim do serviço 17:30+30 → 19:40+30 · +2h10 · vista a 15/07, depois do dia do serviço: conta se as horas mudaram no dia da operação');
+  // A Auditoria do mês: o candidato incerto aparece, mas o seu valor não entra no total (não é dinheiro certo).
+  const { monthAudit } = require(path.resolve('data/audit.js'));
+  if (typeof monthAudit === 'function') {
+    const au = monthAudit({}, { ym: '2026-07', ae: snpvac, cat: 'FA', rosterLog: [mk({ detectedAt: '2026-07-15T08:10' })], events: [], isPilot: false });
+    const it = (au.items || []).find((i) => i.kind === 'rdp');
+    eq('Auditoria: candidato incerto sem valor certo', it && [it.uncertain, it.eur, it.eurMax > 0, au.totalEur], [true, null, true, 0]);
+  } else check('Auditoria: monthAudit existe', false);
+}
+
+// ── 2.ª REVISÃO INDEPENDENTE (2026-11-18) ──
+{
+  const { disruptionsByDuty, disruptionDelta } = require(path.resolve('data/disruption.js'));
+  // Achado 8: no dia o fim passa de 17:30 para 20:00 (+150); a correção vista no dia seguinte põe o fim REAL às 18:30 (+60). A
+  // cláusula pede as duas coisas — alterado no dia em 119 min ou mais, E o término a mais de 119 do programado: com o fim real
+  // abaixo, o candidato não é certo → incerto ('realBelow'), e diz-se.
+  const day = mk({ id: 'a', detectedAt: '2026-07-14T10:00', after: { report: '09:30', end: '20:00', sectors: 2, kind: 'flight' } });
+  const real = mk({ id: 'b', detectedAt: '2026-07-15T08:00', before: { report: '09:30', end: '20:00', sectors: 2, kind: 'flight' }, after: { report: '09:30', end: '18:30', sectors: 2, kind: 'flight' } });
+  const by = disruptionsByDuty([day, real], { isPilot: false });
+  eq('revisão 2/8: +150 no dia, mas o fim real ficou a +60 → incerto', by.map((c) => [c.type, c.dEndMin, !!c.uncertain, c.why, c.realEnd]), [['rdp', 150, true, 'realBelow', '18:30']]);
+  eq('revisão 2/8: a frase', disruptionDelta(by[0], 'pt'), 'fim do serviço 17:30+30 → 20:00+30 · +2h30 · o fim real, visto a 15/07, ficou às 18:30+30: a menos de 119 min do programado');
+  // Uma entrada sem horas do lado de depois (um serviço a que faltam horas) não prova nada, nem pelos setores.
+  eq('revisão 2/1: "depois" sem hora de fim → nada', type(mk({ after: { report: '14:00', end: null, sectors: 0, kind: 'office' } }), { isPilot: false }), null);
+}
+
 // ── Exclusões e robustez ──
 eq('assistência original → nunca qualifica', type(mk({ before: { report: '09:30', end: '17:30', sectors: 0, kind: 'standby_home' } }), { isPilot: false }), null);
 eq('sem detectedAt → null', evaluateDisruption(mk({ detectedAt: null }), {}), null);

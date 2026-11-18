@@ -147,7 +147,7 @@ function SegRow({ options, value, onChange, s }) {
 // cascata das secções + transição suave ao trocar de tipo (LayoutAnimation). Mantém
 // 1 duty/dia (loadFor), a projeção FTL prospetiva e o per-diem AE ao vivo.
 export default function DutyFormSheet({ visible, onClose, date, onSaved, candidate, onCandidate, simulate = false, onSimulate, append = false, editExtra = null }) {
-  const { lang, duties, dayLog, saveDuty, addDutyService, updateDutyService, aeAt, homeBaseAt, caps, company, crewCategory, crewFleet, postFlightMin, crewAt, notify, isPilot, cabinGapMin, splitAdminMin, instructorRated } = useContext(AppContext);
+  const { lang, duties, dayLog, rosterUnknown, saveDuty, addDutyService, updateDutyService, aeAt, homeBaseAt, caps, company, crewCategory, crewFleet, postFlightMin, crewAt, notify, isPilot, cabinGapMin, splitAdminMin, instructorRated } = useContext(AppContext);
   const insets = useSafeAreaInsets();   // insets reais da app — o SafeAreaView não funciona dentro do Modal
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -452,7 +452,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   // o acordo. O dia hipotético: candidato do import = o dia que ele traz · "+ serviço" = junta-se aos do dia · editar um extra
   // = fica no lugar dele · senão fica no lugar do serviço principal (os outros serviços do dia continuam a contar).
   // A memória da Simulação: o que só depende da escala guardada calcula-se uma vez por abertura (ver simulateDuty, `memo`).
-  const simMemo = useMemo(() => new Map(), [visible, duties, dayLog]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const simMemo = useMemo(() => new Map(), [visible, duties, dayLog, rosterUnknown]);   // eslint-disable-line react-hooks/exhaustive-deps
   const prospect = useMemo(() => {
     if (!isFlight || !isClock(form.report)) return null;   // projeção FTL assim que há apresentação válida
     const svc = {
@@ -467,10 +467,10 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     const mode = append ? 'append' : (editExtra != null ? { replaceExtra: editExtra } : 'replace');
     const isTapAt = (iso) => { const a = aeAt(iso); return !!a && /^tap/.test(String(a.AE_ID || '')); };
     return simulateDuty(svc, {
-      duties, dayLog, postFlightMin, isPilot, base, baseAt: homeBaseAt, cabinGapMin, splitAdminMin, mode, memo: simMemo,
+      duties, dayLog, postFlightMin, isPilot, base, baseAt: homeBaseAt, cabinGapMin, splitAdminMin, mode, memo: simMemo, unknown: rosterUnknown || null,
       tap: { isTapAt, crewType: isPilot ? 'pilot' : 'cabin', fleetAt: (iso) => ((crewAt(iso) || {}).fleet || crewFleet || null) },
     });
-  }, [isFlight, form, dayLog, duties, postFlightMin, isPilot, special, accOn, base, candidate, append, editExtra]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isFlight, form, dayLog, duties, rosterUnknown, postFlightMin, isPilot, special, accOn, base, candidate, append, editExtra]); // eslint-disable-line react-hooks/exhaustive-deps
   // O período mais apertado de cada limite do 210 que contém o dia (como no resultado da Simulação).
   const projLimits = useMemo(() => {
     if (!prospect) return '';

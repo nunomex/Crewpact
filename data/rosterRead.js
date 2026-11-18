@@ -25,7 +25,7 @@ export const importWindow = () => {
 // `postFlightMin` = o pós-voo do perfil (a verificação de cada candidato usa-o, A-254). `sickFirst3` = o modelo da doença do
 // acordo (pilotos easyJet: o episódio; cabine: só os dias pagos, Cl. 61.ª — paidSickDays).
 export const baseOfFor = (base, baseAt) => (iso) => (typeof baseAt === 'function' ? baseAt(iso) : base);
-export async function readCalendarRoster({ companySlug, calendarId, duties = {}, dayLog = {}, base = null, baseAt = null, aeEvents = [], isPilot = false, cabinGapMin, splitAdminMin, postFlightMin = 0, sickFirst3 = true }) {
+export async function readCalendarRoster({ companySlug, calendarId, duties = {}, dayLog = {}, base = null, baseAt = null, aeEvents = [], isPilot = false, cabinGapMin, splitAdminMin, postFlightMin = 0, sickFirst3 = true, rosterUnknown = null }) {
   const { start, end, fwdStart } = importWindow();
   const [fl, nf] = await Promise.all([
     getDutiesInRange(start, end, companySlug, calendarId, { baseOf: baseOfFor(base, baseAt) }),
@@ -33,9 +33,14 @@ export async function readCalendarRoster({ companySlug, calendarId, duties = {},
   ]);
   if (!fl.ok && !nf.ok) return { ok: false, cands: [], vacDates: [], sickDates: [], unknown: [], window: null };
   const window = { start: isoDay(fwdStart), end: isoDay(end) };
-  const cands = buildImportCandidates({ activities: fl.duties || [], nonflights: nf.items || [], duties, dayLog, window, base, baseAt, isPilot, cabinGapMin, splitAdminMin, postFlightMin });
   // os códigos que a app não conhece, na janela da leitura (quem grava substitui os dessa janela — saveRosterUnknown)
   const unknown = (nf.unknown || []).filter((u) => u.dateISO >= window.start && u.dateISO <= window.end);
+  // … e a verificação conta-os já (camada 2; revisão independente, achado 3: a leitura do calendário verificava sem eles): os
+  // guardados fora da janela (`rosterUnknown`) mais os desta leitura.
+  const unkAll = {};
+  for (const k in (rosterUnknown || {})) if (k < window.start || k > window.end) unkAll[k] = rosterUnknown[k];
+  for (const u of unknown) (unkAll[u.dateISO] || (unkAll[u.dateISO] = [])).push(u);
+  const cands = buildImportCandidates({ activities: fl.duties || [], nonflights: nf.items || [], duties, dayLog, window, base, baseAt, isPilot, cabinGapMin, splitAdminMin, postFlightMin, unknown: unkAll });
   return { ok: true, cands, ...absenceSuggestions(nf.vacations, nf.sicks, aeEvents, sickFirst3), unknown, window };
 }
 

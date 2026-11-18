@@ -199,7 +199,7 @@ export default function RelatoriosScreen({ navigation }) {
           notify && notify(l('Processo gerado', 'Record generated'));
         } else {
           const model = buildRecordModel({
-            duties: dutiesInPeriod, dayLog,
+            duties: dutiesInPeriod, dayLog, rosterLog,   // o arquivo das mudanças: as correções das horas vão com a linha (ponto 7)
             // Serviço até ao sign-off/pós-voo e o repouso que houve até ao serviço seguinte, mesmo fora do período (A-168).
             postFlightMin: postFlightMin || 0, isPilot, cabinGapMin, splitAdminMin, baseAt: homeBaseAt, allDuties: duties,
             name: recForm.name, crewId: recForm.crewId,

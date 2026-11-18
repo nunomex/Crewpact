@@ -6,7 +6,89 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 ---
 
-## O QUE FALTA (ler isto primeiro · lista única · atualizada 2026-11-17)
+## O QUE FALTA (ler isto primeiro · lista única · atualizada 2026-11-18)
+
+**ONDE FICÁMOS (2026-11-18):** **a sessão Fable 5.2 fez os cinco pontos que não dependiam dos códigos — 3, 4, 7, 8 e 9** (a entrada logo
+abaixo; GRAVADO E ENVIADO a 2026-11-18, no ramo `calculos-repouso-2`). Ficam para quando chegarem os códigos da easyJet: os pontos 1, 2, 5 e 6.
+**Por ver no iPhone:** a lista da entrada abaixo, mais o N3 e tudo de 2026-11-16. **A seguir (Opus):** os 3 esboços da marca da
+correção das horas no Registo 245 (ponto 7) · rever no iPhone a folha "Rever a escala" sem o "Corrigir ›" · as calculadoras da lei
+na linguagem 3.0 · o "Avião" na verificação (W2) · a guia de três balões do Início · o guião `docs/verificacao-device.md`.
+
+**A SESSÃO FABLE 5.2 — FEITA (2026-11-17/18; golden primeiro em tudo; 43 suites + guardião + exportação iOS verdes; gravada e enviada a 2026-11-18).**
+O que mudou, ponto a ponto (o enunciado de cada um está no bloco "SESSÃO FABLE 5.2", mais abaixo):
+- **Ponto 8 · o piso do repouso com um buraco de sítio.** O texto mede o piso pelo sítio onde COMEÇA o PSV seguinte ("before
+  undertaking an FDP starting at home base" — 12 h; "starting away from home base" — 10 h; ORO.FTL.235(a)(1)/(b)). Numa escala sem
+  buracos é o sítio onde o anterior acabou (como a app já fazia). Com um buraco (acaba em OPO, o seguinte parte de LIS, nada pelo
+  meio) falta a viagem, e um posicionamento é serviço (ORO.FTL.215): o que se vê é o MÁXIMO do repouso e o mínimo não se sabe →
+  **"Incerto · no máximo 25 h 10"**, com o que falta; curto só abaixo das 10 h (o mínimo de todas as leituras). O "Repouso até"
+  fica só com a ponta de baixo; a noite local do tardio/noturno → matinal ("planned at home base", CS FTL.1.235(a)(1)) fica
+  incerta com o buraco e a base num dos lados. A regra do sítio passou para `data/placeGap.js` (a mesma no repouso, na Simulação
+  e na importação; um VOO sem rota pelo meio também é uma viagem para sítio desconhecido: deixou de dar "falta um posicionamento?").
+- **Ponto 9 · a camada 2 dos códigos novos** (`ftl/unknownCodes.js`, suite nova `npm run test:unknown`). Um código que a app não
+  conhece conta com as duas pontas em TODAS as contas: serviço em 7/14/28 dias — no mínimo nada, no máximo a duração fora do que
+  já é serviço; **tempo de voo** (28 dias, ano civil, 12 meses) — idem, porque pode ser um voo; o repouso à volta dele — "certo" e
+  "curto" só quando o são em todas as leituras (longe dos dois serviços: antes dele o mínimo do anterior, depois dele o mais que
+  um serviço com a sua duração pode pedir — a duração ou 14 h, mais 4 h de prolongamento); a recuperação (três leituras: nada ·
+  serviço em terra · PSV) e as noites seguidas. O "Dentro dos limites?" ganhou o **"Incerto — serviço em 7 dias entre 58 h e 66 h
+  (máx. 60 h)"**; o "Quanto me falta?" e as Estatísticas deixaram de afirmar a folga quando o máximo passa o limite. Um evento de
+  vários dias guarda o dia em que acaba (`endISO`); um evento com início igual ao fim não inventa 24 h.
+  **De caminho (muda o que já existia):** o "Dentro dos limites?" do Início passa a dizer "incerto" também com um serviço SEM HORA
+  DE APRESENTAÇÃO cujo máximo passe o limite (antes só a Simulação e a importação o diziam).
+- **Ponto 3 · os dias "a corrigir" entram como incerto** (`incompleteSpans`, suite nova `npm run test:incomplete`). Um serviço sem
+  hora de fim, sem hora de início ou sem horas já não fica fora dos limites nem invisível para o repouso: no mínimo nada, no máximo
+  o tempo que pode ter ocupado. **Convenções da app, ditas no ecrã (a lei não dá um teto ao período de serviço):** sem fim → até ao
+  serviço seguinte ou 24 h depois de começar; sem início → desde as 00:00 do dia (e, se o fim é até ao meio-dia, pode ser o da
+  madrugada seguinte: conta até lá); sem horas → o dia inteiro. Na importação o que
+  era "a corrigir" (`fix`) passou a "entra incerto" (`unc`): **entram todos, e o "Corrigir ›" saiu** da "Rever a escala" para
+  estes (fica só nas pernas que não batem certo); a secção de cima chama-se "Incertos · falta um dado". O golden antigo "o dia sem
+  horas fica fora dos 210" mudou de propósito (agora entra com o máximo do dia). **Duas guardas (2.ª revisão):** uma releitura que
+  PERDEU horas que a escala guardada tem não a substitui ("a leitura veio sem horas — fica o que estava guardado", `keep`); e o
+  arquivo das mudanças só guarda o que se lê dos dois lados (`archiveEntry`: um serviço a que faltam horas não é prova de nada).
+- **Ponto 4 · o RDP da cabine e a correção das horas reais.** Relida a Cl. 67.ª (BTE 8/2024, p. 304): o n.º 1 mede "o término do
+  tempo de serviço (calços mais 30 minutos)" contra "a escala de serviço programada" — é o fim REAL; nada o limita às mudanças
+  avisadas antes do voo (o n.º 3 fala de "atraso"). **A correção depois do voo, vista no dia da operação (ou enquanto o serviço
+  ainda corre, se passa a meia-noite), conta como candidato a RDP** — já era assim, fica com golden. **Novo:** vista só em dia
+  posterior, o candidato já não se perde em silêncio — fica INCERTO ("vista a 15/07, depois do dia do serviço: conta se as horas
+  mudaram no dia da operação"), e na Auditoria do mês o valor aparece como "até X €", fora do total. Também incerto quando a
+  mudança do dia chega aos 119 min mas a correção vista depois põe o fim real abaixo disso ("o fim real … ficou a menos de 119 min
+  do programado"): a cláusula pede as duas coisas. O ecrã Disrupção diz "incerto" e "até", e o incerto não se regista como dinheiro.
+- **Ponto 7 · o arquivo como prova.** `hourCorrections` (`data/ftlRecord.js`): a correção das horas que a app viu depois de o
+  serviço começar (pela apresentação antiga E pela nova) vai com a linha do Registo 245 (`corrected`: prevista → real · vista
+  a …). O Registo passou a ter a linha de um serviço sem horas e deixou de afirmar um repouso por cima dele. **Falta o desenho da marca no PDF**
+  (3 esboços, Opus): o modelo já a leva, o PDF ainda não a mostra.
+**Revisão independente (Opus, só com o código, o diff e `fontes/`): feita DUAS vezes; as correções da 2.ª não foram revistas por
+uma 3.ª.** Cada achado corrigido tem golden ("revisão N" e "revisão 2/N" nos testes).
+- **1.ª (pontos 8 e 9), 15 achados.** Corrigidos: o buraco de sítio com assistência e chamada possível dava "curto" (agora incerto) ·
+  um código entre as noites locais de uma rotação dava "certo" · a leitura do calendário verificava sem os códigos · o mínimo a
+  seguir da Simulação não via o que o "Repouso até" via (agora é a mesma função, `needAhead`) · um código pelo meio escondia o
+  código colado antes do serviço · dois códigos seguidos · o tempo de voo · a folga do "Quanto me falta?" · um código hoje no
+  "Dentro dos limites?".
+- **2.ª (as correções, o ponto 3, o 4 e o 7), 16 achados.** Corrigidos: a releitura que apagava horas guardadas e criava um RDP
+  "certo" falso (as duas guardas do ponto 3) · um código ANTES do serviço anterior (o repouso entre os dois pode ter sido reduzido
+  e o seguinte aumenta pela diferença, CS FTL.1.235(c)(3)) · o serviço sem início com o fim de madrugada · "no máximo" onde era
+  "pelo menos" ou exato (o repouso que houve conta do fim de um serviço certo) · o voo que passa a meia-noite com um código amanhã ·
+  os 12 meses vistos em todos os períodos · o Registo 245 · o RDP com o fim real abaixo dos 119 min · a mudança de escala lida
+  como correção das horas · o ecrã Disrupção · "null – 17:00" no Detalhe · as barras "faltam X h" num período incerto.
+  A revisão comparou um ano de escala COMPLETA antes e depois: tudo idêntico (as mudanças só aparecem com dados em falta).
+**Ficou por fechar (dito pelas revisões, não corrigido — para a próxima sessão Fable):** (a) a recuperação de 36 h e as 60 h com um
+buraco de sítio dentro delas (o repouso do par já diz incerto; o aviso de 168 h não) · (b) um dia com registo MANUAL antigo ignora
+o código desse dia (hoje nada escreve registos manuais) · (c) o teto "14 h + 4 h" do código colado não soma a diferença de um
+repouso reduzido anterior nem o "+4 h entre dois prolongados" (janela de 30 a 45 min) · (d) nas leituras "é um serviço" da
+recuperação, um código de vários dias conta só com as horas do 1.º dia · (e) a guarda da releitura só vê horas perdidas, não uma
+ROTA perdida (um voo relido sem rota ainda substitui o guardado) · (f) o teto do repouso depois de um serviço sem horas (a
+duração ou 14 h, mais 4 h) não se diz no ecrã · (g) num dia com um voo só com calços dentro, o "Tenho descanso?" fala do repouso
+antes do serviço seguinte da linha, não do de hoje. **Para o advogado (já era assim):** aos 119 min EXATOS a Cl. 67.ª não fecha
+("119 minutos ou mais" e logo "superior a 119"); e "também incluirá perda ou ganho de setores" lido como motivo à parte.
+**Ver no iPhone:** (1) o caso do buraco de sítio (um serviço que acaba fora e o seguinte a partir da base, sem posicionamento): o
+"Tenho descanso?" incerto com o porquê, o cartão do repouso "mín. 10 h ou mais · falta na escala a viagem de OPO para LIS"; (2) um
+calendário de teste com um código novo (SBYX 0600-1400) num dia livre perto de um voo: o "Tenho descanso?", o "Repouso até" e o
+"Dentro dos limites?" incertos com o código; o detalhe da pergunta sem barra verde; (3) um evento de escritório sem hora de fim no
+calendário: na "Rever a escala" aparece em "Incertos · falta um dado", entra ao importar, o dia fica na Escala, e o Início e os
+Números não partem com ele (é a 1.ª vez que a app guarda um serviço sem fim vindo da importação); (4) o 7.º passo da entrada com um
+serviço incerto ("1 serviço entra incerto"); (5) Disrupção e Auditoria do mês (cabine) com uma correção vista no dia seguinte:
+"até X €" e a frase; no ecrã Disrupção o selo "RDP · incerto" e o valor com "até"; (6) reimportar um PDF pior do que a escala
+guardada (uma perna sem horas): a linha diz "a leitura veio sem horas — fica o que estava guardado" e o dia não muda; (7) o
+Detalhe de um serviço em terra sem hora de início ("— – 17:00").
 
 **ONDE FICÁMOS (2026-11-17):** o "ONDE FICÁMOS" de ontem gravado (`6ab5ff8`); **o modo noite N3 construído** (gravado e enviado; a
 entrada logo abaixo) — a app segue o claro/escuro do iPhone, na app toda. **Por ver no iPhone:** o N3 (a lista na entrada) e tudo de
@@ -252,9 +334,10 @@ O que fazer, cada coisa com golden primeiro e com o texto oficial aberto (`fonte
    no mínimo nada, no máximo a duração do evento (a maquinaria de `doneMaxMin`/`uncertain` que os serviços sem apresentação já usam); (c)
    os dias à volta (a recuperação, as noites seguidas) pelo mesmo princípio; (d) o "Dentro dos limites?" e a Escala a dizerem o mesmo.
    Golden primeiro, com o texto oficial aberto (`fontes/ftl/`); `docs/sitemap.md` e `data/calendarParse.js` dizem onde está cada peça.
-**MARCADA PARA QUARTA-FEIRA, 2026-11-18 (o Nuno, 2026-11-16: "tudo o que é Fable 5.2 fica para quarta-feira").** Sem os códigos ainda
-podem fazer-se os pontos 3, 4, 7, 8 e 9; os 1, 2, 5 e 6 esperam pelos códigos. Abrir a sessão em Fable 5.2, esforço Alto, e dizer: "a
-sessão Fable 5.2 das decisões".
+**FEITOS a 2026-11-17/18: os pontos 3, 4, 7 (os dados; falta o desenho da marca no PDF), 8 e 9** — a entrada "A SESSÃO FABLE 5.2 —
+FEITA", no topo. **Ficam os pontos 1, 2, 5 e 6, à espera dos códigos da easyJet**; quando chegarem, abrir outra sessão em Fable 5.2,
+esforço Alto, e dizer: "a sessão Fable 5.2 das decisões". Nessa sessão ver também o que a revisão deixou por fechar (a lista (a)–(d)
+da mesma entrada) e, com os códigos, tirar a deteção de SNC/RDP pelas mudanças da escala.
 Revisão independente no fim (Opus, só com o código, o diff e `fontes/`).
 
 **O ASPETO NOVO — ONDE ESTÁ (fim da sessão de 2026-11-14; gravado e enviado até `81c2dfd`).** Feitos: o Início, a Escala, os

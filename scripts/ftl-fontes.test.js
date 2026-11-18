@@ -257,6 +257,11 @@ const times = (s) => (s.match(/\b\d{2}:\d{2}\b/g) || []);
 {
   has('235(a)(1): base, serviço ou 12 h', ENf, 'The minimum rest period provided before undertaking an FDP starting at home base shall be at least as long as the preceding duty period, or 12 hours, whichever is greater');
   has('235(b): fora, serviço ou 10 h', ENf, 'as the preceding duty period, or 10 hours, whichever is greater');
+  // (Sessão Fable 5.2, 2026-11-17, ponto 8.) O piso é do sítio onde COMEÇA o PSV seguinte; a viagem que falta na escala é serviço.
+  has('235(b): o piso de fora é o de um PSV que começa fora da base', ENf, 'The minimum rest period provided before undertaking an FDP starting away from home base shall be at least as long');
+  has('215(a): posicionamento depois da apresentação conta como PSV', ENf, 'positioning after reporting but prior to operating shall be counted as FDP but shall not count as a sector');
+  has('215(b): todo o posicionamento é período de serviço', ENf, 'all time spent on positioning shall count as duty period');
+  has('CS 235(a)(1): a noite local pede-se na base', CSf, 'If a transition from a late finish/night duty to an early start is planned at home base, the rest period between the 2 FDPs includes 1 local night');
   eq('235(a)/(b): motor', [restRules.REST_FLOOR_BASE_MIN, restRules.REST_FLOOR_AWAY_MIN], [720, 600]);
   has('CS 235(c)(1): reduzido 12 h / 10 h', CSf, 'The minimum reduced rest periods under reduced rest arrangements are 12 hours at home base and 10 hours out of base');
   has('CS 235(c)(5): máx 2 reduzidos', CSf, 'There is a maximum of 2 reduced rest periods between 2 recurrent extended recovery rest periods');

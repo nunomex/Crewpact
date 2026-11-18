@@ -21,6 +21,8 @@ import { isProblem, fmtClock, clauseShort, ruleTitle } from './tapLimitsText';
 import { unknownsText } from './ftlUnknowns';
 import { NONFLIGHT_KINDS } from './calendarParse';
 import { durHM, durText } from './duration';
+import { placeGaps } from './placeGap';
+import { unknownSpans, incompleteSpans } from '../ftl/unknownCodes';
 
 // A regra de cada aviso (o artigo; onde é o acordo, a cláusula vai no próprio aviso).
 export const SIM_RULES = {
@@ -123,8 +125,9 @@ const RECOVERY_MS = 36 * 3600000;
 // Revisão do 8b (E1–E3).
 const BREAK_KINDS = new Set(['office', 'training', 'positioning', 'standby_airport']);
 const DOUBT_KINDS = new Set(['standby_home', 'reserve']);
-const dutyBetween = (duties, a, b) => {
-  let out = 'no';
+// (Camada 2 dos códigos novos, 2026-11-17.) Um código que a app não conhece entre os dois PSV pode ser um serviço: 'maybe'.
+const dutyBetween = (duties, a, b, unk = []) => {
+  let out = unk.some((u) => +u.end > +a.end && +u.start < +b.start) ? 'maybe' : 'no';
   for (let iso = a.iso; iso <= b.iso; iso = addDays(iso, 1)) {
     const d = duties[iso];
     if (!d || d.deleted) continue;
@@ -150,7 +153,10 @@ const dutyBetween = (duties, a, b) => {
 // Noites seguidas com mais de 4 setores (CS FTL.1.205(a)(1)) à volta do PSV `isTarget` do dia `date`: [{ level: 'bad'|'unc', it }].
 // A Simulação usa-a para o serviço simulado; o Início para o serviço de hoje (`isTarget = f.iso === date`) — a mesma regra nos
 // dois (antes o "Dentro dos limites?" do Início não a via). Regras: ver o comentário no simulateDuty.
-export const nightSectorIssues = (hypo, date, fdpOpts, baseOf, isTarget) => {
+// `unknown` = os códigos que a app não conhece ({ dia: [{ code, start, end }] }): entre duas noites → dúvida; numa noite ao
+// lado de um PSV noturno com mais de 4 setores → se for um serviço noturno são noites seguidas → incerto ('unknown').
+export const nightSectorIssues = (hypo, date, fdpOpts, baseOf, isTarget, unknown = null) => {
+  const unk = unknown ? unknownSpans(unknown) : [];
   const own = fdpsBetween(hypo, date, date, fdpOpts, baseOf);
   const fdps = own.some((f) => isTarget(f) && f.night) ? fdpsBetween(hypo, addDays(date, -4), addDays(date, 4), fdpOpts, baseOf) : own;
   // Todos os PSV noturnos do alvo (um dia pode ter dois — revisão de 2026-11-08: só se via o 1.º).
@@ -167,7 +173,7 @@ export const nightSectorIssues = (hypo, date, fdpOpts, baseOf, isTarget) => {
     if (!o) continue;
     const [a, b] = dir < 0 ? [o, fdps[si]] : [fdps[si], o];
     if (+b.start - +a.end >= RECOVERY_MS && localNightsIn(a.end, b.start) >= 2) continue;   // separados por uma recuperação
-    let between = dutyBetween(hypo, a, b);
+    let between = dutyBetween(hypo, a, b, unk);
     for (const m of mids) {
       if (between === 'yes') break;
       const gA = (+m.start - +a.end) / 3600000, gB = (+b.start - +m.end) / 3600000;
@@ -189,49 +195,25 @@ export const nightSectorIssues = (hypo, date, fdpOpts, baseOf, isTarget) => {
       seen.set(fk, { level, it: { type: 'nightSectors', date: f.iso, sectors: f.sectors, limit: NIGHT_SECTOR_LIMIT, gapNights, ...(level === 'unc' ? { doubt: true, why } : {}), rule: SIM_RULES.nightSectors } });
     }
   }
+  for (const si of (unk.length ? targets : [])) {
+    const f = fdps[si], fk = `${f.iso}|${+f.start}`;
+    if (f.sectors <= NIGHT_SECTOR_LIMIT || seen.has(fk)) continue;
+    for (const u of unk) {
+      if (!nightOf(u.start, u.end)) continue;
+      const [x, y] = +u.start >= +f.end ? [f.end, u.start] : (+u.end <= +f.start ? [u.end, f.start] : [null, null]);
+      if (!x || +y - +x > 4 * 86400000) continue;                                     // por cima do próprio PSV, ou longe
+      if (+y - +x >= RECOVERY_MS && localNightsIn(x, y) >= 2) continue;               // separados por uma recuperação
+      seen.set(fk, { level: 'unc', it: { type: 'nightSectors', date: f.iso, sectors: f.sectors, limit: NIGHT_SECTOR_LIMIT, gapNights: 0, doubt: true, why: 'unknown', unkCode: u.code, rule: SIM_RULES.nightSectors } });
+      break;
+    }
+  }
   for (const v of seen.values()) out.push(v);
   return out;
 };
 
 // ── O SÍTIO: a partida não bate com a última chegada ──
-// Um serviço que parte de um aeroporto diferente daquele onde o anterior acabou (pernoita em LGW e o serviço seguinte a
-// partir de LIS, sem posicionamento na escala — pendência de 2026-11-04). Onde se está decide o repouso mínimo (12 h na base,
-// 10 h fora, ORO.FTL.235(a)/(b)), a aclimatação e a pernoita: a app não inventa a viagem que falta — avisa (incerto).
-//   · Só contam os serviços com sítio (as pernas ou a rota: voo e posicionamento); um serviço em terra não diz onde se está.
-//   · Um posicionamento SEM rota (o calendário nem sempre a traz) é uma viagem para sítio desconhecido: do outro lado dele
-//     não se avisa (revisão independente, E3 — dizia "falta um posicionamento" com ele na escala).
-//   · Até 7 dias de intervalo: depois de férias ou de folgas longas já não se avisa.
-// `targets`: os serviços a verificar no dia `date`. `after`: também o serviço seguinte (a Simulação; na importação cada dia
-// avisa o que lhe chega de trás, para o mesmo aviso não aparecer em dois dias).
-const PLACE_GAP_DAYS = 7;
-const apsOfSvc = (s) => {
-  const legs = Array.isArray(s && s.legs) ? s.legs.filter(Boolean) : [];
-  const up = (x) => (x ? String(x).trim().toUpperCase() : null);
-  let dep = legs.length ? up(legs[0].dep) : null, arr = legs.length ? up(legs[legs.length - 1].arr) : null;
-  if (!dep || !arr) { const r = String((s && s.route) || '').split(/[^A-Za-z]+/).filter(Boolean).map(up); if (r.length >= 2) { dep = dep || r[0]; arr = arr || r[r.length - 1]; } }
-  return dep && arr ? { dep, arr } : null;
-};
-export const placeGapIssues = (duties, date, targets, { after = false } = {}) => {
-  const clk = (t) => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(t || '')); return m ? (+m[1]) * 60 + (+m[2]) : null; };
-  const seq = [];
-  for (let k = -PLACE_GAP_DAYS; k <= PLACE_GAP_DAYS; k++) {
-    const iso = addDays(date, k), x = duties && duties[iso];
-    if (!x || x.deleted) continue;
-    const day = [x, ...(Array.isArray(x.extra) ? x.extra : [])].filter(Boolean)
-      .map((s, i) => ({ s, i, t: clk(s.report_time) ?? clk(s.block_off) ?? 0 })).sort((a, b) => (a.t - b.t) || (a.i - b.i));
-    for (const { s } of day) { const ap = apsOfSvc(s); if (ap) seq.push({ iso, s, ...ap }); else if ((s.kind || 'flight') === 'positioning') seq.push({ iso, s, unknown: true }); }
-  }
-  const out = [];
-  for (const tg of targets || []) {
-    const i = seq.findIndex((e) => e.s === tg);
-    if (i < 0) continue;
-    const me = seq[i], prev = seq[i - 1], next = seq[i + 1];
-    if (me.unknown) continue;
-    if (prev && !prev.unknown && prev.arr !== me.dep) out.push({ type: 'placeGap', date, dep: me.dep, from: prev.arr, prevIso: prev.iso, rule: SIM_RULES.placeGap });
-    if (after && next && !next.unknown && next.dep !== me.arr) out.push({ type: 'placeGap', next: true, date, arr: me.arr, dep: next.dep, nextIso: next.iso, rule: SIM_RULES.placeGap });
-  }
-  return out;
-};
+// A regra vive em data/placeGap.js (pura; o repouso de data/today.js usa a mesma). Aqui junta-se o artigo.
+export const placeGapIssues = (duties, date, targets, opts = {}) => placeGaps(duties, date, targets, opts).map((x) => ({ ...x, rule: SIM_RULES.placeGap }));
 
 export const simulateDuty = (sim, ctx = {}) => {
   const { duties = {}, dayLog = {}, postFlightMin = 0, isPilot = false, base = null, baseAt = null, cabinGapMin, splitAdminMin, disruptiveType = null, tap = null, mode = 'replace' } = ctx || {};
@@ -239,6 +221,8 @@ export const simulateDuty = (sim, ctx = {}) => {
   // avisos que caem no dia (não os que "este serviço cria", que aparecem no dia de cada um). Pode trazer já calculados o dayLog
   // da escala (`hypoLog`) e os avisos de recuperação (`recovery`): calculam-se uma vez por leitura, não uma por candidato.
   const { scope = 'sim', hypoLog: hypoLogIn = null, recovery: recoveryIn = null, restLine = null } = ctx || {};
+  // Os códigos que a app não conhece ({ dia: [{ code, start, end }] }): contam com as duas pontas em todas as contas (camada 2).
+  const unknown = (ctx && ctx.unknown) || null;
   // `memo` (um Map de quem chama, o formulário): o que só depende da escala GUARDADA — os avisos de recuperação e os problemas
   // dos limites TAP sem o simulado — calcula-se uma vez e reaproveita-se a cada tecla (eram ~20 dos ~45 ms de cada conta com
   // um ano de escala TAP). Quem chama deita-o fora quando a escala ou o perfil mudam.
@@ -253,7 +237,10 @@ export const simulateDuty = (sim, ctx = {}) => {
   const list = [hd, ...((hd.extra && hd.extra.length) ? hd.extra : [])];
   const me = list.find((x) => x && x[SIM]) || hd;
   const opts = { postFlightMin, isPilot, base: baseOf(date), date, cabinGapMin, splitAdminMin, duties: hypo };
-  const day = dayFtlFromDuties(list, { ...opts, withBlocks: true });
+  // Um serviço do dia a que faltam horas (ponto 3, ftl/unknownCodes.js): na importação (`scope: 'day'`) o dia verifica-se na
+  // mesma — entra incerto, com o que falta; no formulário da Simulação fica como estava (ainda se está a escrever).
+  const missing = scope === 'day' ? incompleteSpans({ [date]: hd }, { postFlightMin }) : [];
+  const day = dayFtlFromDuties(list, { ...opts, withBlocks: true }) || (missing.length ? { psv: null, blocks: [], incomplete: true } : null);
   if (!day) return empty;   // reserva (ORO.FTL.230: disponibilidade, não serviço) ou sem horas
   const R = SIM_RULES;
   const issues = [];
@@ -267,18 +254,19 @@ export const simulateDuty = (sim, ctx = {}) => {
   // Sem a hora de apresentação (o calendário nem sempre a traz) o PSV não se calcula: incerto, com o que falta. O resto (o tempo
   // de voo, o serviço estimado nos 210) verifica-se na mesma (bloco 4: a importação usa esta verificação).
   if (list.some((s) => s && !s.report_time && isFdpDuty(s))) add('unc', { type: 'noReport', date, rule: R.fdp });
+  else if (missing.length) add('unc', { type: 'missingTimes', date, why: missing[0].why, rule: R.limit });
   if (psvSim && psvSim.over) add('bad', { type: 'fdp', excess: psvSim.excess || null, rule: R.fdp });
   else if (psvSim && psvSim.uncertain) add('unc', { type: 'fdpUncertain', unknowns: psvSim.unknowns || [], rule: R.fdp });
   if (day.psv && day.psv !== psvSim && day.psv.over) add('bad', { type: 'fdpOther', date, rule: R.fdp });   // outro serviço do dia
   // Outro serviço do dia cujas pernas não batem certo (2026-11-11): o dia entra na escala, mas diz-se (o PSV dele é incerto).
   if (!(psvSim && psvSim.uncertain && (psvSim.unknowns || []).includes('legTimes')) && (day.blocks || []).some((b) => b.psv && b.psv !== psvSim && (b.psv.unknowns || []).includes('legTimes'))) add('unc', { type: 'fdpUncertain', unknowns: ['legTimes'], rule: R.fdp });
   if (psvSim && psvSim.sbOver) add('bad', { type: 'standby', kind: 'maxStandby', rule: R.standby });     // standby fora do aeroporto > 16 h
-  const d = ftlForDuty(me, opts);
+  const d = day.incomplete ? null : ftlForDuty(me, opts);
   if (d && d.isFdp && d.fdp && d.fdp.stdbyOver) add('bad', { type: 'standby', kind: d.fdp.stdbyOverKind, rule: R.standby });   // CS FTL.1.225
   const fatigue = d && d.isFdp ? fatigueFromDuty(d) : null;
 
   // ── Os outros dias que o simulado muda (dayLog com e sem ele, os mesmos cálculos do Início) ──
-  const rc = { postFlightMin, isPilot, base, baseAt, cabinGapMin, splitAdminMin };
+  const rc = { postFlightMin, isPilot, base, baseAt, cabinGapMin, splitAdminMin, unknown };
   let hypoLog = hypoLogIn;
   if (!hypoLog) {
     const logNoDay = { ...dayLog }; delete logNoDay[date];
@@ -300,19 +288,29 @@ export const simulateDuty = (sim, ctx = {}) => {
   // Com a linha do repouso já calculada (a importação, `scope: 'day'`): o serviço é o principal do dia nessa escala.
   const ra = (scope === 'day' && restLine
     ? restAround(duties, (s, iso) => iso === date && s === duties[date], { postFlightMin, isPilot, base, baseAt, svcs: restLine.svcs, est: restLine.est })
-    : restAround(hypo, (s) => !!(s && s[SIM]), { postFlightMin, isPilot, base, baseAt, from: addDays(date, -15), to: addDays(date, 15) })) || { before: null, after: null, need: null };
+    : restAround(hypo, (s) => !!(s && s[SIM]), { postFlightMin, isPilot, base, baseAt, unknown, from: addDays(date, -15), to: addDays(date, 15) })) || { before: null, after: null, need: null };
+  // O sítio (ver placeGapIssues, mais abaixo): calcula-se já, porque um repouso incerto pelo buraco de sítio ('placeGap',
+  // data/today.js) é o MESMO aviso — diz-se uma vez. Na importação cada dia avisa só o que lhe chega de trás.
+  const dayScope = scope === 'day';
+  const gapIssues = placeGapIssues(hypo, date, dayScope ? list : [me], { after: !dayScope });
   for (const [type, r] of [['restBefore', ra.before], ['restAfter', ra.after]]) {
     if (!r || (r.status !== 'bad' && r.status !== 'unc')) continue;
+    if (r.kind === 'placeGap' && (type === 'restAfter' ? (dayScope || gapIssues.some((g) => g.next)) : gapIssues.some((g) => !g.next))) continue;
     add(r.status, { type, ...r, rule: r.nightsRequired && r.actualMin >= r.requiredMin ? R.rotationNights : R[type] });
   }
 
+  // O mínimo a seguir fica incerto por um código que a app não conhece (data/today.js needAhead) e nenhum aviso do repouso o
+  // diz (não há serviço seguinte, ou o código vem antes de o mínimo se cumprir): diz-se aqui — não é "certo".
+  if (!dayScope && ra.need && ra.need.uncertain && ra.need.why === 'unknownCode' && !issues.some((i) => (i.type === 'restAfter' || i.type === 'restBefore') && i.kind === 'unknownCode')) {
+    add('unc', { type: 'needUnc', unkCode: ra.need.unkCode || null, unkIso: ra.need.unkIso, unkWhy: ra.need.unkWhy || null, unkGlued: !!ra.need.unkGlued, rule: R.restAfter });
+  }
+
   // ── Recuperação: os avisos que o simulado cria, e os que caem no próprio dia ──
-  const rcx = { postFlightMin, base, baseAt, disruptiveType };
+  const rcx = { postFlightMin, base, baseAt, disruptiveType, unknown };
   const rkey = (x) => `${x.type}|${x.date || ''}|${x.month || ''}`;
   // Só os dias à volta (±62 dias: o 168 h, o 60 h e os dois meses civis à volta do dia para os "2 dias locais 2× por mês"). O
   // que a janela corta nas pontas aparece igual com e sem o simulado, e cai no filtro dos avisos novos.
   const near = (dd) => { const lo = addDays(date, -62), hi = addDays(date, 62), o = {}; for (const k in dd) if (k >= lo && k <= hi) o[k] = dd[k]; return o; };
-  const dayScope = scope === 'day';
   const baseKeys = dayScope ? null : memoGet(`rec|${date}`, () => new Set(recoveryIssues(near(duties), rcx).map(rkey)));
   for (const x of (dayScope && recoveryIn ? recoveryIn : recoveryIssues(near(hypo), rcx))) {
     if (dayScope ? x.date !== date : (baseKeys.has(rkey(x)) && x.date !== date)) continue;
@@ -321,7 +319,7 @@ export const simulateDuty = (sim, ctx = {}) => {
   }
 
   // ── O sítio: a partida não bate com a última chegada (ver placeGapIssues) ──
-  for (const it of placeGapIssues(hypo, date, dayScope ? list : [me], { after: !dayScope })) add('unc', it);
+  for (const it of gapIssues) add('unc', it);
 
   // ── Noites seguidas: 4 setores por serviço (CS FTL.1.205(a)(1)) ──
   // "Consecutive night duties": a FAQ da EASA 47617 — "'Consecutive' is referring to two night duties only separated by a rest
@@ -333,14 +331,14 @@ export const simulateDuty = (sim, ctx = {}) => {
   // reserva e a assistência em casa pelo meio são dúvida (não são repouso, ORO.FTL.105(21), nem claramente serviço).
   // Só se o próprio serviço for noturno é que se olha para os vizinhos (poupa o cálculo de 9 dias a cada serviço de dia).
   // A mesma regra que o Início usa para o serviço de hoje (nightSectorIssues, mais abaixo).
-  for (const { level, it } of nightSectorIssues(hypo, date, { postFlightMin, isPilot, cabinGapMin, splitAdminMin }, baseOf, (f) => f.sim)) add(level, it);
+  for (const { level, it } of nightSectorIssues(hypo, date, { postFlightMin, isPilot, cabinGapMin, splitAdminMin }, baseOf, (f) => f.sim, unknown)) add(level, it);
 
   // ── ORO.FTL.210: todos os períodos que contêm o dia ──
   const windows = limitsAround(hypoLog, date);
   for (const w of windows) {
     if (w.over) add('bad', { type: 'limit', key: w.key, id: w.id, days: w.days || null, doneMin: w.doneMin, limitMin: w.limitMin, overMin: w.overMin, from: w.from, to: w.to, rule: R.limit });
     // Com serviços sem apresentação no período, o serviço é um mínimo: excede se o mínimo passa; se só o máximo passa, incerto.
-    else if (w.uncertain) add('unc', { type: 'limitUnc', key: w.key, id: w.id, doneMin: w.doneMin, doneMaxMin: w.doneMaxMin, limitMin: w.limitMin, estDays: w.estDays, readDays: w.readDays || 0, from: w.maxFrom, to: w.maxTo, rule: R.limit });
+    else if (w.uncertain) add('unc', { type: 'limitUnc', key: w.key, id: w.id, doneMin: w.doneMin, doneMaxMin: w.doneMaxMin, limitMin: w.limitMin, estDays: w.estDays, readDays: w.readDays || 0, unkDays: w.unkDays || 0, unkCodes: w.unkCodes || [], missDays: w.missDays || 0, from: w.maxFrom, to: w.maxTo, rule: R.limit });
   }
   const tightest = {};
   for (const w of windows) if (!tightest[w.key] || w.ratio > tightest[w.key].ratio) tightest[w.key] = w;
@@ -414,6 +412,15 @@ const LIMIT_TXT = {
   voo: { '28d': ['em 28 dias', 'in 28 days', 100], year: ['no ano civil', 'in the calendar year', 900], '12m': ['em 12 meses', 'in 12 months', 1000] },
 };
 
+// O que a escala não diz à volta de um repouso: um código que a app não conhece, ou um serviço a que faltam horas (`unkWhy`).
+const unkWhat = (it, lang) => {
+  const d = ddmm(it.unkIso), en = lang === 'en';
+  if (it.unkWhy === 'noStart') return en ? `on ${d} the roster has a duty without a start time` : `a ${d} a escala tem um serviço sem hora de início`;
+  if (it.unkWhy === 'noTimes') return en ? `on ${d} the roster has a duty without times` : `a ${d} a escala tem um serviço sem horas`;
+  if (it.unkWhy === 'noEnd') return en ? `on ${d} the roster has a duty without an end time` : `a ${d} a escala tem um serviço sem hora de fim`;
+  return en ? `on ${d} the roster has a code the app does not know (${it.unkCode})` : `a ${d} a escala tem um código que a app não conhece (${it.unkCode})`;
+};
+
 export const issueText = (it, lang = 'pt', simDate = null) => {
   const en = lang === 'en';
   const l = (pt, e) => (en ? e : pt);
@@ -422,11 +429,24 @@ export const issueText = (it, lang = 'pt', simDate = null) => {
     case 'fdpOther': return it.date === simDate ? l('o outro serviço do dia excede o PSV', 'the other duty that day is over the FDP') : l(`o PSV de ${ddmm(it.date)} passa a exceder`, `the FDP on ${ddmm(it.date)} goes over`);
     case 'fdpUncertain': return l(`falta saber ${unknownsText(it.unknowns, 'pt')}`, `missing ${unknownsText(it.unknowns, 'en')}`);
     case 'noReport': return l('falta a hora de apresentação: o PSV não se calcula', 'missing the report time: the FDP cannot be computed');
+    case 'missingTimes': return it.why === 'noEnd' ? l('falta a hora de fim: o dia entra incerto (conta, no máximo, até ao serviço seguinte ou 24 h)', 'missing the end time: the day goes in as uncertain (it counts, at most, until the next duty or 24 h)')
+      : it.why === 'noStart' ? l('falta a hora de início: o dia entra incerto (conta, no máximo, desde as 00:00)', 'missing the start time: the day goes in as uncertain (it counts, at most, from 00:00)')
+      : l('faltam as horas: o dia entra incerto (conta, no máximo, o dia inteiro)', 'missing the times: the day goes in as uncertain (it counts, at most, the whole day)');
+    case 'needUnc': return l(`repouso a seguir: o mínimo fica incerto — ${unkWhat(it, 'pt')}`, `rest after: the minimum is uncertain — ${unkWhat(it, 'en')}`);
     case 'standby': return it.kind === 'maxStandby' ? l('standby acima de 16 h', 'standby over 16 h') : it.kind === 'awake' ? l('standby + PSV acima de 18 h acordado', 'standby + FDP over 18 h awake') : l('standby + PSV acima de 16 h', 'standby + FDP over 16 h');
     case 'restBefore':
     case 'restAfter': {
       const who = it.type === 'restBefore' ? l('repouso antes', 'rest before') : l(`repouso antes de ${ddmm(it.nextIso)}`, `rest before ${ddmm(it.nextIso)}`);
       if (it.status === 'unc' && it.kind === 'noReport') return l(`falta a hora de apresentação do serviço de ${ddmm(it.estIso)}`, `missing the report time of the duty on ${ddmm(it.estIso)}`);
+      // O bloco parte de um aeroporto diferente da última chegada (o 1.º serviço com sítio não é o simulado): o mesmo aviso do sítio.
+      if (it.status === 'unc' && it.kind === 'unknownCode') {
+        // O número diz-se pelo que é (data/today.js unkTag): exato, "pelo menos" ou "no máximo".
+        if (it.unkGlued) return l(`${who} ${hm(it.actualMin)} — o mínimo é incerto: ${unkWhat(it, 'pt')}, logo antes do serviço anterior; se fizer parte dele, o repouso mínimo é maior (ORO.FTL.235)`, `${who} ${hm(it.actualMin)} — the minimum is uncertain: ${unkWhat(it, 'en')}, right before the previous duty; if it is part of it, the minimum rest is longer (ORO.FTL.235)`);
+        if (it.unkPrev) return l(`${who} ${hm(it.actualMin)} — o mínimo é incerto: ${unkWhat(it, 'pt')}, antes do serviço anterior; se for um serviço, o repouso entre os dois pode ter sido reduzido e este aumenta pela diferença (CS FTL.1.235(c)(3))`, `${who} ${hm(it.actualMin)} — the minimum is uncertain: ${unkWhat(it, 'en')}, before the previous duty; if it is a duty, the rest between the two may have been reduced and this one is extended by the difference (CS FTL.1.235(c)(3))`);
+        const q = it.unkExact ? ['', ''] : it.unkAtLeast ? ['pelo menos ', 'at least '] : ['no máximo ', 'at most '];
+        return l(`${who}: ${q[0]}${hm(it.actualMin)} — ${unkWhat(it, 'pt')}; ${it.unkWhy ? 'o mínimo depende dessas horas' : 'se for um serviço, muda o repouso e o mínimo'} (ORO.FTL.235)`, `${who}: ${q[1]}${hm(it.actualMin)} — ${unkWhat(it, 'en')}; ${it.unkWhy ? 'the minimum depends on those times' : 'if it is a duty, the rest and its minimum change'} (ORO.FTL.235)`);
+      }
+      if (it.status === 'unc' && it.kind === 'placeGap') return l(`${who}: no máximo ${hm(it.actualMin)} — o serviço de ${ddmm(it.gapPrevIso)} acabou em ${it.gapFrom} e o seguinte parte de ${it.gapDep}; falta um posicionamento na escala?`, `${who}: at most ${hm(it.actualMin)} — the duty on ${ddmm(it.gapPrevIso)} ended in ${it.gapFrom} and the next one departs from ${it.gapDep}; is a positioning missing from the roster?`);
       if (it.status === 'unc' && it.kind === 'noEnd') return l(`falta a hora de fim do serviço de ${ddmm(it.estIso)}: sem ela não se sabe o repouso mínimo a seguir`, `missing the end time of the duty on ${ddmm(it.estIso)}: without it the minimum rest after it is unknown`);
       // As pernas do serviço anterior não batem certo (ftl legsBrokenKind): o mínimo depende das horas certas (2026-11-11).
       // Abaixo do mínimo normal mas com as 12 h (base) / 10 h (fora) do repouso reduzido: só é legal se a companhia o tiver.
@@ -452,6 +472,8 @@ export const issueText = (it, lang = 'pt', simDate = null) => {
     }
     case 'recovery': {
       const u = !it.uncertain ? ''
+        : it.why === 'unknown' ? l(` (depende do código ${it.unkCode || ''} que a app não conhece: se for um serviço, conta)`, ` (depends on code ${it.unkCode || ''}, which the app does not know: if it is a duty, it counts)`)
+        : it.why === 'place' ? l(' (o matinal parte de outro aeroporto: não se sabe se a passagem é na base)', ' (the early start departs from another airport: whether the transition is at home base is unknown)')
         : it.why === 'acclim' ? l(' (depende do fuso a que estás aclimatado)', ' (depends on the time zone you are acclimatised to)')
         : it.why === 'both' ? l(' (depende do tipo de horário e do fuso a que estás aclimatado)', ' (depends on the schedule type and the time zone you are acclimatised to)')
         : l(' (depende do tipo de horário)', ' (depends on the schedule type)');
@@ -465,7 +487,10 @@ export const issueText = (it, lang = 'pt', simDate = null) => {
     case 'placeGap': return it.next
       ? l(`acaba em ${it.arr}, mas o serviço de ${ddmm(it.nextIso)} parte de ${it.dep} — falta um posicionamento na escala?`, `ends in ${it.arr}, but the duty on ${ddmm(it.nextIso)} departs from ${it.dep} — is a positioning missing from the roster?`)
       : l(`parte de ${it.dep}, mas o serviço de ${ddmm(it.prevIso)} acabou em ${it.from} — falta um posicionamento na escala?`, `departs from ${it.dep}, but the duty on ${ddmm(it.prevIso)} ended in ${it.from} — is a positioning missing from the roster?`);
-    case 'nightSectors': return it.doubt && it.why === 'acclim'
+    case 'nightSectors': return it.doubt && it.why === 'unknown'
+      ? l(`${it.sectors} setores à noite: a escala tem um código que a app não conhece (${it.unkCode}) numa noite ao lado — se for um serviço noturno, são noites seguidas (máx. ${it.limit})`,
+        `${it.sectors} sectors at night: the roster has a code the app does not know (${it.unkCode}) on a neighbouring night — if it is a night duty, the nights are consecutive (max ${it.limit})`)
+      : it.doubt && it.why === 'acclim'
       ? l(`${it.sectors} setores à noite: não se sabe a que fuso estás aclimatado (Quadro 1) e, conforme o fuso, um dos serviços é ou não noturno — podem não ser noites seguidas (máx. ${it.limit})`,
         `${it.sectors} sectors at night: your acclimatisation is unknown (Table 1) and, depending on the time zone, one of the duties is or is not a night duty — the nights may not be consecutive (max ${it.limit})`)
       : it.doubt
@@ -484,6 +509,14 @@ export const issueText = (it, lang = 'pt', simDate = null) => {
       const t = (LIMIT_TXT[it.key] || {})[it.id];
       const what = it.key === 'voo' ? l('voo', 'flight') : l('serviço', 'duty');
       const n = it.estDays || 0;
+      // … ou de dias com um serviço a que faltam horas (ponto 3): no máximo o tempo que pode ter ocupado.
+      if (t && it.missDays && !it.unkDays) { const m = it.missDays; return l(`${what} ${hm(it.doneMin)} a ${hm(it.doneMaxMin)} ${t[0]} (máx. ${t[2]} h): ${m === 1 ? '1 dia' : `${m} dias`} com um serviço a que faltam horas (o máximo é uma convenção: até ao serviço seguinte ou 24 h, ou desde as 00:00)`, `${what} ${hm(it.doneMin)} to ${hm(it.doneMaxMin)} ${t[1]} (max ${t[2]} h): ${m === 1 ? '1 day' : `${m} days`} with a duty missing its times (the maximum is a convention: until the next duty or 24 h, or from 00:00)`); }
+      // … ou de dias com um código que a app não conhece (camada 2): no mínimo nada, no máximo a duração do evento.
+      if (t && it.unkDays) {
+        const u = it.unkDays, cs = (it.unkCodes || []).join(', ');
+        return l(`${what} ${hm(it.doneMin)} a ${hm(it.doneMaxMin)} ${t[0]} (máx. ${t[2]} h): ${u === 1 ? '1 dia' : `${u} dias`} com um código que a app não conhece${cs ? ` (${cs})` : ''}${n > u ? ' e serviços sem hora de apresentação' : ''}`,
+          `${what} ${hm(it.doneMin)} to ${hm(it.doneMaxMin)} ${t[1]} (max ${t[2]} h): ${u === 1 ? '1 day' : `${u} days`} with a code the app does not know${cs ? ` (${cs})` : ''}${n > u ? ' and duties without a report time' : ''}`);
+      }
       // O incerto vem (só) de dias com duas leituras — um PSV repartido ou dois, a assistência até à apresentação ou não.
       if (t && it.readDays && it.readDays >= n) return l(`${what} ${hm(it.doneMin)} a ${hm(it.doneMaxMin)} ${t[0]} (máx. ${t[2]} h): depende de como se lê o tempo em terra de ${n === 1 ? '1 dia' : `${n} dias`} (intervalo ou repouso)`, `${what} ${hm(it.doneMin)} to ${hm(it.doneMaxMin)} ${t[1]} (max ${t[2]} h): it depends on how the ground time of ${n === 1 ? '1 day' : `${n} days`} is read (break or rest)`);
       return t ? l(`${what} ${hm(it.doneMin)} a ${hm(it.doneMaxMin)} ${t[0]} (máx. ${t[2]} h): falta a hora de apresentação de ${n === 1 ? '1 serviço' : `${n} serviços`}`,

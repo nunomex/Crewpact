@@ -77,7 +77,10 @@ export const monthAudit = (duties = {}, { ym, ae = null, cat = null, fleet = nul
     if (registered.has(key) || seen.has(key)) continue;   // já registado / duplicado → não repete
     seen.add(key);
     const eur = (typeof ae.monthExtras === 'function') ? r2((ae.monthExtras(cat, { [c.type]: 1 }, { ym, index: ae.indexFactor ? ae.indexFactor(ym) : 1 }) || {}).total) : 0;
-    items.push({ id: key, kind: c.type, date, clause: c.clause || null, eur: eur > 0 ? eur : null, provaId: null });
+    // Um candidato INCERTO (a correção das horas vista depois do dia do serviço — data/disruption.js, 'seenLater') aparece, mas o
+    // seu valor não é dinheiro certo: fica em `eurMax` e não entra no total.
+    if (c.uncertain) items.push({ id: key, kind: c.type, date, clause: c.clause || null, eur: null, eurMax: eur > 0 ? eur : null, uncertain: true, provaId: null });
+    else items.push({ id: key, kind: c.type, date, clause: c.clause || null, eur: eur > 0 ? eur : null, provaId: null });
   }
 
   items.sort((a, b) => ((b.eur ?? b.eurMin ?? 0) - (a.eur ?? a.eurMin ?? 0)));

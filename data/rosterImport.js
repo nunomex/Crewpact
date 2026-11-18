@@ -31,20 +31,49 @@ export const missingOf = (s) => {
 // Estado de um candidato do import (à prova de falha), SEM dinheiro — partilhado pela folha "Confirmar
 // import" e pelo 7.º passo da configuração (2026-11-03), para as duas nunca divergirem:
 //   removed = cancelado (ausência no feed)   ·   info  = não-voo (entra, sem per-diem)
-//   fix     = FICA DE FORA até ser corrigido: voo sem rota ou com aeroporto desconhecido (reason 'route'), ou um serviço do dia
+//   unc     = ENTRA INCERTO (sessão Fable 5.2, ponto 3, 2026-11-18 — antes 'fix': ficava de fora até ser corrigido à mão, e o dia
+//             perdia-se; pela regra "só o calendário" nada se corrige à mão): o motor conta-o com as duas pontas
+//             (ftl/unknownCodes.js) e o que falta tem de vir do calendário. Voo sem rota ou com aeroporto desconhecido (reason 'route'), ou um serviço do dia
 //             sem horas que a lei precisa — não-voo sem início/fim ('start'/'end'), voo sem as horas das pernas ('times')
 //   ready   = voo com rota reconhecida → entra (e conta para o per-diem)
 export const routeAirports = (route) => String(route || '').split(/[^A-Za-z]+/).map((x) => x.toUpperCase()).filter(Boolean);
+// UMA RELEITURA QUE PERDEU DADOS (2.ª revisão independente, achado 2). O candidato vem sem uma hora que o serviço GUARDADO tem
+// (o PDF não a deixou ler, o evento passou a "dia inteiro"): a leitura é pior do que a escala guardada, e não a substitui —
+// 'keep': fica o que estava. A regra "só o calendário" manda não corrigir à mão; não manda aceitar uma leitura que perdeu horas.
+export const lostData = (c, stored) => {
+  if (!c || !stored || stored.deleted) return false;
+  const d = c.duty || {};
+  const cand = [{ ...d, kind: c.kind || d.kind }, ...(Array.isArray(d.extra) ? d.extra : [])];
+  const have = [stored, ...(Array.isArray(stored.extra) ? stored.extra : [])];
+  return cand.some((s) => missingOf(s)) && !have.some((s) => missingOf(s));
+};
+// O ARQUIVO DAS MUDANÇAS (a prova do SNC/RDP e das correções das horas — data/disruption.js, data/ftlRecord.js): a entrada de uma
+// mudança confirmada, ou null. Só o que se lê dos dois lados: um serviço guardado com apresentação e um candidato com
+// apresentação e fim. Um candidato a que faltam horas (ou que fica de fora) não é prova de nada (2.ª revisão, achado 1: um
+// escritório sem fim que passava à frente do voo do dia criava um RDP "certo").
+export const archiveEntry = (c, prev, detectedAt, src) => {
+  if (!c || c.action === 'delete' || (c.status !== 'changed' && c.status !== 'conflict')) return null;
+  if (!prev || prev.deleted || !prev.report_time) return null;
+  const d = c.duty || {};
+  if (c.keep || !d.report_time || !d.block_on) return null;
+  return {
+    id: `rl${Date.now().toString(36)}`, dutyDate: d.duty_date, detectedAt, source: src,
+    route: d.route || prev.route || null,
+    before: { report: prev.report_time || null, end: prev.block_on || null, sectors: prev.sectors ?? null, kind: prev.kind || 'flight' },
+    after: { report: d.report_time || null, end: d.block_on || null, sectors: d.sectors ?? null, kind: c.kind || 'flight' },
+  };
+};
 export const candidateKind = (c) => {
   if (c.action === 'delete') return { kind: 'removed', badAp: null, reason: null };
+  if (c.keep) { const d0 = c.duty || {}; const m0 = [{ ...d0, kind: c.kind || d0.kind }, ...(Array.isArray(d0.extra) ? d0.extra : [])].map(missingOf).find(Boolean); return { kind: 'keep', badAp: null, reason: m0 || null }; }
   const d = c.duty || {};
   const svcs = [{ ...d, kind: c.kind || d.kind }, ...(Array.isArray(d.extra) ? d.extra : [])];
-  for (const s of svcs) { const m = missingOf(s); if (m) return { kind: 'fix', badAp: null, reason: m }; }
+  for (const s of svcs) { const m = missingOf(s); if (m) return { kind: 'unc', badAp: null, reason: m }; }
   if ((c.kind || d.kind) !== 'flight') return { kind: 'info', badAp: null, reason: null };
   const aps = routeAirports(d.route);
-  if (aps.length < 2) return { kind: 'fix', badAp: null, reason: 'route' };
+  if (aps.length < 2) return { kind: 'unc', badAp: null, reason: 'route' };
   const bad = aps.find((a) => airportCoord(a) == null);
-  return bad ? { kind: 'fix', badAp: bad, reason: 'route' } : { kind: 'ready', badAp: null, reason: null };
+  return bad ? { kind: 'unc', badAp: bad, reason: 'route' } : { kind: 'ready', badAp: null, reason: null };
 };
 
 // Pernoita = NOITE FORA DA BASE (Art. 39 pilotos / Art. 56 cabine): uma duty de VOO acaba
@@ -267,7 +296,7 @@ const dayOfCandidate = (c, existing = null) => {
 // VERIFICAÇÃO (auditoria A-254, bloco 4): cada candidato passa pela MESMA verificação da Simulação (simulateDuty — PSV,
 // repouso antes e depois, recuperação, noites seguidas, todos os períodos do 210), numa escala que já tem os OUTROS
 // candidatos desta leitura (na 1.ª leitura não há nada guardado, e 24 dias seguidos davam 0 avisos) e com o pós-voo do perfil.
-export const buildImportCandidates = ({ activities = [], nonflights = [], duties = {}, dayLog = {}, window = null, base = null, baseAt = null, isPilot = false, cabinGapMin, splitAdminMin, postFlightMin = 0 } = {}) => {
+export const buildImportCandidates = ({ activities = [], nonflights = [], duties = {}, dayLog = {}, window = null, base = null, baseAt = null, isPilot = false, cabinGapMin, splitAdminMin, postFlightMin = 0, unknown = null } = {}) => {
   const bAt = (date) => (typeof baseAt === 'function' ? baseAt(date) : base);
   const out = [];
   const inDates = new Set();
@@ -298,8 +327,9 @@ export const buildImportCandidates = ({ activities = [], nonflights = [], duties
     const ex = duties[c.duty.duty_date];
     c.exists = !!(ex && !ex.deleted);
     if (c.exists) { const cls = classify(ex, c.duty); c.status = cls.status; c.diff = cls.fields; c.selected = false; }
+    c.keep = c.exists && lostData(c, ex);   // a leitura perdeu horas que a escala guardada tem → fica o guardado
   }
-  verifyCandidates(out, { duties, dayLog, base, baseAt, isPilot, cabinGapMin, splitAdminMin, postFlightMin });
+  verifyCandidates(out, { duties, dayLog, base, baseAt, isPilot, cabinGapMin, splitAdminMin, postFlightMin, unknown });
   // CANCELADOS (Fase 4): duties source=calendar, dentro da janela, que sumiram do calendário.
   // AUSÊNCIA é sinal FRACO (pode ser atraso/glitch do feed) e apagar é IRREVERSÍVEL (sem tombstone)
   // → vêm POR MARCAR (selected: false). O utilizador opta-in serviço-a-serviço (toca para apagar).
@@ -333,7 +363,7 @@ export const importSections = (cands = []) => {
   const by = {};
   for (const c of cands) {
     if (!c || c.status === 'same') continue;
-    const key = candidateKind(c).kind === 'fix' ? 'fix' : (c.action === 'delete' ? 'removed' : SECTION_OF[c.status]);
+    const key = (candidateKind(c).kind === 'unc' || candidateKind(c).kind === 'keep') ? 'fix' : (c.action === 'delete' ? 'removed' : SECTION_OF[c.status]);   // (a secção de cima: os incertos, a que falta um dado)
     if (!key) continue;
     (by[key] = by[key] || []).push(c);
   }
@@ -371,22 +401,23 @@ export const diagSummary = (items = []) => {
 // nem é um cancelado). Escreve em cada candidato o `prospect` e, nos novos, o estado 'warn'/'ok'. Corre na leitura e OUTRA VEZ
 // quando um candidato é corrigido na folha (risco R8 do bloco 4: o corrigido entrava sem ser verificado com os outros, e os
 // outros não viam o repouso ou os limites que ele muda). Devolve a mesma lista.
-export const verifyCandidates = (out = [], { duties = {}, dayLog = {}, base = null, baseAt = null, isPilot = false, cabinGapMin, splitAdminMin, postFlightMin = 0 } = {}) => {
-  const rc = { postFlightMin, isPilot, base, baseAt, cabinGapMin, splitAdminMin };
+// `unknown` = os códigos que a app não conhece nesta leitura e fora da janela dela (camada 2): contam com as duas pontas.
+export const verifyCandidates = (out = [], { duties = {}, dayLog = {}, base = null, baseAt = null, isPilot = false, cabinGapMin, splitAdminMin, postFlightMin = 0, unknown = null } = {}) => {
+  const rc = { postFlightMin, isPilot, base, baseAt, cabinGapMin, splitAdminMin, unknown };
   for (const c of out) {
     if (c.action === 'delete') continue;
     c.prospect = null;
     if (!c.exists && c.status === 'warn') c.status = 'ok';
   }
-  const applies = out.filter((c) => c.action !== 'delete' && c.status !== 'same' && candidateKind(c).kind !== 'fix');
+  const applies = out.filter((c) => c.action !== 'delete' && c.status !== 'same' && !c.keep);   // (os incertos também: entram, e os outros dias veem-nos — ponto 3)
   if (applies.length) {
     const cum = { ...duties };
     for (const c of applies) cum[c.duty.duty_date] = dayOfCandidate(c, duties[c.duty.duty_date]);
     // Todos entram juntos: verifica-se cada DIA na escala completa (scope 'day'), com o dayLog e os avisos de recuperação dela
     // calculados uma só vez (uma leitura de 12 meses tem centenas de candidatos).
     const cumLog = reconcileDayLog(cum, dayLog, rc);
-    const recovery = recoveryIssues(cum, { postFlightMin, base, baseAt, disruptiveType: null });
-    const restLine = restTimeline(cum, { postFlightMin, isPilot, base, baseAt });
+    const recovery = recoveryIssues(cum, { postFlightMin, base, baseAt, disruptiveType: null, unknown });
+    const restLine = restTimeline(cum, { postFlightMin, isPilot, base, baseAt, unknown });
     for (const c of applies) {
       const date = c.duty.duty_date;
       const sim = { duty_date: date, ...dayOfCandidate(c, duties[date]) };
@@ -399,7 +430,7 @@ export const verifyCandidates = (out = [], { duties = {}, dayLog = {}, base = nu
     const applied = applies.map((c) => c.duty.duty_date).sort();
     const appliedSet = new Set(applied);
     const rkey = (x) => `${x.type}|${x.date || ''}|${x.month || ''}`;
-    const baseRec = new Set(recoveryIssues(duties, { postFlightMin, base, baseAt, disruptiveType: null }).map(rkey));
+    const baseRec = new Set(recoveryIssues(duties, { postFlightMin, base, baseAt, disruptiveType: null, unknown }).map(rkey));
     const baseLog = reconcileDayLog(duties, dayLog, rc);
     const orphans = recovery.filter((x) => x.date && !appliedSet.has(x.date) && !baseRec.has(rkey(x)))
       .map((x) => { const { type: kind, ...y } = x; return { ...y, level: x.uncertain ? 'unc' : 'bad', type: 'recovery', kind, rule: SIM_RULES[kind] || 'ORO.FTL.235' }; });

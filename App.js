@@ -248,7 +248,7 @@ export default function App() {
   const saveRosterUnknown = (win, list) => setRosterUnknown((prev) => {
     const o = {};
     for (const k in prev) if (!win || k < win.start || k > win.end) o[k] = prev[k];
-    for (const u of list || []) if (u && u.dateISO) (o[u.dateISO] || (o[u.dateISO] = [])).push({ code: u.code, title: u.title, start: u.start || null, end: u.end || null });
+    for (const u of list || []) if (u && u.dateISO) (o[u.dateISO] || (o[u.dateISO] = [])).push({ code: u.code, title: u.title, start: u.start || null, end: u.end || null, ...(u.endISO ? { endISO: u.endISO } : {}) });
     return o;
   });
   const addAeEvents = (list) => setAeEvents((prev) => [
@@ -906,10 +906,11 @@ export default function App() {
   // (não toca em registos manuais nem nos derivados existentes; ref igual = no-op).
   useEffect(() => {
     if (!loadedUserId || !dutiesHydrated.current) return;
-    setDayLog(prev => reconcileDayLog(duties, prev, { postFlightMin, isPilot, base, baseAt: homeBaseAt, cabinGapMin, splitAdminMin }));
+    // … e os códigos que a app não conhece (camada 2): contam para os limites com as duas pontas (ftl/unknownCodes.js).
+    setDayLog(prev => reconcileDayLog(duties, prev, { postFlightMin, isPilot, base, baseAt: homeBaseAt, cabinGapMin, splitAdminMin, unknown: rosterUnknown }));
     // deps em profile.* (não na const postFlightMin, declarada ABAIXO — a dep array avalia
     // no render = TDZ); company muda a resolução OM/assumido → também é dep.
-  }, [duties, loadedUserId, profile?.postFlightMin, profile?.company]); // isPilot/postFlightMin lidos por closure
+  }, [duties, rosterUnknown, loadedUserId, profile?.postFlightMin, profile?.company]); // isPilot/postFlightMin lidos por closure
 
   // Sincronizar pendentes: a cada alteração com pendentes e ao voltar ao foreground.
   useEffect(() => {

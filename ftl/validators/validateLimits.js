@@ -1,6 +1,6 @@
 // Validação dos limites cumulativos (ORO.FTL.210) — serviço + voo, em minutos inteiros.
 import { DUTY_WINDOWS, FLIGHT_WINDOWS } from '../rules/flightTimeRules';
-import { sumWindowDaysMin, sumCalendarYearMin, entryMin, nextMin, dayMin, windowResult } from '../calculators/cumulativeCalculator';
+import { sumWindowDaysMin, sumCalendarYearMin, entryMin, nextMin, dayMin, windowResult, maxExtraIn, maxExtraRange, uncFields, hasMax, maxOf } from '../calculators/cumulativeCalculator';
 import { computeFlightTime } from '../calculators/flightTimeCalculator';
 import { isoDay } from '../utils/time';
 
@@ -10,15 +10,29 @@ export const spillsToNextDay = (dayLog, ref, key) => nextMin(dayLog[isoDay(ref)]
 export const nextDayOf = (ref) => { const t = new Date(ref); t.setDate(t.getDate() + 1); return t; };
 // `from`/`to` (ISO): as datas do período escolhido — o que acaba hoje ou, se o de amanhã pesar mais, o de amanhã (em empate, o de hoje).
 // O Início diz-as no porquê das horas de 7 dias (Q3 de design/topo-porque-2.html, 2026-11-14). Os números não mudam.
+// (Sessão Fable 5.2, 2026-11-17.) Cada período leva também o MÁXIMO possível: se só ele passa o limite → `uncertain`, com
+// `doneMaxMin` e os dias que o fazem (`estDays`; `unkDays`/`unkCodes` = os dos códigos novos) — como o limitsAround. Antes o
+// período que acaba hoje (o "Dentro dos limites?" do Início) só via o mínimo.
 export const computeDutyTime = (dayLog = {}, ref = new Date()) => {
   const spill = spillsToNextDay(dayLog, ref, 'servico');
+  const unkSpill = !spill && !!(dayLog[isoDay(ref)] && dayLog[isoDay(ref)].unkSpill);
   return DUTY_WINDOWS.map((w) => {
     const today = sumWindowDaysMin(dayLog, 'servico', w.days, ref);
     const nx = spill ? nextDayOf(ref) : null;
     const tomorrow = nx ? sumWindowDaysMin(dayLog, 'servico', w.days, nx) : 0;
     const end = nx && tomorrow > today ? nx : ref;
     const start = new Date(end); start.setDate(start.getDate() - (w.days - 1));
-    return { ...windowResult(w, 'servico', Math.max(today, tomorrow)), from: isoDay(start), to: isoDay(end) };
+    const out = { ...windowResult(w, 'servico', Math.max(today, tomorrow)), from: isoDay(start), to: isoDay(end) };
+    if (out.over) return out;
+    const ends = [[ref, today]];
+    if (nx) ends.push([nx, tomorrow]);
+    if (unkSpill) { const nu = nextDayOf(ref); ends.push([nu, sumWindowDaysMin(dayLog, 'servico', w.days, nu)]); }   // o código que passa a meia-noite
+    let worst = null;
+    for (const [e, sum] of ends) {
+      const m = maxExtraIn(dayLog, w.days, e, 'servico');
+      if (m.est && sum + m.x > out.limitMin && (!worst || sum + m.x > worst.mx)) worst = { mx: sum + m.x, m };
+    }
+    return worst ? { ...out, ...uncFields(worst.mx, worst.m) } : out;
   });
 };
 
@@ -65,21 +79,37 @@ export const limitsAround = (dayLog = {}, date) => {
     const out = { ...windowResult(w, key, bestSum), from: isos[bestK], to: isos[bestK + N - 1] };
     // Serviços sem apresentação (bloco 4): o serviço deles é um MÍNIMO; com o MÁXIMO possível (servicoMaxMin) um período que
     // não passa pode passar → "incerto" (nem "dentro" nem "excede" inventados). Só o serviço — o tempo de voo é exato.
-    if (key !== 'servico' || out.over) return out;
-    const est = ents.map((e) => (e && typeof e.servicoMaxMin === 'number' ? 1 : 0));
+    if (out.over) return out;
+    // (Sessão Fable 5.2.) O mesmo para o tempo de voo que a escala não diz (`vooMaxMin`: um código que a app não conhece, um PSV
+    // sem horas), e os dias dizem-se pelo que são: com um código novo (`unkDays`, `unkCodes`), ou com um serviço a que faltam
+    // horas (`missDays`).
+    const est = ents.map((e) => (hasMax(e, key) ? 1 : 0));
     // (o máximo também pode vir das DUAS LEITURAS de um dia — um PSV repartido ou dois, a assistência até à apresentação ou
     // não: `servicoMaxReadings`, ftl/index.js — e não de uma apresentação em falta: diz-se qual é o caso, `readDays`)
-    const rdg = ents.map((e) => (e && typeof e.servicoMaxMin === 'number' && e.servicoMaxReadings ? 1 : 0));
+    const rdg = ents.map((e) => (key === 'servico' && hasMax(e, key) && e.servicoMaxReadings ? 1 : 0));
     if (!est.some(Boolean)) return out;
-    const mxv = ents.map((e, k) => (est[k] ? vals[k] + e.servicoMaxMin - entryMin(e, key) : vals[k]));
+    const mxv = ents.map((e, k) => (est[k] ? vals[k] + maxOf(e, key) - entryMin(e, key) : vals[k]));
     let mx = mxv.slice(0, N).reduce((a, b) => a + b, 0), ne = est.slice(0, N).reduce((a, b) => a + b, 0);
     let worst = ne ? { mx, ne, k: 0 } : null;
     for (let k = 1; k < N + ext; k++) {
       mx += mxv[k + N - 1] - mxv[k - 1]; ne += est[k + N - 1] - est[k - 1];
       if (ne && (!worst || mx > worst.mx)) worst = { mx, ne, k };
     }
-    if (worst && worst.mx > out.limitMin) return { ...out, uncertain: true, doneMaxMin: worst.mx, estDays: worst.ne, readDays: rdg.slice(worst.k, worst.k + N).reduce((a, b) => a + b, 0), maxFrom: isos[worst.k], maxTo: isos[worst.k + N - 1] };
+    if (worst && worst.mx > out.limitMin) {
+      const inWin = ents.slice(worst.k, worst.k + N).filter((e) => hasMax(e, key));
+      const unkIn = inWin.filter((e) => e.unkCodes && e.unkCodes.length);
+      const unkCodes = [];
+      for (const e of unkIn) for (const c of e.unkCodes) if (!unkCodes.includes(c)) unkCodes.push(c);
+      return { ...out, uncertain: true, doneMaxMin: worst.mx, estDays: worst.ne, readDays: rdg.slice(worst.k, worst.k + N).reduce((a, b) => a + b, 0),
+        unkDays: unkIn.length, unkCodes, missDays: inWin.filter((e) => !(e.unkCodes && e.unkCodes.length) && (e.missN || key === 'voo')).length, maxFrom: isos[worst.k], maxTo: isos[worst.k + N - 1] };
+    }
     return out;
+  };
+  // O ano civil e os 12 meses: o que o período escolhido (o mais carregado) pode ter a mais.
+  const withMax = (r) => {
+    if (!r || r.over || !r.from || !r.to) return r;
+    const m = maxExtraRange(dayLog, r.from, r.to, 'voo');
+    return m.est && r.doneMin + m.x > r.limitMin ? { ...r, ...uncFields(r.doneMin + m.x, m), maxFrom: r.from, maxTo: r.to } : r;
   };
   const out = DUTY_WINDOWS.map((w) => daysWin(w, 'servico'));
   for (const w of FLIGHT_WINDOWS) {
@@ -90,8 +120,8 @@ export const limitsAround = (dayLog = {}, date) => {
       const nx = shift(1);
       if (nx.getFullYear() !== y && nextMin(dayLog[isoDay(D)], 'voo') > 0) {
         const ny = { ...windowResult(w, 'voo', sumCalendarYearMin(dayLog, 'voo', nx)), from: `${y + 1}-01-01`, to: `${y + 1}-12-31` };
-        out.push(ny.doneMin > yr.doneMin ? ny : yr);
-      } else out.push(yr);
+        out.push(withMax(ny.doneMin > yr.doneMin ? ny : yr));
+      } else out.push(withMax(yr));
     } else if (w.kind === 'months12') {
       // A mesma soma do sumMonthsMin ((ref − 12 meses, ref]), com somas acumuladas: o registo de um ano inteiro somava-se
       // uma vez por cada dia com registo à frente.
@@ -115,8 +145,19 @@ export const limitsAround = (dayLog = {}, date) => {
       const sum12 = (ref) => { const st = new Date(ref); st.setMonth(st.getMonth() - 12); return P[firstAbove(+ref)] - P[firstAbove(+st)]; };
       const end = new Date(D); end.setMonth(end.getMonth() + 12);
       const refs = [D, ...rows.map((r) => new Date(r.t + 12 * 3600000)).filter((t) => +t > +D && +t < +end)];
-      out.push(best(w, 'voo', refs, sum12,
-        (ref) => { const f = new Date(ref); f.setMonth(f.getMonth() - 12); f.setDate(f.getDate() + 1); return { from: isoDay(f), to: isoDay(ref) }; }));
+      const span12 = (ref) => { const f = new Date(ref); f.setMonth(f.getMonth() - 12); f.setDate(f.getDate() + 1); return { from: isoDay(f), to: isoDay(ref) }; };
+      let r12 = withMax(best(w, 'voo', refs, sum12, span12));
+      // (2.ª revisão independente, achado 13.) O máximo vê-se em TODOS os períodos de 12 meses que contêm o dia, não só no mais
+      // carregado pelo mínimo — só quando há tempo de voo por saber (raro).
+      if (!r12.over && !r12.uncertain && Object.values(dayLog).some((e) => hasMax(e, 'voo'))) {
+        let worst = null;
+        for (const ref of refs) {
+          const sp = span12(ref), m = maxExtraRange(dayLog, sp.from, sp.to, 'voo'), mx = sum12(ref) + m.x;
+          if (m.est && mx > r12.limitMin && (!worst || mx > worst.mx)) worst = { mx, m, sp };
+        }
+        if (worst) r12 = { ...r12, ...uncFields(worst.mx, worst.m), maxFrom: worst.sp.from, maxTo: worst.sp.to };
+      }
+      out.push(r12);
     } else out.push(daysWin(w, 'voo'));
   }
   return out;

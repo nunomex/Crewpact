@@ -11,7 +11,7 @@ import { restVerdicts } from './today';
 // Os repousos abaixo do mínimo ENTRE serviços do período `prefix` ('YYYY' ou 'YYYY-MM'; como o "menor repouso"), com o MESMO
 // veredicto do "Tenho descanso?" (data/today.js restVerdict — ORO.FTL.235, o repouso reduzido da CS FTL.1.235(c) com o (c)(3),
 // (c)(4) e (c)(5), a assistência em casa): `short` = curtos de certeza; `uncertain` = só legais numa leitura.
-const restCounts = (duties, prefix, { postFlightMin = 0, baseAt = null, isPilot = false } = {}) => {
+const restCounts = (duties, prefix, { postFlightMin = 0, baseAt = null, isPilot = false, unknown = null } = {}) => {
   const y = +String(prefix).slice(0, 4), m = String(prefix).length > 4 ? +String(prefix).slice(5, 7) : null;
   const p2 = (n) => String(n).padStart(2, '0');
   const iso = (t) => `${t.getFullYear()}-${p2(t.getMonth() + 1)}-${p2(t.getDate())}`;
@@ -19,7 +19,7 @@ const restCounts = (duties, prefix, { postFlightMin = 0, baseAt = null, isPilot 
   // seguinte, para as noites locais da CS FTL.1.235(b)(4))
   const from = iso(new Date(y, (m ? m - 1 : 0) - 2, 1)), to = iso(new Date(m ? y : y + 1, m ? m + 1 : 1, 0));
   const fn = typeof baseAt === 'function';
-  const list = restVerdicts(duties, { postFlightMin, isPilot, base: fn ? null : baseAt, baseAt: fn ? baseAt : null, from, to }).filter((v) => String(v.nextIso).startsWith(prefix) && String(v.prevIso).startsWith(prefix));
+  const list = restVerdicts(duties, { postFlightMin, isPilot, base: fn ? null : baseAt, baseAt: fn ? baseAt : null, from, to, unknown }).filter((v) => String(v.nextIso).startsWith(prefix) && String(v.prevIso).startsWith(prefix));
   return { short: list.filter((v) => v.status === 'bad').length, uncertain: list.filter((v) => v.status === 'unc').length };
 };
 
@@ -55,7 +55,7 @@ export const availableYears = (duties = {}) => {
 };
 
 // Agrega o ano `year`. now = referência (meses decorridos p/ a base AE; testável).
-export const yearStats = (duties = {}, { year, ae = null, aeAt = null, category = null, contract = '12/12', crewHistory = null, companyHistory = null, fleet = null, postFlightMin = 0, events = [], now = new Date(), baseAt = null, serviceStart = null, startExact = false, largada = null, lifestyle = false, isPilot = false } = {}) => {
+export const yearStats = (duties = {}, { year, ae = null, aeAt = null, category = null, contract = '12/12', crewHistory = null, companyHistory = null, fleet = null, postFlightMin = 0, events = [], now = new Date(), baseAt = null, unknown = null, serviceStart = null, startExact = false, largada = null, lifestyle = false, isPilot = false } = {}) => {
   const y = String(year || now.getFullYear());
   const months = Array.from({ length: 12 }, () => ({ flightMin: 0, dutyMin: 0, sectors: 0, count: 0 }));
   const byKind = {}; STAT_KINDS.forEach((k) => { byKind[k] = 0; });
@@ -196,7 +196,7 @@ export const yearStats = (duties = {}, { year, ae = null, aeAt = null, category 
     if (minRestMin == null || rest < minRestMin) minRestMin = rest;
   }
   const minRestH = minRestMin != null ? +(minRestMin / 60).toFixed(1) : null;
-  const { short: reducedRests, uncertain: uncertainRests } = restCounts(duties, y, { postFlightMin, baseAt, isPilot });
+  const { short: reducedRests, uncertain: uncertainRests } = restCounts(duties, y, { postFlightMin, baseAt, isPilot, unknown });
 
   return {
     scope: 'year', year: y,
@@ -214,7 +214,7 @@ const daysInMonth = (y, m0) => new Date(y, m0 + 1, 0).getDate();
 // vista de Mês das Estatísticas. `days` = horas de voo por dia (gráfico diário); `aeMonth`
 // = ganhos estimados do mês (base + per-diem + pernoita, via monthlyAe, à categoria/contrato
 // EFFECTIVE-DATED desse mês). Módulo PURO (testável por golden).
-export const monthStats = (duties = {}, { ym, ae = null, category = null, contract = '12/12', crewHistory = null, companyHistory = null, fleet = null, postFlightMin = 0, events = [], now = new Date(), baseAt = null, serviceStart = null, startExact = false, largada = null, lifestyle = false, isPilot = false } = {}) => {
+export const monthStats = (duties = {}, { ym, ae = null, category = null, contract = '12/12', crewHistory = null, companyHistory = null, fleet = null, postFlightMin = 0, events = [], now = new Date(), baseAt = null, unknown = null, serviceStart = null, startExact = false, largada = null, lifestyle = false, isPilot = false } = {}) => {
   const [Y, M] = String(ym || '').split('-').map(Number);
   const y = Y || now.getFullYear();
   const m0 = M ? M - 1 : now.getMonth();
@@ -281,7 +281,7 @@ export const monthStats = (duties = {}, { ym, ae = null, category = null, contra
     if (minRestMin == null || rest < minRestMin) minRestMin = rest;
   }
   const minRestH = minRestMin != null ? +(minRestMin / 60).toFixed(1) : null;
-  const { short: reducedRests, uncertain: uncertainRests } = restCounts(duties, ymStr, { postFlightMin, baseAt, isPilot });
+  const { short: reducedRests, uncertain: uncertainRests } = restCounts(duties, ymStr, { postFlightMin, baseAt, isPilot, unknown });
 
   // AE do mês — categoria/contrato EFFECTIVE-DATED desse mês (uma promoção não reescreve o
   // passado). `events` = extras do mês (eventos datados) valorizados pelo ae.monthExtras →

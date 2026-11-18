@@ -76,3 +76,32 @@ export const windowResult = (w, key, doneMin) => {
     overMin: Math.max(0, doneMin - limitMin),
   };
 };
+
+// O MÁXIMO POSSÍVEL (sessão Fable 5.2, 2026-11-17/18). Uma entrada pode trazer `servicoMaxMin` / `vooMaxMin`: o que os serviços
+// sem apresentação, os códigos que a app não conhece e os serviços a que faltam horas podem acrescentar (ftl/index.js,
+// ftl/unknownCodes.js). Se só o máximo passa um limite do ORO.FTL.210, o período fica "incerto" — nem "dentro" nem "excede".
+// Soma o que as entradas de um período podem acrescentar: { x (minutos), est (dias com máximo), rdg (dias com duas leituras),
+// unk (dias com um código novo), codes, miss (dias com um serviço a que faltam horas) }.
+const maxField = (key) => (key === 'voo' ? 'vooMaxMin' : 'servicoMaxMin');
+export const hasMax = (e, key) => !!e && typeof e[maxField(key)] === 'number';
+export const maxOf = (e, key) => (hasMax(e, key) ? Math.max(e[maxField(key)], entryMin(e, key)) : entryMin(e, key));
+const tally = (acc, e, key) => {
+  if (!hasMax(e, key)) return;
+  acc.x += maxOf(e, key) - entryMin(e, key); acc.est++;
+  if (key === 'servico' && e.servicoMaxReadings) acc.rdg++;
+  if (e.unkCodes && e.unkCodes.length) { acc.unk++; for (const c of e.unkCodes) if (!acc.codes.includes(c)) acc.codes.push(c); }
+  else if (e.missN || key === 'voo') acc.miss++;
+};
+const newAcc = () => ({ x: 0, est: 0, rdg: 0, unk: 0, miss: 0, codes: [] });
+export const maxExtraIn = (dayLog, days, end, key = 'servico') => {
+  const acc = newAcc();
+  for (let i = 0; i < days; i++) { const d = new Date(end); d.setDate(d.getDate() - i); tally(acc, dayLog[isoDay(d)], key); }
+  return acc;
+};
+export const maxExtraRange = (dayLog, from, to, key = 'voo') => {
+  const acc = newAcc();
+  for (const [date, e] of Object.entries(dayLog)) if (date >= from && date <= to) tally(acc, e, key);
+  return acc;
+};
+// Os campos do "incerto" de um período, a partir da soma (ver acima).
+export const uncFields = (doneMaxMin, m) => ({ uncertain: true, doneMaxMin, estDays: m.est, readDays: m.rdg, unkDays: m.unk, unkCodes: m.codes, missDays: m.miss });

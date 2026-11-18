@@ -123,7 +123,8 @@ eq('voo mantido: flightNo extraído', mapFlight(ev('EJU7625 LIS-FNC 06:40-08:15'
 // a app não conhece fica no dia como "código novo" (e o dia incerto); um título pessoal ou um evento de dia inteiro sem horas ficam
 // de fora, como até aqui (o filtro do pessoal). ──
 eq('código novo com horas no título → fica, com o código e as horas', unknownOf(ev('SBYX 0600-1400 LIS'), codes), { dateISO: '2026-07-01', code: 'SBYX', title: 'SBYX 0600-1400 LIS', start: '06:00', end: '14:00' });
-eq('código novo sem horas no título → as horas do evento', unknownOf(ev('XQT LGW', { start: '2026-07-01T22:00:00', end: '2026-07-02T06:30:00' }), codes), { dateISO: '2026-07-01', code: 'XQT', title: 'XQT LGW', start: '22:00', end: '06:30' });
+eq('código novo sem horas no título → as horas do evento', unknownOf(ev('XQT LGW', { start: '2026-07-01T22:00:00', end: '2026-07-02T06:30:00' }), codes), { dateISO: '2026-07-01', code: 'XQT', title: 'XQT LGW', start: '22:00', end: '06:30', endISO: '2026-07-02' });
+eq('código novo de vários dias → o dia em que acaba', unknownOf(ev('TRN4 LIS', { start: '2026-07-01T08:00:00', end: '2026-07-03T17:00:00' }), codes), { dateISO: '2026-07-01', code: 'TRN4', title: 'TRN4 LIS', start: '08:00', end: '17:00', endISO: '2026-07-03' });
 eq('código com barra ("AB/C")', (unknownOf(ev('AB/C'), codes) || {}).code, 'AB/C');
 eq('título pessoal → fora', unknownOf(ev('Dentista'), codes), null);
 eq('dia inteiro sem horas → fora (o filtro do pessoal)', unknownOf(ev('ZZZ', { allDay: true, start: '2026-07-01T00:00:00', end: '2026-07-02T00:00:00' }), codes), null);

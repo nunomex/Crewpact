@@ -3,6 +3,7 @@
 // do PDF em si vive em data/pdf.js (expo-print). O operador continua obrigado aos
 // seus próprios registos: este documento é um apoio individual ao tripulante.
 import { ftlForDuty, restAfterDuty, computeDutyTime, computeFlightTime } from '../ftl';
+import { incompleteSpans } from '../ftl/unknownCodes';
 
 import { BRAND } from './constants';
 import { durHM, durText } from './duration';
@@ -45,13 +46,49 @@ const WIN = {
   en: { '7d': '7 days', '14d': '14 days', '28d': '28 days', year: 'Calendar year', '12m': '12 months' },
 };
 
+// O ARQUIVO COMO PROVA (sessão Fable 5.2, ponto 7, 2026-11-17). A companhia corrige as horas no calendário depois do voo; a
+// importação guarda cada mudança confirmada no arquivo (`rosterLog`: antes → depois + `detectedAt`, o momento em que a app a
+// viu — components/RosterImportSheet.js). Uma CORREÇÃO DAS HORAS é o que a app viu depois de o serviço começar (a hora de
+// apresentação que estava na escala nesse momento): antes disso é uma mudança de escala (SNC/RDP, data/disruption.js), não as
+// horas reais. Por dia: { plannedReport, plannedEnd (as da escala quando o serviço começou), realReport, realEnd (as que
+// ficaram), seenAt (quando a app viu a última) } — só quando as horas mudaram mesmo. O carimbo é o da app, não o da companhia.
+export const hourCorrections = (rosterLog = []) => {
+  const byDay = new Map();
+  for (const e of rosterLog || []) {
+    if (!e || !e.dutyDate || !e.before || !e.after || !e.detectedAt) continue;
+    // O serviço tinha começado quando a app viu a mudança? Pela apresentação ANTIGA e pela NOVA (2.ª revisão independente,
+    // achado 9: adiada das 11:00 para as 15:00 e vista às 12:00, ainda não tinha começado). Sem horas do lado de depois (um
+    // serviço a que faltam horas) não há "horas reais" para mostrar.
+    const clk = (t) => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(t || '')); return m ? (+m[1]) * 60 + (+m[2]) : null; };
+    const r0 = clk(e.before.report), r1 = clk(e.after.report);
+    const det = new Date(String(e.detectedAt));
+    if (r0 == null || r1 == null || clk(e.after.end) == null || isNaN(det)) continue;
+    const start = new Date(`${e.dutyDate}T00:00:00`); start.setHours(0, Math.max(r0, r1), 0, 0);
+    if (+det < +start) continue;   // vista antes de o serviço começar: mudança de escala
+    if (!byDay.has(e.dutyDate)) byDay.set(e.dutyDate, []);
+    byDay.get(e.dutyDate).push(e);
+  }
+  const out = {};
+  for (const [date, raw] of byDay) {
+    const list = raw.slice().sort((a, b) => String(a.detectedAt).localeCompare(String(b.detectedAt)));
+    const first = list[0], last = list[list.length - 1];
+    const c = { plannedReport: first.before.report || null, plannedEnd: first.before.end || null, realReport: last.after.report || null, realEnd: last.after.end || null, seenAt: String(last.detectedAt) };
+    if (c.plannedReport === c.realReport && c.plannedEnd === c.realEnd) continue;
+    out[date] = c;
+  }
+  return out;
+};
+
 // Constrói o modelo estruturado a partir dos stores `duties` (tabela duties) e
 // `dayLog` (store FTL, para os acumulados 210). Cada dia é recalculado pelo motor
 // (PSV/serviço/repouso) — fonte única de verdade.
 export const buildRecordModel = ({
   duties = {}, dayLog = {}, name = '', crewId = '', operator = '', email = '', generatedAt = null,
-  postFlightMin = 0, isPilot = false, baseAt = null, allDuties = null, cabinGapMin, splitAdminMin,
+  postFlightMin = 0, isPilot = false, baseAt = null, allDuties = null, cabinGapMin, splitAdminMin, rosterLog = null,
 } = {}) => {
+  // As correções das horas depois do voo (o arquivo, ver hourCorrections): vão com a linha do serviço que ficou com essas horas.
+  const fixes = rosterLog ? hourCorrections(rosterLog) : {};
+  const fixOf = (date, d, idx) => { const c = fixes[date]; if (!c) return undefined; return (c.realReport ? d.report_time === c.realReport : idx === 0) ? c : undefined; };
   // Uma linha por PERÍODO DE SERVIÇO (não por dia): a EASA conta serviços (ORO.FTL.245/210),
   // por isso um dia com 2 serviços rende 2 linhas. Serviços do dia = primária + `extra`,
   // ordenados pelo report; cada um recalculado pelo motor (ftlForDuty, o mesmo do dayLog).
@@ -62,7 +99,9 @@ export const buildRecordModel = ({
   const at = (iso, hm, add = 0) => { const [h, m] = String(hm).split(':').map(Number); const x = new Date(iso + 'T00:00:00'); x.setDate(x.getDate() + add); x.setHours(h || 0, m || 0, 0, 0); return x; };
   const hm = (min) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
   const svcOf = (d) => [d, ...(Array.isArray(d.extra) ? d.extra : [])]
-    .filter((sv) => sv && sv.kind !== 'reserve' && (sv.report_time || sv.block_on || sv.flight_minutes > 0))
+    // (2.ª revisão, achado 7) também o serviço sem horas tem a sua linha (ORO.FTL.245(a)(1)) — desde que seja um serviço: com rota,
+    // setores ou um tipo em terra; uma casca vazia ({ kind: 'flight' } sem mais nada) não cria uma linha inválida.
+    .filter((sv) => sv && sv.kind !== 'reserve' && (sv.report_time || sv.block_on || sv.block_off || sv.flight_minutes > 0 || sv.route || sv.sectors > 0 || (sv.kind && sv.kind !== 'flight')))
     .sort((a, b) => String(a.report_time || '').localeCompare(String(b.report_time || '')));
   // Início e fim de cada serviço em instantes (para o repouso real entre eles, também fora do período).
   const timeline = (map) => Object.entries(map || {})
@@ -77,9 +116,12 @@ export const buildRecordModel = ({
     }).filter(Boolean))
     .sort((a, b) => +a.start - +b.start);
   const tl = timeline(allDuties || duties);
+  const holes = incompleteSpans(allDuties || duties, { postFlightMin }).filter((u) => u.rest);
   const restAfter = (sv) => {
     const i = tl.findIndex((x) => x.sv === sv);
     if (i < 0 || !tl[i].end || !tl[i + 1]) return '—';
+    // Um serviço a que faltam horas pelo meio (não está na linha: sem início, sem horas) — o repouso não se afirma por cima dele.
+    if (holes.some((u) => +u.start < +tl[i + 1].start && +u.end > +tl[i].end)) return '—';
     const m = Math.round((+tl[i + 1].start - +tl[i].end) / 60000);
     return m >= 0 ? durHM(m) : '—';   // (D1, data/duration.js: as durações com "h"; os dois pontos só nas horas do relógio)
   };
@@ -96,6 +138,7 @@ export const buildRecordModel = ({
       duty: (r && d.block_on && durText(r.dutyPeriodStr)) || '—',
       rest: restAfter(d),
       over, uncertain,
+      corrected: fixOf(date, d, idx),
     };
   };
   const rows = Object.entries(duties)
@@ -113,7 +156,7 @@ export const buildRecordModel = ({
   const ref = periodEnd ? new Date(periodEnd + 'T12:00:00') : new Date();
 
   return {
-    header: { operator, name, crewId, email, periodStart, periodEnd, generatedAt, count: rows.length },
+    header: { operator, name, crewId, email, periodStart, periodEnd, generatedAt, count: rows.length, corrected: rows.filter((r) => r.corrected).length },
     rows,
     totals: { flightMin: totalFlightMin, sectors: totalSectors, duties: rows.length },
     cumulative: { duty: computeDutyTime(dayLog, ref), flight: computeFlightTime(dayLog, ref) },
@@ -179,7 +222,7 @@ export const recordHtml = (model, lang = 'pt', fontsCss = '') => {
     const pct = w.limit ? Math.min(100, Math.round((w.done / w.limit) * 100)) : 0;
     return `<div class="win${w.over ? ' over' : ''}"><div class="wl">${esc(W[w.id] || w.id)}</div>
       <div class="bar"><i style="width:${pct}%"></i></div>
-      <div class="wv">${fh(w.done)} / ${esc(w.limit)} h</div></div>`;
+      <div class="wv">${fh(w.done)} / ${esc(w.limit)} h${w.uncertain && w.doneMaxMin != null ? ` · ${lang === 'en' ? 'uncertain: up to' : 'incerto: até'} ${fh(w.doneMaxMin / 60)} h` : ''}</div></div>`;
   };
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8"/>

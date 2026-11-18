@@ -65,6 +65,37 @@ export function restItem(rest, rec, lang) {
     const dd = rest.estIso ? `${rest.estIso.slice(8, 10)}/${rest.estIso.slice(5, 7)}` : '';
     answer = `${l('Incerto', 'Uncertain')} · ${hhmm(rest.actualMin)} ${l('antes do report', 'before report')}`;
     suggestion = l(`Falta a hora de apresentação do serviço de ${dd}: sem ela não se sabe quanto durou, nem o repouso mínimo a seguir (ORO.FTL.235). Põe-a no detalhe desse serviço.`, `The duty on ${dd} has no report time: without it its length is unknown, and so is the minimum rest after it (ORO.FTL.235). Add it in that duty's detail.`);
+  } else if (rest.kind === 'unknownCode') {
+    // O que a escala não diz à volta deste repouso: um código que a app não conhece (pode ser um serviço) ou um serviço a que
+    // faltam horas. O número diz-se pelo que é (data/today.js unkTag): exato (colado ou antes do serviço anterior, ou a contar do
+    // fim de um serviço certo) · "pelo menos" (conta do fim do evento, se ele for um serviço) · "no máximo" (um evento pelo meio).
+    const dd = rest.unkIso ? `${rest.unkIso.slice(8, 10)}/${rest.unkIso.slice(5, 7)}` : '';
+    const cp = l('Quem acrescenta o código é a CrewPact: avisa na Escala.', 'CrewPact adds the code: report it in the Roster.');
+    const exact = rest.unkGlued || rest.unkPrev || rest.unkExact || (rest.toCode && !rest.unkWhy);
+    const qual = exact ? '' : rest.unkAtLeast ? l('pelo menos ', 'at least ') : l('no máximo ', 'at most ');
+    const tail = !rest.toCode ? l('antes do report', 'before report') : rest.unkCode ? l(`antes do código ${rest.unkCode}`, `before code ${rest.unkCode}`) : l(`antes do serviço de ${dd}`, `before the duty on ${dd}`);
+    answer = `${l('Incerto', 'Uncertain')} · ${qual}${hhmm(rest.actualMin)} ${tail}`;
+    const miss = rest.unkWhy === 'noStart' || rest.unkWhy === 'noTimes' || rest.unkWhy === 'noEnd';
+    if (miss && rest.toCode) {
+      suggestion = l(`A ${dd} a escala tem um serviço ${rest.unkWhy === 'noTimes' ? 'sem horas' : 'sem hora de início'}: não se sabe quando começa, nem se o repouso antes dele chega (ORO.FTL.235). ${rest.unkWhy === 'noTimes' ? 'As horas têm' : 'A hora tem'} de vir do calendário.`, `On ${dd} the roster has a duty ${rest.unkWhy === 'noTimes' ? 'without times' : 'without a start time'}: when it starts is unknown, and so is whether the rest before it is enough (ORO.FTL.235). It has to come from the calendar.`);
+    } else if (miss) {
+      suggestion = rest.unkWhy === 'noTimes'
+        ? l(`A ${dd} a escala tem um serviço sem horas: não se sabe quando foi, nem o repouso antes e depois dele (ORO.FTL.235). As horas têm de vir do calendário.`, `On ${dd} the roster has a duty without times: when it took place is unknown, and so is the rest before and after it (ORO.FTL.235). The times have to come from the calendar.`)
+        : l(`A ${dd} a escala tem um serviço sem hora de ${rest.unkWhy === 'noEnd' ? 'fim' : 'início'}: não se sabe quanto durou, nem o repouso mínimo a seguir (ORO.FTL.235). A hora tem de vir do calendário.`, `On ${dd} the roster has a duty without ${rest.unkWhy === 'noEnd' ? 'an end' : 'a start'} time: its length is unknown, and so is the minimum rest after it (ORO.FTL.235). The time has to come from the calendar.`);
+    } else if (rest.unkGlued) {
+      suggestion = l(`A ${dd} a escala tem um código que a app não conhece (${rest.unkCode}) logo antes do teu último serviço. Se fizer parte dele, o serviço foi mais longo e o repouso mínimo a seguir é maior (ORO.FTL.235). ${cp}`, `On ${dd} the roster has a code the app does not know (${rest.unkCode}) right before your last duty. If it is part of it, the duty was longer and the minimum rest after it is longer (ORO.FTL.235). ${cp}`);
+    } else if (rest.unkPrev) {
+      suggestion = l(`A ${dd} a escala tem um código que a app não conhece (${rest.unkCode}) antes do teu último serviço. Se for um serviço, o repouso entre os dois pode ter sido um repouso reduzido, e então este aumenta pela diferença (CS FTL.1.235(c)(3)). ${cp}`, `On ${dd} the roster has a code the app does not know (${rest.unkCode}) before your last duty. If it is a duty, the rest between the two may have been a reduced rest, and this one is then extended by the difference (CS FTL.1.235(c)(3)). ${cp}`);
+    } else if (rest.toCode) {
+      suggestion = l(`A ${dd} a escala tem um código que a app não conhece (${rest.unkCode}). Se for um voo, o repouso antes dele pode não chegar (ORO.FTL.235). ${cp}`, `On ${dd} the roster has a code the app does not know (${rest.unkCode}). If it is a flight, the rest before it may not be enough (ORO.FTL.235). ${cp}`);
+    } else {
+      suggestion = l(`A ${dd} a escala tem um código que a app não conhece (${rest.unkCode}). Se for um serviço, muda o repouso que tiveste e o mínimo (ORO.FTL.235). ${cp}`, `On ${dd} the roster has a code the app does not know (${rest.unkCode}). If it is a duty, it changes the rest you had and the minimum (ORO.FTL.235). ${cp}`);
+    }
+  } else if (rest.kind === 'placeGap') {
+    // O serviço anterior acabou num aeroporto e este parte de outro, sem a viagem na escala: o que se vê é o MÁXIMO do repouso.
+    const dd = rest.gapPrevIso ? `${rest.gapPrevIso.slice(8, 10)}/${rest.gapPrevIso.slice(5, 7)}` : '';
+    answer = `${l('Incerto', 'Uncertain')} · ${l('no máximo', 'at most')} ${hhmm(rest.actualMin)} ${l('antes do report', 'before report')}`;
+    suggestion = l(`O serviço de ${dd} acabou em ${rest.gapFrom} e este parte de ${rest.gapDep}: falta na escala como foste de um sítio ao outro. Um posicionamento é serviço (ORO.FTL.215) e muda o repouso que tiveste e o mínimo: 12 h antes de um PSV que começa na base, 10 h fora (ORO.FTL.235(a)/(b)). Tem de vir do calendário.`, `The duty on ${dd} ended in ${rest.gapFrom} and this one departs from ${rest.gapDep}: the roster does not show how you got from one to the other. Positioning is duty (ORO.FTL.215) and changes the rest you had and the minimum: 12 h before an FDP starting at home base, 10 h away (ORO.FTL.235(a)/(b)). It has to come from the calendar.`);
   } else if (rest.kind === 'noEnd') {
     // Um serviço SEM hora de fim antes da assistência ou do serviço em terra que veio a seguir: o mínimo pode depender dele.
     const dd = rest.estIso ? `${rest.estIso.slice(8, 10)}/${rest.estIso.slice(5, 7)}` : '';
@@ -139,7 +170,11 @@ export function restItem(rest, rec, lang) {
     if (lead === NO) answer = `${answer} · ${x.uncertain ? l('incerto: ', 'uncertain: ') : ''}${what}`;   // o repouso já é curto
     else if (status === 'bad') answer = `${NO} · ${what}${lead === UNC ? ` · ${l('repouso incerto', 'rest uncertain')}: ${body}` : ''}`;
     else answer = lead === UNC ? `${answer} · ${what}` : `${UNC} · ${what}`;
-    const recTip = x.uncertain && x.why === 'acclim'
+    const recTip = x.uncertain && x.why === 'unknown'
+      ? l(`Depende de um código que a app não conhece (${x.unkCode || '…'}): se for um serviço, muda os repousos de recuperação (ORO.FTL.235(d), CS FTL.1.235(a)). Quem acrescenta o código é a CrewPact: avisa na Escala.`, `It depends on a code the app does not know (${x.unkCode || '…'}): if it is a duty, the recovery rests change (ORO.FTL.235(d), CS FTL.1.235(a)). CrewPact adds the code: report it in the Roster.`)
+      : x.uncertain && x.why === 'place'
+      ? l('A noite local só se pede quando a passagem do tardio ou noturno para o matinal é na base (CS FTL.1.235(a)(1)). O matinal parte de um aeroporto diferente daquele onde o serviço anterior acabou e a viagem não está na escala: não se sabe onde é a passagem. Tem de vir do calendário.', 'The local night is only required when the transition from the late finish or night duty to the early start is at home base (CS FTL.1.235(a)(1)). The early start departs from a different airport than where the previous duty ended and the trip is not on the roster: where the transition happens is unknown. It has to come from the calendar.')
+      : x.uncertain && x.why === 'acclim'
       ? l('Depende do fuso a que estás aclimatado (Quadro 1): pela hora da base e pela hora local, um dos serviços é ou não irregular (ORO.FTL.105(8)). Confirma com a companhia.', 'It depends on the time zone you are acclimatised to (Table 1): by base time and by local time, one of the duties is or is not disruptive (ORO.FTL.105(8)). Confirm with the company.')
       : x.uncertain && x.why === 'both'
       ? l('Depende do tipo de horário irregular (matinal ou tardio) da tua companhia e do fuso a que estás aclimatado (ORO.FTL.105(8), Quadro 1). Confirma com a companhia.', 'It depends on your company\'s disruptive-schedule type (early or late) and on the time zone you are acclimatised to (ORO.FTL.105(8), Table 1). Confirm with the company.')
@@ -178,7 +213,7 @@ export function buildTodayItems(ctx, lang) {
   // LIMITES DO ACORDO (2026-11-03, D1): num dia na TAP, vale o mais apertado entre o PSV europeu e o do
   // AE (`ctx.aeToday`, calculado no Início pelo motor ae/tapLimits.js). O do AE conta até 30 min depois
   // dos calços: compara-se o equivalente até aos calços.
-  let legal = legalStatus(ftlSnap, dayLog);
+  let legal = legalStatus(ftlSnap, dayLog, ctx.now || new Date());
   // Noites seguidas com mais de 4 setores (CS FTL.1.205(a)(1)) — calculado no Início pela regra da Simulação (`ctx.nightToday`).
   const nt = ctx.nightToday || null;
   if (nt && legal.status !== 'bad') {
@@ -194,6 +229,9 @@ export function buildTodayItems(ctx, lang) {
       legal = { ...legal, psv: { ...(legal.psv || {}), latest: aeT.latest, latestNextDay: aeT.latestNextDay, source: 'AE' } };
     }
   }
+  // Um código que a app não conhece no próprio dia (revisão independente, achado 15): o "Sim" não se afirma.
+  const unkToday = [...new Set((((ctx.unknown || {})[todayISO]) || []).map((u) => u && u.code).filter(Boolean))];
+  if (unkToday.length && legal.status !== 'bad' && legal.status !== 'warn') legal = { ...legal, status: 'warn', kind: 'unknownToday', unkCodes: unkToday };
   {
     let answer, suggestion = null;
     if (legal.kind === 'aeOver') {
@@ -219,7 +257,10 @@ export function buildTodayItems(ctx, lang) {
         'On consecutive night duties, at most 4 sectors per duty (CS FTL.1.205(a)(1)); consecutive = only rest between them (EASA FAQ 47617). Confirm with the company.');
     } else if (legal.kind === 'nightUncertain') {
       answer = l(`Incerto — ${legal.night.sectors} setores à noite`, `Uncertain — ${legal.night.sectors} sectors at night`);
-      suggestion = legal.night.why === 'acclim'
+      suggestion = legal.night.why === 'unknown'
+        ? l(`A escala tem um código que a app não conhece (${legal.night.unkCode}) numa noite ao lado desta: se for um serviço noturno, são noites seguidas e o máximo é 4 setores por serviço (CS FTL.1.205(a)(1)). Quem acrescenta o código é a CrewPact: avisa na Escala.`,
+          `The roster has a code the app does not know (${legal.night.unkCode}) on a neighbouring night: if it is a night duty, the nights are consecutive and the maximum is 4 sectors per duty (CS FTL.1.205(a)(1)). CrewPact adds the code: report it in the Roster.`)
+        : legal.night.why === 'acclim'
         ? l('Não se sabe a que fuso estás aclimatado (Quadro 1): conforme o fuso, um dos serviços é ou não noturno. Em noites seguidas, no máximo 4 setores (CS FTL.1.205(a)(1)).',
           'Your acclimatisation is unknown (Table 1): depending on the time zone, one of the duties is or is not a night duty. On consecutive nights, at most 4 sectors (CS FTL.1.205(a)(1)).')
         : l(`Entre a noite anterior e esta há uma reserva, uma assistência em casa, um serviço sem horas ou um serviço com pouco repouso: pode quebrar a sequência de noites seguidas (máx. 4 setores, CS FTL.1.205(a)(1)).${legal.night.why === 'both' ? ' E não se sabe a que fuso estás aclimatado (Quadro 1).' : ''}`,
@@ -232,6 +273,32 @@ export function buildTodayItems(ctx, lang) {
       answer = l('Não — ', 'No — ') + catLabel(legal.cat, lang) + ' ' + l('acima do limite', 'over the limit');
       suggestion = l('Limite cumulativo ultrapassado — não aceites mais serviço nesta janela. Confirma com a companhia.',
         'Cumulative limit exceeded — don\'t accept more in this window. Confirm with the company.');
+    } else if (legal.kind === 'unknownToday') {
+      // Um código que a app não conhece no próprio dia (revisão independente, achado 15): pode alongar o PSV de hoje e conta para
+      // os limites — o mesmo que o cartão do Início e a Escala dizem.
+      const cs = legal.unkCodes || [];
+      const joinE = (xs, e) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} ${e} ${xs[xs.length - 1]}`);
+      answer = cs.length === 1
+        ? l(`Incerto — falta saber o que é o código ${cs[0]} (a app não o conhece)`, `Uncertain — missing what code ${cs[0]} is (the app doesn’t know it)`)
+        : l(`Incerto — falta saber o que são os códigos ${joinE(cs, 'e')} (a app não os conhece)`, `Uncertain — missing what codes ${joinE(cs, 'and')} are (the app doesn’t know them)`);
+      suggestion = l('Se for um serviço, conta para os limites (ORO.FTL.210) e pode alongar o período de serviço de voo de hoje: um posicionamento depois da apresentação e antes de operar conta como PSV (ORO.FTL.215(a)). Quem acrescenta o código é a CrewPact: avisa na Escala.',
+        'If it is a duty, it counts towards the limits (ORO.FTL.210) and may lengthen today’s flight duty period: positioning after reporting and before operating counts as FDP (ORO.FTL.215(a)). CrewPact adds the code: report it in the Roster.');
+    } else if (legal.kind === 'limitUncertain') {
+      // Um período do ORO.FTL.210 que só passa o limite no máximo possível: as duas pontas e de onde vem a dúvida.
+      const lim = Math.round((legal.limitMin || 0) / 60), u = legal.unkDays || 0, m = legal.missDays || 0, n = legal.estDays || 0, cs = (legal.unkCodes || []).join(', ');
+      const what = legal.cat === 'voo' ? l('voo', 'flight') : l('serviço', 'duty');
+      const prep = legal.windowId === 'year' ? l('no', 'in the') : l('em', 'in');
+      answer = `${l('Incerto', 'Uncertain')} — ${what} ${prep} ${winLbl(legal.windowId, legal.days, lang)} ${l('entre', 'between')} ${hhmm(legal.doneMin)} ${l('e', 'and')} ${hhmm(legal.doneMaxMin)} (${l('máx.', 'max')} ${lim === 1000 ? l('1 000', '1,000') : lim} h)`;
+      const more = n > u + m ? l(' Há também serviços sem hora de apresentação nesse período.', ' That period also has duties without a report time.') : '';
+      suggestion = u
+        ? l(`Nesse período há ${u === 1 ? '1 dia' : `${u} dias`} com um código que a app não conhece${cs ? ` (${cs})` : ''}: se for ${legal.cat === 'voo' ? 'um voo' : 'serviço'}, conta para o limite (ORO.FTL.210) — no mínimo nada, no máximo a duração do evento. Quem acrescenta o código é a CrewPact: avisa na Escala.`,
+          `That period has ${u === 1 ? '1 day' : `${u} days`} with a code the app does not know${cs ? ` (${cs})` : ''}: if it is ${legal.cat === 'voo' ? 'a flight' : 'duty'}, it counts towards the limit (ORO.FTL.210) — at least nothing, at most the length of the event. CrewPact adds the code: report it in the Roster.`) + more
+        : m
+          ? l(`Nesse período há ${m === 1 ? '1 dia' : `${m} dias`} com um serviço a que faltam horas. O que a escala não diz conta, no máximo, até ao serviço seguinte ou 24 h depois de começar (sem fim), ou desde as 00:00 do dia (sem início): é uma convenção da app — a lei não dá um teto ao período de serviço (ORO.FTL.210). As horas têm de vir do calendário.`,
+            `That period has ${m === 1 ? '1 day' : `${m} days`} with a duty missing its times. What the roster does not say counts, at most, until the next duty or 24 h after it starts (no end), or from 00:00 that day (no start): this is an app convention — the law sets no ceiling on a duty period (ORO.FTL.210). The times have to come from the calendar.`) + more
+          : (legal.readDays && legal.readDays >= n)
+            ? l('Depende de como se lê o tempo em terra entre dois serviços do mesmo dia (um intervalo ou um repouso): o serviço que conta para o limite muda (ORO.FTL.210). Confirma com a companhia.', 'It depends on how the ground time between two duties on the same day is read (a break or a rest): the duty that counts towards the limit changes (ORO.FTL.210). Confirm with the company.')
+            : l(`Nesse período há ${n === 1 ? '1 serviço' : `${n} serviços`} sem hora de apresentação: o serviço deles conta, pelo menos, desde os calços — pode ser mais (ORO.FTL.210). A hora tem de vir do calendário.`, `That period has ${n === 1 ? '1 duty' : `${n} duties`} without a report time: their duty counts at least from off-blocks — it may be more (ORO.FTL.210). The time has to come from the calendar.`);
     } else if (legal.kind === 'noData') {
       answer = l('Sem dados suficientes hoje', 'Not enough data today');
     } else {
@@ -247,7 +314,7 @@ export function buildTodayItems(ctx, lang) {
   }
 
   // 2 · Quanto me falta para o limite?
-  const head = headroomStatus(dayLog);
+  const head = headroomStatus(dayLog, ctx.now || new Date());
   {
     const q = l('Quanto me falta para o limite?', 'How much until my limit?');
     let answer, suggestion = null;
@@ -260,7 +327,13 @@ export function buildTodayItems(ctx, lang) {
     } else {
       // Minutos inteiros, nunca arredondados para cima (A-172): "faltam 0:30", não "faltam 1 h".
       answer = `${catLabel(head.cat, lang)} · ${winLbl(head.windowId, head.days, lang)}: ${l('faltam', 'left')} ${hhmm(head.headroomMin)} ${l('de', 'of')} ${Math.round(head.limit)} h`;
-      if (head.status === 'warn') {
+      if (head.uncertain) {
+        // (Revisão independente, achado 9.) O máximo possível passa o limite: a folga é o que falta pelo MÍNIMO — diz-se.
+        const uw = `${head.uncCat === 'voo' ? l('voo', 'flight') : l('serviço', 'duty')} ${head.uncWindowId === 'year' ? l('no', 'in the') : l('em', 'in')} ${winLbl(head.uncWindowId, head.uncDays, lang)}`;
+        answer += ` · ${l('incerto', 'uncertain')}`;
+        suggestion = l(`A folga conta só o que é certo. Há tempo que a escala não diz (${(head.unkCodes || []).length ? `o código ${head.unkCodes.join(', ')}, que a app não conhece` : head.missDays ? 'um serviço a que faltam horas' : 'um serviço sem hora de apresentação'}): com ele, o ${uw} pode chegar a ${hhmm(head.doneMaxMin)}, acima do limite (ORO.FTL.210).`,
+          `The margin counts only what is certain. The roster leaves some time unsaid (${(head.unkCodes || []).length ? `code ${head.unkCodes.join(', ')}, which the app does not know` : head.missDays ? 'a duty missing its times' : 'a duty without a report time'}): with it, ${uw} may reach ${hhmm(head.doneMaxMin)}, over the limit (ORO.FTL.210).`);
+      } else if (head.status === 'warn') {
         suggestion = l(`Estás a ${Math.round(head.ratio * 100)}% — um serviço longo nesta janela pode ultrapassar o limite.`,
           `You're at ${Math.round(head.ratio * 100)}% — a long duty in this window may exceed the limit.`);
       }
@@ -283,9 +356,9 @@ export function buildTodayItems(ctx, lang) {
   }
 
   // 3b · Tenho descanso? (a resposta: restItem, em cima)
-  const rest = restStatus(duties, todayISO, new Date(), { postFlightMin: ctx.postFlightMin || 0, isPilot, baseAt: ctx.baseAt || null });
+  const rest = restStatus(duties, todayISO, ctx.now || new Date(), { postFlightMin: ctx.postFlightMin || 0, isPilot, baseAt: ctx.baseAt || null, unknown: ctx.unknown || null });
   {
-    const rec = recoveryStatus(duties, todayISO, { postFlightMin: ctx.postFlightMin || 0, baseAt: ctx.baseAt || null, disruptiveType: ctx.disruptiveType || null });
+    const rec = recoveryStatus(duties, todayISO, { postFlightMin: ctx.postFlightMin || 0, baseAt: ctx.baseAt || null, disruptiveType: ctx.disruptiveType || null, unknown: ctx.unknown || null });
     const r = restItem(rest, rec, lang);
     items.push({ id: 'rest', q: l('Tenho descanso?', 'Do I have rest?'), status: r.status, answer: r.answer, suggestion: r.suggestion, ...(r.rows ? { rows: r.rows } : {}), raw: { ...rest, recovery: rec } });
   }
@@ -360,8 +433,8 @@ export function buildTodayItems(ctx, lang) {
     switch (it.id) {
       case 'legal':     return r.psv && r.psv.latest && r.kind === 'legal'
         ? { topic: l('Calços até', 'On-blocks by'), short: `${r.psv.latest}${r.psv.latestNextDay ? '+1' : ''}` }
-        : { topic: l('Limites', 'Limits'), short: r.kind === 'psvOver' ? (r.excess ? `+${durText(r.excess)}` : l('Excede', 'Over')) : (r.kind === 'limitOver' || r.kind === 'standbyOver' || r.kind === 'nightOver') ? l('Excede', 'Over') : (r.kind === 'psvUncertain' || r.kind === 'nightUncertain') ? l('Incerto', 'Uncertain') : r.kind === 'noData' ? '—' : l('Dentro', 'Within') };
-      case 'headroom':  return { topic: l('Margem', 'Margin'), short: r.kind === 'noData' ? '—' : it.status === 'bad' ? l('Excede', 'Over') : (r.headroomMin >= 60 ? durHM(Math.floor(r.headroomMin / 60) * 60) : hhmm(r.headroomMin)) };
+        : { topic: l('Limites', 'Limits'), short: r.kind === 'psvOver' ? (r.excess ? `+${durText(r.excess)}` : l('Excede', 'Over')) : (r.kind === 'limitOver' || r.kind === 'standbyOver' || r.kind === 'nightOver') ? l('Excede', 'Over') : (r.kind === 'psvUncertain' || r.kind === 'nightUncertain' || r.kind === 'limitUncertain' || r.kind === 'unknownToday') ? l('Incerto', 'Uncertain') : r.kind === 'noData' ? '—' : l('Dentro', 'Within') };
+      case 'headroom':  return { topic: l('Margem', 'Margin'), short: r.kind === 'noData' ? '—' : it.status === 'bad' ? l('Excede', 'Over') : r.uncertain ? l('Incerto', 'Uncertain') : (r.headroomMin >= 60 ? durHM(Math.floor(r.headroomMin / 60) * 60) : hhmm(r.headroomMin)) };
       case 'next':      return { topic: l('Próximo', 'Next'), short: r.none ? '—' : dateLbl(r.iso, todayISO, lang) };
       case 'rest':      return { topic: l('Descanso', 'Rest'), short: it.status === 'neutral' ? '—' : hhmm(r.actualMin) };
       case 'roster':    return { topic: l('Escala', 'Roster'), short: r.kind === 'none' ? l('Em dia', 'Up to date') : `${r.counts ? r.counts.total : 0} ${l('mud.', 'chg')}` };

@@ -7,7 +7,7 @@ import { RE_CODE_SHAPE } from '../data/calendarParse';
 // um evento não reconhecido com horas e com a forma de um código da escala fica no dia ("código novo", unknownOf); o resto fica de fora
 const isNewCode = (e) => !!(e && e.kind === 'other' && !(e.allDay && !e.times) && RE_CODE_SHAPE.test(String(e.title || '').trim()));
 import { importWindow, readCalendarRoster, absenceSuggestions, baseOfFor } from '../data/rosterRead';
-import { buildImportCandidates, importSaveFields, candidateKind, promoteMissing, verifyCandidates, sortCandidates, storedFacts, importSections, diagSummary } from '../data/rosterImport';
+import { buildImportCandidates, importSaveFields, candidateKind, archiveEntry, promoteMissing, verifyCandidates, sortCandidates, storedFacts, importSections, diagSummary } from '../data/rosterImport';
 import { prettyRoute, monthPillLabel, wdShort } from '../data/escalaDay';
 import { issueText } from '../data/simulation';
 import { parseEasyjetRoster, rosterLooksForeign } from '../data/pdfRoster';
@@ -50,7 +50,7 @@ const demoCands = () => {
 // o que saiu); a linha do mês quando a secção passa de um mês para o outro · o antes riscado por cima · o per diem a verde, com
 // cêntimos · "Confirmar N serviços" largo no fundo. A escolha Calendário | PDF saiu do topo (escolhe-se na janela do calendário da Escala, antes de chegar aqui).
 export default function RosterImportSheet({ visible, onClose, onConnect, initialSource, onDone }) {
-  const { lang, duties, dayLog, saveDuty, saveRosterUnknown, removeDuty, company, calendarId, isPilot, cabinGapMin, splitAdminMin, postFlightMin, ae, aeAt, crewAt, crewCategory, crewFleet, base, homeBaseAt, aeEvents, addAeEvents, addRosterLog } = useContext(AppContext);
+  const { lang, duties, dayLog, saveDuty, rosterUnknown, saveRosterUnknown, removeDuty, company, calendarId, isPilot, cabinGapMin, splitAdminMin, postFlightMin, ae, aeAt, crewAt, crewCategory, crewFleet, base, homeBaseAt, aeEvents, addAeEvents, addRosterLog } = useContext(AppContext);
   // Doença: o episódio inteiro, pilotos e cabine (bloco 5) — o motor paga os dias do acordo e tira a base dos dias de baixa.
   const sickFirst3 = !ae || ae.SICK_FIRST3 !== false;
   const insets = useSafeAreaInsets();
@@ -74,9 +74,17 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
   const [sickSel, setSickSel] = useState(true);
 
   const unknownRead = useRef(null);
+  // Os códigos que a app não conhece, como ficam DEPOIS desta leitura (os guardados fora da janela dela + os que ela traz): a
+  // verificação conta-os com as duas pontas (camada 2, ftl/unknownCodes.js).
+  const unknownNow = () => {
+    const r = unknownRead.current, o = {};
+    for (const k in (rosterUnknown || {})) if (!r || !r.window || k < r.window.start || k > r.window.end) o[k] = rosterUnknown[k];
+    for (const u of ((r && r.list) || [])) if (u && u.dateISO) (o[u.dateISO] || (o[u.dateISO] = [])).push(u);
+    return o;
+  };
   const load = async () => {
     setLoading(true); setDenied(false);
-    const r = await readCalendarRoster({ companySlug: company?.slug, calendarId, duties, dayLog, base, baseAt: homeBaseAt, aeEvents, isPilot, cabinGapMin, splitAdminMin, postFlightMin, sickFirst3 });
+    const r = await readCalendarRoster({ rosterUnknown, companySlug: company?.slug, calendarId, duties, dayLog, base, baseAt: homeBaseAt, aeEvents, isPilot, cabinGapMin, splitAdminMin, postFlightMin, sickFirst3 });
     let next = r.cands;
     if (DEMO_EXAMPLES && next.length === 0) next = demoCands();   // TEMP: exemplos se vazio
     else if (!r.ok) setDenied(true);
@@ -110,7 +118,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
       const text = await pdf.extractText(uri);
       try { await FileSystem.deleteAsync(uri, { idempotent: true }); } catch { /* a cópia local apaga-se à mesma ao fechar */ }
       const r = parseEasyjetRoster(text, company?.slug, { baseOf: baseOfFor(base, homeBaseAt) });
-      setCands(buildImportCandidates({ activities: r.activities, nonflights: r.nonflights, duties, dayLog, base, baseAt: homeBaseAt, isPilot, cabinGapMin, splitAdminMin, postFlightMin }));
+      setCands(buildImportCandidates({ activities: r.activities, nonflights: r.nonflights, duties, dayLog, base, baseAt: homeBaseAt, isPilot, cabinGapMin, splitAdminMin, postFlightMin, unknown: unknownNow() }));
       setPasteDiag(r.diag);
       // Férias e doença do PDF também são sugeridas (auditoria A-236), como no calendário.
       const ab = absenceSuggestions(r.vacDates, r.sickDates, aeEvents, sickFirst3);
@@ -190,9 +198,9 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
     return !!(ex && !ex.deleted && (!ex.source || ex.source === 'manual'));
   };
   const infos = shown.map((c) => ({ c, info: candInfo(c) }));
-  const fixCount = infos.filter((x) => x.info.kind === 'fix').length;
+  const fixCount = infos.filter((x) => x.info.kind === 'unc').length;   // os incertos (falta um dado): ENTRAM, com as duas pontas (ponto 3, 2026-11-18)
   // Entra no import = selecionado E não está "a corrigir" (esses só contam depois de corrigidos).
-  const importable = infos.filter((x) => x.info.kind !== 'fix');   // entram no import (saves + cancelados); os "fix" só após corrigir
+  const importable = infos.filter((x) => x.info.kind !== 'keep');   // entram todos, menos a releitura que perdeu horas (fica o guardado); o que estava "a corrigir" entra incerto
   const saveCount = importable.filter((x) => x.c.action !== 'delete').length;
   const delCount = importable.filter((x) => x.c.action === 'delete').length;                       // cancelados detetados (ausência)
   const selDelCount = importable.filter((x) => x.c.action === 'delete' && x.c.selected).length;     // os que TU marcaste p/ apagar
@@ -223,7 +231,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
       // e vazio apaga o que estava guardado.
       const p = promoteMissing({ ...c.duty, ...corrected, edited: true }, corrected.kind || c.kind);
       return { ...c, duty: { ...p.duty, kind: p.kind }, kind: p.kind };
-    }), { duties, dayLog, base, baseAt: homeBaseAt, isPilot, cabinGapMin, splitAdminMin, postFlightMin })));
+    }), { duties, dayLog, base, baseAt: homeBaseAt, isPilot, cabinGapMin, splitAdminMin, postFlightMin, unknown: unknownNow() })));
     setCorrecting(null);
   };
 
@@ -243,18 +251,10 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
       const nowD = new Date();
       const detectedAt = `${nowD.getFullYear()}-${p2(nowD.getMonth() + 1)}-${p2(nowD.getDate())}T${p2(nowD.getHours())}:${p2(nowD.getMinutes())}`;
       const logEntries = [];
+      // (só o que se lê dos dois lados — data/rosterImport.js archiveEntry)
       for (const c of items) {
-        if (c.action === 'delete') continue;
-        if (c.status !== 'changed' && c.status !== 'conflict') continue;
-        const prev = duties[c.duty.duty_date];
-        if (!prev || prev.deleted || !prev.report_time) continue;
-        logEntries.push({
-          id: `rl${Date.now().toString(36)}${logEntries.length}`,
-          dutyDate: c.duty.duty_date, detectedAt, source: src,
-          route: c.duty.route || prev.route || null,
-          before: { report: prev.report_time || null, end: prev.block_on || null, sectors: prev.sectors ?? null, kind: prev.kind || 'flight' },
-          after: { report: c.duty.report_time || null, end: c.duty.block_on || null, sectors: c.duty.sectors ?? null, kind: c.kind || 'flight' },
-        });
+        const e = archiveEntry(c, duties[c.duty.duty_date], detectedAt, src);
+        if (e) logEntries.push({ ...e, id: `${e.id}${logEntries.length}` });
       }
       if (logEntries.length && addRosterLog) addRosterLog(logEntries);
       // o que a app não conhece fica no dia ("código novo", o dia incerto) — substitui os da janela desta leitura
@@ -274,7 +274,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
       if (sickAdded) addAeEvents(sickDates.map((d) => ({ date: d, type: 'sickDays' })));
       success();
       const saved = saves.length;
-      const ignored = fixCount;   // os "a corrigir" ficaram de fora
+      const ignored = 0;   // (já nada fica de fora)
       const savedMsg = l(`${saved} aplicada(s)${deletes.length ? ` · ${deletes.length} cancelada(s)` : ''}${ignored ? ` · ${ignored} ignorada(s)` : ''}${warn ? ` · ${warn} com aviso` : ''}${vacAdded ? ` · ${vacAdded} dia(s) de férias registados` : ''}${sickAdded ? ` · ${sickAdded} dia(s) de doença registados` : ''}.`,
         `${saved} applied${deletes.length ? ` · ${deletes.length} cancelled` : ''}${ignored ? ` · ${ignored} skipped` : ''}${warn ? ` · ${warn} with warnings` : ''}${vacAdded ? ` · ${vacAdded} leave day(s) logged` : ''}${sickAdded ? ` · ${sickAdded} sick day(s) logged` : ''}.`);
       if (onDone) {
@@ -304,7 +304,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
   const infoOf = new Map(infos.map((x) => [x.c, x.info]));
   const plural = (n, one, many) => (n === 1 ? one : many);
   const SEC_LABEL = {
-    fix: () => l('A corrigir', 'To fix'),
+    fix: () => l('Incertos · falta um dado', 'Uncertain · a fact is missing'),
     changed: (n) => plural(n, l('Mudou', 'Changed'), l('Mudaram', 'Changed')),
     new: (n) => plural(n, l('Novo', 'New'), l('Novos', 'New')),
     removed: (n) => plural(n, l('Deixou de aparecer', 'Stopped appearing'), l('Deixaram de aparecer', 'Stopped appearing')),
@@ -321,12 +321,14 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
   const metaLow = (c) => [c.duty.report_time ? `report ${c.duty.report_time}` : null, c.duty.sectors ? `${c.duty.sectors} ${plural(c.duty.sectors, l('setor', 'sector'), l('setores', 'sectors'))}` : null, c.multi > 1 ? l(`${c.multi} serviços no dia`, `${c.multi} duties that day`) : null].filter(Boolean).join(' · ');
   const issueOf = (c, info) => {
     const legsIssue = (c.action !== 'delete' && c.prospect) ? c.prospect.issues.find((x) => x.type === 'fdpUncertain' && (x.unknowns || []).includes('legTimes')) : null;
-    if (info.kind === 'fix') {
-      return { legsIssue, warn: true, text: info.badAp ? l(`aeroporto «${info.badAp}» não reconhecido`, `airport “${info.badAp}” not recognised`)
-        : info.reason === 'end' ? l('sem hora de fim — corrige para contar', 'no end time — fix to count')
-        : info.reason === 'start' ? l('sem hora de início — corrige para contar', 'no start time — fix to count')
-        : info.reason === 'times' ? l('horas das pernas por confirmar', 'leg times to confirm')
-        : l('sem rota — corrige para somar', 'no route — fix to count') };
+    if (info.kind === 'keep') return { legsIssue, warn: true, text: l('a leitura veio sem horas — fica o que estava guardado', 'this reading has no times — the saved duty stays') };
+    if (info.kind === 'unc') {
+      // Entra com o que a escala diz; o que falta tem de vir do calendário (nada se corrige à mão).
+      return { legsIssue, warn: true, text: info.badAp ? l(`entra incerto — aeroporto «${info.badAp}» não reconhecido`, `goes in as uncertain — airport “${info.badAp}” not recognised`)
+        : info.reason === 'end' ? l('entra incerto — sem hora de fim', 'goes in as uncertain — no end time')
+        : info.reason === 'start' ? l('entra incerto — sem hora de início', 'goes in as uncertain — no start time')
+        : info.reason === 'times' ? l('entra incerto — sem as horas das pernas', 'goes in as uncertain — no leg times')
+        : l('entra incerto — sem rota', 'goes in as uncertain — no route') };
     }
     if (c.prospect && c.prospect.verdict === 'bad') { const it = c.prospect.issues.find((x) => x.level === 'bad'); if (it) return { legsIssue, warn: true, text: issueText(it, lang, c.duty.duty_date) }; }
     // O "incerto" também se diz (risco R6 do bloco 4): falta um facto que a lei precisa, ou o sítio não bate.
@@ -356,7 +358,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
         : c.status === 'refresh' ? l('a escala não mudou', 'the roster did not change')
         : iss.text || otherDiff(c) || metaLow(c) || null,
     ].filter(Boolean).join(' · ');
-    const right = info.kind === 'fix' ? <Text style={[TXT3.act, { color: W.ink }]}>{l('Corrigir ›', 'Fix ›')}</Text>
+    const right = false ? null
       : removed ? tick(c.selected, c.selected ? l('Marcado para apagar', 'Marked to delete') : l('Não marcado', 'Not marked'))
       : (info.perDiem != null || info.nsEur != null) ? (
         <View style={s.pay}>
@@ -364,14 +366,14 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
           {info.nsEur != null ? <Text style={[TXT3.cardSub, { color: W.gainOut }]}>{l('pernoita', 'night stop')} +{fmtEur0n(info.nsEur)}</Text> : null}
         </View>
       ) : null;
-    const onPress = (info.kind === 'fix' || iss.legsIssue) ? () => correct(c) : removed ? () => toggle(c) : undefined;
+    const onPress = iss.legsIssue ? () => correct(c) : removed ? () => toggle(c) : undefined;   // (o "Corrigir ›" dos incertos saiu: o que falta vem do calendário)
     const legs = c.kind === 'flight' && Array.isArray(c.duty.legs) && c.duty.legs.length > 1
       ? c.duty.legs.map((lg) => `${lg.dh ? 'DH ' : ''}${lg.dep || '?'}→${lg.arr || '?'} ${lg.off || '—'}–${lg.on || '—'}`).join('  ·  ') : null;
     return (
       <MarkRow key={c.duty.duty_date + c.kind} first={first} mark={mark} right={right} onPress={onPress}
         a11yRole={removed ? 'checkbox' : 'button'} a11yState={removed ? { checked: !!c.selected } : undefined}
         old={rd && rd.before ? prettyRoute(rd.before) || rd.before : null}
-        a11yLabel={[fmtDayShort(iso), nameOf(c), removed ? l('deixou de aparecer', 'stopped appearing') : iss.warn ? l('a corrigir', 'to fix') : null, sub].filter(Boolean).join('. ')}
+        a11yLabel={[fmtDayShort(iso), nameOf(c), removed ? l('deixou de aparecer', 'stopped appearing') : info.kind === 'unc' ? l('entra incerto', 'goes in as uncertain') : iss.warn ? l('com aviso', 'with a warning') : null, sub].filter(Boolean).join('. ')}
         title={nameOf(c)} sub={sub} subTone={iss.warn ? W.ink : undefined}>
         {legs ? <Text style={[TXT3.cardSub, s.legs, { color: W.tabSub }]} numberOfLines={2}>{legs}</Text> : null}
       </MarkRow>
@@ -436,13 +438,13 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
   const summary = [
     l(`Li ${shown.length} ${plural(shown.length, 'dia', 'dias')} ${source === 'paste' ? 'do PDF' : 'do calendário'}`, `Read ${shown.length} ${plural(shown.length, 'day', 'days')} from the ${source === 'paste' ? 'PDF' : 'calendar'}`),
     shown.length - fixCount ? l(`${shown.length - fixCount} ${plural(shown.length - fixCount, 'pronto', 'prontos')}`, `${shown.length - fixCount} ready`) : null,
-    fixCount ? l(`${fixCount} a corrigir`, `${fixCount} to fix`) : null,
+    fixCount ? l(`${fixCount} ${plural(fixCount, 'incerto', 'incertos')}`, `${fixCount} uncertain`) : null,
     sameCount ? l(`${sameCount} ${plural(sameCount, 'igual fica', 'iguais ficam')} como ${plural(sameCount, 'está', 'estão')}`, `${sameCount} unchanged stay as they are`) : null,
   ].filter(Boolean).join(' · ') + '.';
   const confirmLabel = `${saveCount ? l(`Confirmar ${saveCount} ${plural(saveCount, 'serviço', 'serviços')}`, `Confirm ${saveCount} ${plural(saveCount, 'duty', 'duties')}`) : l('Aplicar', 'Apply')}${selDelCount ? l(` · apagar ${selDelCount}`, ` · delete ${selDelCount}`) : ''}${payTotal ? ` · +${fmtEur0n(payTotal)}` : ''}`;
   const footNote = [
     nsTotal ? l(`per diem +${fmtEur0n(perDiemTotal)} · pernoitas +${fmtEur0n(nsTotal)}`, `per diem +${fmtEur0n(perDiemTotal)} · night stops +${fmtEur0n(nsTotal)}`) : null,
-    fixCount ? l(`${plural(fixCount, 'o que está', 'os que estão')} a corrigir só ${plural(fixCount, 'entra', 'entram')} depois de ${plural(fixCount, 'corrigido', 'corrigidos')}`, `the ones to fix only go in once fixed`) : null,
+    fixCount ? l(`${plural(fixCount, 'o incerto entra', 'os incertos entram')} com o que a escala diz; o que falta tem de vir do calendário`, `the uncertain ones go in with what the roster says; what is missing has to come from the calendar`) : null,
   ].filter(Boolean).join(' · ');
 
   return (

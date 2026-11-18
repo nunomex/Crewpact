@@ -181,7 +181,7 @@ for (const [gapLbl, off2, on2] of [['6h01', '14:16', '15:51'], ['7h00', '15:15',
   const gap = dutyFromActivity(acts([ev('EZY1 LIS-OPO', '2026-10-15T06:40:00', '2026-10-15T07:40:00', { notes: 'RP 05:40' }),
     ev('EZY2 FNC-LIS', '2026-10-15T11:00:00', '2026-10-15T12:40:00')])[0], 'LIS');
   eq('A-226 pernas que não encadeiam: sem rota', gap.route, null);
-  eq('A-226 … e o candidato fica a corrigir', candidateKind({ kind: 'flight', duty: gap }).kind, 'fix');
+  eq('A-226 … e o candidato entra incerto (sem rota)', [candidateKind({ kind: 'flight', duty: gap }).kind, candidateKind({ kind: 'flight', duty: gap }).reason], ['unc', 'route']);
   const chain = dutyFromActivity(acts([ev('EZY1 LIS-OPO', '2026-10-15T06:40:00', '2026-10-15T07:40:00', { notes: 'RP 05:40' }),
     ev('DH EZY9 OPO-FNC', '2026-10-15T08:30:00', '2026-10-15T10:10:00'), ev('EZY2 FNC-LIS', '2026-10-15T11:00:00', '2026-10-15T12:40:00')])[0], 'LIS');
   eq('A-226 com o DH no meio: encadeiam, 2 setores', [chain.route, chain.sectors, chain.flight_minutes], ['LIS-OPO-FNC-LIS', 2, 160]);
@@ -214,7 +214,7 @@ DH EJU7004 [320] OPO - LIS A13:40 - A14:35`);
   const r4 = P('08/04/2025 Tue OFC8 09:00');
   eq('A-220 escritório sem fim', r4.nonflights.map((n) => [n.kind, n.start, n.end]), [['office', '09:00', null]]);
   const c4 = buildImportCandidates({ nonflights: r4.nonflights, ...PIL });
-  eq('A-220 … a corrigir (falta o fim)', [candidateKind(c4[0]).kind, candidateKind(c4[0]).reason], ['fix', 'end']);
+  eq('A-220 … entra incerto (falta o fim)', [candidateKind(c4[0]).kind, candidateKind(c4[0]).reason], ['unc', 'end']);
 
   // A-221: dia com HSBY e voos — os voos não desaparecem. Sem a hora em que acabou o standby (= apresentação para o voo, CS
   // FTL.1.225(b)(5)) o dia fica a corrigir; com ela, o standby é o "standby antes" do voo: PSV desde a apresentação e 25 %.
@@ -224,7 +224,7 @@ EJU7004 [320] OPO - LIS A15:00 - A15:50`);
   eq('A-221 HSBY + voos: os voos ficam', [r5.activities.length, r5.activities[0] && r5.activities[0].legs.length, r5.activities[0] && r5.activities[0].legs[0].report], [1, 2, null]);
   eq('A-221 HSBY sem fim', r5.nonflights.map((n) => [n.kind, n.start, n.end]), [['standby_home', '05:00', null]]);
   const c5 = buildImportCandidates({ activities: r5.activities, nonflights: r5.nonflights, ...PIL });
-  eq('A-221 … um candidato do dia, a corrigir (o standby à frente, para se corrigir)', [c5.length, candidateKind(c5[0]).kind, c5[0].kind], [1, 'fix', 'standby_home']);
+  eq('A-221 … um candidato do dia, a corrigir (o standby à frente, para se corrigir)', [c5.length, candidateKind(c5[0]).kind, c5[0].kind], [1, 'unc', 'standby_home']);
   const r6 = P(`09/04/2025 Wed HSBY 05:00 A05:00 - A12:30
 EJU7003 [320] LIS - OPO A13:30 - A14:20
 EJU7004 [320] OPO - LIS A15:00 - A15:50`);
@@ -270,7 +270,7 @@ FNC - LIS
 06:00
 A07:00 - A08:45`);
   const c12 = buildImportCandidates({ activities: r12.activities, ...PIL });
-  eq('A-237 rotas e horas que não batem (células soltas): a corrigir', [candidateKind(c12[0]).kind, candidateKind(c12[0]).reason], ['fix', 'times']);
+  eq('A-237 rotas e horas que não batem (células soltas): a corrigir', [candidateKind(c12[0]).kind, candidateKind(c12[0]).reason], ['unc', 'times']);
 
   // A-236: férias e doença no PDF também são sugeridas.
   const r13 = P(`14/04/2025 Mon LVE Annual leave
@@ -444,7 +444,7 @@ EJU8002 [320] LGW - LIS CNX
 EJU8003 [320] LIS - OPO A20:00 - A21:00
 EJU8004 [320] OPO - LIS A21:40 - A22:40`, 'easyjet');
   const c2 = buildImportCandidates({ activities: r2.activities, ...PIL });
-  eq('R2: cancelada que parte o dia → um candidato, a corrigir', [c2.length, candidateKind(c2[0]).kind], [1, 'fix']);
+  eq('R2: cancelada que parte o dia → um candidato, incerto', [c2.length, candidateKind(c2[0]).kind], [1, 'unc']);
 }
 
 // ───────────────────────────────────────────────────────────────────────────────
@@ -707,6 +707,52 @@ EJU8013 [320] LIS - FNC A00:30 - A02:00`, 'easyjet');
   eq('lido: o selo "!" nos dias com alguma coisa de fora', d.days.map((x) => x.unknown), [false, false, true, false, false, true, false]);
   eq('lido: os eventos do dia pela ordem do calendário', d.days[4].events.map((e) => e.title), ['EZY1003 LIS-OPO', 'HSBY']);
   eq('lido: sem eventos', diagSummary([]), { total: 0, flights: 0, ground: 0, unknown: 0, off: 0, days: [] });
+}
+
+// ── PONTO 3 da sessão Fable 5.2 (2026-11-18): O QUE ESTAVA "A CORRIGIR" ENTRA COMO INCERTO — nenhum dia se perde ──
+// A regra "só o calendário": a app não pede que se corrija à mão. Um serviço a que falta a hora de fim ou de início, um voo sem
+// as horas das pernas, sem rota ou com um aeroporto que a app não conhece ENTRA com o que a escala diz; o motor conta-o com as
+// duas pontas (ftl/unknownCodes.js) e o dia fica incerto, com o que falta — que tem de vir do calendário.
+{
+  const { importSaveFields, verifyCandidates, importSections, candidateKind } = require(path.resolve('data/rosterImport.js'));
+  const office = (date, rep, end) => ({ duty: { duty_date: date, kind: 'office', report_time: rep, block_on: end, sectors: 0, flight_minutes: 0 }, kind: 'office', status: 'ok', exists: false, diff: [], prospect: null, selected: true, action: 'save' });
+  const flight = (date, rep, on) => ({ duty: { duty_date: date, kind: 'flight', report_time: rep, block_off: '07:00', block_on: on, sectors: 2, flight_minutes: 240, route: 'LIS-FNC-LIS', legs: [{ dep: 'LIS', arr: 'FNC', off: '07:00', on: '08:45' }, { dep: 'FNC', arr: 'LIS', off: '09:30', on }] }, kind: 'flight', status: 'ok', exists: false, diff: [], prospect: null, selected: true, action: 'save' });
+  const cs = verifyCandidates([office('2026-10-10', '09:00', null), flight('2026-10-11', '06:00', '11:10')], { duties: {}, dayLog: {}, ...PIL });
+  const c10 = cs.find((c) => c.duty.duty_date === '2026-10-10'), c11 = cs.find((c) => c.duty.duty_date === '2026-10-11');
+  eq('ponto 3: o escritório sem fim é verificado e entra incerto', [candidateKind(c10).kind, candidateKind(c10).reason, !!c10.prospect, c10.prospect && c10.prospect.verdict, c10.prospect && c10.prospect.issues.filter((x) => x.type === 'missingTimes').map((x) => x.why)], ['unc', 'end', true, 'unc', ['noEnd']]);
+  // … e os outros dias veem-no: o voo do dia seguinte não tem o repouso "certo" (falta o fim do serviço de antes).
+  const rb = c11.prospect.issues.find((x) => x.type === 'restBefore');
+  eq('ponto 3: o dia seguinte vê o serviço sem fim (repouso incerto)', [c11.prospect.verdict, rb && rb.status, rb && rb.kind], ['unc', 'unc', 'noPrevEnd']);
+  eq('ponto 3: grava-se como veio (sem inventar o fim)', [importSaveFields(c10).report_time, importSaveFields(c10).block_on], ['09:00', null]);
+  // Na folha fica na mesma secção de cima (a que pede atenção), agora "incertos".
+  eq('ponto 3: a secção', importSections(cs).map((x) => [x.key, x.items.map((c) => c.duty.duty_date)]), [['fix', ['2026-10-10']], ['new', ['2026-10-11']]]);
+  // Um escritório sem INÍCIO: o voo 13 h depois do fim dele fica incerto (pode ter durado 17 h); antes era "certo".
+  const cs2 = verifyCandidates([office('2026-10-10', null, '17:00'), flight('2026-10-11', '06:00', '11:10')], { duties: {}, dayLog: {}, ...PIL });
+  const d11 = cs2.find((c) => c.duty.duty_date === '2026-10-11'), rb2 = d11.prospect.issues.find((x) => x.type === 'restBefore');
+  eq('ponto 3: o serviço sem início não fica invisível para o dia seguinte', [d11.prospect.verdict, rb2 && rb2.kind, rb2 && rb2.unkWhy], ['unc', 'unknownCode', 'noStart']);
+}
+
+// ── 2.ª REVISÃO INDEPENDENTE (2026-11-18): uma releitura que PERDEU dados não apaga o que estava guardado, nem cria prova falsa ──
+{
+  const { buildImportCandidates, candidateKind, importSections, verifyCandidates, lostData, archiveEntry } = require(path.resolve('data/rosterImport.js'));
+  // Achado 2: guardado um escritório 09:00–17:00; a releitura traz o mesmo evento sem hora de fim. A leitura perdeu um dado que a
+  // escala guardada tinha: fica o que estava (a regra "só o calendário" não manda aceitar uma leitura pior).
+  const stored = { '2026-10-10': { duty_date: '2026-10-10', kind: 'office', report_time: '09:00', block_on: '17:00', sectors: 0, flight_minutes: 0, source: 'calendar' } };
+  const cs = buildImportCandidates({ nonflights: [{ dateISO: '2026-10-10', start: '09:00', end: null, kind: 'office' }], duties: stored, dayLog: {}, ...PIL });
+  const c = cs.find((x) => x.duty.duty_date === '2026-10-10');
+  eq('revisão 2/2: a releitura sem fim de um serviço guardado completo → fica o guardado', [!!c, c && candidateKind(c).kind, c && candidateKind(c).reason, c && c.prospect], [true, 'keep', 'end', null]);
+  eq('revisão 2/2: … na secção de cima, e não se aplica', [importSections(cs).map((x) => x.key), lostData(c, stored['2026-10-10'])], [['fix'], true]);
+  // … mas se o guardado já estava sem fim, ou o dia é novo, entra incerto como os outros.
+  eq('revisão 2/2: guardado também sem fim → entra incerto', lostData(c, { ...stored['2026-10-10'], block_on: null }), false);
+  // Achado 1: o arquivo das mudanças (a prova do SNC/RDP e das correções das horas) só guarda uma mudança que se pode ler dos
+  // dois lados: o MESMO serviço, com horas antes e depois. Um candidato incerto (faltam horas) ou guardado não é prova de nada.
+  const prev = { kind: 'flight', report_time: '06:00', block_on: '11:00', sectors: 2, route: 'LIS-FNC-LIS' };
+  const full = { duty: { duty_date: '2026-07-14', kind: 'flight', report_time: '06:00', block_on: '13:30', sectors: 2, route: 'LIS-FNC-LIS' }, kind: 'flight', status: 'changed', action: 'save' };
+  const e = archiveEntry(full, prev, '2026-07-14T15:00', 'calendar');
+  eq('revisão 2/1: mudança legível → entra no arquivo', e && [e.dutyDate, e.detectedAt, e.before.end, e.after.end, e.after.kind], ['2026-07-14', '2026-07-14T15:00', '11:00', '13:30', 'flight']);
+  const promoted = { duty: { duty_date: '2026-07-14', kind: 'office', report_time: '14:00', block_on: null, sectors: 0, extra: [prev] }, kind: 'office', status: 'changed', action: 'save' };
+  eq('revisão 2/1: o serviço incompleto que passou à frente não é uma mudança do voo → fora do arquivo', archiveEntry(promoted, prev, '2026-07-14T15:00', 'calendar'), null);
+  eq('revisão 2/1: novo, igual ou cancelado → fora do arquivo', [archiveEntry({ ...full, status: 'ok' }, prev, 'x', 'calendar'), archiveEntry({ ...full, action: 'delete' }, prev, 'x', 'calendar'), archiveEntry(full, null, 'x', 'calendar')], [null, null, null]);
 }
 
 console.log(`\nimportação (bloco 4) — ${ok} passou, ${fail} falhou (${ok + fail} asserções)`);

@@ -90,14 +90,15 @@ export default function SimulationSheet({ visible, onClose }) {
   const memoDeps = useRef(null);
   const isTapAt = (iso) => { const a = iso ? aeAt(iso) : aeNow; return !!a && /^tap/.test(String(a.AE_ID || '')); };
   const seq = useMemo(() => {
-    const deps = [duties, dayLog, postFlightMin, isPilot, baseNow, homeBaseAt, cabinGapMin, splitAdminMin, aeAt, crewAt, crewFleet];
+    const deps = [duties, dayLog, postFlightMin, isPilot, baseNow, homeBaseAt, cabinGapMin, splitAdminMin, aeAt, crewAt, crewFleet, ctx.rosterUnknown];
     if (!memoDeps.current || deps.some((v, i) => v !== memoDeps.current[i])) { memos.current = new Map(); memoDeps.current = deps; }
     return simSequence(entries, {
     duties, dayLog, base: baseNow, baseAt: homeBaseAt, lang, memos: memos.current,
-    ctx: { postFlightMin: postFlightMin || 0, isPilot, base: baseNow, baseAt: homeBaseAt, cabinGapMin, splitAdminMin,
+    // os códigos que a app não conhece contam com as duas pontas (camada 2, ftl/unknownCodes.js)
+    ctx: { postFlightMin: postFlightMin || 0, isPilot, base: baseNow, baseAt: homeBaseAt, cabinGapMin, splitAdminMin, unknown: ctx.rosterUnknown || null,
       tap: { isTapAt, crewType: isPilot ? 'pilot' : 'cabin', fleetAt: (iso) => ((crewAt(iso) || {}).fleet || crewFleet || null) } },
     });
-  }, [entries, duties, dayLog, lang, postFlightMin, isPilot, baseNow, homeBaseAt, cabinGapMin, splitAdminMin, aeAt, crewAt, crewFleet]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [entries, duties, dayLog, lang, postFlightMin, isPilot, baseNow, homeBaseAt, cabinGapMin, splitAdminMin, aeAt, crewAt, crewFleet, ctx.rosterUnknown]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // quanto recebe — a mesma conta do total do mês (serviceMoney): per diem, posicionamento e pernoita, pelo acordo DESSE dia
   const moneyParts = (d, date) => {

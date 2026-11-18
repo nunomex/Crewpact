@@ -404,6 +404,18 @@ for (const [who, C, ct] of [['cabine', CAB, 'cabin'], ['piloto', PIL, 'pilot']])
   // foi, mas a viagem está na escala: não se avisa que falta.
   const posNoRoute = { ...base, '2026-03-11': { kind: 'positioning', report_time: '09:00', block_on: '12:00', sectors: 0, flight_minutes: 0, route: null } };
   eq('sítio: posicionamento sem rota pelo meio → sem aviso', has(simulateDuty(sim('2026-03-12', F('12:00', '18:00', 2, 'LIS-FNC-LIS')), { duties: posNoRoute, ...PIL }), 'placeGap'), false);
+  // (Sessão Fable 5.2, 2026-11-17.) Um VOO sem rota nem pernas pelo meio também é uma viagem para sítio desconhecido: não se avisa.
+  const flNoRoute = { ...base, '2026-03-11': { kind: 'flight', report_time: '09:00', block_on: '12:00', sectors: 1, flight_minutes: 150, route: null } };
+  eq('sítio: voo sem rota pelo meio → sem aviso', has(simulateDuty(sim('2026-03-12', F('12:00', '18:00', 2, 'LIS-FNC-LIS')), { duties: flNoRoute, ...PIL }), 'placeGap'), false);
+  // O repouso antes fica incerto pelo MESMO motivo (data/today.js, 'placeGap'): diz-se uma vez, no aviso do sítio.
+  eq('sítio: o repouso incerto pelo buraco não repete o aviso', [r.rest.before && r.rest.before.kind, r.issues.filter((i) => i.type === 'restBefore').length, r.issues.filter((i) => i.type === 'placeGap').length], ['placeGap', 0, 1]);
+  // … mas se o serviço simulado não tem sítio (uma assistência) e o voo a seguir, no mesmo bloco, parte de outro aeroporto, o
+  // aviso do sítio não é dele: fica o do repouso, com o motivo.
+  const sbThenFl = { ...base, '2026-03-11': F('12:00', '18:00', 2, 'LIS-FNC-LIS') };
+  const rsb = simulateDuty(sim('2026-03-11', { kind: 'standby_airport', report_time: '08:00', block_on: '12:00', sectors: 0, flight_minutes: 0 }), { duties: sbThenFl, ...PIL, mode: 'append' });
+  const rb = issue(rsb, 'restBefore');
+  eq('sítio: bloco que começa numa assistência e parte de outro aeroporto → o repouso antes diz o motivo', [rb && rb.level, rb && rb.kind, rb && issueText(rb, 'pt', '2026-03-11')],
+    ['unc', 'placeGap', 'repouso antes: no máximo 20 h 30 — o serviço de 10/3 acabou em LGW e o seguinte parte de LIS; falta um posicionamento na escala?']);
   // Um dia de escritório (sem rota) pelo meio não diz onde se está: o aviso mantém-se.
   const withOfc = { ...base, '2026-03-11': OFC('09:00', '13:00') };
   eq('sítio: escritório pelo meio não fecha a cadeia', has(simulateDuty(sim('2026-03-12', F('12:00', '18:00', 2, 'LIS-FNC-LIS')), { duties: withOfc, ...PIL }), 'placeGap'), true);

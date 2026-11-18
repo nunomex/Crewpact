@@ -62,7 +62,8 @@ export default function AuditSheet({ visible, onClose, audit, monthName = '', la
           const meta = KIND_META[it.kind] || KIND_META.route;
           const lb = label(it);
           const pv = it.provaId ? provaFor(it.provaId, provaCtx) : null;
-          const eur = it.eur != null ? `+${fmtEur(it.eur, lang)}` : it.eurMin != null ? `≥ ${fmtEur(it.eurMin, lang)}` : null;
+          // (o candidato incerto — a correção das horas vista depois do dia do serviço — não é dinheiro certo: 'até')
+          const eur = it.eur != null ? `+${fmtEur(it.eur, lang)}` : it.eurMin != null ? `≥ ${fmtEur(it.eurMin, lang)}` : it.eurMax != null ? `${l('até', 'up to')} ${fmtEur(it.eurMax, lang)}` : null;
           // Um dia → o dia no quadradinho, com o selo "!" (por confirmar); vários dias → o ícone do tipo.
           const mark = it.date ? { day: String(+String(it.date).slice(8, 10)), wd: wdShort(it.date, lang === 'en' ? 'en' : 'pt'), bg: meta.bg, badge: 'alert' } : { icon: meta.icon, bg: meta.bg };
           return (

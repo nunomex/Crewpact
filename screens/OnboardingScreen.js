@@ -293,14 +293,14 @@ export default function OnboardingScreen() {
   // "Guardar a escala" grava só o que é NOVO e PRONTO (+ férias e doença detetadas, como a folha faz por
   // defeito). Voos por corrigir, sobreposições a edições tuas e cancelados ficam para "Rever um a um".
   const rCands = (rRes && rRes.cands) || [];
-  const quick = rCands.filter((c) => c.action !== 'delete' && c.status !== 'same' && c.status !== 'conflict' && candidateKind(c).kind !== 'fix');
-  const fixN = rCands.filter((c) => c.action !== 'delete' && c.status !== 'same' && candidateKind(c).kind === 'fix').length;
+  const quick = rCands.filter((c) => c.action !== 'delete' && c.status !== 'same' && c.status !== 'conflict' && !c.keep);   // os incertos (falta um dado) também entram — ponto 3, 2026-11-18
+  const fixN = rCands.filter((c) => c.action !== 'delete' && c.status !== 'same' && c.status !== 'conflict' && candidateKind(c).kind === 'unc').length;
   const nFlights = quick.filter((c) => c.kind === 'flight').length;
   const nStandby = quick.filter((c) => /standby|reserve/.test(String(c.kind || ''))).length;
   const nOther = quick.length - nFlights - nStandby;
   const vacN = rRes && rRes.ok ? rRes.vacDates.length : 0;
   const sickN = rRes && rRes.ok ? rRes.sickDates.length : 0;
-  const found = quick.length + fixN + vacN + sickN > 0;
+  const found = quick.length + vacN + sickN > 0;   // (os incertos já estão nos que entram)
   const saveRoster = () => {
     if (!quick.length) return;
     for (const c of quick) saveDuty(c.duty.duty_date, importSaveFields(c, 'calendar', duties[c.duty.duty_date]));
@@ -442,8 +442,8 @@ export default function OnboardingScreen() {
               <View style={o.warn}>
                 <View style={o.warnDot} />
                 <Text style={o.warnTxt}>
-                  <Text style={P.strong}>{fixN === 1 ? l('1 voo por corrigir. ', '1 flight to fix. ') : l(`${fixN} voos por corrigir. `, `${fixN} flights to fix. `)}</Text>
-                  {l('Ficam de fora até lhes dares a rota. Corriges em "Rever um a um".', 'They stay out until you add the route. Fix them in "Review one by one".')}
+                  <Text style={P.strong}>{fixN === 1 ? l('1 serviço entra incerto. ', '1 duty goes in as uncertain. ') : l(`${fixN} serviços entram incertos. `, `${fixN} duties go in as uncertain. `)}</Text>
+                  {l('Falta-lhes um dado (uma hora ou a rota), que tem de vir do calendário.', 'A fact is missing (a time or the route); it has to come from the calendar.')}
                 </Text>
               </View>
             ) : null}

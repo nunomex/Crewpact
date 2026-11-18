@@ -98,7 +98,12 @@ export const computeRecovery = (duties = {}, { postFlightMin = 0, base = null, b
         disruptive: pick((x) => x.disruptive), nightOrLate: pick((x) => x.night || x.lateFinish),
       };
       const dep = Array.isArray(s.legs) && s.legs.length ? s.legs[0].dep : String(s.route || '').split(/[^A-Za-z]+/).filter(Boolean)[0];
-      rows.push({ date, start, end, ...dis, kind: s.kind || 'flight', fdp: isFdpDuty(s), depAtBase: !dep || !baseOf(date) ? null : String(dep).toUpperCase() === baseOf(date) });
+      // … e a última chegada (as pernas; sem elas, a rota com dois aeroportos ou mais): para ver se o serviço seguinte parte de lá.
+      const rt = String(s.route || '').split(/[^A-Za-z]+/).filter(Boolean);
+      const arr = Array.isArray(s.legs) && s.legs.length ? s.legs[s.legs.length - 1].arr : (rt.length > 1 ? rt[rt.length - 1] : null);
+      const up = (x) => (x ? String(x).trim().toUpperCase() : null);
+      rows.push({ date, start, end, ...dis, kind: s.kind || 'flight', fdp: isFdpDuty(s), depAp: up(dep), arrAp: up(arr), arrAtBase: !arr || !baseOf(date) ? null : up(arr) === baseOf(date),
+        depAtBase: !dep || !baseOf(date) ? null : String(dep).toUpperCase() === baseOf(date) });
     }
   }
   rows.sort((a, b) => +a.start - +b.start);
@@ -132,6 +137,14 @@ export const computeRecovery = (duties = {}, { postFlightMin = 0, base = null, b
     const prev = rows[g.i - 1], next = rows[g.i];
     if (!prev.nightOrLate || !next.earlyStart) continue;
     if (!prev.fdp || !next.fdp) continue;     // "the rest period between the 2 FDPs" — só entre dois PSV
+    // O BURACO DE SÍTIO (sessão Fable 5.2, ponto 8): "is planned at home base" (CS FTL.1.235(a)(1)). Se o matinal parte de um
+    // aeroporto diferente daquele onde o tardio acabou, falta a viagem na escala e não se sabe onde é a passagem: se um dos dois
+    // lados é a base, a noite local que falta fica incerta (`place`); entre dois sítios fora da base a regra não se aplica.
+    // (2.ª revisão independente, achado 16: sem a base conhecida não se sabe se algum dos lados é a base — fica como antes.)
+    const hole = !!(prev.arrAp && next.depAp && prev.arrAp !== next.depAp) && (next.depAtBase != null || prev.arrAtBase != null);
+    // (Revisão independente, achado 7.) Com o buraco, o repouso que se vê é só o MÁXIMO que houve: uma noite local à vista pode
+    // não ter existido (a viagem que falta encurta-o) → incerto também com 1 noite; com 2 ou mais já não.
+    if (hole) { if (g.nights <= 1 && (next.depAtBase === true || prev.arrAtBase === true)) issues.push({ type: 'transitionNight', date: next.date, place: true }); continue; }
     if (next.depAtBase === false) continue;   // fora da base, a regra não se aplica
     if (g.nights < 1) issues.push({ type: 'transitionNight', date: next.date });
   }
